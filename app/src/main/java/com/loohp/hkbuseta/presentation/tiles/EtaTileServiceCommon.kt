@@ -172,7 +172,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(15F).build()
+                            DimensionBuilders.SpProp.Builder().setValue(if (seq == 1) 15F else (if (Shared.language == "en") 11F else 13F)).build()
                         )
                         .setColor(
                             ColorProp.Builder(color).build()
