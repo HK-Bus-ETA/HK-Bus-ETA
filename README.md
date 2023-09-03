@@ -1,5 +1,5 @@
 # HK-Bus-ETA-WearOS
-WearOS app to  
+WearOS app for checking Hong Kong Bus Estimated Time of Arrival on WearOS smartwatches with Tiles support.
 
 ## Language
 This web app is in the native language of Hong Kong: **Traditional Chinese**.<br>
