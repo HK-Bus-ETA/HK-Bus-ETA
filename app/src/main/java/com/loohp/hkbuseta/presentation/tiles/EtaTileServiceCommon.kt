@@ -199,9 +199,9 @@ class EtaTileServiceCommon {
                                     LayoutElementBuilders.Text.Builder()
                                         .setMaxLines(Int.MAX_VALUE)
                                         .setText(if (Shared.language == "en") {
-                                            "\nYou don't have a selected route stop!\nYou can set the route stop in the app."
+                                            "\nNo selected route stop\nYou can set the route stop in the app."
                                         } else {
-                                            "\n你未有選擇路線巴士站\n您可在應用程式中選取"
+                                            "\n未有選擇路線巴士站\n你可在應用程式中選取"
                                         })
                                         .build()
                                 ).build()
