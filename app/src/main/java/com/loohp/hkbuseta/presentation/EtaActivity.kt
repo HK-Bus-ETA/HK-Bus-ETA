@@ -96,11 +96,11 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
             Title(index, stop.optJSONObject("name"), route.optString("route"))
             SubTitle(route.optJSONObject("dest"))
             Spacer(modifier = Modifier.size(12.dp))
-            EtaText(eta, 1, false)
+            EtaText(eta, 1)
             Spacer(modifier = Modifier.size(7.dp))
-            EtaText(eta, 2, true)
+            EtaText(eta, 2)
             Spacer(modifier = Modifier.size(7.dp))
-            EtaText(eta, 3, true)
+            EtaText(eta, 3)
             Spacer(modifier = Modifier.size(3.dp))
             Row(
                 horizontalArrangement = Arrangement.Center
@@ -189,32 +189,33 @@ fun Title(index: Int, stopName: JSONObject, routeNumber: String) {
 fun SubTitle(destName: JSONObject) {
     var name = destName.optString(Shared.language)
     name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
-    Text(
+    AutoResizeText(
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         text = name,
-        fontSize = TextUnit(2F, TextUnitType.Em)
+        maxLines = 1,
+        fontSizeRange = FontSizeRange(
+            min = 5.sp,
+            max = 11.sp,
+        )
     )
 }
 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EtaText(lines: Map<Int, String>, seq: Int, singleLine: Boolean) {
-    var modifier = Modifier
-        .fillMaxWidth()
-        .padding(20.dp, 0.dp)
-    if (singleLine) {
-        modifier = modifier.basicMarquee(iterations = kotlin.Int.MAX_VALUE)
-    }
+fun EtaText(lines: Map<Int, String>, seq: Int) {
     Text(
-        modifier = modifier,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp, 0.dp)
+            .basicMarquee(iterations = Int.MAX_VALUE),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        maxLines = if (singleLine) 1 else Int.MAX_VALUE,
+        maxLines = 1,
         text = StringUtilsKt.toAnnotatedString(HtmlCompat.fromHtml(lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT))
     )
 }
