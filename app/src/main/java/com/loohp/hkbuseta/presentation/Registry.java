@@ -73,7 +73,14 @@ public class Registry {
             NetworkCapabilities.TRANSPORT_USB
     );
 
-    public static final Registry INSTANCE = new Registry();
+    private static Registry INSTANCE = null;
+
+    public static synchronized Registry getInstance(Context context) {
+        if (INSTANCE == null) {
+            INSTANCE = new Registry(context);
+        }
+        return INSTANCE;
+    }
 
     private static final String PREFERENCES_FILE_NAME = "preferences.json";
     private static final String CHECKSUM_FILE_NAME = "checksum.json";
@@ -102,9 +109,9 @@ public class Registry {
     private String typhoonWarningTitle = "";
     private String currentTyphoonSignalId = "";
 
-    private Registry() {
+    private Registry(Context context) {
         try {
-            ensureData();
+            ensureData(context);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -299,7 +306,7 @@ public class Registry {
         return -1;
     }
 
-    public void ensureData() throws IOException {
+    public void ensureData(Context context) throws IOException {
         if (state.equals(State.READY)) {
             return;
         }
@@ -307,9 +314,9 @@ public class Registry {
             return;
         }
 
-        List<String> files = Arrays.asList(MainActivity.Companion.getContext().getApplicationContext().fileList());
+        List<String> files = Arrays.asList(context.getApplicationContext().fileList());
         if (files.contains(PREFERENCES_FILE_NAME)) {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(PREFERENCES_FILE_NAME), StandardCharsets.UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(PREFERENCES_FILE_NAME), StandardCharsets.UTF_8))) {
                 PREFERENCES = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
                 Shared.Companion.setLanguage(PREFERENCES.optString("language", "zh"));
                 if (PREFERENCES.has("favouriteRouteStops")) {
@@ -333,7 +340,7 @@ public class Registry {
 
         Thread thread = new Thread(() -> {
             try {
-                int connectionType = getConnectionType(MainActivity.Companion.getContext());
+                int connectionType = getConnectionType(context);
 
                 boolean cached = false;
                 String checksum = connectionType < 0 ? null : HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/checksum.md5");
@@ -341,7 +348,7 @@ public class Registry {
                     if (checksum == null) {
                         cached = true;
                     } else {
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(CHECKSUM_FILE_NAME), StandardCharsets.UTF_8))) {
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(CHECKSUM_FILE_NAME), StandardCharsets.UTF_8))) {
                             String localChecksum = reader.readLine();
                             if (Objects.equals(localChecksum, checksum)) {
                                 cached = true;
@@ -351,42 +358,42 @@ public class Registry {
                 }
 
                 if (cached) {
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(DATA_SHEET_FILE_NAME), StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_SHEET_FILE_NAME), StandardCharsets.UTF_8))) {
                         DATA_SHEET = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(BUS_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(BUS_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
                         BUS_ROUTE = JsonUtils.toSet(new JSONArray(reader.lines().collect(Collectors.joining("\n"))), String.class);
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(KMB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(KMB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
                         KMB_ROUTE = new JSONArray(reader.lines().collect(Collectors.joining("\n")));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(CTB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(CTB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
                         CTB_ROUTE = new JSONArray(reader.lines().collect(Collectors.joining("\n")));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(NLB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(NLB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
                         NLB_ROUTE = new JSONArray(reader.lines().collect(Collectors.joining("\n")));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(MTR_BUS_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(MTR_BUS_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
                         MTR_BUS_ROUTE = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(MTR_BUS_STOP_ALIAS_FILE_NAME), StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(MTR_BUS_STOP_ALIAS_FILE_NAME), StandardCharsets.UTF_8))) {
                         MTR_BUS_STOP_ALIAS = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(MainActivity.Companion.getContext().getApplicationContext().openFileInput(GMB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(GMB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
                         GMB_ROUTE = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
@@ -404,7 +411,7 @@ public class Registry {
                         String route = KMB_ROUTE.optJSONObject(i).optString("route");
                         BUS_ROUTE.add(route);
                     }
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(KMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(KMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(KMB_ROUTE.toString());
                         pw.flush();
                     }
@@ -414,7 +421,7 @@ public class Registry {
                         String route = CTB_ROUTE.optJSONObject(i).optString("route");
                         BUS_ROUTE.add(route);
                     }
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(CTB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CTB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(CTB_ROUTE.toString());
                         pw.flush();
                     }
@@ -424,13 +431,13 @@ public class Registry {
                         String route = NLB_ROUTE.optJSONObject(i).optString("routeNo");
                         BUS_ROUTE.add(route);
                     }
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(NLB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(NLB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(NLB_ROUTE.toString());
                         pw.flush();
                     }
 
                     MTR_BUS_STOP_ALIAS = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stop_alias.json");
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(MTR_BUS_STOP_ALIAS.toString());
                         pw.flush();
                     }
@@ -444,7 +451,7 @@ public class Registry {
                             BUS_ROUTE.add(route);
                         }
                     }
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(GMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(GMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(GMB_ROUTE.toString());
                         pw.flush();
                     }
@@ -687,7 +694,7 @@ public class Registry {
                             DATA_SHEET.optJSONObject("routeList").put(key, data);
                             BUS_ROUTE.add(route);
                         }
-                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(MTR_BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                             pw.write(MTR_BUS_ROUTE.toString());
                             pw.flush();
                         }
@@ -702,16 +709,16 @@ public class Registry {
                         throw new RuntimeException(e);
                     }
                     
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(DATA_SHEET.toString());
                         pw.flush();
                     }
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(JsonUtils.fromCollection(BUS_ROUTE).toString());
                         pw.flush();
                     }
                 }
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(CHECKSUM_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CHECKSUM_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                     pw.write(checksum == null ? "" : checksum);
                     pw.flush();
                 } catch (IOException e) {
@@ -719,6 +726,7 @@ public class Registry {
                 }
                 if (!state.equals(State.ERROR)) {
                     state = State.READY;
+                    updateTileService(context);
                 }
             } catch (Exception e) {
                 state = State.ERROR;

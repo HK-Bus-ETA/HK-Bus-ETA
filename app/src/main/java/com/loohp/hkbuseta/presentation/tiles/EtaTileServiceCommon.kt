@@ -1,5 +1,6 @@
 package com.loohp.hkbuseta.presentation.tiles
 
+import android.content.Context
 import androidx.annotation.OptIn
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -26,7 +27,100 @@ class EtaTileServiceCommon {
 
         const val RESOURCES_VERSION = "0"
 
-        fun noFavouriteRouteStop(favoriteIndex: Int, packageName: String): LayoutElementBuilders.LayoutElement {
+        fun pleaseWait(favoriteIndex: Int, packageName: String): LayoutElementBuilders.LayoutElement {
+            return LayoutElementBuilders.Box.Builder()
+                .setWidth(expand())
+                .setHeight(expand())
+                .addContent(
+                    LayoutElementBuilders.Arc.Builder()
+                        .setAnchorAngle(
+                            DimensionBuilders.DegreesProp.Builder(0F).build()
+                        )
+                        .setAnchorType(LayoutElementBuilders.ARC_ANCHOR_START)
+                        .addContent(
+                            ArcLine.Builder()
+                                .setLength(
+                                    DimensionBuilders.DegreesProp.Builder(360F).build()
+                                )
+                                .setThickness(
+                                    DimensionBuilders.DpProp.Builder(7F).build()
+                                )
+                                .setColor(
+                                    ColorProp.Builder(android.graphics.Color.DKGRAY).build()
+                                ).build()
+                        ).build()
+                )
+                .addContent(
+                    LayoutElementBuilders.Row.Builder()
+                        .setWidth(DimensionBuilders.wrap())
+                        .setHeight(DimensionBuilders.wrap())
+                        .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+                        .setModifiers(
+                            ModifiersBuilders.Modifiers.Builder()
+                                .setClickable(
+                                    ModifiersBuilders.Clickable.Builder()
+                                        .setId("open")
+                                        .setOnClick(
+                                            ActionBuilders.LaunchAction.Builder()
+                                                .setAndroidActivity(
+                                                    ActionBuilders.AndroidActivity.Builder()
+                                                        .setClassName(MainActivity::class.java.name)
+                                                        .setPackageName(packageName)
+                                                        .build()
+                                                ).build()
+                                        ).build()
+                                ).build()
+                        )
+                        .addContent(
+                            LayoutElementBuilders.Column.Builder()
+                                .setWidth(DimensionBuilders.wrap())
+                                .setHeight(DimensionBuilders.wrap())
+                                .setModifiers(
+                                    ModifiersBuilders.Modifiers.Builder()
+                                        .setPadding(
+                                            ModifiersBuilders.Padding.Builder()
+                                                .setStart(DimensionBuilders.DpProp.Builder(20F).build())
+                                                .setEnd(DimensionBuilders.DpProp.Builder(20F).build())
+                                                .build()
+                                        )
+                                        .build()
+                                )
+                                .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                                .addContent(
+                                    LayoutElementBuilders.Text.Builder()
+                                        .setMaxLines(Int.MAX_VALUE)
+                                        .setFontStyle(
+                                            FontStyle.Builder()
+                                                .setSize(
+                                                    DimensionBuilders.SpProp.Builder().setValue(25F).build()
+                                                )
+                                                .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
+                                                .setColor(
+                                                    ColorProp.Builder(Color.Gray.toArgb()).build()
+                                                ).build()
+                                        )
+                                        .setText(favoriteIndex.toString())
+                                        .build()
+                                )
+                                .addContent(
+                                    LayoutElementBuilders.Text.Builder()
+                                        .setMaxLines(Int.MAX_VALUE)
+                                        .setText("\n載入中...")
+                                        .build()
+                                ).addContent(
+                                    LayoutElementBuilders.Text.Builder()
+                                        .setMaxLines(Int.MAX_VALUE)
+                                        .setText("Loading...")
+                                        .build()
+                                ).build()
+                        ).build()
+                ).build()
+        }
+
+        fun noFavouriteRouteStop(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+            if (Registry.getInstance(context).state != Registry.State.READY) {
+                return pleaseWait(favoriteIndex, packageName)
+            }
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
@@ -181,7 +275,11 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        fun buildLayout(favouriteStopRoute: JSONObject, packageName: String): LayoutElementBuilders.LayoutElement {
+        fun buildLayout(favoriteIndex: Int, favouriteStopRoute: JSONObject, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+            if (Registry.getInstance(context).state != Registry.State.READY) {
+                return pleaseWait(favoriteIndex, packageName)
+            }
+
             val stopName = favouriteStopRoute.optJSONObject("stop").optJSONObject("name")
             val destName = favouriteStopRoute.optJSONObject("route").optJSONObject("dest")
 

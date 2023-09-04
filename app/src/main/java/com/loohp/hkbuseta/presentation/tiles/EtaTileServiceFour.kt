@@ -27,10 +27,13 @@ class EtaTileServiceFour : TileService() {
                             LayoutElementBuilders.Layout.Builder().setRoot(
                                 if (!Shared.favoriteRouteStops.containsKey(ETA_TILE_INDEX)) EtaTileServiceCommon.noFavouriteRouteStop(
                                     ETA_TILE_INDEX,
-                                    packageName
+                                    packageName,
+                                    this
                                 ) else EtaTileServiceCommon.buildLayout(
+                                    ETA_TILE_INDEX,
                                     Shared.favoriteRouteStops[ETA_TILE_INDEX]!!,
-                                    packageName
+                                    packageName,
+                                    this
                                 )
                             ).build()
                         ).build()

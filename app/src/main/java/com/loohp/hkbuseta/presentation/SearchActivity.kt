@@ -76,7 +76,7 @@ fun SearchPage(instance: SearchActivity) {
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun MainElement(instance: SearchActivity) {
-    val state = remember { mutableStateOf(Pair.create(defaultText(), Registry.INSTANCE.getPossibleNextChar(""))) }
+    val state = remember { mutableStateOf(Pair.create(defaultText(), Registry.getInstance(instance).getPossibleNextChar(""))) }
 
     Column(
         modifier = Modifier
@@ -150,7 +150,7 @@ fun handleInput(instance: SearchActivity, state: MutableState<Pair<String, Pair<
         originalText = "";
     }
     if (input == '/') {
-        val result = Registry.INSTANCE.findRoutes(originalText)
+        val result = Registry.getInstance(instance).findRoutes(originalText)
         if (result != null && result.isNotEmpty()) {
             val intent = Intent(instance, ListRouteActivity::class.java)
             intent.putExtra("result", JsonUtils.fromCollection(result).toString())
@@ -166,7 +166,7 @@ fun handleInput(instance: SearchActivity, state: MutableState<Pair<String, Pair<
         } else {
             originalText + input
         }
-        val possibleNextChar = Registry.INSTANCE.getPossibleNextChar(newText)
+        val possibleNextChar = Registry.getInstance(instance).getPossibleNextChar(newText)
         val text = newText.ifEmpty { defaultText() }
         state.value = Pair.create(text, possibleNextChar)
     }

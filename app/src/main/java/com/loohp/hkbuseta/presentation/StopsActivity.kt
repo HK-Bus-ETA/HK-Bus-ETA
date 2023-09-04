@@ -70,7 +70,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
     var targetDistance = 1.0
     var randomTr: TableRow? = null
     var i = 1
-    for (entry in Registry.INSTANCE.getAllStops(routeNumber, bound, co)) {
+    for (entry in Registry.getInstance(instance).getAllStops(routeNumber, bound, co)) {
         val stopId = entry.key
         val stop = entry.value.first
 
@@ -135,7 +135,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
         if (route.has("origin")) {
             val origin = route.optJSONObject("origin")
             val location = stop.optJSONObject("location")
-            val distance = Registry.INSTANCE.findDistance(origin.optDouble("lat"), origin.optDouble("lng"), location.optDouble("lat"), location.optDouble("lng"))
+            val distance = Registry.getInstance(instance).findDistance(origin.optDouble("lat"), origin.optDouble("lng"), location.optDouble("lat"), location.optDouble("lng"))
             if (distance < targetDistance) {
                 targetIndex = i
                 targetDistance = distance

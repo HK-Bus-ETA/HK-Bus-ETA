@@ -68,11 +68,11 @@ fun NoNearbyText() {
 @RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun MainElement(instance: NearbyActivity) {
-    val gps = Registry.INSTANCE.getGPSLocation(instance)
+    val gps = Registry.getInstance(instance).getGPSLocation(instance)
     if (gps == null) {
         return NoNearbyText()
     }
-    val result = Registry.INSTANCE.getNearbyRoutes(gps[0], gps[1])
+    val result = Registry.getInstance(instance).getNearbyRoutes(gps[0], gps[1])
     return if (result == null) {
         NoNearbyText()
     } else {

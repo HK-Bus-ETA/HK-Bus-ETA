@@ -119,15 +119,15 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
 
 @Composable
 fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity) {
-    val state = remember { mutableStateOf(Registry.INSTANCE.isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)) }
+    val state = remember { mutableStateOf(Registry.getInstance(instance).isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)) }
     Button(
         onClick = {
             if (state.value) {
-                Registry.INSTANCE.clearFavouriteRouteStop(favoriteIndex, instance)
+                Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
             } else {
-                Registry.INSTANCE.setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, instance)
+                Registry.getInstance(instance).setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, instance)
             }
-            state.value = Registry.INSTANCE.isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)
+            state.value = Registry.getInstance(instance).isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)
         },
         modifier = Modifier
             .width(24.dp)

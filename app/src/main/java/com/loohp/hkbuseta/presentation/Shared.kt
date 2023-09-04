@@ -1,5 +1,6 @@
 package com.loohp.hkbuseta.presentation
 
+import android.content.Context
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -28,13 +29,13 @@ class Shared {
         }
 
         @Composable
-        fun LoadingLabel(language: String) {
+        fun LoadingLabel(language: String, instance: Context) {
             val text = remember { mutableStateOf(if (language == "en") "Loading..." else "載入中...") }
 
             LaunchedEffect (Unit) {
                 while (true) {
                     delay(500)
-                    if (Registry.INSTANCE.state == Registry.State.UPDATING) {
+                    if (Registry.getInstance(instance).state == Registry.State.UPDATING) {
                         text.value = if (language == "en") "Updating...\nMight take several minutes" else "更新數據中...\n可能需要幾分鐘"
                     }
                 }

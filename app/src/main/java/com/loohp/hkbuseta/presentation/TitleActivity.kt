@@ -94,7 +94,7 @@ fun SearchButton(instance: TitleActivity) {
 fun NearbyButton(instance: TitleActivity) {
     Button(
         onClick = {
-            if (Registry.INSTANCE.checkLocationPermission(instance, true)) {
+            if (Registry.getInstance(instance).checkLocationPermission(instance, true)) {
                 instance.startActivity(Intent(instance, NearbyActivity::class.java))
             }
         },
@@ -121,7 +121,7 @@ fun NearbyButton(instance: TitleActivity) {
 fun LanguageButton(instance: TitleActivity) {
     Button(
         onClick = {
-            Registry.INSTANCE.setLanguage(if (Shared.language == "en") "zh" else "en", instance)
+            Registry.getInstance(instance).setLanguage(if (Shared.language == "en") "zh" else "en", instance)
             instance.startActivity(Intent(instance, MainActivity::class.java))
             instance.finish()
         },

@@ -37,14 +37,14 @@ class MainActivity : ComponentActivity() {
         mContext = this;
         setContent {
             LaunchedEffect (Unit) {
-                Registry.INSTANCE
+                Registry.getInstance(this@MainActivity)
                 Timer().schedule(object : TimerTask() {
                     override fun run() {
-                        if (Registry.INSTANCE.state == Registry.State.READY) {
+                        if (Registry.getInstance(this@MainActivity).state == Registry.State.READY) {
                             cancel()
                             startActivity(Intent(this@MainActivity, TitleActivity::class.java))
                             finish()
-                        } else if (Registry.INSTANCE.state == Registry.State.ERROR) {
+                        } else if (Registry.getInstance(this@MainActivity).state == Registry.State.ERROR) {
                             cancel()
                             val intent = Intent(this@MainActivity, FatalErrorActivity::class.java)
                             intent.putExtra("zh", "發生錯誤\n請檢查您的網絡連接")
@@ -55,13 +55,13 @@ class MainActivity : ComponentActivity() {
                     }
                 }, 0, 100)
             }
-            Loading()
+            Loading(this)
         }
     }
 }
 
 @Composable
-fun Loading() {
+fun Loading(instance: MainActivity) {
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -76,9 +76,9 @@ fun Loading() {
                 .fillMaxSize(),
             verticalArrangement = Arrangement.Center
         ) {
-            Shared.LoadingLabel("zh")
+            Shared.LoadingLabel("zh", instance)
             Spacer(modifier = Modifier.size(10.dp))
-            Shared.LoadingLabel("en")
+            Shared.LoadingLabel("en", instance)
         }
     }
 }
