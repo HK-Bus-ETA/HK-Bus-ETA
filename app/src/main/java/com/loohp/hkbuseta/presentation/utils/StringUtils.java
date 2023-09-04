@@ -1,5 +1,7 @@
 package com.loohp.hkbuseta.presentation.utils;
 
+import android.content.Context;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +35,16 @@ public class StringUtils {
         sb.append(inputString);
 
         return sb.toString();
+    }
+
+    public static int scaledSize(int size, Context context) {
+        return Math.round(scaledSize((float) size, context));
+    }
+
+    public static float scaledSize(float size, Context context) {
+        int dimension = ScreenSizeUtils.getMinScreenSize(context);
+        float scale = dimension / 454F;
+        return size * scale;
     }
 
 }

@@ -92,16 +92,16 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.size(7.dp))
-            Title(index, stop.optJSONObject("name"), route.optString("route"))
-            SubTitle(route.optJSONObject("dest"))
-            Spacer(modifier = Modifier.size(12.dp))
-            EtaText(eta, 1)
-            Spacer(modifier = Modifier.size(7.dp))
-            EtaText(eta, 2)
-            Spacer(modifier = Modifier.size(7.dp))
-            EtaText(eta, 3)
-            Spacer(modifier = Modifier.size(3.dp))
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+            Title(index, stop.optJSONObject("name"), route.optString("route"), instance)
+            SubTitle(route.optJSONObject("dest"), instance)
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(12, instance).dp))
+            EtaText(eta, 1, instance)
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+            EtaText(eta, 2, instance)
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+            EtaText(eta, 3, instance)
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
             Row(
                 horizontalArrangement = Arrangement.Center
             )  {
@@ -149,7 +149,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
 }
 
 @Composable
-fun Title(index: Int, stopName: JSONObject, routeNumber: String) {
+fun Title(index: Int, stopName: JSONObject, routeNumber: String, instance: EtaActivity) {
     var name = stopName.optString(Shared.language)
     if (Shared.language == "en") {
         name = StringUtils.capitalize(name)
@@ -163,8 +163,8 @@ fun Title(index: Int, stopName: JSONObject, routeNumber: String) {
             maxLines = 2,
             fontWeight = FontWeight(900),
             fontSizeRange = FontSizeRange(
-                min = 10.sp,
-                max = 17.sp,
+                min = StringUtils.scaledSize(10, instance).sp,
+                max = StringUtils.scaledSize(17, instance).sp,
             )
         )
     } else {
@@ -178,15 +178,15 @@ fun Title(index: Int, stopName: JSONObject, routeNumber: String) {
             maxLines = 2,
             fontWeight = FontWeight(900),
             fontSizeRange = FontSizeRange(
-                min = 10.sp,
-                max = 17.sp,
+                min = StringUtils.scaledSize(10, instance).sp,
+                max = StringUtils.scaledSize(17, instance).sp,
             )
         )
     }
 }
 
 @Composable
-fun SubTitle(destName: JSONObject) {
+fun SubTitle(destName: JSONObject, instance: EtaActivity) {
     var name = destName.optString(Shared.language)
     name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
     AutoResizeText(
@@ -198,8 +198,8 @@ fun SubTitle(destName: JSONObject) {
         text = name,
         maxLines = 1,
         fontSizeRange = FontSizeRange(
-            min = 5.sp,
-            max = 11.sp,
+            min = StringUtils.scaledSize(5, instance).sp,
+            max = StringUtils.scaledSize(11, instance).sp,
         )
     )
 }
@@ -207,7 +207,7 @@ fun SubTitle(destName: JSONObject) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EtaText(lines: Map<Int, String>, seq: Int) {
+fun EtaText(lines: Map<Int, String>, seq: Int, instance: EtaActivity) {
     Text(
         modifier = Modifier
             .fillMaxWidth()

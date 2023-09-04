@@ -42,6 +42,7 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.JsonUtils
 import android.util.Pair
+import com.loohp.hkbuseta.presentation.utils.StringUtils
 
 
 class SearchActivity : ComponentActivity() {
@@ -85,12 +86,12 @@ fun MainElement(instance: SearchActivity) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.size(10.dp))
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
         Box(
             modifier = Modifier
-                .width(140.dp)
-                .height(35.dp)
-                .border(2.dp, MaterialTheme.colors.secondaryVariant, RoundedCornerShape(10))
+                .width(StringUtils.scaledSize(140, instance).dp)
+                .height(StringUtils.scaledSize(35, instance).dp)
+                .border(StringUtils.scaledSize(2, instance).dp, MaterialTheme.colors.secondaryVariant, RoundedCornerShape(10))
                 .background(MaterialTheme.colors.secondary),
             contentAlignment = Alignment.Center
         ) {
@@ -121,11 +122,11 @@ fun MainElement(instance: SearchActivity) {
                 KeyboardButton(instance, '3', state)
                 KeyboardButton(instance, '/', state, Icons.Outlined.Done, Color.Green)
             }
-            Spacer(modifier = Modifier.size(10.dp))
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             Box (
                 modifier = Modifier
-                    .width(35.dp)
-                    .height(135.dp)
+                    .width(StringUtils.scaledSize(35, instance).dp)
+                    .height(StringUtils.scaledSize(135, instance).dp)
             ) {
                 Column (
                     modifier = Modifier
@@ -191,8 +192,8 @@ fun KeyboardButton(instance: SearchActivity, content: Char, state: MutableState<
             handleInput(instance, state, content)
         },
         modifier = Modifier
-            .width(35.dp)
-            .height(if (content.isLetter()) 30.dp else 35.dp),
+            .width(StringUtils.scaledSize(35, instance).dp)
+            .height(StringUtils.scaledSize(if (content.isLetter()) 30 else 35, instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = Color.Transparent,
             contentColor = actualColor

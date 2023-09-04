@@ -89,7 +89,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
             tr.setBackgroundResource(android.R.drawable.list_selector_background)
         }
 
-        val padding = (7.5 * instance.resources.displayMetrics.density).roundToInt()
+        val padding = (StringUtils.scaledSize(7.5F, instance) * instance.resources.displayMetrics.density).roundToInt()
         tr.setPadding(0, padding, 0, padding)
         val stopIndex = i
         tr.setOnClickListener {
@@ -105,7 +105,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
         tr.addView(indexTextView);
         indexTextView.text = "".plus(i).plus(". ")
         indexTextView.setTextColor(color)
-        indexTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f)
+        indexTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, StringUtils.scaledSize(15F, instance))
         val layoutParams: ViewGroup.LayoutParams = indexTextView.layoutParams
         layoutParams.width = (30 * instance.resources.displayMetrics.density).roundToInt()
         indexTextView.layoutParams = layoutParams
@@ -120,7 +120,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
         stopTextView.setHorizontallyScrolling(true)
         stopTextView.isSelected = true
         val destTextLayoutParams: ViewGroup.LayoutParams = stopTextView.layoutParams
-        destTextLayoutParams.width = (131 * instance.resources.displayMetrics.density).roundToInt()
+        destTextLayoutParams.width = (StringUtils.scaledSize(131F, instance) * instance.resources.displayMetrics.density).roundToInt()
         stopTextView.layoutParams = destTextLayoutParams
 
         var stopStr = stop.optJSONObject("name").optString(Shared.language)
@@ -129,7 +129,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
         }
         stopTextView.text = stopStr
         stopTextView.setTextColor(color)
-        stopTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f)
+        stopTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, StringUtils.scaledSize(15F, instance))
         table.addView(tr)
 
         if (route.has("origin")) {

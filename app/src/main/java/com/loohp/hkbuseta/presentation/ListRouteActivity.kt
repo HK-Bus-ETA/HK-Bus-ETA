@@ -100,7 +100,7 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
             tr.setBackgroundResource(android.R.drawable.list_selector_background)
         }
 
-        val padding = (7.5 * instance.resources.displayMetrics.density).roundToInt()
+        val padding = (StringUtils.scaledSize(7.5F, instance) * instance.resources.displayMetrics.density).roundToInt()
         tr.setPadding(0, padding, 0, padding)
         tr.setOnClickListener {
             val intent = Intent(instance, StopsActivity::class.java)
@@ -111,10 +111,10 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
         tr.addView(routeTextView);
         routeTextView.text = route.optJSONObject("route").optString("route")
         routeTextView.setTextColor(color)
-        routeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20f)
+        routeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, StringUtils.scaledSize(20F, instance))
         val routeTextLayoutParams: ViewGroup.LayoutParams = routeTextView.layoutParams
         routeTextLayoutParams.width =
-            (51 * instance.resources.displayMetrics.density).roundToInt()
+            (StringUtils.scaledSize(51F, instance) * instance.resources.displayMetrics.density).roundToInt()
         routeTextView.layoutParams = routeTextLayoutParams
         val destTextView = TextView(instance)
         tr.addView(destTextView);
@@ -128,7 +128,7 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
         destTextView.isSelected = true
         val destTextLayoutParams: ViewGroup.LayoutParams = destTextView.layoutParams
         destTextLayoutParams.width =
-            (95 * instance.resources.displayMetrics.density).roundToInt()
+            (StringUtils.scaledSize(95F, instance) * instance.resources.displayMetrics.density).roundToInt()
         destTextView.layoutParams = destTextLayoutParams
 
         var dest =
@@ -138,7 +138,7 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
         }
         destTextView.text = (if (Shared.language == "en") "To " else "往").plus(dest)
         destTextView.setTextColor(color)
-        destTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f)
+        destTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, StringUtils.scaledSize(15F, instance))
         table.addView(tr)
 
         val scrollView: ScrollView = instance.findViewById(R.id.route_list_scroll)

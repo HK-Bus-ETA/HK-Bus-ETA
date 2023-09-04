@@ -26,6 +26,7 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
+import com.loohp.hkbuseta.presentation.utils.StringUtils
 
 class TitleActivity : ComponentActivity() {
 
@@ -55,7 +56,7 @@ fun HKBusETAApp(instance: TitleActivity) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.size(25.dp))
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(25, instance).dp))
             SearchButton(instance)
             Spacer(modifier = Modifier.size(10.dp))
             NearbyButton(instance)

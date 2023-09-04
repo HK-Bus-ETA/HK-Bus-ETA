@@ -185,7 +185,7 @@ class EtaTileServiceCommon {
                                         .setFontStyle(
                                             FontStyle.Builder()
                                                 .setSize(
-                                                    DimensionBuilders.SpProp.Builder().setValue(25F).build()
+                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(25F, context)).build()
                                                 )
                                                 .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                                                 .setColor(
@@ -209,7 +209,7 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        fun title(index: Int, stopName: JSONObject, routeNumber: String): LayoutElementBuilders.Text {
+        fun title(index: Int, stopName: JSONObject, routeNumber: String, context: Context): LayoutElementBuilders.Text {
             var name = stopName.optString(Shared.language)
             if (Shared.language == "en") {
                 name = StringUtils.capitalize(name)
@@ -221,7 +221,7 @@ class EtaTileServiceCommon {
                     FontStyle.Builder()
                         .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(if (Shared.language == "en") 13F else 17F).build()
+                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(if (Shared.language == "en") 13F else 17F, context)).build()
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -230,7 +230,7 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        fun subTitle(destName: JSONObject): LayoutElementBuilders.Text {
+        fun subTitle(destName: JSONObject, context: Context): LayoutElementBuilders.Text {
             var name = destName.optString(Shared.language)
             name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
             return LayoutElementBuilders.Text.Builder()
@@ -239,7 +239,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(12F).build()
+                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(12F, context)).build()
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -249,7 +249,7 @@ class EtaTileServiceCommon {
         }
 
         @OptIn(ProtoLayoutExperimental::class)
-        fun etaText(lines: Map<Int, String>, seq: Int, singleLine: Boolean): LayoutElementBuilders.Text {
+        fun etaText(lines: Map<Int, String>, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Text {
             val text = StringUtilsKt.toAnnotatedString(
                 HtmlCompat.fromHtml(
                     lines.getOrDefault(seq, "-"),
@@ -266,7 +266,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(if (seq == 1) 15F else (if (Shared.language == "en") 11F else 13F)).build()
+                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(if (seq == 1) 15F else (if (Shared.language == "en") 11F else 13F), context)).build()
                         )
                         .setColor(
                             ColorProp.Builder(color).build()
@@ -359,10 +359,10 @@ class EtaTileServiceCommon {
                                 )
                                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
                                 .addContent(
-                                    title(index, stopName, route.optString("route"))
+                                    title(index, stopName, route.optString("route"), context)
                                 )
                                 .addContent(
-                                    subTitle(destName)
+                                    subTitle(destName, context)
                                 )
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()
@@ -371,7 +371,7 @@ class EtaTileServiceCommon {
                                         )
                                         .build()
                                 ).addContent(
-                                    etaText(eta, 1, false)
+                                    etaText(eta, 1, false, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
@@ -379,7 +379,7 @@ class EtaTileServiceCommon {
                                         )
                                         .build()
                                 ).addContent(
-                                    etaText(eta, 2, true)
+                                    etaText(eta, 2, true, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
@@ -387,7 +387,7 @@ class EtaTileServiceCommon {
                                         )
                                         .build()
                                 ).addContent(
-                                    etaText(eta, 3, true)
+                                    etaText(eta, 3, true, context)
                                 ).build()
                         ).build()
                 ).build()
