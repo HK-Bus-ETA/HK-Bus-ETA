@@ -17,6 +17,8 @@ In addition, it also supports **English**.
 - [HK Bus Crawling@2021](https://github.com/hkbus/hk-bus-crawling)
 
 
-## Privacy policy
+## Privacy Policy
 I hereby state, to the best of my knowledge and belief, that I have not programmed this app to collect any personally identifiable information.<br>
-The only data stored locally on your device are bus route caches and can be simply erased by clearing the app's data or uninstalling it.
+The only data stored locally on your device are bus route caches and can be simply erased by clearing the app's data or uninstalling it.<br>
+GPS information used (such as to find nearby bus routes and stops) is only used at the moment and is not stored or collected.<br>
+HTTPS Requests are made to the above data sources to retrieve bus routes, stops and ETA information. No personally identifiable information (apart from information essentially needed to perform a request, such as the IP address) is sent in such requests.
