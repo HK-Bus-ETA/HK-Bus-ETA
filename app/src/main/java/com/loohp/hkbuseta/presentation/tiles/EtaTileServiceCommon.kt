@@ -13,13 +13,19 @@ import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.LayoutElementBuilders.ArcLine
 import androidx.wear.protolayout.LayoutElementBuilders.FontStyle
 import androidx.wear.protolayout.ModifiersBuilders
+import androidx.wear.protolayout.TimelineBuilders
 import androidx.wear.protolayout.expression.ProtoLayoutExperimental
+import androidx.wear.tiles.TileBuilders
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.presentation.MainActivity
 import com.loohp.hkbuseta.presentation.Registry
 import com.loohp.hkbuseta.presentation.Shared
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import org.json.JSONObject
+import java.util.concurrent.Callable
+import java.util.concurrent.ForkJoinPool
 
 class EtaTileServiceCommon {
 
@@ -391,6 +397,32 @@ class EtaTileServiceCommon {
                                 ).build()
                         ).build()
                 ).build()
+        }
+
+        fun buildTileRequest(etaIndex: Int, packageName: String, context: Context): ListenableFuture<TileBuilders.Tile> {
+            return Futures.submit(Callable {
+                TileBuilders.Tile.Builder()
+                    .setResourcesVersion(RESOURCES_VERSION)
+                    .setFreshnessIntervalMillis(30000)
+                    .setTileTimeline(
+                        TimelineBuilders.Timeline.Builder().addTimelineEntry(
+                            TimelineBuilders.TimelineEntry.Builder().setLayout(
+                                LayoutElementBuilders.Layout.Builder().setRoot(
+                                    if (!Shared.favoriteRouteStops.containsKey(etaIndex)) noFavouriteRouteStop(
+                                        etaIndex,
+                                        packageName,
+                                        context
+                                    ) else buildLayout(
+                                        etaIndex,
+                                        Shared.favoriteRouteStops[etaIndex]!!,
+                                        packageName,
+                                        context
+                                    )
+                                ).build()
+                            ).build()
+                        ).build()
+                    ).build()
+            }, ForkJoinPool.commonPool())
         }
 
     }

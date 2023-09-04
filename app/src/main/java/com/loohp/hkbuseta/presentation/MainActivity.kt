@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.MaterialTheme
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
+import com.loohp.hkbuseta.presentation.utils.StringUtils
 import java.util.Timer
 import java.util.TimerTask
 
@@ -34,7 +35,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        mContext = this;
+        mContext = this
         setContent {
             LaunchedEffect (Unit) {
                 Registry.getInstance(this@MainActivity)
@@ -77,7 +78,7 @@ fun Loading(instance: MainActivity) {
             verticalArrangement = Arrangement.Center
         ) {
             Shared.LoadingLabel("zh", instance)
-            Spacer(modifier = Modifier.size(10.dp))
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             Shared.LoadingLabel("en", instance)
         }
     }

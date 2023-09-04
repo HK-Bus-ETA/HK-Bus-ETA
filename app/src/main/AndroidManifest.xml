@@ -83,7 +83,7 @@
         <service
             android:name=".presentation.tiles.EtaTileServiceOne"
             android:exported="true"
-            android:label="Route Stop ETA 1"
+            android:label="@string/route_stop_eta_tile_name_1"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
 
             <intent-filter>
@@ -99,7 +99,7 @@
         <service
             android:name=".presentation.tiles.EtaTileServiceTwo"
             android:exported="true"
-            android:label="Route Stop ETA 2"
+            android:label="@string/route_stop_eta_tile_name_2"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
 
             <intent-filter>
@@ -115,7 +115,7 @@
         <service
             android:name=".presentation.tiles.EtaTileServiceThree"
             android:exported="true"
-            android:label="Route Stop ETA 3"
+            android:label="@string/route_stop_eta_tile_name_3"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
 
             <intent-filter>
@@ -131,7 +131,7 @@
         <service
             android:name=".presentation.tiles.EtaTileServiceFour"
             android:exported="true"
-            android:label="Route Stop ETA 4"
+            android:label="@string/route_stop_eta_tile_name_4"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
 
             <intent-filter>

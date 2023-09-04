@@ -30,6 +30,7 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
+import com.loohp.hkbuseta.presentation.utils.StringUtils
 
 
 class FatalErrorActivity : ComponentActivity() {
@@ -85,7 +86,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?) {
                 color = MaterialTheme.colors.primary,
                 text = en ?: "發生錯誤"
             )
-            Spacer(modifier = Modifier.size(10.dp))
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth(),
@@ -93,8 +94,8 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?) {
             ) {
                 Button(
                     modifier = Modifier
-                        .width(50.dp)
-                        .height(50.dp),
+                        .width(StringUtils.scaledSize(50, instance).dp)
+                        .height(StringUtils.scaledSize(50, instance).dp),
                     onClick = {
                         instance.startActivity(Intent(instance, MainActivity::class.java))
                         instance.finish()
@@ -107,16 +108,16 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?) {
                         Icon(
                             modifier = Modifier.size(35.dp),
                             imageVector = Icons.Filled.Refresh,
-                            contentDescription = "Relaunch",
+                            contentDescription = if (Shared.language == "en") "Relaunch App" else "重新載入",
                             tint = Color.Yellow,
                         )
                     }
                 )
-                Spacer(modifier = Modifier.size(25.dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(25, instance).dp))
                 Button(
                     modifier = Modifier
-                        .width(50.dp)
-                        .height(50.dp),
+                        .width(StringUtils.scaledSize(50, instance).dp)
+                        .height(StringUtils.scaledSize(50, instance).dp),
                     onClick = {
                         instance.finishAffinity()
                     },
@@ -126,9 +127,9 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?) {
                     ),
                     content = {
                         Icon(
-                            modifier = Modifier.size(25.dp),
+                            modifier = Modifier.size(StringUtils.scaledSize(25, instance).dp),
                             imageVector = Icons.Filled.Close,
-                            contentDescription = "Exit",
+                            contentDescription = if (Shared.language == "en") "Exit App" else "退出應用程式",
                             tint = Color.Red,
                         )
                     }

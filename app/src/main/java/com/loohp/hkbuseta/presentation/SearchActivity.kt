@@ -132,12 +132,11 @@ fun MainElement(instance: SearchActivity) {
                     modifier = Modifier
                         .verticalScroll(rememberScrollState())
                 ) {
-                    var alphabet = 'A'
-                    while (alphabet <= 'Z') {
-                        if (state.value.second.first.contains(alphabet)) {
+                    val possibleValues = state.value.second.first
+                    for (alphabet in 'A'..'Z') {
+                        if (possibleValues.contains(alphabet)) {
                             KeyboardButton(instance, alphabet, state)
                         }
-                        alphabet++
                     }
                 }
             }
