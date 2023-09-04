@@ -13,9 +13,11 @@ import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.LayoutElementBuilders.ArcLine
 import androidx.wear.protolayout.LayoutElementBuilders.FontStyle
 import androidx.wear.protolayout.ModifiersBuilders
+import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
 import androidx.wear.protolayout.expression.ProtoLayoutExperimental
 import androidx.wear.tiles.TileBuilders
+import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.presentation.MainActivity
@@ -24,7 +26,10 @@ import com.loohp.hkbuseta.presentation.Shared
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import org.json.JSONObject
+import java.util.Timer
+import java.util.TimerTask
 import java.util.concurrent.Callable
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ForkJoinPool
 
 class EtaTileServiceCommon {
@@ -403,7 +408,7 @@ class EtaTileServiceCommon {
             return Futures.submit(Callable {
                 TileBuilders.Tile.Builder()
                     .setResourcesVersion(RESOURCES_VERSION)
-                    .setFreshnessIntervalMillis(30000)
+                    .setFreshnessIntervalMillis(0)
                     .setTileTimeline(
                         TimelineBuilders.Timeline.Builder().addTimelineEntry(
                             TimelineBuilders.TimelineEntry.Builder().setLayout(
@@ -423,6 +428,36 @@ class EtaTileServiceCommon {
                         ).build()
                     ).build()
             }, ForkJoinPool.commonPool())
+        }
+
+        fun buildTileResourcesRequest(): ListenableFuture<ResourceBuilders.Resources> {
+            return Futures.immediateFuture(
+                ResourceBuilders.Resources.Builder()
+                    .setVersion(RESOURCES_VERSION)
+                    .build()
+            )
+        }
+
+        private val timerTasks: MutableMap<Int, TimerTask> = ConcurrentHashMap()
+        private val lastUpdate: MutableMap<Int, Long> = ConcurrentHashMap()
+
+        fun handleTileEnterEvent(favoriteIndex: Int, context: TileService) {
+            timerTasks.compute(favoriteIndex) { _, currentValue ->
+                currentValue?.cancel()
+                val timerTask = object : TimerTask() {
+                    override fun run() {
+                        TileService.getUpdater(context).requestUpdate(context.javaClass)
+                        lastUpdate[favoriteIndex] = System.currentTimeMillis()
+                    }
+                }
+                val lastUpdated = 30000 - (System.currentTimeMillis() - lastUpdate.getOrDefault(favoriteIndex, 0))
+                Timer().schedule(timerTask, lastUpdated.coerceAtLeast(0), 30000)
+                return@compute timerTask
+            }
+        }
+
+        fun handleTileLeaveEvent(favoriteIndex: Int) {
+            timerTasks.remove(favoriteIndex)?.cancel()
         }
 
     }

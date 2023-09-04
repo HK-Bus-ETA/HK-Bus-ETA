@@ -9,6 +9,7 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.os.Build;
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.RequiresApi;
@@ -729,6 +730,7 @@ public class Registry {
                     updateTileService(context);
                 }
             } catch (Exception e) {
+                Log.e("Resource Downloading Exception", "Exception: ", e);
                 state = State.ERROR;
             }
         });
