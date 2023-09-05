@@ -348,6 +348,11 @@ class EtaTileServiceCommon {
                                                 .setAndroidActivity(
                                                     ActionBuilders.AndroidActivity.Builder()
                                                         .setClassName(MainActivity::class.java.name)
+                                                        .addKeyToExtraMapping("stopId", ActionBuilders.AndroidStringExtra.Builder().setValue(stopId).build())
+                                                        .addKeyToExtraMapping("co", ActionBuilders.AndroidStringExtra.Builder().setValue(co).build())
+                                                        .addKeyToExtraMapping("index", ActionBuilders.AndroidIntExtra.Builder().setValue(index).build())
+                                                        .addKeyToExtraMapping("stop", ActionBuilders.AndroidStringExtra.Builder().setValue(stop.toString()).build())
+                                                        .addKeyToExtraMapping("route", ActionBuilders.AndroidStringExtra.Builder().setValue(route.toString()).build())
                                                         .setPackageName(packageName)
                                                         .build()
                                                 ).build()

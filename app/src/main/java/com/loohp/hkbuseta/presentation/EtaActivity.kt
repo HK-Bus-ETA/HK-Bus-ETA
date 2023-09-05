@@ -1,12 +1,16 @@
 package com.loohp.hkbuseta.presentation
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,8 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
@@ -37,6 +39,8 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import androidx.wear.remote.interactions.RemoteActivityHelper
+import com.google.android.gms.wearable.Wearable
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.AutoResizeText
 import com.loohp.hkbuseta.presentation.utils.FontSizeRange
@@ -45,6 +49,7 @@ import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.util.Collections
+import java.util.concurrent.ForkJoinPool
 
 
 class EtaActivity : ComponentActivity() {
@@ -69,6 +74,10 @@ class EtaActivity : ComponentActivity() {
 @Composable
 fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity) {
     var eta: Map<Int, String> by remember { mutableStateOf(Collections.emptyMap()) }
+
+    val lat = stop.optJSONObject("location").optDouble("lat")
+    val lng = stop.optJSONObject("location").optDouble("lng")
+
     LaunchedEffect (Unit) {
         while (true) {
             Thread {
@@ -93,8 +102,8 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
-            Title(index, stop.optJSONObject("name"), route.optString("route"), instance)
-            SubTitle(route.optJSONObject("dest"), instance)
+            Title(index, stop.optJSONObject("name"), lat, lng, route.optString("route"), instance)
+            SubTitle(route.optJSONObject("dest"), lat, lng, instance)
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(12, instance).dp))
             EtaText(eta, 1, instance)
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
@@ -124,8 +133,10 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
         onClick = {
             if (state.value) {
                 Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
+                Toast.makeText(instance, if (Shared.language == "en") "Cleared Route Stop ETA 1 Tile" else "已清除資訊方塊路線巴士站預計到達時間1", Toast.LENGTH_SHORT).show()
             } else {
                 Registry.getInstance(instance).setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, instance)
+                Toast.makeText(instance, if (Shared.language == "en") "Set Route Stop ETA 1 Tile" else "已設置資訊方塊路線巴士站預計到達時間1", Toast.LENGTH_SHORT).show()
             }
             state.value = Registry.getInstance(instance).isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)
         },
@@ -148,15 +159,51 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
     )
 }
 
+fun openMapsOnPhone(lat: Double, lng: Double, label: String, instance: EtaActivity): () -> Unit {
+    return {
+        val remoteActivityHelper = RemoteActivityHelper(instance, ForkJoinPool.commonPool())
+        Wearable.getNodeClient(instance).connectedNodes.addOnCompleteListener { nodes ->
+            if (nodes.result.isEmpty()) {
+                instance.runOnUiThread {
+                    Toast.makeText(instance, if (Shared.language == "en") "No phone connected to show bus stop location on maps" else "未連接手機 無法在地圖上顯示巴士站位置", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                for (node in nodes.result) {
+                    val result = remoteActivityHelper.startRemoteActivity(
+                        Intent(Intent.ACTION_VIEW)
+                            .addCategory(Intent.CATEGORY_BROWSABLE)
+                            .setData(Uri.parse("geo:0,0?q=".plus(lat).plus(",").plus(lng).plus("(").plus(label).plus(")")))
+                        , node.id)
+                    result.addListener({
+                        try {
+                            result.get()
+                            instance.runOnUiThread {
+                                Toast.makeText(instance, if (Shared.language == "en") "Please check your phone" else "請在手機上繼續", Toast.LENGTH_SHORT).show()
+                            }
+                        } catch (e: Exception) {
+                            instance.runOnUiThread {
+                                Toast.makeText(instance, if (Shared.language == "en") "Unable to connect to phone to show bus stop location on maps" else "無法連接手機顯示巴士站位置", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }, ForkJoinPool.commonPool())
+                }
+            }
+        }
+    }
+}
+
 @Composable
-fun Title(index: Int, stopName: JSONObject, routeNumber: String, instance: EtaActivity) {
+fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumber: String, instance: EtaActivity) {
     var name = stopName.optString(Shared.language)
     if (Shared.language == "en") {
         name = StringUtils.capitalize(name)
         AutoResizeText (
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(37.dp, 0.dp),
+                .padding(37.dp, 0.dp)
+                .clickable(
+                    onClick = openMapsOnPhone(lat, lng, name, instance)
+                ),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
             text = "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name),
@@ -171,7 +218,9 @@ fun Title(index: Int, stopName: JSONObject, routeNumber: String, instance: EtaAc
         AutoResizeText (
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(37.dp, 0.dp),
+                .padding(37.dp, 0.dp).clickable(
+                    onClick = openMapsOnPhone(lat, lng, name, instance)
+                ),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
             text = "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name),
@@ -186,13 +235,15 @@ fun Title(index: Int, stopName: JSONObject, routeNumber: String, instance: EtaAc
 }
 
 @Composable
-fun SubTitle(destName: JSONObject, instance: EtaActivity) {
+fun SubTitle(destName: JSONObject, lat: Double, lng: Double, instance: EtaActivity) {
     var name = destName.optString(Shared.language)
     name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
     AutoResizeText(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp, 0.dp),
+            .padding(20.dp, 0.dp).clickable(
+                onClick = openMapsOnPhone(lat, lng, name, instance)
+            ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         text = name,
