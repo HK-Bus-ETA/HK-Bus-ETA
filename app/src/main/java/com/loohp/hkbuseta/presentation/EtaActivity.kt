@@ -48,6 +48,8 @@ import com.google.android.gms.wearable.Wearable
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.compose.AutoResizeText
 import com.loohp.hkbuseta.presentation.compose.FontSizeRange
+import com.loohp.hkbuseta.presentation.shared.Registry
+import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import kotlinx.coroutines.delay

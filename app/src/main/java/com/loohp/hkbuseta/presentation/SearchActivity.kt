@@ -35,17 +35,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.JsonUtils
 import android.util.Pair
-import android.view.HapticFeedbackConstants
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.loohp.hkbuseta.presentation.compose.AdvanceButton
+import com.loohp.hkbuseta.presentation.shared.Registry
+import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 
 

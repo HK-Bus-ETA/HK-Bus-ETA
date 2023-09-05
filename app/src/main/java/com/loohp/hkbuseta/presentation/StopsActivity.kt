@@ -20,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material.MaterialTheme
 import com.loohp.hkbuseta.R
+import com.loohp.hkbuseta.presentation.shared.Registry
+import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import org.json.JSONObject

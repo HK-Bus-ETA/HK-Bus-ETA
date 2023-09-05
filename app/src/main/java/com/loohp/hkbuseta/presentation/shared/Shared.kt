@@ -1,4 +1,4 @@
-package com.loohp.hkbuseta.presentation
+package com.loohp.hkbuseta.presentation.shared
 
 import android.content.Context
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,7 +35,10 @@ class Shared {
             LaunchedEffect (Unit) {
                 while (true) {
                     delay(500)
-                    if (Registry.getInstance(instance).state == Registry.State.UPDATING) {
+                    if (Registry.getInstance(
+                            instance
+                        ).state == Registry.State.UPDATING
+                    ) {
                         text.value = if (language == "en") "Updating...\nMight take several minutes" else "更新數據中...\n可能需要幾分鐘"
                     }
                 }

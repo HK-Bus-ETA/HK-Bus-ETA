@@ -21,8 +21,8 @@ import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.presentation.MainActivity
-import com.loohp.hkbuseta.presentation.Registry
-import com.loohp.hkbuseta.presentation.Shared
+import com.loohp.hkbuseta.presentation.shared.Registry
+import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import org.json.JSONObject

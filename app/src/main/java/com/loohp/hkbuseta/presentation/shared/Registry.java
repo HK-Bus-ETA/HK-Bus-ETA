@@ -1,4 +1,4 @@
-package com.loohp.hkbuseta.presentation;
+package com.loohp.hkbuseta.presentation.shared;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -18,6 +18,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
+import com.loohp.hkbuseta.presentation.MainActivity;
 import com.loohp.hkbuseta.presentation.branchedlist.BranchedList;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceEight;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceFive;
