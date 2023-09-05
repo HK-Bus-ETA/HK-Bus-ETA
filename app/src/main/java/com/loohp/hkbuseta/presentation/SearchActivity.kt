@@ -42,6 +42,10 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.JsonUtils
 import android.util.Pair
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.loohp.hkbuseta.presentation.compose.AdvanceButton
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 
 
@@ -97,7 +101,7 @@ fun MainElement(instance: SearchActivity) {
         ) {
             Text(
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colors.primary,
+                color = if (state.value.first == defaultText()) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.primary,
                 text = state.value.first
             )
         }
@@ -108,7 +112,7 @@ fun MainElement(instance: SearchActivity) {
                 KeyboardButton(instance, '7', state)
                 KeyboardButton(instance, '4', state)
                 KeyboardButton(instance, '1', state)
-                KeyboardButton(instance, '<', state, Icons.Outlined.Delete, Color.Red)
+                KeyboardButton(instance, '<', '-', state, Icons.Outlined.Delete, Color.Red)
             }
             Column {
                 KeyboardButton(instance, '8', state)
@@ -120,7 +124,7 @@ fun MainElement(instance: SearchActivity) {
                 KeyboardButton(instance, '9', state)
                 KeyboardButton(instance, '6', state)
                 KeyboardButton(instance, '3', state)
-                KeyboardButton(instance, '/', state, Icons.Outlined.Done, Color.Green)
+                KeyboardButton(instance, '/', null, state, Icons.Outlined.Done, Color.Green)
             }
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             Box (
@@ -163,6 +167,8 @@ fun handleInput(instance: SearchActivity, state: MutableState<Pair<String, Pair<
             } else {
                 originalText
             }
+        } else if (input == '-') {
+            ""
         } else {
             originalText + input
         }
@@ -174,21 +180,28 @@ fun handleInput(instance: SearchActivity, state: MutableState<Pair<String, Pair<
 
 @Composable
 fun KeyboardButton(instance: SearchActivity, content: Char, state: MutableState<Pair<String, Pair<Set<Char>, Boolean>>>) {
-    KeyboardButton(instance, content, state, null, MaterialTheme.colors.primary)
+    KeyboardButton(instance, content, null, state, null, MaterialTheme.colors.primary)
 }
 
 
 @Composable
-fun KeyboardButton(instance: SearchActivity, content: Char, state: MutableState<Pair<String, Pair<Set<Char>, Boolean>>>, icon: ImageVector?, color: Color) {
+fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, state: MutableState<Pair<String, Pair<Set<Char>, Boolean>>>, icon: ImageVector?, color: Color) {
     val enabled = when (content) {
         '/' -> state.value.second.second
         '<' -> true
         else -> state.value.second.first.contains(content)
     }
+    val haptic = LocalHapticFeedback.current
     val actualColor = if (enabled) color else Color(0xFF444444)
-    Button(
+    AdvanceButton(
         onClick = {
             handleInput(instance, state, content)
+        },
+        onLongClick = {
+            if (longContent != null) {
+                handleInput(instance, state, longContent)
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(35, instance).dp)

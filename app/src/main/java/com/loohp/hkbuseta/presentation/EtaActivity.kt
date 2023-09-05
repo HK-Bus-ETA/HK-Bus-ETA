@@ -46,8 +46,8 @@ import androidx.wear.compose.material.Text
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.android.gms.wearable.Wearable
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
-import com.loohp.hkbuseta.presentation.utils.AutoResizeText
-import com.loohp.hkbuseta.presentation.utils.FontSizeRange
+import com.loohp.hkbuseta.presentation.compose.AutoResizeText
+import com.loohp.hkbuseta.presentation.compose.FontSizeRange
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import kotlinx.coroutines.delay
@@ -141,26 +141,39 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
     }
 }
 
+fun getFavState(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity): Int {
+    val registry = Registry.getInstance(instance)
+    if (registry.hasFavouriteRouteStop(favoriteIndex)) {
+        return if (registry.isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)) 2 else 1
+    }
+    return 0
+}
+
 @Composable
 fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity) {
-    val state = remember { mutableStateOf(Registry.getInstance(instance).isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)) }
+    val state = remember { mutableStateOf(getFavState(favoriteIndex, stopId, co, index, stop, route, instance)) }
     Button(
         onClick = {
-            if (state.value) {
+            if (state.value == 2) {
                 Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
                 Toast.makeText(instance, if (Shared.language == "en") "Cleared Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已清除資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             } else {
                 Registry.getInstance(instance).setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, instance)
                 Toast.makeText(instance, if (Shared.language == "en") "Set Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已設置資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             }
-            state.value = Registry.getInstance(instance).isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)
+            state.value = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(24, instance).dp)
             .height(StringUtils.scaledSize(24, instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
-            contentColor = if (state.value) Color.Yellow else MaterialTheme.colors.secondaryVariant
+            contentColor = when (state.value) {
+                0 -> Color(0xFF444444)
+                1 -> Color(0xFF4E4E00)
+                2 -> Color(0xFFFFFF00)
+                else -> Color(0xFF444444)
+            }
         ),
         content = {
             Text(
@@ -168,7 +181,12 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                     .fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
-                color = if (state.value) Color.Yellow else Color(0xFF444444),
+                color = when (state.value) {
+                    0 -> Color(0xFF444444)
+                    1 -> Color(0xFF4E4E00)
+                    2 -> Color(0xFFFFFF00)
+                    else -> Color(0xFF444444)
+                },
                 text = favoriteIndex.toString()
             )
         }

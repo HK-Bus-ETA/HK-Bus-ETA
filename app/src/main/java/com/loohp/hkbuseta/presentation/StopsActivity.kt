@@ -71,10 +71,10 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
     var randomTr: TableRow? = null
     var i = 1
     for (entry in Registry.getInstance(instance).getAllStops(routeNumber, bound, co)) {
-        val stopId = entry.key
-        val stop = entry.value.first
+        val stopId = entry.stopId
+        val stop = entry.stop
 
-        val color = if (entry.value.second.optString("serviceType") == "1") Color.WHITE else 0xFF999999.toInt()
+        val color = if (entry.serviceType == 1) Color.WHITE else 0xFF9E9E9E.toInt()
 
         val tr = TableRow(instance)
         tr.layoutParams = TableRow.LayoutParams(

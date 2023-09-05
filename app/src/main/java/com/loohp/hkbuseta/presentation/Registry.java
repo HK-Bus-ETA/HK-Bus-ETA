@@ -18,6 +18,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
+import com.loohp.hkbuseta.presentation.branchedlist.BranchedList;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceEight;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceFive;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceFour;
@@ -51,7 +52,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -242,6 +242,10 @@ public class Registry {
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public boolean hasFavouriteRouteStop(int favoriteIndex) {
+        return Shared.Companion.getFavoriteRouteStops().get(favoriteIndex) != null;
     }
 
     public boolean isFavouriteRouteStop(int favoriteIndex, String stopId, String co, int index, JSONObject stop, JSONObject route) {
@@ -1059,8 +1063,8 @@ public class Registry {
         }
     }
 
-    public Map<String, Pair<JSONObject, JSONObject>> getAllStops(String routeNumber, String bound, String co) {
-        Map<String, Pair<JSONObject, JSONObject>> result = new LinkedHashMap<>();
+    public List<StopData> getAllStops(String routeNumber, String bound, String co) {
+        BranchedList<String, StopData> result = new BranchedList<>((a, b) -> a.getServiceType() > b.getServiceType() ? b : a);
         for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
             String key = itr.next();
             JSONObject route = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
@@ -1072,25 +1076,43 @@ public class Registry {
                     flag = bound.equals(route.optJSONObject("bound").optString(co));
                 }
                 if (flag) {
+                    BranchedList<String, StopData> localStops = new BranchedList<>();
                     JSONArray stops = route.optJSONObject("stops").optJSONArray(co);
                     for (int i = 0; i < stops.length(); i++) {
                         String stopId = stops.optString(i);
-                        if (result.containsKey(stopId)) {
-                            try {
-                                Pair<JSONObject, JSONObject> existingEntry = result.get(stopId);
-                                if (Integer.parseInt(existingEntry.second.optString("serviceType")) > Integer.parseInt(route.optString("serviceType"))) {
-                                    result.put(stopId, Pair.create(DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId), route));
-                                }
-                            } catch (NumberFormatException ignore) {
-                            }
-                        } else {
-                            result.put(stopId, Pair.create(DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId), route));
-                        }
+                        int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
+                        localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId)));
                     }
+                    result.merge(localStops);
                 }
             }
         }
-        return result;
+        return result.values();
+    }
+
+    public static class StopData {
+
+        private final String stopId;
+        private final int serviceType;
+        private final JSONObject stop;
+
+        public StopData(String stopId, int serviceType, JSONObject stop) {
+            this.stopId = stopId;
+            this.serviceType = serviceType;
+            this.stop = stop;
+        }
+
+        public String getStopId() {
+            return stopId;
+        }
+
+        public int getServiceType() {
+            return serviceType;
+        }
+
+        public JSONObject getStop() {
+            return stop;
+        }
     }
 
     public static String getNoScheduledDepartureMessage(int elementFontSize, String altMessage, boolean isAboveTyphoonSignalEight, String typhoonWarningTitle) {
