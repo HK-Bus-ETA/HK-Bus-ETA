@@ -18,8 +18,12 @@ import androidx.core.app.ActivityCompat;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
+import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceEight;
+import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceFive;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceFour;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceOne;
+import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceSeven;
+import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceSix;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceThree;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceTwo;
 import com.loohp.hkbuseta.presentation.utils.HTTPRequestUtils;
@@ -179,6 +183,10 @@ public class Registry {
         updateTileService(2, context);
         updateTileService(3, context);
         updateTileService(4, context);
+        updateTileService(5, context);
+        updateTileService(6, context);
+        updateTileService(7, context);
+        updateTileService(8, context);
     }
 
     public void updateTileService(int favoriteIndex, Context context) {
@@ -198,6 +206,22 @@ public class Registry {
             }
             case 4: {
                 updater.requestUpdate(EtaTileServiceFour.class);
+                break;
+            }
+            case 5: {
+                updater.requestUpdate(EtaTileServiceFive.class);
+                break;
+            }
+            case 6: {
+                updater.requestUpdate(EtaTileServiceSix.class);
+                break;
+            }
+            case 7: {
+                updater.requestUpdate(EtaTileServiceSeven.class);
+                break;
+            }
+            case 8: {
+                updater.requestUpdate(EtaTileServiceEight.class);
                 break;
             }
         }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
@@ -112,15 +116,26 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
             EtaText(eta, 3, instance)
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
             Row(
+                modifier = Modifier
+                    .width(StringUtils.scaledSize(113, instance).dp)
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.Center
             )  {
                 FavButton(1, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(5.dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
                 FavButton(2, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(5.dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
                 FavButton(3, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(5.dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
                 FavButton(4, stopId, co, index, stop, route, instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                FavButton(5, stopId, co, index, stop, route, instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                FavButton(6, stopId, co, index, stop, route, instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                FavButton(7, stopId, co, index, stop, route, instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                FavButton(8, stopId, co, index, stop, route, instance)
             }
         }
     }
@@ -141,8 +156,8 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
             state.value = Registry.getInstance(instance).isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)
         },
         modifier = Modifier
-            .width(24.dp)
-            .height(24.dp),
+            .width(StringUtils.scaledSize(24, instance).dp)
+            .height(StringUtils.scaledSize(24, instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = if (state.value) Color.Yellow else MaterialTheme.colors.secondaryVariant
@@ -152,6 +167,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                 modifier = Modifier
                     .fillMaxWidth(),
                 textAlign = TextAlign.Center,
+                fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
                 color = if (state.value) Color.Yellow else Color(0xFF444444),
                 text = favoriteIndex.toString()
             )
@@ -218,7 +234,8 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
         AutoResizeText (
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(37.dp, 0.dp).clickable(
+                .padding(37.dp, 0.dp)
+                .clickable(
                     onClick = openMapsOnPhone(lat, lng, name, instance)
                 ),
             textAlign = TextAlign.Center,
@@ -241,7 +258,8 @@ fun SubTitle(destName: JSONObject, lat: Double, lng: Double, instance: EtaActivi
     AutoResizeText(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp, 0.dp).clickable(
+            .padding(20.dp, 0.dp)
+            .clickable(
                 onClick = openMapsOnPhone(lat, lng, name, instance)
             ),
         textAlign = TextAlign.Center,

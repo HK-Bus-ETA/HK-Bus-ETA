@@ -142,6 +142,70 @@
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@mipmap/route_stop_tile" />
         </service>
+
+        <service
+            android:name=".presentation.tiles.EtaTileServiceFive"
+            android:exported="true"
+            android:label="@string/route_stop_eta_tile_name_5"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+
+            <!-- The tile preview shown when configuring tiles on your phone -->
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@mipmap/route_stop_tile" />
+        </service>
+
+        <service
+            android:name=".presentation.tiles.EtaTileServiceSix"
+            android:exported="true"
+            android:label="@string/route_stop_eta_tile_name_6"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+
+            <!-- The tile preview shown when configuring tiles on your phone -->
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@mipmap/route_stop_tile" />
+        </service>
+
+        <service
+            android:name=".presentation.tiles.EtaTileServiceSeven"
+            android:exported="true"
+            android:label="@string/route_stop_eta_tile_name_7"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+
+            <!-- The tile preview shown when configuring tiles on your phone -->
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@mipmap/route_stop_tile" />
+        </service>
+
+        <service
+            android:name=".presentation.tiles.EtaTileServiceEight"
+            android:exported="true"
+            android:label="@string/route_stop_eta_tile_name_8"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+
+            <!-- The tile preview shown when configuring tiles on your phone -->
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@mipmap/route_stop_tile" />
+        </service>
     </application>
 
 </manifest>
