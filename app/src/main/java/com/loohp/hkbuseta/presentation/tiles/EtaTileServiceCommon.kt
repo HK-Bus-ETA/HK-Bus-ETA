@@ -38,7 +38,7 @@ class EtaTileServiceCommon {
 
         const val RESOURCES_VERSION = "0"
 
-        fun pleaseWait(favoriteIndex: Int, packageName: String): LayoutElementBuilders.LayoutElement {
+        fun pleaseWait(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
@@ -90,8 +90,8 @@ class EtaTileServiceCommon {
                                     ModifiersBuilders.Modifiers.Builder()
                                         .setPadding(
                                             ModifiersBuilders.Padding.Builder()
-                                                .setStart(DimensionBuilders.DpProp.Builder(20F).build())
-                                                .setEnd(DimensionBuilders.DpProp.Builder(20F).build())
+                                                .setStart(DimensionBuilders.DpProp.Builder(35F).build())
+                                                .setEnd(DimensionBuilders.DpProp.Builder(35F).build())
                                                 .build()
                                         )
                                         .build()
@@ -103,7 +103,7 @@ class EtaTileServiceCommon {
                                         .setFontStyle(
                                             FontStyle.Builder()
                                                 .setSize(
-                                                    DimensionBuilders.SpProp.Builder().setValue(25F).build()
+                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(25F, context)).build()
                                                 )
                                                 .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                                                 .setColor(
@@ -114,14 +114,59 @@ class EtaTileServiceCommon {
                                         .build()
                                 )
                                 .addContent(
+                                    LayoutElementBuilders.Spacer.Builder()
+                                        .setHeight(
+                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(10F, context)).build()
+                                        ).build()
+                                )
+                                .addContent(
                                     LayoutElementBuilders.Text.Builder()
                                         .setMaxLines(Int.MAX_VALUE)
-                                        .setText("\n載入中...")
+                                        .setFontStyle(
+                                            FontStyle.Builder()
+                                                .setSize(
+                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(17F, context)).build()
+                                                ).build()
+                                        )
+                                        .setText("應用程式啟動中...")
                                         .build()
                                 ).addContent(
                                     LayoutElementBuilders.Text.Builder()
                                         .setMaxLines(Int.MAX_VALUE)
-                                        .setText("Loading...")
+                                        .setFontStyle(
+                                            FontStyle.Builder()
+                                                .setSize(
+                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(9F, context)).build()
+                                                ).build()
+                                        )
+                                        .setText("你可允許背景活動以防應用程式被終止")
+                                        .build()
+                                ).addContent(
+                                    LayoutElementBuilders.Spacer.Builder()
+                                        .setHeight(
+                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(5F, context)).build()
+                                        ).build()
+                                ).addContent(
+                                    LayoutElementBuilders.Text.Builder()
+                                        .setMaxLines(Int.MAX_VALUE)
+                                        .setFontStyle(
+                                            FontStyle.Builder()
+                                                .setSize(
+                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(17F, context)).build()
+                                                ).build()
+                                        )
+                                        .setText("Starting App...")
+                                        .build()
+                                ).addContent(
+                                    LayoutElementBuilders.Text.Builder()
+                                        .setMaxLines(Int.MAX_VALUE)
+                                        .setFontStyle(
+                                            FontStyle.Builder()
+                                                .setSize(
+                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(9F, context)).build()
+                                                ).build()
+                                        )
+                                        .setText("You can allow background activity to prevent the app from being terminated")
                                         .build()
                                 ).build()
                         ).build()
@@ -130,7 +175,7 @@ class EtaTileServiceCommon {
 
         fun noFavouriteRouteStop(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             if (Registry.getInstance(context).state != Registry.State.READY) {
-                return pleaseWait(favoriteIndex, packageName)
+                return pleaseWait(favoriteIndex, packageName, context)
             }
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
@@ -288,7 +333,7 @@ class EtaTileServiceCommon {
 
         fun buildLayout(favoriteIndex: Int, favouriteStopRoute: JSONObject, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             if (Registry.getInstance(context).state != Registry.State.READY) {
-                return pleaseWait(favoriteIndex, packageName)
+                return pleaseWait(favoriteIndex, packageName, context)
             }
 
             val stopName = favouriteStopRoute.optJSONObject("stop").optJSONObject("name")
@@ -300,7 +345,7 @@ class EtaTileServiceCommon {
             val stop = favouriteStopRoute.optJSONObject("stop")
             val route = favouriteStopRoute.optJSONObject("route")
 
-            val eta = Registry.getEta(stopId, co, index, stop, route)
+            val eta = Registry.getEta(stopId, co, route, context)
 
             val color = when (co) {
                 "kmb" -> 0xFFFF4747.toInt()

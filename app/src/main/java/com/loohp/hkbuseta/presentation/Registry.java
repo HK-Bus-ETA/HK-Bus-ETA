@@ -1,6 +1,7 @@
 package com.loohp.hkbuseta.presentation;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -65,7 +66,8 @@ import java.util.stream.StreamSupport;
 
 public class Registry {
 
-    public static final List<Integer> NETWORK_CAPABLILITES = Arrays.asList(
+    @SuppressLint("InlinedApi")
+    public static final List<Integer> NETWORK_CAPABILITIES = Arrays.asList(
             NetworkCapabilities.TRANSPORT_CELLULAR,
             NetworkCapabilities.TRANSPORT_WIFI,
             NetworkCapabilities.TRANSPORT_BLUETOOTH,
@@ -297,7 +299,7 @@ public class Registry {
         if (cm != null) {
             NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
             if (capabilities != null) {
-                for (int type : NETWORK_CAPABLILITES) {
+                for (int type : NETWORK_CAPABILITIES) {
                     if (capabilities.hasTransport(type)) {
                         return type;
                     }
@@ -1081,7 +1083,10 @@ public class Registry {
         }
     }
 
-    public static Map<Integer, String> getEta(String stopId, String co, int index, JSONObject stop, JSONObject route) {
+    public static Map<Integer, String> getEta(String stopId, String co, JSONObject route, Context context) {
+        if (getConnectionType(context) < 0) {
+            return Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器");
+        }
         int elementFontSize = 25;
         CompletableFuture<Map<Integer, String>> future = new CompletableFuture<>();
         new Thread(() -> {

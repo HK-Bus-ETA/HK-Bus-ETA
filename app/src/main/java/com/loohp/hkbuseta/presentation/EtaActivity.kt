@@ -81,7 +81,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
     LaunchedEffect (Unit) {
         while (true) {
             Thread {
-                eta = Registry.getEta(stopId, co, index, stop, route)
+                eta = Registry.getEta(stopId, co, route, instance)
             }.start()
             delay(30000)
         }
