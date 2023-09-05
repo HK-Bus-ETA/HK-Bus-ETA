@@ -133,10 +133,10 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
         onClick = {
             if (state.value) {
                 Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
-                Toast.makeText(instance, if (Shared.language == "en") "Cleared Route Stop ETA 1 Tile" else "已清除資訊方塊路線巴士站預計到達時間1", Toast.LENGTH_SHORT).show()
+                Toast.makeText(instance, if (Shared.language == "en") "Cleared Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已清除資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             } else {
                 Registry.getInstance(instance).setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, instance)
-                Toast.makeText(instance, if (Shared.language == "en") "Set Route Stop ETA 1 Tile" else "已設置資訊方塊路線巴士站預計到達時間1", Toast.LENGTH_SHORT).show()
+                Toast.makeText(instance, if (Shared.language == "en") "Set Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已設置資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             }
             state.value = Registry.getInstance(instance).isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)
         },
