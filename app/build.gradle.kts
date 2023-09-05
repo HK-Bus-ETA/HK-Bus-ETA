@@ -11,12 +11,11 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 33
-        versionCode = 12
+        versionCode = 13
         versionName = "1.3.0"
         vectorDrawables {
             useSupportLibrary = true
         }
-
     }
 
     buildTypes {
