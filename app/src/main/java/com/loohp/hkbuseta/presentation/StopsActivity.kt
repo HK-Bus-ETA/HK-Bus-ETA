@@ -122,7 +122,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
         stopTextView.setHorizontallyScrolling(true)
         stopTextView.isSelected = true
         val destTextLayoutParams: ViewGroup.LayoutParams = stopTextView.layoutParams
-        destTextLayoutParams.width = (StringUtils.scaledSize(131F, instance) * instance.resources.displayMetrics.density).roundToInt()
+        destTextLayoutParams.width = (StringUtils.scaledSize(120F, instance) * instance.resources.displayMetrics.density).roundToInt()
         stopTextView.layoutParams = destTextLayoutParams
 
         var stopStr = stop.optJSONObject("name").optString(Shared.language)
