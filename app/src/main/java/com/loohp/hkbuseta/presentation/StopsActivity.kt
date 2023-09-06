@@ -2,6 +2,7 @@ package com.loohp.hkbuseta.presentation
 
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.TypedValue
@@ -69,6 +70,8 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
     val co = route.optString("co")
     val bound = if (co.equals("nlb")) route.optJSONObject("route").optString("nlbId") else route.optJSONObject("route").optJSONObject("bound").optString(co)
     var targetIndex = -1
+    var targetIndexText: TextView? = null
+    var targetStopText: TextView? = null
     var targetDistance = 1.0
     var randomTr: TableRow? = null
     var i = 1
@@ -140,6 +143,8 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
             val distance = Registry.getInstance(instance).findDistance(origin.optDouble("lat"), origin.optDouble("lng"), location.optDouble("lat"), location.optDouble("lng"))
             if (distance < targetDistance) {
                 targetIndex = i
+                targetIndexText = indexTextView
+                targetStopText = stopTextView
                 targetDistance = distance
             }
         }
@@ -150,6 +155,8 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
     val scrollView: ScrollView = instance.findViewById(R.id.stop_scroll)
     if (targetIndex >= 0 && randomTr != null) {
         scrollView.post {
+            targetIndexText!!.setTypeface(targetIndexText.typeface, Typeface.BOLD)
+            targetStopText!!.setTypeface(targetStopText.typeface, Typeface.BOLD)
             val y = randomTr.height * targetIndex - scrollView.height / 2 + randomTr.height / 2
             scrollView.scrollTo(0, y)
         }

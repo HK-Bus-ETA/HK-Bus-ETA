@@ -13,7 +13,6 @@ import android.widget.TableRow
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,7 +32,6 @@ import kotlin.math.roundToInt
 
 class ListRouteActivity : ComponentActivity() {
 
-    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val list = intent.extras!!.getString("result")?.let { JSONArray(it) } ?: throw RuntimeException()

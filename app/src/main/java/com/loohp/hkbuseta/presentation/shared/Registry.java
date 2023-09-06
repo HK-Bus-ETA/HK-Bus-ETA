@@ -1,20 +1,12 @@
 package com.loohp.hkbuseta.presentation.shared;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.location.Criteria;
-import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
-import android.os.Build;
 import android.util.Log;
 import android.util.Pair;
 
-import androidx.annotation.RequiresApi;
-import androidx.core.app.ActivityCompat;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
@@ -63,7 +55,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -353,7 +344,7 @@ public class Registry {
                 Shared.Companion.setLanguage(PREFERENCES.optString("language", "zh"));
                 if (PREFERENCES.has("favouriteRouteStops")) {
                     JSONObject favoriteRouteStops = PREFERENCES.optJSONObject("favouriteRouteStops");
-                    for (Iterator<String> itr = favoriteRouteStops.keys(); itr.hasNext();) {
+                    for (Iterator<String> itr = favoriteRouteStops.keys(); itr.hasNext(); ) {
                         String key = itr.next();
                         Shared.Companion.getFavoriteRouteStops().put(Integer.parseInt(key), favoriteRouteStops.optJSONObject(key));
                     }
@@ -489,7 +480,7 @@ public class Registry {
                     }
 
                     DATA_SHEET = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/hk-bus-crawling/gh-pages/routeFareList.json");
-                    
+
                     try {
                         JSONObject a = DATA_SHEET.optJSONObject("stopList").optJSONObject("AC1FD9BDD09D1DD6").optJSONObject("name");
                         a.put("zh", a.optString("zh") + " (沙頭角邊境禁區 - 需持邊境禁區許可證)");
@@ -528,7 +519,7 @@ public class Registry {
                         e2.put("en", e2.optString("en") + " (Lok Ma Chau Control Point - Border Crossing Passengers Only)");
 
                         Set<String> kmbOps = new HashSet<>();
-                        
+
                         Set<String> keysToRemove = new HashSet<>();
                         //outer:
                         for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
@@ -600,7 +591,7 @@ public class Registry {
                             DATA_SHEET.optJSONObject("routeList").remove(key);
                         }
                         */
-                        
+
                         Set<String> ctbOps = new HashSet<>();
                         Map<String, JSONArray> ctbStopCircularSets = new HashMap<>();
                         Map<String, JSONArray> ctbStopSets = new HashMap<>();
@@ -646,7 +637,7 @@ public class Registry {
                         for (String key : keysToRemove) {
                             DATA_SHEET.optJSONObject("routeList").remove(key);
                         }
-                        
+
                         Map<String, JSONArray> ctbRouteDests = new HashMap<>();
 
                         keysToRemove.clear();
@@ -691,7 +682,7 @@ public class Registry {
                         for (String key : keysToRemove) {
                             DATA_SHEET.optJSONObject("routeList").remove(key);
                         }
-                        
+
                         Set<String> intersection = new HashSet<>(ctbOps);
                         intersection.retainAll(kmbOps);
 
@@ -717,7 +708,7 @@ public class Registry {
                                 }
                             }
                         }
-                        
+
                         MTR_BUS_ROUTE = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_routes.json");
                         for (Iterator<String> itr = MTR_BUS_ROUTE.keys(); itr.hasNext(); ) {
                             String key = itr.next();
@@ -730,17 +721,17 @@ public class Registry {
                             pw.write(MTR_BUS_ROUTE.toString());
                             pw.flush();
                         }
-                        
+
                         JSONObject mtrBusStops = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stops.json");
                         for (Iterator<String> itr = mtrBusStops.keys(); itr.hasNext(); ) {
                             String key = itr.next();
                             DATA_SHEET.optJSONObject("stopList").put(key, mtrBusStops.opt(key));
                         }
-                        
+
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
-                    
+
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(DATA_SHEET.toString());
                         pw.flush();
@@ -766,41 +757,6 @@ public class Registry {
             }
         });
         thread.start();
-    }
-
-    public boolean checkLocationPermission(Activity activity, boolean askIfNotGranted) {
-        if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(MainActivity.Companion.getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            if (askIfNotGranted) {
-                ActivityCompat.requestPermissions(
-                        activity,
-                        new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
-                        99
-                );
-            }
-            return false;
-        }
-        return true;
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.S)
-    public double[] getGPSLocation(Activity activity) {
-        if (checkLocationPermission(activity, false)) {
-            return null;
-        }
-        LocationManager locationManager = (LocationManager) MainActivity.Companion.getContext().getSystemService(Context.LOCATION_SERVICE);
-        String provider = locationManager.getBestProvider(new Criteria(), true);
-        if (provider == null) {
-            return null;
-        }
-        CompletableFuture<double[]> future = new CompletableFuture<>();
-        locationManager.getCurrentLocation(provider, null, ForkJoinPool.commonPool(), loc -> {
-            future.complete(new double[] {loc.getLatitude(), loc.getLongitude()});
-        });
-        try {
-            return future.get();
-        } catch (ExecutionException | InterruptedException e) {
-            return null;
-        }
     }
 
     public Pair<Set<Character>, Boolean> getPossibleNextChar(String input) {
@@ -905,7 +861,7 @@ public class Registry {
         }
     }
 
-    public List<JSONObject> getNearbyRoutes(double lat, double lng) {
+    public NearbyRoutesResult getNearbyRoutes(double lat, double lng) {
         try {
             //lat = 22.475977635712525;
             //lng = 114.15532485241508;
@@ -913,11 +869,19 @@ public class Registry {
             JSONObject stops = DATA_SHEET.optJSONObject("stopList");
             List<JSONObject> nearbyStops = new ArrayList<>();
 
+            JSONObject closestStop = null;
+            double closestDistance = Double.MAX_VALUE;
+
             for (Iterator<String> itr = stops.keys(); itr.hasNext(); ) {
                 String stopId = itr.next();
                 JSONObject entry = stops.optJSONObject(stopId);
                 JSONObject location = entry.optJSONObject("location");
                 double distance = findDistance(lat, lng, location.optDouble("lat"), location.optDouble("lng"));
+
+                if (distance < closestDistance) {
+                    closestStop = entry;
+                    closestDistance = distance;
+                }
 
                 if (distance <= 0.3) {
                     String co;
@@ -997,7 +961,7 @@ public class Registry {
             }
 
             if (nearbyRoutes.isEmpty()) {
-                return null;
+                return new NearbyRoutesResult(Collections.emptyList(), closestStop, closestDistance);
             }
 
             List<JSONObject> routes = new ArrayList<>(nearbyRoutes.values());
@@ -1058,9 +1022,34 @@ public class Registry {
                 return diff;
             });
 
-            return routes;
+            return new NearbyRoutesResult(routes, closestStop, closestDistance);
         } catch (JSONException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static class NearbyRoutesResult {
+
+        private final List<JSONObject> result;
+        private final JSONObject closestStop;
+        private final double cloestDistance;
+
+        public NearbyRoutesResult(List<JSONObject> result, JSONObject closestStop, double cloestDistance) {
+            this.result = result;
+            this.closestStop = closestStop;
+            this.cloestDistance = cloestDistance;
+        }
+
+        public List<JSONObject> getResult() {
+            return result;
+        }
+
+        public JSONObject getClosestStop() {
+            return closestStop;
+        }
+
+        public double getCloestDistance() {
+            return cloestDistance;
         }
     }
 

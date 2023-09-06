@@ -11,8 +11,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 33
-        versionCode = 21
-        versionName = "1.3.6"
+        versionCode = 22
+        versionName = "1.3.7"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -64,7 +64,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.5.1")
     implementation("androidx.wear.tiles:tiles:1.2.0-alpha07")
     implementation("androidx.concurrent:concurrent-futures-ktx:1.1.0")
-    implementation("com.google.android.gms:play-services-location:10.2.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("androidx.wear:wear-input:1.1.0")
     implementation("androidx.wear:wear-input-testing:1.1.0")
     implementation("androidx.wear:wear-ongoing:1.0.0")

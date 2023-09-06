@@ -3,7 +3,6 @@ package com.loohp.hkbuseta.presentation
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -27,20 +26,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat.startActivity
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import androidx.wear.remote.interactions.RemoteActivityHelper
-import com.google.android.gms.wearable.Wearable
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.presentation.shared.Registry
 import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
+import com.loohp.hkbuseta.presentation.utils.LocationUtils
 import com.loohp.hkbuseta.presentation.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
-import java.util.concurrent.ForkJoinPool
 
 
 class TitleActivity : ComponentActivity() {
@@ -113,7 +109,7 @@ fun SearchButton(instance: TitleActivity) {
 fun NearbyButton(instance: TitleActivity) {
     Button(
         onClick = {
-            if (Registry.getInstance(instance).checkLocationPermission(instance, true)) {
+            if (LocationUtils.checkLocationPermission(instance, true)) {
                 instance.startActivity(Intent(instance, NearbyActivity::class.java))
             }
         },
