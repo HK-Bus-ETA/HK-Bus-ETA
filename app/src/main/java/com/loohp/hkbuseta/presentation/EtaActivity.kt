@@ -7,15 +7,13 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -54,24 +53,20 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import androidx.wear.remote.interactions.RemoteActivityHelper
-import com.google.android.gms.wearable.Wearable
-import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.compose.AutoResizeText
 import com.loohp.hkbuseta.presentation.compose.FontSizeRange
 import com.loohp.hkbuseta.presentation.compose.ScrollBarConfig
 import com.loohp.hkbuseta.presentation.compose.horizontalScrollWithScrollbar
-import com.loohp.hkbuseta.presentation.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.presentation.shared.Registry
 import com.loohp.hkbuseta.presentation.shared.Shared
+import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
+import com.loohp.hkbuseta.presentation.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.Collections
-import java.util.concurrent.ForkJoinPool
-import kotlin.math.absoluteValue
 
 
 class EtaActivity : ComponentActivity() {
@@ -236,41 +231,38 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
     )
 }
 
-fun openMapsOnPhone(lat: Double, lng: Double, label: String, instance: EtaActivity): () -> Unit {
+fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaActivity, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
     return {
-        val remoteActivityHelper = RemoteActivityHelper(instance, ForkJoinPool.commonPool())
-        Wearable.getNodeClient(instance).connectedNodes.addOnCompleteListener { nodes ->
-            if (nodes.result.isEmpty()) {
-                instance.runOnUiThread {
-                    Toast.makeText(instance, if (Shared.language == "en") "No phone connected to show bus stop location on maps" else "未連接手機 無法在地圖上顯示巴士站位置", Toast.LENGTH_SHORT).show()
+        val intent = Intent(Intent.ACTION_VIEW)
+            .addCategory(Intent.CATEGORY_BROWSABLE)
+            .setData(Uri.parse("geo:0,0?q=".plus(lat).plus(",").plus(lng).plus("(").plus(label).plus(")")))
+        if (longClick) {
+            instance.startActivity(intent)
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        } else {
+            RemoteActivityUtils.intentToPhone(
+                instance = instance,
+                intent = intent,
+                noPhone = {
+                    instance.startActivity(intent)
+                },
+                failed = {
+                    instance.startActivity(intent)
+                },
+                success = {
+                    instance.runOnUiThread {
+                        Toast.makeText(instance, if (Shared.language == "en") "Please check your phone" else "請在手機上繼續", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            } else {
-                for (node in nodes.result) {
-                    val result = remoteActivityHelper.startRemoteActivity(
-                        Intent(Intent.ACTION_VIEW)
-                            .addCategory(Intent.CATEGORY_BROWSABLE)
-                            .setData(Uri.parse("geo:0,0?q=".plus(lat).plus(",").plus(lng).plus("(").plus(label).plus(")")))
-                        , node.id)
-                    result.addListener({
-                        try {
-                            result.get()
-                            instance.runOnUiThread {
-                                Toast.makeText(instance, if (Shared.language == "en") "Please check your phone" else "請在手機上繼續", Toast.LENGTH_SHORT).show()
-                            }
-                        } catch (e: Exception) {
-                            instance.runOnUiThread {
-                                Toast.makeText(instance, if (Shared.language == "en") "Unable to connect to phone to show bus stop location on maps" else "無法連接手機顯示巴士站位置", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }, ForkJoinPool.commonPool())
-                }
-            }
+            )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumber: String, instance: EtaActivity) {
+    val haptic = LocalHapticFeedback.current
     var name = stopName.optString(Shared.language)
     if (Shared.language == "en") {
         name = StringUtils.capitalize(name)
@@ -278,8 +270,9 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(37.dp, 0.dp)
-                .clickable(
-                    onClick = openMapsOnPhone(lat, lng, name, instance)
+                .combinedClickable(
+                    onClick = handleOpenMaps(lat, lng, name, instance, false, haptic),
+                    onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic)
                 ),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
@@ -296,8 +289,9 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(37.dp, 0.dp)
-                .clickable(
-                    onClick = openMapsOnPhone(lat, lng, name, instance)
+                .combinedClickable(
+                    onClick = handleOpenMaps(lat, lng, name, instance, false, haptic),
+                    onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic)
                 ),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
@@ -312,16 +306,19 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SubTitle(destName: JSONObject, lat: Double, lng: Double, instance: EtaActivity) {
+    val haptic = LocalHapticFeedback.current
     var name = destName.optString(Shared.language)
     name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
     AutoResizeText(
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp, 0.dp)
-            .clickable(
-                onClick = openMapsOnPhone(lat, lng, name, instance)
+            .combinedClickable(
+                onClick = handleOpenMaps(lat, lng, name, instance, false, haptic),
+                onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic)
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,

@@ -1,10 +1,14 @@
 package com.loohp.hkbuseta.presentation
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,18 +21,27 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import androidx.wear.remote.interactions.RemoteActivityHelper
+import com.google.android.gms.wearable.Wearable
+import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.presentation.shared.Registry
 import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
+import com.loohp.hkbuseta.presentation.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
+import java.util.concurrent.ForkJoinPool
+
 
 class TitleActivity : ComponentActivity() {
 
@@ -54,16 +67,19 @@ fun HKBusETAApp(instance: TitleActivity) {
         }
         Column(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .padding(20.dp, 0.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(25, instance).dp))
             SearchButton(instance)
-            Spacer(modifier = Modifier.size(10.dp))
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
             NearbyButton(instance)
-            Spacer(modifier = Modifier.size(10.dp))
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
             LanguageButton(instance)
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+            CreditVersionText(instance)
         }
     }
 }
@@ -75,8 +91,8 @@ fun SearchButton(instance: TitleActivity) {
             instance.startActivity(Intent(instance, SearchActivity::class.java))
         },
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp, 0.dp),
+            .width(StringUtils.scaledSize(StringUtils.scaledSize(220, instance), instance).dp)
+            .height(StringUtils.scaledSize(StringUtils.scaledSize(45, instance), instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
@@ -86,7 +102,7 @@ fun SearchButton(instance: TitleActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = TextUnit(3F, TextUnitType.Em),
+                fontSize = TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Em),
                 text = if (Shared.language == "en") "Input Route" else "輸入巴士路線"
             )
         }
@@ -102,8 +118,8 @@ fun NearbyButton(instance: TitleActivity) {
             }
         },
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp, 0.dp),
+            .width(StringUtils.scaledSize(StringUtils.scaledSize(220, instance), instance).dp)
+            .height(StringUtils.scaledSize(StringUtils.scaledSize(45, instance), instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
@@ -113,7 +129,7 @@ fun NearbyButton(instance: TitleActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = TextUnit(3F, TextUnitType.Em),
+                fontSize = TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Em),
                 text = if (Shared.language == "en") "Search Nearby" else "附近巴士路線"
             )
         }
@@ -129,9 +145,8 @@ fun LanguageButton(instance: TitleActivity) {
             instance.finish()
         },
         modifier = Modifier
-            .width(130.dp)
-            .height(35.dp)
-            .padding(20.dp, 0.dp),
+            .width(StringUtils.scaledSize(110, instance).dp)
+            .height(StringUtils.scaledSize(35, instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
@@ -141,8 +156,57 @@ fun LanguageButton(instance: TitleActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
+                fontSize = TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Em),
                 text = if (Shared.language == "en") "中文" else "English"
             )
         }
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun CreditVersionText(instance: TitleActivity) {
+    val packageInfo = instance.packageManager.getPackageInfo(instance.packageName, 0)
+    val haptic = LocalHapticFeedback.current
+    Text(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW)
+                        .addCategory(Intent.CATEGORY_BROWSABLE)
+                        .setData(Uri.parse("https://play.google.com/store/apps/details?id=com.loohp.hkbuseta"))
+                    RemoteActivityUtils.intentToPhone(
+                        instance = instance,
+                        intent = intent,
+                        noPhone = {
+                            instance.startActivity(intent)
+                        },
+                        failed = {
+                            instance.startActivity(intent)
+                        }
+                    )
+                },
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    val intent = Intent(Intent.ACTION_VIEW)
+                        .addCategory(Intent.CATEGORY_BROWSABLE)
+                        .setData(Uri.parse("https://loohpjames.com"))
+                    RemoteActivityUtils.intentToPhone(
+                        instance = instance,
+                        intent = intent,
+                        noPhone = {
+                            instance.startActivity(intent)
+                        },
+                        failed = {
+                            instance.startActivity(intent)
+                        }
+                    )
+                }
+            ),
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colors.primary,
+        fontSize = TextUnit(StringUtils.scaledSize(1.5F, instance), TextUnitType.Em),
+        text = instance.resources.getString(R.string.app_name).plus(" v").plus(packageInfo.versionName).plus(" (").plus(packageInfo.longVersionCode).plus(")\n@LoohpJames")
     )
 }

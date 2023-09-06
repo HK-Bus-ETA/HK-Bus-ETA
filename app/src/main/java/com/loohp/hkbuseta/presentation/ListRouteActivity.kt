@@ -138,8 +138,7 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
         destTextView.setTextColor(color)
         destTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, StringUtils.scaledSize(15F, instance))
         table.addView(tr)
-
-        val scrollView: ScrollView = instance.findViewById(R.id.route_list_scroll)
-        scrollView.requestFocus()
     }
+    val scrollView: ScrollView = instance.findViewById(R.id.route_list_scroll)
+    scrollView.requestFocus()
 }
