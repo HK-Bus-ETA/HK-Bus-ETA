@@ -9,7 +9,7 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
 
-public class BranchedList<K, V> extends LinkedList<BranchListEntry<K, V>> {
+public class BranchedList<K, V> extends LinkedList<BranchedListEntry<K, V>> {
 
     private final BinaryOperator<V> conflictResolve;
 
@@ -21,21 +21,21 @@ public class BranchedList<K, V> extends LinkedList<BranchListEntry<K, V>> {
         this.conflictResolve = conflictResolve;
     }
 
-    public BranchedList(Collection<? extends BranchListEntry<K, V>> c) {
+    public BranchedList(Collection<? extends BranchedListEntry<K, V>> c) {
         this((a, b) -> a, c);
     }
 
-    public BranchedList(BinaryOperator<V> conflictResolve, Collection<? extends BranchListEntry<K, V>> c) {
+    public BranchedList(BinaryOperator<V> conflictResolve, Collection<? extends BranchedListEntry<K, V>> c) {
         super(c);
         this.conflictResolve = conflictResolve;
     }
 
     public boolean add(K key, V value) {
-        return add(new BranchListEntry<>(key, value));
+        return add(new BranchedListEntry<>(key, value));
     }
 
     public int keyIndexOf(K key, int from) {
-        for (ListIterator<BranchListEntry<K, V>> itr = listIterator(from); itr.hasNext();) {
+        for (ListIterator<BranchedListEntry<K, V>> itr = listIterator(from); itr.hasNext();) {
             int i = itr.nextIndex();
             if (Objects.equals(key, itr.next().getKey())) {
                 return i;
@@ -44,8 +44,8 @@ public class BranchedList<K, V> extends LinkedList<BranchListEntry<K, V>> {
         return -1;
     }
 
-    public int[] match(List<BranchListEntry<K, V>> other, int searchFrom) {
-        for (ListIterator<BranchListEntry<K, V>> itr = other.listIterator(); itr.hasNext();) {
+    public int[] match(List<BranchedListEntry<K, V>> other, int searchFrom) {
+        for (ListIterator<BranchedListEntry<K, V>> itr = other.listIterator(); itr.hasNext();) {
             int i = itr.nextIndex();
             int indexOf = keyIndexOf(itr.next().getKey(), searchFrom);
             if (indexOf >= 0) {
@@ -55,11 +55,11 @@ public class BranchedList<K, V> extends LinkedList<BranchListEntry<K, V>> {
         return null;
     }
 
-    public void merge(List<BranchListEntry<K, V>> other) {
+    public void merge(List<BranchedListEntry<K, V>> other) {
         merge(other, 0, false);
     }
 
-    public void merge(List<BranchListEntry<K, V>> other, int searchFrom, boolean addToFrontIfNotFound) {
+    public void merge(List<BranchedListEntry<K, V>> other, int searchFrom, boolean addToFrontIfNotFound) {
         if (other.isEmpty()) {
             return;
         }
@@ -78,8 +78,8 @@ public class BranchedList<K, V> extends LinkedList<BranchListEntry<K, V>> {
         }
         int selfIndex = match[0];
         int otherIndex = match[1];
-        BranchListEntry<K, V> entry = get(selfIndex);
-        set(selfIndex, new BranchListEntry<>(entry.getKey(), conflictResolve.apply(entry.getValue(), other.get(otherIndex).getValue())));
+        BranchedListEntry<K, V> entry = get(selfIndex);
+        set(selfIndex, new BranchedListEntry<>(entry.getKey(), conflictResolve.apply(entry.getValue(), other.get(otherIndex).getValue())));
         addAll(selfIndex, other.subList(0, otherIndex));
         other = other.subList(otherIndex + 1, other.size());
         if (!other.isEmpty()) {
@@ -88,7 +88,7 @@ public class BranchedList<K, V> extends LinkedList<BranchListEntry<K, V>> {
     }
 
     public List<V> values() {
-        return Lists.transform(this, BranchListEntry::getValue);
+        return Lists.transform(this, BranchedListEntry::getValue);
     }
 
 }

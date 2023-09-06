@@ -3,13 +3,18 @@ package com.loohp.hkbuseta.presentation
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
+import android.util.Pair
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,33 +25,40 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
-import com.loohp.hkbuseta.presentation.utils.JsonUtils
-import android.util.Pair
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import com.loohp.hkbuseta.presentation.compose.AdvanceButton
+import com.loohp.hkbuseta.presentation.compose.ScrollBarConfig
+import com.loohp.hkbuseta.presentation.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.presentation.shared.Registry
 import com.loohp.hkbuseta.presentation.shared.Shared
+import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
+import com.loohp.hkbuseta.presentation.utils.JsonUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
+import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
 
 
 class SearchActivity : ComponentActivity() {
@@ -95,7 +107,11 @@ fun MainElement(instance: SearchActivity) {
             modifier = Modifier
                 .width(StringUtils.scaledSize(140, instance).dp)
                 .height(StringUtils.scaledSize(35, instance).dp)
-                .border(StringUtils.scaledSize(2, instance).dp, MaterialTheme.colors.secondaryVariant, RoundedCornerShape(10))
+                .border(
+                    StringUtils.scaledSize(2, instance).dp,
+                    MaterialTheme.colors.secondaryVariant,
+                    RoundedCornerShape(10)
+                )
                 .background(MaterialTheme.colors.secondary),
             contentAlignment = Alignment.Center
         ) {
@@ -132,9 +148,37 @@ fun MainElement(instance: SearchActivity) {
                     .width(StringUtils.scaledSize(35, instance).dp)
                     .height(StringUtils.scaledSize(135, instance).dp)
             ) {
+                val focusRequester = remember { FocusRequester() }
+                val scroll = rememberScrollState()
+                val scope = rememberCoroutineScope()
+                val haptic = LocalHapticFeedback.current
+
+                LaunchedEffect (Unit) {
+                    focusRequester.requestFocus()
+                }
+
                 Column (
                     modifier = Modifier
-                        .verticalScroll(rememberScrollState())
+                        .verticalScrollWithScrollbar(
+                            scroll,
+                            scrollbarConfig = ScrollBarConfig(
+                                indicatorThickness = 2.dp,
+                                padding = PaddingValues(0.dp, 2.dp, 0.dp, 2.dp)
+                            )
+                        )
+                        .onRotaryScrollEvent {
+                            scope.launch {
+                                scroll.animateScrollBy(it.verticalScrollPixels, TweenSpec())
+                                if (scroll.canScrollBackward != scroll.canScrollForward) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                }
+                            }
+                            true
+                        }
+                        .focusRequester(
+                            focusRequester = focusRequester
+                        )
+                        .focusable()
                 ) {
                     val possibleValues = state.value.second.first
                     for (alphabet in 'A'..'Z') {

@@ -7,13 +7,18 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,10 +33,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -48,14 +59,19 @@ import com.google.android.gms.wearable.Wearable
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.compose.AutoResizeText
 import com.loohp.hkbuseta.presentation.compose.FontSizeRange
+import com.loohp.hkbuseta.presentation.compose.ScrollBarConfig
+import com.loohp.hkbuseta.presentation.compose.horizontalScrollWithScrollbar
+import com.loohp.hkbuseta.presentation.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.presentation.shared.Registry
 import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.Collections
 import java.util.concurrent.ForkJoinPool
+import kotlin.math.absoluteValue
 
 
 class EtaActivity : ComponentActivity() {
@@ -79,19 +95,6 @@ class EtaActivity : ComponentActivity() {
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity) {
-    var eta: Map<Int, String> by remember { mutableStateOf(Collections.emptyMap()) }
-
-    val lat = stop.optJSONObject("location").optDouble("lat")
-    val lng = stop.optJSONObject("location").optDouble("lng")
-
-    LaunchedEffect (Unit) {
-        while (true) {
-            Thread {
-                eta = Registry.getEta(stopId, co, route, instance)
-            }.start()
-            delay(30000)
-        }
-    }
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -107,6 +110,26 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            val focusRequester = remember { FocusRequester() }
+            val scroll = rememberScrollState()
+            val scope = rememberCoroutineScope()
+            val haptic = LocalHapticFeedback.current
+
+            var eta: Map<Int, String> by remember { mutableStateOf(Collections.emptyMap()) }
+
+            val lat = stop.optJSONObject("location").optDouble("lat")
+            val lng = stop.optJSONObject("location").optDouble("lng")
+
+            LaunchedEffect (Unit) {
+                focusRequester.requestFocus()
+                while (true) {
+                    Thread {
+                        eta = Registry.getEta(stopId, co, route, instance)
+                    }.start()
+                    delay(30000)
+                }
+            }
+
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
             Title(index, stop.optJSONObject("name"), lat, lng, route.optString("route"), instance)
             SubTitle(route.optJSONObject("dest"), lat, lng, instance)
@@ -120,7 +143,25 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
             Row(
                 modifier = Modifier
                     .width(StringUtils.scaledSize(113, instance).dp)
-                    .horizontalScroll(rememberScrollState()),
+                    .horizontalScrollWithScrollbar(
+                        scroll,
+                        scrollbarConfig = ScrollBarConfig(
+                            indicatorThickness = 2.dp,
+                            padding = PaddingValues(2.dp, (-6).dp, 2.dp, (-6).dp)
+                        )
+                    ).onRotaryScrollEvent {
+                        scope.launch {
+                            scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
+                            if (scroll.canScrollBackward != scroll.canScrollForward) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
+                        }
+                        true
+                    }
+                    .focusRequester(
+                        focusRequester = focusRequester
+                    )
+                    .focusable(),
                 horizontalArrangement = Arrangement.Center
             )  {
                 FavButton(1, stopId, co, index, stop, route, instance)

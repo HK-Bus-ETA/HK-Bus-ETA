@@ -1,11 +1,11 @@
 package com.loohp.hkbuseta.presentation.branchedlist;
 
-public class BranchListEntry<K, V> {
+public class BranchedListEntry<K, V> {
 
     private final K key;
     private final V value;
 
-    public BranchListEntry(K key, V value) {
+    public BranchedListEntry(K key, V value) {
         this.key = key;
         this.value = value;
     }
