@@ -1,6 +1,7 @@
 package com.loohp.hkbuseta.presentation.tiles
 
 import android.content.Context
+import android.text.format.DateFormat
 import androidx.annotation.OptIn
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -22,10 +23,13 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.presentation.MainActivity
 import com.loohp.hkbuseta.presentation.shared.Registry
+import com.loohp.hkbuseta.presentation.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
+import com.loohp.hkbuseta.presentation.utils.adjustBrightness
 import org.json.JSONObject
+import java.util.Date
 import java.util.Timer
 import java.util.TimerTask
 import java.util.concurrent.Callable
@@ -302,11 +306,23 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
+        fun lastUpdated(context: Context): LayoutElementBuilders.Text {
+            return LayoutElementBuilders.Text.Builder()
+                .setMaxLines(1)
+                .setText((if (Shared.language == "en") "Updated: " else "更新時間: ").plus(DateFormat.getTimeFormat(context).format(Date())))
+                .setFontStyle(
+                    FontStyle.Builder()
+                        .setSize(
+                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(9F, context)).build()
+                        ).build()
+                ).build()
+        }
+
         @OptIn(ProtoLayoutExperimental::class)
-        fun etaText(lines: Map<Int, String>, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Text {
+        fun etaText(eta: ETAQueryResult, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Text {
             val text = StringUtilsKt.toAnnotatedString(
                 HtmlCompat.fromHtml(
-                    lines.getOrDefault(seq, "-"),
+                    eta.lines.getOrDefault(seq, "-"),
                     HtmlCompat.FROM_HTML_MODE_COMPACT
                 )
             )
@@ -341,13 +357,17 @@ class EtaTileServiceCommon {
 
             val eta = Registry.getEta(stopId, co, route, context)
 
-            val color = when (co) {
-                "kmb" -> 0xFFFF4747.toInt()
-                "ctb" -> 0xFFFFE15E.toInt()
-                "nlb" -> 0xFF9BFFC6.toInt()
-                "mtr-bus" -> 0xFFAAD4FF.toInt()
-                "gmb" -> 0xFFAAFFAF.toInt()
-                else -> android.graphics.Color.DKGRAY
+            val color = if (eta.isConnectionError) {
+                Color.DarkGray
+            } else {
+                when (co) {
+                    "kmb" -> Color(0xFFFF4747)
+                    "ctb" -> Color(0xFFFFE15E)
+                    "nlb" -> Color(0xFF9BFFC6)
+                    "mtr-bus" -> Color(0xFFAAD4FF)
+                    "gmb" -> Color(0xFF36FF42)
+                    else -> Color.LightGray
+                }.adjustBrightness(if (eta.hasScheduledBus()) 1F else 0.2F)
             }
 
             return LayoutElementBuilders.Box.Builder()
@@ -368,7 +388,7 @@ class EtaTileServiceCommon {
                                     DimensionBuilders.DpProp.Builder(7F).build()
                                 )
                                 .setColor(
-                                    ColorProp.Builder(color).build()
+                                    ColorProp.Builder(color.toArgb()).build()
                                 ).build()
                         ).build()
                 )
@@ -414,6 +434,11 @@ class EtaTileServiceCommon {
                                 )
                                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
                                 .addContent(
+                                    LayoutElementBuilders.Spacer.Builder()
+                                        .setHeight(
+                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(16F, context)).build()
+                                        ).build()
+                                ).addContent(
                                     title(index, stopName, route.optString("route"), context)
                                 )
                                 .addContent(
@@ -422,27 +447,31 @@ class EtaTileServiceCommon {
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.DpProp.Builder(12F).build()
-                                        )
-                                        .build()
+                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(12F, context)).build()
+                                        ).build()
                                 ).addContent(
                                     etaText(eta, 1, false, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.DpProp.Builder(7F).build()
-                                        )
-                                        .build()
+                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(7F, context)).build()
+                                        ).build()
                                 ).addContent(
                                     etaText(eta, 2, true, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.DpProp.Builder(7F).build()
-                                        )
-                                        .build()
+                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(7F, context)).build()
+                                        ).build()
                                 ).addContent(
                                     etaText(eta, 3, true, context)
+                                ).addContent(
+                                    LayoutElementBuilders.Spacer.Builder()
+                                        .setHeight(
+                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(7F, context)).build()
+                                        ).build()
+                                ).addContent(
+                                    lastUpdated(context)
                                 ).build()
                         ).build()
                 ).build()

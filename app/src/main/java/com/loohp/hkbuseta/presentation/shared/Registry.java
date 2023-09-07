@@ -1125,16 +1125,17 @@ public class Registry {
         }
     }
 
-    public static Map<Integer, String> getEta(String stopId, String co, JSONObject route, Context context) {
+    public static ETAQueryResult getEta(String stopId, String co, JSONObject route, Context context) {
         if (getConnectionType(context) < 0) {
-            return Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器");
+            return ETAQueryResult.CONNECTION_ERROR;
         }
         int elementFontSize = 25;
-        CompletableFuture<Map<Integer, String>> future = new CompletableFuture<>();
+        CompletableFuture<ETAQueryResult> future = new CompletableFuture<>();
         new Thread(() -> {
             try {
-                Map<Integer, String> results = new HashMap<>();
-                results.put(1, getNoScheduledDepartureMessage(elementFontSize, null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
+                Map<Integer, String> lines = new HashMap<>();
+                boolean hasScheduledBus = false;
+                lines.put(1, getNoScheduledDepartureMessage(elementFontSize, null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
                 String language = Shared.Companion.getLanguage();
                 switch (co) {
                     case "kmb": {
@@ -1155,8 +1156,10 @@ public class Registry {
                                     if (language.equals("en")) {
                                         if (mins > 0) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                            hasScheduledBus = true;
                                         } else if (mins > -60) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                            hasScheduledBus = true;
                                         }
                                         if (!bus.optString("rmk_en").isEmpty()) {
                                             message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
@@ -1164,8 +1167,10 @@ public class Registry {
                                     } else {
                                         if (mins > 0) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            hasScheduledBus = true;
                                         } else if (mins > -60) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            hasScheduledBus = true;
                                         }
                                         if (!bus.optString("rmk_tc").isEmpty()) {
                                             message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
@@ -1185,7 +1190,7 @@ public class Registry {
                                     } else {
                                         message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
                                     }
-                                    results.put(seq, message);
+                                    lines.put(seq, message);
                                 }
                             }
                         }
@@ -1209,8 +1214,10 @@ public class Registry {
                                     if (language.equals("en")) {
                                         if (mins > 0) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                            hasScheduledBus = true;
                                         } else if (mins > -60) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                            hasScheduledBus = true;
                                         }
                                         if (!bus.optString("rmk_en").isEmpty()) {
                                             message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
@@ -1218,8 +1225,10 @@ public class Registry {
                                     } else {
                                         if (mins > 0) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            hasScheduledBus = true;
                                         } else if (mins > -60) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            hasScheduledBus = true;
                                         }
                                         if (!bus.optString("rmk_tc").isEmpty()) {
                                             message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
@@ -1239,7 +1248,7 @@ public class Registry {
                                     } else {
                                         message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
                                     }
-                                    results.put(seq, message);
+                                    lines.put(seq, message);
                                 }
                             }
                         }
@@ -1263,8 +1272,10 @@ public class Registry {
                             if (language.equals("en")) {
                                 if (mins > 0) {
                                     message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                    hasScheduledBus = true;
                                 } else if (mins > -60) {
                                     message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                    hasScheduledBus = true;
                                 }
                                 if (!variant.isEmpty()) {
                                     message += (message.isEmpty() ? variant : " (" + variant + ")");
@@ -1272,8 +1283,10 @@ public class Registry {
                             } else {
                                 if (mins > 0) {
                                     message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    hasScheduledBus = true;
                                 } else if (mins > -60) {
                                     message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    hasScheduledBus = true;
                                 }
                                 if (!variant.isEmpty()) {
                                     message += (message.isEmpty() ? variant : " (" + variant + ")");
@@ -1293,7 +1306,7 @@ public class Registry {
                             } else {
                                 message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
                             }
-                            results.put(seq, message);
+                            lines.put(seq, message);
                         }
                         break;
                     }
@@ -1345,8 +1358,10 @@ public class Registry {
                                     if (language.equals("en")) {
                                         if (mins > 0) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                            hasScheduledBus = true;
                                         } else if (mins > -60) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                            hasScheduledBus = true;
                                         }
                                         if (!remark.isEmpty()) {
                                             message += (message.isEmpty() ? remark : " (" + remark + ")");
@@ -1354,8 +1369,10 @@ public class Registry {
                                     } else {
                                         if (mins > 0) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            hasScheduledBus = true;
                                         } else if (mins > -60) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            hasScheduledBus = true;
                                         }
                                         if (!remark.isEmpty()) {
                                             message += (message.isEmpty() ? remark : " (" + remark + ")");
@@ -1375,7 +1392,7 @@ public class Registry {
                                     } else {
                                         message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
                                     }
-                                    results.put(seq, message);
+                                    lines.put(seq, message);
                                 }
                             }
                         }
@@ -1409,8 +1426,10 @@ public class Registry {
                                         if (language.equals("en")) {
                                             if (mins > 0) {
                                                 message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                                hasScheduledBus = true;
                                             } else if (mins > -60) {
                                                 message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                                hasScheduledBus = true;
                                             }
                                             if (!remark.isEmpty()) {
                                                 message += (message.isEmpty() ? remark : " (" + remark + ")");
@@ -1418,8 +1437,10 @@ public class Registry {
                                         } else {
                                             if (mins > 0) {
                                                 message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                hasScheduledBus = true;
                                             } else if (mins > -60) {
                                                 message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                hasScheduledBus = true;
                                             }
                                             if (!remark.isEmpty()) {
                                                 message += (message.isEmpty() ? remark : " (" + remark + ")");
@@ -1439,7 +1460,7 @@ public class Registry {
                                         } else {
                                             message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
                                         }
-                                        results.put(seq, message);
+                                        lines.put(seq, message);
                                     }
                                 }
                             }
@@ -1447,7 +1468,7 @@ public class Registry {
                         break;
                     }
                 }
-                future.complete(results);
+                future.complete(ETAQueryResult.result(hasScheduledBus, lines));
             } catch (Throwable e) {
                 future.completeExceptionally(e);
             }
@@ -1455,7 +1476,53 @@ public class Registry {
         try {
             return future.get();
         } catch (ExecutionException | InterruptedException e) {
-            return Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器");
+            return ETAQueryResult.CONNECTION_ERROR;
+        }
+    }
+
+    public static class ETAQueryResult {
+
+        public static final ETAQueryResult EMPTY = new ETAQueryResult(true, false, Collections.emptyMap());
+
+        public static final ETAQueryResult CONNECTION_ERROR = new ETAQueryResult(true, false, Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"));
+
+        public static ETAQueryResult result(boolean hasScheduledBus, Map<Integer, String> lines) {
+            return new ETAQueryResult(false, hasScheduledBus, lines);
+        }
+
+        private final boolean isConnectionError;
+        private final boolean hasScheduledBus;
+        private final Map<Integer, String> lines;
+
+        private ETAQueryResult(boolean isConnectionError, boolean hasScheduledBus, Map<Integer, String> lines) {
+            this.isConnectionError = isConnectionError;
+            this.hasScheduledBus = hasScheduledBus;
+            this.lines = Collections.unmodifiableMap(lines);
+        }
+
+        public boolean isConnectionError() {
+            return isConnectionError;
+        }
+
+        public boolean hasScheduledBus() {
+            return hasScheduledBus;
+        }
+
+        public Map<Integer, String> getLines() {
+            return lines;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ETAQueryResult that = (ETAQueryResult) o;
+            return isConnectionError == that.isConnectionError && hasScheduledBus == that.hasScheduledBus && Objects.equals(lines, that.lines);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(isConnectionError, hasScheduledBus, lines);
         }
     }
 

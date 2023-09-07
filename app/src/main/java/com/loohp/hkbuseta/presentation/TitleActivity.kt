@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,9 +19,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
@@ -29,6 +33,7 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.R
@@ -38,7 +43,6 @@ import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.LocationUtils
 import com.loohp.hkbuseta.presentation.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
-import java.util.function.Consumer
 
 
 class TitleActivity : ComponentActivity() {
@@ -76,7 +80,14 @@ fun HKBusETAApp(instance: TitleActivity) {
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
             NearbyButton(instance)
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
-            LanguageButton(instance)
+            Row (
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                LanguageButton(instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+                FavButton(instance)
+            }
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
             CreditVersionText(instance)
         }
@@ -158,7 +169,7 @@ fun LanguageButton(instance: TitleActivity) {
             instance.finish()
         },
         modifier = Modifier
-            .width(StringUtils.scaledSize(110, instance).dp)
+            .width(StringUtils.scaledSize(90, instance).dp)
             .height(StringUtils.scaledSize(35, instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
@@ -171,6 +182,30 @@ fun LanguageButton(instance: TitleActivity) {
                 color = MaterialTheme.colors.primary,
                 fontSize = TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Em),
                 text = if (Shared.language == "en") "中文" else "English"
+            )
+        }
+    )
+}
+
+@Composable
+fun FavButton(instance: TitleActivity) {
+    Button(
+        onClick = {
+            instance.startActivity(Intent(instance, FavActivity::class.java))
+        },
+        modifier = Modifier
+            .width(StringUtils.scaledSize(35, instance).dp)
+            .height(StringUtils.scaledSize(35, instance).dp),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.secondary,
+            contentColor = Color(0xFFFFFF00)
+        ),
+        content = {
+            Icon(
+                modifier = Modifier.size(StringUtils.scaledSize(21, instance).dp),
+                imageVector = Icons.Filled.Star,
+                tint = Color(0xFFFFFF00),
+                contentDescription = if (Shared.language == "en") "最喜愛路線" else "Favourite Routes"
             )
         }
     )

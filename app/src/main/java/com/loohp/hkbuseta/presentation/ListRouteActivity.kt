@@ -1,8 +1,6 @@
 package com.loohp.hkbuseta.presentation
 
 import android.content.Intent
-import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.TypedValue
@@ -19,6 +17,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.wear.compose.material.MaterialTheme
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.presentation.shared.Shared
@@ -70,13 +70,13 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
     table.removeAllViews()
     for (route in result) {
         val color = when (route.optString("co")) {
-            "kmb" -> 0xFFFF4747.toInt()
-            "ctb" -> 0xFFFFE15E.toInt()
-            "nlb" -> 0xFF9BFFC6.toInt()
-            "mtr-bus" -> 0xFFAAD4FF.toInt()
-            "gmb" -> 0xFFAAFFAF.toInt()
-            else -> Color.WHITE
-        }
+            "kmb" -> Color(0xFFFF4747)
+            "ctb" -> Color(0xFFFFE15E)
+            "nlb" -> Color(0xFF9BFFC6)
+            "mtr-bus" -> Color(0xFFAAD4FF)
+            "gmb" -> Color(0xFF36FF42)
+            else -> Color.White
+        }.toArgb()
 
         val tr = TableRow(instance)
         tr.layoutParams = TableRow.LayoutParams(

@@ -58,6 +58,7 @@ import com.loohp.hkbuseta.presentation.compose.FontSizeRange
 import com.loohp.hkbuseta.presentation.compose.ScrollBarConfig
 import com.loohp.hkbuseta.presentation.compose.horizontalScrollWithScrollbar
 import com.loohp.hkbuseta.presentation.shared.Registry
+import com.loohp.hkbuseta.presentation.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.RemoteActivityUtils
@@ -111,7 +112,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
             val scope = rememberCoroutineScope()
             val haptic = LocalHapticFeedback.current
 
-            var eta: Map<Int, String> by remember { mutableStateOf(Collections.emptyMap()) }
+            var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
 
             val lat = stop.optJSONObject("location").optDouble("lat")
             val lng = stop.optJSONObject("location").optDouble("lng")
@@ -335,7 +336,7 @@ fun SubTitle(destName: JSONObject, lat: Double, lng: Double, instance: EtaActivi
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EtaText(lines: Map<Int, String>, seq: Int, instance: EtaActivity) {
+fun EtaText(lines: ETAQueryResult, seq: Int, instance: EtaActivity) {
     Text(
         modifier = Modifier
             .fillMaxWidth()
@@ -344,6 +345,6 @@ fun EtaText(lines: Map<Int, String>, seq: Int, instance: EtaActivity) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         maxLines = 1,
-        text = StringUtilsKt.toAnnotatedString(HtmlCompat.fromHtml(lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT))
+        text = StringUtilsKt.toAnnotatedString(HtmlCompat.fromHtml(lines.lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT))
     )
 }
