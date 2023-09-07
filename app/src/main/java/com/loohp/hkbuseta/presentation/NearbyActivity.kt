@@ -120,7 +120,7 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(2F, instance), TextUnitType.Em),
+        fontSize = TextUnit(StringUtils.scaledSize(2.25F, instance), TextUnitType.Em),
         text = if (Shared.language == "en")
             "Nearest Stop: ".plus(closestStop.optJSONObject("name").optString("en")).plus(" (").plus(distance.roundToInt()).plus("m)")
         else

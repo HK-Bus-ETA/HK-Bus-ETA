@@ -3,6 +3,7 @@ package com.loohp.hkbuseta.presentation
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -37,6 +38,7 @@ import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.LocationUtils
 import com.loohp.hkbuseta.presentation.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
+import java.util.function.Consumer
 
 
 class TitleActivity : ComponentActivity() {
@@ -47,6 +49,7 @@ class TitleActivity : ComponentActivity() {
             HKBusETAApp(this)
         }
     }
+
 }
 
 @Composable
@@ -105,13 +108,27 @@ fun SearchButton(instance: TitleActivity) {
     )
 }
 
+fun handleNearbyClick(permission: Boolean, instance: TitleActivity) {
+    instance.runOnUiThread {
+        if (permission) {
+            instance.startActivity(Intent(instance, NearbyActivity::class.java))
+        } else {
+            Toast.makeText(instance, if (Shared.language == "en") "Location Access Permission Denied" else "位置存取權限被拒絕", Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
+fun handleNearbyClick(instance: TitleActivity) {
+    if (LocationUtils.checkLocationPermission(instance) { r -> handleNearbyClick(r, instance) }) {
+        handleNearbyClick(true, instance)
+    }
+}
+
 @Composable
 fun NearbyButton(instance: TitleActivity) {
     Button(
         onClick = {
-            if (LocationUtils.checkLocationPermission(instance, true)) {
-                instance.startActivity(Intent(instance, NearbyActivity::class.java))
-            }
+            handleNearbyClick(instance)
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(StringUtils.scaledSize(220, instance), instance).dp)

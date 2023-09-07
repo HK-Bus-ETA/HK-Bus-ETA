@@ -1,12 +1,14 @@
 package com.loohp.hkbuseta.presentation.utils;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 
+import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.ActivityCompat;
 
 import com.google.android.gms.location.CurrentLocationRequest;
@@ -15,22 +17,39 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.Task;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class LocationUtils {
 
-    public static boolean checkLocationPermission(Activity activity, boolean askIfNotGranted) {
+    public static boolean checkLocationPermission(ComponentActivity activity, boolean askIfNotGranted) {
+        return checkLocationPermission(activity, askIfNotGranted, r -> {});
+    }
+
+    public static boolean checkLocationPermission(ComponentActivity activity, Consumer<Boolean> callback) {
+        return checkLocationPermission(activity, true, callback);
+    }
+
+    private static boolean checkLocationPermission(ComponentActivity activity, boolean askIfNotGranted, Consumer<Boolean> callback) {
         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             return true;
         }
         if (askIfNotGranted) {
-            ActivityCompat.requestPermissions(activity, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, 99);
+            AtomicReference<ActivityResultLauncher<String>> ref = new AtomicReference<>();
+            ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result -> {
+                callback.accept(result);
+                ref.get().unregister();
+            });
+            ref.set(launcher);
+            launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
         }
         return false;
     }
 
-    public static CompletableFuture<LocationResult> getGPSLocation(Activity activity) {
+    public static CompletableFuture<LocationResult> getGPSLocation(ComponentActivity activity) {
         if (!checkLocationPermission(activity, false)) {
             return CompletableFuture.completedFuture(null);
         }
