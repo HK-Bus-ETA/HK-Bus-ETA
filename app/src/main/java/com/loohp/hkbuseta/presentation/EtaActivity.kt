@@ -67,6 +67,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.Collections
+import kotlin.math.absoluteValue
 
 
 class EtaActivity : ComponentActivity() {
@@ -146,8 +147,8 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                         )
                     ).onRotaryScrollEvent {
                         scope.launch {
-                            scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
-                            if (scroll.canScrollBackward != scroll.canScrollForward) {
+                            val amount = scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
+                            if (amount.absoluteValue == 0F && scroll.canScrollBackward != scroll.canScrollForward) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
                         }
