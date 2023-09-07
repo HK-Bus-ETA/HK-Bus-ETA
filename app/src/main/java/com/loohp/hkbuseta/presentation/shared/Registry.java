@@ -102,7 +102,8 @@ public class Registry {
     private static JSONObject MTR_BUS_STOP_ALIAS = null;
     private static JSONObject GMB_ROUTE = null;
 
-    private State state = State.LOADING;
+    private volatile State state = State.LOADING;
+    private volatile boolean preferencesLoaded = false;
 
     private boolean isAboveTyphoonSignalEight = false;
     private String typhoonWarningTitle = "";
@@ -145,6 +146,10 @@ public class Registry {
 
     public State getState() {
         return state;
+    }
+
+    public boolean isPreferencesLoaded() {
+        return preferencesLoaded;
     }
 
     public double findDistance(double lat1, double lng1, double lat2, double lng2) {
@@ -329,7 +334,7 @@ public class Registry {
         return -1;
     }
 
-    public void ensureData(Context context) throws IOException {
+    private void ensureData(Context context) throws IOException {
         if (state.equals(State.READY)) {
             return;
         }
@@ -360,6 +365,7 @@ public class Registry {
                 throw new RuntimeException(e);
             }
         }
+        preferencesLoaded = true;
 
         Thread thread = new Thread(() -> {
             try {

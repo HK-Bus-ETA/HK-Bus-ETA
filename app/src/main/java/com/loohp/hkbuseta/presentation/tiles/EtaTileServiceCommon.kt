@@ -31,6 +31,7 @@ import java.util.TimerTask
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ForkJoinPool
+import java.util.concurrent.TimeUnit
 
 class EtaTileServiceCommon {
 
@@ -174,9 +175,6 @@ class EtaTileServiceCommon {
         }
 
         fun noFavouriteRouteStop(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
-            if (Registry.getInstance(context).state != Registry.State.READY) {
-                return pleaseWait(favoriteIndex, packageName, context)
-            }
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
@@ -332,10 +330,6 @@ class EtaTileServiceCommon {
         }
 
         fun buildLayout(favoriteIndex: Int, favouriteStopRoute: JSONObject, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
-            if (Registry.getInstance(context).state != Registry.State.READY) {
-                return pleaseWait(favoriteIndex, packageName, context)
-            }
-
             val stopName = favouriteStopRoute.optJSONObject("stop").optJSONObject("name")
             val destName = favouriteStopRoute.optJSONObject("route").optJSONObject("dest")
 
@@ -454,6 +448,25 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
+        fun buildSuitableElement(etaIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+            if (!Registry.getInstance(context).isPreferencesLoaded) {
+                TimeUnit.SECONDS.sleep(1)
+                if (!Registry.getInstance(context).isPreferencesLoaded) {
+                    return pleaseWait(etaIndex, packageName, context)
+                }
+            }
+            return if (!Shared.favoriteRouteStops.containsKey(etaIndex)) noFavouriteRouteStop(
+                etaIndex,
+                packageName,
+                context
+            ) else buildLayout(
+                etaIndex,
+                Shared.favoriteRouteStops[etaIndex]!!,
+                packageName,
+                context
+            )
+        }
+
         fun buildTileRequest(etaIndex: Int, packageName: String, context: Context): ListenableFuture<TileBuilders.Tile> {
             return Futures.submit(Callable {
                 TileBuilders.Tile.Builder()
@@ -463,16 +476,7 @@ class EtaTileServiceCommon {
                         TimelineBuilders.Timeline.Builder().addTimelineEntry(
                             TimelineBuilders.TimelineEntry.Builder().setLayout(
                                 LayoutElementBuilders.Layout.Builder().setRoot(
-                                    if (!Shared.favoriteRouteStops.containsKey(etaIndex)) noFavouriteRouteStop(
-                                        etaIndex,
-                                        packageName,
-                                        context
-                                    ) else buildLayout(
-                                        etaIndex,
-                                        Shared.favoriteRouteStops[etaIndex]!!,
-                                        packageName,
-                                        context
-                                    )
+                                    buildSuitableElement(etaIndex, packageName, context)
                                 ).build()
                             ).build()
                         ).build()
