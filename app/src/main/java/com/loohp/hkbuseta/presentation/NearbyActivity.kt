@@ -78,7 +78,7 @@ fun WaitingText(instance: NearbyActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Em),
+        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
         text = if (Shared.language == "en") "Locating..." else "正在讀取你的位置..."
     )
 }
@@ -90,7 +90,7 @@ fun FailedText(instance: NearbyActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Em),
+        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
         text = if (Shared.language == "en") "Unable to read your location" else "無法讀取你的位置"
     )
     Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
@@ -99,7 +99,7 @@ fun FailedText(instance: NearbyActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(2.5F, instance), TextUnitType.Em),
+        fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
         text = if (Shared.language == "en") "Please check whether your GPS is enabled" else "請檢查你的定位服務是否已開啟"
     )
 }
@@ -111,7 +111,7 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Em),
+        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
         text = if (Shared.language == "en") "There are no nearby bus stops" else "附近沒有巴士站"
     )
     Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
@@ -120,7 +120,7 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(2.25F, instance), TextUnitType.Em),
+        fontSize = TextUnit(StringUtils.scaledSize(12.5F, instance), TextUnitType.Sp),
         text = if (Shared.language == "en")
             "Nearest Stop: ".plus(closestStop.optJSONObject("name").optString("en")).plus(" (").plus(distance.roundToInt()).plus("m)")
         else

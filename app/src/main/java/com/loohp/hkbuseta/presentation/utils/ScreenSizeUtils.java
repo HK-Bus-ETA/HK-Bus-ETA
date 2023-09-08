@@ -17,4 +17,14 @@ public class ScreenSizeUtils {
         }
     }
 
+    public static int getScreenWidth(Context context) {
+        if (context instanceof Activity) {
+            Rect bound = ((Activity) context).getWindowManager().getCurrentWindowMetrics().getBounds();
+            return Math.abs(bound.width());
+        } else {
+            DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+            return Math.abs(displayMetrics.widthPixels);
+        }
+    }
+
 }

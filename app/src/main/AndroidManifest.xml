@@ -98,7 +98,7 @@
             <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
-                android:resource="@mipmap/route_stop_tile" />
+                android:resource="@mipmap/route_stop_tile_1" />
         </service>
 
         <service
@@ -114,7 +114,7 @@
             <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
-                android:resource="@mipmap/route_stop_tile" />
+                android:resource="@mipmap/route_stop_tile_2" />
         </service>
 
         <service
@@ -130,7 +130,7 @@
             <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
-                android:resource="@mipmap/route_stop_tile" />
+                android:resource="@mipmap/route_stop_tile_3" />
         </service>
 
         <service
@@ -146,7 +146,7 @@
             <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
-                android:resource="@mipmap/route_stop_tile" />
+                android:resource="@mipmap/route_stop_tile_4" />
         </service>
 
         <service
@@ -162,7 +162,7 @@
             <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
-                android:resource="@mipmap/route_stop_tile" />
+                android:resource="@mipmap/route_stop_tile_5" />
         </service>
 
         <service
@@ -178,7 +178,7 @@
             <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
-                android:resource="@mipmap/route_stop_tile" />
+                android:resource="@mipmap/route_stop_tile_6" />
         </service>
 
         <service
@@ -194,7 +194,7 @@
             <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
-                android:resource="@mipmap/route_stop_tile" />
+                android:resource="@mipmap/route_stop_tile_7" />
         </service>
 
         <service
@@ -210,7 +210,7 @@
             <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
-                android:resource="@mipmap/route_stop_tile" />
+                android:resource="@mipmap/route_stop_tile_8" />
         </service>
     </application>
 

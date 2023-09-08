@@ -57,7 +57,7 @@ class Shared {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Em),
+                    fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
                     text = if (language == "en") "Updating..." else "更新數據中..."
                 )
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
@@ -65,7 +65,7 @@ class Shared {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = TextUnit(StringUtils.scaledSize(2.5F, instance), TextUnitType.Em),
+                    fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
                     text = if (language == "en") "Might take several minutes" else "可能需要幾分鐘"
                 )
             } else {
@@ -73,7 +73,7 @@ class Shared {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Em),
+                    fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
                     text = if (language == "en") "Loading..." else "載入中..."
                 )
             }

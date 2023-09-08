@@ -282,7 +282,7 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
             maxLines = 2,
             fontWeight = FontWeight(900),
             fontSizeRange = FontSizeRange(
-                min = StringUtils.scaledSize(10, instance).sp,
+                min = StringUtils.scaledSize(1, instance).sp,
                 max = StringUtils.scaledSize(17, instance).sp,
             )
         )
@@ -301,7 +301,7 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
             maxLines = 2,
             fontWeight = FontWeight(900),
             fontSizeRange = FontSizeRange(
-                min = StringUtils.scaledSize(10, instance).sp,
+                min = StringUtils.scaledSize(1, instance).sp,
                 max = StringUtils.scaledSize(17, instance).sp,
             )
         )
@@ -327,7 +327,7 @@ fun SubTitle(destName: JSONObject, lat: Double, lng: Double, instance: EtaActivi
         text = name,
         maxLines = 1,
         fontSizeRange = FontSizeRange(
-            min = StringUtils.scaledSize(5, instance).sp,
+            min = StringUtils.scaledSize(1, instance).sp,
             max = StringUtils.scaledSize(11, instance).sp,
         )
     )

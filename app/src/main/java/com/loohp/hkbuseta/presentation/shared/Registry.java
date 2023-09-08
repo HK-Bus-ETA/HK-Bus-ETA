@@ -42,6 +42,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1059,7 +1060,7 @@ public class Registry {
         }
     }
 
-    public List<StopData> getAllStops(String routeNumber, String bound, String co) {
+    public List<StopData> getAllStops(String routeNumber, String bound, String co, String gtfsId) {
         BranchedList<String, StopData> result = new BranchedList<>((a, b) -> a.getServiceType() > b.getServiceType() ? b : a);
         for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
             String key = itr.next();
@@ -1070,6 +1071,9 @@ public class Registry {
                     flag = bound.equals(route.optString("nlbId"));
                 } else {
                     flag = bound.equals(route.optJSONObject("bound").optString(co));
+                    if (co.equals("gmb")) {
+                        flag &= gtfsId.equals(route.optString("gtfsId"));
+                    }
                 }
                 if (flag) {
                     BranchedList<String, StopData> localStops = new BranchedList<>();
@@ -1400,7 +1404,7 @@ public class Registry {
                     }
                     case "gmb": {
                         JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/eta/stop/" + stopId);
-
+                        List<Pair<Long, JSONObject>> busList = new ArrayList<>();
                         for (int i = 0; i < data.optJSONArray("data").length(); i++) {
                             JSONObject routeData = data.optJSONArray("data").optJSONObject(i);
                             JSONArray buses = routeData.optJSONArray("eta");
@@ -1413,57 +1417,64 @@ public class Registry {
                                 String routeNumber = filteredEntry.get().optString("route");
                                 for (int u = 0; u < buses.length(); u++) {
                                     JSONObject bus = buses.optJSONObject(u);
-                                    int seq = bus.optInt("eta_seq");
                                     String eta = bus.optString("timestamp");
-                                    String remark = language.equals("en") ? bus.optString("remarks_en") : bus.optString("remarks_tc");
-                                    if (remark == null || remark.equalsIgnoreCase("null")) {
-                                        remark = "";
-                                    }
                                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
                                     long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
                                     if (routeNumber.equals(route.optString("route"))) {
-                                        String message = "";
-                                        if (language.equals("en")) {
-                                            if (mins > 0) {
-                                                message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
-                                                hasScheduledBus = true;
-                                            } else if (mins > -60) {
-                                                message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
-                                                hasScheduledBus = true;
-                                            }
-                                            if (!remark.isEmpty()) {
-                                                message += (message.isEmpty() ? remark : " (" + remark + ")");
-                                            }
-                                        } else {
-                                            if (mins > 0) {
-                                                message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                hasScheduledBus = true;
-                                            } else if (mins > -60) {
-                                                message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                hasScheduledBus = true;
-                                            }
-                                            if (!remark.isEmpty()) {
-                                                message += (message.isEmpty() ? remark : " (" + remark + ")");
-                                            }
-                                        }
-                                        message = message
-                                                .replaceAll("原定", "預定")
-                                                .replaceAll("最後班次", "尾班車")
-                                                .replaceAll("尾班車已過", "尾班車已過本站");
-
-                                        if (message.isEmpty()) {
-                                            if (seq == 1) {
-                                                message = getNoScheduledDepartureMessage(elementFontSize, message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
-                                            } else {
-                                                message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>-";
-                                            }
-                                        } else {
-                                            message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
-                                        }
-                                        lines.put(seq, message);
+                                        busList.add(Pair.create(mins, bus));
                                     }
                                 }
                             }
+                        }
+                        busList.sort(Comparator.comparing(p -> p.first));
+                        for (int i = 0; i < busList.size(); i++) {
+                            Pair<Long, JSONObject> entry = busList.get(i);
+                            JSONObject bus = entry.second;
+                            int seq = i + 1;
+                            String remark = language.equals("en") ? bus.optString("remarks_en") : bus.optString("remarks_tc");
+                            if (remark == null || remark.equalsIgnoreCase("null")) {
+                                remark = "";
+                            }
+                            long mins = entry.first;
+                            String message = "";
+                            if (language.equals("en")) {
+                                if (mins > 0) {
+                                    message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                    hasScheduledBus = true;
+                                } else if (mins > -60) {
+                                    message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                    hasScheduledBus = true;
+                                }
+                                if (!remark.isEmpty()) {
+                                    message += (message.isEmpty() ? remark : " (" + remark + ")");
+                                }
+                            } else {
+                                if (mins > 0) {
+                                    message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    hasScheduledBus = true;
+                                } else if (mins > -60) {
+                                    message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    hasScheduledBus = true;
+                                }
+                                if (!remark.isEmpty()) {
+                                    message += (message.isEmpty() ? remark : " (" + remark + ")");
+                                }
+                            }
+                            message = message
+                                    .replaceAll("原定", "預定")
+                                    .replaceAll("最後班次", "尾班車")
+                                    .replaceAll("尾班車已過", "尾班車已過本站");
+
+                            if (message.isEmpty()) {
+                                if (seq == 1) {
+                                    message = getNoScheduledDepartureMessage(elementFontSize, message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                } else {
+                                    message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>-";
+                                }
+                            } else {
+                                message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
+                            }
+                            lines.put(seq, message);
                         }
                         break;
                     }

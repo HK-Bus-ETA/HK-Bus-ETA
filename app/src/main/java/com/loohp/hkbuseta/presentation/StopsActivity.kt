@@ -69,13 +69,14 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
     val routeNumber = route.optJSONObject("route").optString("route")
     val co = route.optString("co")
     val bound = if (co.equals("nlb")) route.optJSONObject("route").optString("nlbId") else route.optJSONObject("route").optJSONObject("bound").optString(co)
+    val gtfsId = route.optJSONObject("route").optString("gtfsId")
     var targetIndex = -1
     var targetIndexText: TextView? = null
     var targetStopText: TextView? = null
     var targetDistance = 1.0
     var randomTr: TableRow? = null
     var i = 1
-    for (entry in Registry.getInstance(instance).getAllStops(routeNumber, bound, co)) {
+    for (entry in Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId)) {
         val stopId = entry.stopId
         val stop = entry.stop
 

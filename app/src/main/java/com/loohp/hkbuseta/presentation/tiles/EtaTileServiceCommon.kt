@@ -2,7 +2,6 @@ package com.loohp.hkbuseta.presentation.tiles
 
 import android.content.Context
 import android.text.format.DateFormat
-import androidx.annotation.OptIn
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.text.HtmlCompat
@@ -16,7 +15,6 @@ import androidx.wear.protolayout.LayoutElementBuilders.FontStyle
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
-import androidx.wear.protolayout.expression.ProtoLayoutExperimental
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.Futures
@@ -25,8 +23,10 @@ import com.loohp.hkbuseta.presentation.MainActivity
 import com.loohp.hkbuseta.presentation.shared.Registry
 import com.loohp.hkbuseta.presentation.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.presentation.shared.Shared
+import com.loohp.hkbuseta.presentation.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
+import com.loohp.hkbuseta.presentation.utils.UnitUtils
 import com.loohp.hkbuseta.presentation.utils.adjustBrightness
 import org.json.JSONObject
 import java.util.Date
@@ -36,14 +36,19 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 class EtaTileServiceCommon {
 
     companion object {
 
-        const val RESOURCES_VERSION = "0"
+        private const val RESOURCES_VERSION = "0"
 
-        fun pleaseWait(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+        private fun targetWidth(context: Context, padding: Int): Int {
+            return ScreenSizeUtils.getScreenWidth(context) - UnitUtils.dpToPixels(context, padding * 2).roundToInt()
+        }
+
+        private fun pleaseWait(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
@@ -178,7 +183,7 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        fun noFavouriteRouteStop(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+        private fun noFavouriteRouteStop(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
@@ -267,19 +272,20 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        fun title(index: Int, stopName: JSONObject, routeNumber: String, context: Context): LayoutElementBuilders.Text {
+        private fun title(index: Int, stopName: JSONObject, routeNumber: String, context: Context): LayoutElementBuilders.Text {
             var name = stopName.optString(Shared.language)
             if (Shared.language == "en") {
                 name = StringUtils.capitalize(name)
             }
+            val text = "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
-                .setText("[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name))
-                .setMaxLines(Int.MAX_VALUE)
+                .setText(text)
+                .setMaxLines(2)
                 .setFontStyle(
                     FontStyle.Builder()
                         .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(if (Shared.language == "en") 13F else 17F, context)).build()
+                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.findOptimalSp(context, text, targetWidth(context, 35), 2, 1F, 17F)).build()
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -288,16 +294,16 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        fun subTitle(destName: JSONObject, context: Context): LayoutElementBuilders.Text {
+        private fun subTitle(destName: JSONObject, context: Context): LayoutElementBuilders.Text {
             var name = destName.optString(Shared.language)
             name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
             return LayoutElementBuilders.Text.Builder()
                 .setText(name)
-                .setMaxLines(Int.MAX_VALUE)
+                .setMaxLines(1)
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(12F, context)).build()
+                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.findOptimalSp(context, name, targetWidth(context, 35), 1, 1F, 11F)).build()
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -306,7 +312,30 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        fun lastUpdated(context: Context): LayoutElementBuilders.Text {
+        private fun etaText(eta: ETAQueryResult, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Text {
+            val text = StringUtilsKt.toAnnotatedString(HtmlCompat.fromHtml(eta.lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT)).text
+            val color = Color.White.toArgb()
+            val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
+            val maxLines = if (singleLine) 1 else 2
+            val textSize = StringUtils.findOptimalSp(context, text, targetWidth(context, 20), maxLines, 1F, maxTextSize)
+
+            return LayoutElementBuilders.Text.Builder()
+                //.setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
+                .setMaxLines(maxLines)
+                .setText(text)
+                .setFontStyle(
+                    FontStyle.Builder()
+                        .setSize(
+                            DimensionBuilders.SpProp.Builder().setValue(textSize).build()
+                        )
+                        .setColor(
+                            ColorProp.Builder(color).build()
+                        )
+                        .build()
+                ).build()
+        }
+
+        private fun lastUpdated(context: Context): LayoutElementBuilders.Text {
             return LayoutElementBuilders.Text.Builder()
                 .setMaxLines(1)
                 .setText((if (Shared.language == "en") "Updated: " else "更新時間: ").plus(DateFormat.getTimeFormat(context).format(Date())))
@@ -318,34 +347,7 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        @OptIn(ProtoLayoutExperimental::class)
-        fun etaText(eta: ETAQueryResult, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Text {
-            val text = StringUtilsKt.toAnnotatedString(
-                HtmlCompat.fromHtml(
-                    eta.lines.getOrDefault(seq, "-"),
-                    HtmlCompat.FROM_HTML_MODE_COMPACT
-                )
-            )
-            val color = Color.White.toArgb()
-
-            return LayoutElementBuilders.Text.Builder()
-                .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
-                .setMarqueeIterations(-1)
-                .setMaxLines(if (singleLine) 1 else Int.MAX_VALUE)
-                .setText(text.text)
-                .setFontStyle(
-                    FontStyle.Builder()
-                        .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(if (seq == 1) 15F else (if (Shared.language == "en") 11F else 13F), context)).build()
-                        )
-                        .setColor(
-                            ColorProp.Builder(color).build()
-                        )
-                        .build()
-                ).build()
-        }
-
-        fun buildLayout(favoriteIndex: Int, favouriteStopRoute: JSONObject, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+        private fun buildLayout(favoriteIndex: Int, favouriteStopRoute: JSONObject, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             val stopName = favouriteStopRoute.optJSONObject("stop").optJSONObject("name")
             val destName = favouriteStopRoute.optJSONObject("route").optJSONObject("dest")
 
@@ -477,7 +479,7 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        fun buildSuitableElement(etaIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+        private fun buildSuitableElement(etaIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             if (!Registry.getInstance(context).isPreferencesLoaded) {
                 TimeUnit.SECONDS.sleep(1)
                 if (!Registry.getInstance(context).isPreferencesLoaded) {
