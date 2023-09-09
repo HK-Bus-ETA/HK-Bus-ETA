@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.TypedValue
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
 import android.widget.TableLayout
@@ -85,12 +86,7 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
         )
         val selectableItemBackgroundResource = android.R.attr.selectableItemBackground
         val typedValue = TypedValue()
-        if (instance.theme.resolveAttribute(
-                selectableItemBackgroundResource,
-                typedValue,
-                true
-            )
-        ) {
+        if (instance.theme.resolveAttribute(selectableItemBackgroundResource, typedValue, true)) {
             tr.setBackgroundResource(typedValue.resourceId)
         } else {
             tr.setBackgroundResource(android.R.drawable.list_selector_background)
@@ -107,7 +103,7 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
         tr.addView(routeTextView);
         routeTextView.text = route.optJSONObject("route").optString("route")
         routeTextView.setTextColor(color)
-        routeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, StringUtils.scaledSize(20F, instance))
+        routeTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(20F, instance))
         val routeTextLayoutParams: ViewGroup.LayoutParams = routeTextView.layoutParams
         routeTextLayoutParams.width =
             (StringUtils.scaledSize(51F, instance) * instance.resources.displayMetrics.density).roundToInt()
@@ -127,15 +123,19 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
             (StringUtils.scaledSize(95F, instance) * instance.resources.displayMetrics.density).roundToInt()
         destTextView.layoutParams = destTextLayoutParams
 
-        var dest =
-            route.optJSONObject("route").optJSONObject("dest").optString(Shared.language)
+        var dest = route.optJSONObject("route").optJSONObject("dest").optString(Shared.language)
         if (Shared.language == "en") {
             dest = StringUtils.capitalize(dest)
         }
         destTextView.text = (if (Shared.language == "en") "To " else "往").plus(dest)
         destTextView.setTextColor(color)
-        destTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, StringUtils.scaledSize(15F, instance))
+        destTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(15F, instance))
         table.addView(tr)
+
+        val baseline = View(instance)
+        baseline.layoutParams = TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, 1)
+        baseline.setBackgroundColor(Color(0xFF333333).toArgb())
+        table.addView(baseline)
     }
     val scrollView: ScrollView = instance.findViewById(R.id.route_list_scroll)
     scrollView.requestFocus()

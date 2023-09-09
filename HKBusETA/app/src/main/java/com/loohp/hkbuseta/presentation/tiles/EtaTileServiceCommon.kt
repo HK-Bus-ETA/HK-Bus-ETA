@@ -28,6 +28,7 @@ import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import com.loohp.hkbuseta.presentation.utils.UnitUtils
 import com.loohp.hkbuseta.presentation.utils.adjustBrightness
+import com.loohp.hkbuseta.presentation.utils.clampSp
 import org.json.JSONObject
 import java.util.Date
 import java.util.Timer
@@ -45,7 +46,7 @@ class EtaTileServiceCommon {
         private const val RESOURCES_VERSION = "0"
 
         private fun targetWidth(context: Context, padding: Int): Int {
-            return ScreenSizeUtils.getScreenWidth(context) - UnitUtils.dpToPixels(context, padding * 2).roundToInt()
+            return ScreenSizeUtils.getScreenWidth(context) - UnitUtils.dpToPixels(context, (padding * 2).toFloat()).roundToInt()
         }
 
         private fun pleaseWait(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
@@ -285,7 +286,7 @@ class EtaTileServiceCommon {
                     FontStyle.Builder()
                         .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.findOptimalSp(context, text, targetWidth(context, 35), 2, 1F, 17F)).build()
+                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 35), 2, 1F, 17F), dpMax = 18F)).build()
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -303,7 +304,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.findOptimalSp(context, name, targetWidth(context, 35), 1, 1F, 11F)).build()
+                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.findOptimalSp(context, name, targetWidth(context, 35), 1, 1F, 11F), dpMax = 12F)).build()
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -317,7 +318,7 @@ class EtaTileServiceCommon {
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
             val maxLines = if (singleLine) 1 else 2
-            val textSize = StringUtils.findOptimalSp(context, text, targetWidth(context, 20), maxLines, 1F, maxTextSize)
+            val textSize = clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 20), maxLines, 1F, maxTextSize), dpMax = maxTextSize + 1F)
 
             return LayoutElementBuilders.Text.Builder()
                 //.setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
@@ -342,7 +343,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(9F, context)).build()
+                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.scaledSize(9F, context), dpMax = 10F)).build()
                         ).build()
                 ).build()
         }

@@ -1,11 +1,11 @@
 package com.loohp.hkbuseta.presentation
 
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.TypedValue
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
 import android.widget.TableLayout
@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.wear.compose.material.MaterialTheme
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.presentation.shared.Registry
@@ -80,7 +82,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
         val stopId = entry.stopId
         val stop = entry.stop
 
-        val color = if (entry.serviceType == 1) Color.WHITE else 0xFF9E9E9E.toInt()
+        val color = (if (entry.serviceType == 1) Color.White else Color(0xFF9E9E9E)).toArgb()
 
         val tr = TableRow(instance)
         tr.layoutParams = TableRow.LayoutParams(
@@ -111,7 +113,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
         tr.addView(indexTextView);
         indexTextView.text = "".plus(i).plus(". ")
         indexTextView.setTextColor(color)
-        indexTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, StringUtils.scaledSize(15F, instance))
+        indexTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(15F, instance))
         val layoutParams: ViewGroup.LayoutParams = indexTextView.layoutParams
         layoutParams.width = (30 * instance.resources.displayMetrics.density).roundToInt()
         indexTextView.layoutParams = layoutParams
@@ -135,8 +137,13 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
         }
         stopTextView.text = stopStr
         stopTextView.setTextColor(color)
-        stopTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, StringUtils.scaledSize(15F, instance))
+        stopTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(15F, instance))
         table.addView(tr)
+
+        val baseline = View(instance)
+        baseline.layoutParams = TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, 1)
+        baseline.setBackgroundColor(Color(0xFF333333).toArgb())
+        table.addView(baseline)
 
         if (route.has("origin")) {
             val origin = route.optJSONObject("origin")

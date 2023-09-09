@@ -64,10 +64,11 @@ import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
+import com.loohp.hkbuseta.presentation.utils.clamp
+import com.loohp.hkbuseta.presentation.utils.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.util.Collections
 import kotlin.math.absoluteValue
 
 
@@ -146,9 +147,11 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                             indicatorThickness = 2.dp,
                             padding = PaddingValues(2.dp, (-6).dp, 2.dp, (-6).dp)
                         )
-                    ).onRotaryScrollEvent {
+                    )
+                    .onRotaryScrollEvent {
                         scope.launch {
-                            val amount = scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
+                            val amount =
+                                scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
                             if (amount.absoluteValue == 0F && scroll.canScrollBackward != scroll.canScrollForward) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
@@ -282,8 +285,8 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
             maxLines = 2,
             fontWeight = FontWeight(900),
             fontSizeRange = FontSizeRange(
-                min = StringUtils.scaledSize(1, instance).sp,
-                max = StringUtils.scaledSize(17, instance).sp,
+                min = StringUtils.scaledSize(1, instance).dp.sp,
+                max = StringUtils.scaledSize(17, instance).sp.clamp(max = 18.dp)
             )
         )
     } else {
@@ -301,8 +304,8 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
             maxLines = 2,
             fontWeight = FontWeight(900),
             fontSizeRange = FontSizeRange(
-                min = StringUtils.scaledSize(1, instance).sp,
-                max = StringUtils.scaledSize(17, instance).sp,
+                min = StringUtils.scaledSize(1, instance).dp.sp,
+                max = StringUtils.scaledSize(17, instance).sp.clamp(max = 18.dp)
             )
         )
     }
@@ -327,8 +330,8 @@ fun SubTitle(destName: JSONObject, lat: Double, lng: Double, instance: EtaActivi
         text = name,
         maxLines = 1,
         fontSizeRange = FontSizeRange(
-            min = StringUtils.scaledSize(1, instance).sp,
-            max = StringUtils.scaledSize(11, instance).sp,
+            min = StringUtils.scaledSize(1, instance).dp.sp,
+            max = StringUtils.scaledSize(11, instance).sp.clamp(max = 12.dp)
         )
     )
 }
@@ -343,6 +346,7 @@ fun EtaText(lines: ETAQueryResult, seq: Int, instance: EtaActivity) {
             .padding(20.dp, 0.dp)
             .basicMarquee(iterations = Int.MAX_VALUE),
         textAlign = TextAlign.Center,
+        fontSize = StringUtils.scaledSize(16, instance).sp.clamp(max = 17.dp),
         color = MaterialTheme.colors.primary,
         maxLines = 1,
         text = StringUtilsKt.toAnnotatedString(HtmlCompat.fromHtml(lines.lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT))
