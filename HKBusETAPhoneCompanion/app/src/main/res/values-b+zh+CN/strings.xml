@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">香港巴士預報 (Wear OS)</string>
+    <string name="description_1">本手機配套應用程式的存在是為了讓你更輕鬆找到 香港巴士預報 從而下載到WearOS手錶上</string>
+    <string name="description_2">所有功能都已經包含在WearOS手錶應用程式中 你可以隨時移除此手機配套應用程式</string>
+    <string name="download_description">如果您尚未在手錶上下載 香港巴士預報 歡迎點擊下面按鈕！</string>
+    <string name="download">Google Play 下載</string>
+</resources>

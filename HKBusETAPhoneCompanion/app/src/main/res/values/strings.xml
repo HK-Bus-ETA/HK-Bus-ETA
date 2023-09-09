@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">HK Bus ETA (Wear OS)</string>
+    <string name="description_1">This phone companion app was created for you to easily find and download this application to your WearOS devices.</string>
+    <string name="description_2">All functionalities are contained inside the WearOS app! You are free to uninstall this phone companion app.</string>
+    <string name="download_description">If you haven\'t already downloaded HK Bus ETA on your watch, click the button below!</string>
+    <string name="download">Download on Google Play</string>
+</resources>
