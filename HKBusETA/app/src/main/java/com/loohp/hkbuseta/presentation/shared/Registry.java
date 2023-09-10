@@ -1,9 +1,6 @@
 package com.loohp.hkbuseta.presentation.shared;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.NetworkCapabilities;
 import android.util.Log;
 import android.util.Pair;
 
@@ -20,6 +17,7 @@ import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceSeven;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceSix;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceThree;
 import com.loohp.hkbuseta.presentation.tiles.EtaTileServiceTwo;
+import com.loohp.hkbuseta.presentation.utils.ConnectionUtils;
 import com.loohp.hkbuseta.presentation.utils.HTTPRequestUtils;
 import com.loohp.hkbuseta.presentation.utils.IntUtils;
 import com.loohp.hkbuseta.presentation.utils.JsonUtils;
@@ -35,6 +33,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -62,16 +61,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class Registry {
-
-    @SuppressLint("InlinedApi")
-    public static final List<Integer> NETWORK_CAPABILITIES = Arrays.asList(
-            NetworkCapabilities.TRANSPORT_CELLULAR,
-            NetworkCapabilities.TRANSPORT_WIFI,
-            NetworkCapabilities.TRANSPORT_BLUETOOTH,
-            NetworkCapabilities.TRANSPORT_ETHERNET,
-            NetworkCapabilities.TRANSPORT_VPN,
-            NetworkCapabilities.TRANSPORT_USB
-    );
 
     private static Registry INSTANCE = null;
 
@@ -320,21 +309,6 @@ public class Registry {
         return currentTyphoonSignalId;
     }
 
-    public static int getConnectionType(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm != null) {
-            NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
-            if (capabilities != null) {
-                for (int type : NETWORK_CAPABILITIES) {
-                    if (capabilities.hasTransport(type)) {
-                        return type;
-                    }
-                }
-            }
-        }
-        return -1;
-    }
-
     private void ensureData(Context context) throws IOException {
         if (state.equals(State.READY)) {
             return;
@@ -370,10 +344,10 @@ public class Registry {
 
         Thread thread = new Thread(() -> {
             try {
-                int connectionType = getConnectionType(context);
+                ConnectionUtils.ConnectionType connectionType = ConnectionUtils.getConnectionType(context);
 
                 boolean cached = false;
-                String checksum = connectionType < 0 ? null : HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/checksum.md5");
+                String checksum = connectionType.hasConnection() ? HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/checksum.md5") : null;
                 if (files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_SHEET_FILE_NAME) && files.contains(BUS_ROUTE_FILE_NAME) && files.contains(KMB_ROUTE_FILE_NAME) && files.contains(CTB_ROUTE_FILE_NAME) && files.contains(NLB_ROUTE_FILE_NAME) && files.contains(MTR_BUS_ROUTE_FILE_NAME) && files.contains(MTR_BUS_STOP_ALIAS_FILE_NAME) && files.contains(GMB_ROUTE_FILE_NAME)) {
                     if (checksum == null) {
                         cached = true;
@@ -429,7 +403,7 @@ public class Registry {
                         throw new RuntimeException(e);
                     }
                     state = State.READY;
-                } else if (connectionType < 0) {
+                } else if (!connectionType.hasConnection()) {
                     state = State.ERROR;
                 } else {
                     state = State.UPDATING;
@@ -977,12 +951,13 @@ public class Registry {
             }
 
             List<JSONObject> routes = new ArrayList<>(nearbyRoutes.values());
-            int hour = (ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong")).getHour() + 8) % 24;
+            ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
+            int hour = hongKongTime.getHour();
             boolean isNight = hour >= 1 && hour < 5;
-            String weekday = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong")).getDayOfWeek().toString();
-            String date = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong")).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            DayOfWeek weekday = hongKongTime.getDayOfWeek();
+            String date = hongKongTime.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-            boolean isHoliday = weekday.equals("Saturday") || weekday.equals("Sunday") || JsonUtils.contains(DATA_SHEET.optJSONArray("holidays"), date);
+            boolean isHoliday = weekday.equals(DayOfWeek.SATURDAY) || weekday.equals(DayOfWeek.SUNDAY) || JsonUtils.contains(DATA_SHEET.optJSONArray("holidays"), date);
 
             routes.sort((a, b) -> {
                 String pa = String.valueOf(a.optJSONObject("route").optString("route").charAt(0));
@@ -1135,7 +1110,7 @@ public class Registry {
     }
 
     public static ETAQueryResult getEta(String stopId, String co, JSONObject route, Context context) {
-        if (getConnectionType(context) < 0) {
+        if (!ConnectionUtils.getConnectionType(context).hasConnection()) {
             return ETAQueryResult.CONNECTION_ERROR;
         }
         int elementFontSize = 25;

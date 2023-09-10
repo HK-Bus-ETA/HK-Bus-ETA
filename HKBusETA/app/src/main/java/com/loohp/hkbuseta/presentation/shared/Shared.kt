@@ -1,6 +1,8 @@
 package com.loohp.hkbuseta.presentation.shared
 
 import android.content.Context
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -10,7 +12,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
@@ -18,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
+import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import kotlinx.coroutines.delay
 import org.json.JSONObject
@@ -35,7 +40,7 @@ class Shared {
         }
 
         @Composable
-        fun LoadingLabel(language: String, instance: Context) {
+        fun LoadingLabel(language: String, includeImage: Boolean, instance: Context) {
             var state by remember { mutableStateOf(false) }
 
             LaunchedEffect (Unit) {
@@ -47,11 +52,11 @@ class Shared {
                 }
             }
 
-            LoadingLabelText(state, language, instance)
+            LoadingLabelText(state, language, includeImage, instance)
         }
 
         @Composable
-        private fun LoadingLabelText(updating: Boolean, language: String, instance: Context) {
+        private fun LoadingLabelText(updating: Boolean, language: String, includeImage: Boolean, instance: Context) {
             if (updating) {
                 Text(
                     modifier = Modifier.fillMaxWidth(),
@@ -69,6 +74,18 @@ class Shared {
                     text = if (language == "en") "Might take several minutes" else "可能需要幾分鐘"
                 )
             } else {
+                if (includeImage) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Image(
+                            modifier = Modifier.size(StringUtils.scaledSize(50, instance).dp).align(Alignment.Center),
+                            painter = painterResource(R.mipmap.icon_full_smaller),
+                            contentDescription = instance.resources.getString(R.string.app_name)
+                        )
+                    }
+                    Spacer(modifier = Modifier.size(10.dp))
+                }
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,

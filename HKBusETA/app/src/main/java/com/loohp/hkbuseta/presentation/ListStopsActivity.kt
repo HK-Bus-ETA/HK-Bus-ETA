@@ -11,6 +11,7 @@ import android.widget.ScrollView
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -21,6 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.wear.compose.material.MaterialTheme
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.presentation.shared.Registry
@@ -31,7 +34,7 @@ import org.json.JSONObject
 import kotlin.math.roundToInt
 
 
-class StopsActivity : ComponentActivity() {
+class ListStopsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +46,7 @@ class StopsActivity : ComponentActivity() {
 }
 
 @Composable
-fun StopsPage(instance: StopsActivity, route: JSONObject) {
+fun StopsPage(instance: ListStopsActivity, route: JSONObject) {
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -64,7 +67,9 @@ fun StopsPage(instance: StopsActivity, route: JSONObject) {
 }
 
 @Composable
-fun MainElement(instance: StopsActivity, route: JSONObject) {
+fun MainElement(instance: ListStopsActivity, route: JSONObject) {
+    val haptic = LocalHapticFeedback.current
+
     instance.setContentView(R.layout.stop_list)
     val table: TableLayout = instance.findViewById(R.id.stop_list)
     table.removeAllViews()
@@ -99,16 +104,7 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
 
         val padding = (StringUtils.scaledSize(7.5F, instance) * instance.resources.displayMetrics.density).roundToInt()
         tr.setPadding(0, padding, 0, padding)
-        val stopIndex = i
-        tr.setOnClickListener {
-            val intent = Intent(instance, EtaActivity::class.java)
-            intent.putExtra("stopId", stopId)
-            intent.putExtra("co", co)
-            intent.putExtra("index", stopIndex)
-            intent.putExtra("stop", stop.toString())
-            intent.putExtra("route", route.optJSONObject("route").toString())
-            instance.startActivity(intent)
-        }
+
         val indexTextView = TextView(instance)
         tr.addView(indexTextView);
         indexTextView.text = "".plus(i).plus(". ")
@@ -139,6 +135,25 @@ fun MainElement(instance: StopsActivity, route: JSONObject) {
         stopTextView.setTextColor(color)
         stopTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(15F, instance))
         table.addView(tr)
+
+        val stopIndex = i
+        tr.setOnClickListener {
+            val intent = Intent(instance, EtaActivity::class.java)
+            intent.putExtra("stopId", stopId)
+            intent.putExtra("co", co)
+            intent.putExtra("index", stopIndex)
+            intent.putExtra("stop", stop.toString())
+            intent.putExtra("route", route.optJSONObject("route").toString())
+            instance.startActivity(intent)
+        }
+        tr.setOnLongClickListener {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            instance.runOnUiThread {
+                val text = "".plus(stopIndex).plus(". ").plus(stopStr)
+                Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+            }
+            return@setOnLongClickListener true
+        }
 
         val baseline = View(instance)
         baseline.layoutParams = TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, 1)

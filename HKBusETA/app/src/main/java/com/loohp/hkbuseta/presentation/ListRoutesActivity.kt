@@ -10,6 +10,7 @@ import android.widget.ScrollView
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -20,6 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.wear.compose.material.MaterialTheme
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.presentation.shared.Shared
@@ -31,7 +34,7 @@ import org.json.JSONObject
 import kotlin.math.roundToInt
 
 
-class ListRouteActivity : ComponentActivity() {
+class ListRoutesActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +47,7 @@ class ListRouteActivity : ComponentActivity() {
 }
 
 @Composable
-fun ListRoutePage(instance: ListRouteActivity, result: List<JSONObject>) {
+fun ListRoutePage(instance: ListRoutesActivity, result: List<JSONObject>) {
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -65,7 +68,9 @@ fun ListRoutePage(instance: ListRouteActivity, result: List<JSONObject>) {
 }
 
 @Composable
-fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
+fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
+    val haptic = LocalHapticFeedback.current
+
     instance.setContentView(R.layout.route_list)
     val table: TableLayout = instance.findViewById(R.id.route_list)
     table.removeAllViews()
@@ -94,14 +99,11 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
 
         val padding = (StringUtils.scaledSize(7.5F, instance) * instance.resources.displayMetrics.density).roundToInt()
         tr.setPadding(0, padding, 0, padding)
-        tr.setOnClickListener {
-            val intent = Intent(instance, StopsActivity::class.java)
-            intent.putExtra("route", route.toString())
-            instance.startActivity(intent)
-        }
+
         val routeTextView = TextView(instance)
-        tr.addView(routeTextView);
-        routeTextView.text = route.optJSONObject("route").optString("route")
+        tr.addView(routeTextView)
+        val routeNumber = route.optJSONObject("route").optString("route")
+        routeTextView.text = routeNumber
         routeTextView.setTextColor(color)
         routeTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(20F, instance))
         val routeTextLayoutParams: ViewGroup.LayoutParams = routeTextView.layoutParams
@@ -127,7 +129,8 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
         if (Shared.language == "en") {
             dest = StringUtils.capitalize(dest)
         }
-        destTextView.text = (if (Shared.language == "en") "To " else "往").plus(dest)
+        dest = (if (Shared.language == "en") "To " else "往").plus(dest)
+        destTextView.text = dest
         destTextView.setTextColor(color)
         destTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(15F, instance))
         table.addView(tr)
@@ -136,6 +139,38 @@ fun MainElement(instance: ListRouteActivity, result: List<JSONObject>) {
         baseline.layoutParams = TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, 1)
         baseline.setBackgroundColor(Color(0xFF333333).toArgb())
         table.addView(baseline)
+
+        tr.setOnClickListener {
+            val intent = Intent(instance, ListStopsActivity::class.java)
+            intent.putExtra("route", route.toString())
+            instance.startActivity(intent)
+        }
+        tr.setOnLongClickListener {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            instance.runOnUiThread {
+                val text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(if (Shared.language == "en") {
+                    when (route.optString("co")) {
+                        "kmb" -> "KMB"
+                        "ctb" -> "CTB"
+                        "nlb" -> "NLB"
+                        "mtr-bus" -> "MTR-Bus"
+                        "gmb" -> "GMB"
+                        else -> "???"
+                    }
+                } else {
+                    when (route.optString("co")) {
+                        "kmb" -> "九巴"
+                        "ctb" -> "城巴"
+                        "nlb" -> "嶼巴"
+                        "mtr-bus" -> "港鐵巴士"
+                        "gmb" -> "專線小巴"
+                        else -> "???"
+                    }
+                }).plus(")")
+                Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+            }
+            return@setOnLongClickListener true
+        }
     }
     val scrollView: ScrollView = instance.findViewById(R.id.route_list_scroll)
     scrollView.requestFocus()

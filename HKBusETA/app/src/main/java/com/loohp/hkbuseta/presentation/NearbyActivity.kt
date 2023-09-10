@@ -173,7 +173,7 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
             if (list.isEmpty()) {
                 NoNearbyText(result.closestStop, result.closestDistance, instance)
             } else {
-                val intent = Intent(instance, ListRouteActivity::class.java)
+                val intent = Intent(instance, ListRoutesActivity::class.java)
                 intent.putExtra("result", JsonUtils.fromCollection(list).toString())
                 instance.startActivity(intent)
                 instance.finish()

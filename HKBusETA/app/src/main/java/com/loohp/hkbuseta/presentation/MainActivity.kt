@@ -98,9 +98,9 @@ fun Loading(instance: MainActivity) {
                 .padding(20.dp, 0.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Shared.LoadingLabel("zh", instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-            Shared.LoadingLabel("en", instance)
+            Shared.LoadingLabel("zh", true, instance)
+            Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+            Shared.LoadingLabel("en", false, instance)
         }
     }
 }

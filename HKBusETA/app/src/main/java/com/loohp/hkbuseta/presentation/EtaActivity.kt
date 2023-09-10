@@ -111,7 +111,12 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
 
     if (swipe.currentValue) {
         instance.runOnUiThread {
-            Toast.makeText(instance, if (Shared.language == "en") "Nearby Interchange Routes" else "附近轉乘路線", Toast.LENGTH_LONG).show()
+            val text = if (Shared.language == "en") {
+                "Nearby Interchange Routes of ".plus(stop.optJSONObject("name").optString("en"))
+            } else {
+                "".plus(stop.optJSONObject("name").optString("zh")).plus(" 附近轉乘路線")
+            }
+            Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
         }
         val intent = Intent(instance, NearbyActivity::class.java)
         intent.putExtra("lat", stop.optJSONObject("location").optDouble("lat"))

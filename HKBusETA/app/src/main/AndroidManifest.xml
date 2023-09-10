@@ -63,13 +63,13 @@
         </activity>
 
         <activity
-            android:name=".presentation.ListRouteActivity"
+            android:name=".presentation.ListRoutesActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
 
         <activity
-            android:name=".presentation.StopsActivity"
+            android:name=".presentation.ListStopsActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>

@@ -200,7 +200,7 @@ fun handleInput(instance: SearchActivity, state: MutableState<Pair<String, Pair<
     if (input == '/') {
         val result = Registry.getInstance(instance).findRoutes(originalText)
         if (result != null && result.isNotEmpty()) {
-            val intent = Intent(instance, ListRouteActivity::class.java)
+            val intent = Intent(instance, ListRoutesActivity::class.java)
             intent.putExtra("result", JsonUtils.fromCollection(result).toString())
             instance.startActivity(intent)
         }
