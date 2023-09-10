@@ -486,7 +486,7 @@ public class Registry {
                         pw.flush();
                     }
 
-                    DATA_SHEET = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/hk-bus-crawling/gh-pages/routeFareList.json");
+                    DATA_SHEET = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/hk-bus-crawling/gh-pages/routeFareList.min.json");
 
                     try {
                         JSONObject a = DATA_SHEET.optJSONObject("stopList").optJSONObject("AC1FD9BDD09D1DD6").optJSONObject("name");
@@ -868,7 +868,7 @@ public class Registry {
         }
     }
 
-    public NearbyRoutesResult getNearbyRoutes(double lat, double lng) {
+    public NearbyRoutesResult getNearbyRoutes(double lat, double lng, Set<String> excludedRouteNumbers) {
         try {
             //lat = 22.475977635712525;
             //lng = 114.15532485241508;
@@ -923,11 +923,16 @@ public class Registry {
                 for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
                     String key = itr.next();
                     JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                    boolean isKmb = data.has("bound") && data.optJSONObject("bound").has("kmb") && JsonUtils.contains((JSONArray) data.optJSONObject("stops").optJSONArray("kmb"), stopId);
-                    boolean isCtb = data.has("bound") && data.optJSONObject("bound").has("ctb") && JsonUtils.contains((JSONArray) data.optJSONObject("stops").optJSONArray("ctb"), stopId);
-                    boolean isNlb = data.has("bound") && data.optJSONObject("bound").has("nlb") && JsonUtils.contains((JSONArray) data.optJSONObject("stops").optJSONArray("nlb"), stopId);
-                    boolean isMtrBus = data.has("bound") && data.optJSONObject("bound").has("mtr-bus") && JsonUtils.contains((JSONArray) data.optJSONObject("stops").optJSONArray("mtr-bus"), stopId);
-                    boolean isGmb = data.has("bound") && data.optJSONObject("bound").has("gmb") && JsonUtils.contains((JSONArray) data.optJSONObject("stops").optJSONArray("gmb"), stopId);
+
+                    if (excludedRouteNumbers.contains(data.optString("route"))) {
+                        continue;
+                    }
+
+                    boolean isKmb = data.has("bound") && data.optJSONObject("bound").has("kmb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("kmb"), stopId);
+                    boolean isCtb = data.has("bound") && data.optJSONObject("bound").has("ctb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("ctb"), stopId);
+                    boolean isNlb = data.has("bound") && data.optJSONObject("bound").has("nlb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("nlb"), stopId);
+                    boolean isMtrBus = data.has("bound") && data.optJSONObject("bound").has("mtr-bus") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("mtr-bus"), stopId);
+                    boolean isGmb = data.has("bound") && data.optJSONObject("bound").has("gmb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("gmb"), stopId);
 
                     if (isKmb || isCtb || isNlb || isMtrBus || isGmb) {
                         String co = isKmb ? "kmb" : (isCtb ? "ctb" : (isNlb ? "nlb" : (isMtrBus ? "mtr-bus" : "gmb")));
@@ -1039,12 +1044,12 @@ public class Registry {
 
         private final List<JSONObject> result;
         private final JSONObject closestStop;
-        private final double cloestDistance;
+        private final double closestDistance;
 
-        public NearbyRoutesResult(List<JSONObject> result, JSONObject closestStop, double cloestDistance) {
+        public NearbyRoutesResult(List<JSONObject> result, JSONObject closestStop, double closestDistance) {
             this.result = result;
             this.closestStop = closestStop;
-            this.cloestDistance = cloestDistance;
+            this.closestDistance = closestDistance;
         }
 
         public List<JSONObject> getResult() {
@@ -1055,8 +1060,8 @@ public class Registry {
             return closestStop;
         }
 
-        public double getCloestDistance() {
-            return cloestDistance;
+        public double getClosestDistance() {
+            return closestDistance;
         }
     }
 

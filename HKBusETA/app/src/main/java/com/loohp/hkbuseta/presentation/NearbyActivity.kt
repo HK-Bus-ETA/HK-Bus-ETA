@@ -1,7 +1,6 @@
 package com.loohp.hkbuseta.presentation
 
 import android.content.Intent
-import android.location.Location
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,7 +25,6 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.google.android.gms.tasks.Task
 import com.loohp.hkbuseta.presentation.shared.Registry
 import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
@@ -43,14 +41,28 @@ class NearbyActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        var location: LocationResult? = null
+        var exclude: Set<String> = emptySet()
+        if (intent.extras != null) {
+            if (intent.extras!!.containsKey("lat") && intent.extras!!.containsKey("lng")) {
+                val lat = intent.extras!!.getDouble("lat")
+                val lng = intent.extras!!.getDouble("lng")
+                location = LocationResult.fromLatLng(lat, lng)
+            }
+            if (intent.extras!!.containsKey("exclude")) {
+                exclude = HashSet(intent.extras!!.getStringArrayList("exclude")!!)
+            }
+        }
+
         setContent {
-            NearbyPage(this)
+            NearbyPage(location, exclude, this)
         }
     }
 }
 
 @Composable
-fun NearbyPage(instance: NearbyActivity) {
+fun NearbyPage(location: LocationResult?, exclude: Set<String>, instance: NearbyActivity) {
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -66,20 +78,24 @@ fun NearbyPage(instance: NearbyActivity) {
                 .padding(20.dp, 0.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            MainElement(instance)
+            MainElement(location, exclude, instance)
         }
     }
 }
 
 @Composable
-fun WaitingText(instance: NearbyActivity) {
+fun WaitingText(usingGps: Boolean, instance: NearbyActivity) {
     Text(
         modifier = Modifier
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
-        text = if (Shared.language == "en") "Locating..." else "正在讀取你的位置..."
+        text = if (usingGps) {
+            if (Shared.language == "en") "Locating..." else "正在讀取你的位置..."
+        } else {
+            if (Shared.language == "en") "Searching Nearby..." else "正在搜尋附近路線..."
+        }
     )
 }
 
@@ -129,37 +145,41 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
 }
 
 @Composable
-fun MainElement(instance: NearbyActivity) {
-    var task: LocationResult? by remember { mutableStateOf(null) }
+fun MainElement(location: LocationResult?, exclude: Set<String>, instance: NearbyActivity) {
+    var state by remember { mutableStateOf(false) }
+    var result: Registry.NearbyRoutesResult? by remember { mutableStateOf(null) }
 
     LaunchedEffect (Unit) {
         ForkJoinPool.commonPool().execute {
-            task = LocationUtils.getGPSLocation(instance).get()
+            val locationResult = location?: LocationUtils.getGPSLocation(instance).get()
+            if (locationResult.isSuccess) {
+                val loc = locationResult.location
+                result = Registry.getInstance(instance).getNearbyRoutes(loc!!.latitude, loc.longitude, exclude)
+            }
+            state = true
         }
     }
 
-    EvaluatedElement(task, instance)
+    EvaluatedElement(state, result, location == null, instance)
 }
 
 @Composable
-fun EvaluatedElement(task: LocationResult?, instance: NearbyActivity) {
-    if (task == null) {
-        WaitingText(instance)
-    } else {
-        var loc: Location? = null
-        if (task.isSuccess && task.location.also { loc = it } != null) {
-            val result = Registry.getInstance(instance).getNearbyRoutes(loc!!.latitude, loc!!.longitude)
+fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, usingGps: Boolean, instance: NearbyActivity) {
+    if (state) {
+        if (result == null) {
+            FailedText(instance)
+        } else {
             val list = result.result
             if (list.isEmpty()) {
-                NoNearbyText(result.closestStop, result.cloestDistance, instance)
+                NoNearbyText(result.closestStop, result.closestDistance, instance)
             } else {
                 val intent = Intent(instance, ListRouteActivity::class.java)
                 intent.putExtra("result", JsonUtils.fromCollection(list).toString())
                 instance.startActivity(intent)
                 instance.finish()
             }
-        } else {
-            FailedText(instance)
         }
+    } else {
+        WaitingText(usingGps, instance)
     }
 }

@@ -7,11 +7,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.coerceAtMost
+import kotlin.math.absoluteValue
 
 
 inline val Dp.sp: TextUnit @Composable get() = with (LocalDensity.current) { this@sp.toSp() }
 
 inline val TextUnit.dp: Dp @Composable get() = with (LocalDensity.current) { this@dp.toDp() }
+
+inline val Float.equivalentDp: Dp @Composable get() = with (LocalDensity.current) { this@equivalentDp.toDp() }
+
+fun Float.sameValueAs(other: Float) : Boolean {
+    return (this - other).absoluteValue < 0.00001
+}
 
 
 @Composable

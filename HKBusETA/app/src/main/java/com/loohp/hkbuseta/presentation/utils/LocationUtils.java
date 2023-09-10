@@ -85,6 +85,13 @@ public class LocationUtils {
             return new LocationResult(task.getResult());
         }
 
+        public static LocationResult fromLatLng(double lat, double lng) {
+            Location location = new Location("custom");
+            location.setLatitude(lat);
+            location.setLongitude(lng);
+            return new LocationResult(location);
+        }
+
         public static LocationResult ofNullable(Location location) {
             return new LocationResult(location);
         }

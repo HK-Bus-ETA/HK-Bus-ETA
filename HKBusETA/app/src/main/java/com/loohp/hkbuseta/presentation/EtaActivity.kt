@@ -13,8 +13,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -51,8 +54,11 @@ import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.ExperimentalWearMaterialApi
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import androidx.wear.compose.material.rememberSwipeableState
+import androidx.wear.compose.material.swipeable
 import com.loohp.hkbuseta.presentation.compose.AutoResizeText
 import com.loohp.hkbuseta.presentation.compose.FontSizeRange
 import com.loohp.hkbuseta.presentation.compose.ScrollBarConfig
@@ -61,10 +67,14 @@ import com.loohp.hkbuseta.presentation.shared.Registry
 import com.loohp.hkbuseta.presentation.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
+import com.loohp.hkbuseta.presentation.utils.ActivityUtils
 import com.loohp.hkbuseta.presentation.utils.RemoteActivityUtils
+import com.loohp.hkbuseta.presentation.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtilsKt
 import com.loohp.hkbuseta.presentation.utils.clamp
+import com.loohp.hkbuseta.presentation.utils.equivalentDp
+import com.loohp.hkbuseta.presentation.utils.sameValueAs
 import com.loohp.hkbuseta.presentation.utils.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -90,95 +100,131 @@ class EtaActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalWearMaterialApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity) {
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val swipe = rememberSwipeableState(initialValue = false)
+    var swiping by remember { mutableStateOf(swipe.offset.value != 0F) }
+
+    if (swipe.currentValue) {
+        instance.runOnUiThread {
+            Toast.makeText(instance, if (Shared.language == "en") "Nearby Interchange Routes" else "附近轉乘路線", Toast.LENGTH_LONG).show()
+        }
+        val intent = Intent(instance, NearbyActivity::class.java)
+        intent.putExtra("lat", stop.optJSONObject("location").optDouble("lat"))
+        intent.putExtra("lng", stop.optJSONObject("location").optDouble("lng"))
+        intent.putExtra("exclude", arrayListOf(route.optString("route")))
+        ActivityUtils.startActivity(instance, intent) { _ ->
+            scope.launch {
+                swipe.snapTo(false)
+            }
+        }
+    }
+    if (!swiping && !swipe.offset.value.sameValueAs(0F)) {
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        swiping = true
+    } else if (swipe.offset.value.sameValueAs(0F)) {
+        swiping = false
+    }
+
     HKBusETATheme {
-        Column(
+        Box (
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colors.background),
-            verticalArrangement = Arrangement.Top
+                .offset(0.dp, swipe.offset.value.coerceAtMost(0F).equivalentDp)
+                .swipeable(
+                    state = swipe,
+                    anchors = mapOf(0F to false, -ScreenSizeUtils.getScreenHeight(instance).toFloat() to true),
+                    orientation = Orientation.Vertical
+                )
         ) {
-            Shared.MainTime()
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            val focusRequester = remember { FocusRequester() }
-            val scroll = rememberScrollState()
-            val scope = rememberCoroutineScope()
-            val haptic = LocalHapticFeedback.current
-
-            var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
-
-            val lat = stop.optJSONObject("location").optDouble("lat")
-            val lng = stop.optJSONObject("location").optDouble("lng")
-
-            LaunchedEffect (Unit) {
-                focusRequester.requestFocus()
-                while (true) {
-                    Thread {
-                        eta = Registry.getEta(stopId, co, route, instance)
-                    }.start()
-                    delay(30000)
-                }
-            }
-
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
-            Title(index, stop.optJSONObject("name"), lat, lng, route.optString("route"), instance)
-            SubTitle(route.optJSONObject("dest"), lat, lng, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(12, instance).dp))
-            EtaText(eta, 1, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
-            EtaText(eta, 2, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
-            EtaText(eta, 3, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
-            Row(
+            Column(
                 modifier = Modifier
-                    .width(StringUtils.scaledSize(113, instance).dp)
-                    .horizontalScrollWithScrollbar(
-                        scroll,
-                        scrollbarConfig = ScrollBarConfig(
-                            indicatorThickness = 2.dp,
-                            padding = PaddingValues(2.dp, (-6).dp, 2.dp, (-6).dp)
-                        )
-                    )
-                    .onRotaryScrollEvent {
-                        scope.launch {
-                            val amount =
-                                scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
-                            if (amount.absoluteValue == 0F && scroll.canScrollBackward != scroll.canScrollForward) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            }
-                        }
-                        true
+                    .fillMaxSize()
+                    .background(MaterialTheme.colors.background),
+                verticalArrangement = Arrangement.Top
+            ) {
+                Shared.MainTime()
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val focusRequester = remember { FocusRequester() }
+                val scroll = rememberScrollState()
+
+                var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
+
+                val lat = stop.optJSONObject("location").optDouble("lat")
+                val lng = stop.optJSONObject("location").optDouble("lng")
+
+                LaunchedEffect (Unit) {
+                    focusRequester.requestFocus()
+                    while (true) {
+                        Thread {
+                            eta = Registry.getEta(stopId, co, route, instance)
+                        }.start()
+                        delay(30000)
                     }
-                    .focusRequester(
-                        focusRequester = focusRequester
-                    )
-                    .focusable(),
-                horizontalArrangement = Arrangement.Center
-            )  {
-                FavButton(1, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                FavButton(2, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                FavButton(3, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                FavButton(4, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                FavButton(5, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                FavButton(6, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                FavButton(7, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                FavButton(8, stopId, co, index, stop, route, instance)
+                }
+
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+                Title(index, stop.optJSONObject("name"), lat, lng, route.optString("route"), instance)
+                SubTitle(route.optJSONObject("dest"), lat, lng, instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(12, instance).dp))
+                EtaText(eta, 1, instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+                EtaText(eta, 2, instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+                EtaText(eta, 3, instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
+                Row(
+                    modifier = Modifier
+                        .width(StringUtils.scaledSize(113, instance).dp)
+                        .horizontalScrollWithScrollbar(
+                            scroll,
+                            scrollbarConfig = ScrollBarConfig(
+                                indicatorThickness = 2.dp,
+                                padding = PaddingValues(2.dp, (-6).dp, 2.dp, (-6).dp)
+                            )
+                        )
+                        .onRotaryScrollEvent {
+                            scope.launch {
+                                val amount =
+                                    scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
+                                if (amount.absoluteValue == 0F && scroll.canScrollBackward != scroll.canScrollForward) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                }
+                            }
+                            true
+                        }
+                        .focusRequester(
+                            focusRequester = focusRequester
+                        )
+                        .focusable(),
+                    horizontalArrangement = Arrangement.Center
+                )  {
+                    FavButton(1, stopId, co, index, stop, route, instance)
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                    FavButton(2, stopId, co, index, stop, route, instance)
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                    FavButton(3, stopId, co, index, stop, route, instance)
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                    FavButton(4, stopId, co, index, stop, route, instance)
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                    FavButton(5, stopId, co, index, stop, route, instance)
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                    FavButton(6, stopId, co, index, stop, route, instance)
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                    FavButton(7, stopId, co, index, stop, route, instance)
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                    FavButton(8, stopId, co, index, stop, route, instance)
+                }
             }
         }
     }
