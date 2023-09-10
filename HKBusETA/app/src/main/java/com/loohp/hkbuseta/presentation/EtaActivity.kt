@@ -112,7 +112,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
     if (swipe.currentValue) {
         instance.runOnUiThread {
             val text = if (Shared.language == "en") {
-                "Nearby Interchange Routes of ".plus(stop.optJSONObject("name").optString("en"))
+                "Nearby Interchange Routes of ".plus(StringUtils.capitalize(stop.optJSONObject("name").optString("en")))
             } else {
                 "".plus(stop.optJSONObject("name").optString("zh")).plus(" 附近轉乘路線")
             }
