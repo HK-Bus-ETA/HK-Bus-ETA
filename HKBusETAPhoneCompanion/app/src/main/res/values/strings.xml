@@ -1,7 +1,13 @@
 <resources>
     <string name="app_name">HK Bus ETA (Wear OS)</string>
-    <string name="description_1">This phone companion app was created for you to easily find and download this application to your WearOS devices.</string>
-    <string name="description_2">All functionalities are contained inside the WearOS app! You are free to uninstall this phone companion app.</string>
+    <string name="description_1">This phone companion app was created for you to directly open share links on the WearOS main app. (Currently supporting KMB App, Citybus App &amp; hkbus.app links)</string>
+    <string name="description_2">To do that, just use the \"Share this route\" button in one of the supported apps and click this companion app when the share menu is shown.</string>
+    <string name="description_3">All other main functionalities are contained inside the WearOS app!</string>
     <string name="download_description">If you haven\'t already downloaded HK Bus ETA on your watch, click the button below!</string>
     <string name="download">Download on Google Play</string>
+    <string name="send_label">Open on Watch</string>
+    <string name="send_no_watch">Unable to connect to watch</string>
+    <string name="send_failed">Failed to connect to watch</string>
+    <string name="send_success">Please check your watch</string>
+    <string name="send_malformed">This is not a support bus route link</string>
 </resources>

@@ -959,55 +959,32 @@ public class Registry {
 
             boolean isHoliday = weekday.equals(DayOfWeek.SATURDAY) || weekday.equals(DayOfWeek.SUNDAY) || JsonUtils.contains(DATA_SHEET.optJSONArray("holidays"), date);
 
-            routes.sort((a, b) -> {
+            routes.sort(Comparator.comparing((JSONObject a) -> {
                 String pa = String.valueOf(a.optJSONObject("route").optString("route").charAt(0));
-                String pb = String.valueOf(b.optJSONObject("route").optString("route").charAt(0));
                 String sa = String.valueOf(a.optJSONObject("route").optString("route").charAt(a.optJSONObject("route").optString("route").length() - 1));
-                String sb = String.valueOf(b.optJSONObject("route").optString("route").charAt(b.optJSONObject("route").optString("route").length() - 1));
                 int na = IntUtils.parseOrZero(a.optJSONObject("route").optString("route").replaceAll("[^0-9]", ""));
-                int nb = IntUtils.parseOrZero(b.optJSONObject("route").optString("route").replaceAll("[^0-9]", ""));
 
                 if (a.optJSONObject("route").optJSONObject("bound").has("gmb")) {
                     na += 1000;
                 }
-                if (b.optJSONObject("route").optJSONObject("bound").has("gmb")) {
-                    nb += 1000;
-                }
                 if (pa.equals("N") || a.optJSONObject("route").optString("route").equals("270S") || a.optJSONObject("route").optString("route").equals("271S") || a.optJSONObject("route").optString("route").equals("293S") || a.optJSONObject("route").optString("route").equals("701S") || a.optJSONObject("route").optString("route").equals("796S")) {
                     na -= (isNight ? 1 : -1) * 10000;
-                }
-                if (pb.equals("N") || b.optJSONObject("route").optString("route").equals("270S") || b.optJSONObject("route").optString("route").equals("271S") || b.optJSONObject("route").optString("route").equals("293S") || b.optJSONObject("route").optString("route").equals("701S") || b.optJSONObject("route").optString("route").equals("796S")) {
-                    nb -= (isNight ? 1 : -1) * 10000;
                 }
                 if (sa.equals("S") && !a.optJSONObject("route").optString("route").equals("89S") && !a.optJSONObject("route").optString("route").equals("796S")) {
                     na += 1000;
                 }
-                if (sb.equals("S") && !b.optJSONObject("route").optString("route").equals("89S") && !b.optJSONObject("route").optString("route").equals("796S")) {
-                    nb += 1000;
-                }
-                if (!isHoliday) {
-                    if (pa.equals("R") || sa.equals("R")) {
-                        na += 100000;
-                    }
-                    if (pb.equals("R") || sb.equals("R")) {
-                        nb += 100000;
-                    }
+                if (!isHoliday && (pa.equals("R") || sa.equals("R"))) {
+                    na += 100000;
                 }
                 if (!pa.matches("[0-9]") && !pa.equals("K")) {
                     na += 400;
                 }
-                if (!pb.matches("[0-9]") && pb.equals("K")) {
-                    nb += 400;
-                }
-                int diff = na - nb;
-                if (diff == 0) {
-                    diff = a.optJSONObject("route").optString("route").compareTo(b.optJSONObject("route").optString("route"));
-                }
-                if (diff == 0) {
-                    diff = IntUtils.parseOrZero(a.optJSONObject("route").optString("serviceType")) - IntUtils.parseOrZero(b.optJSONObject("route").optString("serviceType"));
-                }
-                return diff;
-            });
+                return na;
+            }).thenComparing(a -> {
+                return a.optJSONObject("route").optString("route");
+            }).thenComparing(a -> {
+                return IntUtils.parseOrZero(a.optJSONObject("route").optString("serviceType"));
+            }));
 
             return new NearbyRoutesResult(routes, closestStop, closestDistance);
         } catch (JSONException e) {

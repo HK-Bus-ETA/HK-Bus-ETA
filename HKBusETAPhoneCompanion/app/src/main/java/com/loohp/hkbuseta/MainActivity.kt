@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
@@ -70,7 +73,7 @@ fun PhoneElements(instance: MainActivity) {
         Image(
             modifier = Modifier.clickable {
                 openGooglePlay(instance)
-            },
+            }.size(100.dp),
             painter = painterResource(R.mipmap.icon),
             contentDescription = instance.resources.getString(R.string.app_name)
         )
@@ -94,47 +97,62 @@ fun PhoneElements(instance: MainActivity) {
             text = "@LoohpJames"
         )
         Spacer(modifier = Modifier.size(20.dp))
-        Text(
-            modifier = Modifier.padding(30.dp, 0.dp),
-            textAlign = TextAlign.Left,
-            color = Color.White,
-            fontSize = TextUnit(17F, TextUnitType.Sp),
-            text = instance.resources.getString(R.string.description_1)
-        )
-        Spacer(modifier = Modifier.size(20.dp))
-        Text(
-            modifier = Modifier.padding(30.dp, 0.dp),
-            textAlign = TextAlign.Left,
-            color = Color.White,
-            fontSize = TextUnit(17F, TextUnitType.Sp),
-            text = instance.resources.getString(R.string.description_2)
-        )
-        Spacer(modifier = Modifier.size(40.dp))
-        Text(
-            modifier = Modifier.padding(30.dp, 0.dp),
-            textAlign = TextAlign.Left,
-            color = Color.White,
-            fontSize = TextUnit(17F, TextUnitType.Sp),
-            text = instance.resources.getString(R.string.download_description)
-        )
-        Spacer(modifier = Modifier.size(20.dp))
-        Button(
-            onClick = {
-                openGooglePlay(instance)
-            },
-            modifier = Modifier.padding(30.dp, 0.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF636363),
-                contentColor = Color(0xFFFFFFFF)
-            ),
-            content = {
-                Text(
-                    textAlign = TextAlign.Left,
-                    color = Color.White,
-                    fontSize = TextUnit(17F, TextUnitType.Sp),
-                    text = instance.resources.getString(R.string.download)
-                )
-            }
-        )
+        Column (
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                modifier = Modifier.padding(30.dp, 0.dp),
+                textAlign = TextAlign.Left,
+                color = Color.White,
+                fontSize = TextUnit(17F, TextUnitType.Sp),
+                text = instance.resources.getString(R.string.description_1)
+            )
+            Spacer(modifier = Modifier.size(20.dp))
+            Text(
+                modifier = Modifier.padding(30.dp, 0.dp),
+                textAlign = TextAlign.Left,
+                color = Color.White,
+                fontSize = TextUnit(17F, TextUnitType.Sp),
+                text = instance.resources.getString(R.string.description_2)
+            )
+            Spacer(modifier = Modifier.size(20.dp))
+            Text(
+                modifier = Modifier.padding(30.dp, 0.dp),
+                textAlign = TextAlign.Left,
+                color = Color.White,
+                fontSize = TextUnit(17F, TextUnitType.Sp),
+                text = instance.resources.getString(R.string.description_3)
+            )
+            Spacer(modifier = Modifier.size(40.dp))
+            Text(
+                modifier = Modifier.padding(30.dp, 0.dp),
+                textAlign = TextAlign.Left,
+                color = Color.White,
+                fontSize = TextUnit(17F, TextUnitType.Sp),
+                text = instance.resources.getString(R.string.download_description)
+            )
+            Spacer(modifier = Modifier.size(20.dp))
+            Button(
+                onClick = {
+                    openGooglePlay(instance)
+                },
+                modifier = Modifier.padding(30.dp, 0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF636363),
+                    contentColor = Color(0xFFFFFFFF)
+                ),
+                content = {
+                    Text(
+                        textAlign = TextAlign.Left,
+                        color = Color.White,
+                        fontSize = TextUnit(17F, TextUnitType.Sp),
+                        text = instance.resources.getString(R.string.download)
+                    )
+                }
+            )
+            Spacer(modifier = Modifier.size(20.dp))
+        }
     }
 }
