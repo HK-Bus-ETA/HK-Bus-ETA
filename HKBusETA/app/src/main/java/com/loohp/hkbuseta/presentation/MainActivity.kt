@@ -71,6 +71,7 @@ class MainActivity : ComponentActivity() {
                                 intent.putExtra("stop", stop)
                                 intent.putExtra("route", route)
                                 startActivity(intent)
+                                finish()
                             } else if (queryRouteNumber != null) {
                                 startActivity(Intent(this@MainActivity, TitleActivity::class.java))
 
