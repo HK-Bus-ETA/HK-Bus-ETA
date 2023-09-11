@@ -348,6 +348,8 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
+        private val states: MutableMap<Int, Boolean> = ConcurrentHashMap()
+
         private fun buildLayout(favoriteIndex: Int, favouriteStopRoute: JSONObject, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             val stopName = favouriteStopRoute.optJSONObject("stop").optJSONObject("name")
             val destName = favouriteStopRoute.optJSONObject("route").optJSONObject("dest")
@@ -370,10 +372,10 @@ class EtaTileServiceCommon {
                     "mtr-bus" -> Color(0xFFAAD4FF)
                     "gmb" -> Color(0xFF36FF42)
                     else -> Color.LightGray
-                }.adjustBrightness(if (eta.hasScheduledBus()) 1F else 0.2F)
+                }.adjustBrightness(if (eta.nextScheduledBus < 0) 0.2F else 1F)
             }
 
-            return LayoutElementBuilders.Box.Builder()
+            val element = LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
                 .addContent(
@@ -478,6 +480,16 @@ class EtaTileServiceCommon {
                                 ).build()
                         ).build()
                 ).build()
+
+            return if (states.compute(favoriteIndex) { _, v -> if (v == null) false else !v }!!) {
+                element
+            } else {
+                LayoutElementBuilders.Box.Builder()
+                    .setWidth(expand())
+                    .setHeight(expand())
+                    .addContent(element)
+                    .build()
+            }
         }
 
         private fun buildSuitableElement(etaIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
@@ -499,7 +511,7 @@ class EtaTileServiceCommon {
             )
         }
 
-        fun buildTileRequest(etaIndex: Int, packageName: String, context: Context): ListenableFuture<TileBuilders.Tile> {
+        fun buildTileRequest(etaIndex: Int, packageName: String, context: TileService): ListenableFuture<TileBuilders.Tile> {
             return Futures.submit(Callable {
                 TileBuilders.Tile.Builder()
                     .setResourcesVersion(RESOURCES_VERSION)

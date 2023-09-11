@@ -15,8 +15,10 @@ fun Color.adjustBrightness(percentage: Float): Color {
     val argb = toArgb()
     val hsv = FloatArray(3)
     android.graphics.Color.RGBToHSV(argb.red, argb.green, argb.blue, hsv)
-    var value = hsv[2]
-    value *= percentage
-    hsv[2] = value.coerceAtLeast(0F).coerceAtMost(1F)
+    if (percentage > 1F) {
+        hsv[1] = (hsv[1] * (1F - (percentage - 1F))).coerceAtLeast(0F).coerceAtMost(1F)
+    } else {
+        hsv[2] = (hsv[2] * percentage).coerceAtLeast(0F).coerceAtMost(1F)
+    }
     return Color(android.graphics.Color.HSVToColor(argb.alpha, hsv))
 }

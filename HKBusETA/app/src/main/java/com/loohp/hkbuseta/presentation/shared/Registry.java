@@ -1095,7 +1095,7 @@ public class Registry {
         new Thread(() -> {
             try {
                 Map<Integer, String> lines = new HashMap<>();
-                boolean hasScheduledBus = false;
+                long nextScheduledBus = -999;
                 lines.put(1, getNoScheduledDepartureMessage(elementFontSize, null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
                 String language = Shared.Companion.getLanguage();
                 switch (co) {
@@ -1117,10 +1117,14 @@ public class Registry {
                                     if (language.equals("en")) {
                                         if (mins > 0) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         } else if (mins > -60) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         }
                                         if (!bus.optString("rmk_en").isEmpty()) {
                                             message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
@@ -1128,10 +1132,14 @@ public class Registry {
                                     } else {
                                         if (mins > 0) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         } else if (mins > -60) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         }
                                         if (!bus.optString("rmk_tc").isEmpty()) {
                                             message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
@@ -1175,10 +1183,14 @@ public class Registry {
                                     if (language.equals("en")) {
                                         if (mins > 0) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         } else if (mins > -60) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         }
                                         if (!bus.optString("rmk_en").isEmpty()) {
                                             message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
@@ -1186,10 +1198,14 @@ public class Registry {
                                     } else {
                                         if (mins > 0) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         } else if (mins > -60) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         }
                                         if (!bus.optString("rmk_tc").isEmpty()) {
                                             message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
@@ -1233,10 +1249,14 @@ public class Registry {
                             if (language.equals("en")) {
                                 if (mins > 0) {
                                     message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
-                                    hasScheduledBus = true;
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
                                 } else if (mins > -60) {
                                     message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
-                                    hasScheduledBus = true;
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
                                 }
                                 if (!variant.isEmpty()) {
                                     message += (message.isEmpty() ? variant : " (" + variant + ")");
@@ -1244,10 +1264,14 @@ public class Registry {
                             } else {
                                 if (mins > 0) {
                                     message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                    hasScheduledBus = true;
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
                                 } else if (mins > -60) {
                                     message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                    hasScheduledBus = true;
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
                                 }
                                 if (!variant.isEmpty()) {
                                     message += (message.isEmpty() ? variant : " (" + variant + ")");
@@ -1319,10 +1343,14 @@ public class Registry {
                                     if (language.equals("en")) {
                                         if (mins > 0) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         } else if (mins > -60) {
                                             message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         }
                                         if (!remark.isEmpty()) {
                                             message += (message.isEmpty() ? remark : " (" + remark + ")");
@@ -1330,10 +1358,14 @@ public class Registry {
                                     } else {
                                         if (mins > 0) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         } else if (mins > -60) {
                                             message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                            hasScheduledBus = true;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
                                         }
                                         if (!remark.isEmpty()) {
                                             message += (message.isEmpty() ? remark : " (" + remark + ")");
@@ -1397,10 +1429,14 @@ public class Registry {
                             if (language.equals("en")) {
                                 if (mins > 0) {
                                     message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
-                                    hasScheduledBus = true;
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
                                 } else if (mins > -60) {
                                     message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
-                                    hasScheduledBus = true;
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
                                 }
                                 if (!remark.isEmpty()) {
                                     message += (message.isEmpty() ? remark : " (" + remark + ")");
@@ -1408,10 +1444,14 @@ public class Registry {
                             } else {
                                 if (mins > 0) {
                                     message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                    hasScheduledBus = true;
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
                                 } else if (mins > -60) {
                                     message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                    hasScheduledBus = true;
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
                                 }
                                 if (!remark.isEmpty()) {
                                     message += (message.isEmpty() ? remark : " (" + remark + ")");
@@ -1436,7 +1476,7 @@ public class Registry {
                         break;
                     }
                 }
-                future.complete(ETAQueryResult.result(hasScheduledBus, lines));
+                future.complete(ETAQueryResult.result(nextScheduledBus > -60 ? Math.max(0, nextScheduledBus) : -1, lines));
             } catch (Throwable e) {
                 future.completeExceptionally(e);
             }
@@ -1450,21 +1490,21 @@ public class Registry {
 
     public static class ETAQueryResult {
 
-        public static final ETAQueryResult EMPTY = new ETAQueryResult(true, false, Collections.emptyMap());
+        public static final ETAQueryResult EMPTY = new ETAQueryResult(true, -1, Collections.emptyMap());
 
-        public static final ETAQueryResult CONNECTION_ERROR = new ETAQueryResult(true, false, Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"));
+        public static final ETAQueryResult CONNECTION_ERROR = new ETAQueryResult(true, -1, Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"));
 
-        public static ETAQueryResult result(boolean hasScheduledBus, Map<Integer, String> lines) {
-            return new ETAQueryResult(false, hasScheduledBus, lines);
+        public static ETAQueryResult result(long nextScheduledBus, Map<Integer, String> lines) {
+            return new ETAQueryResult(false, nextScheduledBus, lines);
         }
 
         private final boolean isConnectionError;
-        private final boolean hasScheduledBus;
+        private final long nextScheduledBus;
         private final Map<Integer, String> lines;
 
-        private ETAQueryResult(boolean isConnectionError, boolean hasScheduledBus, Map<Integer, String> lines) {
+        private ETAQueryResult(boolean isConnectionError, long nextScheduledBus, Map<Integer, String> lines) {
             this.isConnectionError = isConnectionError;
-            this.hasScheduledBus = hasScheduledBus;
+            this.nextScheduledBus = nextScheduledBus;
             this.lines = Collections.unmodifiableMap(lines);
         }
 
@@ -1472,8 +1512,8 @@ public class Registry {
             return isConnectionError;
         }
 
-        public boolean hasScheduledBus() {
-            return hasScheduledBus;
+        public long getNextScheduledBus() {
+            return nextScheduledBus;
         }
 
         public Map<Integer, String> getLines() {
@@ -1485,12 +1525,12 @@ public class Registry {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ETAQueryResult that = (ETAQueryResult) o;
-            return isConnectionError == that.isConnectionError && hasScheduledBus == that.hasScheduledBus && Objects.equals(lines, that.lines);
+            return isConnectionError == that.isConnectionError && nextScheduledBus == that.nextScheduledBus && Objects.equals(lines, that.lines);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(isConnectionError, hasScheduledBus, lines);
+            return Objects.hash(isConnectionError, nextScheduledBus, lines);
         }
     }
 

@@ -1,7 +1,6 @@
 package com.loohp.hkbuseta.presentation.tiles
 
 import androidx.wear.protolayout.ResourceBuilders
-import androidx.wear.tiles.EventBuilders.TileAddEvent
 import androidx.wear.tiles.EventBuilders.TileEnterEvent
 import androidx.wear.tiles.EventBuilders.TileLeaveEvent
 import androidx.wear.tiles.EventBuilders.TileRemoveEvent
