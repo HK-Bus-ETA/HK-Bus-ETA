@@ -200,9 +200,8 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                         )
                         .onRotaryScrollEvent {
                             scope.launch {
-                                val amount =
-                                    scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
-                                if (amount.absoluteValue == 0F && scroll.canScrollBackward != scroll.canScrollForward) {
+                                scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
+                                if (scroll.canScrollBackward != scroll.canScrollForward) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 }
                             }

@@ -63,7 +63,6 @@ class MainActivity : ComponentActivity() {
                     override fun run() {
                         if (Registry.getInstance(this@MainActivity).state == Registry.State.READY) {
                             cancel()
-                            finishAffinity()
                             if (stopId != null && co != null && stop != null && route != null) {
                                 val intent = Intent(this@MainActivity, EtaActivity::class.java)
                                 intent.putExtra("stopId", stopId)
@@ -134,8 +133,10 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
+                                finishAffinity()
                             } else {
                                 startActivity(Intent(this@MainActivity, TitleActivity::class.java))
+                                finishAffinity()
                             }
                         } else if (Registry.getInstance(this@MainActivity).state == Registry.State.ERROR) {
                             cancel()

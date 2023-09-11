@@ -168,8 +168,8 @@ fun MainElement(instance: SearchActivity) {
                         )
                         .onRotaryScrollEvent {
                             scope.launch {
-                                val amount = scroll.animateScrollBy(it.verticalScrollPixels, TweenSpec())
-                                if (amount.absoluteValue == 0F && scroll.canScrollBackward != scroll.canScrollForward) {
+                                scroll.animateScrollBy(it.verticalScrollPixels, TweenSpec())
+                                if (scroll.canScrollBackward != scroll.canScrollForward) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 }
                             }
