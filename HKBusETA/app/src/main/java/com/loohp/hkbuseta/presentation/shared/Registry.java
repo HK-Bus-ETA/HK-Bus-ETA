@@ -53,8 +53,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1482,8 +1485,11 @@ public class Registry {
             }
         }).start();
         try {
-            return future.get();
-        } catch (ExecutionException | InterruptedException e) {
+            return future.get(9, TimeUnit.SECONDS);
+        } catch (ExecutionException | InterruptedException | TimeoutException | CancellationException e) {
+            try {
+                future.cancel(true);
+            } catch (Throwable ignore) {}
             return ETAQueryResult.CONNECTION_ERROR;
         }
     }

@@ -348,8 +348,6 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private val states: MutableMap<Int, Boolean> = ConcurrentHashMap()
-
         private fun buildLayout(favoriteIndex: Int, favouriteStopRoute: JSONObject, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             val stopName = favouriteStopRoute.optJSONObject("stop").optJSONObject("name")
             val destName = favouriteStopRoute.optJSONObject("route").optJSONObject("dest")
@@ -375,7 +373,7 @@ class EtaTileServiceCommon {
                 }.adjustBrightness(if (eta.nextScheduledBus < 0) 0.2F else 1F)
             }
 
-            val element = LayoutElementBuilders.Box.Builder()
+            return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
                 .addContent(
@@ -480,16 +478,6 @@ class EtaTileServiceCommon {
                                 ).build()
                         ).build()
                 ).build()
-
-            return if (states.compute(favoriteIndex) { _, v -> if (v == null) false else !v }!!) {
-                element
-            } else {
-                LayoutElementBuilders.Box.Builder()
-                    .setWidth(expand())
-                    .setHeight(expand())
-                    .addContent(element)
-                    .build()
-            }
         }
 
         private fun buildSuitableElement(etaIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
@@ -511,7 +499,19 @@ class EtaTileServiceCommon {
             )
         }
 
+        private val states: MutableMap<Int, Boolean> = ConcurrentHashMap()
+
         fun buildTileRequest(etaIndex: Int, packageName: String, context: TileService): ListenableFuture<TileBuilders.Tile> {
+            val element = buildSuitableElement(etaIndex, packageName, context)
+            val stateElement = if (states.compute(etaIndex) { _, v -> if (v == null) false else !v }!!) {
+                element
+            } else {
+                LayoutElementBuilders.Box.Builder()
+                    .setWidth(expand())
+                    .setHeight(expand())
+                    .addContent(element)
+                    .build()
+            }
             return Futures.submit(Callable {
                 TileBuilders.Tile.Builder()
                     .setResourcesVersion(RESOURCES_VERSION)
@@ -520,7 +520,7 @@ class EtaTileServiceCommon {
                         TimelineBuilders.Timeline.Builder().addTimelineEntry(
                             TimelineBuilders.TimelineEntry.Builder().setLayout(
                                 LayoutElementBuilders.Layout.Builder().setRoot(
-                                    buildSuitableElement(etaIndex, packageName, context)
+                                    stateElement
                                 ).build()
                             ).build()
                         ).build()
