@@ -79,7 +79,6 @@ import com.loohp.hkbuseta.presentation.utils.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import kotlin.math.absoluteValue
 
 
 class EtaActivity : ComponentActivity() {
@@ -181,11 +180,11 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
                 Title(index, stop.optJSONObject("name"), lat, lng, route.optString("route"), instance)
                 SubTitle(route.optJSONObject("dest"), lat, lng, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(12, instance).dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(9, instance).dp))
                 EtaText(eta, 1, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
                 EtaText(eta, 2, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
                 EtaText(eta, 3, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
                 Row(

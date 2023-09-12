@@ -1,9 +1,13 @@
 package com.loohp.hkbuseta.presentation
 
+import android.R.attr.text
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
+import android.text.SpannableString
 import android.text.TextUtils
+import android.text.style.StyleSpan
+import android.text.style.UnderlineSpan
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
@@ -82,6 +86,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject) {
     var targetStopText: TextView? = null
     var targetDistance = 1.0
     var randomTr: TableRow? = null
+    var randomBaseline: View? = null
     var i = 1
     for (entry in Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId)) {
         val stopId = entry.stopId
@@ -172,15 +177,23 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject) {
             }
         }
         randomTr = tr
+        randomBaseline = baseline
 
         i++
     }
     val scrollView: ScrollView = instance.findViewById(R.id.stop_scroll)
     if (targetIndex >= 0 && randomTr != null) {
         scrollView.post {
-            targetIndexText!!.setTypeface(targetIndexText.typeface, Typeface.BOLD)
-            targetStopText!!.setTypeface(targetStopText.typeface, Typeface.BOLD)
-            val y = randomTr.height * targetIndex - scrollView.height / 2 + randomTr.height / 2
+            val indexSpanString = SpannableString(targetIndexText!!.text)
+            indexSpanString.setSpan(StyleSpan(Typeface.BOLD), 0, indexSpanString.length, 0)
+            targetIndexText.text = indexSpanString
+
+            val stopSpanString = SpannableString(targetStopText!!.text)
+            stopSpanString.setSpan(StyleSpan(Typeface.BOLD), 0, stopSpanString.length, 0)
+            targetStopText.text = stopSpanString
+
+            val elementHeight = randomTr.height + randomBaseline!!.height
+            val y = elementHeight * targetIndex - scrollView.height / 2 + elementHeight / 2
             scrollView.scrollTo(0, y)
         }
     }
