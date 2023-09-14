@@ -101,8 +101,8 @@ fun SearchButton(instance: TitleActivity) {
             instance.startActivity(Intent(instance, SearchActivity::class.java))
         },
         modifier = Modifier
-            .width(StringUtils.scaledSize(StringUtils.scaledSize(220, instance), instance).dp)
-            .height(StringUtils.scaledSize(StringUtils.scaledSize(45, instance), instance).dp),
+            .width(StringUtils.scaledSize(220, instance).dp)
+            .height(StringUtils.scaledSize(45, instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
@@ -142,8 +142,8 @@ fun NearbyButton(instance: TitleActivity) {
             handleNearbyClick(instance)
         },
         modifier = Modifier
-            .width(StringUtils.scaledSize(StringUtils.scaledSize(220, instance), instance).dp)
-            .height(StringUtils.scaledSize(StringUtils.scaledSize(45, instance), instance).dp),
+            .width(StringUtils.scaledSize(220, instance).dp)
+            .height(StringUtils.scaledSize(45, instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
