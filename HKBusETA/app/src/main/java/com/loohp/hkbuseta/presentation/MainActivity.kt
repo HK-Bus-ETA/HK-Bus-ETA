@@ -22,7 +22,6 @@ import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.JsonUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
-import org.json.JSONObject
 import java.util.Timer
 import java.util.TimerTask
 import kotlin.streams.toList
@@ -172,9 +171,9 @@ fun Loading(instance: MainActivity) {
                 .padding(20.dp, 0.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Shared.LoadingLabel("zh", true, instance)
+            Shared.LoadingLabel(language = "zh", includeImage = true, includeProgress = false, instance = instance)
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
-            Shared.LoadingLabel("en", false, instance)
+            Shared.LoadingLabel(language = "en", includeImage = false, includeProgress = true, instance = instance)
         }
     }
 }

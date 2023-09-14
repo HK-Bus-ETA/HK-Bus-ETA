@@ -45,7 +45,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,9 +54,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -96,6 +100,7 @@ public class Registry {
     private static JSONObject GMB_ROUTE = null;
 
     private volatile State state = State.LOADING;
+    private volatile float updatePercentage = 0F;
     private volatile boolean preferencesLoaded = false;
 
     private boolean isAboveTyphoonSignalEight = false;
@@ -141,6 +146,10 @@ public class Registry {
         return state;
     }
 
+    public float getUpdatePercentage() {
+        return updatePercentage;
+    }
+
     public boolean isPreferencesLoaded() {
         return preferencesLoaded;
     }
@@ -158,14 +167,6 @@ public class Registry {
         double c = 2 * Math.asin(Math.sqrt(a));
 
         return c * 6371;
-    }
-
-    private <T> boolean testOrderedSubset(JSONArray b, JSONArray a, Class<T> type) {
-        return testOrderedSubset(JsonUtils.toList(b, type), JsonUtils.toList(a, type));
-    }
-
-    private <T> boolean testOrderedSubset(List<T> b, List<T> a) {
-        return Collections.indexOfSubList(b, a) >= 0;
     }
 
     public void updateTileService(Context context) {
@@ -410,310 +411,200 @@ public class Registry {
                     state = State.ERROR;
                 } else {
                     state = State.UPDATING;
+                    updatePercentage = 0F;
 
-                    BUS_ROUTE = new LinkedHashSet<>();
+                    BUS_ROUTE = ConcurrentHashMap.newKeySet();
+                    AtomicReference<JSONObject> mtrBusStopsRef = new AtomicReference<>();
 
-                    KMB_ROUTE = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/route/").optJSONArray("data");
-                    for (int i = 0; i < KMB_ROUTE.length(); i++) {
-                        String route = KMB_ROUTE.optJSONObject(i).optString("route");
-                        BUS_ROUTE.add(route);
-                    }
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(KMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(KMB_ROUTE.toString());
-                        pw.flush();
-                    }
-
-                    CTB_ROUTE = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/route/ctb").optJSONArray("data");
-                    for (int i = 0; i < CTB_ROUTE.length(); i++) {
-                        String route = CTB_ROUTE.optJSONObject(i).optString("route");
-                        BUS_ROUTE.add(route);
-                    }
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CTB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(CTB_ROUTE.toString());
-                        pw.flush();
-                    }
-
-                    NLB_ROUTE = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/route.php?action=list").optJSONArray("routes");
-                    for (int i = 0; i < NLB_ROUTE.length(); i++) {
-                        String route = NLB_ROUTE.optJSONObject(i).optString("routeNo");
-                        BUS_ROUTE.add(route);
-                    }
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(NLB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(NLB_ROUTE.toString());
-                        pw.flush();
-                    }
-
-                    MTR_BUS_STOP_ALIAS = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stop_alias.json");
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(MTR_BUS_STOP_ALIAS.toString());
-                        pw.flush();
-                    }
-
-                    GMB_ROUTE = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/route").optJSONObject("data").optJSONObject("routes");
-                    for (Iterator<String> itr = GMB_ROUTE.keys(); itr.hasNext(); ) {
-                        String region = itr.next();
-                        JSONArray list = GMB_ROUTE.optJSONArray(region);
-                        for (int i = 0; i < list.length(); i++) {
-                            String route = list.optString(i);
-                            BUS_ROUTE.add(route);
-                        }
-                    }
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(GMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(GMB_ROUTE.toString());
-                        pw.flush();
-                    }
-
-                    DATA_SHEET = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/hk-bus-crawling/gh-pages/routeFareList.min.json");
-
+                    List<Future<?>> tasks = new ArrayList<>();
+                    ExecutorService service = Executors.newCachedThreadPool();
                     try {
-                        JSONObject a = DATA_SHEET.optJSONObject("stopList").optJSONObject("AC1FD9BDD09D1DD6").optJSONObject("name");
-                        a.put("zh", a.optString("zh") + " (沙頭角邊境禁區 - 需持邊境禁區許可證)");
-                        a.put("en", a.optString("en") + " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)");
-
-                        JSONObject b = DATA_SHEET.optJSONObject("stopList").optJSONObject("20001477").optJSONObject("name");
-                        b.put("zh", b.optString("zh") + " (沙頭角邊境禁區 - 需持邊境禁區許可證)");
-                        b.put("en", b.optString("en") + " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)");
-
-                        JSONObject c1 = DATA_SHEET.optJSONObject("stopList").optJSONObject("152").optJSONObject("name");
-                        c1.put("zh", c1.optString("zh") + " (深圳灣管制站 - 僅限過境旅客)");
-                        c1.put("en", c1.optString("en") + " (Shenzhen Bay Control Point - Border Crossing Passengers Only)");
-
-                        JSONObject c2 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20015453").optJSONObject("name");
-                        c2.put("zh", c2.optString("zh") + " (深圳灣管制站 - 僅限過境旅客)");
-                        c2.put("en", c2.optString("en") + " (Shenzhen Bay Control Point - Border Crossing Passengers Only)");
-
-                        JSONObject c3 = DATA_SHEET.optJSONObject("stopList").optJSONObject("003208").optJSONObject("name");
-                        c3.put("zh", c3.optString("zh") + " (深圳灣管制站 - 僅限過境旅客)");
-                        c3.put("en", c3.optString("en") + " (Shenzhen Bay Control Point - Border Crossing Passengers Only)");
-
-                        JSONObject d1 = DATA_SHEET.optJSONObject("stopList").optJSONObject("81567ACCCF40DD4B").optJSONObject("name");
-                        d1.put("zh", d1.optString("zh") + " (落馬洲支線出入境管制站 - 僅限過境旅客)");
-                        d1.put("en", d1.optString("en") + " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)");
-
-                        JSONObject d2 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20015420").optJSONObject("name");
-                        d2.put("zh", d2.optString("zh") + " (落馬洲支線出入境管制站 - 僅限過境旅客)");
-                        d2.put("en", d2.optString("en") + " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)");
-
-                        JSONObject e1 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20011698").optJSONObject("name");
-                        e1.put("zh", e1.optString("zh") + " (落馬洲管制站 - 僅限過境旅客)");
-                        e1.put("en", e1.optString("en") + " (Lok Ma Chau Control Point - Border Crossing Passengers Only)");
-
-                        JSONObject e2 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20015598").optJSONObject("name");
-                        e2.put("zh", e2.optString("zh") + " (落馬洲管制站 - 僅限過境旅客)");
-                        e2.put("en", e2.optString("en") + " (Lok Ma Chau Control Point - Border Crossing Passengers Only)");
-
-                        Set<String> kmbOps = new HashSet<>();
-
-                        Set<String> keysToRemove = new HashSet<>();
-                        //outer:
-                        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                            String key = itr.next();
-                            /*
-                            if (keysToRemove.contains(key)) {
-                                continue;
+                        tasks.add(service.submit(() -> {
+                            KMB_ROUTE = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/route/").optJSONArray("data");
+                            for (int i = 0; i < KMB_ROUTE.length(); i++) {
+                                String route = KMB_ROUTE.optJSONObject(i).optString("route");
+                                BUS_ROUTE.add(route);
                             }
-                            */
-                            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                            /*
-                            String co = data.optJSONObject("bound").has("kmb") ? "kmb" :
-                                    (data.optJSONObject("bound").has("ctb") ? "ctb" :
-                                            (data.optJSONObject("bound").has("nlb") ? "nlb" :
-                                                    (data.optJSONObject("bound").has("mtr-bus") ? "mtr-bus" : "gmb")));
+                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(KMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                                pw.write(KMB_ROUTE.toString());
+                                pw.flush();
+                            } catch (IOException e) {
+                                Log.e("Resource Downloading Exception", "Exception: ", e);
+                            }
+                        }));
 
-                            if (!co.equals("ctb")) {
-                                JSONArray stops = data.optJSONObject("stops").optJSONArray(co);
-                                for (Iterator<String> it = DATA_SHEET.optJSONObject("routeList").keys(); it.hasNext(); ) {
-                                    String key0 = it.next();
-                                    if (keysToRemove.contains(key0)) {
-                                        continue;
+                        tasks.add(service.submit(() -> {
+                            CTB_ROUTE = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/route/ctb").optJSONArray("data");
+                            for (int i = 0; i < CTB_ROUTE.length(); i++) {
+                                String route = CTB_ROUTE.optJSONObject(i).optString("route");
+                                BUS_ROUTE.add(route);
+                            }
+                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CTB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                                pw.write(CTB_ROUTE.toString());
+                                pw.flush();
+                            } catch (IOException e) {
+                                Log.e("Resource Downloading Exception", "Exception: ", e);
+                            }
+                        }));
+
+                        tasks.add(service.submit(() -> {
+                            NLB_ROUTE = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/route.php?action=list").optJSONArray("routes");
+                            for (int i = 0; i < NLB_ROUTE.length(); i++) {
+                                String route = NLB_ROUTE.optJSONObject(i).optString("routeNo");
+                                BUS_ROUTE.add(route);
+                            }
+                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(NLB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                                pw.write(NLB_ROUTE.toString());
+                                pw.flush();
+                            } catch (IOException e) {
+                                Log.e("Resource Downloading Exception", "Exception: ", e);
+                            }
+                        }));
+
+                        tasks.add(service.submit(() -> {
+                            MTR_BUS_STOP_ALIAS = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stop_alias.json");
+                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                                pw.write(MTR_BUS_STOP_ALIAS.toString());
+                                pw.flush();
+                            } catch (IOException e) {
+                                Log.e("Resource Downloading Exception", "Exception: ", e);
+                            }
+                        }));
+
+                        tasks.add(service.submit(() -> {
+                            GMB_ROUTE = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/route").optJSONObject("data").optJSONObject("routes");
+                            for (Iterator<String> itr = GMB_ROUTE.keys(); itr.hasNext(); ) {
+                                String region = itr.next();
+                                JSONArray list = GMB_ROUTE.optJSONArray(region);
+                                for (int i = 0; i < list.length(); i++) {
+                                    String route = list.optString(i);
+                                    BUS_ROUTE.add(route);
+                                }
+                            }
+                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(GMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                                pw.write(GMB_ROUTE.toString());
+                                pw.flush();
+                            } catch (IOException e) {
+                                Log.e("Resource Downloading Exception", "Exception: ", e);
+                            }
+                        }));
+
+                        tasks.add(service.submit(() -> {
+                            try {
+                                DATA_SHEET = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/hk-bus-crawling/gh-pages/routeFareList.min.json");
+
+                                JSONObject a = DATA_SHEET.optJSONObject("stopList").optJSONObject("AC1FD9BDD09D1DD6").optJSONObject("name");
+                                a.put("zh", a.optString("zh") + " (沙頭角邊境禁區 - 需持邊境禁區許可證)");
+                                a.put("en", a.optString("en") + " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)");
+
+                                JSONObject b = DATA_SHEET.optJSONObject("stopList").optJSONObject("20001477").optJSONObject("name");
+                                b.put("zh", b.optString("zh") + " (沙頭角邊境禁區 - 需持邊境禁區許可證)");
+                                b.put("en", b.optString("en") + " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)");
+
+                                JSONObject c1 = DATA_SHEET.optJSONObject("stopList").optJSONObject("152").optJSONObject("name");
+                                c1.put("zh", c1.optString("zh") + " (深圳灣管制站 - 僅限過境旅客)");
+                                c1.put("en", c1.optString("en") + " (Shenzhen Bay Control Point - Border Crossing Passengers Only)");
+
+                                JSONObject c2 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20015453").optJSONObject("name");
+                                c2.put("zh", c2.optString("zh") + " (深圳灣管制站 - 僅限過境旅客)");
+                                c2.put("en", c2.optString("en") + " (Shenzhen Bay Control Point - Border Crossing Passengers Only)");
+
+                                JSONObject c3 = DATA_SHEET.optJSONObject("stopList").optJSONObject("003208").optJSONObject("name");
+                                c3.put("zh", c3.optString("zh") + " (深圳灣管制站 - 僅限過境旅客)");
+                                c3.put("en", c3.optString("en") + " (Shenzhen Bay Control Point - Border Crossing Passengers Only)");
+
+                                JSONObject d1 = DATA_SHEET.optJSONObject("stopList").optJSONObject("81567ACCCF40DD4B").optJSONObject("name");
+                                d1.put("zh", d1.optString("zh") + " (落馬洲支線出入境管制站 - 僅限過境旅客)");
+                                d1.put("en", d1.optString("en") + " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)");
+
+                                JSONObject d2 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20015420").optJSONObject("name");
+                                d2.put("zh", d2.optString("zh") + " (落馬洲支線出入境管制站 - 僅限過境旅客)");
+                                d2.put("en", d2.optString("en") + " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)");
+
+                                JSONObject e1 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20011698").optJSONObject("name");
+                                e1.put("zh", e1.optString("zh") + " (落馬洲管制站 - 僅限過境旅客)");
+                                e1.put("en", e1.optString("en") + " (Lok Ma Chau Control Point - Border Crossing Passengers Only)");
+
+                                JSONObject e2 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20015598").optJSONObject("name");
+                                e2.put("zh", e2.optString("zh") + " (落馬洲管制站 - 僅限過境旅客)");
+                                e2.put("en", e2.optString("en") + " (Lok Ma Chau Control Point - Border Crossing Passengers Only)");
+
+                                Set<String> kmbOps = new HashSet<>();
+                                Set<String> ctbCircular = new HashSet<>();
+
+                                Set<String> keysToRemove = new HashSet<>();
+                                for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
+                                    String key = itr.next();
+                                    JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
+                                    JSONObject bounds = data.optJSONObject("bound");
+                                    if (bounds.has("kmb")) {
+                                        if (data.optJSONArray("co").toString().contains("ctb")) {
+                                            kmbOps.add(data.optString("route"));
+                                        }
+                                    } else if (bounds.has("ctb") && bounds.optString("ctb").length() > 1) {
+                                        ctbCircular.add(data.optString("route"));
+                                        JSONObject dest = data.optJSONObject("dest");
+                                        dest.put("zh", dest.optString("zh") + " (循環線)");
+                                        dest.put("en", dest.optString("en") + " (Circular)");
                                     }
-                                    JSONObject data0 = DATA_SHEET.optJSONObject("routeList").optJSONObject(key0);
-                                    String co0 = data0.optJSONObject("bound").has("kmb") ? "kmb" :
-                                            (data0.optJSONObject("bound").has("ctb") ? "ctb" :
-                                                    (data0.optJSONObject("bound").has("nlb") ? "nlb" :
-                                                            (data0.optJSONObject("bound").has("mtr-bus") ? "mtr-bus" : "gmb")));
-
-                                    if (!data.equals(data0) && co.equals(co0) && data.optString("route").equals(data0.optString("route"))) {
-                                        JSONArray stops0 = data0.optJSONObject("stops").optJSONArray(co0);
-                                        if (stops != null && stops0 != null && testOrderedSubset(stops0, stops, String.class)) {
+                                }
+                                for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
+                                    String key = itr.next();
+                                    JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
+                                    String routeNumber = data.optString("route");
+                                    JSONObject bounds = data.optJSONObject("bound");
+                                    if (data.optJSONObject("bound").has("ctb")) {
+                                        if (kmbOps.contains(routeNumber) && !bounds.has("kmb")) {
                                             keysToRemove.add(key);
-                                            continue outer;
+                                        } else if (ctbCircular.contains(routeNumber) && bounds.optString("ctb").length() < 2) {
+                                            data.put("ctbIsCircular", true);
                                         }
                                     }
                                 }
-                            }
-                            */
-
-                            if (data.optJSONObject("bound").has("kmb")) {
-                                if (data.optJSONArray("co").toString().contains("ctb")) {
-                                    kmbOps.add(data.optString("route"));
+                                for (String key : keysToRemove) {
+                                    DATA_SHEET.optJSONObject("routeList").remove(key);
                                 }
-                                /*
-                                if (!data.has("fares")) {
-                                    for (Iterator<String> it = DATA_SHEET.optJSONObject("routeList").keys(); it.hasNext(); ) {
-                                        String key0 = it.next();
-                                        if (keysToRemove.contains(key0)) {
-                                            continue;
-                                        }
-                                        JSONObject data0 = DATA_SHEET.optJSONObject("routeList").optJSONObject(key0);
-                                        if (!data.equals(data0) && data0.has("fares") &&
-                                                data0.optString("route").equals(data.optString("route")) &&
-                                                data0.getInt("seq") == data.getInt("seq")) {
-                                            JSONArray fares = data0.optJSONArray("fares");
-                                            if (fares != null) {
-                                                int length = Math.min(fares.length(), data.optJSONObject("stops").optJSONArray("kmb").length());
-                                                data.put("fares", new JSONArray(JsonUtils.toList(fares, String.class).subList(0, length)));
-                                            }
-                                        }
-                                    }
-                                }
-                                */
+                            } catch (JSONException e) {
+                                Log.e("Resource Downloading Exception", "Exception: ", e);
+                            }
+                        }));
+
+                        tasks.add(service.submit(() -> {
+                            MTR_BUS_ROUTE = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_routes.json");
+                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                                pw.write(MTR_BUS_ROUTE.toString());
+                                pw.flush();
+                            } catch (IOException e) {
+                                Log.e("Resource Downloading Exception", "Exception: ", e);
+                            }
+                        }));
+
+                        tasks.add(service.submit(() -> {
+                            mtrBusStopsRef.set(HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stops.json"));
+                        }));
+
+                        while (true) {
+                            int completed = tasks.stream().mapToInt(t -> t.isDone() ? 1 : 0).sum();
+                            updatePercentage = completed / (float) tasks.size();
+                            if (completed >= tasks.size()) {
+                                break;
                             }
                         }
-                        /*
-                        for (String key : keysToRemove) {
-                            DATA_SHEET.optJSONObject("routeList").remove(key);
-                        }
-                        */
+                    } finally {
+                        service.shutdown();
+                    }
 
-                        Set<String> ctbOps = new HashSet<>();
-                        Map<String, JSONArray> ctbStopCircularSets = new HashMap<>();
-                        Map<String, JSONArray> ctbStopSets = new HashMap<>();
-
-                        //keysToRemove.clear();
-                        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                            String key = itr.next();
-                            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                            if (data.optJSONObject("bound").has("ctb")) {
-                                if (kmbOps.contains(data.optString("route")) && !data.optJSONObject("bound").has("kmb")) {
-                                    ctbOps.add(data.optString("route"));
-                                    keysToRemove.add(key);
-                                } else {
-                                    if (data.optJSONObject("bound").optString("ctb").length() > 1 &&
-                                            data.optJSONObject("orig").optString("zh").equals(data.optJSONObject("dest").optString("zh"))) {
-                                        String routeKey = data.optString("route") + "," + data.getInt("serviceType");
-                                        JSONArray stops = data.optJSONObject("stops").optJSONArray("ctb");
-                                        if (ctbStopCircularSets.containsKey(routeKey)) {
-                                            if (ctbStopCircularSets.get(routeKey).length() < stops.length()) {
-                                                ctbStopCircularSets.put(routeKey, stops);
-                                            }
-                                        } else {
-                                            ctbStopCircularSets.put(routeKey, stops);
-                                        }
-                                    } else {
-                                        if (data.optJSONObject("bound").optString("ctb").length() > 1) {
-                                            data.optJSONObject("bound").put("ctb", "I");
-                                        }
-                                        String routeKey = data.optString("route") + "," + data.optJSONObject("bound").optString("ctb") + ","
-                                                + data.getInt("serviceType");
-                                        JSONArray stops = data.optJSONObject("stops").optJSONArray("ctb");
-                                        if (ctbStopSets.containsKey(routeKey)) {
-                                            if (ctbStopSets.get(routeKey).length() < stops.length()) {
-                                                ctbStopSets.put(routeKey, stops);
-                                            }
-                                        } else {
-                                            ctbStopSets.put(routeKey, stops);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        for (String key : keysToRemove) {
-                            DATA_SHEET.optJSONObject("routeList").remove(key);
-                        }
-
-                        Map<String, JSONArray> ctbRouteDests = new HashMap<>();
-
-                        keysToRemove.clear();
-                        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                            String key = itr.next();
-                            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                            if (data.optJSONObject("bound").has("ctb")) {
-                                String routeKey = data.optString("route") + "," + data.getInt("serviceType");
-                                if (ctbStopCircularSets.containsKey(routeKey)) {
-                                    JSONArray stops = data.optJSONObject("stops").optJSONArray("ctb");
-                                    JSONArray longestStops = ctbStopCircularSets.get(routeKey);
-                                    if (!stops.equals(longestStops) && testOrderedSubset(longestStops, stops, String.class)) {
-                                        if (ctbRouteDests.containsKey(routeKey)) {
-                                            ctbRouteDests.get(routeKey).put(data.optJSONObject("dest"));
-                                        } else {
-                                            JSONArray destArray = new JSONArray();
-                                            destArray.put(data.optJSONObject("dest"));
-                                            ctbRouteDests.put(routeKey, destArray);
-                                        }
-                                        keysToRemove.add(key);
-                                        continue;
-                                    }
-                                    if (data.optJSONObject("bound").optString("ctb").length() > 1) {
-                                        data.optJSONObject("bound").put("ctb", "O");
-                                    }
-                                    if (!stops.equals(longestStops) && data.getInt("serviceType") == 1) {
-                                        data.put("ctbSpecial", "Any");
-                                    }
-                                } else {
-                                    routeKey = data.optString("route") + "," + data.optJSONObject("bound").optString("ctb") + ","
-                                            + data.getInt("serviceType");
-                                    if (ctbStopSets.containsKey(routeKey)) {
-                                        JSONArray stops = data.optJSONObject("stops").optJSONArray("ctb");
-                                        JSONArray longestStops = ctbStopSets.get(routeKey);
-                                        if (!stops.equals(longestStops)) {
-                                            data.put("ctbSpecial", data.optJSONObject("bound").optString("ctb"));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        for (String key : keysToRemove) {
-                            DATA_SHEET.optJSONObject("routeList").remove(key);
-                        }
-
-                        Set<String> intersection = new HashSet<>(ctbOps);
-                        intersection.retainAll(kmbOps);
-
-                        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                            String key = itr.next();
-                            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                            if (intersection.contains(data.optString("route"))) {
-                                data.put("jointOp", true);
-                            }
-                            if (data.optJSONObject("bound").has("ctb")) {
-                                String routeKey = data.optString("route") + "," + data.getInt("serviceType");
-                                if (ctbRouteDests.containsKey(routeKey)) {
-                                    JSONArray destList = ctbRouteDests.get(routeKey);
-                                    for (int i = destList.length() - 1; i >= 0; i--) {
-                                        JSONObject e = destList.optJSONObject(i);
-                                        if (e.optString("zh").equals(data.optJSONObject("dest").optString("zh")) && e.optString("en").equals(data.optJSONObject("dest").optString("en"))) {
-                                            destList.remove(i);
-                                        }
-                                    }
-                                    if (destList.length() > 0) {
-                                        data.put("ctbCircularDests", destList);
-                                    }
-                                }
-                            }
-                        }
-
-                        MTR_BUS_ROUTE = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_routes.json");
-                        for (Iterator<String> itr = MTR_BUS_ROUTE.keys(); itr.hasNext(); ) {
-                            String key = itr.next();
-                            JSONObject data = MTR_BUS_ROUTE.optJSONObject(key);
-                            String route = data.optString("route");
-                            DATA_SHEET.optJSONObject("routeList").put(key, data);
-                            BUS_ROUTE.add(route);
-                        }
-                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                            pw.write(MTR_BUS_ROUTE.toString());
-                            pw.flush();
-                        }
-
-                        JSONObject mtrBusStops = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stops.json");
-                        for (Iterator<String> itr = mtrBusStops.keys(); itr.hasNext(); ) {
-                            String key = itr.next();
-                            DATA_SHEET.optJSONObject("stopList").put(key, mtrBusStops.opt(key));
-                        }
-
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
+                    for (Iterator<String> itr = MTR_BUS_ROUTE.keys(); itr.hasNext(); ) {
+                        String key = itr.next();
+                        JSONObject data = MTR_BUS_ROUTE.optJSONObject(key);
+                        String route = data.optString("route");
+                        DATA_SHEET.optJSONObject("routeList").put(key, data);
+                        BUS_ROUTE.add(route);
+                    }
+                    JSONObject mtrBusStops = mtrBusStopsRef.get();
+                    for (Iterator<String> itr = mtrBusStops.keys(); itr.hasNext(); ) {
+                        String key = itr.next();
+                        DATA_SHEET.optJSONObject("stopList").put(key, mtrBusStops.opt(key));
                     }
 
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
@@ -731,6 +622,7 @@ public class Registry {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+                updatePercentage = 1F;
                 if (!state.equals(State.ERROR)) {
                     state = State.READY;
                     updateTileService(context);
@@ -765,6 +657,9 @@ public class Registry {
             for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
                 String key = itr.next();
                 JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
+                if (data.optBoolean("ctbIsCircular")) {
+                    continue;
+                }
                 if (data.optString("route").equals(input)) {
                     String co;
                     JSONObject bound = data.optJSONObject("bound");

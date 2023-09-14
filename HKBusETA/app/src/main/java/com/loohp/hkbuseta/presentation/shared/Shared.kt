@@ -1,11 +1,16 @@
 package com.loohp.hkbuseta.presentation.shared
 
 import android.content.Context
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -40,7 +46,7 @@ class Shared {
         }
 
         @Composable
-        fun LoadingLabel(language: String, includeImage: Boolean, instance: Context) {
+        fun LoadingLabel(language: String, includeImage: Boolean, includeProgress: Boolean, instance: Context) {
             var state by remember { mutableStateOf(false) }
 
             LaunchedEffect (Unit) {
@@ -52,12 +58,27 @@ class Shared {
                 }
             }
 
-            LoadingLabelText(state, language, includeImage, instance)
+            LoadingLabelText(state, language, includeImage, includeProgress, instance)
         }
 
         @Composable
-        private fun LoadingLabelText(updating: Boolean, language: String, includeImage: Boolean, instance: Context) {
+        private fun LoadingLabelText(updating: Boolean, language: String, includeImage: Boolean, includeProgress: Boolean, instance: Context) {
             if (updating) {
+                var currentProgress by remember { mutableStateOf(0F) }
+                val progressAnimation by animateFloatAsState(
+                    targetValue = currentProgress,
+                    animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+                    label = "LoadingProgressAnimation"
+                )
+                if (includeProgress) {
+                    LaunchedEffect (Unit) {
+                        while (true) {
+                            currentProgress = Registry.getInstance(instance).updatePercentage
+                            delay(500)
+                        }
+                    }
+                }
+
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
@@ -71,15 +92,27 @@ class Shared {
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
                     fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
-                    text = if (language == "en") "Might take several minutes" else "可能需要幾分鐘"
+                    text = if (language == "en") "Might take a minute" else "可能需要約一分鐘"
                 )
+                if (includeProgress) {
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(25.dp, 0.dp),
+                        color = Color(0xFF1F8AE4),
+                        progress = progressAnimation
+                    )
+                }
             } else {
                 if (includeImage) {
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Image(
-                            modifier = Modifier.size(StringUtils.scaledSize(50, instance).dp).align(Alignment.Center),
+                            modifier = Modifier
+                                .size(StringUtils.scaledSize(50, instance).dp)
+                                .align(Alignment.Center),
                             painter = painterResource(R.mipmap.icon_full_smaller),
                             contentDescription = instance.resources.getString(R.string.app_name)
                         )
