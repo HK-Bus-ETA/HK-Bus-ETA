@@ -205,7 +205,7 @@ fun FavButton(instance: TitleActivity) {
                 modifier = Modifier.size(StringUtils.scaledSize(21, instance).dp),
                 imageVector = Icons.Filled.Star,
                 tint = Color(0xFFFFFF00),
-                contentDescription = if (Shared.language == "en") "最喜愛路線" else "Favourite Routes"
+                contentDescription = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"
             )
         }
     )
