@@ -386,7 +386,7 @@ class EtaTileServiceCommon {
                         }
                     }
                     else -> Color.LightGray
-                }.adjustBrightness(if (eta.nextScheduledBus < 0) 0.2F else 1F)
+                }.adjustBrightness(if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) 0.2F else 1F)
             }
 
             return LayoutElementBuilders.Box.Builder()
