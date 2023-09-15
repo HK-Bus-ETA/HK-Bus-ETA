@@ -996,7 +996,7 @@ public class Registry {
     }
 
     public List<StopData> getAllStops(String routeNumber, String bound, String co, String gtfsId) {
-        BranchedList<String, StopData> result = new BranchedList<>((a, b) -> a.getServiceType() > b.getServiceType() ? b : a);
+        List<Pair<BranchedList<String, StopData>, Integer>> lists = new ArrayList<>();
         for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
             String key = itr.next();
             JSONObject route = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
@@ -1013,14 +1013,19 @@ public class Registry {
                 if (flag) {
                     BranchedList<String, StopData> localStops = new BranchedList<>();
                     JSONArray stops = route.optJSONObject("stops").optJSONArray(co);
+                    int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
                     for (int i = 0; i < stops.length(); i++) {
                         String stopId = stops.optString(i);
-                        int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
                         localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId)));
                     }
-                    result.merge(localStops);
+                    lists.add(Pair.create(localStops, serviceType));
                 }
             }
+        }
+        lists.sort(Comparator.comparing(p -> p.second));
+        BranchedList<String, StopData> result = new BranchedList<>((a, b) -> a.getServiceType() > b.getServiceType() ? b : a);
+        for (Pair<BranchedList<String, StopData>, Integer> pair : lists) {
+            result.merge(pair.first);
         }
         return result.values();
     }
@@ -1048,6 +1053,21 @@ public class Registry {
         public JSONObject getStop() {
             return stop;
         }
+    }
+
+    public static boolean isMtrStopEndOfLine(String stopId, String lineName, String bound) {
+        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
+            String key = itr.next();
+            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
+            if (lineName.equals(data.optString("route")) && data.optJSONObject("bound").optString("mtr").endsWith(bound)) {
+                JSONArray stopsList = data.optJSONObject("stops").optJSONArray("mtr");
+                int index = JsonUtils.indexOf(stopsList, stopId);
+                if (index >= 0 && index + 1 < stopsList.length()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public static String getNoScheduledDepartureMessage(String altMessage, boolean isAboveTyphoonSignalEight, String typhoonWarningTitle) {
@@ -1502,11 +1522,11 @@ public class Registry {
                         break;
                     }
                     case "mtr": {
-                        JSONArray stopsList = route.optJSONObject("stops").optJSONArray("mtr");
-                        if (JsonUtils.indexOf(stopsList, stopId) + 1 >= stopsList.length()) {
+                        String lineName = route.optString("route");
+                        String bound = route.optJSONObject("bound").optString("mtr");
+                        if (isMtrStopEndOfLine(stopId, lineName, bound)) {
                             lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
                         } else {
-                            String lineName = route.optString("route");
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=" + lineName + "&sta=" + stopId);
                             if (data.optInt("status") == 0) {
                                 lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
@@ -1520,7 +1540,7 @@ public class Registry {
                                     }
                                 } else {
                                     boolean delayed = !data.optString("isdelay", "N").equals("N");
-                                    String dir = route.optJSONObject("bound").optString("mtr").equals("UT") ? "UP" : "DOWN";
+                                    String dir = bound.equals("UT") ? "UP" : "DOWN";
                                     JSONArray trains = lineStops.optJSONArray(dir);
                                     if (trains == null || trains.length() == 0) {
                                         if (stopId.equals("RAC")) {
