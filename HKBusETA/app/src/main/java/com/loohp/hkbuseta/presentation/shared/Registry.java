@@ -1527,6 +1527,10 @@ public class Registry {
                         if (isMtrStopEndOfLine(stopId, lineName, bound)) {
                             lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
                         } else {
+                            ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
+                            int hour = hongKongTime.getHour();
+                            boolean isOutOfServiceHours = hour >= 0 && hour < 5;
+
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=" + lineName + "&sta=" + stopId);
                             if (data.optInt("status") == 0) {
                                 lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
@@ -1535,6 +1539,8 @@ public class Registry {
                                 if (lineStops == null) {
                                     if (stopId.equals("RAC")) {
                                         lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務");
+                                    } else if (isOutOfServiceHours) {
+                                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出");
                                     } else {
                                         lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
                                     }
@@ -1545,6 +1551,8 @@ public class Registry {
                                     if (trains == null || trains.length() == 0) {
                                         if (stopId.equals("RAC")) {
                                             lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務");
+                                        } else if (isOutOfServiceHours) {
+                                            lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出");
                                         } else {
                                             lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
                                         }
@@ -1569,7 +1577,7 @@ public class Registry {
 
                                             @SuppressLint("SimpleDateFormat")
                                             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                                            format.setTimeZone(TimeZone.getTimeZone("Asia/Hong_Kong"));
+                                            format.setTimeZone(TimeZone.getTimeZone(hongKongTime.getZone()));
                                             long mins = (long) Math.ceil((format.parse(eta).getTime() - Instant.now().toEpochMilli()) / 60000.0);
 
                                             String minsMessage = mins > 0 ? (mins + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘")) : (Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開");
