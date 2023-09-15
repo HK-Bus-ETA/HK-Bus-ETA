@@ -43,7 +43,7 @@ public class StringUtils {
             str = str.toLowerCase();
         }
         StringBuffer sb = new StringBuffer();
-        Matcher matcher = Pattern.compile("(?:^|\\s|[\"'(\\[{/])+\\S").matcher(str);
+        Matcher matcher = Pattern.compile("(?:^|\\s|[\\\"'(\\[{/\\-])+\\S").matcher(str);
         while (matcher.find()) {
             matcher.appendReplacement(sb, matcher.group().toUpperCase());
         }

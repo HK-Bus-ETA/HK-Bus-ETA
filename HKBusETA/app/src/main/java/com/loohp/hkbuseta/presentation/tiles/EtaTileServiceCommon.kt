@@ -273,12 +273,12 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun title(index: Int, stopName: JSONObject, routeNumber: String, context: Context): LayoutElementBuilders.Text {
+        private fun title(index: Int, stopName: JSONObject, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
             var name = stopName.optString(Shared.language)
             if (Shared.language == "en") {
                 name = StringUtils.capitalize(name)
             }
-            val text = "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name)
+            val text = if (co == "mtr") name else "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
                 .setText(text)
                 .setMaxLines(2)
@@ -295,9 +295,16 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun subTitle(destName: JSONObject, context: Context): LayoutElementBuilders.Text {
+        private fun subTitle(destName: JSONObject, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
             var name = destName.optString(Shared.language)
             name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
+            if (co == "mtr") {
+                name = if (Shared.language == "en") {
+                    routeNumber.plus(" ").plus(name)
+                } else {
+                    Shared.getMtrLineChineseName(routeNumber, "???").plus(" ").plus(name)
+                }
+            }
             return LayoutElementBuilders.Text.Builder()
                 .setText(name)
                 .setMaxLines(1)
@@ -355,6 +362,7 @@ class EtaTileServiceCommon {
             val stop = favouriteStopRoute.optJSONObject("stop")!!
             val route = favouriteStopRoute.optJSONObject("route")!!
 
+            val routeNumber = route.optString("route")
             val stopName = stop.optJSONObject("name")!!
             val destName = route.optJSONObject("dest")!!
 
@@ -458,10 +466,10 @@ class EtaTileServiceCommon {
                                             DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(16F, context)).build()
                                         ).build()
                                 ).addContent(
-                                    title(index, stopName, route.optString("route"), context)
+                                    title(index, stopName, routeNumber, co, context)
                                 )
                                 .addContent(
-                                    subTitle(destName, context)
+                                    subTitle(destName, routeNumber, co, context)
                                 )
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()

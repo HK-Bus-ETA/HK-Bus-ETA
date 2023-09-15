@@ -3,10 +3,10 @@ package com.loohp.hkbuseta.presentation
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import android.util.Pair
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.TweenSpec
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -44,21 +44,36 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.presentation.compose.AdvanceButton
 import com.loohp.hkbuseta.presentation.compose.ScrollBarConfig
 import com.loohp.hkbuseta.presentation.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.presentation.shared.Registry
+import com.loohp.hkbuseta.presentation.shared.Registry.PossibleNextCharResult
 import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.JsonUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
+
+
+data class RouteKeyboardState(val text: String, val nextCharResult: PossibleNextCharResult) {
+
+    fun withText(text: String): RouteKeyboardState {
+        return RouteKeyboardState(text, nextCharResult)
+    }
+
+    fun withNextCharResult(nextCharResult: PossibleNextCharResult): RouteKeyboardState {
+        return RouteKeyboardState(text, nextCharResult)
+    }
+
+}
 
 
 class SearchActivity : ComponentActivity() {
@@ -93,7 +108,7 @@ fun SearchPage(instance: SearchActivity) {
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun MainElement(instance: SearchActivity) {
-    val state = remember { mutableStateOf(Pair.create(defaultText(), Registry.getInstance(instance).getPossibleNextChar(""))) }
+    val state = remember { mutableStateOf(RouteKeyboardState(defaultText(), Registry.getInstance(instance).getPossibleNextChar(""))) }
 
     Column(
         modifier = Modifier
@@ -117,8 +132,8 @@ fun MainElement(instance: SearchActivity) {
         ) {
             Text(
                 textAlign = TextAlign.Center,
-                color = if (state.value.first == defaultText()) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.primary,
-                text = state.value.first
+                color = if (state.value.text == defaultText()) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.primary,
+                text = if (Shared.language == "en") state.value.text else Shared.getMtrLineChineseName(state.value.text)
             )
         }
         Row(
@@ -128,7 +143,7 @@ fun MainElement(instance: SearchActivity) {
                 KeyboardButton(instance, '7', state)
                 KeyboardButton(instance, '4', state)
                 KeyboardButton(instance, '1', state)
-                KeyboardButton(instance, '<', '-', state, Icons.Outlined.Delete, Color.Red)
+                KeyboardButton(instance, '<', '-', state, Color.Red, Icons.Outlined.Delete)
             }
             Column {
                 KeyboardButton(instance, '8', state)
@@ -140,7 +155,7 @@ fun MainElement(instance: SearchActivity) {
                 KeyboardButton(instance, '9', state)
                 KeyboardButton(instance, '6', state)
                 KeyboardButton(instance, '3', state)
-                KeyboardButton(instance, '/', null, state, Icons.Outlined.Done, Color.Green)
+                KeyboardButton(instance, '/', null, state, Color.Green, Icons.Outlined.Done)
             }
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             Box (
@@ -180,11 +195,15 @@ fun MainElement(instance: SearchActivity) {
                         )
                         .focusable()
                 ) {
-                    val possibleValues = state.value.second.first
+                    val possibleValues = state.value.nextCharResult.characters
                     for (alphabet in 'A'..'Z') {
                         if (possibleValues.contains(alphabet)) {
                             KeyboardButton(instance, alphabet, state)
                         }
+                    }
+                    val currentText = state.value.text
+                    if (currentText.isEmpty() || currentText == defaultText()) {
+                        KeyboardButton(instance, '!', null, state, Color.Red, R.mipmap.mtr)
                     }
                 }
             }
@@ -192,13 +211,13 @@ fun MainElement(instance: SearchActivity) {
     }
 }
 
-fun handleInput(instance: SearchActivity, state: MutableState<Pair<String, Pair<Set<Char>, Boolean>>>, input: Char) {
-    var originalText = state.value.first
+fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState>, input: Char) {
+    var originalText = state.value.text
     if (originalText == defaultText()) {
         originalText = "";
     }
-    if (input == '/') {
-        val result = Registry.getInstance(instance).findRoutes(originalText)
+    if (input == '/' || input == '!') {
+        val result = if (input == '!') Registry.getInstance(instance).findRoutes("", false) { it.optJSONObject("bound")!!.has("mtr") } else Registry.getInstance(instance).findRoutes(originalText, true)
         if (result != null && result.isNotEmpty()) {
             val intent = Intent(instance, ListRoutesActivity::class.java)
             intent.putExtra("result", JsonUtils.fromCollection(result).toString())
@@ -218,22 +237,23 @@ fun handleInput(instance: SearchActivity, state: MutableState<Pair<String, Pair<
         }
         val possibleNextChar = Registry.getInstance(instance).getPossibleNextChar(newText)
         val text = newText.ifEmpty { defaultText() }
-        state.value = Pair.create(text, possibleNextChar)
+        state.value = RouteKeyboardState(text, possibleNextChar)
     }
 }
 
 @Composable
-fun KeyboardButton(instance: SearchActivity, content: Char, state: MutableState<Pair<String, Pair<Set<Char>, Boolean>>>) {
-    KeyboardButton(instance, content, null, state, null, MaterialTheme.colors.primary)
+fun KeyboardButton(instance: SearchActivity, content: Char, state: MutableState<RouteKeyboardState>) {
+    KeyboardButton(instance, content, null, state, MaterialTheme.colors.primary, null)
 }
 
 
 @Composable
-fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, state: MutableState<Pair<String, Pair<Set<Char>, Boolean>>>, icon: ImageVector?, color: Color) {
+fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, state: MutableState<RouteKeyboardState>, color: Color, icon: Any?) {
     val enabled = when (content) {
-        '/' -> state.value.second.second
+        '/' -> true
         '<' -> true
-        else -> state.value.second.first.contains(content)
+        '!' -> true
+        else -> state.value.nextCharResult.characters.contains(content)
     }
     val haptic = LocalHapticFeedback.current
     val actualColor = if (enabled) color else Color(0xFF444444)
@@ -249,27 +269,37 @@ fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, 
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(35, instance).dp)
-            .height(StringUtils.scaledSize(if (content.isLetter()) 30 else 35, instance).dp),
+            .height(StringUtils.scaledSize(if (content.isLetter() || content == '!') 30 else 35, instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = Color.Transparent,
             contentColor = actualColor
         ),
         enabled = enabled,
         content = {
-            if (icon == null) {
-                Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    color = actualColor,
-                    text = content.toString()
-                )
-            } else {
-                Icon(
-                    modifier = Modifier.size(17.dp),
-                    imageVector = icon,
-                    contentDescription = content.toString(),
-                    tint = actualColor,
-                )
+            when (icon) {
+                null -> {
+                    Text(
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        color = actualColor,
+                        text = content.toString()
+                    )
+                }
+                is ImageVector -> {
+                    Icon(
+                        modifier = Modifier.size(17.dp),
+                        imageVector = icon,
+                        contentDescription = content.toString(),
+                        tint = actualColor,
+                    )
+                }
+                is Int -> {
+                    Image(
+                        modifier = Modifier.size(17.dp),
+                        painter = painterResource(icon),
+                        contentDescription = content.toString()
+                    )
+                }
             }
         }
     )

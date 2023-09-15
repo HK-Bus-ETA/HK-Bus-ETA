@@ -66,6 +66,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -535,6 +536,18 @@ public class Registry {
 
                                 DATA_SHEET.optJSONObject("stopList").put("RAC", new JSONObject("{\"location\": {\"lat\": 22.4003487,\"lng\": 114.2030287},\"name\": {\"en\": \"Racecourse\",\"zh\": \"馬場\"}}"));
 
+                                JSONObject aelD = DATA_SHEET.optJSONObject("routeList").optJSONObject("AEL+1+AsiaWorld-Expo+Hong Kong");
+                                aelD.optJSONObject("orig").put("zh", "機場/博覽館");
+                                aelD.optJSONObject("orig").put("en", "Airport/AsiaWorld-Expo");
+                                aelD.optJSONObject("dest").put("zh", "市區");
+                                aelD.optJSONObject("dest").put("en", "city");
+
+                                JSONObject aelU = DATA_SHEET.optJSONObject("routeList").optJSONObject("AEL+1+Hong Kong+AsiaWorld-Expo");
+                                aelU.optJSONObject("orig").put("zh", "市區");
+                                aelU.optJSONObject("orig").put("en", "city");
+                                aelU.optJSONObject("dest").put("zh", "機場/博覽館");
+                                aelU.optJSONObject("dest").put("en", "Airport/AsiaWorld-Expo");
+
                                 Set<String> kmbOps = new HashSet<>();
                                 Set<String> ctbCircular = new HashSet<>();
                                 Map<String, List<JSONObject>> mtrOrig = new HashMap<>();
@@ -705,7 +718,7 @@ public class Registry {
         thread.start();
     }
 
-    public Pair<Set<Character>, Boolean> getPossibleNextChar(String input) {
+    public PossibleNextCharResult getPossibleNextChar(String input) {
         Set<Character> result = new HashSet<>();
         boolean exactMatch = false;
         for (String routeNumber : BUS_ROUTE) {
@@ -717,10 +730,35 @@ public class Registry {
                 }
             }
         }
-        return Pair.create(result, exactMatch);
+        return new PossibleNextCharResult(result, exactMatch);
     }
 
-    public List<JSONObject> findRoutes(String input) {
+    public static class PossibleNextCharResult {
+
+        private final Set<Character> characters;
+        private final boolean hasExactMatch;
+
+        public PossibleNextCharResult(Set<Character> characters, boolean hasExactMatch) {
+            this.characters = characters;
+            this.hasExactMatch = hasExactMatch;
+        }
+
+        public Set<Character> getCharacters() {
+            return characters;
+        }
+
+        public boolean hasExactMatch() {
+            return hasExactMatch;
+        }
+
+    }
+
+    public List<JSONObject> findRoutes(String input, boolean exact) {
+        return findRoutes(input, exact, r -> true);
+    }
+
+    public List<JSONObject> findRoutes(String input, boolean exact, Predicate<JSONObject> predicate) {
+        Predicate<String> routeMatcher = exact ? r -> r.equals(input) : r -> r.startsWith(input);
         try {
             Map<String, JSONObject> matchingRoutes = new HashMap<>();
 
@@ -730,7 +768,7 @@ public class Registry {
                 if (data.optBoolean("ctbIsCircular")) {
                     continue;
                 }
-                if (data.optString("route").equals(input)) {
+                if (routeMatcher.test(data.optString("route")) && predicate.test(data)) {
                     String co;
                     JSONObject bound = data.optJSONObject("bound");
                     if (bound.has("kmb")) {
@@ -788,25 +826,30 @@ public class Registry {
                 if (coA != coB) {
                     return coA - coB;
                 }
+                if (coA == 5 || coA == 6) {
+                    int lineDiff = a.optJSONObject("route").optString("route").compareTo(b.optJSONObject("route").optString("route"));
+                    if (lineDiff != 0) {
+                        return lineDiff;
+                    }
+                    return -boundA.optString("mtr").compareTo(boundB.optString("mtr"));
+                }
                 if (coA == 2) {
                     return IntUtils.parseOrZero(a.optJSONObject("route").optString("nlbId")) - IntUtils.parseOrZero(b.optJSONObject("route").optString("nlbId"));
-                } else {
-                    if (coA == 4) {
-                        int gtfsDiff = IntUtils.parseOrZero(a.optJSONObject("route").optString("gtfsId")) - IntUtils.parseOrZero(b.optJSONObject("route").optString("gtfsId"));
-                        if (gtfsDiff != 0) {
-                            return gtfsDiff;
-                        }
-                    }
-                    int typeDiff = IntUtils.parseOrZero(a.optJSONObject("route").optString("serviceType")) - IntUtils.parseOrZero(b.optJSONObject("route").optString("serviceType"));
-                    if (typeDiff == 0) {
-                        if (coA == 1) {
-                            return Boolean.compare(a.optJSONObject("route").has("ctbSpecial"), b.optJSONObject("route").has("ctbSpecial"));
-                        }
-                        return -boundA.optString(coAStr).compareTo(boundB.optString(coBStr));
-                    } else {
-                        return typeDiff;
+                }
+                if (coA == 4) {
+                    int gtfsDiff = IntUtils.parseOrZero(a.optJSONObject("route").optString("gtfsId")) - IntUtils.parseOrZero(b.optJSONObject("route").optString("gtfsId"));
+                    if (gtfsDiff != 0) {
+                        return gtfsDiff;
                     }
                 }
+                int typeDiff = IntUtils.parseOrZero(a.optJSONObject("route").optString("serviceType")) - IntUtils.parseOrZero(b.optJSONObject("route").optString("serviceType"));
+                if (typeDiff == 0) {
+                    if (coA == 1) {
+                        return Boolean.compare(a.optJSONObject("route").has("ctbSpecial"), b.optJSONObject("route").has("ctbSpecial"));
+                    }
+                    return -boundA.optString(coAStr).compareTo(boundB.optString(coBStr));
+                }
+                return typeDiff;
             });
             return routes;
         } catch (JSONException e) {
@@ -1563,6 +1606,11 @@ public class Registry {
                                             int platform = Integer.parseInt(trainData.optString("plat"));
                                             String specialRoute = trainData.optString("route");
                                             String dest = DATA_SHEET.optJSONObject("stopList").optJSONObject(trainData.optString("dest")).optJSONObject("name").optString(Shared.Companion.getLanguage());
+                                            if (dest.equals("博覽館")) {
+                                                dest = "機場及博覽館";
+                                            } else if (dest.equals("AsiaWorld-Expo")) {
+                                                dest = "Airport & AsiaWorld-Expo";
+                                            }
                                             if (Shared.Companion.getLanguage().equals("en")) {
                                                 dest = StringUtils.capitalize(dest);
                                             }

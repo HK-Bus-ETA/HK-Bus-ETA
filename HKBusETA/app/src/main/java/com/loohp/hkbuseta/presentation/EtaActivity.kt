@@ -111,15 +111,15 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
     if (swipe.currentValue) {
         instance.runOnUiThread {
             val text = if (Shared.language == "en") {
-                "Nearby Interchange Routes of ".plus(StringUtils.capitalize(stop.optJSONObject("name").optString("en")))
+                "Nearby Interchange Routes of ".plus(StringUtils.capitalize(stop.optJSONObject("name")!!.optString("en")))
             } else {
-                "".plus(stop.optJSONObject("name").optString("zh")).plus(" 附近轉乘路線")
+                "".plus(stop.optJSONObject("name")!!.optString("zh")).plus(" 附近轉乘路線")
             }
             Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
         }
         val intent = Intent(instance, NearbyActivity::class.java)
-        intent.putExtra("lat", stop.optJSONObject("location").optDouble("lat"))
-        intent.putExtra("lng", stop.optJSONObject("location").optDouble("lng"))
+        intent.putExtra("lat", stop.optJSONObject("location")!!.optDouble("lat"))
+        intent.putExtra("lng", stop.optJSONObject("location")!!.optDouble("lng"))
         intent.putExtra("exclude", arrayListOf(route.optString("route")))
         ActivityUtils.startActivity(instance, intent) { _ ->
             scope.launch {
@@ -164,8 +164,8 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
 
                 var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
 
-                val lat = stop.optJSONObject("location").optDouble("lat")
-                val lng = stop.optJSONObject("location").optDouble("lng")
+                val lat = stop.optJSONObject("location")!!.optDouble("lat")
+                val lng = stop.optJSONObject("location")!!.optDouble("lng")
 
                 LaunchedEffect (Unit) {
                     focusRequester.requestFocus()
@@ -176,10 +176,11 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                         delay(30000)
                     }
                 }
+                val routeNumber = route.optString("route")
 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
-                Title(index, stop.optJSONObject("name"), lat, lng, route.optString("route"), instance)
-                SubTitle(route.optJSONObject("dest"), lat, lng, instance)
+                Title(index, stop.optJSONObject("name")!!, lat, lng, routeNumber, co, instance)
+                SubTitle(route.optJSONObject("dest")!!, lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(9, instance).dp))
                 EtaText(eta, 1, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
@@ -315,7 +316,7 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaActivit
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumber: String, instance: EtaActivity) {
+fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     var name = stopName.optString(Shared.language)
     if (Shared.language == "en") {
@@ -330,7 +331,7 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
                 ),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
-            text = "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name),
+            text = if (co == "mtr") name else "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name),
             maxLines = 2,
             fontWeight = FontWeight(900),
             fontSizeRange = FontSizeRange(
@@ -349,7 +350,7 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
                 ),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
-            text = "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name),
+            text = if (co == "mtr") name else "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name),
             maxLines = 2,
             fontWeight = FontWeight(900),
             fontSizeRange = FontSizeRange(
@@ -362,10 +363,17 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SubTitle(destName: JSONObject, lat: Double, lng: Double, instance: EtaActivity) {
+fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     var name = destName.optString(Shared.language)
     name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
+    if (co == "mtr") {
+        name = if (Shared.language == "en") {
+            routeNumber.plus(" ").plus(name)
+        } else {
+            Shared.getMtrLineChineseName(routeNumber, "???").plus(" ").plus(name)
+        }
+    }
     AutoResizeText(
         modifier = Modifier
             .fillMaxWidth()

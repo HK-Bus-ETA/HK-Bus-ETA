@@ -129,6 +129,30 @@ class Shared {
             }
         }
 
+        fun getMtrLineChineseName(lineName: String): String {
+            return getMtrLineChineseName(lineName) { lineName }
+        }
+
+        fun getMtrLineChineseName(lineName: String, orElse: String): String {
+            return getMtrLineChineseName(lineName) { orElse }
+        }
+
+        fun getMtrLineChineseName(lineName: String, orElse: () -> String): String {
+            return when (lineName) {
+                "AEL" -> "機場快綫"
+                "TCL" -> "東涌綫"
+                "TML" -> "屯馬綫"
+                "TKL" -> "將軍澳綫"
+                "EAL" -> "東鐵綫"
+                "SIL" -> "南港島綫"
+                "TWL" -> "荃灣綫"
+                "ISL" -> "港島綫"
+                "KTL" -> "觀塘綫"
+                "DRL" -> "迪士尼綫"
+                else -> orElse.invoke()
+            }
+        }
+
         var language = "zh"
 
         val favoriteRouteStops: Map<Int, JSONObject> = ConcurrentHashMap()

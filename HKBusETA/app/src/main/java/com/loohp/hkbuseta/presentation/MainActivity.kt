@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
                             } else if (queryRouteNumber != null) {
                                 startActivity(Intent(this@MainActivity, TitleActivity::class.java))
 
-                                val result = Registry.getInstance(this@MainActivity).findRoutes(queryRouteNumber);
+                                val result = Registry.getInstance(this@MainActivity).findRoutes(queryRouteNumber, true);
                                 if (result != null && result.isNotEmpty()) {
                                     val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
                                     intent.putExtra("result", JsonUtils.fromCollection(result).toString())
