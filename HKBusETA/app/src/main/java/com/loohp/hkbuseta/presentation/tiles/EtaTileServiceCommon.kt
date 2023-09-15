@@ -318,7 +318,7 @@ class EtaTileServiceCommon {
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
             val maxLines = if (singleLine) 1 else 2
-            val textSize = clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 20), maxLines, 1F, maxTextSize), dpMax = maxTextSize + 1F)
+            val textSize = clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 20) / 10 * 8, maxLines, 1F, maxTextSize), dpMax = maxTextSize + 1F)
 
             return LayoutElementBuilders.Text.Builder()
                 //.setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
@@ -349,14 +349,14 @@ class EtaTileServiceCommon {
         }
 
         private fun buildLayout(favoriteIndex: Int, favouriteStopRoute: JSONObject, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
-            val stopName = favouriteStopRoute.optJSONObject("stop").optJSONObject("name")
-            val destName = favouriteStopRoute.optJSONObject("route").optJSONObject("dest")
-
             val stopId = favouriteStopRoute.optString("stopId")
             val co = favouriteStopRoute.optString("co")
             val index = favouriteStopRoute.optInt("index")
-            val stop = favouriteStopRoute.optJSONObject("stop")
-            val route = favouriteStopRoute.optJSONObject("route")
+            val stop = favouriteStopRoute.optJSONObject("stop")!!
+            val route = favouriteStopRoute.optJSONObject("route")!!
+
+            val stopName = stop.optJSONObject("name")!!
+            val destName = route.optJSONObject("dest")!!
 
             val eta = Registry.getEta(stopId, co, route, context)
 
@@ -369,6 +369,22 @@ class EtaTileServiceCommon {
                     "nlb" -> Color(0xFF9BFFC6)
                     "mtr-bus" -> Color(0xFFAAD4FF)
                     "gmb" -> Color(0xFF36FF42)
+                    "lightRail" -> Color(0xFFD3A809)
+                    "mtr" -> {
+                        when (route.optString("route")) {
+                            "AEL" -> Color(0xFF00888E)
+                            "TCL" -> Color(0xFFF3982D)
+                            "TML" -> Color(0xFF9C2E00)
+                            "TKL" -> Color(0xFF7E3C93)
+                            "EAL" -> Color(0xFF5EB7E8)
+                            "SIL" -> Color(0xFFCBD300)
+                            "TWL" -> Color(0xFFE60012)
+                            "ISL" -> Color(0xFF0075C2)
+                            "KTL" -> Color(0xFF00A040)
+                            "DRL" -> Color(0xFFEB6EA5)
+                            else -> Color.LightGray
+                        }
+                    }
                     else -> Color.LightGray
                 }.adjustBrightness(if (eta.nextScheduledBus < 0) 0.2F else 1F)
             }
@@ -453,7 +469,7 @@ class EtaTileServiceCommon {
                                             DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(12F, context)).build()
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 1, false, context)
+                                    etaText(eta, 1, co == "mtr" || co == "lightRail", context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(

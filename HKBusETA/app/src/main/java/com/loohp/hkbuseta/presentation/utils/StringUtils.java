@@ -11,6 +11,29 @@ import java.util.regex.Pattern;
 
 public class StringUtils {
 
+    public static String getCircledNumber(int number) {
+        if (number < 0 || number > 20) {
+            return String.valueOf(number);
+        }
+        if (number == 0) {
+            return "⓿";
+        }
+        if (number > 10) {
+            return String.valueOf((char) (9451 + (number - 11)));
+        }
+        return String.valueOf((char) (10102 + (number - 1)));
+    }
+
+    public static String getHollowCircledNumber(int number) {
+        if (number < 0 || number > 10) {
+            return String.valueOf(number);
+        }
+        if (number == 0) {
+            return "⓪";
+        }
+        return String.valueOf((char) (9312 + (number - 1)));
+    }
+
     public static String capitalize(String str) {
         return capitalize(str, true);
     }
@@ -20,7 +43,7 @@ public class StringUtils {
             str = str.toLowerCase();
         }
         StringBuffer sb = new StringBuffer();
-        Matcher matcher = Pattern.compile("(?:^|\\s|[\"'(\\[{])+\\S").matcher(str);
+        Matcher matcher = Pattern.compile("(?:^|\\s|[\"'(\\[{/])+\\S").matcher(str);
         while (matcher.find()) {
             matcher.appendReplacement(sb, matcher.group().toUpperCase());
         }

@@ -1,5 +1,6 @@
 package com.loohp.hkbuseta.presentation.shared;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.Log;
 import android.util.Pair;
@@ -33,6 +34,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -45,11 +47,13 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
@@ -529,15 +533,39 @@ public class Registry {
                                 e2.put("zh", e2.optString("zh") + " (落馬洲管制站 - 僅限過境旅客)");
                                 e2.put("en", e2.optString("en") + " (Lok Ma Chau Control Point - Border Crossing Passengers Only)");
 
+                                DATA_SHEET.optJSONObject("stopList").put("RAC", new JSONObject("{\"location\": {\"lat\": 22.4003487,\"lng\": 114.2030287},\"name\": {\"en\": \"Racecourse\",\"zh\": \"馬場\"}}"));
+
                                 Set<String> kmbOps = new HashSet<>();
                                 Set<String> ctbCircular = new HashSet<>();
+                                Map<String, List<JSONObject>> mtrOrig = new HashMap<>();
+                                Map<String, List<JSONObject>> mtrDest = new HashMap<>();
 
                                 Set<String> keysToRemove = new HashSet<>();
                                 for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
                                     String key = itr.next();
                                     JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
                                     JSONObject bounds = data.optJSONObject("bound");
-                                    if (bounds.has("kmb")) {
+                                    if (bounds.has("lightRail")) {
+                                        BUS_ROUTE.add(data.optString("route"));
+                                    } else if (bounds.has("mtr")) {
+                                        String lineName = data.optString("route");
+                                        BUS_ROUTE.add(lineName);
+                                        String bound = bounds.optString("mtr");
+                                        int index = bound.indexOf("-");
+                                        if (index >= 0) {
+                                            if (bound.startsWith("LMC-")) {
+                                                JSONArray stops = data.optJSONObject("stops").optJSONArray("mtr");
+                                                stops.put(JsonUtils.indexOf(stops, "FOT"), "RAC");
+                                            }
+                                            bounds.put("mtr", bound = bound.substring(index + 1));
+                                            data.put("serviceType", "2");
+                                            mtrOrig.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>(2)).add(data.optJSONObject("orig"));
+                                            mtrDest.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>(2)).add(data.optJSONObject("dest"));
+                                        } else {
+                                            mtrOrig.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>(2)).add(0, data.optJSONObject("orig"));
+                                            mtrDest.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>(2)).add(0, data.optJSONObject("dest"));
+                                        }
+                                    } else if (bounds.has("kmb")) {
                                         if (data.optJSONArray("co").toString().contains("ctb")) {
                                             kmbOps.add(data.optString("route"));
                                         }
@@ -548,12 +576,54 @@ public class Registry {
                                         dest.put("en", dest.optString("en") + " (Circular)");
                                     }
                                 }
+
+                                Map<String, Pair<String, String>> mtrJoinedOrig = new HashMap<>();
+                                for (Map.Entry<String, List<JSONObject>> entry : mtrOrig.entrySet()) {
+                                    List<JSONObject> values = entry.getValue();
+                                    if (values.size() > 1) {
+                                        Set<String> origZh = new LinkedHashSet<>();
+                                        Set<String> origEn = new LinkedHashSet<>();
+                                        for (JSONObject orig : values) {
+                                            origZh.add(orig.optString("zh"));
+                                            origEn.add(orig.optString("en"));
+                                        }
+                                        mtrJoinedOrig.put(entry.getKey(), Pair.create(String.join("/", origZh), String.join("/", origEn)));
+                                    }
+                                }
+                                Map<String, Pair<String, String>> mtrJoinedDest = new HashMap<>();
+                                for (Map.Entry<String, List<JSONObject>> entry : mtrDest.entrySet()) {
+                                    List<JSONObject> values = entry.getValue();
+                                    if (values.size() > 1) {
+                                        Set<String> destZh = new LinkedHashSet<>();
+                                        Set<String> destEn = new LinkedHashSet<>();
+                                        for (JSONObject orig : values) {
+                                            destZh.add(orig.optString("zh"));
+                                            destEn.add(orig.optString("en"));
+                                        }
+                                        mtrJoinedDest.put(entry.getKey(), Pair.create(String.join("/", destZh), String.join("/", destEn)));
+                                    }
+                                }
                                 for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
                                     String key = itr.next();
                                     JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
                                     String routeNumber = data.optString("route");
                                     JSONObject bounds = data.optJSONObject("bound");
-                                    if (data.optJSONObject("bound").has("ctb")) {
+                                    if (bounds.has("mtr")) {
+                                        String lineName = routeNumber;
+                                        String bound = bounds.optString("mtr");
+                                        Pair<String, String> jointOri = mtrJoinedOrig.get(lineName + "_" + bound);
+                                        if (jointOri != null) {
+                                            JSONObject orig = data.optJSONObject("orig");
+                                            orig.put("zh", jointOri.first);
+                                            orig.put("en", jointOri.second);
+                                        }
+                                        Pair<String, String> jointDest = mtrJoinedDest.get(lineName + "_" + bound);
+                                        if (jointDest != null) {
+                                            JSONObject dest = data.optJSONObject("dest");
+                                            dest.put("zh", jointDest.first);
+                                            dest.put("en", jointDest.second);
+                                        }
+                                    } else if (data.optJSONObject("bound").has("ctb")) {
                                         if (kmbOps.contains(routeNumber) && !bounds.has("kmb")) {
                                             keysToRemove.add(key);
                                         } else if (ctbCircular.contains(routeNumber) && bounds.optString("ctb").length() < 2) {
@@ -673,6 +743,10 @@ public class Registry {
                         co = "mtr-bus";
                     } else if (bound.has("gmb")) {
                         co = "gmb";
+                    } else if (bound.has("lightRail")) {
+                        co = "lightRail";
+                    } else if (bound.has("mtr")) {
+                        co = "mtr";
                     } else {
                         continue;
                     }
@@ -707,10 +781,10 @@ public class Registry {
             routes.sort((a, b) -> {
                 JSONObject boundA = a.optJSONObject("route").optJSONObject("bound");
                 JSONObject boundB = b.optJSONObject("route").optJSONObject("bound");
-                String coAStr = boundA.has("kmb") ? "kmb" : (boundA.has("ctb") ? "ctb" : (boundA.has("nlb") ? "nlb" : (boundA.has("mtr-bus") ? "mtr-bus" : "gmb")));
-                String coBStr = boundB.has("kmb") ? "kmb" : (boundB.has("ctb") ? "ctb" : (boundB.has("nlb") ? "nlb" : (boundB.has("mtr-bus") ? "mtr-bus" : "gmb")));
-                int coA = coAStr.equals("kmb") ? 0 : (coAStr.equals("ctb") ? 1 : (coAStr.equals("nlb") ? 2 : (coAStr.equals("mtr-bus") ? 3 : 4)));
-                int coB = coBStr.equals("kmb") ? 0 : (coBStr.equals("ctb") ? 1 : (coBStr.equals("nlb") ? 2 : (coBStr.equals("mtr-bus") ? 3 : 4)));
+                String coAStr = boundA.has("kmb") ? "kmb" : (boundA.has("ctb") ? "ctb" : (boundA.has("nlb") ? "nlb" : (boundA.has("mtr-bus") ? "mtr-bus" : (boundA.has("gmb") ? "gmb" : (boundA.has("lightRail") ? "lightRail" : "mtr")))));
+                String coBStr = boundB.has("kmb") ? "kmb" : (boundB.has("ctb") ? "ctb" : (boundB.has("nlb") ? "nlb" : (boundB.has("mtr-bus") ? "mtr-bus" : (boundB.has("gmb") ? "gmb" : (boundB.has("lightRail") ? "lightRail" : "mtr")))));
+                int coA = coAStr.equals("kmb") ? 0 : (coAStr.equals("ctb") ? 1 : (coAStr.equals("nlb") ? 2 : (coAStr.equals("mtr-bus") ? 3 : (coAStr.equals("gmb") ? 4 : (coAStr.equals("lightRail") ? 5 : 6)))));
+                int coB = coBStr.equals("kmb") ? 0 : (coBStr.equals("ctb") ? 1 : (coBStr.equals("nlb") ? 2 : (coBStr.equals("mtr-bus") ? 3 : (coBStr.equals("gmb") ? 4 : (coBStr.equals("lightRail") ? 5 : 6)))));
                 if (coA != coB) {
                     return coA - coB;
                 }
@@ -774,6 +848,10 @@ public class Registry {
                         co = "mtr-bus";
                     } else if (stopId.matches("^[0-9]{8}$")) {
                         co = "gmb";
+                    } else if (stopId.matches("^LR[0-9]+$")) {
+                        co = "lightRail";
+                    } else if (stopId.matches("^[A-Z]{3}$")) {
+                        co = "mtr";
                     } else {
                         continue;
                     }
@@ -805,9 +883,11 @@ public class Registry {
                     boolean isNlb = data.has("bound") && data.optJSONObject("bound").has("nlb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("nlb"), stopId);
                     boolean isMtrBus = data.has("bound") && data.optJSONObject("bound").has("mtr-bus") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("mtr-bus"), stopId);
                     boolean isGmb = data.has("bound") && data.optJSONObject("bound").has("gmb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("gmb"), stopId);
+                    boolean isLrt = data.has("bound") && data.optJSONObject("bound").has("lightRail") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("lightRail"), stopId);
+                    boolean isMtr = data.has("bound") && data.optJSONObject("bound").has("mtr") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("mtr"), stopId);
 
-                    if (isKmb || isCtb || isNlb || isMtrBus || isGmb) {
-                        String co = isKmb ? "kmb" : (isCtb ? "ctb" : (isNlb ? "nlb" : (isMtrBus ? "mtr-bus" : "gmb")));
+                    if (isKmb || isCtb || isNlb || isMtrBus || isGmb || isLrt || isMtr) {
+                        String co = isKmb ? "kmb" : (isCtb ? "ctb" : (isNlb ? "nlb" : (isMtrBus ? "mtr-bus" : (isGmb ? "gmb" : (isLrt ? "lightRail" : "mtr")))));
                         String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co));
 
                         JSONObject location = nearbyStop.optJSONObject("data").optJSONObject("location");
@@ -970,7 +1050,7 @@ public class Registry {
         }
     }
 
-    public static String getNoScheduledDepartureMessage(int elementFontSize, String altMessage, boolean isAboveTyphoonSignalEight, String typhoonWarningTitle) {
+    public static String getNoScheduledDepartureMessage(String altMessage, boolean isAboveTyphoonSignalEight, String typhoonWarningTitle) {
         if (altMessage == null || altMessage.isEmpty()) {
             altMessage = Shared.Companion.getLanguage().equals("en") ? "No scheduled departures at this moment" : "暫時沒有預定班次";
         }
@@ -978,9 +1058,9 @@ public class Registry {
             altMessage += " (" + typhoonWarningTitle + ")";
         }
         if (isAboveTyphoonSignalEight) {
-            return "<span style=\"font-size: " + elementFontSize + "px;\"></span><span style=\"color: #6472BC;\">" + altMessage + "</span>";
+            return "<span style=\"color: #6472BC;\">" + altMessage + "</span>";
         } else {
-            return "<span style=\"font-size: " + elementFontSize + "px;\"></span>" + altMessage;
+            return altMessage;
         }
     }
 
@@ -988,13 +1068,12 @@ public class Registry {
         if (!ConnectionUtils.getConnectionType(context).hasConnection()) {
             return ETAQueryResult.CONNECTION_ERROR;
         }
-        int elementFontSize = 25;
         CompletableFuture<ETAQueryResult> future = new CompletableFuture<>();
         new Thread(() -> {
             try {
                 Map<Integer, String> lines = new HashMap<>();
                 long nextScheduledBus = -999;
-                lines.put(1, getNoScheduledDepartureMessage(elementFontSize, null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
+                lines.put(1, getNoScheduledDepartureMessage(null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
                 String language = Shared.Companion.getLanguage();
                 switch (co) {
                     case "kmb": {
@@ -1014,12 +1093,12 @@ public class Registry {
                                     String message = "";
                                     if (language.equals("en")) {
                                         if (mins > 0) {
-                                            message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                            message = "<b>" + mins + "</b>" + " Min." + "";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
                                         } else if (mins > -60) {
-                                            message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                            message = "<b>-</b>" + " Min." + "";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
@@ -1029,12 +1108,12 @@ public class Registry {
                                         }
                                     } else {
                                         if (mins > 0) {
-                                            message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
                                         } else if (mins > -60) {
-                                            message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
@@ -1050,12 +1129,12 @@ public class Registry {
 
                                     if (message.isEmpty() || (INSTANCE.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
                                         if (seq == 1) {
-                                            message = getNoScheduledDepartureMessage(elementFontSize, message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                            message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
                                         } else {
-                                            message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>-";
+                                            message = "<b></b>-";
                                         }
                                     } else {
-                                        message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
+                                        message = "<b></b>" + message;
                                     }
                                     lines.put(seq, message);
                                 }
@@ -1080,12 +1159,12 @@ public class Registry {
                                     String message = "";
                                     if (language.equals("en")) {
                                         if (mins > 0) {
-                                            message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                            message = "<b>" + mins + "</b>" + " Min." + "";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
                                         } else if (mins > -60) {
-                                            message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                            message = "<b>-</b>" + " Min." + "";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
@@ -1095,12 +1174,12 @@ public class Registry {
                                         }
                                     } else {
                                         if (mins > 0) {
-                                            message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
                                         } else if (mins > -60) {
-                                            message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
@@ -1116,12 +1195,12 @@ public class Registry {
 
                                     if (message.isEmpty()) {
                                         if (seq == 1) {
-                                            message = getNoScheduledDepartureMessage(elementFontSize, message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                            message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
                                         } else {
-                                            message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>-";
+                                            message = "<b></b>-";
                                         }
                                     } else {
-                                        message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
+                                        message = "<b></b>" + message;
                                     }
                                     lines.put(seq, message);
                                 }
@@ -1146,12 +1225,12 @@ public class Registry {
                             String message = "";
                             if (language.equals("en")) {
                                 if (mins > 0) {
-                                    message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                    message = "<b>" + mins + "</b>" + " Min." + "";
                                     if (seq == 1) {
                                         nextScheduledBus = mins;
                                     }
                                 } else if (mins > -60) {
-                                    message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                    message = "<b>-</b>" + " Min." + "";
                                     if (seq == 1) {
                                         nextScheduledBus = mins;
                                     }
@@ -1161,12 +1240,12 @@ public class Registry {
                                 }
                             } else {
                                 if (mins > 0) {
-                                    message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                     if (seq == 1) {
                                         nextScheduledBus = mins;
                                     }
                                 } else if (mins > -60) {
-                                    message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                     if (seq == 1) {
                                         nextScheduledBus = mins;
                                     }
@@ -1182,12 +1261,12 @@ public class Registry {
 
                             if (message.isEmpty()) {
                                 if (seq == 1) {
-                                    message = getNoScheduledDepartureMessage(elementFontSize, message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                    message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
                                 } else {
-                                    message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>-";
+                                    message = "<b></b>-";
                                 }
                             } else {
-                                message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
+                                message = "<b></b>" + message;
                             }
                             lines.put(seq, message);
                         }
@@ -1240,12 +1319,12 @@ public class Registry {
                                     String message = "";
                                     if (language.equals("en")) {
                                         if (mins > 0) {
-                                            message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                            message = "<b>" + mins + "</b>" + " Min." + "";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
                                         } else if (mins > -60) {
-                                            message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                            message = "<b>-</b>" + " Min." + "";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
@@ -1255,12 +1334,12 @@ public class Registry {
                                         }
                                     } else {
                                         if (mins > 0) {
-                                            message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
                                         } else if (mins > -60) {
-                                            message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                             if (seq == 1) {
                                                 nextScheduledBus = mins;
                                             }
@@ -1276,12 +1355,12 @@ public class Registry {
 
                                     if (message.isEmpty()) {
                                         if (seq == 1) {
-                                            message = getNoScheduledDepartureMessage(elementFontSize, message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                            message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
                                         } else {
-                                            message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>-";
+                                            message = "<b></b>-";
                                         }
                                     } else {
-                                        message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
+                                        message = "<b></b>" + message;
                                     }
                                     lines.put(seq, message);
                                 }
@@ -1326,12 +1405,12 @@ public class Registry {
                             String message = "";
                             if (language.equals("en")) {
                                 if (mins > 0) {
-                                    message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " Min." + "";
+                                    message = "<b>" + mins + "</b>" + " Min." + "";
                                     if (seq == 1) {
                                         nextScheduledBus = mins;
                                     }
                                 } else if (mins > -60) {
-                                    message = "" + "<b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " Min." + "";
+                                    message = "<b>-</b>" + " Min." + "";
                                     if (seq == 1) {
                                         nextScheduledBus = mins;
                                     }
@@ -1341,12 +1420,12 @@ public class Registry {
                                 }
                             } else {
                                 if (mins > 0) {
-                                    message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">" + mins + "</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                     if (seq == 1) {
                                         nextScheduledBus = mins;
                                     }
                                 } else if (mins > -60) {
-                                    message = "<span style=\"white-space: nowrap;\"><b style=\"font-size: " + elementFontSize + "px;\">-</b>" + "" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
                                     if (seq == 1) {
                                         nextScheduledBus = mins;
                                     }
@@ -1362,14 +1441,131 @@ public class Registry {
 
                             if (message.isEmpty()) {
                                 if (seq == 1) {
-                                    message = getNoScheduledDepartureMessage(elementFontSize, message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                    message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
                                 } else {
-                                    message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>-";
+                                    message = "<b></b>-";
                                 }
                             } else {
-                                message = "<b style=\"font-size: " + elementFontSize + "px;\"></b>" + message;
+                                message = "<b></b>" + message;
                             }
                             lines.put(seq, message);
+                        }
+                        break;
+                    }
+                    case "lightRail": {
+                        JSONArray stopsList = route.optJSONObject("stops").optJSONArray("lightRail");
+                        if (JsonUtils.indexOf(stopsList, stopId) + 1 >= stopsList.length()) {
+                            lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
+                        } else {
+                            List<LrtETAData> results = new ArrayList<>();
+                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=" + stopId.substring(2));
+                            if (data.optInt("status") == 0) {
+                                lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                            } else {
+                                JSONArray platformList = data.optJSONArray("platform_list");
+                                for (int i = 0; i < platformList.length(); i++) {
+                                    JSONObject platform = platformList.optJSONObject(i);
+                                    int platformNumber = platform.optInt("platform_id");
+                                    JSONArray routeList = platform.optJSONArray("route_list");
+                                    if (routeList != null) {
+                                        for (int u = 0; u < routeList.length(); u++) {
+                                            JSONObject routeData = routeList.optJSONObject(u);
+                                            String routeNumber = routeData.optString("route_no");
+                                            if (routeNumber.equals(route.optString("route"))) {
+                                                Matcher matcher = Pattern.compile("([0-9]+) *min").matcher(routeData.optString("time_en"));
+                                                long mins = matcher.find() ? Long.parseLong(matcher.group(1)) : 0;
+                                                String minsMsg = routeData.optString(Shared.Companion.getLanguage().equals("en") ? "time_en" : "time_ch");
+                                                String dest = routeData.optString(Shared.Companion.getLanguage().equals("en") ? "dest_en" : "dest_ch");
+                                                int trainLength = routeData.optInt("train_length");
+                                                results.add(new LrtETAData(routeNumber, dest, trainLength, platformNumber, mins, minsMsg));
+                                            }
+                                        }
+                                    }
+                                }
+                                results.sort(Comparator.naturalOrder());
+                                for (int i = 0; i < results.size(); i++) {
+                                    LrtETAData lrt = results.get(i);
+                                    int seq = i + 1;
+                                    String minsMessage = lrt.getEtaMessage();
+                                    if (seq == 1) {
+                                        nextScheduledBus = lrt.getEta();
+                                    }
+                                    StringBuilder cartsMessage = new StringBuilder(2);
+                                    for (int u = 0; u < lrt.getTrainLength(); u++) {
+                                        cartsMessage.append("\uD83D\uDE83");
+                                    }
+                                    String message = "<b></b>" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + " " + cartsMessage + " " + minsMessage;
+                                    lines.put(seq, message);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    case "mtr": {
+                        JSONArray stopsList = route.optJSONObject("stops").optJSONArray("mtr");
+                        if (JsonUtils.indexOf(stopsList, stopId) + 1 >= stopsList.length()) {
+                            lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
+                        } else {
+                            String lineName = route.optString("route");
+                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=" + lineName + "&sta=" + stopId);
+                            if (data.optInt("status") == 0) {
+                                lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                            } else {
+                                JSONObject lineStops = data.optJSONObject("data").optJSONObject(lineName + "-" + stopId);
+                                if (lineStops == null) {
+                                    if (stopId.equals("RAC")) {
+                                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務");
+                                    } else {
+                                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                                    }
+                                } else {
+                                    boolean delayed = !data.optString("isdelay", "N").equals("N");
+                                    String dir = route.optJSONObject("bound").optString("mtr").equals("UT") ? "UP" : "DOWN";
+                                    JSONArray trains = lineStops.optJSONArray(dir);
+                                    if (trains == null || trains.length() == 0) {
+                                        if (stopId.equals("RAC")) {
+                                            lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務");
+                                        } else {
+                                            lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                                        }
+                                    } else {
+                                        for (int u = 0; u < trains.length(); u++) {
+                                            JSONObject trainData = trains.optJSONObject(u);
+                                            int seq = Integer.parseInt(trainData.optString("seq"));
+                                            int platform = Integer.parseInt(trainData.optString("plat"));
+                                            String specialRoute = trainData.optString("route");
+                                            String dest = DATA_SHEET.optJSONObject("stopList").optJSONObject(trainData.optString("dest")).optJSONObject("name").optString(Shared.Companion.getLanguage());
+                                            if (Shared.Companion.getLanguage().equals("en")) {
+                                                dest = StringUtils.capitalize(dest);
+                                            }
+                                            if (!specialRoute.isEmpty()) {
+                                                String via = DATA_SHEET.optJSONObject("stopList").optJSONObject(specialRoute).optJSONObject("name").optString(Shared.Companion.getLanguage());
+                                                if (Shared.Companion.getLanguage().equals("en")) {
+                                                    via = StringUtils.capitalize(via);
+                                                }
+                                                dest += (Shared.Companion.getLanguage().equals("en") ? " via " : " 經") + via;
+                                            }
+                                            String eta = trainData.optString("time");
+
+                                            @SuppressLint("SimpleDateFormat")
+                                            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                            format.setTimeZone(TimeZone.getTimeZone("Asia/Hong_Kong"));
+                                            long mins = (long) Math.ceil((format.parse(eta).getTime() - Instant.now().toEpochMilli()) / 60000.0);
+
+                                            String minsMessage = mins > 0 ? (mins + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘")) : (Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開");
+
+                                            String message = StringUtils.getCircledNumber(platform) + " " + dest + " " + minsMessage;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                                if (delayed) {
+                                                    message += Shared.Companion.getLanguage().equals("en") ? " (Delayed)" : " (服務服務)";
+                                                }
+                                            }
+                                            lines.put(seq, message);
+                                        }
+                                    }
+                                }
+                            }
                         }
                         break;
                     }
@@ -1386,6 +1582,56 @@ public class Registry {
                 future.cancel(true);
             } catch (Throwable ignore) {}
             return ETAQueryResult.CONNECTION_ERROR;
+        }
+    }
+
+    public static class LrtETAData implements Comparable<LrtETAData> {
+
+        public static final Comparator<LrtETAData> COMPARATOR = Comparator.comparing(LrtETAData::getEta).thenComparing(LrtETAData::getPlatformNumber);
+
+        private final String routeNumber;
+        private final String dest;
+        private final int trainLength;
+        private final int platformNumber;
+        private final long eta;
+        private final String etaMessage;
+
+        public LrtETAData(String routeNumber, String dest, int trainLength, int platformNumber, long eta, String etaMessage) {
+            this.routeNumber = routeNumber;
+            this.dest = dest;
+            this.trainLength = trainLength;
+            this.platformNumber = platformNumber;
+            this.eta = eta;
+            this.etaMessage = etaMessage;
+        }
+
+        public String getRouteNumber() {
+            return routeNumber;
+        }
+
+        public String getDest() {
+            return dest;
+        }
+
+        public int getTrainLength() {
+            return trainLength;
+        }
+
+        public int getPlatformNumber() {
+            return platformNumber;
+        }
+
+        public long getEta() {
+            return eta;
+        }
+
+        public String getEtaMessage() {
+            return etaMessage;
+        }
+
+        @Override
+        public int compareTo(LrtETAData o) {
+            return COMPARATOR.compare(this, o);
         }
     }
 

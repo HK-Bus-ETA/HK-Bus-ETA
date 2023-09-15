@@ -81,6 +81,22 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
             "nlb" -> Color(0xFF9BFFC6)
             "mtr-bus" -> Color(0xFFAAD4FF)
             "gmb" -> Color(0xFF36FF42)
+            "lightRail" -> Color(0xFFD3A809)
+            "mtr" -> {
+                when (route.optJSONObject("route")!!.optString("route")) {
+                    "AEL" -> Color(0xFF00888E)
+                    "TCL" -> Color(0xFFF3982D)
+                    "TML" -> Color(0xFF9C2E00)
+                    "TKL" -> Color(0xFF7E3C93)
+                    "EAL" -> Color(0xFF5EB7E8)
+                    "SIL" -> Color(0xFFCBD300)
+                    "TWL" -> Color(0xFFE60012)
+                    "ISL" -> Color(0xFF0075C2)
+                    "KTL" -> Color(0xFF00A040)
+                    "DRL" -> Color(0xFFEB6EA5)
+                    else -> Color.White
+                }
+            }
             else -> Color.White
         }.toArgb()
 
@@ -155,6 +171,8 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
                         "nlb" -> "NLB"
                         "mtr-bus" -> "MTR-Bus"
                         "gmb" -> "GMB"
+                        "lightRail" -> "LRT"
+                        "mtr" -> "MTR"
                         else -> "???"
                     }
                 } else {
@@ -164,6 +182,8 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
                         "nlb" -> "嶼巴"
                         "mtr-bus" -> "港鐵巴士"
                         "gmb" -> "專線小巴"
+                        "lightRail" -> "輕鐵"
+                        "mtr" -> "港鐵"
                         else -> "???"
                     }
                 }).plus(")")
