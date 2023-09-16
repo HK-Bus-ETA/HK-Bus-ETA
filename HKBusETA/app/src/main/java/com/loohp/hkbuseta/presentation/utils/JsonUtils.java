@@ -9,6 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -21,6 +22,14 @@ public class JsonUtils {
             }
         }
         return -1;
+    }
+
+    public static <T> List<T> mapToList(JSONArray array, Function<Object, T> mapping) {
+        List<T> list = new ArrayList<>(array.length());
+        for (int i = 0; i < array.length(); i++) {
+            list.add(mapping.apply(array.opt(i)));
+        }
+        return list;
     }
 
     public static boolean contains(JSONArray array, Object obj) {

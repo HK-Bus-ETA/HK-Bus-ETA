@@ -552,6 +552,7 @@ public class Registry {
                                 Set<String> ctbCircular = new HashSet<>();
                                 Map<String, List<JSONObject>> mtrOrig = new HashMap<>();
                                 Map<String, List<JSONObject>> mtrDest = new HashMap<>();
+                                Map<String, List<List<String>>> mtrStopsLists = new HashMap<>();
 
                                 Set<String> keysToRemove = new HashSet<>();
                                 for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
@@ -565,19 +566,20 @@ public class Registry {
                                         BUS_ROUTE.add(lineName);
                                         String bound = bounds.optString("mtr");
                                         int index = bound.indexOf("-");
+                                        JSONArray stops = data.optJSONObject("stops").optJSONArray("mtr");
                                         if (index >= 0) {
                                             if (bound.startsWith("LMC-")) {
-                                                JSONArray stops = data.optJSONObject("stops").optJSONArray("mtr");
                                                 stops.put(JsonUtils.indexOf(stops, "FOT"), "RAC");
                                             }
                                             bounds.put("mtr", bound = bound.substring(index + 1));
                                             data.put("serviceType", "2");
-                                            mtrOrig.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>(2)).add(data.optJSONObject("orig"));
-                                            mtrDest.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>(2)).add(data.optJSONObject("dest"));
+                                            mtrOrig.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(data.optJSONObject("orig"));
+                                            mtrDest.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(data.optJSONObject("dest"));
                                         } else {
-                                            mtrOrig.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>(2)).add(0, data.optJSONObject("orig"));
-                                            mtrDest.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>(2)).add(0, data.optJSONObject("dest"));
+                                            mtrOrig.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(0, data.optJSONObject("orig"));
+                                            mtrDest.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(0, data.optJSONObject("dest"));
                                         }
+                                        mtrStopsLists.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(JsonUtils.mapToList(stops, s -> DATA_SHEET.optJSONObject("stopList").optJSONObject((String) s).optJSONObject("name").optString("zh")));
                                     } else if (bounds.has("kmb")) {
                                         if (data.optJSONArray("co").toString().contains("ctb")) {
                                             kmbOps.add(data.optString("route"));
@@ -592,28 +594,42 @@ public class Registry {
 
                                 Map<String, Pair<String, String>> mtrJoinedOrig = new HashMap<>();
                                 for (Map.Entry<String, List<JSONObject>> entry : mtrOrig.entrySet()) {
+                                    String key = entry.getKey();
                                     List<JSONObject> values = entry.getValue();
                                     if (values.size() > 1) {
                                         Set<String> origZh = new LinkedHashSet<>();
                                         Set<String> origEn = new LinkedHashSet<>();
                                         for (JSONObject orig : values) {
-                                            origZh.add(orig.optString("zh"));
-                                            origEn.add(orig.optString("en"));
+                                            String stopNameZh = orig.optString("zh");
+                                            if (mtrStopsLists.get(key).stream().noneMatch(l -> {
+                                                int index = l.indexOf(stopNameZh);
+                                                return index > 0 && index + 1 < l.size();
+                                            })) {
+                                                origZh.add(stopNameZh);
+                                                origEn.add(orig.optString("en"));
+                                            }
                                         }
-                                        mtrJoinedOrig.put(entry.getKey(), Pair.create(String.join("/", origZh), String.join("/", origEn)));
+                                        mtrJoinedOrig.put(key, Pair.create(String.join("/", origZh), String.join("/", origEn)));
                                     }
                                 }
                                 Map<String, Pair<String, String>> mtrJoinedDest = new HashMap<>();
                                 for (Map.Entry<String, List<JSONObject>> entry : mtrDest.entrySet()) {
+                                    String key = entry.getKey();
                                     List<JSONObject> values = entry.getValue();
                                     if (values.size() > 1) {
                                         Set<String> destZh = new LinkedHashSet<>();
                                         Set<String> destEn = new LinkedHashSet<>();
                                         for (JSONObject orig : values) {
-                                            destZh.add(orig.optString("zh"));
-                                            destEn.add(orig.optString("en"));
+                                            String stopNameZh = orig.optString("zh");
+                                            if (mtrStopsLists.get(key).stream().noneMatch(l -> {
+                                                int index = l.indexOf(stopNameZh);
+                                                return index > 0 && index + 1 < l.size();
+                                            })) {
+                                                destZh.add(stopNameZh);
+                                                destEn.add(orig.optString("en"));
+                                            }
                                         }
-                                        mtrJoinedDest.put(entry.getKey(), Pair.create(String.join("/", destZh), String.join("/", destEn)));
+                                        mtrJoinedDest.put(key, Pair.create(String.join("/", destZh), String.join("/", destEn)));
                                     }
                                 }
                                 for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
