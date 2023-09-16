@@ -101,6 +101,7 @@ class Shared {
                             .fillMaxWidth()
                             .padding(25.dp, 0.dp),
                         color = Color(0xFFF9DE09),
+                        trackColor = Color(0xFF797979),
                         progress = progressAnimation
                     )
                 }
