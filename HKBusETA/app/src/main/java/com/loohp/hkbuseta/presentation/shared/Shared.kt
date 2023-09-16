@@ -100,7 +100,7 @@ class Shared {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(25.dp, 0.dp),
-                        color = Color(0xFF1F8AE4),
+                        color = Color(0xFFF9DE09),
                         progress = progressAnimation
                     )
                 }
