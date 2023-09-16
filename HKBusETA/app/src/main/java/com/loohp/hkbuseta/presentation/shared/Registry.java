@@ -1622,10 +1622,12 @@ public class Registry {
                                             int platform = Integer.parseInt(trainData.optString("plat"));
                                             String specialRoute = trainData.optString("route");
                                             String dest = DATA_SHEET.optJSONObject("stopList").optJSONObject(trainData.optString("dest")).optJSONObject("name").optString(Shared.Companion.getLanguage());
-                                            if (dest.equals("博覽館")) {
-                                                dest = "機場及博覽館";
-                                            } else if (dest.equals("AsiaWorld-Expo")) {
-                                                dest = "Airport & AsiaWorld-Expo";
+                                            if (!stopId.equals("AIR")) {
+                                                if (dest.equals("博覽館")) {
+                                                    dest = "機場及博覽館";
+                                                } else if (dest.equals("AsiaWorld-Expo")) {
+                                                    dest = "Airport & AsiaWorld-Expo";
+                                                }
                                             }
                                             if (Shared.Companion.getLanguage().equals("en")) {
                                                 dest = StringUtils.capitalize(dest);
