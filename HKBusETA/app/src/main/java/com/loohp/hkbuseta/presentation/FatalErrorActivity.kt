@@ -37,6 +37,7 @@ class FatalErrorActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.currentActivityClass = javaClass
 
         val zh: String?
         val en: String?

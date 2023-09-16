@@ -1,5 +1,6 @@
 package com.loohp.hkbuseta.presentation.shared
 
+import android.app.Activity
 import android.content.Context
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -157,6 +158,8 @@ class Shared {
         var language = "zh"
 
         val favoriteRouteStops: Map<Int, JSONObject> = ConcurrentHashMap()
+
+        var currentActivityClass: Class<Activity>? = null
 
     }
 

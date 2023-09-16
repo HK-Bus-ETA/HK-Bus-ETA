@@ -134,8 +134,11 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                                 finishAffinity()
-                            } else {
+                            } else if (Shared.currentActivityClass == null) {
                                 startActivity(Intent(this@MainActivity, TitleActivity::class.java))
+                                finishAffinity()
+                            } else {
+                                startActivity(Intent(this@MainActivity, Shared.currentActivityClass))
                                 finishAffinity()
                             }
                         } else if (Registry.getInstance(this@MainActivity).state == Registry.State.ERROR) {

@@ -38,6 +38,7 @@ class ListRoutesActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.currentActivityClass = javaClass
         val list = intent.extras!!.getString("result")?.let { JSONArray(it) } ?: throw RuntimeException()
         val result = JsonUtils.toList(list, JSONObject::class.java)
         setContent {

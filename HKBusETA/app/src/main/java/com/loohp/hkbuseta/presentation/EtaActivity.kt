@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -85,6 +86,7 @@ class EtaActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.currentActivityClass = javaClass
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")
         val index = intent.extras!!.getInt("index")
@@ -200,7 +202,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                         )
                         .onRotaryScrollEvent {
                             scope.launch {
-                                scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec())
+                                scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing))
                                 if (scroll.canScrollBackward != scroll.canScrollForward) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 }

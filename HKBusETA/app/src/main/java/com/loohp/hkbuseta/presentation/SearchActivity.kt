@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -80,6 +81,7 @@ class SearchActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.currentActivityClass = javaClass
         setContent {
             SearchPage(this)
         }
@@ -183,7 +185,7 @@ fun MainElement(instance: SearchActivity) {
                         )
                         .onRotaryScrollEvent {
                             scope.launch {
-                                scroll.animateScrollBy(it.verticalScrollPixels, TweenSpec())
+                                scroll.animateScrollBy(it.verticalScrollPixels, TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing))
                                 if (scroll.canScrollBackward != scroll.canScrollForward) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 }

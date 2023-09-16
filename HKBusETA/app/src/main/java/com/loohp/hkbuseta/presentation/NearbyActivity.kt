@@ -41,6 +41,7 @@ class NearbyActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.currentActivityClass = javaClass
 
         var location: LocationResult? = null
         var exclude: Set<String> = emptySet()
