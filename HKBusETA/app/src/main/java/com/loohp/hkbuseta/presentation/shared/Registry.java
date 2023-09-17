@@ -842,26 +842,33 @@ public class Registry {
                 if (coA != coB) {
                     return coA - coB;
                 }
+
+                JSONObject routeA = a.optJSONObject("route");
+                JSONObject routeB = b.optJSONObject("route");
+
+                String routeNumberA = routeA.optString("route");
+                String routeNumberB = routeB.optString("route");
+
                 if (coA == 5 || coA == 6) {
-                    int lineDiff = a.optJSONObject("route").optString("route").compareTo(b.optJSONObject("route").optString("route"));
+                    int lineDiff = routeNumberA.compareTo(routeNumberB);
                     if (lineDiff != 0) {
                         return lineDiff;
                     }
                     return -boundA.optString("mtr").compareTo(boundB.optString("mtr"));
                 }
                 if (coA == 2) {
-                    return IntUtils.parseOrZero(a.optJSONObject("route").optString("nlbId")) - IntUtils.parseOrZero(b.optJSONObject("route").optString("nlbId"));
+                    return IntUtils.parseOrZero(routeA.optString("nlbId")) - IntUtils.parseOrZero(routeB.optString("nlbId"));
                 }
                 if (coA == 4) {
-                    int gtfsDiff = IntUtils.parseOrZero(a.optJSONObject("route").optString("gtfsId")) - IntUtils.parseOrZero(b.optJSONObject("route").optString("gtfsId"));
+                    int gtfsDiff = IntUtils.parseOrZero(routeA.optString("gtfsId")) - IntUtils.parseOrZero(routeB.optString("gtfsId"));
                     if (gtfsDiff != 0) {
                         return gtfsDiff;
                     }
                 }
-                int typeDiff = IntUtils.parseOrZero(a.optJSONObject("route").optString("serviceType")) - IntUtils.parseOrZero(b.optJSONObject("route").optString("serviceType"));
+                int typeDiff = IntUtils.parseOrZero(routeA.optString("serviceType")) - IntUtils.parseOrZero(routeB.optString("serviceType"));
                 if (typeDiff == 0) {
                     if (coA == 1) {
-                        return Boolean.compare(a.optJSONObject("route").has("ctbSpecial"), b.optJSONObject("route").has("ctbSpecial"));
+                        return Boolean.compare(routeA.has("ctbSpecial"), routeB.has("ctbSpecial"));
                     }
                     return -boundA.optString(coAStr).compareTo(boundB.optString(coBStr));
                 }
@@ -875,9 +882,6 @@ public class Registry {
 
     public NearbyRoutesResult getNearbyRoutes(double lat, double lng, Set<String> excludedRouteNumbers) {
         try {
-            //lat = 22.475977635712525;
-            //lng = 114.15532485241508;
-
             JSONObject stops = DATA_SHEET.optJSONObject("stopList");
             List<JSONObject> nearbyStops = new ArrayList<>();
 
@@ -997,18 +1001,24 @@ public class Registry {
             boolean isHoliday = weekday.equals(DayOfWeek.SATURDAY) || weekday.equals(DayOfWeek.SUNDAY) || JsonUtils.contains(DATA_SHEET.optJSONArray("holidays"), date);
 
             routes.sort(Comparator.comparing((JSONObject a) -> {
-                String pa = String.valueOf(a.optJSONObject("route").optString("route").charAt(0));
-                String sa = String.valueOf(a.optJSONObject("route").optString("route").charAt(a.optJSONObject("route").optString("route").length() - 1));
-                int na = IntUtils.parseOrZero(a.optJSONObject("route").optString("route").replaceAll("[^0-9]", ""));
+                JSONObject route = a.optJSONObject("route");
+                String routeNumber = route.optString("route");
+                JSONObject bound = route.optJSONObject("bound");
 
-                if (a.optJSONObject("route").optJSONObject("bound").has("gmb")) {
+                String pa = String.valueOf(routeNumber.charAt(0));
+                String sa = String.valueOf(routeNumber.charAt(routeNumber.length() - 1));
+                int na = IntUtils.parseOrZero(routeNumber.replaceAll("[^0-9]", ""));
+
+                if (bound.has("gmb")) {
                     na += 1000;
+                } else if (bound.has("mtr")) {
+                    na += 2000;
                 }
-                if (pa.equals("N") || a.optJSONObject("route").optString("route").equals("270S") || a.optJSONObject("route").optString("route").equals("271S") || a.optJSONObject("route").optString("route").equals("293S") || a.optJSONObject("route").optString("route").equals("701S") || a.optJSONObject("route").optString("route").equals("796S")) {
+                if (pa.equals("N") || routeNumber.equals("270S") || routeNumber.equals("271S") || routeNumber.equals("293S") || routeNumber.equals("701S") || routeNumber.equals("796S")) {
                     na -= (isNight ? 1 : -1) * 10000;
                 }
-                if (sa.equals("S") && !a.optJSONObject("route").optString("route").equals("89S") && !a.optJSONObject("route").optString("route").equals("796S")) {
-                    na += 1000;
+                if (sa.equals("S") && !routeNumber.equals("89S") && !routeNumber.equals("796S")) {
+                    na += 3000;
                 }
                 if (!isHoliday && (pa.equals("R") || sa.equals("R"))) {
                     na += 100000;
@@ -1021,7 +1031,13 @@ public class Registry {
                 return a.optJSONObject("route").optString("route");
             }).thenComparing(a -> {
                 return IntUtils.parseOrZero(a.optJSONObject("route").optString("serviceType"));
-            }));
+            }).thenComparing(Comparator.comparing((JSONObject a) -> {
+                JSONObject bound = a.optJSONObject("route").optJSONObject("bound");
+                if (bound.has("mtr")) {
+                    return bound.optString("mtr");
+                }
+                return "";
+            }).reversed()));
 
             return new NearbyRoutesResult(routes, closestStop, closestDistance);
         } catch (JSONException e) {
