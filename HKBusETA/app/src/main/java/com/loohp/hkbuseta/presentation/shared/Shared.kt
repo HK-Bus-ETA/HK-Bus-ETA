@@ -2,6 +2,7 @@ package com.loohp.hkbuseta.presentation.shared
 
 import android.app.Activity
 import android.content.Context
+import android.os.Bundle
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -31,9 +32,29 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.presentation.utils.StringUtils
+import com.loohp.hkbuseta.presentation.utils.isEqualTo
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
+
+
+data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
+
+    override fun equals(other: Any?): Boolean {
+        return if (other is CurrentActivityData) {
+            this.cls == other.cls && ((this.extras == null && other.extras == null) || (this.extras != null && this.extras.isEqualTo(other.extras)))
+        } else {
+            false
+        }
+    }
+
+    override fun hashCode(): Int {
+        var result = cls.hashCode()
+        result = 31 * result + (extras?.hashCode() ?: 0)
+        return result
+    }
+
+}
 
 class Shared {
 
@@ -159,7 +180,22 @@ class Shared {
 
         val favoriteRouteStops: Map<Int, JSONObject> = ConcurrentHashMap()
 
-        var currentActivityClass: Class<Activity>? = null
+        private var currentActivity: CurrentActivityData? = null
+
+        fun getCurrentActivity(): CurrentActivityData? {
+            return currentActivity
+        }
+
+        fun setSelfAsCurrentActivity(activity: Activity) {
+            currentActivity = CurrentActivityData(activity.javaClass, activity.intent.extras)
+        }
+
+        fun removeSelfFromCurrentActivity(activity: Activity) {
+            val data = CurrentActivityData(activity.javaClass, activity.intent.extras)
+            if (currentActivity == data) {
+                currentActivity = null
+            }
+        }
 
     }
 

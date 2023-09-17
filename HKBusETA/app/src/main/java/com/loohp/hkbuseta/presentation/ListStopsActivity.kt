@@ -1,13 +1,11 @@
 package com.loohp.hkbuseta.presentation
 
-import android.R.attr.text
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.TextUtils
 import android.text.style.StyleSpan
-import android.text.style.UnderlineSpan
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
@@ -42,12 +40,25 @@ class ListStopsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.currentActivityClass = javaClass
+
         val route = intent.extras!!.getString("route")?.let { JSONObject(it) } ?: throw RuntimeException()
         setContent {
             StopsPage(this, route)
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        Shared.setSelfAsCurrentActivity(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            Shared.removeSelfFromCurrentActivity(this)
+        }
+    }
+
 }
 
 @Composable

@@ -134,11 +134,16 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                                 finishAffinity()
-                            } else if (Shared.currentActivityClass == null) {
+                            } else if (Shared.getCurrentActivity() == null) {
                                 startActivity(Intent(this@MainActivity, TitleActivity::class.java))
                                 finishAffinity()
                             } else {
-                                startActivity(Intent(this@MainActivity, Shared.currentActivityClass))
+                                val currentActivityData = Shared.getCurrentActivity()!!
+                                val intent2 = Intent(this@MainActivity, currentActivityData.cls)
+                                if (currentActivityData.extras != null) {
+                                    intent2.putExtras(currentActivityData.extras)
+                                }
+                                startActivity(intent2)
                                 finishAffinity()
                             }
                         } else if (Registry.getInstance(this@MainActivity).state == Registry.State.ERROR) {

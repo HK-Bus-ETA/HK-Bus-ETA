@@ -50,9 +50,20 @@ class FavActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.currentActivityClass = javaClass
         setContent {
             FavElements(this)
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Shared.setSelfAsCurrentActivity(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            Shared.removeSelfFromCurrentActivity(this)
         }
     }
 

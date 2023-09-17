@@ -86,7 +86,7 @@ class EtaActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.currentActivityClass = javaClass
+
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")
         val index = intent.extras!!.getInt("index")
@@ -99,6 +99,19 @@ class EtaActivity : ComponentActivity() {
             EtaElement(stopId, co, index, stop, route, this)
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        Shared.setSelfAsCurrentActivity(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            Shared.removeSelfFromCurrentActivity(this)
+        }
+    }
+
 }
 
 @OptIn(ExperimentalWearMaterialApi::class)

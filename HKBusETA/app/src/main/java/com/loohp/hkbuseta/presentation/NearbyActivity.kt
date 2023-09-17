@@ -41,7 +41,6 @@ class NearbyActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.currentActivityClass = javaClass
 
         var location: LocationResult? = null
         var exclude: Set<String> = emptySet()
@@ -60,6 +59,19 @@ class NearbyActivity : ComponentActivity() {
             NearbyPage(location, exclude, this)
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        Shared.setSelfAsCurrentActivity(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            Shared.removeSelfFromCurrentActivity(this)
+        }
+    }
+
 }
 
 @Composable

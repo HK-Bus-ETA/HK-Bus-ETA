@@ -81,11 +81,24 @@ class SearchActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.currentActivityClass = javaClass
+
         setContent {
             SearchPage(this)
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        Shared.setSelfAsCurrentActivity(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            Shared.removeSelfFromCurrentActivity(this)
+        }
+    }
+
 }
 
 fun defaultText(): String {
@@ -252,7 +265,7 @@ fun KeyboardButton(instance: SearchActivity, content: Char, state: MutableState<
 @Composable
 fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, state: MutableState<RouteKeyboardState>, color: Color, icon: Any?) {
     val enabled = when (content) {
-        '/' -> true
+        '/' -> state.value.nextCharResult.hasExactMatch()
         '<' -> true
         '!' -> true
         else -> state.value.nextCharResult.characters.contains(content)
