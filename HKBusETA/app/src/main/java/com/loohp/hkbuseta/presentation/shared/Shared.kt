@@ -40,18 +40,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
 
-    override fun equals(other: Any?): Boolean {
+    fun isEqualTo(other: Any?): Boolean {
         return if (other is CurrentActivityData) {
             this.cls == other.cls && ((this.extras == null && other.extras == null) || (this.extras != null && this.extras.isEqualTo(other.extras)))
         } else {
             false
         }
-    }
-
-    override fun hashCode(): Int {
-        var result = cls.hashCode()
-        result = 31 * result + (extras?.hashCode() ?: 0)
-        return result
     }
 
 }
@@ -180,6 +174,7 @@ class Shared {
 
         val favoriteRouteStops: Map<Int, JSONObject> = ConcurrentHashMap()
 
+        private val currentActivityAccessLock = Object()
         private var currentActivity: CurrentActivityData? = null
 
         fun getCurrentActivity(): CurrentActivityData? {
@@ -187,13 +182,19 @@ class Shared {
         }
 
         fun setSelfAsCurrentActivity(activity: Activity) {
-            currentActivity = CurrentActivityData(activity.javaClass, activity.intent.extras)
+            synchronized (currentActivityAccessLock) {
+                currentActivity = CurrentActivityData(activity.javaClass, activity.intent.extras)
+            }
         }
 
         fun removeSelfFromCurrentActivity(activity: Activity) {
-            val data = CurrentActivityData(activity.javaClass, activity.intent.extras)
-            if (currentActivity == data) {
-                currentActivity = null
+            synchronized (currentActivityAccessLock) {
+                if (currentActivity != null) {
+                    val data = CurrentActivityData(activity.javaClass, activity.intent.extras)
+                    if (currentActivity!!.isEqualTo(data)) {
+                        currentActivity = null
+                    }
+                }
             }
         }
 
