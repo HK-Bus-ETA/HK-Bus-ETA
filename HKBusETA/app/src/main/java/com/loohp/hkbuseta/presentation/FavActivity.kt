@@ -185,8 +185,8 @@ fun FavButtonInternal(favoriteIndex: Int, hasFavouriteStopRoute: MutableState<Bo
                     val stopId = favouriteStopRoute.optString("stopId")
                     val co = favouriteStopRoute.optString("co")
                     val index = favouriteStopRoute.optInt("index")
-                    val stop = favouriteStopRoute.optJSONObject("stop")
-                    val route = favouriteStopRoute.optJSONObject("route")
+                    val stop = favouriteStopRoute.optJSONObject("stop")!!
+                    val route = favouriteStopRoute.optJSONObject("route")!!
 
                     val intent = Intent(instance, EtaActivity::class.java)
                     intent.putExtra("stopId", stopId)
@@ -209,6 +209,25 @@ fun FavButtonInternal(favoriteIndex: Int, hasFavouriteStopRoute: MutableState<Bo
                         }
                     }
                 }, 5000)
+
+                val favouriteStopRoute = Shared.favoriteRouteStops[favoriteIndex]
+                if (favouriteStopRoute != null) {
+                    val index = favouriteStopRoute.optInt("index")
+                    val stop = favouriteStopRoute.optJSONObject("stop")!!
+                    val stopName = stop.optJSONObject("name")!!
+                    val route = favouriteStopRoute.optJSONObject("route")!!
+                    val destName = route.optJSONObject("dest")!!
+                    val text = if (Shared.language == "en") {
+                        route.optString("route").plus(" To ").plus(StringUtils.capitalize(destName.optString("en"))).plus("\n")
+                            .plus(index).plus(". ").plus(StringUtils.capitalize(stopName.optString("en")))
+                    } else {
+                        route.optString("route").plus(" 往").plus(StringUtils.capitalize(destName.optString("zh"))).plus("\n")
+                            .plus(index).plus(". ").plus(StringUtils.capitalize(stopName.optString("zh")))
+                    }
+                    instance.runOnUiThread {
+                        Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+                    }
+                }
             }
         },
         modifier = Modifier

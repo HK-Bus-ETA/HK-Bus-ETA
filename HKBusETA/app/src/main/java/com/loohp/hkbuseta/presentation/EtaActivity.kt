@@ -333,61 +333,37 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaActivit
 @Composable
 fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
-    var name = stopName.optString(Shared.language)
-    if (Shared.language == "en") {
-        name = StringUtils.capitalize(name)
-        AutoResizeText (
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(37.dp, 0.dp)
-                .combinedClickable(
-                    onClick = handleOpenMaps(lat, lng, name, instance, false, haptic),
-                    onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic)
-                ),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.primary,
-            text = if (co == "mtr") name else "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name),
-            maxLines = 2,
-            fontWeight = FontWeight(900),
-            fontSizeRange = FontSizeRange(
-                min = StringUtils.scaledSize(1, instance).dp.sp,
-                max = StringUtils.scaledSize(17, instance).sp.clamp(max = 18.dp)
-            )
+    val name = if (Shared.language == "en") StringUtils.capitalize(stopName.optString("en")) else stopName.optString("zh")
+    AutoResizeText (
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(37.dp, 0.dp)
+            .combinedClickable(
+                onClick = handleOpenMaps(lat, lng, name, instance, false, haptic),
+                onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic)
+            ),
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colors.primary,
+        text = if (co == "mtr") name else index.toString().plus(". ").plus(name),
+        maxLines = 2,
+        fontWeight = FontWeight(900),
+        fontSizeRange = FontSizeRange(
+            min = StringUtils.scaledSize(1, instance).dp.sp,
+            max = StringUtils.scaledSize(17, instance).sp.clamp(max = 18.dp)
         )
-    } else {
-        AutoResizeText (
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(37.dp, 0.dp)
-                .combinedClickable(
-                    onClick = handleOpenMaps(lat, lng, name, instance, false, haptic),
-                    onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic)
-                ),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.primary,
-            text = if (co == "mtr") name else "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name),
-            maxLines = 2,
-            fontWeight = FontWeight(900),
-            fontSizeRange = FontSizeRange(
-                min = StringUtils.scaledSize(1, instance).dp.sp,
-                max = StringUtils.scaledSize(17, instance).sp.clamp(max = 18.dp)
-            )
-        )
-    }
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
-    var name = destName.optString(Shared.language)
-    name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
-    if (co == "mtr") {
-        name = if (Shared.language == "en") {
-            routeNumber.plus(" ").plus(name)
-        } else {
-            Shared.getMtrLineChineseName(routeNumber, "???").plus(" ").plus(name)
-        }
+    val name = if (Shared.language == "en") {
+        val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
+        routeName.plus(" To ").plus(StringUtils.capitalize(destName.optString("en")))
+    } else {
+        val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
+        routeName.plus(" 往").plus(destName.optString("zh"))
     }
     AutoResizeText(
         modifier = Modifier

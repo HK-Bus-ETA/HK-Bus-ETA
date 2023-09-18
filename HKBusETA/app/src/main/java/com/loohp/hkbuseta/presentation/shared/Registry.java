@@ -1585,7 +1585,7 @@ public class Registry {
                                     if (seq == 1) {
                                         nextScheduledBus = lrt.getEta();
                                     }
-                                    StringBuilder cartsMessage = new StringBuilder(2);
+                                    StringBuilder cartsMessage = new StringBuilder(lrt.getTrainLength() * 2);
                                     for (int u = 0; u < lrt.getTrainLength(); u++) {
                                         cartsMessage.append("\uD83D\uDE83");
                                     }

@@ -146,27 +146,43 @@ class Shared {
             }
         }
 
-        fun getMtrLineChineseName(lineName: String): String {
-            return getMtrLineChineseName(lineName) { lineName }
+        fun getMtrLineName(lineName: String): String {
+            return getMtrLineName(lineName) { lineName }
         }
 
-        fun getMtrLineChineseName(lineName: String, orElse: String): String {
-            return getMtrLineChineseName(lineName) { orElse }
+        fun getMtrLineName(lineName: String, orElse: String): String {
+            return getMtrLineName(lineName) { orElse }
         }
 
-        fun getMtrLineChineseName(lineName: String, orElse: () -> String): String {
-            return when (lineName) {
-                "AEL" -> "機場快綫"
-                "TCL" -> "東涌綫"
-                "TML" -> "屯馬綫"
-                "TKL" -> "將軍澳綫"
-                "EAL" -> "東鐵綫"
-                "SIL" -> "南港島綫"
-                "TWL" -> "荃灣綫"
-                "ISL" -> "港島綫"
-                "KTL" -> "觀塘綫"
-                "DRL" -> "迪士尼綫"
-                else -> orElse.invoke()
+        fun getMtrLineName(lineName: String, orElse: () -> String): String {
+            return if (language == "en") {
+                when (lineName) {
+                    "AEL" -> "Airport Express"
+                    "TCL" -> "Tung Chung Line"
+                    "TML" -> "Tuen Ma Line"
+                    "TKL" -> "Tseung Kwan O Line"
+                    "EAL" -> "East Rail Line"
+                    "SIL" -> "South Island Line"
+                    "TWL" -> "Tsuen Wan Line"
+                    "ISL" -> "Island Line"
+                    "KTL" -> "Kwun Tong Line"
+                    "DRL" -> "Disneyland Resort Line"
+                    else -> orElse.invoke()
+                }
+            } else {
+                when (lineName) {
+                    "AEL" -> "機場快綫"
+                    "TCL" -> "東涌綫"
+                    "TML" -> "屯馬綫"
+                    "TKL" -> "將軍澳綫"
+                    "EAL" -> "東鐵綫"
+                    "SIL" -> "南港島綫"
+                    "TWL" -> "荃灣綫"
+                    "ISL" -> "港島綫"
+                    "KTL" -> "觀塘綫"
+                    "DRL" -> "迪士尼綫"
+                    else -> orElse.invoke()
+                }
             }
         }
 

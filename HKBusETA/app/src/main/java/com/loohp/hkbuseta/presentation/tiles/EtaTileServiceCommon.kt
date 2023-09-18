@@ -278,7 +278,7 @@ class EtaTileServiceCommon {
             if (Shared.language == "en") {
                 name = StringUtils.capitalize(name)
             }
-            val text = if (co == "mtr") name else "[".plus(routeNumber).plus("] ").plus(index).plus(". ").plus(name)
+            val text = if (co == "mtr") name else index.toString().plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
                 .setText(text)
                 .setMaxLines(2)
@@ -296,14 +296,12 @@ class EtaTileServiceCommon {
         }
 
         private fun subTitle(destName: JSONObject, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
-            var name = destName.optString(Shared.language)
-            name = if (Shared.language == "en") "To " + StringUtils.capitalize(name) else "往$name"
-            if (co == "mtr") {
-                name = if (Shared.language == "en") {
-                    routeNumber.plus(" ").plus(name)
-                } else {
-                    Shared.getMtrLineChineseName(routeNumber, "???").plus(" ").plus(name)
-                }
+            val name = if (Shared.language == "en") {
+                val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
+                routeName.plus(" To ").plus(StringUtils.capitalize(destName.optString("en")))
+            } else {
+                val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
+                routeName.plus(" 往").plus(destName.optString("zh"))
             }
             return LayoutElementBuilders.Text.Builder()
                 .setText(name)

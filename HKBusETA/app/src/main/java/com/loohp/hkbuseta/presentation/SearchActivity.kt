@@ -148,7 +148,7 @@ fun MainElement(instance: SearchActivity) {
             Text(
                 textAlign = TextAlign.Center,
                 color = if (state.value.text == defaultText()) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.primary,
-                text = if (Shared.language == "en") state.value.text else Shared.getMtrLineChineseName(state.value.text)
+                text = Shared.getMtrLineName(state.value.text)
             )
         }
         Row(

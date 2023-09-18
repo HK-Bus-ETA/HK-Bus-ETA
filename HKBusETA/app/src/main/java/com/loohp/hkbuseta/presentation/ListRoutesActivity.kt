@@ -134,7 +134,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
         val routeTextView = TextView(instance)
         tr.addView(routeTextView)
         val routeNumber = if (co == "mtr" && Shared.language != "en") {
-            Shared.getMtrLineChineseName(route.optJSONObject("route")!!.optString("route"))
+            Shared.getMtrLineName(route.optJSONObject("route")!!.optString("route"))
         } else {
             route.optJSONObject("route")!!.optString("route")
         }
