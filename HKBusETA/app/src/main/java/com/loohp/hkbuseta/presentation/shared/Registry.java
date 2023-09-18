@@ -144,7 +144,7 @@ public class Registry {
                 typhoonWarningTitle = "";
                 currentTyphoonSignalId = "";
             }
-        }, 0, 30000);
+        }, 0, Shared.ETA_UPDATE_INTERVAL);
     }
 
     public State getState() {
@@ -1662,7 +1662,14 @@ public class Registry {
                                             format.setTimeZone(TimeZone.getTimeZone(hongKongTime.getZone()));
                                             long mins = (long) Math.ceil((format.parse(eta).getTime() - Instant.now().toEpochMilli()) / 60000.0);
 
-                                            String minsMessage = mins > 0 ? (mins + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘")) : (Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開");
+                                            String minsMessage;
+                                            if (mins > 1) {
+                                                minsMessage = mins + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘");
+                                            } else if (mins == 1) {
+                                                minsMessage = Shared.Companion.getLanguage().equals("en") ? "Arriving" : "即將抵達";
+                                            } else {
+                                                minsMessage = Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開";
+                                            }
 
                                             String message = StringUtils.getCircledNumber(platform) + " " + dest + " " + minsMessage;
                                             if (seq == 1) {

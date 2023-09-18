@@ -188,7 +188,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                         Thread {
                             eta = Registry.getEta(stopId, co, route, instance)
                         }.start()
-                        delay(30000)
+                        delay(Shared.ETA_UPDATE_INTERVAL)
                     }
                 }
                 val routeNumber = route.optString("route")

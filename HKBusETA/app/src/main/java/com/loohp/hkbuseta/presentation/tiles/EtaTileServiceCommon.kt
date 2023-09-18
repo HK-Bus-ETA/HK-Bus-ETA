@@ -570,8 +570,8 @@ class EtaTileServiceCommon {
                         lastUpdate[favoriteIndex] = System.currentTimeMillis()
                     }
                 }
-                val lastUpdated = 30000 - (System.currentTimeMillis() - lastUpdate.getOrDefault(favoriteIndex, 0))
-                Timer().schedule(timerTask, lastUpdated.coerceAtLeast(0), 30000)
+                val lastUpdated = Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - lastUpdate.getOrDefault(favoriteIndex, 0))
+                Timer().schedule(timerTask, lastUpdated.coerceAtLeast(0), Shared.ETA_UPDATE_INTERVAL)
                 return@compute timerTask
             }
         }

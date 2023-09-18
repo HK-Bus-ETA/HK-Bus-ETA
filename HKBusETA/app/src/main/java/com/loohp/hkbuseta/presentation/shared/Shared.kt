@@ -54,6 +54,8 @@ class Shared {
 
     companion object {
 
+        const val ETA_UPDATE_INTERVAL: Long = 15000
+
         @Composable
         fun MainTime() {
             TimeText(
