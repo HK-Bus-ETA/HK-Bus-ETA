@@ -40,7 +40,7 @@ class ListStopsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        Shared.setDefaultExceptionHandler(this)
         val route = intent.extras!!.getString("route")?.let { JSONObject(it) } ?: throw RuntimeException()
         setContent {
             StopsPage(this, route)

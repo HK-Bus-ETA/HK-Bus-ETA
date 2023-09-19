@@ -41,7 +41,7 @@ class NearbyActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        Shared.setDefaultExceptionHandler(this)
         var location: LocationResult? = null
         var exclude: Set<String> = emptySet()
         if (intent.extras != null) {

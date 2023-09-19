@@ -81,7 +81,7 @@ class SearchActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        Shared.setDefaultExceptionHandler(this)
         setContent {
             SearchPage(this)
         }

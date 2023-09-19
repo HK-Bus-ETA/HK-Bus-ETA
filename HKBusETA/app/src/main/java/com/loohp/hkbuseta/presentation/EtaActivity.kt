@@ -86,6 +86,7 @@ class EtaActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.setDefaultExceptionHandler(this)
 
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")

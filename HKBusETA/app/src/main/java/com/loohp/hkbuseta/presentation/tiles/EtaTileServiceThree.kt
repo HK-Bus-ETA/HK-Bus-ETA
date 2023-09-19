@@ -6,10 +6,15 @@ import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
+import com.loohp.hkbuseta.presentation.shared.Shared
 
 private const val ETA_TILE_INDEX = 3
 
 class EtaTileServiceThree : TileService() {
+
+    override fun onCreate() {
+        Shared.setDefaultExceptionHandler(this)
+    }
 
     override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> {
         return EtaTileServiceCommon.buildTileRequest(ETA_TILE_INDEX, packageName, this)

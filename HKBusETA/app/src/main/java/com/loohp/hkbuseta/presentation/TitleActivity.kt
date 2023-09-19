@@ -49,6 +49,7 @@ class TitleActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.setDefaultExceptionHandler(this)
         setContent {
             HKBusETAApp(this)
         }

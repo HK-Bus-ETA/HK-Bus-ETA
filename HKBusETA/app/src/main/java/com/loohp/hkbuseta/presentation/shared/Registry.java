@@ -94,6 +94,12 @@ public class Registry {
     private static final String MTR_BUS_STOP_ALIAS_FILE_NAME = "mtr_bus_stop_alias.json";
     private static final String GMB_ROUTE_FILE_NAME = "gmb_routes.json";
 
+    public static void invalidateCache(Context context) {
+        try {
+            context.getApplicationContext().deleteFile(CHECKSUM_FILE_NAME);
+        } catch (Throwable ignore) {}
+    }
+
     private static JSONObject PREFERENCES = null;
     private static JSONObject DATA_SHEET = null;
     private static Set<String> BUS_ROUTE = null;

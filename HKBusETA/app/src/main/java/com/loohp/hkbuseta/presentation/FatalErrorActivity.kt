@@ -4,33 +4,53 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.loohp.hkbuseta.presentation.compose.ScrollBarConfig
+import com.loohp.hkbuseta.presentation.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.StringUtils
+import com.loohp.hkbuseta.presentation.utils.sp
+import kotlinx.coroutines.launch
 
 
 class FatalErrorActivity : ComponentActivity() {
@@ -40,22 +60,27 @@ class FatalErrorActivity : ComponentActivity() {
 
         val zh: String?
         val en: String?
+        val exception: String?
         if (intent.extras == null) {
             zh = null
             en = null
+            exception = null
         } else {
             zh = intent.extras!!.getString("zh")
             en = intent.extras!!.getString("en")
+            exception = intent.extras!!.getString("exception")
         }
 
+        Shared.invalidateCache(this)
+
         setContent {
-            Message(this, zh, en)
+            Message(this, zh, en, exception)
         }
     }
 }
 
 @Composable
-fun Message(instance: FatalErrorActivity, zh: String?, en: String?) {
+fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: String?) {
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -75,17 +100,58 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?) {
                     .fillMaxWidth()
                     .padding(20.dp, 0.dp),
                 textAlign = TextAlign.Center,
+                fontSize = TextUnit(17F, TextUnitType.Sp),
                 color = MaterialTheme.colors.primary,
-                text = zh ?: "Fatal Error Occurred"
+                text = en ?: "發生錯誤"
             )
             Text(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp, 0.dp),
                 textAlign = TextAlign.Center,
+                fontSize = TextUnit(17F, TextUnitType.Sp),
                 color = MaterialTheme.colors.primary,
-                text = en ?: "發生錯誤"
+                text = zh ?: "Fatal Error Occurred"
             )
+            if (exception != null) {
+                val focusRequester = remember { FocusRequester() }
+                val scroll = rememberScrollState()
+                val scope = rememberCoroutineScope()
+                val haptic = LocalHapticFeedback.current
+                LaunchedEffect (Unit) {
+                    focusRequester.requestFocus()
+                }
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95F)
+                        .fillMaxHeight(0.3F)
+                        .verticalScrollWithScrollbar(
+                            state = scroll,
+                            scrollbarConfig = ScrollBarConfig(
+                                indicatorThickness = 2.dp
+                            )
+                        )
+                        .onRotaryScrollEvent {
+                            scope.launch {
+                                scroll.animateScrollBy(it.verticalScrollPixels / 2, TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing))
+                                if (scroll.canScrollBackward != scroll.canScrollForward) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                }
+                            }
+                            true
+                        }
+                        .focusRequester(
+                            focusRequester = focusRequester
+                        )
+                        .focusable()
+                        .padding(20.dp, 0.dp),
+                    textAlign = TextAlign.Left,
+                    fontSize = TextUnit(10F.dp.sp.value, TextUnitType.Sp),
+                    color = MaterialTheme.colors.primaryVariant,
+                    text = exception
+                )
+            }
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             Row(
                 modifier = Modifier
@@ -97,8 +163,9 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?) {
                         .width(StringUtils.scaledSize(50, instance).dp)
                         .height(StringUtils.scaledSize(50, instance).dp),
                     onClick = {
+                        Shared.invalidateCache(instance)
                         instance.startActivity(Intent(instance, MainActivity::class.java))
-                        instance.finish()
+                        instance.finishAffinity()
                     },
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = MaterialTheme.colors.secondary,
@@ -119,6 +186,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?) {
                         .width(StringUtils.scaledSize(50, instance).dp)
                         .height(StringUtils.scaledSize(50, instance).dp),
                     onClick = {
+                        Shared.invalidateCache(instance)
                         instance.finishAffinity()
                     },
                     colors = ButtonDefaults.buttonColors(

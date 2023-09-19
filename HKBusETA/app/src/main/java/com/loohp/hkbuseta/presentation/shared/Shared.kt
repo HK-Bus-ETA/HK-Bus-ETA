@@ -2,6 +2,7 @@ package com.loohp.hkbuseta.presentation.shared
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -31,11 +32,15 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import com.loohp.hkbuseta.R
+import com.loohp.hkbuseta.presentation.FatalErrorActivity
 import com.loohp.hkbuseta.presentation.utils.StringUtils
 import com.loohp.hkbuseta.presentation.utils.isEqualTo
 import kotlinx.coroutines.delay
 import org.json.JSONObject
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.system.exitProcess
 
 
 data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
@@ -55,6 +60,35 @@ class Shared {
     companion object {
 
         const val ETA_UPDATE_INTERVAL: Long = 15000
+
+        fun setDefaultExceptionHandler(context: Context) {
+            val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+            Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+                try {
+                    invalidateCache(context)
+                    if (context is Activity) {
+                        val sw = StringWriter()
+                        val pw = PrintWriter(sw)
+                        pw.use {
+                            throwable.printStackTrace(it)
+                        }
+                        val intent = Intent(context, FatalErrorActivity::class.java)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        intent.putExtra("exception", sw.toString())
+                        context.startActivity(intent)
+                    }
+                } finally {
+                    defaultHandler?.uncaughtException(thread, throwable)
+                    exitProcess(1)
+                }
+            }
+        }
+
+        fun invalidateCache(context: Context) {
+            try {
+                Registry.invalidateCache(context)
+            } catch (_: Throwable) {}
+        }
 
         @Composable
         fun MainTime() {

@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         mContext = this
+        Shared.setDefaultExceptionHandler(this)
 
         val stopId = intent.extras?.getString("stopId")
         val co = intent.extras?.getString("co")
