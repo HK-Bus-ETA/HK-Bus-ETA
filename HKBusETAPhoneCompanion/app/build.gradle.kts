@@ -11,8 +11,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 24
         targetSdk = 33
-        versionCode = 63
-        versionName = "1.5.3"
+        versionCode = 79
+        versionName = "1.5.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -22,7 +22,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
