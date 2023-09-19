@@ -25,7 +25,7 @@
             android:value="true" />
 
         <activity
-            android:name=".presentation.MainActivity"
+            android:name="com.loohp.hkbuseta.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.App.Starting">
             <intent-filter>
@@ -35,54 +35,54 @@
         </activity>
 
         <activity
-            android:name=".presentation.TitleActivity"
+            android:name="com.loohp.hkbuseta.TitleActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
 
         <activity
-            android:name=".presentation.FavActivity"
+            android:name="com.loohp.hkbuseta.FavActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
 
         <activity
-            android:name=".presentation.SearchActivity"
+            android:name="com.loohp.hkbuseta.SearchActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
 
         <activity
-            android:name=".presentation.NearbyActivity"
+            android:name="com.loohp.hkbuseta.NearbyActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
 
         <activity
-            android:name=".presentation.ListRoutesActivity"
+            android:name="com.loohp.hkbuseta.ListRoutesActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
 
         <activity
-            android:name=".presentation.ListStopsActivity"
+            android:name="com.loohp.hkbuseta.ListStopsActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
 
         <activity
-            android:name=".presentation.EtaActivity"
+            android:name="com.loohp.hkbuseta.EtaActivity"
             android:exported="true"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
 
         <activity
-            android:name=".presentation.FatalErrorActivity"
+            android:name="com.loohp.hkbuseta.FatalErrorActivity"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
 
         <service
-            android:name=".presentation.tiles.EtaTileServiceOne"
+            android:name="com.loohp.hkbuseta.tiles.EtaTileServiceOne"
             android:exported="true"
             android:label="@string/route_stop_eta_tile_name_1"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
@@ -98,7 +98,7 @@
         </service>
 
         <service
-            android:name=".presentation.tiles.EtaTileServiceTwo"
+            android:name="com.loohp.hkbuseta.tiles.EtaTileServiceTwo"
             android:exported="true"
             android:label="@string/route_stop_eta_tile_name_2"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
@@ -114,7 +114,7 @@
         </service>
 
         <service
-            android:name=".presentation.tiles.EtaTileServiceThree"
+            android:name="com.loohp.hkbuseta.tiles.EtaTileServiceThree"
             android:exported="true"
             android:label="@string/route_stop_eta_tile_name_3"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
@@ -130,7 +130,7 @@
         </service>
 
         <service
-            android:name=".presentation.tiles.EtaTileServiceFour"
+            android:name="com.loohp.hkbuseta.tiles.EtaTileServiceFour"
             android:exported="true"
             android:label="@string/route_stop_eta_tile_name_4"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
@@ -146,7 +146,7 @@
         </service>
 
         <service
-            android:name=".presentation.tiles.EtaTileServiceFive"
+            android:name="com.loohp.hkbuseta.tiles.EtaTileServiceFive"
             android:exported="true"
             android:label="@string/route_stop_eta_tile_name_5"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
@@ -162,7 +162,7 @@
         </service>
 
         <service
-            android:name=".presentation.tiles.EtaTileServiceSix"
+            android:name="com.loohp.hkbuseta.tiles.EtaTileServiceSix"
             android:exported="true"
             android:label="@string/route_stop_eta_tile_name_6"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
@@ -178,7 +178,7 @@
         </service>
 
         <service
-            android:name=".presentation.tiles.EtaTileServiceSeven"
+            android:name="com.loohp.hkbuseta.tiles.EtaTileServiceSeven"
             android:exported="true"
             android:label="@string/route_stop_eta_tile_name_7"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
@@ -194,7 +194,7 @@
         </service>
 
         <service
-            android:name=".presentation.tiles.EtaTileServiceEight"
+            android:name="com.loohp.hkbuseta.tiles.EtaTileServiceEight"
             android:exported="true"
             android:label="@string/route_stop_eta_tile_name_8"
             android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
@@ -210,7 +210,7 @@
         </service>
 
         <service
-            android:name=".presentation.listeners.WearDataLayerListenerService"
+            android:name="com.loohp.hkbuseta.listeners.WearDataLayerListenerService"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
