@@ -40,7 +40,6 @@ import org.json.JSONObject
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.system.exitProcess
 
 
 data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
@@ -79,7 +78,7 @@ class Shared {
                     }
                 } finally {
                     defaultHandler?.uncaughtException(thread, throwable)
-                    exitProcess(1)
+                    throw throwable
                 }
             }
         }
