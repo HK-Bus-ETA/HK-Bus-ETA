@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "HK Bus ETA"
+rootProject.name = "HKBusETA"
 include(":app")
