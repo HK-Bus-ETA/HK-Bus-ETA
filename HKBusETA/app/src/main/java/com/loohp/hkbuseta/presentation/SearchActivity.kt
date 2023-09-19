@@ -11,6 +11,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,9 +34,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -61,6 +65,7 @@ import com.loohp.hkbuseta.presentation.shared.Shared
 import com.loohp.hkbuseta.presentation.theme.HKBusETATheme
 import com.loohp.hkbuseta.presentation.utils.JsonUtils
 import com.loohp.hkbuseta.presentation.utils.StringUtils
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -182,7 +187,26 @@ fun MainElement(instance: SearchActivity) {
                 val scroll = rememberScrollState()
                 val scope = rememberCoroutineScope()
                 val haptic = LocalHapticFeedback.current
-
+                val possibleValues by remember { derivedStateOf { state.value.nextCharResult.characters } }
+                var scrollCounter by remember { mutableStateOf(0) }
+                val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
+                val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
+                var scrollMoved by remember { mutableStateOf(false) }
+                LaunchedEffect (possibleValues) {
+                    scrollMoved = false
+                }
+                LaunchedEffect (scrollInProgress) {
+                    if (scrollInProgress) {
+                        scrollCounter++
+                    }
+                }
+                LaunchedEffect (scrollCounter, scrollReachedEnd) {
+                    delay(50)
+                    if (scrollReachedEnd && scrollMoved) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    scrollMoved = true
+                }
                 LaunchedEffect (Unit) {
                     focusRequester.requestFocus()
                 }
@@ -190,7 +214,8 @@ fun MainElement(instance: SearchActivity) {
                 Column (
                     modifier = Modifier
                         .verticalScrollWithScrollbar(
-                            scroll,
+                            state = scroll,
+                            flingBehavior = ScrollableDefaults.flingBehavior(),
                             scrollbarConfig = ScrollBarConfig(
                                 indicatorThickness = 2.dp,
                                 padding = PaddingValues(0.dp, 2.dp, 0.dp, 2.dp)
@@ -198,10 +223,10 @@ fun MainElement(instance: SearchActivity) {
                         )
                         .onRotaryScrollEvent {
                             scope.launch {
-                                scroll.animateScrollBy(it.verticalScrollPixels, TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing))
-                                if (scroll.canScrollBackward != scroll.canScrollForward) {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                }
+                                scroll.animateScrollBy(
+                                    it.verticalScrollPixels,
+                                    TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing)
+                                )
                             }
                             true
                         }
@@ -210,7 +235,6 @@ fun MainElement(instance: SearchActivity) {
                         )
                         .focusable()
                 ) {
-                    val possibleValues = state.value.nextCharResult.characters
                     for (alphabet in 'A'..'Z') {
                         if (possibleValues.contains(alphabet)) {
                             KeyboardButton(instance, alphabet, state)
@@ -284,7 +308,12 @@ fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, 
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(35, instance).dp)
-            .height(StringUtils.scaledSize(if (content.isLetter() || content == '!') 30 else 35, instance).dp),
+            .height(
+                StringUtils.scaledSize(
+                    if (content.isLetter() || content == '!') 30 else 35,
+                    instance
+                ).dp
+            ),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = Color.Transparent,
             contentColor = actualColor

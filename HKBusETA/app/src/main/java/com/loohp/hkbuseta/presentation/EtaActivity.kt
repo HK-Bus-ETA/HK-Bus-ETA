@@ -15,6 +15,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -178,6 +180,23 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 val focusRequester = remember { FocusRequester() }
                 val scroll = rememberScrollState()
 
+                var scrollCounter by remember { mutableStateOf(0) }
+                val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
+                val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
+                var scrollMoved by remember { mutableStateOf(false) }
+                LaunchedEffect (scrollInProgress) {
+                    if (scrollInProgress) {
+                        scrollCounter++
+                    }
+                }
+                LaunchedEffect (scrollCounter, scrollReachedEnd) {
+                    delay(50)
+                    if (scrollReachedEnd && scrollMoved) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    scrollMoved = true
+                }
+
                 var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
 
                 val lat = stop.optJSONObject("location")!!.optDouble("lat")
@@ -208,7 +227,8 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                     modifier = Modifier
                         .width(StringUtils.scaledSize(113, instance).dp)
                         .horizontalScrollWithScrollbar(
-                            scroll,
+                            state = scroll,
+                            flingBehavior = ScrollableDefaults.flingBehavior(),
                             scrollbarConfig = ScrollBarConfig(
                                 indicatorThickness = 2.dp,
                                 padding = PaddingValues(2.dp, (-6).dp, 2.dp, (-6).dp)
@@ -216,10 +236,9 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                         )
                         .onRotaryScrollEvent {
                             scope.launch {
-                                scroll.animateScrollBy(it.horizontalScrollPixels, TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing))
-                                if (scroll.canScrollBackward != scroll.canScrollForward) {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                }
+                                scroll.animateScrollBy(
+                                    it.horizontalScrollPixels,
+                                    TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing))
                             }
                             true
                         }
