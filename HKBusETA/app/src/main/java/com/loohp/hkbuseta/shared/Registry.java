@@ -658,7 +658,7 @@ public class Registry {
                                             dest.put("zh", jointDest.first);
                                             dest.put("en", jointDest.second);
                                         }
-                                    } else if (data.optJSONObject("bound").has("ctb")) {
+                                    } else if (bounds.has("ctb")) {
                                         if (kmbOps.contains(routeNumber) && !bounds.has("kmb")) {
                                             keysToRemove.add(key);
                                         } else if (ctbCircular.contains(routeNumber) && bounds.optString("ctb").length() < 2) {
@@ -946,6 +946,9 @@ public class Registry {
                     if (excludedRouteNumbers.contains(data.optString("route"))) {
                         continue;
                     }
+                    if (data.optBoolean("ctbIsCircular")) {
+                        continue;
+                    }
 
                     boolean isKmb = data.has("bound") && data.optJSONObject("bound").has("kmb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("kmb"), stopId);
                     boolean isCtb = data.has("bound") && data.optJSONObject("bound").has("ctb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("ctb"), stopId);
@@ -969,12 +972,14 @@ public class Registry {
                                     int matchingType = Integer.parseInt(existingNearbyRoute.optJSONObject("route").optString("serviceType"));
 
                                     if (type < matchingType) {
+                                        existingNearbyRoute.put("routeKey", key);
                                         existingNearbyRoute.put("stop", nearbyStop);
                                         existingNearbyRoute.put("route", data);
                                         existingNearbyRoute.put("co", co);
                                         existingNearbyRoute.put("origin", location);
                                     }
                                 } catch (NumberFormatException ignore) {
+                                    existingNearbyRoute.put("routeKey", key);
                                     existingNearbyRoute.put("stop", nearbyStop);
                                     existingNearbyRoute.put("route", data);
                                     existingNearbyRoute.put("co", co);
@@ -983,6 +988,7 @@ public class Registry {
                             }
                         } else {
                             JSONObject newNearbyRoute = new JSONObject();
+                            newNearbyRoute.put("routeKey", key);
                             newNearbyRoute.put("stop", nearbyStop);
                             newNearbyRoute.put("route", data);
                             newNearbyRoute.put("co", co);
@@ -1037,6 +1043,9 @@ public class Registry {
                 return a.optJSONObject("route").optString("route");
             }).thenComparing(a -> {
                 return IntUtils.parseOrZero(a.optJSONObject("route").optString("serviceType"));
+            }).thenComparing(a -> {
+                String co = a.optString("co");
+                return co.equals("kmb") ? 0 : (co.equals("ctb") ? 1 : (co.equals("nlb") ? 2 : (co.equals("mtr-bus") ? 3 : (co.equals("gmb") ? 4 : (co.equals("lightRail") ? 5 : 6)))));
             }).thenComparing(Comparator.comparing((JSONObject a) -> {
                 JSONObject bound = a.optJSONObject("route").optJSONObject("bound");
                 if (bound.has("mtr")) {
@@ -1045,7 +1054,15 @@ public class Registry {
                 return "";
             }).reversed()));
 
-            return new NearbyRoutesResult(routes, closestStop, closestDistance);
+            Set<String> addedKeys = new HashSet<>();
+            List<JSONObject> distinctRoutes = new ArrayList<>();
+            for (JSONObject value : routes) {
+                if (addedKeys.add(value.optString("routeKey"))) {
+                    distinctRoutes.add(value);
+                }
+            }
+
+            return new NearbyRoutesResult(distinctRoutes, closestStop, closestDistance);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
