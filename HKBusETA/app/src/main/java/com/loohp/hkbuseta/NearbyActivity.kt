@@ -25,10 +25,10 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.loohp.hkbuseta.shared.ExtendedOneUseDataHolder
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.StringUtils
@@ -187,7 +187,7 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
                 NoNearbyText(result.closestStop, result.closestDistance, instance)
             } else {
                 val intent = Intent(instance, ListRoutesActivity::class.java)
-                intent.putExtra("result", JsonUtils.fromCollection(list).toString())
+                intent.putExtra("resultKey", ExtendedOneUseDataHolder.createNew().extra("result", list).buildAndRegisterData())
                 instance.startActivity(intent)
                 instance.finish()
             }

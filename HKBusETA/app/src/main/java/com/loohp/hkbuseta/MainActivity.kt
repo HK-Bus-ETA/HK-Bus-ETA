@@ -17,10 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.MaterialTheme
+import com.loohp.hkbuseta.shared.ExtendedOneUseDataHolder
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import java.util.Timer
 import java.util.TimerTask
@@ -77,11 +77,7 @@ class MainActivity : ComponentActivity() {
 
                                 val result = Registry.getInstance(this@MainActivity).findRoutes(queryRouteNumber, true)
                                 if (result != null && result.isNotEmpty()) {
-                                    val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                    intent.putExtra("result", JsonUtils.fromCollection(result).toString())
-                                    startActivity(intent)
-
-                                    var results = result.stream().filter {
+                                    var filteredResult = result.stream().filter {
                                         return@filter when (queryCo) {
                                             "nlb" -> (queryCo.isEmpty() || it.optString("co") == queryCo) && (queryBound == null || it.optJSONObject("route")!!.optString("nlbId") == queryBound)
                                             "gmb" -> {
@@ -92,17 +88,25 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }.toList()
                                     if (queryDest != null) {
-                                        val destFiltered = results.stream().filter {
+                                        val destFiltered = filteredResult.stream().filter {
                                             val dest = it.optJSONObject("route")!!.optJSONObject("dest")!!
                                             return@filter queryDest == dest.optString("zh") || queryDest == dest.optString("en")
                                         }.toList()
                                         if (destFiltered.isNotEmpty()) {
-                                            results = destFiltered
+                                            filteredResult = destFiltered
                                         }
                                     }
-                                    if (results.isNotEmpty()) {
+                                    if (filteredResult.isEmpty()) {
+                                        val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
+                                        intent.putExtra("resultKey", ExtendedOneUseDataHolder.createNew().extra("result", result).buildAndRegisterData())
+                                        startActivity(intent)
+                                    } else {
+                                        val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
+                                        intent.putExtra("resultKey", ExtendedOneUseDataHolder.createNew().extra("result", filteredResult).buildAndRegisterData())
+                                        startActivity(intent)
+
                                         if (queryStop != null) {
-                                            val it = results[0]
+                                            val it = filteredResult[0]
                                             val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)
                                             intent2.putExtra("route", it.toString())
                                             startActivity(intent2)
@@ -122,14 +126,10 @@ class MainActivity : ComponentActivity() {
                                                 }
                                                 i++
                                             }
-                                        } else if (results.size == 1) {
-                                            val it = results[0]
+                                        } else if (filteredResult.size == 1) {
+                                            val it = filteredResult[0]
                                             val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)
                                             intent2.putExtra("route", it.toString())
-                                            startActivity(intent2)
-                                        } else {
-                                            val intent2 = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                            intent2.putExtra("result", JsonUtils.fromCollection(results).toString())
                                             startActivity(intent2)
                                         }
                                     }

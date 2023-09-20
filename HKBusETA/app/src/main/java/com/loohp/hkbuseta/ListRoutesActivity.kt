@@ -24,11 +24,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.wear.compose.material.MaterialTheme
+import com.loohp.hkbuseta.shared.ExtendedOneUseDataHolder
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
-import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.roundToInt
 
@@ -38,8 +37,9 @@ class ListRoutesActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
-        val list = intent.extras!!.getString("result")?.let { JSONArray(it) } ?: throw RuntimeException()
-        val result = JsonUtils.toList(list, JSONObject::class.java)
+        val resultKey = intent.extras!!.getString("resultKey")!!
+        @Suppress("UNCHECKED_CAST")
+        val result = ExtendedOneUseDataHolder.poll(resultKey)!!.getExtra("result") as List<JSONObject>
         setContent {
             ListRoutePage(this, result)
         }

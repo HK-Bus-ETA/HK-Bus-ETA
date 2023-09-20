@@ -71,9 +71,13 @@ class Shared {
                         pw.use {
                             throwable.printStackTrace(it)
                         }
+                        var stacktrace = sw.toString()
+                        if (stacktrace.length > 459000) {
+                            stacktrace = stacktrace.substring(0, 459000).plus("...")
+                        }
                         val intent = Intent(context, FatalErrorActivity::class.java)
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        intent.putExtra("exception", sw.toString())
+                        intent.putExtra("exception", stacktrace)
                         context.startActivity(intent)
                     }
                 } finally {
