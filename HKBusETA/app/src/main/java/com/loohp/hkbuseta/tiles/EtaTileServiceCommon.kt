@@ -25,10 +25,10 @@ import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.StringUtilsKt
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clampSp
+import com.loohp.hkbuseta.utils.toAnnotatedString
 import org.json.JSONObject
 import java.util.Date
 import java.util.Timer
@@ -319,7 +319,7 @@ class EtaTileServiceCommon {
         }
 
         private fun etaText(eta: ETAQueryResult, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Text {
-            val text = StringUtilsKt.toAnnotatedString(HtmlCompat.fromHtml(eta.lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT)).text
+            val text = HtmlCompat.fromHtml(eta.lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT).toAnnotatedString(context).text
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
             val maxLines = if (singleLine) 1 else 2

@@ -1136,6 +1136,22 @@ public class Registry {
         }
     }
 
+    public static boolean isMtrStopOnOrAfter(String stopId, String relativeTo, String lineName, String bound) {
+        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
+            String key = itr.next();
+            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
+            if (lineName.equals(data.optString("route")) && data.optJSONObject("bound").optString("mtr").endsWith(bound)) {
+                JSONArray stopsList = data.optJSONObject("stops").optJSONArray("mtr");
+                int index = JsonUtils.indexOf(stopsList, stopId);
+                int indexRef = JsonUtils.indexOf(stopsList, relativeTo);
+                if (indexRef >= 0 && index >= indexRef) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static boolean isMtrStopEndOfLine(String stopId, String lineName, String bound) {
         for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
             String key = itr.next();
@@ -1654,12 +1670,12 @@ public class Registry {
                                             if (Shared.Companion.getLanguage().equals("en")) {
                                                 dest = StringUtils.capitalize(dest);
                                             }
-                                            if (!specialRoute.isEmpty()) {
+                                            if (!specialRoute.isEmpty() && !isMtrStopOnOrAfter(stopId, specialRoute, lineName, bound)) {
                                                 String via = DATA_SHEET.optJSONObject("stopList").optJSONObject(specialRoute).optJSONObject("name").optString(Shared.Companion.getLanguage());
                                                 if (Shared.Companion.getLanguage().equals("en")) {
                                                     via = StringUtils.capitalize(via);
                                                 }
-                                                dest += (Shared.Companion.getLanguage().equals("en") ? " via " : " 經") + via;
+                                                dest += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " via " : " 經") + via + "</small>";
                                             }
                                             String eta = trainData.optString("time");
 

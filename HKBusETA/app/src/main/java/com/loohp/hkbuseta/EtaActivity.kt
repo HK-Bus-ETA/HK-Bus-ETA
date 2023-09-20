@@ -74,11 +74,11 @@ import com.loohp.hkbuseta.utils.ActivityUtils
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.StringUtilsKt
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.sp
+import com.loohp.hkbuseta.utils.toAnnotatedString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -408,15 +408,16 @@ fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EtaText(lines: ETAQueryResult, seq: Int, instance: EtaActivity) {
+    val textSize = StringUtils.scaledSize(16, instance).sp.clamp(max = 17.dp)
     Text(
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp, 0.dp)
             .basicMarquee(iterations = Int.MAX_VALUE),
         textAlign = TextAlign.Center,
-        fontSize = StringUtils.scaledSize(16, instance).sp.clamp(max = 17.dp),
+        fontSize = textSize,
         color = MaterialTheme.colors.primary,
         maxLines = 1,
-        text = StringUtilsKt.toAnnotatedString(HtmlCompat.fromHtml(lines.lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT))
+        text = HtmlCompat.fromHtml(lines.lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT).toAnnotatedString(instance, textSize.value)
     )
 }
