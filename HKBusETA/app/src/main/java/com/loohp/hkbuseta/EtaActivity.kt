@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -17,6 +18,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,8 +81,11 @@ import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toAnnotatedString
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 
 
@@ -183,7 +188,22 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 var scrollCounter by remember { mutableStateOf(0) }
                 val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
                 val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
-                var scrollMoved by remember { mutableStateOf(false) }
+                var scrollMoved by remember { mutableStateOf(0) }
+
+                val mutex by remember { mutableStateOf(Mutex()) }
+                var job: Job? = remember { null }
+                val animatedScrollValue = remember { Animatable(0F) }
+                var previousScrollValue by remember { mutableStateOf(0F) }
+                LaunchedEffect (animatedScrollValue.value) {
+                    if (scrollMoved > 0) {
+                        val diff = previousScrollValue - animatedScrollValue.value
+                        job?.cancel()
+                        job = launch { scroll.animateScrollBy(0F, TweenSpec(durationMillis = 500)) }
+                        scroll.scrollBy(diff)
+                        previousScrollValue -= diff
+                    }
+                }
+
                 LaunchedEffect (scrollInProgress) {
                     if (scrollInProgress) {
                         scrollCounter++
@@ -191,10 +211,12 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 }
                 LaunchedEffect (scrollCounter, scrollReachedEnd) {
                     delay(50)
-                    if (scrollReachedEnd && scrollMoved) {
+                    if (scrollReachedEnd && scrollMoved > 1) {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
-                    scrollMoved = true
+                    if (scrollMoved <= 1) {
+                        scrollMoved++
+                    }
                 }
 
                 var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
@@ -236,9 +258,15 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                         )
                         .onRotaryScrollEvent {
                             scope.launch {
-                                scroll.animateScrollBy(
-                                    it.horizontalScrollPixels,
-                                    TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing))
+                                mutex.withLock {
+                                    val target = it.horizontalScrollPixels + animatedScrollValue.value
+                                    animatedScrollValue.snapTo(target)
+                                    previousScrollValue = target
+                                }
+                                animatedScrollValue.animateTo(
+                                    0F,
+                                    TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing)
+                                )
                             }
                             true
                         }

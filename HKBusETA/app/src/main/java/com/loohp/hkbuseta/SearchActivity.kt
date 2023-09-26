@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.Image
@@ -13,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,8 +66,11 @@ import com.loohp.hkbuseta.shared.Registry.PossibleNextCharResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.StringUtils
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 
 data class RouteKeyboardState(val text: String, val nextCharResult: PossibleNextCharResult) {
@@ -190,9 +195,24 @@ fun MainElement(instance: SearchActivity) {
                 var scrollCounter by remember { mutableStateOf(0) }
                 val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
                 val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
-                var scrollMoved by remember { mutableStateOf(false) }
+                var scrollMoved by remember { mutableStateOf(0) }
+
+                val mutex by remember { mutableStateOf(Mutex()) }
+                var job: Job? = remember { null }
+                val animatedScrollValue = remember { Animatable(0F) }
+                var previousScrollValue by remember { mutableStateOf(0F) }
+                LaunchedEffect (animatedScrollValue.value) {
+                    if (scrollMoved > 0) {
+                        val diff = previousScrollValue - animatedScrollValue.value
+                        job?.cancel()
+                        job = launch { scroll.animateScrollBy(0F, TweenSpec(durationMillis = 500)) }
+                        scroll.scrollBy(diff)
+                        previousScrollValue -= diff
+                    }
+                }
+
                 LaunchedEffect (possibleValues) {
-                    scrollMoved = false
+                    scrollMoved = 1
                 }
                 LaunchedEffect (scrollInProgress) {
                     if (scrollInProgress) {
@@ -201,10 +221,12 @@ fun MainElement(instance: SearchActivity) {
                 }
                 LaunchedEffect (scrollCounter, scrollReachedEnd) {
                     delay(50)
-                    if (scrollReachedEnd && scrollMoved) {
+                    if (scrollReachedEnd && scrollMoved > 1) {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
-                    scrollMoved = true
+                    if (scrollMoved <= 1) {
+                        scrollMoved++
+                    }
                 }
                 LaunchedEffect (Unit) {
                     focusRequester.requestFocus()
@@ -222,8 +244,13 @@ fun MainElement(instance: SearchActivity) {
                         )
                         .onRotaryScrollEvent {
                             scope.launch {
-                                scroll.animateScrollBy(
-                                    it.verticalScrollPixels,
+                                mutex.withLock {
+                                    val target = it.verticalScrollPixels + animatedScrollValue.value
+                                    animatedScrollValue.snapTo(target)
+                                    previousScrollValue = target
+                                }
+                                animatedScrollValue.animateTo(
+                                    0F,
                                     TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing)
                                 )
                             }
@@ -252,7 +279,7 @@ fun MainElement(instance: SearchActivity) {
 fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState>, input: Char) {
     var originalText = state.value.text
     if (originalText == defaultText()) {
-        originalText = "";
+        originalText = ""
     }
     if (input == '/' || input == '!') {
         val result = if (input == '!') Registry.getInstance(instance).findRoutes("", false) { it.optJSONObject("bound")!!.has("mtr") } else Registry.getInstance(instance).findRoutes(originalText, true)
