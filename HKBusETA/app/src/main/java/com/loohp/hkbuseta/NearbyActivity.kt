@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.loohp.hkbuseta.shared.ExtendedOneUseDataHolder
+import com.loohp.hkbuseta.shared.ExtendedDataHolder
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -151,9 +151,9 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
         color = MaterialTheme.colors.primary,
         fontSize = TextUnit(StringUtils.scaledSize(12.5F, instance), TextUnitType.Sp),
         text = if (Shared.language == "en")
-            "Nearest Stop: ".plus(closestStop.optJSONObject("name").optString("en")).plus(" (").plus(distance.roundToInt()).plus("m)")
+            "Nearest Stop: ".plus(closestStop.optJSONObject("name")!!.optString("en")).plus(" (").plus(distance.roundToInt()).plus("m)")
         else
-            "最近的巴士站: ".plus(closestStop.optJSONObject("name").optString("zh")).plus(" (").plus(distance.roundToInt()).plus("米)")
+            "最近的巴士站: ".plus(closestStop.optJSONObject("name")!!.optString("zh")).plus(" (").plus(distance.roundToInt()).plus("米)")
     )
 }
 
@@ -187,7 +187,7 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
                 NoNearbyText(result.closestStop, result.closestDistance, instance)
             } else {
                 val intent = Intent(instance, ListRoutesActivity::class.java)
-                intent.putExtra("resultKey", ExtendedOneUseDataHolder.createNew().extra("result", list).buildAndRegisterData())
+                intent.putExtra("resultKey", ExtendedDataHolder.createNew().extra("result", list).buildAndRegisterData(ListRoutesActivity::class.java.name))
                 instance.startActivity(intent)
                 instance.finish()
             }

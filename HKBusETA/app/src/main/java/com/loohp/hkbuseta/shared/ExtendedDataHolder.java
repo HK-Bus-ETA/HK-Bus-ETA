@@ -1,34 +1,25 @@
 package com.loohp.hkbuseta.shared;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class ExtendedOneUseDataHolder {
+public class ExtendedDataHolder {
 
-    private static final Map<String, ExtendedOneUseDataHolder> REGISTRY;
-
-    static {
-        Cache<String, ExtendedOneUseDataHolder> registry = CacheBuilder.newBuilder().expireAfterWrite(5, TimeUnit.MINUTES).build();
-        REGISTRY = registry.asMap();
-    }
+    private static final Map<String, ExtendedDataHolder> REGISTRY = new ConcurrentHashMap<>();
 
     public static Builder createNew() {
         return new Builder();
     }
 
-    public static ExtendedOneUseDataHolder poll(String key) {
-        return REGISTRY.remove(key);
+    public static ExtendedDataHolder get(String key) {
+        return REGISTRY.get(key);
     }
 
     private final Map<String, Object> extras;
 
-    private ExtendedOneUseDataHolder(Map<String, Object> extras) {
+    private ExtendedDataHolder(Map<String, Object> extras) {
         this.extras = Collections.unmodifiableMap(extras);
     }
 
@@ -57,9 +48,8 @@ public class ExtendedOneUseDataHolder {
             this.extras = new HashMap<>();
         }
 
-        public String buildAndRegisterData() {
-            String key = UUID.randomUUID().toString();
-            ExtendedOneUseDataHolder holder = new ExtendedOneUseDataHolder(extras);
+        public String buildAndRegisterData(String key) {
+            ExtendedDataHolder holder = new ExtendedDataHolder(extras);
             REGISTRY.put(key, holder);
             return key;
         }
@@ -69,7 +59,7 @@ public class ExtendedOneUseDataHolder {
             return this;
         }
 
-        public Builder extras(ExtendedOneUseDataHolder other) {
+        public Builder extras(ExtendedDataHolder other) {
             extras.putAll(other.extras);
             return this;
         }

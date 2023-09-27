@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.wear.compose.material.MaterialTheme
-import com.loohp.hkbuseta.shared.ExtendedOneUseDataHolder
+import com.loohp.hkbuseta.shared.ExtendedDataHolder
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.StringUtils
@@ -39,7 +39,7 @@ class ListRoutesActivity : ComponentActivity() {
         Shared.setDefaultExceptionHandler(this)
         val resultKey = intent.extras!!.getString("resultKey")!!
         @Suppress("UNCHECKED_CAST")
-        val result = ExtendedOneUseDataHolder.poll(resultKey)!!.getExtra("result") as List<JSONObject>
+        val result = ExtendedDataHolder.get(resultKey)!!.getExtra("result") as List<JSONObject>
         setContent {
             ListRoutePage(this, result)
         }

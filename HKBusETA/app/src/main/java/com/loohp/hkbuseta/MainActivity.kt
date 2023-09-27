@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.MaterialTheme
-import com.loohp.hkbuseta.shared.ExtendedOneUseDataHolder
+import com.loohp.hkbuseta.shared.ExtendedDataHolder
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -98,11 +98,11 @@ class MainActivity : ComponentActivity() {
                                     }
                                     if (filteredResult.isEmpty()) {
                                         val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                        intent.putExtra("resultKey", ExtendedOneUseDataHolder.createNew().extra("result", result).buildAndRegisterData())
+                                        intent.putExtra("resultKey", ExtendedDataHolder.createNew().extra("result", result).buildAndRegisterData(ListRoutesActivity::class.java.name))
                                         startActivity(intent)
                                     } else {
                                         val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                        intent.putExtra("resultKey", ExtendedOneUseDataHolder.createNew().extra("result", filteredResult).buildAndRegisterData())
+                                        intent.putExtra("resultKey", ExtendedDataHolder.createNew().extra("result", filteredResult).buildAndRegisterData(ListRoutesActivity::class.java.name))
                                         startActivity(intent)
 
                                         if (queryStop != null) {
