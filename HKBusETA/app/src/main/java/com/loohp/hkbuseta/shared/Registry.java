@@ -5,6 +5,7 @@ import android.content.Context;
 import android.util.Log;
 import android.util.Pair;
 
+import androidx.compose.runtime.Stable;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
@@ -1806,6 +1807,7 @@ public class Registry {
         }
     }
 
+    @Stable
     public static class ETAQueryResult {
 
         public static final ETAQueryResult EMPTY = new ETAQueryResult(true, -1, Collections.emptyMap());

@@ -58,7 +58,7 @@ public class LocationUtils {
         ForkJoinPool.commonPool().execute(() -> {
             client.getLocationAvailability().addOnCompleteListener(task -> {
                 if (task.isSuccessful() && task.getResult().isLocationAvailable()) {
-                    client.getCurrentLocation(new CurrentLocationRequest.Builder().build(), null).addOnCompleteListener(t -> future.complete(LocationResult.fromTask(t)));
+                    client.getCurrentLocation(new CurrentLocationRequest.Builder().setMaxUpdateAgeMillis(5000).setDurationMillis(60000).build(), null).addOnCompleteListener(t -> future.complete(LocationResult.fromTask(t)));
                 } else {
                     LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
                     if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
