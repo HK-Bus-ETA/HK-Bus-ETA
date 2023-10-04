@@ -57,7 +57,6 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -605,7 +604,6 @@ public class Registry {
                                         mtrStopsLists.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(JsonUtils.mapToList(stops, s -> DATA_SHEET.optJSONObject("stopList").optJSONObject((String) s).optJSONObject("name").optString("zh")));
                                     } else if (bounds.has("kmb")) {
                                         if (data.optJSONArray("co").toString().contains("ctb")) {
-                                            data.put("kmbCtbJoint", true);
                                             kmbOps.add(data.optString("route"));
                                         }
                                     } else if (bounds.has("ctb") && bounds.optString("ctb").length() > 1) {
@@ -1227,11 +1225,8 @@ public class Registry {
                 long nextScheduledBus = -999;
                 lines.put(1, getNoScheduledDepartureMessage(null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
                 String language = Shared.Companion.getLanguage();
-                if (route.optBoolean("kmbCtbJoint", false)) {
-                    Map<Long, Pair<String, String>> etaSorted = new TreeMap<>();
-                    String kmbSpecialMessage = null;
-                    long kmbFirstScheduledBus = Long.MAX_VALUE;
-                    {
+                switch (co) {
+                    case "kmb": {
                         JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/" + stopId);
                         JSONArray buses = data.optJSONArray("data");
 
@@ -1241,590 +1236,449 @@ public class Registry {
                                 String routeNumber = bus.optString("route");
                                 String bound = bus.optString("dir");
                                 if (routeNumber.equals(route.optString("route")) && bound.equals(route.optJSONObject("bound").optString("kmb"))) {
+                                    int seq = bus.optInt("eta_seq");
                                     String eta = bus.optString("eta");
                                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-                                    if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
-                                        long mins = Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
-                                        String message = "";
-                                        if (language.equals("en")) {
-                                            if (mins > 0) {
-                                                message = "<b>" + mins + "</b>" + " Min." + "";
-                                            } else if (mins > -60) {
-                                                message = "<b>-</b>" + " Min." + "";
+                                    long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                                    String message = "";
+                                    if (language.equals("en")) {
+                                        if (mins > 0) {
+                                            message = "<b>" + mins + "</b>" + " Min." + "";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
                                             }
-                                            if (!bus.optString("rmk_en").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
-                                            }
-                                        } else {
-                                            if (mins > 0) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                            } else if (mins > -60) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                            }
-                                            if (!bus.optString("rmk_tc").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
+                                        } else if (mins > -60) {
+                                            message = "<b>-</b>" + " Min." + "";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
                                             }
                                         }
-                                        message = message
-                                                .replaceAll("原定", "預定")
-                                                .replaceAll("最後班次", "尾班車")
-                                                .replaceAll("尾班車已過", "尾班車已過本站");
-                                        if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
-                                            kmbFirstScheduledBus = mins;
+                                        if (!bus.optString("rmk_en").isEmpty()) {
+                                            message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
                                         }
-                                        etaSorted.put(mins, Pair.create(message, "kmb"));
                                     } else {
-                                        String message = "";
-                                        if (language.equals("en")) {
-                                            if (!bus.optString("rmk_en").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
+                                        if (mins > 0) {
+                                            message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
                                             }
-                                        } else {
-                                            if (!bus.optString("rmk_tc").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
+                                        } else if (mins > -60) {
+                                            message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
                                             }
                                         }
-                                        message = message
-                                                .replaceAll("原定", "預定")
-                                                .replaceAll("最後班次", "尾班車")
-                                                .replaceAll("尾班車已過", "尾班車已過本站");
-                                        if (message.isEmpty()) {
+                                        if (!bus.optString("rmk_tc").isEmpty()) {
+                                            message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
+                                        }
+                                    }
+                                    message = message
+                                            .replaceAll("原定", "預定")
+                                            .replaceAll("最後班次", "尾班車")
+                                            .replaceAll("尾班車已過", "尾班車已過本站");
+
+                                    if (message.isEmpty() || (INSTANCE.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
+                                        if (seq == 1) {
                                             message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
                                         } else {
-                                            message = "<b></b>" + message;
+                                            message = "<b></b>-";
                                         }
-                                        kmbSpecialMessage = message;
+                                    } else {
+                                        message = "<b></b>" + message;
                                     }
+                                    lines.put(seq, message);
                                 }
                             }
                         }
+                        break;
                     }
-                    {
+                    case "ctb": {
                         String routeNumber = route.optString("route");
-                        JSONArray matchingStops = DATA_SHEET.optJSONObject("stopMap").optJSONArray(stopId);
-                        List<String> ctbStopIds = new ArrayList<>();
-                        if (matchingStops != null) {
-                            for (int k = 0; k < matchingStops.length(); k++) {
-                                JSONArray stopArray = matchingStops.optJSONArray(k);
-                                if ("ctb".equals(stopArray.optString(0))) {
-                                    ctbStopIds.add(stopArray.optString(1));
-                                }
-                            }
-                        }
-                        Map<String, Map<Long, Pair<String, String>>> ctbEtaEntries = new HashMap<>();
-                        for (String ctbStopId : ctbStopIds) {
-                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + ctbStopId + "/" + routeNumber);
-                            JSONArray buses = data.optJSONArray("data");
+                        JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + stopId + "/" + routeNumber);
+                        JSONArray buses = data.optJSONArray("data");
 
-                            for (int u = 0; u < buses.length(); u++) {
-                                JSONObject bus = buses.optJSONObject(u);
-                                if ("CTB".equals(bus.optString("co"))) {
-                                    String busDest = bus.optString("dest_tc");
-                                    if (routeNumber.equals(bus.optString("route"))) {
-                                        String eta = bus.optString("eta");
-                                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-                                        if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
-                                            long mins = Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
-                                            String message = "";
-                                            if (language.equals("en")) {
-                                                if (mins > 0) {
-                                                    message = "<b>" + mins + "</b>" + " Min." + "";
-                                                } else if (mins > -60) {
-                                                    message = "<b>-</b>" + " Min." + "";
-                                                }
-                                                if (!bus.optString("rmk_en").isEmpty()) {
-                                                    message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
-                                                }
-                                            } else {
-                                                if (mins > 0) {
-                                                    message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                } else if (mins > -60) {
-                                                    message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                }
-                                                if (!bus.optString("rmk_tc").isEmpty()) {
-                                                    message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
-                                                }
+                        for (int u = 0; u < buses.length(); u++) {
+                            JSONObject bus = buses.optJSONObject(u);
+                            if ("CTB".equals(bus.optString("co"))) {
+                                String bound = bus.optString("dir");
+                                if (routeNumber.equals(bus.optString("route")) && bound.equals(route.optJSONObject("bound").optString("ctb"))) {
+                                    int seq = bus.optInt("eta_seq");
+                                    String eta = bus.optString("eta");
+                                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+                                    long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                                    String message = "";
+                                    if (language.equals("en")) {
+                                        if (mins > 0) {
+                                            message = "<b>" + mins + "</b>" + " Min." + "";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
                                             }
-                                            message = message
-                                                    .replaceAll("原定", "預定")
-                                                    .replaceAll("最後班次", "尾班車")
-                                                    .replaceAll("尾班車已過", "尾班車已過本站");
-                                            ctbEtaEntries.computeIfAbsent(busDest, k -> new HashMap<>()).put(mins, Pair.create(message, "ctb"));
+                                        } else if (mins > -60) {
+                                            message = "<b>-</b>" + " Min." + "";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
+                                        }
+                                        if (!bus.optString("rmk_en").isEmpty()) {
+                                            message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
+                                        }
+                                    } else {
+                                        if (mins > 0) {
+                                            message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
+                                        } else if (mins > -60) {
+                                            message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
+                                        }
+                                        if (!bus.optString("rmk_tc").isEmpty()) {
+                                            message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
                                         }
                                     }
+                                    message = message
+                                            .replaceAll("原定", "預定")
+                                            .replaceAll("最後班次", "尾班車")
+                                            .replaceAll("尾班車已過", "尾班車已過本站");
+
+                                    if (message.isEmpty()) {
+                                        if (seq == 1) {
+                                            message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                        } else {
+                                            message = "<b></b>-";
+                                        }
+                                    } else {
+                                        message = "<b></b>" + message;
+                                    }
+                                    lines.put(seq, message);
                                 }
                             }
                         }
-                        String dest = route.optJSONObject("dest").optString("zh").replace(" ", "");
-                        etaSorted.putAll(ctbEtaEntries.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(dest, e.getKey().replace(" ", "")))).map(Map.Entry::getValue).orElse(Collections.emptyMap()));
+                        break;
                     }
-
-                    if (etaSorted.isEmpty()) {
-                        if (kmbSpecialMessage == null || kmbSpecialMessage.isEmpty()) {
-                            lines.put(1, getNoScheduledDepartureMessage(null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
-                        } else {
-                            lines.put(1, kmbSpecialMessage);
+                    case "nlb": {
+                        JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=" + route.optString("nlbId") + "&stopId=" + stopId + "&language=" + Shared.Companion.getLanguage());
+                        if (data == null || data.length() == 0 || !data.has("estimatedArrivals")) {
+                            return;
                         }
-                    } else {
-                        int counter = 0;
-                        for (Map.Entry<Long, Pair<String, String>> entry : etaSorted.entrySet()) {
-                            long min = entry.getKey();
-                            String message = "<b></b>" + entry.getValue().first;
-                            String entryCo = entry.getValue().second;
-                            if (min > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
-                                message += Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)";
-                            }
-                            if (entryCo.equals("kmb")) {
-                                message += Shared.Companion.getLanguage().equals("en") ? " - KMB" : " - 九巴";
+                        JSONArray buses = data.optJSONArray("estimatedArrivals");
+
+                        for (int u = 0; u < buses.length(); u++) {
+                            JSONObject bus = buses.optJSONObject(u);
+                            int seq = u + 1;
+                            String eta = bus.optString("estimatedArrivalTime") + "+08:00";
+                            String variant = bus.optString("routeVariantName").trim();
+                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssXXX");
+                            long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                            String message = "";
+                            if (language.equals("en")) {
+                                if (mins > 0) {
+                                    message = "<b>" + mins + "</b>" + " Min." + "";
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
+                                } else if (mins > -60) {
+                                    message = "<b>-</b>" + " Min." + "";
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
+                                }
+                                if (!variant.isEmpty()) {
+                                    message += (message.isEmpty() ? variant : " (" + variant + ")");
+                                }
                             } else {
-                                message += Shared.Companion.getLanguage().equals("en") ? " - CTB" : " - 城巴";
+                                if (mins > 0) {
+                                    message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
+                                } else if (mins > -60) {
+                                    message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
+                                }
+                                if (!variant.isEmpty()) {
+                                    message += (message.isEmpty() ? variant : " (" + variant + ")");
+                                }
                             }
-                            lines.put(++counter, message);
+                            message = message
+                                    .replaceAll("原定", "預定")
+                                    .replaceAll("最後班次", "尾班車")
+                                    .replaceAll("尾班車已過", "尾班車已過本站");
+
+                            if (message.isEmpty()) {
+                                if (seq == 1) {
+                                    message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                } else {
+                                    message = "<b></b>-";
+                                }
+                            } else {
+                                message = "<b></b>" + message;
+                            }
+                            lines.put(seq, message);
                         }
+                        break;
                     }
-                } else {
-                    switch (co) {
-                        case "kmb": {
-                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/" + stopId);
-                            JSONArray buses = data.optJSONArray("data");
-
-                            for (int u = 0; u < buses.length(); u++) {
-                                JSONObject bus = buses.optJSONObject(u);
-                                if ("KMB".equals(bus.optString("co"))) {
-                                    String routeNumber = bus.optString("route");
-                                    String bound = bus.optString("dir");
-                                    if (routeNumber.equals(route.optString("route")) && bound.equals(route.optJSONObject("bound").optString("kmb"))) {
-                                        int seq = bus.optInt("eta_seq");
-                                        String eta = bus.optString("eta");
-                                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-                                        long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
-                                        String message = "";
-                                        if (language.equals("en")) {
-                                            if (mins > 0) {
-                                                message = "<b>" + mins + "</b>" + " Min." + "";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            } else if (mins > -60) {
-                                                message = "<b>-</b>" + " Min." + "";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            }
-                                            if (!bus.optString("rmk_en").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
-                                            }
-                                        } else {
-                                            if (mins > 0) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            } else if (mins > -60) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            }
-                                            if (!bus.optString("rmk_tc").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
-                                            }
-                                        }
-                                        message = message
-                                                .replaceAll("原定", "預定")
-                                                .replaceAll("最後班次", "尾班車")
-                                                .replaceAll("尾班車已過", "尾班車已過本站");
-
-                                        if (message.isEmpty() || (INSTANCE.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
-                                            if (seq == 1) {
-                                                message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
-                                            } else {
-                                                message = "<b></b>-";
-                                            }
-                                        } else {
-                                            message = "<b></b>" + message;
-                                        }
-                                        lines.put(seq, message);
-                                    }
-                                }
-                            }
-                            break;
+                    case "mtr-bus": {
+                        String routeNumber = route.optString("route");
+                        JSONObject body = new JSONObject();
+                        try {
+                            body.put("language", Shared.Companion.getLanguage());
+                            body.put("routeName", routeNumber);
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
                         }
-                        case "ctb": {
-                            String routeNumber = route.optString("route");
-                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + stopId + "/" + routeNumber);
-                            JSONArray buses = data.optJSONArray("data");
-
-                            for (int u = 0; u < buses.length(); u++) {
-                                JSONObject bus = buses.optJSONObject(u);
-                                if ("CTB".equals(bus.optString("co"))) {
-                                    String bound = bus.optString("dir");
-                                    if (routeNumber.equals(bus.optString("route")) && bound.equals(route.optJSONObject("bound").optString("ctb"))) {
-                                        int seq = bus.optInt("eta_seq");
-                                        String eta = bus.optString("eta");
-                                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-                                        long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
-                                        String message = "";
-                                        if (language.equals("en")) {
-                                            if (mins > 0) {
-                                                message = "<b>" + mins + "</b>" + " Min." + "";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            } else if (mins > -60) {
-                                                message = "<b>-</b>" + " Min." + "";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            }
-                                            if (!bus.optString("rmk_en").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
-                                            }
-                                        } else {
-                                            if (mins > 0) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            } else if (mins > -60) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            }
-                                            if (!bus.optString("rmk_tc").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
-                                            }
-                                        }
-                                        message = message
-                                                .replaceAll("原定", "預定")
-                                                .replaceAll("最後班次", "尾班車")
-                                                .replaceAll("尾班車已過", "尾班車已過本站");
-
-                                        if (message.isEmpty()) {
-                                            if (seq == 1) {
-                                                message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
-                                            } else {
-                                                message = "<b></b>-";
-                                            }
-                                        } else {
-                                            message = "<b></b>" + message;
-                                        }
-                                        lines.put(seq, message);
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                        case "nlb": {
-                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=" + route.optString("nlbId") + "&stopId=" + stopId + "&language=" + Shared.Companion.getLanguage());
-                            if (data == null || data.length() == 0 || !data.has("estimatedArrivals")) {
-                                return;
-                            }
-                            JSONArray buses = data.optJSONArray("estimatedArrivals");
-
+                        JSONObject data = HTTPRequestUtils.postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body);
+                        JSONArray busStops = data.optJSONArray("busStop");
+                        for (int k = 0; k < busStops.length(); k++) {
+                            JSONObject busStop = busStops.optJSONObject(k);
+                            JSONArray buses = busStop.optJSONArray("bus");
+                            String busStopId = busStop.optString("busStopId");
                             for (int u = 0; u < buses.length(); u++) {
                                 JSONObject bus = buses.optJSONObject(u);
                                 int seq = u + 1;
-                                String eta = bus.optString("estimatedArrivalTime") + "+08:00";
-                                String variant = bus.optString("routeVariantName").trim();
-                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssXXX");
-                                long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
-                                String message = "";
-                                if (language.equals("en")) {
-                                    if (mins > 0) {
-                                        message = "<b>" + mins + "</b>" + " Min." + "";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
-                                    } else if (mins > -60) {
-                                        message = "<b>-</b>" + " Min." + "";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
-                                    }
-                                    if (!variant.isEmpty()) {
-                                        message += (message.isEmpty() ? variant : " (" + variant + ")");
-                                    }
-                                } else {
-                                    if (mins > 0) {
-                                        message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
-                                    } else if (mins > -60) {
-                                        message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
-                                    }
-                                    if (!variant.isEmpty()) {
-                                        message += (message.isEmpty() ? variant : " (" + variant + ")");
-                                    }
+                                double eta = bus.optDouble("arrivalTimeInSecond");
+                                if (eta >= 108000) {
+                                    eta = bus.optDouble("departureTimeInSecond");
                                 }
-                                message = message
-                                        .replaceAll("原定", "預定")
-                                        .replaceAll("最後班次", "尾班車")
-                                        .replaceAll("尾班車已過", "尾班車已過本站");
-
-                                if (message.isEmpty()) {
-                                    if (seq == 1) {
-                                        message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
-                                    } else {
-                                        message = "<b></b>-";
-                                    }
-                                } else {
-                                    message = "<b></b>" + message;
-                                }
-                                lines.put(seq, message);
-                            }
-                            break;
-                        }
-                        case "mtr-bus": {
-                            String routeNumber = route.optString("route");
-                            JSONObject body = new JSONObject();
-                            try {
-                                body.put("language", Shared.Companion.getLanguage());
-                                body.put("routeName", routeNumber);
-                            } catch (JSONException e) {
-                                throw new RuntimeException(e);
-                            }
-                            JSONObject data = HTTPRequestUtils.postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body);
-                            JSONArray busStops = data.optJSONArray("busStop");
-                            for (int k = 0; k < busStops.length(); k++) {
-                                JSONObject busStop = busStops.optJSONObject(k);
-                                JSONArray buses = busStop.optJSONArray("bus");
-                                String busStopId = busStop.optString("busStopId");
-                                for (int u = 0; u < buses.length(); u++) {
-                                    JSONObject bus = buses.optJSONObject(u);
-                                    int seq = u + 1;
-                                    double eta = bus.optDouble("arrivalTimeInSecond");
-                                    if (eta >= 108000) {
-                                        eta = bus.optDouble("departureTimeInSecond");
-                                    }
-                                    String remark = bus.optString("busRemark");
-                                    if (remark == null || remark.isEmpty() || remark.equalsIgnoreCase("null")) {
-                                        remark = "";
-                                    }
-                                    boolean isScheduled = bus.optString("isScheduled").equals("1");
-                                    if (isScheduled) {
-                                        if (!remark.isEmpty()) {
-                                            remark += "/";
-                                        }
-                                        remark += language.equals("en") ? "Scheduled Bus" : "預定班次";
-                                    }
-                                    boolean isDelayed = bus.optString("isDelayed").equals("1");
-                                    if (isDelayed) {
-                                        if (!remark.isEmpty()) {
-                                            remark += "/";
-                                        }
-                                        remark += language.equals("en") ? "Bus Delayed" : "行車緩慢";
-                                    }
-
-                                    long mins = (long) Math.floor(eta / 60);
-
-                                    if (JsonUtils.contains(MTR_BUS_STOP_ALIAS.optJSONArray(stopId), busStopId)) {
-                                        String message = "";
-                                        if (language.equals("en")) {
-                                            if (mins > 0) {
-                                                message = "<b>" + mins + "</b>" + " Min." + "";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            } else if (mins > -60) {
-                                                message = "<b>-</b>" + " Min." + "";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            }
-                                            if (!remark.isEmpty()) {
-                                                message += (message.isEmpty() ? remark : " (" + remark + ")");
-                                            }
-                                        } else {
-                                            if (mins > 0) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            } else if (mins > -60) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                }
-                                            }
-                                            if (!remark.isEmpty()) {
-                                                message += (message.isEmpty() ? remark : " (" + remark + ")");
-                                            }
-                                        }
-                                        message = message
-                                                .replaceAll("原定", "預定")
-                                                .replaceAll("最後班次", "尾班車")
-                                                .replaceAll("尾班車已過", "尾班車已過本站");
-
-                                        if (message.isEmpty()) {
-                                            if (seq == 1) {
-                                                message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
-                                            } else {
-                                                message = "<b></b>-";
-                                            }
-                                        } else {
-                                            message = "<b></b>" + message;
-                                        }
-                                        lines.put(seq, message);
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                        case "gmb": {
-                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/eta/stop/" + stopId);
-                            List<Pair<Long, JSONObject>> busList = new ArrayList<>();
-                            for (int i = 0; i < data.optJSONArray("data").length(); i++) {
-                                JSONObject routeData = data.optJSONArray("data").optJSONObject(i);
-                                JSONArray buses = routeData.optJSONArray("eta");
-                                Iterable<String> iterable = () -> DATA_SHEET.optJSONObject("routeList").keys();
-                                Optional<JSONObject> filteredEntry = StreamSupport.stream(iterable.spliterator(), false)
-                                        .map(k -> DATA_SHEET.optJSONObject("routeList").optJSONObject(k))
-                                        .filter(r -> r.optJSONObject("bound").has("gmb") && r.optString("gtfsId").equals(routeData.optString("route_id")))
-                                        .findFirst();
-                                if (filteredEntry.isPresent() && buses != null) {
-                                    String routeNumber = filteredEntry.get().optString("route");
-                                    for (int u = 0; u < buses.length(); u++) {
-                                        JSONObject bus = buses.optJSONObject(u);
-                                        String eta = bus.optString("timestamp");
-                                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-                                        long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
-                                        if (routeNumber.equals(route.optString("route"))) {
-                                            busList.add(Pair.create(mins, bus));
-                                        }
-                                    }
-                                }
-                            }
-                            busList.sort(Comparator.comparing(p -> p.first));
-                            for (int i = 0; i < busList.size(); i++) {
-                                Pair<Long, JSONObject> entry = busList.get(i);
-                                JSONObject bus = entry.second;
-                                int seq = i + 1;
-                                String remark = language.equals("en") ? bus.optString("remarks_en") : bus.optString("remarks_tc");
-                                if (remark == null || remark.equalsIgnoreCase("null")) {
+                                String remark = bus.optString("busRemark");
+                                if (remark == null || remark.isEmpty() || remark.equalsIgnoreCase("null")) {
                                     remark = "";
                                 }
-                                long mins = entry.first;
-                                String message = "";
-                                if (language.equals("en")) {
-                                    if (mins > 0) {
-                                        message = "<b>" + mins + "</b>" + " Min." + "";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
-                                    } else if (mins > -60) {
-                                        message = "<b>-</b>" + " Min." + "";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
-                                    }
+                                boolean isScheduled = bus.optString("isScheduled").equals("1");
+                                if (isScheduled) {
                                     if (!remark.isEmpty()) {
-                                        message += (message.isEmpty() ? remark : " (" + remark + ")");
+                                        remark += "/";
                                     }
-                                } else {
-                                    if (mins > 0) {
-                                        message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
-                                    } else if (mins > -60) {
-                                        message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
-                                    }
-                                    if (!remark.isEmpty()) {
-                                        message += (message.isEmpty() ? remark : " (" + remark + ")");
-                                    }
+                                    remark += language.equals("en") ? "Scheduled Bus" : "預定班次";
                                 }
-                                message = message
-                                        .replaceAll("原定", "預定")
-                                        .replaceAll("最後班次", "尾班車")
-                                        .replaceAll("尾班車已過", "尾班車已過本站");
+                                boolean isDelayed = bus.optString("isDelayed").equals("1");
+                                if (isDelayed) {
+                                    if (!remark.isEmpty()) {
+                                        remark += "/";
+                                    }
+                                    remark += language.equals("en") ? "Bus Delayed" : "行車緩慢";
+                                }
 
-                                if (message.isEmpty()) {
-                                    if (seq == 1) {
-                                        message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                long mins = (long) Math.floor(eta / 60);
+
+                                if (JsonUtils.contains(MTR_BUS_STOP_ALIAS.optJSONArray(stopId), busStopId)) {
+                                    String message = "";
+                                    if (language.equals("en")) {
+                                        if (mins > 0) {
+                                            message = "<b>" + mins + "</b>" + " Min." + "";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
+                                        } else if (mins > -60) {
+                                            message = "<b>-</b>" + " Min." + "";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
+                                        }
+                                        if (!remark.isEmpty()) {
+                                            message += (message.isEmpty() ? remark : " (" + remark + ")");
+                                        }
                                     } else {
-                                        message = "<b></b>-";
+                                        if (mins > 0) {
+                                            message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
+                                        } else if (mins > -60) {
+                                            message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                            }
+                                        }
+                                        if (!remark.isEmpty()) {
+                                            message += (message.isEmpty() ? remark : " (" + remark + ")");
+                                        }
                                     }
-                                } else {
-                                    message = "<b></b>" + message;
+                                    message = message
+                                            .replaceAll("原定", "預定")
+                                            .replaceAll("最後班次", "尾班車")
+                                            .replaceAll("尾班車已過", "尾班車已過本站");
+
+                                    if (message.isEmpty()) {
+                                        if (seq == 1) {
+                                            message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                        } else {
+                                            message = "<b></b>-";
+                                        }
+                                    } else {
+                                        message = "<b></b>" + message;
+                                    }
+                                    lines.put(seq, message);
                                 }
-                                lines.put(seq, message);
                             }
-                            break;
                         }
-                        case "lightRail": {
-                            JSONArray stopsList = route.optJSONObject("stops").optJSONArray("lightRail");
-                            if (JsonUtils.indexOf(stopsList, stopId) + 1 >= stopsList.length()) {
-                                lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
+                        break;
+                    }
+                    case "gmb": {
+                        JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/eta/stop/" + stopId);
+                        List<Pair<Long, JSONObject>> busList = new ArrayList<>();
+                        for (int i = 0; i < data.optJSONArray("data").length(); i++) {
+                            JSONObject routeData = data.optJSONArray("data").optJSONObject(i);
+                            JSONArray buses = routeData.optJSONArray("eta");
+                            Iterable<String> iterable = () -> DATA_SHEET.optJSONObject("routeList").keys();
+                            Optional<JSONObject> filteredEntry = StreamSupport.stream(iterable.spliterator(), false)
+                                    .map(k -> DATA_SHEET.optJSONObject("routeList").optJSONObject(k))
+                                    .filter(r -> r.optJSONObject("bound").has("gmb") && r.optString("gtfsId").equals(routeData.optString("route_id")))
+                                    .findFirst();
+                            if (filteredEntry.isPresent() && buses != null) {
+                                String routeNumber = filteredEntry.get().optString("route");
+                                for (int u = 0; u < buses.length(); u++) {
+                                    JSONObject bus = buses.optJSONObject(u);
+                                    String eta = bus.optString("timestamp");
+                                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                                    long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                                    if (routeNumber.equals(route.optString("route"))) {
+                                        busList.add(Pair.create(mins, bus));
+                                    }
+                                }
+                            }
+                        }
+                        busList.sort(Comparator.comparing(p -> p.first));
+                        for (int i = 0; i < busList.size(); i++) {
+                            Pair<Long, JSONObject> entry = busList.get(i);
+                            JSONObject bus = entry.second;
+                            int seq = i + 1;
+                            String remark = language.equals("en") ? bus.optString("remarks_en") : bus.optString("remarks_tc");
+                            if (remark == null || remark.equalsIgnoreCase("null")) {
+                                remark = "";
+                            }
+                            long mins = entry.first;
+                            String message = "";
+                            if (language.equals("en")) {
+                                if (mins > 0) {
+                                    message = "<b>" + mins + "</b>" + " Min." + "";
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
+                                } else if (mins > -60) {
+                                    message = "<b>-</b>" + " Min." + "";
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
+                                }
+                                if (!remark.isEmpty()) {
+                                    message += (message.isEmpty() ? remark : " (" + remark + ")");
+                                }
                             } else {
-                                List<LrtETAData> results = new ArrayList<>();
-                                JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=" + stopId.substring(2));
-                                if (data.optInt("status") == 0) {
-                                    lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                                if (mins > 0) {
+                                    message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
+                                } else if (mins > -60) {
+                                    message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                    if (seq == 1) {
+                                        nextScheduledBus = mins;
+                                    }
+                                }
+                                if (!remark.isEmpty()) {
+                                    message += (message.isEmpty() ? remark : " (" + remark + ")");
+                                }
+                            }
+                            message = message
+                                    .replaceAll("原定", "預定")
+                                    .replaceAll("最後班次", "尾班車")
+                                    .replaceAll("尾班車已過", "尾班車已過本站");
+
+                            if (message.isEmpty()) {
+                                if (seq == 1) {
+                                    message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
                                 } else {
-                                    JSONArray platformList = data.optJSONArray("platform_list");
-                                    for (int i = 0; i < platformList.length(); i++) {
-                                        JSONObject platform = platformList.optJSONObject(i);
-                                        int platformNumber = platform.optInt("platform_id");
-                                        JSONArray routeList = platform.optJSONArray("route_list");
-                                        if (routeList != null) {
-                                            for (int u = 0; u < routeList.length(); u++) {
-                                                JSONObject routeData = routeList.optJSONObject(u);
-                                                String routeNumber = routeData.optString("route_no");
-                                                if (routeNumber.equals(route.optString("route"))) {
-                                                    Matcher matcher = Pattern.compile("([0-9]+) *min").matcher(routeData.optString("time_en"));
-                                                    long mins = matcher.find() ? Long.parseLong(matcher.group(1)) : 0;
-                                                    String minsMsg = routeData.optString(Shared.Companion.getLanguage().equals("en") ? "time_en" : "time_ch");
-                                                    String dest = routeData.optString(Shared.Companion.getLanguage().equals("en") ? "dest_en" : "dest_ch");
-                                                    int trainLength = routeData.optInt("train_length");
-                                                    results.add(new LrtETAData(routeNumber, dest, trainLength, platformNumber, mins, minsMsg));
-                                                }
+                                    message = "<b></b>-";
+                                }
+                            } else {
+                                message = "<b></b>" + message;
+                            }
+                            lines.put(seq, message);
+                        }
+                        break;
+                    }
+                    case "lightRail": {
+                        JSONArray stopsList = route.optJSONObject("stops").optJSONArray("lightRail");
+                        if (JsonUtils.indexOf(stopsList, stopId) + 1 >= stopsList.length()) {
+                            lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
+                        } else {
+                            List<LrtETAData> results = new ArrayList<>();
+                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=" + stopId.substring(2));
+                            if (data.optInt("status") == 0) {
+                                lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                            } else {
+                                JSONArray platformList = data.optJSONArray("platform_list");
+                                for (int i = 0; i < platformList.length(); i++) {
+                                    JSONObject platform = platformList.optJSONObject(i);
+                                    int platformNumber = platform.optInt("platform_id");
+                                    JSONArray routeList = platform.optJSONArray("route_list");
+                                    if (routeList != null) {
+                                        for (int u = 0; u < routeList.length(); u++) {
+                                            JSONObject routeData = routeList.optJSONObject(u);
+                                            String routeNumber = routeData.optString("route_no");
+                                            if (routeNumber.equals(route.optString("route"))) {
+                                                Matcher matcher = Pattern.compile("([0-9]+) *min").matcher(routeData.optString("time_en"));
+                                                long mins = matcher.find() ? Long.parseLong(matcher.group(1)) : 0;
+                                                String minsMsg = routeData.optString(Shared.Companion.getLanguage().equals("en") ? "time_en" : "time_ch");
+                                                String dest = routeData.optString(Shared.Companion.getLanguage().equals("en") ? "dest_en" : "dest_ch");
+                                                int trainLength = routeData.optInt("train_length");
+                                                results.add(new LrtETAData(routeNumber, dest, trainLength, platformNumber, mins, minsMsg));
                                             }
                                         }
                                     }
-                                    results.sort(Comparator.naturalOrder());
-                                    for (int i = 0; i < results.size(); i++) {
-                                        LrtETAData lrt = results.get(i);
-                                        int seq = i + 1;
-                                        String minsMessage = lrt.getEtaMessage();
-                                        if (seq == 1) {
-                                            nextScheduledBus = lrt.getEta();
-                                        }
-                                        StringBuilder cartsMessage = new StringBuilder(lrt.getTrainLength() * 2);
-                                        for (int u = 0; u < lrt.getTrainLength(); u++) {
-                                            cartsMessage.append("\uD83D\uDE83");
-                                        }
-                                        String message = "<b></b>" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + " " + cartsMessage + " " + minsMessage;
-                                        lines.put(seq, message);
+                                }
+                                results.sort(Comparator.naturalOrder());
+                                for (int i = 0; i < results.size(); i++) {
+                                    LrtETAData lrt = results.get(i);
+                                    int seq = i + 1;
+                                    String minsMessage = lrt.getEtaMessage();
+                                    if (seq == 1) {
+                                        nextScheduledBus = lrt.getEta();
                                     }
+                                    StringBuilder cartsMessage = new StringBuilder(lrt.getTrainLength() * 2);
+                                    for (int u = 0; u < lrt.getTrainLength(); u++) {
+                                        cartsMessage.append("\uD83D\uDE83");
+                                    }
+                                    String message = "<b></b>" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + " " + cartsMessage + " " + minsMessage;
+                                    lines.put(seq, message);
                                 }
                             }
-                            break;
                         }
-                        case "mtr": {
-                            String lineName = route.optString("route");
-                            String bound = route.optJSONObject("bound").optString("mtr");
-                            if (isMtrStopEndOfLine(stopId, lineName, bound)) {
-                                lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
-                            } else {
-                                ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
-                                int hour = hongKongTime.getHour();
-                                boolean isOutOfServiceHours = hour >= 0 && hour < 5;
+                        break;
+                    }
+                    case "mtr": {
+                        String lineName = route.optString("route");
+                        String bound = route.optJSONObject("bound").optString("mtr");
+                        if (isMtrStopEndOfLine(stopId, lineName, bound)) {
+                            lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
+                        } else {
+                            ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
+                            int hour = hongKongTime.getHour();
+                            boolean isOutOfServiceHours = hour >= 0 && hour < 5;
 
-                                JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=" + lineName + "&sta=" + stopId);
-                                if (data.optInt("status") == 0) {
-                                    lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=" + lineName + "&sta=" + stopId);
+                            if (data.optInt("status") == 0) {
+                                lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                            } else {
+                                JSONObject lineStops = data.optJSONObject("data").optJSONObject(lineName + "-" + stopId);
+                                if (lineStops == null) {
+                                    if (stopId.equals("RAC")) {
+                                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務");
+                                    } else if (isOutOfServiceHours) {
+                                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出");
+                                    } else {
+                                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                                    }
                                 } else {
-                                    JSONObject lineStops = data.optJSONObject("data").optJSONObject(lineName + "-" + stopId);
-                                    if (lineStops == null) {
+                                    boolean delayed = !data.optString("isdelay", "N").equals("N");
+                                    String dir = bound.equals("UT") ? "UP" : "DOWN";
+                                    JSONArray trains = lineStops.optJSONArray(dir);
+                                    if (trains == null || trains.length() == 0) {
                                         if (stopId.equals("RAC")) {
                                             lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務");
                                         } else if (isOutOfServiceHours) {
@@ -1833,77 +1687,63 @@ public class Registry {
                                             lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
                                         }
                                     } else {
-                                        boolean delayed = !data.optString("isdelay", "N").equals("N");
-                                        String dir = bound.equals("UT") ? "UP" : "DOWN";
-                                        JSONArray trains = lineStops.optJSONArray(dir);
-                                        if (trains == null || trains.length() == 0) {
-                                            if (stopId.equals("RAC")) {
-                                                lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務");
-                                            } else if (isOutOfServiceHours) {
-                                                lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出");
-                                            } else {
-                                                lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
-                                            }
-                                        } else {
-                                            for (int u = 0; u < trains.length(); u++) {
-                                                JSONObject trainData = trains.optJSONObject(u);
-                                                int seq = Integer.parseInt(trainData.optString("seq"));
-                                                int platform = Integer.parseInt(trainData.optString("plat"));
-                                                String specialRoute = trainData.optString("route");
-                                                String dest = DATA_SHEET.optJSONObject("stopList").optJSONObject(trainData.optString("dest")).optJSONObject("name").optString(Shared.Companion.getLanguage());
-                                                if (!stopId.equals("AIR")) {
-                                                    if (dest.equals("博覽館")) {
-                                                        dest = "機場及博覽館";
-                                                    } else if (dest.equals("AsiaWorld-Expo")) {
-                                                        dest = "Airport & AsiaWorld-Expo";
-                                                    }
+                                        for (int u = 0; u < trains.length(); u++) {
+                                            JSONObject trainData = trains.optJSONObject(u);
+                                            int seq = Integer.parseInt(trainData.optString("seq"));
+                                            int platform = Integer.parseInt(trainData.optString("plat"));
+                                            String specialRoute = trainData.optString("route");
+                                            String dest = DATA_SHEET.optJSONObject("stopList").optJSONObject(trainData.optString("dest")).optJSONObject("name").optString(Shared.Companion.getLanguage());
+                                            if (!stopId.equals("AIR")) {
+                                                if (dest.equals("博覽館")) {
+                                                    dest = "機場及博覽館";
+                                                } else if (dest.equals("AsiaWorld-Expo")) {
+                                                    dest = "Airport & AsiaWorld-Expo";
                                                 }
+                                            }
+                                            if (Shared.Companion.getLanguage().equals("en")) {
+                                                dest = StringUtils.capitalize(dest);
+                                            }
+                                            if (!specialRoute.isEmpty() && !isMtrStopOnOrAfter(stopId, specialRoute, lineName, bound)) {
+                                                String via = DATA_SHEET.optJSONObject("stopList").optJSONObject(specialRoute).optJSONObject("name").optString(Shared.Companion.getLanguage());
                                                 if (Shared.Companion.getLanguage().equals("en")) {
-                                                    dest = StringUtils.capitalize(dest);
+                                                    via = StringUtils.capitalize(via);
                                                 }
-                                                if (!specialRoute.isEmpty() && !isMtrStopOnOrAfter(stopId, specialRoute, lineName, bound)) {
-                                                    String via = DATA_SHEET.optJSONObject("stopList").optJSONObject(specialRoute).optJSONObject("name").optString(Shared.Companion.getLanguage());
-                                                    if (Shared.Companion.getLanguage().equals("en")) {
-                                                        via = StringUtils.capitalize(via);
-                                                    }
-                                                    dest += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " via " : " 經") + via + "</small>";
-                                                }
-                                                String eta = trainData.optString("time");
-
-                                                @SuppressLint("SimpleDateFormat")
-                                                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                                                format.setTimeZone(TimeZone.getTimeZone(hongKongTime.getZone()));
-                                                long mins = (long) Math.ceil((format.parse(eta).getTime() - Instant.now().toEpochMilli()) / 60000.0);
-
-                                                String minsMessage;
-                                                if (mins > 1) {
-                                                    minsMessage = mins + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘");
-                                                } else if (mins == 1) {
-                                                    minsMessage = Shared.Companion.getLanguage().equals("en") ? "Arriving" : "即將抵達";
-                                                } else {
-                                                    minsMessage = Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開";
-                                                }
-
-                                                String message = StringUtils.getCircledNumber(platform) + " " + dest + " " + minsMessage;
-                                                if (seq == 1) {
-                                                    nextScheduledBus = mins;
-                                                    if (delayed) {
-                                                        message += Shared.Companion.getLanguage().equals("en") ? " (Delayed)" : " (服務服務)";
-                                                    }
-                                                }
-                                                lines.put(seq, message);
+                                                dest += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " via " : " 經") + via + "</small>";
                                             }
+                                            String eta = trainData.optString("time");
+
+                                            @SuppressLint("SimpleDateFormat")
+                                            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                            format.setTimeZone(TimeZone.getTimeZone(hongKongTime.getZone()));
+                                            long mins = (long) Math.ceil((format.parse(eta).getTime() - Instant.now().toEpochMilli()) / 60000.0);
+
+                                            String minsMessage;
+                                            if (mins > 1) {
+                                                minsMessage = mins + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘");
+                                            } else if (mins == 1) {
+                                                minsMessage = Shared.Companion.getLanguage().equals("en") ? "Arriving" : "即將抵達";
+                                            } else {
+                                                minsMessage = Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開";
+                                            }
+
+                                            String message = StringUtils.getCircledNumber(platform) + " " + dest + " " + minsMessage;
+                                            if (seq == 1) {
+                                                nextScheduledBus = mins;
+                                                if (delayed) {
+                                                    message += Shared.Companion.getLanguage().equals("en") ? " (Delayed)" : " (服務服務)";
+                                                }
+                                            }
+                                            lines.put(seq, message);
                                         }
                                     }
                                 }
                             }
-                            break;
                         }
+                        break;
                     }
                 }
                 future.complete(ETAQueryResult.result(nextScheduledBus > -60 ? Math.max(0, nextScheduledBus) : -1, lines));
             } catch (Throwable e) {
-                e.printStackTrace();
                 future.completeExceptionally(e);
             }
         }).start();

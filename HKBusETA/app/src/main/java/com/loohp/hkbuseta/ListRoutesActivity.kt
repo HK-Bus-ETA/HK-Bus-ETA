@@ -151,7 +151,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
         }
         routeTextView.layoutParams = routeTextLayoutParams
         val destTextView = TextView(instance)
-        tr.addView(destTextView)
+        tr.addView(destTextView);
 
         destTextView.isSingleLine = true
         destTextView.ellipsize = TextUtils.TruncateAt.MARQUEE
