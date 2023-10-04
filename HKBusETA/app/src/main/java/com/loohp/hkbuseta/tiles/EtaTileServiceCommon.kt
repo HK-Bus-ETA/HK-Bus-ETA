@@ -53,6 +53,22 @@ class EtaTileServiceCommon {
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
+                .setModifiers(
+                    ModifiersBuilders.Modifiers.Builder()
+                        .setClickable(
+                            ModifiersBuilders.Clickable.Builder()
+                                .setId("open")
+                                .setOnClick(
+                                    ActionBuilders.LaunchAction.Builder()
+                                        .setAndroidActivity(
+                                            ActionBuilders.AndroidActivity.Builder()
+                                                .setClassName(MainActivity::class.java.name)
+                                                .setPackageName(packageName)
+                                                .build()
+                                        ).build()
+                                ).build()
+                        ).build()
+                )
                 .addContent(
                     LayoutElementBuilders.Arc.Builder()
                         .setAnchorAngle(
@@ -77,22 +93,6 @@ class EtaTileServiceCommon {
                         .setWidth(DimensionBuilders.wrap())
                         .setHeight(DimensionBuilders.wrap())
                         .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-                        .setModifiers(
-                            ModifiersBuilders.Modifiers.Builder()
-                                .setClickable(
-                                    ModifiersBuilders.Clickable.Builder()
-                                        .setId("open")
-                                        .setOnClick(
-                                            ActionBuilders.LaunchAction.Builder()
-                                                .setAndroidActivity(
-                                                    ActionBuilders.AndroidActivity.Builder()
-                                                        .setClassName(MainActivity::class.java.name)
-                                                        .setPackageName(packageName)
-                                                        .build()
-                                                ).build()
-                                        ).build()
-                                ).build()
-                        )
                         .addContent(
                             LayoutElementBuilders.Column.Builder()
                                 .setWidth(DimensionBuilders.wrap())
@@ -188,6 +188,22 @@ class EtaTileServiceCommon {
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
+                .setModifiers(
+                    ModifiersBuilders.Modifiers.Builder()
+                        .setClickable(
+                            ModifiersBuilders.Clickable.Builder()
+                                .setId("open")
+                                .setOnClick(
+                                    ActionBuilders.LaunchAction.Builder()
+                                        .setAndroidActivity(
+                                            ActionBuilders.AndroidActivity.Builder()
+                                                .setClassName(MainActivity::class.java.name)
+                                                .setPackageName(packageName)
+                                                .build()
+                                        ).build()
+                                ).build()
+                        ).build()
+                )
                 .addContent(
                     LayoutElementBuilders.Arc.Builder()
                         .setAnchorAngle(
@@ -212,22 +228,6 @@ class EtaTileServiceCommon {
                         .setWidth(DimensionBuilders.wrap())
                         .setHeight(DimensionBuilders.wrap())
                         .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-                        .setModifiers(
-                            ModifiersBuilders.Modifiers.Builder()
-                                .setClickable(
-                                    ModifiersBuilders.Clickable.Builder()
-                                        .setId("open")
-                                        .setOnClick(
-                                            ActionBuilders.LaunchAction.Builder()
-                                                .setAndroidActivity(
-                                                    ActionBuilders.AndroidActivity.Builder()
-                                                        .setClassName(MainActivity::class.java.name)
-                                                        .setPackageName(packageName)
-                                                        .build()
-                                                ).build()
-                                        ).build()
-                                ).build()
-                        )
                         .addContent(
                             LayoutElementBuilders.Column.Builder()
                                 .setWidth(DimensionBuilders.wrap())
@@ -398,6 +398,27 @@ class EtaTileServiceCommon {
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
                 .setHeight(expand())
+                .setModifiers(
+                    ModifiersBuilders.Modifiers.Builder()
+                        .setClickable(
+                            ModifiersBuilders.Clickable.Builder()
+                                .setId("open")
+                                .setOnClick(
+                                    ActionBuilders.LaunchAction.Builder()
+                                        .setAndroidActivity(
+                                            ActionBuilders.AndroidActivity.Builder()
+                                                .setClassName(MainActivity::class.java.name)
+                                                .addKeyToExtraMapping("stopId", ActionBuilders.AndroidStringExtra.Builder().setValue(stopId).build())
+                                                .addKeyToExtraMapping("co", ActionBuilders.AndroidStringExtra.Builder().setValue(co).build())
+                                                .addKeyToExtraMapping("index", ActionBuilders.AndroidIntExtra.Builder().setValue(index).build())
+                                                .addKeyToExtraMapping("stop", ActionBuilders.AndroidStringExtra.Builder().setValue(stop.toString()).build())
+                                                .addKeyToExtraMapping("route", ActionBuilders.AndroidStringExtra.Builder().setValue(route.toString()).build())
+                                                .setPackageName(packageName)
+                                                .build()
+                                        ).build()
+                                ).build()
+                        ).build()
+                )
                 .addContent(
                     LayoutElementBuilders.Arc.Builder()
                         .setAnchorAngle(
@@ -422,27 +443,6 @@ class EtaTileServiceCommon {
                         .setWidth(DimensionBuilders.wrap())
                         .setHeight(DimensionBuilders.wrap())
                         .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-                        .setModifiers(
-                            ModifiersBuilders.Modifiers.Builder()
-                                .setClickable(
-                                    ModifiersBuilders.Clickable.Builder()
-                                        .setId("open")
-                                        .setOnClick(
-                                            ActionBuilders.LaunchAction.Builder()
-                                                .setAndroidActivity(
-                                                    ActionBuilders.AndroidActivity.Builder()
-                                                        .setClassName(MainActivity::class.java.name)
-                                                        .addKeyToExtraMapping("stopId", ActionBuilders.AndroidStringExtra.Builder().setValue(stopId).build())
-                                                        .addKeyToExtraMapping("co", ActionBuilders.AndroidStringExtra.Builder().setValue(co).build())
-                                                        .addKeyToExtraMapping("index", ActionBuilders.AndroidIntExtra.Builder().setValue(index).build())
-                                                        .addKeyToExtraMapping("stop", ActionBuilders.AndroidStringExtra.Builder().setValue(stop.toString()).build())
-                                                        .addKeyToExtraMapping("route", ActionBuilders.AndroidStringExtra.Builder().setValue(route.toString()).build())
-                                                        .setPackageName(packageName)
-                                                        .build()
-                                                ).build()
-                                        ).build()
-                                ).build()
-                        )
                         .addContent(
                             LayoutElementBuilders.Column.Builder()
                                 .setWidth(DimensionBuilders.wrap())
