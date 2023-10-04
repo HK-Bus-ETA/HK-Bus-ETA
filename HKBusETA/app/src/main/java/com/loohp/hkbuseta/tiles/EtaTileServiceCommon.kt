@@ -369,7 +369,7 @@ class EtaTileServiceCommon {
             val color = if (eta.isConnectionError) {
                 Color.DarkGray
             } else {
-                when (co) {
+                when (eta.nextCo) {
                     "kmb" -> Color(0xFFFF4747)
                     "ctb" -> Color(0xFFFFE15E)
                     "nlb" -> Color(0xFF9BFFC6)
