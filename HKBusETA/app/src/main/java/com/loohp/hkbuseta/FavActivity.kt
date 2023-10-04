@@ -41,6 +41,7 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.clamp
 import kotlinx.coroutines.delay
 import java.util.Timer
 import java.util.TimerTask
@@ -128,7 +129,7 @@ fun FavTitle(instance: FavActivity) {
         modifier = Modifier.fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp).clamp(max = 17.dp),
         text = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"
     )
 }
@@ -141,7 +142,7 @@ fun FavDescription(instance: FavActivity) {
             .padding(10.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(11F, instance), TextUnitType.Sp),
+        fontSize = TextUnit(StringUtils.scaledSize(11F, instance), TextUnitType.Sp).clamp(max = 11.dp),
         text = if (Shared.language == "en") "These routes will display in their corresponding indexed Tile" else "這些路線將顯示在其相應數字的資訊方塊中"
     )
 }
