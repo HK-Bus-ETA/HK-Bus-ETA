@@ -28,6 +28,7 @@ import com.loohp.hkbuseta.shared.ExtendedDataHolder
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.clampSp
 import org.json.JSONObject
 import kotlin.math.roundToInt
 
@@ -89,8 +90,13 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
     table.removeAllViews()
     for (route in result) {
         val co = route.optString("co")
+        val routeNumber = if (co == "mtr" && Shared.language != "en") {
+            Shared.getMtrLineName(route.optJSONObject("route")!!.optString("route"))
+        } else {
+            route.optJSONObject("route")!!.optString("route")
+        }
         val color = when (co) {
-            "kmb" -> Color(0xFFFF4747)
+            "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
             "ctb" -> Color(0xFFFFE15E)
             "nlb" -> Color(0xFF9BFFC6)
             "mtr-bus" -> Color(0xFFAAD4FF)
@@ -132,22 +138,16 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
 
         val routeTextView = TextView(instance)
         tr.addView(routeTextView)
-        val routeNumber = if (co == "mtr" && Shared.language != "en") {
-            Shared.getMtrLineName(route.optJSONObject("route")!!.optString("route"))
-        } else {
-            route.optJSONObject("route")!!.optString("route")
-        }
+
         routeTextView.text = routeNumber
         routeTextView.setTextColor(color)
         val routeTextLayoutParams: ViewGroup.LayoutParams = routeTextView.layoutParams
         if (co == "mtr" && Shared.language != "en") {
-            routeTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(16F, instance))
-            routeTextLayoutParams.width =
-                (StringUtils.scaledSize(60F, instance) * instance.resources.displayMetrics.density).roundToInt()
+            routeTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, clampSp(instance, StringUtils.scaledSize(16F, instance), dpMax = StringUtils.scaledSize(16F, instance)))
+            routeTextLayoutParams.width = (StringUtils.scaledSize(60F, instance) * instance.resources.displayMetrics.density).roundToInt()
         } else {
-            routeTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(20F, instance))
-            routeTextLayoutParams.width =
-                (StringUtils.scaledSize(51F, instance) * instance.resources.displayMetrics.density).roundToInt()
+            routeTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, clampSp(instance, StringUtils.scaledSize(20F, instance), dpMax = StringUtils.scaledSize(20F, instance)))
+            routeTextLayoutParams.width = (StringUtils.scaledSize(51F, instance) * instance.resources.displayMetrics.density).roundToInt()
         }
         routeTextView.layoutParams = routeTextLayoutParams
         val destTextView = TextView(instance)
@@ -162,11 +162,9 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
         destTextView.isSelected = true
         val destTextLayoutParams: ViewGroup.LayoutParams = destTextView.layoutParams
         if (co == "mtr" && Shared.language != "en") {
-            destTextLayoutParams.width =
-                (StringUtils.scaledSize(86F, instance) * instance.resources.displayMetrics.density).roundToInt()
+            destTextLayoutParams.width = (StringUtils.scaledSize(86F, instance) * instance.resources.displayMetrics.density).roundToInt()
         } else {
-            destTextLayoutParams.width =
-                (StringUtils.scaledSize(95F, instance) * instance.resources.displayMetrics.density).roundToInt()
+            destTextLayoutParams.width = (StringUtils.scaledSize(95F, instance) * instance.resources.displayMetrics.density).roundToInt()
         }
         destTextView.layoutParams = destTextLayoutParams
 
@@ -178,9 +176,9 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
         destTextView.text = dest
         destTextView.setTextColor(color)
         if (co == "mtr" && Shared.language != "en") {
-            destTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(14F, instance))
+            destTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, clampSp(instance, StringUtils.scaledSize(14F, instance), dpMax = StringUtils.scaledSize(17F, instance)))
         } else {
-            destTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(15F, instance))
+            destTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, clampSp(instance, StringUtils.scaledSize(15F, instance), dpMax = StringUtils.scaledSize(18F, instance)))
         }
         table.addView(tr)
 
@@ -199,7 +197,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
             instance.runOnUiThread {
                 val text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(if (Shared.language == "en") {
                     when (route.optString("co")) {
-                        "kmb" -> "KMB"
+                        "kmb" -> if (Shared.isLWBRoute(routeNumber)) "LWB" else "KMB"
                         "ctb" -> "CTB"
                         "nlb" -> "NLB"
                         "mtr-bus" -> "MTR-Bus"
@@ -210,7 +208,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>) {
                     }
                 } else {
                     when (route.optString("co")) {
-                        "kmb" -> "九巴"
+                        "kmb" -> if (Shared.isLWBRoute(routeNumber)) "龍運" else "九巴"
                         "ctb" -> "城巴"
                         "nlb" -> "嶼巴"
                         "mtr-bus" -> "港鐵巴士"

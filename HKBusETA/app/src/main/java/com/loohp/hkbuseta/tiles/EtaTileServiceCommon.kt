@@ -286,7 +286,7 @@ class EtaTileServiceCommon {
                     FontStyle.Builder()
                         .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 35), 2, 1F, 17F), dpMax = 18F)).build()
+                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 35), 2, 1F, 17F), dpMax = 17F)).build()
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -309,7 +309,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.findOptimalSp(context, name, targetWidth(context, 35), 1, 1F, 11F), dpMax = 12F)).build()
+                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.findOptimalSp(context, name, targetWidth(context, 35), 1, 1F, 11F), dpMax = 11F)).build()
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -323,7 +323,7 @@ class EtaTileServiceCommon {
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
             val maxLines = if (singleLine) 1 else 2
-            val textSize = clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 20) / 10 * 8, maxLines, 1F, maxTextSize), dpMax = maxTextSize + 1F)
+            val textSize = clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 20) / 10 * 8, maxLines, 1F, maxTextSize), dpMax = maxTextSize)
 
             return LayoutElementBuilders.Text.Builder()
                 //.setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
@@ -348,7 +348,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.scaledSize(9F, context), dpMax = 10F)).build()
+                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.scaledSize(9F, context), dpMax = 9F)).build()
                         ).build()
                 ).build()
         }
@@ -370,7 +370,7 @@ class EtaTileServiceCommon {
                 Color.DarkGray
             } else {
                 when (eta.nextCo) {
-                    "kmb" -> Color(0xFFFF4747)
+                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
                     "ctb" -> Color(0xFFFFE15E)
                     "nlb" -> Color(0xFF9BFFC6)
                     "mtr-bus" -> Color(0xFFAAD4FF)

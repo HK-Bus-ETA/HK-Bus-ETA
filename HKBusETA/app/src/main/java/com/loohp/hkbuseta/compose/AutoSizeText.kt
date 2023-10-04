@@ -38,6 +38,7 @@ fun AutoResizeText(
     maxLines: Int = Int.MAX_VALUE,
     style: TextStyle = LocalTextStyle.current,
 ) {
+    var previousText by remember { mutableStateOf(text) }
     var fontSizeValue by remember { mutableStateOf(fontSizeRange.max.value) }
     var readyToDraw by remember { mutableStateOf(false) }
 
@@ -57,7 +58,16 @@ fun AutoResizeText(
         style = style,
         fontSize = fontSizeValue.sp,
         onTextLayout = {
-            if (it.didOverflowHeight && !readyToDraw) {
+            if (previousText != text) {
+                if (fontSizeRange.resetToMaxIfTextUpdated) {
+                    fontSizeValue = fontSizeRange.max.value
+                }
+                previousText = text
+            }
+            if (it.didOverflowHeight || (maxLines <= 1 && it.didOverflowWidth)) {
+                if (readyToDraw) {
+                    readyToDraw = false
+                }
                 val nextFontSizeValue = fontSizeValue - fontSizeRange.step.value
                 if (nextFontSizeValue <= fontSizeRange.min.value) {
                     // Reached minimum, set minimum font size and it's readToDraw
@@ -80,6 +90,7 @@ data class FontSizeRange(
     val min: TextUnit,
     val max: TextUnit,
     val step: TextUnit = DEFAULT_TEXT_STEP,
+    val resetToMaxIfTextUpdated: Boolean = true
 ) {
     init {
         require(min < max) { "min should be less than max, $this" }

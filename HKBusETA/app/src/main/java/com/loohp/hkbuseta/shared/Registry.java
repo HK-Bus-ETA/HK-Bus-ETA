@@ -1380,8 +1380,7 @@ public class Registry {
                                 message += Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)";
                             }
                             if (entryCo.equals("kmb")) {
-                                String routeNumber = route.optString("route");
-                                if (routeNumber.startsWith("A") || routeNumber.startsWith("E") || routeNumber.startsWith("S") || routeNumber.equals("X1")) {
+                                if (Shared.Companion.isLWBRoute(route.optString("route"))) {
                                     message += Shared.Companion.getLanguage().equals("en") ? " - LWB" : " - 龍運";
                                 } else {
                                     message += Shared.Companion.getLanguage().equals("en") ? " - KMB" : " - 九巴";

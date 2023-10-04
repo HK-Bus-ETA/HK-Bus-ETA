@@ -396,8 +396,8 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
         maxLines = 2,
         fontWeight = FontWeight(900),
         fontSizeRange = FontSizeRange(
-            min = StringUtils.scaledSize(1, instance).dp.sp,
-            max = StringUtils.scaledSize(17, instance).sp.clamp(max = 18.dp)
+            min = StringUtils.scaledSize(1F, instance).dp.sp,
+            max = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
         )
     )
 }
@@ -426,8 +426,8 @@ fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String
         text = name,
         maxLines = 1,
         fontSizeRange = FontSizeRange(
-            min = StringUtils.scaledSize(1, instance).dp.sp,
-            max = StringUtils.scaledSize(11, instance).sp.clamp(max = 12.dp)
+            min = StringUtils.scaledSize(1F, instance).dp.sp,
+            max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(11F, instance).dp)
         )
     )
 }
@@ -436,7 +436,7 @@ fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EtaText(lines: ETAQueryResult, seq: Int, instance: EtaActivity) {
-    val textSize = StringUtils.scaledSize(16, instance).sp.clamp(max = 17.dp)
+    val textSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp)
     Text(
         modifier = Modifier
             .fillMaxWidth()

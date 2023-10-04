@@ -225,6 +225,30 @@ class Shared {
             }
         }
 
+        fun isLWBRoute(routeNumber: String): Boolean {
+            val routeNumberFiltered = if (routeNumber.startsWith("N")) routeNumber.substring(1) else routeNumber
+            if (routeNumberFiltered.startsWith("A") || routeNumberFiltered.startsWith("E") || routeNumberFiltered.startsWith("S")) {
+                return true
+            }
+            return when (routeNumber) {
+                "N30" -> true
+                "N31" -> true
+                "N42" -> true
+                "N42A" -> true
+                "N64" -> true
+                "R8" -> true
+                "R33" -> true
+                "R42" -> true
+                "X1" -> true
+                "X33" -> true
+                "X34" -> true
+                "X40" -> true
+                "X43" -> true
+                "X47" -> true
+                else -> false
+            }
+        }
+
         var language = "zh"
 
         val favoriteRouteStops: Map<Int, JSONObject> = ConcurrentHashMap()

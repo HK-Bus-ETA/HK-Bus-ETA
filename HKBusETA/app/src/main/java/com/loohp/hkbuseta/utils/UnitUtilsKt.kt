@@ -20,19 +20,17 @@ fun Float.sameValueAs(other: Float) : Boolean {
     return (this - other).absoluteValue < 0.00001
 }
 
-
 @Composable
-fun TextUnit.clamp(min: Dp? = null, max: Dp? = null) = with (LocalDensity.current) {
-    var dp = dp
+fun TextUnit.clamp(min: Dp? = null, max: Dp? = null): TextUnit {
+    var dp = this.dp
     if (min != null) {
         dp = dp.coerceAtLeast(min)
     }
     if (max != null) {
         dp = dp.coerceAtMost(max)
     }
-    return@with dp.sp
+    return dp.sp
 }
-
 
 fun clampSp(context: Context, sp: Float, dpMin: Float? = null, dpMax: Float? = null): Float {
     var dp = UnitUtils.spToDp(context, sp)
