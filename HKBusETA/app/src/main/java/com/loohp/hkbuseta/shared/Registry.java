@@ -1112,38 +1112,42 @@ public class Registry {
     }
 
     public List<StopData> getAllStops(String routeNumber, String bound, String co, String gtfsId) {
-        List<Pair<BranchedList<String, StopData>, Integer>> lists = new ArrayList<>();
-        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-            String key = itr.next();
-            JSONObject route = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-            if (routeNumber.equals(route.optString("route")) && JsonUtils.contains(route.optJSONArray("co"), co)) {
-                boolean flag;
-                if (co.equals("nlb")) {
-                    flag = bound.equals(route.optString("nlbId"));
-                } else {
-                    flag = bound.equals(route.optJSONObject("bound").optString(co));
-                    if (co.equals("gmb")) {
-                        flag &= gtfsId.equals(route.optString("gtfsId"));
+        try {
+            List<Pair<BranchedList<String, StopData>, Integer>> lists = new ArrayList<>();
+            for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
+                String key = itr.next();
+                JSONObject route = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
+                if (routeNumber.equals(route.optString("route")) && JsonUtils.contains(route.optJSONArray("co"), co)) {
+                    boolean flag;
+                    if (co.equals("nlb")) {
+                        flag = bound.equals(route.optString("nlbId"));
+                    } else {
+                        flag = bound.equals(route.optJSONObject("bound").optString(co));
+                        if (co.equals("gmb")) {
+                            flag &= gtfsId.equals(route.optString("gtfsId"));
+                        }
                     }
-                }
-                if (flag) {
-                    BranchedList<String, StopData> localStops = new BranchedList<>();
-                    JSONArray stops = route.optJSONObject("stops").optJSONArray(co);
-                    int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
-                    for (int i = 0; i < stops.length(); i++) {
-                        String stopId = stops.optString(i);
-                        localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId)));
+                    if (flag) {
+                        BranchedList<String, StopData> localStops = new BranchedList<>();
+                        JSONArray stops = route.optJSONObject("stops").optJSONArray(co);
+                        int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
+                        for (int i = 0; i < stops.length(); i++) {
+                            String stopId = stops.optString(i);
+                            localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId)));
+                        }
+                        lists.add(Pair.create(localStops, serviceType));
                     }
-                    lists.add(Pair.create(localStops, serviceType));
                 }
             }
+            lists.sort(Comparator.comparing(p -> p.second));
+            BranchedList<String, StopData> result = new BranchedList<>((a, b) -> a.getServiceType() > b.getServiceType() ? b : a);
+            for (Pair<BranchedList<String, StopData>, Integer> pair : lists) {
+                result.merge(pair.first);
+            }
+            return result.values();
+        } catch (Throwable e) {
+            throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gtfsId + ": " + e.getMessage(), e);
         }
-        lists.sort(Comparator.comparing(p -> p.second));
-        BranchedList<String, StopData> result = new BranchedList<>((a, b) -> a.getServiceType() > b.getServiceType() ? b : a);
-        for (Pair<BranchedList<String, StopData>, Integer> pair : lists) {
-            result.merge(pair.first);
-        }
-        return result.values();
     }
 
     public static class StopData {
