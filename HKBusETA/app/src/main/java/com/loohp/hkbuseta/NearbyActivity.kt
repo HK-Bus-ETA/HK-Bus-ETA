@@ -32,6 +32,7 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import org.json.JSONObject
 import java.util.concurrent.ForkJoinPool
 import kotlin.math.roundToInt
@@ -153,9 +154,9 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
         color = MaterialTheme.colors.primary,
         fontSize = TextUnit(StringUtils.scaledSize(12.5F, instance), TextUnitType.Sp),
         text = if (Shared.language == "en")
-            "Nearest Stop: ".plus(closestStop.optJSONObject("name")!!.optString("en")).plus(" (").plus(distance.roundToInt()).plus("m)")
+            "Nearest Stop: ".plus(closestStop.optJSONObject("name")!!.optString("en")).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("m)")
         else
-            "最近的巴士站: ".plus(closestStop.optJSONObject("name")!!.optString("zh")).plus(" (").plus(distance.roundToInt()).plus("米)")
+            "最近的巴士站: ".plus(closestStop.optJSONObject("name")!!.optString("zh")).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("米)")
     )
 }
 

@@ -38,6 +38,7 @@ import com.loohp.hkbuseta.utils.DistanceUtils
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import org.json.JSONObject
 import kotlin.math.roundToInt
 
@@ -261,7 +262,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject) {
                     instance.runOnUiThread {
                         val text = "".plus(closest.stopIndex).plus(". ").plus(closest.stopName).plus("\n")
                             .plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
-                            .plus((closest.distance * 1000).roundToInt()).plus(if (Shared.language == "en") "m" else "米")
+                            .plus((closest.distance * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
                         Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
                     }
                     return@setOnLongClickListener true
