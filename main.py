@@ -1,4 +1,3 @@
-import hashlib
 import json
 import requests
 
@@ -110,9 +109,9 @@ def download_and_process_data_sheet():
     mtr_dest = {}
     mtr_stops_lists = {}
 
-    def list_index_of(l, o):
+    def list_index_of(li, o):
         try:
-            return l.index(o)
+            return li.index(o)
         except ValueError:
             return -1
 
@@ -158,10 +157,10 @@ def download_and_process_data_sheet():
             orig_en = []
             for orig in values:
                 stop_name_zh = orig["zh"]
-                if not all(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
+                if not any(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
                     orig_zh.append(stop_name_zh)
                     orig_en.append(orig["en"])
-            mtr_joined_orig[key] = ("/".join(dict.fromkeys(orig_zh)), "/".join(dict.fromkeys(orig_en)))
+            mtr_joined_orig[key] = ("/".join(list(dict.fromkeys(orig_zh))), "/".join(list(dict.fromkeys(orig_en))))
 
     mtr_joined_dest = {}
     for key, values in mtr_dest.items():
@@ -170,10 +169,10 @@ def download_and_process_data_sheet():
             dest_en = []
             for orig in values:
                 stop_name_zh = orig.get("zh")
-                if not all(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
+                if not any(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
                     dest_zh.append(stop_name_zh)
                     dest_en.append(orig["en"])
-            mtr_joined_dest[key] = ("/".join(dict.fromkeys(dest_zh)), "/".join(dict.fromkeys(dest_en)))
+            mtr_joined_dest[key] = ("/".join(list(dict.fromkeys(dest_zh))), "/".join(list(dict.fromkeys(dest_en))))
 
     keys_to_remove = []
     for key in DATA_SHEET["routeList"]:
