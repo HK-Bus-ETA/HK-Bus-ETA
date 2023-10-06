@@ -154,26 +154,26 @@ def download_and_process_data_sheet():
     mtr_joined_orig = {}
     for key, values in mtr_orig.items():
         if len(values) > 1:
-            orig_zh = set()
-            orig_en = set()
+            orig_zh = []
+            orig_en = []
             for orig in values:
                 stop_name_zh = orig["zh"]
                 if not all(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
-                    orig_zh.add(stop_name_zh)
-                    orig_en.add(orig["en"])
-            mtr_joined_orig[key] = ("/".join(orig_zh), "/".join(orig_en))
+                    orig_zh.append(stop_name_zh)
+                    orig_en.append(orig["en"])
+            mtr_joined_orig[key] = ("/".join(dict.fromkeys(orig_zh)), "/".join(dict.fromkeys(orig_en)))
 
     mtr_joined_dest = {}
     for key, values in mtr_dest.items():
         if len(values) > 1:
-            dest_zh = set()
-            dest_en = set()
+            dest_zh = []
+            dest_en = []
             for orig in values:
                 stop_name_zh = orig.get("zh")
                 if not all(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
-                    dest_zh.add(stop_name_zh)
-                    dest_en.add(orig["en"])
-            mtr_joined_dest[key] = ("/".join(dest_zh), "/".join(dest_en))
+                    dest_zh.append(stop_name_zh)
+                    dest_en.append(orig["en"])
+            mtr_joined_dest[key] = ("/".join(dict.fromkeys(dest_zh)), "/".join(dict.fromkeys(dest_en)))
 
     keys_to_remove = []
     for key in DATA_SHEET["routeList"]:
