@@ -239,7 +239,3 @@ output = {
 
 with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False)
-
-with open(CHECKSUM_FILE_NAME, "w", encoding="utf-8") as f:
-    f.write(hashlib.md5(json.dumps(output, sort_keys=True).encode('utf-8')).hexdigest())
-    f.flush()
