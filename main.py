@@ -68,24 +68,19 @@ def download_and_process_data_sheet():
     DATA_SHEET = response.json()
 
     DATA_SHEET["stopList"]["AC1FD9BDD09D1DD6"]["name"]["zh"] += " (沙頭角邊境禁區 - 需持邊境禁區許可證)"
-    DATA_SHEET["stopList"]["AC1FD9BDD09D1DD6"]["name"][
-        "en"] += " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)"
+    DATA_SHEET["stopList"]["AC1FD9BDD09D1DD6"]["name"]["en"] += " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)"
     DATA_SHEET["stopList"]["20001477"]["name"]["zh"] += " (沙頭角邊境禁區 - 需持邊境禁區許可證)"
-    DATA_SHEET["stopList"]["20001477"]["name"][
-        "en"] += " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)"
+    DATA_SHEET["stopList"]["20001477"]["name"]["en"] += " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)"
     DATA_SHEET["stopList"]["152"]["name"]["zh"] += " (深圳灣管制站 - 僅限過境旅客)"
     DATA_SHEET["stopList"]["152"]["name"]["en"] += " (Shenzhen Bay Control Point - Border Crossing Passengers Only)"
     DATA_SHEET["stopList"]["20015453"]["name"]["zh"] += " (深圳灣管制站 - 僅限過境旅客)"
-    DATA_SHEET["stopList"]["20015453"]["name"][
-        "en"] += " (Shenzhen Bay Control Point - Border Crossing Passengers Only)"
+    DATA_SHEET["stopList"]["20015453"]["name"]["en"] += " (Shenzhen Bay Control Point - Border Crossing Passengers Only)"
     DATA_SHEET["stopList"]["003208"]["name"]["zh"] += " (深圳灣管制站 - 僅限過境旅客)"
     DATA_SHEET["stopList"]["003208"]["name"]["en"] += " (Shenzhen Bay Control Point - Border Crossing Passengers Only)"
     DATA_SHEET["stopList"]["81567ACCCF40DD4B"]["name"]["zh"] += " (落馬洲支線出入境管制站 - 僅限過境旅客)"
-    DATA_SHEET["stopList"]["81567ACCCF40DD4B"]["name"][
-        "en"] += " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)"
+    DATA_SHEET["stopList"]["81567ACCCF40DD4B"]["name"]["en"] += " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)"
     DATA_SHEET["stopList"]["20015420"]["name"]["zh"] += " (落馬洲支線出入境管制站 - 僅限過境旅客)"
-    DATA_SHEET["stopList"]["20015420"]["name"][
-        "en"] += " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)"
+    DATA_SHEET["stopList"]["20015420"]["name"]["en"] += " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)"
     DATA_SHEET["stopList"]["20011698"]["name"]["zh"] += " (落馬洲管制站 - 僅限過境旅客)"
     DATA_SHEET["stopList"]["20011698"]["name"]["en"] += " (Lok Ma Chau Control Point - Border Crossing Passengers Only)"
     DATA_SHEET["stopList"]["20015598"]["name"]["zh"] += " (落馬洲管制站 - 僅限過境旅客)"
@@ -137,9 +132,7 @@ def download_and_process_data_sheet():
             else:
                 mtr_orig.setdefault(line_name + "_" + bound, []).insert(0, data.get("orig"))
                 mtr_dest.setdefault(line_name + "_" + bound, []).insert(0, data.get("dest"))
-            mtr_stops_lists.setdefault(line_name + "_" + bound, []).append(
-                [DATA_SHEET["stopList"][s]["name"]["zh"] for s in stops]
-            )
+            mtr_stops_lists.setdefault(line_name + "_" + bound, []).append([DATA_SHEET["stopList"][s]["name"]["zh"] for s in stops])
         elif "kmb" in bounds:
             if "ctb" in data["co"]:
                 data["kmbCtbJoint"] = True
