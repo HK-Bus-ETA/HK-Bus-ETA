@@ -187,12 +187,12 @@ def download_and_process_data_sheet():
             line_name = route_number
             bound = bounds["mtr"]
 
-            joint_ori = mtr_joined_orig[line_name + "_" + bound]
+            joint_ori = mtr_joined_orig.get(line_name + "_" + bound)
             if joint_ori:
                 orig = data["orig"]
                 orig["zh"], orig["en"] = joint_ori
 
-            joint_dest = mtr_joined_dest[line_name + "_" + bound]
+            joint_dest = mtr_joined_dest.get(line_name + "_" + bound)
             if joint_dest:
                 dest = data["dest"]
                 dest["zh"], dest["en"] = joint_dest
