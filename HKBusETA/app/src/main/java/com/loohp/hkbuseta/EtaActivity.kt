@@ -141,6 +141,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
             Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
         }
         val intent = Intent(instance, NearbyActivity::class.java)
+        intent.putExtra("interchangeSearch", true)
         intent.putExtra("lat", stop.optJSONObject("location")!!.optDouble("lat"))
         intent.putExtra("lng", stop.optJSONObject("location")!!.optDouble("lng"))
         intent.putExtra("exclude", arrayListOf(route.optString("route")))

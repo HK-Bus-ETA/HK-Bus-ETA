@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -35,6 +36,7 @@ public class LocationUtils {
 
     private static boolean checkLocationPermission(ComponentActivity activity, boolean askIfNotGranted, Consumer<Boolean> callback) {
         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            callback.accept(true);
             return true;
         }
         if (askIfNotGranted) {
@@ -49,7 +51,7 @@ public class LocationUtils {
         return false;
     }
 
-    public static CompletableFuture<LocationResult> getGPSLocation(ComponentActivity activity) {
+    public static Future<LocationResult> getGPSLocation(ComponentActivity activity) {
         if (!checkLocationPermission(activity, false)) {
             return CompletableFuture.completedFuture(null);
         }

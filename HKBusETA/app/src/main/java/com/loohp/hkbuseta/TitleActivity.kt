@@ -131,27 +131,19 @@ fun SearchButton(instance: TitleActivity) {
     )
 }
 
-fun handleNearbyClick(permission: Boolean, instance: TitleActivity) {
-    instance.runOnUiThread {
-        if (permission) {
-            instance.startActivity(Intent(instance, NearbyActivity::class.java))
-        } else {
-            Toast.makeText(instance, if (Shared.language == "en") "Location Access Permission Denied" else "位置存取權限被拒絕", Toast.LENGTH_SHORT).show()
-        }
-    }
-}
-
-fun handleNearbyClick(instance: TitleActivity) {
-    if (LocationUtils.checkLocationPermission(instance) { r -> handleNearbyClick(r, instance) }) {
-        handleNearbyClick(true, instance)
-    }
-}
-
 @Composable
 fun NearbyButton(instance: TitleActivity) {
     Button(
         onClick = {
-            handleNearbyClick(instance)
+            LocationUtils.checkLocationPermission(instance) {
+                instance.runOnUiThread {
+                    if (it) {
+                        instance.startActivity(Intent(instance, NearbyActivity::class.java))
+                    } else {
+                        Toast.makeText(instance, if (Shared.language == "en") "Location Access Permission Denied" else "位置存取權限被拒絕", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(220, instance).dp)

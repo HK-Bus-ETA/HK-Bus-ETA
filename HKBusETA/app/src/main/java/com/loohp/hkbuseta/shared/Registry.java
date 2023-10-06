@@ -20,6 +20,7 @@ import com.loohp.hkbuseta.tiles.EtaTileServiceSix;
 import com.loohp.hkbuseta.tiles.EtaTileServiceThree;
 import com.loohp.hkbuseta.tiles.EtaTileServiceTwo;
 import com.loohp.hkbuseta.utils.ConnectionUtils;
+import com.loohp.hkbuseta.utils.DistanceUtils;
 import com.loohp.hkbuseta.utils.HTTPRequestUtils;
 import com.loohp.hkbuseta.utils.IntUtils;
 import com.loohp.hkbuseta.utils.JsonUtils;
@@ -48,7 +49,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -60,15 +60,10 @@ import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -91,12 +86,7 @@ public class Registry {
     private static final String CHECKSUM_FILE_NAME = "checksum.json";
     private static final String DATA_SHEET_FILE_NAME = "data_sheet.json";
     private static final String BUS_ROUTE_FILE_NAME = "bus_routes.json";
-    private static final String KMB_ROUTE_FILE_NAME = "kmb_routes.json";
-    private static final String CTB_ROUTE_FILE_NAME = "ctb_routes.json";
-    private static final String NLB_ROUTE_FILE_NAME = "nlb_routes.json";
-    private static final String MTR_BUS_ROUTE_FILE_NAME = "mtr_bus_routes.json";
     private static final String MTR_BUS_STOP_ALIAS_FILE_NAME = "mtr_bus_stop_alias.json";
-    private static final String GMB_ROUTE_FILE_NAME = "gmb_routes.json";
 
     public static void invalidateCache(Context context) {
         try {
@@ -107,12 +97,7 @@ public class Registry {
     private static JSONObject PREFERENCES = null;
     private static JSONObject DATA_SHEET = null;
     private static Set<String> BUS_ROUTE = null;
-    private static JSONArray KMB_ROUTE = null;
-    private static JSONArray CTB_ROUTE = null;
-    private static JSONArray NLB_ROUTE = null;
-    private static JSONObject MTR_BUS_ROUTE = null;
     private static JSONObject MTR_BUS_STOP_ALIAS = null;
-    private static JSONObject GMB_ROUTE = null;
 
     private volatile State state = State.LOADING;
     private volatile float updatePercentage = 0F;
@@ -167,21 +152,6 @@ public class Registry {
 
     public boolean isPreferencesLoaded() {
         return preferencesLoaded;
-    }
-
-    public double findDistance(double lat1, double lng1, double lat2, double lng2) {
-        lat1 = Math.toRadians(lat1);
-        lat2 = Math.toRadians(lat2);
-        lng1 = Math.toRadians(lng1);
-        lng2 = Math.toRadians(lng2);
-
-        double d_lon = lng2 - lng1;
-        double d_lat = lat2 - lat1;
-        double a = Math.pow(Math.sin(d_lat / 2), 2) + Math.cos(lat1) * Math.cos(lat2) * Math.pow(Math.sin(d_lon / 2), 2);
-
-        double c = 2 * Math.asin(Math.sqrt(a));
-
-        return c * 6371;
     }
 
     public void updateTileService(Context context) {
@@ -332,7 +302,7 @@ public class Registry {
         if (state.equals(State.READY)) {
             return;
         }
-        if (PREFERENCES != null && DATA_SHEET != null && BUS_ROUTE != null && KMB_ROUTE != null && CTB_ROUTE != null && NLB_ROUTE != null && MTR_BUS_ROUTE != null && MTR_BUS_STOP_ALIAS != null && GMB_ROUTE != null) {
+        if (PREFERENCES != null && DATA_SHEET != null && BUS_ROUTE != null && MTR_BUS_STOP_ALIAS != null) {
             return;
         }
 
@@ -368,7 +338,7 @@ public class Registry {
                 Supplier<String> checksumFetcher = () -> {
                     CompletableFuture<String> future = new CompletableFuture<>();
                     ForkJoinPool.commonPool().execute(() -> {
-                        future.complete(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/checksum.md5"));
+                        future.complete(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5"));
                     });
                     try {
                         return future.get(8, TimeUnit.SECONDS);
@@ -380,7 +350,7 @@ public class Registry {
 
                 boolean cached = false;
                 String checksum = connectionType.hasConnection() ? checksumFetcher.get() : null;
-                if (files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_SHEET_FILE_NAME) && files.contains(BUS_ROUTE_FILE_NAME) && files.contains(KMB_ROUTE_FILE_NAME) && files.contains(CTB_ROUTE_FILE_NAME) && files.contains(NLB_ROUTE_FILE_NAME) && files.contains(MTR_BUS_ROUTE_FILE_NAME) && files.contains(MTR_BUS_STOP_ALIAS_FILE_NAME) && files.contains(GMB_ROUTE_FILE_NAME)) {
+                if (files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_SHEET_FILE_NAME) && files.contains(BUS_ROUTE_FILE_NAME) && files.contains(MTR_BUS_STOP_ALIAS_FILE_NAME)) {
                     if (checksum == null) {
                         cached = true;
                     } else {
@@ -404,33 +374,8 @@ public class Registry {
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(KMB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
-                        KMB_ROUTE = new JSONArray(reader.lines().collect(Collectors.joining("\n")));
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
-                    }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(CTB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
-                        CTB_ROUTE = new JSONArray(reader.lines().collect(Collectors.joining("\n")));
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
-                    }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(NLB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
-                        NLB_ROUTE = new JSONArray(reader.lines().collect(Collectors.joining("\n")));
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
-                    }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(MTR_BUS_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
-                        MTR_BUS_ROUTE = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
-                    }
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(MTR_BUS_STOP_ALIAS_FILE_NAME), StandardCharsets.UTF_8))) {
                         MTR_BUS_STOP_ALIAS = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
-                    }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(GMB_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
-                        GMB_ROUTE = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
@@ -441,295 +386,17 @@ public class Registry {
                     state = State.UPDATING;
                     updatePercentage = 0F;
 
-                    BUS_ROUTE = ConcurrentHashMap.newKeySet();
-                    AtomicReference<JSONObject> mtrBusStopsRef = new AtomicReference<>();
+                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json", p -> updatePercentage = p * 0.85F);
+                    updatePercentage = 0.95F;
+                    MTR_BUS_STOP_ALIAS = data.optJSONObject("mtrBusStopAlias");
+                    DATA_SHEET = data.optJSONObject("dataSheet");
+                    BUS_ROUTE = JsonUtils.toSet(data.optJSONArray("busRoute"), String.class);
+                    updatePercentage = 1F;
 
-                    List<Future<?>> tasks = new ArrayList<>();
-                    ExecutorService service = Executors.newCachedThreadPool();
-                    try {
-                        tasks.add(service.submit(() -> {
-                            KMB_ROUTE = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/route/").optJSONArray("data");
-                            for (int i = 0; i < KMB_ROUTE.length(); i++) {
-                                String route = KMB_ROUTE.optJSONObject(i).optString("route");
-                                BUS_ROUTE.add(route);
-                            }
-                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(KMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                                pw.write(KMB_ROUTE.toString());
-                                pw.flush();
-                            } catch (IOException e) {
-                                Log.e("Resource Downloading Exception", "Exception: ", e);
-                            }
-                        }));
-
-                        tasks.add(service.submit(() -> {
-                            CTB_ROUTE = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/route/ctb").optJSONArray("data");
-                            for (int i = 0; i < CTB_ROUTE.length(); i++) {
-                                String route = CTB_ROUTE.optJSONObject(i).optString("route");
-                                BUS_ROUTE.add(route);
-                            }
-                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CTB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                                pw.write(CTB_ROUTE.toString());
-                                pw.flush();
-                            } catch (IOException e) {
-                                Log.e("Resource Downloading Exception", "Exception: ", e);
-                            }
-                        }));
-
-                        tasks.add(service.submit(() -> {
-                            NLB_ROUTE = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/route.php?action=list").optJSONArray("routes");
-                            for (int i = 0; i < NLB_ROUTE.length(); i++) {
-                                String route = NLB_ROUTE.optJSONObject(i).optString("routeNo");
-                                BUS_ROUTE.add(route);
-                            }
-                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(NLB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                                pw.write(NLB_ROUTE.toString());
-                                pw.flush();
-                            } catch (IOException e) {
-                                Log.e("Resource Downloading Exception", "Exception: ", e);
-                            }
-                        }));
-
-                        tasks.add(service.submit(() -> {
-                            MTR_BUS_STOP_ALIAS = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stop_alias.json");
-                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                                pw.write(MTR_BUS_STOP_ALIAS.toString());
-                                pw.flush();
-                            } catch (IOException e) {
-                                Log.e("Resource Downloading Exception", "Exception: ", e);
-                            }
-                        }));
-
-                        tasks.add(service.submit(() -> {
-                            GMB_ROUTE = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/route").optJSONObject("data").optJSONObject("routes");
-                            for (Iterator<String> itr = GMB_ROUTE.keys(); itr.hasNext(); ) {
-                                String region = itr.next();
-                                JSONArray list = GMB_ROUTE.optJSONArray(region);
-                                for (int i = 0; i < list.length(); i++) {
-                                    String route = list.optString(i);
-                                    BUS_ROUTE.add(route);
-                                }
-                            }
-                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(GMB_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                                pw.write(GMB_ROUTE.toString());
-                                pw.flush();
-                            } catch (IOException e) {
-                                Log.e("Resource Downloading Exception", "Exception: ", e);
-                            }
-                        }));
-
-                        tasks.add(service.submit(() -> {
-                            try {
-                                DATA_SHEET = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/hk-bus-crawling/gh-pages/routeFareList.strip.json");
-
-                                JSONObject a = DATA_SHEET.optJSONObject("stopList").optJSONObject("AC1FD9BDD09D1DD6").optJSONObject("name");
-                                a.put("zh", a.optString("zh") + " (沙頭角邊境禁區 - 需持邊境禁區許可證)");
-                                a.put("en", a.optString("en") + " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)");
-
-                                JSONObject b = DATA_SHEET.optJSONObject("stopList").optJSONObject("20001477").optJSONObject("name");
-                                b.put("zh", b.optString("zh") + " (沙頭角邊境禁區 - 需持邊境禁區許可證)");
-                                b.put("en", b.optString("en") + " (Sha Tau Kok Frontier Closed Area - Closed Area Permit Required)");
-
-                                JSONObject c1 = DATA_SHEET.optJSONObject("stopList").optJSONObject("152").optJSONObject("name");
-                                c1.put("zh", c1.optString("zh") + " (深圳灣管制站 - 僅限過境旅客)");
-                                c1.put("en", c1.optString("en") + " (Shenzhen Bay Control Point - Border Crossing Passengers Only)");
-
-                                JSONObject c2 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20015453").optJSONObject("name");
-                                c2.put("zh", c2.optString("zh") + " (深圳灣管制站 - 僅限過境旅客)");
-                                c2.put("en", c2.optString("en") + " (Shenzhen Bay Control Point - Border Crossing Passengers Only)");
-
-                                JSONObject c3 = DATA_SHEET.optJSONObject("stopList").optJSONObject("003208").optJSONObject("name");
-                                c3.put("zh", c3.optString("zh") + " (深圳灣管制站 - 僅限過境旅客)");
-                                c3.put("en", c3.optString("en") + " (Shenzhen Bay Control Point - Border Crossing Passengers Only)");
-
-                                JSONObject d1 = DATA_SHEET.optJSONObject("stopList").optJSONObject("81567ACCCF40DD4B").optJSONObject("name");
-                                d1.put("zh", d1.optString("zh") + " (落馬洲支線出入境管制站 - 僅限過境旅客)");
-                                d1.put("en", d1.optString("en") + " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)");
-
-                                JSONObject d2 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20015420").optJSONObject("name");
-                                d2.put("zh", d2.optString("zh") + " (落馬洲支線出入境管制站 - 僅限過境旅客)");
-                                d2.put("en", d2.optString("en") + " (Lok Ma Chau Spur Line Immigration Control Point - Border Crossing Passengers Only)");
-
-                                JSONObject e1 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20011698").optJSONObject("name");
-                                e1.put("zh", e1.optString("zh") + " (落馬洲管制站 - 僅限過境旅客)");
-                                e1.put("en", e1.optString("en") + " (Lok Ma Chau Control Point - Border Crossing Passengers Only)");
-
-                                JSONObject e2 = DATA_SHEET.optJSONObject("stopList").optJSONObject("20015598").optJSONObject("name");
-                                e2.put("zh", e2.optString("zh") + " (落馬洲管制站 - 僅限過境旅客)");
-                                e2.put("en", e2.optString("en") + " (Lok Ma Chau Control Point - Border Crossing Passengers Only)");
-
-                                DATA_SHEET.optJSONObject("stopList").put("RAC", new JSONObject("{\"location\": {\"lat\": 22.4003487,\"lng\": 114.2030287},\"name\": {\"en\": \"Racecourse\",\"zh\": \"馬場\"}}"));
-
-                                JSONObject aelD = DATA_SHEET.optJSONObject("routeList").optJSONObject("AEL+1+AsiaWorld-Expo+Hong Kong");
-                                aelD.optJSONObject("orig").put("zh", "機場/博覽館");
-                                aelD.optJSONObject("orig").put("en", "Airport/AsiaWorld-Expo");
-                                aelD.optJSONObject("dest").put("zh", "市區");
-                                aelD.optJSONObject("dest").put("en", "city");
-
-                                JSONObject aelU = DATA_SHEET.optJSONObject("routeList").optJSONObject("AEL+1+Hong Kong+AsiaWorld-Expo");
-                                aelU.optJSONObject("orig").put("zh", "市區");
-                                aelU.optJSONObject("orig").put("en", "city");
-                                aelU.optJSONObject("dest").put("zh", "機場/博覽館");
-                                aelU.optJSONObject("dest").put("en", "Airport/AsiaWorld-Expo");
-
-                                Set<String> kmbOps = new HashSet<>();
-                                Set<String> ctbCircular = new HashSet<>();
-                                Map<String, List<JSONObject>> mtrOrig = new HashMap<>();
-                                Map<String, List<JSONObject>> mtrDest = new HashMap<>();
-                                Map<String, List<List<String>>> mtrStopsLists = new HashMap<>();
-
-                                Set<String> keysToRemove = new HashSet<>();
-                                for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                                    String key = itr.next();
-                                    JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                                    JSONObject bounds = data.optJSONObject("bound");
-                                    if (bounds.has("lightRail")) {
-                                        BUS_ROUTE.add(data.optString("route"));
-                                    } else if (bounds.has("mtr")) {
-                                        String lineName = data.optString("route");
-                                        BUS_ROUTE.add(lineName);
-                                        String bound = bounds.optString("mtr");
-                                        int index = bound.indexOf("-");
-                                        JSONArray stops = data.optJSONObject("stops").optJSONArray("mtr");
-                                        if (index >= 0) {
-                                            if (bound.startsWith("LMC-")) {
-                                                stops.put(JsonUtils.indexOf(stops, "FOT"), "RAC");
-                                            }
-                                            bounds.put("mtr", bound = bound.substring(index + 1));
-                                            data.put("serviceType", "2");
-                                            mtrOrig.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(data.optJSONObject("orig"));
-                                            mtrDest.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(data.optJSONObject("dest"));
-                                        } else {
-                                            mtrOrig.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(0, data.optJSONObject("orig"));
-                                            mtrDest.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(0, data.optJSONObject("dest"));
-                                        }
-                                        mtrStopsLists.computeIfAbsent(lineName + "_" + bound, k -> new ArrayList<>()).add(JsonUtils.mapToList(stops, s -> DATA_SHEET.optJSONObject("stopList").optJSONObject((String) s).optJSONObject("name").optString("zh")));
-                                    } else if (bounds.has("kmb")) {
-                                        if (data.optJSONArray("co").toString().contains("ctb")) {
-                                            data.put("kmbCtbJoint", true);
-                                            kmbOps.add(data.optString("route"));
-                                        }
-                                    } else if (bounds.has("ctb") && bounds.optString("ctb").length() > 1) {
-                                        ctbCircular.add(data.optString("route"));
-                                        JSONObject dest = data.optJSONObject("dest");
-                                        dest.put("zh", dest.optString("zh") + " (循環線)");
-                                        dest.put("en", dest.optString("en") + " (Circular)");
-                                    }
-                                }
-
-                                Map<String, Pair<String, String>> mtrJoinedOrig = new HashMap<>();
-                                for (Map.Entry<String, List<JSONObject>> entry : mtrOrig.entrySet()) {
-                                    String key = entry.getKey();
-                                    List<JSONObject> values = entry.getValue();
-                                    if (values.size() > 1) {
-                                        Set<String> origZh = new LinkedHashSet<>();
-                                        Set<String> origEn = new LinkedHashSet<>();
-                                        for (JSONObject orig : values) {
-                                            String stopNameZh = orig.optString("zh");
-                                            if (mtrStopsLists.get(key).stream().noneMatch(l -> {
-                                                int index = l.indexOf(stopNameZh);
-                                                return index > 0 && index + 1 < l.size();
-                                            })) {
-                                                origZh.add(stopNameZh);
-                                                origEn.add(orig.optString("en"));
-                                            }
-                                        }
-                                        mtrJoinedOrig.put(key, Pair.create(String.join("/", origZh), String.join("/", origEn)));
-                                    }
-                                }
-                                Map<String, Pair<String, String>> mtrJoinedDest = new HashMap<>();
-                                for (Map.Entry<String, List<JSONObject>> entry : mtrDest.entrySet()) {
-                                    String key = entry.getKey();
-                                    List<JSONObject> values = entry.getValue();
-                                    if (values.size() > 1) {
-                                        Set<String> destZh = new LinkedHashSet<>();
-                                        Set<String> destEn = new LinkedHashSet<>();
-                                        for (JSONObject orig : values) {
-                                            String stopNameZh = orig.optString("zh");
-                                            if (mtrStopsLists.get(key).stream().noneMatch(l -> {
-                                                int index = l.indexOf(stopNameZh);
-                                                return index > 0 && index + 1 < l.size();
-                                            })) {
-                                                destZh.add(stopNameZh);
-                                                destEn.add(orig.optString("en"));
-                                            }
-                                        }
-                                        mtrJoinedDest.put(key, Pair.create(String.join("/", destZh), String.join("/", destEn)));
-                                    }
-                                }
-                                for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                                    String key = itr.next();
-                                    JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                                    String routeNumber = data.optString("route");
-                                    JSONObject bounds = data.optJSONObject("bound");
-                                    if (bounds.has("mtr")) {
-                                        String lineName = routeNumber;
-                                        String bound = bounds.optString("mtr");
-                                        Pair<String, String> jointOri = mtrJoinedOrig.get(lineName + "_" + bound);
-                                        if (jointOri != null) {
-                                            JSONObject orig = data.optJSONObject("orig");
-                                            orig.put("zh", jointOri.first);
-                                            orig.put("en", jointOri.second);
-                                        }
-                                        Pair<String, String> jointDest = mtrJoinedDest.get(lineName + "_" + bound);
-                                        if (jointDest != null) {
-                                            JSONObject dest = data.optJSONObject("dest");
-                                            dest.put("zh", jointDest.first);
-                                            dest.put("en", jointDest.second);
-                                        }
-                                    } else if (bounds.has("ctb")) {
-                                        if (kmbOps.contains(routeNumber) && !bounds.has("kmb")) {
-                                            keysToRemove.add(key);
-                                        } else if (ctbCircular.contains(routeNumber) && bounds.optString("ctb").length() < 2) {
-                                            data.put("ctbIsCircular", true);
-                                        }
-                                    }
-                                }
-                                for (String key : keysToRemove) {
-                                    DATA_SHEET.optJSONObject("routeList").remove(key);
-                                }
-                            } catch (JSONException e) {
-                                Log.e("Resource Downloading Exception", "Exception: ", e);
-                            }
-                        }));
-
-                        tasks.add(service.submit(() -> {
-                            MTR_BUS_ROUTE = HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_routes.json");
-                            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                                pw.write(MTR_BUS_ROUTE.toString());
-                                pw.flush();
-                            } catch (IOException e) {
-                                Log.e("Resource Downloading Exception", "Exception: ", e);
-                            }
-                        }));
-
-                        tasks.add(service.submit(() -> {
-                            mtrBusStopsRef.set(HTTPRequestUtils.getJSONResponse("https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stops.json"));
-                        }));
-
-                        while (true) {
-                            int completed = tasks.stream().mapToInt(t -> t.isDone() ? 1 : 0).sum();
-                            updatePercentage = completed / (float) tasks.size();
-                            if (completed >= tasks.size()) {
-                                break;
-                            }
-                        }
-                    } finally {
-                        service.shutdown();
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                        pw.write(MTR_BUS_STOP_ALIAS.toString());
+                        pw.flush();
                     }
-
-                    for (Iterator<String> itr = MTR_BUS_ROUTE.keys(); itr.hasNext(); ) {
-                        String key = itr.next();
-                        JSONObject data = MTR_BUS_ROUTE.optJSONObject(key);
-                        String route = data.optString("route");
-                        DATA_SHEET.optJSONObject("routeList").put(key, data);
-                        BUS_ROUTE.add(route);
-                    }
-                    JSONObject mtrBusStops = mtrBusStopsRef.get();
-                    for (Iterator<String> itr = mtrBusStops.keys(); itr.hasNext(); ) {
-                        String key = itr.next();
-                        DATA_SHEET.optJSONObject("stopList").put(key, mtrBusStops.opt(key));
-                    }
-
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(DATA_SHEET.toString());
                         pw.flush();
@@ -738,12 +405,10 @@ public class Registry {
                         pw.write(JsonUtils.fromCollection(BUS_ROUTE).toString());
                         pw.flush();
                     }
-                }
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CHECKSUM_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(checksum == null ? "" : checksum);
-                    pw.flush();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CHECKSUM_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                        pw.write(checksum == null ? "" : checksum);
+                        pw.flush();
+                    }
                 }
                 updatePercentage = 1F;
                 if (!state.equals(State.ERROR)) {
@@ -904,8 +569,10 @@ public class Registry {
         }
     }
 
-    public NearbyRoutesResult getNearbyRoutes(double lat, double lng, Set<String> excludedRouteNumbers) {
+    public NearbyRoutesResult getNearbyRoutes(double lat, double lng, Set<String> excludedRouteNumbers, boolean isInterchangeSearch) {
         try {
+            JSONObject origin = new JSONObject().put("lat", lat).put("lng", lng);
+
             JSONObject stops = DATA_SHEET.optJSONObject("stopList");
             List<JSONObject> nearbyStops = new ArrayList<>();
 
@@ -916,7 +583,7 @@ public class Registry {
                 String stopId = itr.next();
                 JSONObject entry = stops.optJSONObject(stopId);
                 JSONObject location = entry.optJSONObject("location");
-                double distance = findDistance(lat, lng, location.optDouble("lat"), location.optDouble("lng"));
+                double distance = DistanceUtils.findDistance(lat, lng, location.optDouble("lat"), location.optDouble("lng"));
 
                 if (distance < closestDistance) {
                     closestStop = entry;
@@ -980,7 +647,6 @@ public class Registry {
                         String co = isKmb ? "kmb" : (isCtb ? "ctb" : (isNlb ? "nlb" : (isMtrBus ? "mtr-bus" : (isGmb ? "gmb" : (isLrt ? "lightRail" : "mtr")))));
                         String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co));
 
-                        JSONObject location = nearbyStop.optJSONObject("data").optJSONObject("location");
                         if (nearbyRoutes.containsKey(key0)) {
                             JSONObject existingNearbyRoute = nearbyRoutes.get(key0);
 
@@ -994,14 +660,16 @@ public class Registry {
                                         existingNearbyRoute.put("stop", nearbyStop);
                                         existingNearbyRoute.put("route", data);
                                         existingNearbyRoute.put("co", co);
-                                        existingNearbyRoute.put("origin", location);
+                                        existingNearbyRoute.put("origin", origin);
+                                        existingNearbyRoute.put("interchangeSearch", isInterchangeSearch);
                                     }
                                 } catch (NumberFormatException ignore) {
                                     existingNearbyRoute.put("routeKey", key);
                                     existingNearbyRoute.put("stop", nearbyStop);
                                     existingNearbyRoute.put("route", data);
                                     existingNearbyRoute.put("co", co);
-                                    existingNearbyRoute.put("origin", location);
+                                    existingNearbyRoute.put("origin", origin);
+                                    existingNearbyRoute.put("interchangeSearch", isInterchangeSearch);
                                 }
                             }
                         } else {
@@ -1010,7 +678,8 @@ public class Registry {
                             newNearbyRoute.put("stop", nearbyStop);
                             newNearbyRoute.put("route", data);
                             newNearbyRoute.put("co", co);
-                            newNearbyRoute.put("origin", location);
+                            newNearbyRoute.put("origin", origin);
+                            newNearbyRoute.put("interchangeSearch", isInterchangeSearch);
                             nearbyRoutes.put(key0, newNearbyRoute);
                         }
                     }

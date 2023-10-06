@@ -13,6 +13,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -36,6 +37,38 @@ public class HTTPRequestUtils {
                 return null;
             }
         } catch (IOException e) {
+            return null;
+        }
+    }
+
+    public static JSONObject getJSONResponseWithPercentageCallback(String link, Consumer<Float> percentageCallback) {
+        try {
+            URL url = new URL(link);
+            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            connection.setUseCaches(false);
+            connection.setDefaultUseCaches(false);
+            connection.addRequestProperty("User-Agent", "Mozilla/5.0");
+            connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
+            connection.addRequestProperty("Pragma", "no-cache");
+            if (connection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
+                float contentLength = connection.getContentLength();
+                try (InputStream inputStream = connection.getInputStream()) {
+                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                    int readTotal = 0;
+                    int nRead;
+                    byte[] data = new byte[16384];
+                    while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+                        readTotal += nRead;
+                        buffer.write(data, 0, nRead);
+                        percentageCallback.accept(Math.max(0F, Math.min(readTotal / contentLength, 1F)));
+                    }
+                    percentageCallback.accept(1F);
+                    return new JSONObject(new String(buffer.toByteArray(), 0, buffer.size(), StandardCharsets.UTF_8));
+                }
+            } else {
+                return null;
+            }
+        } catch (IOException | JSONException e) {
             return null;
         }
     }

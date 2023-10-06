@@ -1,5 +1,8 @@
 package com.loohp.hkbuseta
 
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
@@ -28,11 +31,34 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.wear.compose.material.MaterialTheme
 import com.loohp.hkbuseta.shared.Registry
+import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.DistanceUtils
+import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.adjustBrightness
 import org.json.JSONObject
 import kotlin.math.roundToInt
+
+
+data class StopEntry(
+    val stopIndex: Int,
+    val indexTextView: TextView,
+    val stopTextView: TextView,
+    val tableRow: TableRow,
+    val stopName: String,
+    val stopData: StopData,
+    val lat: Double,
+    val lng: Double,
+    var distance: Double = Double.MAX_VALUE
+)
+
+data class OriginData(
+    val lat: Double,
+    val lng: Double,
+    val onlyInRange: Boolean = false
+)
 
 
 class ListStopsActivity : ComponentActivity() {
@@ -40,7 +66,7 @@ class ListStopsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
-        val route = intent.extras!!.getString("route")?.let { JSONObject(it) } ?: throw RuntimeException()
+        val route = intent.extras!!.getString("route")?.let { JSONObject(it) }?: throw RuntimeException()
         setContent {
             StopsPage(this, route)
         }
@@ -88,22 +114,25 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject) {
     instance.setContentView(R.layout.stop_list)
     val table: TableLayout = instance.findViewById(R.id.stop_list)
     table.removeAllViews()
-    val routeNumber = route.optJSONObject("route").optString("route")
+    val kmbCtbJoint = route.optJSONObject("route")!!.optBoolean("kmbCtbJoint", false)
+    val routeNumber = route.optJSONObject("route")!!.optString("route")
     val co = route.optString("co")
-    val bound = if (co.equals("nlb")) route.optJSONObject("route").optString("nlbId") else route.optJSONObject("route").optJSONObject("bound").optString(co)
-    val gtfsId = route.optJSONObject("route").optString("gtfsId")
-    var targetIndex = -1
-    var targetIndexText: TextView? = null
-    var targetStopText: TextView? = null
-    var targetDistance = 1.0
+    val bound = if (co.equals("nlb")) route.optJSONObject("route")!!.optString("nlbId") else route.optJSONObject("route")!!.optJSONObject("bound")!!.optString(co)
+    val gtfsId = route.optJSONObject("route")!!.optString("gtfsId")
+
+    val stopEntries: MutableList<StopEntry> = ArrayList()
     var randomTr: TableRow? = null
     var randomBaseline: View? = null
-    var i = 1
-    for (entry in Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId)) {
+
+    val stopsList = Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId)
+    val lowestServiceType = stopsList.minOf { it.serviceType }
+
+    for ((index, entry) in stopsList.withIndex()) {
+        val i = index + 1
         val stopId = entry.stopId
         val stop = entry.stop
 
-        val color = (if (entry.serviceType == 1) Color.White else Color(0xFF9E9E9E)).toArgb()
+        val color = Color.White.adjustBrightness(if (entry.serviceType == lowestServiceType) 1F else 0.65F).toArgb()
 
         val tr = TableRow(instance)
         tr.layoutParams = TableRow.LayoutParams(
@@ -122,15 +151,15 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject) {
         tr.setPadding(0, padding, 0, padding)
 
         val indexTextView = TextView(instance)
-        tr.addView(indexTextView);
-        indexTextView.text = "".plus(i).plus(". ")
+        tr.addView(indexTextView)
+        indexTextView.text = i.toString().plus(". ")
         indexTextView.setTextColor(color)
         indexTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(15F, instance))
         val layoutParams: ViewGroup.LayoutParams = indexTextView.layoutParams
         layoutParams.width = (30 * instance.resources.displayMetrics.density).roundToInt()
         indexTextView.layoutParams = layoutParams
         val stopTextView = TextView(instance)
-        tr.addView(stopTextView);
+        tr.addView(stopTextView)
 
         stopTextView.isSingleLine = true
         stopTextView.ellipsize = TextUtils.TruncateAt.MARQUEE
@@ -143,7 +172,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject) {
         destTextLayoutParams.width = (StringUtils.scaledSize(120F, instance) * instance.resources.displayMetrics.density).roundToInt()
         stopTextView.layoutParams = destTextLayoutParams
 
-        var stopStr = stop.optJSONObject("name").optString(Shared.language)
+        var stopStr = stop.optJSONObject("name")!!.optString(Shared.language)
         if (Shared.language == "en") {
             stopStr = StringUtils.capitalize(stopStr)
         }
@@ -152,20 +181,19 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject) {
         stopTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, StringUtils.scaledSize(15F, instance))
         table.addView(tr)
 
-        val stopIndex = i
         tr.setOnClickListener {
             val intent = Intent(instance, EtaActivity::class.java)
             intent.putExtra("stopId", stopId)
             intent.putExtra("co", co)
-            intent.putExtra("index", stopIndex)
+            intent.putExtra("index", i)
             intent.putExtra("stop", stop.toString())
-            intent.putExtra("route", route.optJSONObject("route").toString())
+            intent.putExtra("route", route.optJSONObject("route")!!.toString())
             instance.startActivity(intent)
         }
         tr.setOnLongClickListener {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             instance.runOnUiThread {
-                val text = "".plus(stopIndex).plus(". ").plus(stopStr)
+                val text = "".plus(i).plus(". ").plus(stopStr)
                 Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
             }
             return@setOnLongClickListener true
@@ -176,37 +204,116 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject) {
         baseline.setBackgroundColor(Color(0xFF333333).toArgb())
         table.addView(baseline)
 
-        if (route.has("origin")) {
-            val origin = route.optJSONObject("origin")
-            val location = stop.optJSONObject("location")
-            val distance = Registry.getInstance(instance).findDistance(origin.optDouble("lat"), origin.optDouble("lng"), location.optDouble("lat"), location.optDouble("lng"))
-            if (distance < targetDistance) {
-                targetIndex = i
-                targetIndexText = indexTextView
-                targetStopText = stopTextView
-                targetDistance = distance
-            }
-        }
+        val location = stop.optJSONObject("location")!!
+        stopEntries.add(StopEntry(i, indexTextView, stopTextView, tr, stopStr, entry, location.optDouble("lat"), location.optDouble("lng")))
+
         randomTr = tr
         randomBaseline = baseline
-
-        i++
     }
     val scrollView: ScrollView = instance.findViewById(R.id.stop_scroll)
-    if (targetIndex >= 0 && randomTr != null) {
-        scrollView.post {
-            val indexSpanString = SpannableString(targetIndexText!!.text)
-            indexSpanString.setSpan(StyleSpan(Typeface.BOLD), 0, indexSpanString.length, 0)
-            targetIndexText.text = indexSpanString
+    scrollView.requestFocus()
 
-            val stopSpanString = SpannableString(targetStopText!!.text)
-            stopSpanString.setSpan(StyleSpan(Typeface.BOLD), 0, stopSpanString.length, 0)
-            targetStopText.text = stopSpanString
+    val scrollTask: (OriginData) -> Unit = { origin ->
+        val closest = stopEntries.onEach {
+            it.distance = DistanceUtils.findDistance(origin.lat, origin.lng, it.lat, it.lng)
+        }.minBy { it.distance }
+        if (randomTr != null && (!origin.onlyInRange || closest.distance <= 0.3)) {
+            scrollView.post {
+                val brightness = if (closest.stopData.serviceType == lowestServiceType) 1F else 0.65F
+                val color = when (co) {
+                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
+                    "ctb" -> Color(0xFFFFE15E)
+                    "nlb" -> Color(0xFF9BFFC6)
+                    "mtr-bus" -> Color(0xFFAAD4FF)
+                    "gmb" -> Color(0xFF36FF42)
+                    "lightRail" -> Color(0xFFD3A809)
+                    "mtr" -> {
+                        when (route.optJSONObject("route")!!.optString("route")) {
+                            "AEL" -> Color(0xFF00888E)
+                            "TCL" -> Color(0xFFF3982D)
+                            "TML" -> Color(0xFF9C2E00)
+                            "TKL" -> Color(0xFF7E3C93)
+                            "EAL" -> Color(0xFF5EB7E8)
+                            "SIL" -> Color(0xFFCBD300)
+                            "TWL" -> Color(0xFFE60012)
+                            "ISL" -> Color(0xFF0075C2)
+                            "KTL" -> Color(0xFF00A040)
+                            "DRL" -> Color(0xFFEB6EA5)
+                            else -> Color.White
+                        }
+                    }
+                    else -> Color.White
+                }.adjustBrightness(brightness).toArgb()
 
-            val elementHeight = randomTr.height + randomBaseline!!.height
-            val y = elementHeight * targetIndex - scrollView.height / 2 + elementHeight / 2
-            scrollView.scrollTo(0, y)
+                val indexSpanString = SpannableString(closest.indexTextView.text)
+                indexSpanString.setSpan(StyleSpan(Typeface.BOLD), 0, indexSpanString.length, 0)
+                closest.indexTextView.text = indexSpanString
+                closest.indexTextView.setTextColor(color)
+
+                val stopSpanString = SpannableString(closest.stopTextView.text)
+                stopSpanString.setSpan(StyleSpan(Typeface.BOLD), 0, stopSpanString.length, 0)
+                closest.stopTextView.text = stopSpanString
+                closest.stopTextView.setTextColor(color)
+
+                val interchangeSearch = route.optBoolean("interchangeSearch", false)
+                closest.tableRow.setOnLongClickListener {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    instance.runOnUiThread {
+                        val text = "".plus(closest.stopIndex).plus(". ").plus(closest.stopName).plus("\n")
+                            .plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
+                            .plus((closest.distance * 1000).roundToInt()).plus(if (Shared.language == "en") "m" else "米")
+                        Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+                    }
+                    return@setOnLongClickListener true
+                }
+
+                if (kmbCtbJoint) {
+                    val secondColor = Color(0xFFFFE15E).adjustBrightness(brightness).toArgb()
+
+                    val colorAnimIndex = ObjectAnimator.ofInt(closest.indexTextView, "textColor", color, secondColor)
+                    colorAnimIndex.setEvaluator(ArgbEvaluator())
+                    colorAnimIndex.startDelay = 1500
+                    colorAnimIndex.duration = 5000
+                    colorAnimIndex.repeatCount = -1
+                    colorAnimIndex.repeatMode = ValueAnimator.REVERSE
+
+                    val colorAnimStop = ObjectAnimator.ofInt(closest.stopTextView, "textColor", color, secondColor)
+                    colorAnimStop.setEvaluator(ArgbEvaluator())
+                    colorAnimStop.startDelay = 1500
+                    colorAnimStop.duration = 5000
+                    colorAnimStop.repeatCount = -1
+                    colorAnimStop.repeatMode = ValueAnimator.REVERSE
+
+                    colorAnimIndex.start()
+                    colorAnimStop.start()
+                }
+
+                val elementHeight = randomTr.height + randomBaseline!!.height
+                val y = elementHeight * closest.stopIndex - scrollView.height / 2 + elementHeight / 2
+                scrollView.smoothScrollTo(0, y)
+            }
         }
     }
-    scrollView.requestFocus()
+
+    if (route.has("origin")) {
+        val origin = route.optJSONObject("origin")!!
+        scrollTask.invoke(OriginData(origin.optDouble("lat"), origin.optDouble("lng")))
+    } else {
+        LocationUtils.checkLocationPermission(instance) {
+            if (it) {
+                val future = LocationUtils.getGPSLocation(instance)
+                Thread {
+                    try {
+                        val locationResult = future.get()
+                        if (locationResult.isSuccess) {
+                            val location = locationResult.location
+                            scrollTask.invoke(OriginData(location.latitude, location.longitude, true))
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }.start()
+            }
+        }
+    }
 }

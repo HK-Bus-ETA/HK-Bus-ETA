@@ -31,8 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
-import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.FatalErrorActivity
+import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.isEqualTo
 import kotlinx.coroutines.delay
@@ -147,7 +147,7 @@ class Shared {
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
                     fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
-                    text = if (language == "en") "Might take a minute" else "可能需要約一分鐘"
+                    text = if (language == "en") "Might take a moment" else "更新需時 請稍等"
                 )
                 if (includeProgress) {
                     Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))

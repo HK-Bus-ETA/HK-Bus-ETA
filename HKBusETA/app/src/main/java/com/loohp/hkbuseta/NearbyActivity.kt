@@ -44,6 +44,7 @@ class NearbyActivity : ComponentActivity() {
         Shared.setDefaultExceptionHandler(this)
         var location: LocationResult? = null
         var exclude: Set<String> = emptySet()
+        var interchangeSearch = false
         if (intent.extras != null) {
             if (intent.extras!!.containsKey("lat") && intent.extras!!.containsKey("lng")) {
                 val lat = intent.extras!!.getDouble("lat")
@@ -53,10 +54,11 @@ class NearbyActivity : ComponentActivity() {
             if (intent.extras!!.containsKey("exclude")) {
                 exclude = HashSet(intent.extras!!.getStringArrayList("exclude")!!)
             }
+            interchangeSearch = intent.extras!!.getBoolean("interchangeSearch", false)
         }
 
         setContent {
-            NearbyPage(location, exclude, this)
+            NearbyPage(location, exclude, interchangeSearch, this)
         }
     }
 
@@ -75,7 +77,7 @@ class NearbyActivity : ComponentActivity() {
 }
 
 @Composable
-fun NearbyPage(location: LocationResult?, exclude: Set<String>, instance: NearbyActivity) {
+fun NearbyPage(location: LocationResult?, exclude: Set<String>, interchangeSearch: Boolean, instance: NearbyActivity) {
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -91,7 +93,7 @@ fun NearbyPage(location: LocationResult?, exclude: Set<String>, instance: Nearby
                 .padding(20.dp, 0.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            MainElement(location, exclude, instance)
+            MainElement(location, exclude, interchangeSearch, instance)
         }
     }
 }
@@ -158,7 +160,7 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
 }
 
 @Composable
-fun MainElement(location: LocationResult?, exclude: Set<String>, instance: NearbyActivity) {
+fun MainElement(location: LocationResult?, exclude: Set<String>, interchangeSearch: Boolean, instance: NearbyActivity) {
     var state by remember { mutableStateOf(false) }
     var result: Registry.NearbyRoutesResult? by remember { mutableStateOf(null) }
 
@@ -167,7 +169,7 @@ fun MainElement(location: LocationResult?, exclude: Set<String>, instance: Nearb
             val locationResult = location?: LocationUtils.getGPSLocation(instance).get()
             if (locationResult.isSuccess) {
                 val loc = locationResult.location
-                result = Registry.getInstance(instance).getNearbyRoutes(loc!!.latitude, loc.longitude, exclude)
+                result = Registry.getInstance(instance).getNearbyRoutes(loc!!.latitude, loc.longitude, exclude, interchangeSearch)
             }
             state = true
         }
