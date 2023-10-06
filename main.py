@@ -158,7 +158,7 @@ def download_and_process_data_sheet():
             orig_en = set()
             for orig in values:
                 stop_name_zh = orig["zh"]
-                if all(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
+                if not all(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
                     orig_zh.add(stop_name_zh)
                     orig_en.add(orig["en"])
             mtr_joined_orig[key] = ("/".join(orig_zh), "/".join(orig_en))
@@ -170,7 +170,7 @@ def download_and_process_data_sheet():
             dest_en = set()
             for orig in values:
                 stop_name_zh = orig.get("zh")
-                if all(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
+                if not all(0 < list_index_of(x, stop_name_zh) < len(x) - 1 for x in mtr_stops_lists[key]):
                     dest_zh.add(stop_name_zh)
                     dest_en.add(orig["en"])
             mtr_joined_dest[key] = ("/".join(dest_zh), "/".join(dest_en))
@@ -187,17 +187,15 @@ def download_and_process_data_sheet():
             line_name = route_number
             bound = bounds["mtr"]
 
-            joint_ori = mtr_joined_orig.get(line_name + "_" + bound)
+            joint_ori = mtr_joined_orig[line_name + "_" + bound]
             if joint_ori:
                 orig = data["orig"]
-                orig["zh"] = joint_ori[0]
-                orig["en"] = joint_ori[1]
+                orig["zh"], orig["en"] = joint_ori
 
-            joint_dest = mtr_joined_dest.get(line_name + "_" + bound)
+            joint_dest = mtr_joined_dest[line_name + "_" + bound]
             if joint_dest:
                 dest = data["dest"]
-                dest["zh"] = joint_dest[0]
-                dest["en"] = joint_dest[1]
+                dest["zh"], dest["en"] = joint_dest
         elif "ctb" in bounds:
             if route_number in kmb_ops and "kmb" not in bounds:
                 keys_to_remove.append(key)
