@@ -224,7 +224,7 @@ download_and_process_mtr_bus_route_and_stops()
 output = {
     "dataSheet": DATA_SHEET,
     "mtrBusStopAlias": MTR_BUS_STOP_ALIAS,
-    "busRoute": list(BUS_ROUTE)
+    "busRoute": sorted(BUS_ROUTE)
 }
 
 with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
