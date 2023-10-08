@@ -922,7 +922,7 @@ public class Registry {
             altMessage += " (" + typhoonWarningTitle + ")";
         }
         if (isAboveTyphoonSignalEight) {
-            return "<span style=\"color: #6472BC;\">" + altMessage + "</span>";
+            return "<span style=\"color: #88A3D1;\">" + altMessage + "</span>";
         } else {
             return altMessage;
         }

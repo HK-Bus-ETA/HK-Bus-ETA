@@ -226,39 +226,32 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                                 onLongClick = {
                                     instance.runOnUiThread {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        val text = routeNumber
-                                            .plus(" ")
-                                            .plus(dest)
-                                            .plus("\n(")
-                                            .plus(
-                                                if (Shared.language == "en") {
-                                                    when (route.optString("co")) {
-                                                        "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "LWB")
-                                                        "ctb" -> "CTB"
-                                                        "nlb" -> "NLB"
-                                                        "mtr-bus" -> "MTR-Bus"
-                                                        "gmb" -> "GMB"
-                                                        "lightRail" -> "LRT"
-                                                        "mtr" -> "MTR"
-                                                        else -> "???"
-                                                    }
-                                                } else {
-                                                    when (route.optString("co")) {
-                                                        "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
-                                                        "ctb" -> "城巴"
-                                                        "nlb" -> "嶼巴"
-                                                        "mtr-bus" -> "港鐵巴士"
-                                                        "gmb" -> "專線小巴"
-                                                        "lightRail" -> "輕鐵"
-                                                        "mtr" -> "港鐵"
-                                                        else -> "???"
-                                                    }
+                                        val text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(
+                                            if (Shared.language == "en") {
+                                                when (route.optString("co")) {
+                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "LWB")
+                                                    "ctb" -> "CTB"
+                                                    "nlb" -> "NLB"
+                                                    "mtr-bus" -> "MTR-Bus"
+                                                    "gmb" -> "GMB"
+                                                    "lightRail" -> "LRT"
+                                                    "mtr" -> "MTR"
+                                                    else -> "???"
                                                 }
-                                            )
-                                            .plus(")")
-                                        Toast
-                                            .makeText(instance, text, Toast.LENGTH_LONG)
-                                            .show()
+                                            } else {
+                                                when (route.optString("co")) {
+                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
+                                                    "ctb" -> "城巴"
+                                                    "nlb" -> "嶼巴"
+                                                    "mtr-bus" -> "港鐵巴士"
+                                                    "gmb" -> "專線小巴"
+                                                    "lightRail" -> "輕鐵"
+                                                    "mtr" -> "港鐵"
+                                                    else -> "???"
+                                                }
+                                            }
+                                        ).plus(")")
+                                        Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
                                     }
                                 }
                             )

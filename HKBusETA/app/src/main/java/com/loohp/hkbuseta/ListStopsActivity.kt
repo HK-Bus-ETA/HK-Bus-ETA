@@ -306,12 +306,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, schedule: (Boole
                                     intent.putExtra("co", co)
                                     intent.putExtra("index", stopNumber)
                                     intent.putExtra("stop", stop.toString())
-                                    intent.putExtra(
-                                        "route",
-                                        route
-                                            .optJSONObject("route")!!
-                                            .toString()
-                                    )
+                                    intent.putExtra("route", route.optJSONObject("route")!!.toString())
                                     instance.startActivity(intent)
                                 },
                                 onLongClick = {
@@ -319,28 +314,12 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, schedule: (Boole
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         instance.runOnUiThread {
                                             val text = if (isClosest) {
-                                                ""
-                                                    .plus(stopNumber)
-                                                    .plus(". ")
-                                                    .plus(stopStr)
-                                                    .plus("\n")
-                                                    .plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
-                                                    .plus(
-                                                        ((distances[stopNumber]
-                                                            ?: Double.NaN) * 1000)
-                                                            .roundToInt()
-                                                            .formatDecimalSeparator()
-                                                    )
-                                                    .plus(if (Shared.language == "en") "m" else "米")
+                                                "".plus(stopNumber).plus(". ").plus(stopStr).plus("\n").plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
+                                                    .plus(((distances[stopNumber] ?: Double.NaN) * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
                                             } else {
-                                                ""
-                                                    .plus(stopNumber)
-                                                    .plus(". ")
-                                                    .plus(stopStr)
+                                                "".plus(stopNumber).plus(". ").plus(stopStr)
                                             }
-                                            Toast
-                                                .makeText(instance, text, Toast.LENGTH_LONG)
-                                                .show()
+                                            Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
                                         }
                                     }
                                 }
