@@ -104,6 +104,7 @@ public class Registry {
     private volatile boolean preferencesLoaded = false;
 
     private boolean isAboveTyphoonSignalEight = false;
+    private boolean isAboveTyphoonSignalNine = false;
     private String typhoonWarningTitle = "";
     private String currentTyphoonSignalId = "";
 
@@ -122,6 +123,7 @@ public class Registry {
                     if (matcher.find() && matcher.group(1) != null) {
                         int signal = Integer.parseInt(matcher.group(1));
                         isAboveTyphoonSignalEight = signal >= 8;
+                        isAboveTyphoonSignalNine = signal >= 9;
                         if (Shared.Companion.getLanguage().equals("en")) {
                             typhoonWarningTitle = data.optJSONObject("WTCSGNL").optString("type") + " is in force";
                         } else {
@@ -136,6 +138,7 @@ public class Registry {
                     }
                 }
                 isAboveTyphoonSignalEight = false;
+                isAboveTyphoonSignalNine = false;
                 typhoonWarningTitle = "";
                 currentTyphoonSignalId = "";
             }
@@ -287,6 +290,10 @@ public class Registry {
     }
 
     public boolean isAboveTyphoonSignalEight() {
+        return isAboveTyphoonSignalEight;
+    }
+
+    public boolean isAboveTyphoonSignalNine() {
         return isAboveTyphoonSignalEight;
     }
 
@@ -844,6 +851,38 @@ public class Registry {
         }
     }
 
+    public List<JSONObject> getAllDestinations(String routeNumber, String bound, String co, String gtfsId) {
+        try {
+            List<Pair<JSONObject, Integer>> dests = new ArrayList<>();
+            for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
+                String key = itr.next();
+                JSONObject route = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
+                if (routeNumber.equals(route.optString("route")) && JsonUtils.contains(route.optJSONArray("co"), co)) {
+                    boolean flag;
+                    if (co.equals("nlb")) {
+                        flag = bound.equals(route.optString("nlbId"));
+                    } else {
+                        flag = bound.equals(route.optJSONObject("bound").optString(co));
+                        if (co.equals("gmb")) {
+                            flag &= gtfsId.equals(route.optString("gtfsId"));
+                        }
+                    }
+                    if (flag) {
+                        JSONObject dest = route.optJSONObject("dest");
+                        int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
+                        Pair<JSONObject, Integer> old = dests.stream().filter(d -> d.first.optString("zh").equals(dest.optString("zh"))).findFirst().orElse(null);
+                        if (old == null || old.second > serviceType) {
+                            dests.add(Pair.create(dest, serviceType));
+                        }
+                    }
+                }
+            }
+            return dests.stream().sorted(Comparator.comparing(p -> p.second)).map(p -> p.first).collect(Collectors.toList());
+        } catch (Throwable e) {
+            throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gtfsId + ": " + e.getMessage(), e);
+        }
+    }
+
     public static boolean isMtrStopOnOrAfter(String stopId, String relativeTo, String lineName, String bound) {
         for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
             String key = itr.next();
@@ -898,10 +937,13 @@ public class Registry {
             try {
                 Map<Integer, String> lines = new HashMap<>();
                 long nextScheduledBus = -999;
+                boolean isMtrEndOfLine = false;
+                boolean isTyphoonSchedule = false;
                 lines.put(1, getNoScheduledDepartureMessage(null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
                 String language = Shared.Companion.getLanguage();
                 String nextCo = co;
                 if (route.optBoolean("kmbCtbJoint", false)) {
+                    isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
                     String dest = route.optJSONObject("dest").optString("zh").replace(" ", "");
                     String orig = route.optJSONObject("orig").optString("zh").replace(" ", "");
                     Map<Long, Pair<String, String>> etaSorted = new TreeMap<>();
@@ -964,7 +1006,7 @@ public class Registry {
                                                 .replaceAll("原定", "預定")
                                                 .replaceAll("最後班次", "尾班車")
                                                 .replaceAll("尾班車已過", "尾班車已過本站");
-                                        if (message.isEmpty()) {
+                                        if (message.isEmpty() || (INSTANCE.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
                                             message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
                                         } else {
                                             message = "<b></b>" + message;
@@ -1072,6 +1114,8 @@ public class Registry {
                 } else {
                     switch (co) {
                         case "kmb": {
+                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/" + stopId);
                             JSONArray buses = data.optJSONArray("data");
 
@@ -1138,6 +1182,8 @@ public class Registry {
                             break;
                         }
                         case "ctb": {
+                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+
                             String routeNumber = route.optString("route");
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + stopId + "/" + routeNumber);
                             JSONArray buses = data.optJSONArray("data");
@@ -1204,6 +1250,8 @@ public class Registry {
                             break;
                         }
                         case "nlb": {
+                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=" + route.optString("nlbId") + "&stopId=" + stopId + "&language=" + Shared.Companion.getLanguage());
                             if (data == null || data.length() == 0 || !data.has("estimatedArrivals")) {
                                 return;
@@ -1268,6 +1316,8 @@ public class Registry {
                             break;
                         }
                         case "mtr-bus": {
+                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+
                             String routeNumber = route.optString("route");
                             JSONObject body = new JSONObject();
                             try {
@@ -1364,6 +1414,8 @@ public class Registry {
                             break;
                         }
                         case "gmb": {
+                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/eta/stop/" + stopId);
                             List<Pair<Long, JSONObject>> busList = new ArrayList<>();
                             for (int i = 0; i < data.optJSONArray("data").length(); i++) {
@@ -1448,8 +1500,11 @@ public class Registry {
                             break;
                         }
                         case "lightRail": {
+                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalNine;
+
                             JSONArray stopsList = route.optJSONObject("stops").optJSONArray("lightRail");
                             if (JsonUtils.indexOf(stopsList, stopId) + 1 >= stopsList.length()) {
+                                isMtrEndOfLine = true;
                                 lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
                             } else {
                                 List<LrtETAData> results = new ArrayList<>();
@@ -1497,9 +1552,12 @@ public class Registry {
                             break;
                         }
                         case "mtr": {
+                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalNine;
+
                             String lineName = route.optString("route");
                             String bound = route.optJSONObject("bound").optString("mtr");
                             if (isMtrStopEndOfLine(stopId, lineName, bound)) {
+                                isMtrEndOfLine = true;
                                 lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
                             } else {
                                 ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
@@ -1588,7 +1646,7 @@ public class Registry {
                         }
                     }
                 }
-                future.complete(ETAQueryResult.result(nextScheduledBus > -60 ? Math.max(0, nextScheduledBus) : -1, nextCo, lines));
+                future.complete(ETAQueryResult.result(nextScheduledBus > -60 ? Math.max(0, nextScheduledBus) : -1, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines));
             } catch (Throwable e) {
                 e.printStackTrace();
                 future.completeExceptionally(e);
@@ -1657,24 +1715,28 @@ public class Registry {
     @Stable
     public static class ETAQueryResult {
 
-        public static final ETAQueryResult EMPTY = new ETAQueryResult(true, -1, null, Collections.emptyMap());
+        public static final ETAQueryResult EMPTY = new ETAQueryResult(true, -1, false, false, null, Collections.emptyMap());
 
         public static ETAQueryResult connectionError(String co) {
-            return new ETAQueryResult(true, -1, co, Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"));
+            return new ETAQueryResult(true, -1, false, false, co, Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"));
         }
 
-        public static ETAQueryResult result(long nextScheduledBus, String nextCo, Map<Integer, String> lines) {
-            return new ETAQueryResult(false, nextScheduledBus, nextCo, lines);
+        public static ETAQueryResult result(long nextScheduledBus, boolean isMtrEndOfLine, boolean isTyphoonSchedule, String nextCo, Map<Integer, String> lines) {
+            return new ETAQueryResult(false, nextScheduledBus, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
         }
 
         private final boolean isConnectionError;
         private final long nextScheduledBus;
+        private final boolean isMtrEndOfLine;
+        private final boolean isTyphoonSchedule;
         private final String nextCo;
         private final Map<Integer, String> lines;
 
-        private ETAQueryResult(boolean isConnectionError, long nextScheduledBus, String nextCo, Map<Integer, String> lines) {
+        private ETAQueryResult(boolean isConnectionError, long nextScheduledBus, boolean isMtrEndOfLine, boolean isTyphoonSchedule, String nextCo, Map<Integer, String> lines) {
             this.isConnectionError = isConnectionError;
             this.nextScheduledBus = nextScheduledBus;
+            this.isMtrEndOfLine = isMtrEndOfLine;
+            this.isTyphoonSchedule = isTyphoonSchedule;
             this.nextCo = nextCo;
             this.lines = Collections.unmodifiableMap(lines);
         }
@@ -1685,6 +1747,14 @@ public class Registry {
 
         public long getNextScheduledBus() {
             return nextScheduledBus;
+        }
+
+        public boolean isMtrEndOfLine() {
+            return isMtrEndOfLine;
+        }
+
+        public boolean isTyphoonSchedule() {
+            return isTyphoonSchedule;
         }
 
         public String getNextCo() {
@@ -1700,12 +1770,12 @@ public class Registry {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ETAQueryResult that = (ETAQueryResult) o;
-            return isConnectionError == that.isConnectionError && nextScheduledBus == that.nextScheduledBus && Objects.equals(lines, that.lines);
+            return isConnectionError == that.isConnectionError && nextScheduledBus == that.nextScheduledBus && isMtrEndOfLine == that.isMtrEndOfLine && isTyphoonSchedule == that.isTyphoonSchedule && Objects.equals(nextCo, that.nextCo) && Objects.equals(lines, that.lines);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(isConnectionError, nextScheduledBus, lines);
+            return Objects.hash(isConnectionError, nextScheduledBus, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
         }
     }
 
