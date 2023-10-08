@@ -5,6 +5,8 @@ import android.graphics.Typeface;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.util.TypedValue;
+import android.widget.TextView;
 
 import java.util.Arrays;
 import java.util.regex.Matcher;
@@ -118,6 +120,12 @@ public class StringUtils {
             }
         }
         return minSp;
+    }
+
+    public static float findTextLengthDp(Context context, String text, float sp) {
+        TextView textView = new TextView(context);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        return UnitUtils.pixelsToDp(context, textView.getPaint().measureText(text));
     }
 
 }

@@ -191,6 +191,7 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
             } else {
                 val intent = Intent(instance, ListRoutesActivity::class.java)
                 intent.putExtra("resultKey", ExtendedDataHolder.createNew().extra("result", list).buildAndRegisterData(ListRoutesActivity::class.java.name))
+                intent.putExtra("showEta", true)
                 instance.startActivity(intent)
                 instance.finish()
             }

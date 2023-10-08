@@ -711,7 +711,7 @@ public class Registry {
                 if (bound.has("gmb")) {
                     na += 1000;
                 } else if (bound.has("mtr")) {
-                    na += 2000;
+                    na += isInterchangeSearch ? -2000 : 2000;
                 }
                 if (pa.equals("N") || routeNumber.equals("270S") || routeNumber.equals("271S") || routeNumber.equals("293S") || routeNumber.equals("701S") || routeNumber.equals("796S")) {
                     na -= (isNight ? 1 : -1) * 10000;
