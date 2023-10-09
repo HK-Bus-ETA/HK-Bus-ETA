@@ -1,5 +1,6 @@
 name: Data Fetching Processing
 on: 
+  push:
   schedule:
     - cron: "30 20 * * *"
   workflow_dispatch:
