@@ -23,6 +23,7 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.StringUtils
 import kotlinx.coroutines.delay
+import java.util.concurrent.ForkJoinPool
 import kotlin.streams.toList
 
 
@@ -48,8 +49,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LaunchedEffect (Unit) {
-                Registry.getInstance(this@MainActivity)
-                loop@ while (true) {
+                ForkJoinPool.commonPool().execute { Registry.getInstance(this@MainActivity) }
+                loop@while (true) {
                     when (Registry.getInstance(this@MainActivity).state) {
                         Registry.State.READY -> {
                             if (stopId != null && co != null && stop != null && route != null) {
@@ -148,8 +149,8 @@ class MainActivity : ComponentActivity() {
                         }
                         else -> {}
                     }
+                    delay(500)
                 }
-                delay(100)
             }
             Loading(this)
         }

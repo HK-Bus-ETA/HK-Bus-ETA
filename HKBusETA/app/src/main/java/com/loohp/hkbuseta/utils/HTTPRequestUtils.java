@@ -41,7 +41,7 @@ public class HTTPRequestUtils {
         }
     }
 
-    public static JSONObject getJSONResponseWithPercentageCallback(String link, Consumer<Float> percentageCallback) {
+    public static JSONObject getJSONResponseWithPercentageCallback(String link, long customContentLength, Consumer<Float> percentageCallback) {
         try {
             URL url = new URL(link);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -51,7 +51,7 @@ public class HTTPRequestUtils {
             connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
             connection.addRequestProperty("Pragma", "no-cache");
             if (connection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
-                float contentLength = connection.getContentLength();
+                float contentLength = customContentLength >= 0 ? customContentLength : connection.getContentLengthLong();
                 try (InputStream inputStream = connection.getInputStream()) {
                     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                     int readTotal = 0;

@@ -2,14 +2,12 @@ package com.loohp.hkbuseta.shared;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.util.Log;
 import android.util.Pair;
 
 import androidx.compose.runtime.Stable;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
-import com.loohp.hkbuseta.MainActivity;
 import com.loohp.hkbuseta.branchedlist.BranchedList;
 import com.loohp.hkbuseta.tiles.EtaTileServiceEight;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFive;
@@ -306,7 +304,7 @@ public class Registry {
     }
 
     private void ensureData(Context context) throws IOException {
-        if (state.equals(State.READY)) {
+        if (state == State.READY) {
             return;
         }
         if (PREFERENCES != null && DATA_SHEET != null && BUS_ROUTE != null && MTR_BUS_STOP_ALIAS != null) {
@@ -408,7 +406,8 @@ public class Registry {
                     state = State.UPDATING;
                     updatePercentage = 0F;
 
-                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json", p -> updatePercentage = p * 0.85F);
+                    long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.dat"), -1);
+                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json", length, p -> updatePercentage = p * 0.85F);
                     updatePercentage = 0.95F;
                     MTR_BUS_STOP_ALIAS = data.optJSONObject("mtrBusStopAlias");
                     DATA_SHEET = data.optJSONObject("dataSheet");
@@ -437,7 +436,7 @@ public class Registry {
                 }
                 updatePercentage = 1F;
             } catch (Exception e) {
-                Log.e("Resource Downloading Exception", "Exception: ", e);
+                e.printStackTrace();
                 state = State.ERROR;
             }
             if (state != State.READY) {
