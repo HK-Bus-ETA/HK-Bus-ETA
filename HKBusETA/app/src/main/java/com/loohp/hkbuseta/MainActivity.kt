@@ -22,25 +22,15 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.StringUtils
-import java.util.Timer
-import java.util.TimerTask
+import kotlinx.coroutines.delay
 import kotlin.streams.toList
 
 
 class MainActivity : ComponentActivity() {
 
-    companion object {
-        private var mContext: MainActivity? = null
-
-        fun getContext(): MainActivity? {
-            return mContext
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        mContext = this
         Shared.setDefaultExceptionHandler(this)
 
         val stopId = intent.extras?.getString("stopId")
@@ -59,10 +49,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             LaunchedEffect (Unit) {
                 Registry.getInstance(this@MainActivity)
-                Timer().schedule(object : TimerTask() {
-                    override fun run() {
-                        if (Registry.getInstance(this@MainActivity).state == Registry.State.READY) {
-                            cancel()
+                loop@ while (true) {
+                    when (Registry.getInstance(this@MainActivity).state) {
+                        Registry.State.READY -> {
                             if (stopId != null && co != null && stop != null && route != null) {
                                 val intent = Intent(this@MainActivity, EtaActivity::class.java)
                                 intent.putExtra("stopId", stopId)
@@ -147,16 +136,20 @@ class MainActivity : ComponentActivity() {
                                 startActivity(intent2)
                                 finishAffinity()
                             }
-                        } else if (Registry.getInstance(this@MainActivity).state == Registry.State.ERROR) {
-                            cancel()
+                            break@loop
+                        }
+                        Registry.State.ERROR -> {
                             val intent = Intent(this@MainActivity, FatalErrorActivity::class.java)
                             intent.putExtra("zh", "發生錯誤\n請檢查您的網絡連接")
                             intent.putExtra("en", "Fatal Error\nPlease check your internet connection")
                             startActivity(intent)
                             finish()
+                            break@loop
                         }
+                        else -> {}
                     }
-                }, 0, 100)
+                }
+                delay(100)
             }
             Loading(this)
         }

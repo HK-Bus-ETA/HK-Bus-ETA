@@ -380,7 +380,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
             maxLines = 1,
             text = (if (Shared.language == "en") {
                 when (co) {
-                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "LWB")
+                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
                     "ctb" -> "CTB"
                     "nlb" -> "NLB"
                     "mtr-bus" -> "MTR-Bus"

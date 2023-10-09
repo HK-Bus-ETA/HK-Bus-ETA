@@ -229,7 +229,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                                         val text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(
                                             if (Shared.language == "en") {
                                                 when (route.optString("co")) {
-                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "LWB")
+                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
                                                     "ctb" -> "CTB"
                                                     "nlb" -> "NLB"
                                                     "mtr-bus" -> "MTR-Bus"

@@ -213,7 +213,7 @@ public class Registry {
                 PREFERENCES = new JSONObject();
             }
             PREFERENCES.put("language", language);
-            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                 pw.write(PREFERENCES.toString());
                 pw.flush();
             }
@@ -252,7 +252,7 @@ public class Registry {
             Shared.Companion.getFavoriteRouteStops().remove(favoriteIndex);
             if (PREFERENCES != null && PREFERENCES.has("favouriteRouteStops")) {
                 PREFERENCES.optJSONObject("favouriteRouteStops").remove(String.valueOf(favoriteIndex));
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                     pw.write(PREFERENCES.toString());
                     pw.flush();
                 }
@@ -279,7 +279,7 @@ public class Registry {
                 PREFERENCES.put("favouriteRouteStops", new JSONObject());
             }
             PREFERENCES.optJSONObject("favouriteRouteStops").put(String.valueOf(favoriteIndex), json);
-            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(MainActivity.Companion.getContext().getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                 pw.write(PREFERENCES.toString());
                 pw.flush();
             }
@@ -338,7 +338,7 @@ public class Registry {
         }
         preferencesLoaded = true;
 
-        Thread thread = new Thread(() -> {
+        new Thread(() -> {
             try {
                 ConnectionUtils.ConnectionType connectionType = ConnectionUtils.getConnectionType(context);
 
@@ -426,8 +426,7 @@ public class Registry {
                 Log.e("Resource Downloading Exception", "Exception: ", e);
                 state = State.ERROR;
             }
-        });
-        thread.start();
+        }).start();
     }
 
     public PossibleNextCharResult getPossibleNextChar(String input) {
