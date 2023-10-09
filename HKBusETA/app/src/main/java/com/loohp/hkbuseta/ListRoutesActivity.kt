@@ -147,14 +147,10 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
         val haptic = LocalHapticFeedback.current
 
         val padding by remember { derivedStateOf { StringUtils.scaledSize(7.5F, instance) } }
-        val routeTextWidth by remember { derivedStateOf {
-            if (Shared.language != "en" && result.any { it.optString("co") == "mtr" }) {
-                StringUtils.findTextLengthDp(instance, "機場快綫", clampSp(instance, StringUtils.scaledSize(16F, instance), dpMax = StringUtils.scaledSize(19F, instance))) + 1F
-            } else {
-                StringUtils.findTextLengthDp(instance, "N373", clampSp(instance, StringUtils.scaledSize(20F, instance), dpMax = StringUtils.scaledSize(23F, instance))) + 1F
-            }
-        } }
         val etaTextWidth by remember { derivedStateOf { if (showEta) StringUtils.findTextLengthDp(instance, "99", clampSp(instance, StringUtils.scaledSize(16F, instance), dpMax = 19F)) + 1F else 0F } }
+
+        val defaultTextWidth by remember { derivedStateOf { StringUtils.findTextLengthDp(instance, "N373", clampSp(instance, StringUtils.scaledSize(20F, instance), dpMax = StringUtils.scaledSize(23F, instance))) + 1F } }
+        val mtrTextWidth by remember { derivedStateOf { StringUtils.findTextLengthDp(instance, "機場快綫", clampSp(instance, StringUtils.scaledSize(16F, instance), dpMax = StringUtils.scaledSize(19F, instance))) + 1F } }
 
         val bottomOffset by remember { derivedStateOf { -UnitUtils.spToDp(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(7F, instance))) / 2.7F } }
         val mtrBottomOffset by remember { derivedStateOf { -UnitUtils.spToDp(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(7F, instance))) / 10.7F } }
@@ -184,6 +180,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                     } else {
                         route.optJSONObject("route")!!.optString("route")
                     }
+                    val routeTextWidth = if (Shared.language != "en" && co == "mtr") mtrTextWidth else defaultTextWidth
                     val rawColor = when (co) {
                         "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
                         "ctb" -> Color(0xFFFFE15E)
