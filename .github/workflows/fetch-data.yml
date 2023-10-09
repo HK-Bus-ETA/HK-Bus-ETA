@@ -25,12 +25,15 @@ jobs:
           python ./main.py
       - name: Update MD5
         run: md5sum data.json | cut -f1 -d ' ' | tr -d $'\n' > checksum.md5
+      - name: Update Data Length
+        run: du -sb data.json | cut -f -1 > size.dat
       - name: Update resources
         uses: test-room-7/action-update-file@v1
         with:
             file-path: |
               data.json
               checksum.md5
+              size.dat
             commit-msg: Update resources
             github-token: ${{ secrets.GITHUB_TOKEN }}
             branch: data
