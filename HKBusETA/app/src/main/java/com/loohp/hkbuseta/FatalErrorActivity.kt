@@ -106,18 +106,18 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     .fillMaxWidth()
                     .padding(20.dp, 0.dp),
                 textAlign = TextAlign.Center,
-                fontSize = TextUnit(17F, TextUnitType.Sp),
+                fontSize = TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp),
                 color = MaterialTheme.colors.primary,
-                text = en ?: "發生錯誤"
+                text = zh ?: "發生錯誤"
             )
             Text(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp, 0.dp),
                 textAlign = TextAlign.Center,
-                fontSize = TextUnit(17F, TextUnitType.Sp),
+                fontSize = TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp),
                 color = MaterialTheme.colors.primary,
-                text = zh ?: "Fatal Error Occurred"
+                text = en ?: "Fatal Error Occurred"
             )
             if (exception != null) {
                 val focusRequester = remember { FocusRequester() }
@@ -190,7 +190,9 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                         .height(StringUtils.scaledSize(50, instance).dp),
                     onClick = {
                         Shared.invalidateCache(instance)
-                        instance.startActivity(Intent(instance, MainActivity::class.java))
+                        val intent = Intent(instance, MainActivity::class.java)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        instance.startActivity(intent)
                         instance.finishAffinity()
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -199,7 +201,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     ),
                     content = {
                         Icon(
-                            modifier = Modifier.size(35.dp),
+                            modifier = Modifier.size(StringUtils.scaledSize(35F, instance).dp),
                             imageVector = Icons.Filled.Refresh,
                             contentDescription = if (Shared.language == "en") "Relaunch App" else "重新載入",
                             tint = Color.Yellow,
@@ -221,7 +223,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     ),
                     content = {
                         Icon(
-                            modifier = Modifier.size(StringUtils.scaledSize(25, instance).dp),
+                            modifier = Modifier.size(StringUtils.scaledSize(35F, instance).dp),
                             imageVector = Icons.Filled.Close,
                             contentDescription = if (Shared.language == "en") "Exit App" else "退出應用程式",
                             tint = Color.Red,

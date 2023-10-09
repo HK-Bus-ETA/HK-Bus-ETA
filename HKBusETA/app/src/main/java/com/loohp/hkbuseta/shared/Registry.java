@@ -344,9 +344,14 @@ public class Registry {
 
                 Supplier<String> checksumFetcher = () -> {
                     CompletableFuture<String> future = new CompletableFuture<>();
-                    ForkJoinPool.commonPool().execute(() -> {
-                        future.complete(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5"));
-                    });
+                    new Thread(() -> {
+                        try {
+                            future.complete(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5"));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            future.complete(null);
+                        }
+                    }).start();
                     try {
                         return future.get(8, TimeUnit.SECONDS);
                     } catch (Exception e) {
@@ -373,20 +378,30 @@ public class Registry {
                 if (cached) {
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_SHEET_FILE_NAME), StandardCharsets.UTF_8))) {
                         DATA_SHEET = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
+                        if (DATA_SHEET.length() == 0) {
+                            throw new RuntimeException();
+                        }
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(BUS_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
                         BUS_ROUTE = JsonUtils.toSet(new JSONArray(reader.lines().collect(Collectors.joining("\n"))), String.class);
+                        if (BUS_ROUTE.isEmpty()) {
+                            throw new RuntimeException();
+                        }
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(MTR_BUS_STOP_ALIAS_FILE_NAME), StandardCharsets.UTF_8))) {
                         MTR_BUS_STOP_ALIAS = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
+                        if (MTR_BUS_STOP_ALIAS.length() == 0) {
+                            throw new RuntimeException();
+                        }
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
                     state = State.READY;
+                    updateTileService(context);
                 } else if (!connectionType.hasConnection()) {
                     state = State.ERROR;
                 } else {
@@ -416,14 +431,16 @@ public class Registry {
                         pw.write(checksum == null ? "" : checksum);
                         pw.flush();
                     }
-                }
-                updatePercentage = 1F;
-                if (!state.equals(State.ERROR)) {
+
                     state = State.READY;
                     updateTileService(context);
                 }
+                updatePercentage = 1F;
             } catch (Exception e) {
                 Log.e("Resource Downloading Exception", "Exception: ", e);
+                state = State.ERROR;
+            }
+            if (state != State.READY) {
                 state = State.ERROR;
             }
         }).start();
