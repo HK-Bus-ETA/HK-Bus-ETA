@@ -362,7 +362,7 @@ class EtaTileServiceCommon {
 
             val routeNumber = route.optString("route")
             val stopName = stop.optJSONObject("name")!!
-            val destName = route.optJSONObject("dest")!!
+            val destName = Registry.getInstance(context).getStopSpeicalDestinations(stopId, co, route)
 
             val eta = Registry.getEta(stopId, co, route, context)
 

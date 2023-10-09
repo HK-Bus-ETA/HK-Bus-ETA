@@ -59,7 +59,6 @@ import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -900,6 +899,32 @@ public class Registry {
         } catch (Throwable e) {
             throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gtfsId + ": " + e.getMessage(), e);
         }
+    }
+
+    public JSONObject getStopSpeicalDestinations(String stopId, String co, JSONObject route) {
+        String bound = route.optJSONObject("bound").optString(co);
+        try {
+            switch (stopId) {
+                case "LHP": {
+                    if (bound.contains("UT")) {
+                        return new JSONObject().put("zh", "康城").put("en", "LOHAS Park");
+                    } else {
+                        return new JSONObject().put("zh", "北角/寶琳").put("en", "North Point/Po Lam");
+                    }
+                }
+                case "HAH":
+                case "POA": {
+                    if (bound.contains("UT")) {
+                        return new JSONObject().put("zh", "寶琳").put("en", "Po Lam");
+                    } else {
+                        return new JSONObject().put("zh", "北角/康城").put("en", "North Point/LOHAS Park");
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return route.optJSONObject("dest");
     }
 
     public static boolean isMtrStopOnOrAfter(String stopId, String relativeTo, String lineName, String bound) {

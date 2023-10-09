@@ -238,7 +238,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
                 Title(index, stop.optJSONObject("name")!!, lat, lng, routeNumber, co, instance)
-                SubTitle(route.optJSONObject("dest")!!, lat, lng, routeNumber, co, instance)
+                SubTitle(Registry.getInstance(instance).getStopSpeicalDestinations(stopId, co, route), lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(9, instance).dp))
                 EtaText(eta, 1, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
