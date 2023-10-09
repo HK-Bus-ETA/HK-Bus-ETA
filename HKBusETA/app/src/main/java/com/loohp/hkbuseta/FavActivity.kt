@@ -212,19 +212,52 @@ fun FavButtonInternal(favoriteIndex: Int, hasFavouriteStopRoute: MutableState<Bo
                     }
                 }, 5000)
 
-                val favouriteStopRoute = Shared.favoriteRouteStops[favoriteIndex]
-                if (favouriteStopRoute != null) {
-                    val index = favouriteStopRoute.optInt("index")
-                    val stop = favouriteStopRoute.optJSONObject("stop")!!
+                val currentFavouriteStopRoute = Shared.favoriteRouteStops[favoriteIndex]
+                if (currentFavouriteStopRoute != null) {
+                    val index = currentFavouriteStopRoute.optInt("index")
+                    val stop = currentFavouriteStopRoute.optJSONObject("stop")!!
                     val stopName = stop.optJSONObject("name")!!
-                    val route = favouriteStopRoute.optJSONObject("route")!!
-                    val destName = route.optJSONObject("dest")!!
-                    val text = if (Shared.language == "en") {
-                        route.optString("route").plus(" To ").plus(StringUtils.capitalize(destName.optString("en"))).plus("\n")
-                            .plus(index).plus(". ").plus(StringUtils.capitalize(stopName.optString("en")))
+                    val route = currentFavouriteStopRoute.optJSONObject("route")!!
+                    val kmbCtbJoint = route.optBoolean("kmbCtbJoint", false)
+                    val co = currentFavouriteStopRoute.optString("co")
+                    val routeNumber = route.optString("route")
+                    val stopId = currentFavouriteStopRoute.optString("stopId")
+                    val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route)
+
+                    val operator = if (Shared.language == "en") {
+                        when (co) {
+                            "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
+                            "ctb" -> "CTB"
+                            "nlb" -> "NLB"
+                            "mtr-bus" -> "MTR-Bus"
+                            "gmb" -> "GMB"
+                            "lightRail" -> "LRT"
+                            "mtr" -> "MTR"
+                            else -> "???"
+                        }
                     } else {
-                        route.optString("route").plus(" 往").plus(StringUtils.capitalize(destName.optString("zh"))).plus("\n")
-                            .plus(index).plus(". ").plus(StringUtils.capitalize(stopName.optString("zh")))
+                        when (co) {
+                            "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
+                            "ctb" -> "城巴"
+                            "nlb" -> "嶼巴"
+                            "mtr-bus" -> "港鐵巴士"
+                            "gmb" -> "專線小巴"
+                            "lightRail" -> "輕鐵"
+                            "mtr" -> "港鐵"
+                            else -> "???"
+                        }
+                    }
+                    val routeName = if (Shared.language == "en") {
+                        val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
+                        routeName.plus(" To ").plus(StringUtils.capitalize(destName.optString("en")))
+                    } else {
+                        val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
+                        routeName.plus(" 往").plus(destName.optString("zh"))
+                    }
+                    val text = if (Shared.language == "en") {
+                        operator.plus(" ").plus(routeName).plus("\n").plus(index).plus(". ").plus(StringUtils.capitalize(stopName.optString("en")))
+                    } else {
+                        operator.plus(" ").plus(routeName).plus("\n").plus(index).plus(". ").plus(stopName.optString("zh"))
                     }
                     instance.runOnUiThread {
                         Toast.makeText(instance, text, Toast.LENGTH_LONG).show()

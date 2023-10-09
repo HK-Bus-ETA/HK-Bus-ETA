@@ -901,7 +901,7 @@ public class Registry {
         }
     }
 
-    public JSONObject getStopSpeicalDestinations(String stopId, String co, JSONObject route) {
+    public JSONObject getStopSpecialDestinations(String stopId, String co, JSONObject route) {
         String bound = route.optJSONObject("bound").optString(co);
         try {
             switch (stopId) {
