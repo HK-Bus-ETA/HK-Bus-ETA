@@ -51,6 +51,7 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
+import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.StringUtils
@@ -88,6 +89,9 @@ class FatalErrorActivity : ComponentActivity() {
 @Composable
 fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: String?) {
     HKBusETATheme {
+        LaunchedEffect (Unit) {
+            Registry.clearInstance()
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()

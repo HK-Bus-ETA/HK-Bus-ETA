@@ -80,6 +80,10 @@ public class Registry {
         return INSTANCE;
     }
 
+    public static synchronized void clearInstance() {
+        INSTANCE = null;
+    }
+
     private static final String PREFERENCES_FILE_NAME = "preferences.json";
     private static final String CHECKSUM_FILE_NAME = "checksum.json";
     private static final String DATA_SHEET_FILE_NAME = "data_sheet.json";
