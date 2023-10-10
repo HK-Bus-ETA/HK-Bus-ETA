@@ -28,7 +28,7 @@ const val START_ACTIVITY_PATH = "/HKBusETA/Launch"
 const val KMB_URL_STARTS_WITH = "https://app1933.page.link"
 const val KMB_DIRECT_URL_STARTS_WITH = "https://m4.kmb.hk/kmb-ws/share.php?parameter="
 val CTB_URL_PATTERN: Pattern = Pattern.compile("(?:城巴|Citybus) ?App: ?([0-9A-Za-z]+) ?(?:往|To) ?(.*)?http")
-val HKBUSAPP_URL_PATTERN: Pattern = Pattern.compile("https://hkbus\\.app/.+/route/([^-]*)")
+val HKBUSAPP_URL_PATTERN: Pattern = Pattern.compile("https://hkbus\\.app/.+/route/([^/]*)")
 
 
 class SendToWatchActivity : ComponentActivity() {
@@ -103,10 +103,10 @@ fun DisplayElements(intent: Intent, instance: SendToWatchActivity) {
 
                     sendPayload(instance, payload)
                 } else if (HKBUSAPP_URL_PATTERN.matcher(url).also { matcher = it }.find()) {
-                    val route = matcher.group(1)!!
+                    val key = matcher.group(1)!!
 
                     val payload = JSONObject()
-                    payload.put("r", route)
+                    payload.put("k", key)
 
                     sendPayload(instance, payload)
                 } else {

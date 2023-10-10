@@ -448,6 +448,27 @@ public class Registry {
         }).start();
     }
 
+    public JSONObject findRouteByKey(String inputKey, String routeNumber) {
+        JSONObject exact = DATA_SHEET.optJSONObject("routeList").optJSONObject(inputKey);
+        if (exact != null) {
+            return exact;
+        }
+        inputKey = inputKey.toLowerCase();
+        String nearestKey = "";
+        int distance = Integer.MAX_VALUE;
+        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
+            String key = itr.next();
+            if (routeNumber == null || DATA_SHEET.optJSONObject("routeList").optJSONObject(key).optString("route").equalsIgnoreCase(routeNumber)) {
+                int editDistance = StringUtils.editDistance(key.toLowerCase(), inputKey);
+                if (editDistance < distance) {
+                    nearestKey = key;
+                    distance = editDistance;
+                }
+            }
+        }
+        return DATA_SHEET.optJSONObject("routeList").optJSONObject(nearestKey);
+    }
+
     public PossibleNextCharResult getPossibleNextChar(String input) {
         Set<Character> result = new HashSet<>();
         boolean exactMatch = false;

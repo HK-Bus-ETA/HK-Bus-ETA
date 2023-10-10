@@ -25,7 +25,7 @@ public class WearDataLayerListenerService extends WearableListenerService {
             try {
                 JSONObject data = new JSONObject(new String(event.getData()));
                 Intent intent = new Intent(this, MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 for (Iterator<String> itr = data.keys(); itr.hasNext(); ) {
                     String key = itr.next();
                     intent.putExtra(key, data.optString(key));
