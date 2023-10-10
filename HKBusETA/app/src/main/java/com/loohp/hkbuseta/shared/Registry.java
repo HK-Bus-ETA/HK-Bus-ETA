@@ -1031,21 +1031,21 @@ public class Registry {
                                         String message = "";
                                         if (language.equals("en")) {
                                             if (mins > 0) {
-                                                message = "<b>" + mins + "</b>" + " Min." + "";
+                                                message = "<b>" + mins + "</b><small> Min.</small>";
                                             } else if (mins > -60) {
-                                                message = "<b>-</b>" + " Min." + "";
+                                                message = "<b>-</b><small> Min.</small>";
                                             }
                                             if (!bus.optString("rmk_en").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
+                                                message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
                                             }
                                         } else {
                                             if (mins > 0) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                message = "<b>" + mins + "</b><small> 分鐘</small>";
                                             } else if (mins > -60) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                message = "<b>-</b><small> 分鐘</small>";
                                             }
                                             if (!bus.optString("rmk_tc").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
+                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
                                             }
                                         }
                                         message = message
@@ -1060,11 +1060,11 @@ public class Registry {
                                         String message = "";
                                         if (language.equals("en")) {
                                             if (!bus.optString("rmk_en").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
+                                                message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
                                             }
                                         } else {
                                             if (!bus.optString("rmk_tc").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
+                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
                                             }
                                         }
                                         message = message
@@ -1113,21 +1113,21 @@ public class Registry {
                                             String message = "";
                                             if (language.equals("en")) {
                                                 if (mins > 0) {
-                                                    message = "<b>" + mins + "</b>" + " Min." + "";
+                                                    message = "<b>" + mins + "</b><small> Min.</small>";
                                                 } else if (mins > -60) {
-                                                    message = "<b>-</b>" + " Min." + "";
+                                                    message = "<b>-</b><small> Min.</small>";
                                                 }
                                                 if (!bus.optString("rmk_en").isEmpty()) {
-                                                    message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
+                                                    message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
                                                 }
                                             } else {
                                                 if (mins > 0) {
-                                                    message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                    message = "<b>" + mins + "</b><small> 分鐘</small>";
                                                 } else if (mins > -60) {
-                                                    message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                    message = "<b>-</b><small> 分鐘</small>";
                                                 }
                                                 if (!bus.optString("rmk_tc").isEmpty()) {
-                                                    message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
+                                                    message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
                                                 }
                                             }
                                             message = message
@@ -1157,16 +1157,16 @@ public class Registry {
                             String message = "<b></b>" + entry.getValue().first.replace("(尾班車)", "").replace("(Final Bus)", "").trim();
                             String entryCo = entry.getValue().second;
                             if (mins > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
-                                message += Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)";
+                                message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)") + "</small>";
                             }
                             if (entryCo.equals("kmb")) {
                                 if (Shared.Companion.isLWBRoute(route.optString("route"))) {
-                                    message += Shared.Companion.getLanguage().equals("en") ? " - LWB" : " - 龍運";
+                                    message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " - LWB" : " - 龍運") + "</small>";
                                 } else {
-                                    message += Shared.Companion.getLanguage().equals("en") ? " - KMB" : " - 九巴";
+                                    message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " - KMB" : " - 九巴") + "</small>";
                                 }
                             } else {
-                                message += Shared.Companion.getLanguage().equals("en") ? " - CTB" : " - 城巴";
+                                message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " - CTB" : " - 城巴") + "</small>";
                             }
                             int seq = ++counter;
                             if (seq == 1) {
@@ -1197,33 +1197,33 @@ public class Registry {
                                         String message = "";
                                         if (language.equals("en")) {
                                             if (mins > 0) {
-                                                message = "<b>" + mins + "</b>" + " Min." + "";
+                                                message = "<b>" + mins + "</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             } else if (mins > -60) {
-                                                message = "<b>-</b>" + " Min." + "";
+                                                message = "<b>-</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             }
                                             if (!bus.optString("rmk_en").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
+                                                message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
                                             }
                                         } else {
                                             if (mins > 0) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                message = "<b>" + mins + "</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             } else if (mins > -60) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                message = "<b>-</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             }
                                             if (!bus.optString("rmk_tc").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
+                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
                                             }
                                         }
                                         message = message
@@ -1265,33 +1265,33 @@ public class Registry {
                                         String message = "";
                                         if (language.equals("en")) {
                                             if (mins > 0) {
-                                                message = "<b>" + mins + "</b>" + " Min." + "";
+                                                message = "<b>" + mins + "</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             } else if (mins > -60) {
-                                                message = "<b>-</b>" + " Min." + "";
+                                                message = "<b>-</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             }
                                             if (!bus.optString("rmk_en").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_en") : " (" + bus.optString("rmk_en") + ")");
+                                                message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
                                             }
                                         } else {
                                             if (mins > 0) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                message = "<b>" + mins + "</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             } else if (mins > -60) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                message = "<b>-</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             }
                                             if (!bus.optString("rmk_tc").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : " (" + bus.optString("rmk_tc") + ")");
+                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
                                             }
                                         }
                                         message = message
@@ -1333,34 +1333,31 @@ public class Registry {
                                 String message = "";
                                 if (language.equals("en")) {
                                     if (mins > 0) {
-                                        message = "<b>" + mins + "</b>" + " Min." + "";
+                                        message = "<b>" + mins + "</b><small> Min.</small>";
                                         if (seq == 1) {
                                             nextScheduledBus = mins;
                                         }
                                     } else if (mins > -60) {
-                                        message = "<b>-</b>" + " Min." + "";
+                                        message = "<b>-</b><small> Min.</small>";
                                         if (seq == 1) {
                                             nextScheduledBus = mins;
                                         }
-                                    }
-                                    if (!variant.isEmpty()) {
-                                        message += (message.isEmpty() ? variant : " (" + variant + ")");
                                     }
                                 } else {
                                     if (mins > 0) {
-                                        message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                        message = "<b>" + mins + "</b><small> 分鐘</small>";
                                         if (seq == 1) {
                                             nextScheduledBus = mins;
                                         }
                                     } else if (mins > -60) {
-                                        message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                        message = "<b>-</b><small> 分鐘</small>";
                                         if (seq == 1) {
                                             nextScheduledBus = mins;
                                         }
                                     }
-                                    if (!variant.isEmpty()) {
-                                        message += (message.isEmpty() ? variant : " (" + variant + ")");
-                                    }
+                                }
+                                if (!variant.isEmpty()) {
+                                    message += (message.isEmpty() ? variant : "<small> (" + variant + ")</small>");
                                 }
                                 message = message
                                         .replaceAll("原定", "預定")
@@ -1429,34 +1426,31 @@ public class Registry {
                                         String message = "";
                                         if (language.equals("en")) {
                                             if (mins > 0) {
-                                                message = "<b>" + mins + "</b>" + " Min." + "";
+                                                message = "<b>" + mins + "</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             } else if (mins > -60) {
-                                                message = "<b>-</b>" + " Min." + "";
+                                                message = "<b>-</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
-                                            }
-                                            if (!remark.isEmpty()) {
-                                                message += (message.isEmpty() ? remark : " (" + remark + ")");
                                             }
                                         } else {
                                             if (mins > 0) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                message = "<b>" + mins + "</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             } else if (mins > -60) {
-                                                message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                                message = "<b>-</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                 }
                                             }
-                                            if (!remark.isEmpty()) {
-                                                message += (message.isEmpty() ? remark : " (" + remark + ")");
-                                            }
+                                        }
+                                        if (!remark.isEmpty()) {
+                                            message += (message.isEmpty() ? remark : "<small> (" + remark + ")</small>");
                                         }
                                         message = message
                                                 .replaceAll("原定", "預定")
@@ -1517,34 +1511,31 @@ public class Registry {
                                 String message = "";
                                 if (language.equals("en")) {
                                     if (mins > 0) {
-                                        message = "<b>" + mins + "</b>" + " Min." + "";
+                                        message = "<b>" + mins + "</b><small> Min.</small>";
                                         if (seq == 1) {
                                             nextScheduledBus = mins;
                                         }
                                     } else if (mins > -60) {
-                                        message = "<b>-</b>" + " Min." + "";
+                                        message = "<b>-</b><small> Min.</small>";
                                         if (seq == 1) {
                                             nextScheduledBus = mins;
                                         }
-                                    }
-                                    if (!remark.isEmpty()) {
-                                        message += (message.isEmpty() ? remark : " (" + remark + ")");
                                     }
                                 } else {
                                     if (mins > 0) {
-                                        message = "<span style=\"white-space: nowrap;\"><b>" + mins + "</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                        message = "<b>" + mins + "</b><small> 分鐘</small>";
                                         if (seq == 1) {
                                             nextScheduledBus = mins;
                                         }
                                     } else if (mins > -60) {
-                                        message = "<span style=\"white-space: nowrap;\"><b>-</b>" + " <span style=\"word-break: keep-all;\">分鐘</span></span>";
+                                        message = "<b>-</b><small> 分鐘</small>";
                                         if (seq == 1) {
                                             nextScheduledBus = mins;
                                         }
                                     }
-                                    if (!remark.isEmpty()) {
-                                        message += (message.isEmpty() ? remark : " (" + remark + ")");
-                                    }
+                                }
+                                if (!remark.isEmpty()) {
+                                    message += (message.isEmpty() ? remark : "<small> (" + remark + ")</small>");
                                 }
                                 message = message
                                         .replaceAll("原定", "預定")
@@ -1602,14 +1593,25 @@ public class Registry {
                                         LrtETAData lrt = results.get(i);
                                         int seq = i + 1;
                                         String minsMessage = lrt.getEtaMessage();
+                                        if (minsMessage.equals("-")) {
+                                            minsMessage = Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開";
+                                        }
+                                        if (minsMessage.equals("即將抵達") || minsMessage.equals("Arriving") || minsMessage.equals("正在離開") || minsMessage.equals("Departing")) {
+                                            minsMessage = "<b>" + minsMessage + "</b>";
+                                        } else {
+                                            minsMessage = minsMessage.replaceAll("^([0-9]+)", "<b>$1</b>").replace(" min", "<small> Min.</small>").replace(" 分鐘", "<small> 分鐘</small>");
+                                        }
                                         if (seq == 1) {
                                             nextScheduledBus = lrt.getEta();
                                         }
-                                        StringBuilder cartsMessage = new StringBuilder(lrt.getTrainLength() * 2);
+                                        StringBuilder cartsMessage = new StringBuilder(Math.max(3, lrt.getTrainLength() * 2));
                                         for (int u = 0; u < lrt.getTrainLength(); u++) {
                                             cartsMessage.append("\uD83D\uDE83");
                                         }
-                                        String message = "<b></b>" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + " " + cartsMessage + " " + minsMessage;
+                                        if (lrt.getTrainLength() == 1) {
+                                            cartsMessage.append(" ");
+                                        }
+                                        String message = "<b></b><span style=\"color: #D3A809\">" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + "</span> " + cartsMessage + " " + minsMessage;
                                         lines.put(seq, message);
                                     }
                                 }
@@ -1620,6 +1622,42 @@ public class Registry {
                             isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalNine;
 
                             String lineName = route.optString("route");
+                            String lineColor;
+                            switch (lineName) {
+                                case "AEL":
+                                    lineColor = "#00888E";
+                                    break;
+                                case "TCL":
+                                    lineColor = "#F3982D";
+                                    break;
+                                case "TML":
+                                    lineColor = "#9C2E00";
+                                    break;
+                                case "TKL":
+                                    lineColor = "#7E3C93";
+                                    break;
+                                case "EAL":
+                                    lineColor = "#5EB7E8";
+                                    break;
+                                case "SIL":
+                                    lineColor = "#CBD300";
+                                    break;
+                                case "TWL":
+                                    lineColor = "#E60012";
+                                    break;
+                                case "ISL":
+                                    lineColor = "#0075C2";
+                                    break;
+                                case "KTL":
+                                    lineColor = "#00A040";
+                                    break;
+                                case "DRL":
+                                    lineColor = "#EB6EA5";
+                                    break;
+                                default:
+                                    lineColor = "#FFFFFF";
+                            }
+
                             String bound = route.optJSONObject("bound").optString("mtr");
                             if (isMtrStopEndOfLine(stopId, lineName, bound)) {
                                 isMtrEndOfLine = true;
@@ -1687,18 +1725,18 @@ public class Registry {
 
                                                 String minsMessage;
                                                 if (mins > 1) {
-                                                    minsMessage = mins + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘");
+                                                    minsMessage = "<b>" + mins + "</b><small>" + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘") + "</small>";
                                                 } else if (mins == 1) {
-                                                    minsMessage = Shared.Companion.getLanguage().equals("en") ? "Arriving" : "即將抵達";
+                                                    minsMessage = "<b>" + (Shared.Companion.getLanguage().equals("en") ? "Arriving" : "即將抵達") + "</b>";
                                                 } else {
-                                                    minsMessage = Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開";
+                                                    minsMessage = "<b>" + (Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開") + "</b>";
                                                 }
 
-                                                String message = StringUtils.getCircledNumber(platform) + " " + dest + " " + minsMessage;
+                                                String message = "<b></b><span style=\"color: " + lineColor + "\">" + StringUtils.getCircledNumber(platform) + "</span> " + dest + " " + minsMessage;
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
                                                     if (delayed) {
-                                                        message += Shared.Companion.getLanguage().equals("en") ? " (Delayed)" : " (服務服務)";
+                                                        message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Delayed)" : " (服務延誤)") + "</small>";
                                                     }
                                                 }
                                                 lines.put(seq, message);
@@ -1826,8 +1864,8 @@ public class Registry {
             return nextCo;
         }
 
-        public Map<Integer, String> getLines() {
-            return lines;
+        public String getLine(int index) {
+            return lines.getOrDefault(index, "-");
         }
 
         @Override

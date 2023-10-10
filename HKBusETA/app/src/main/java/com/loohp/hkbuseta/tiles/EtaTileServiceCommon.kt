@@ -17,6 +17,7 @@ import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
+import com.aghajari.compose.text.asAnnotatedString
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
@@ -26,9 +27,9 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
+import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clampSp
-import com.loohp.hkbuseta.utils.toAnnotatedString
 import org.json.JSONObject
 import java.util.Date
 import java.util.Timer
@@ -280,6 +281,16 @@ class EtaTileServiceCommon {
             }
             val text = if (co == "mtr") name else index.toString().plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
+                .setModifiers(
+                    ModifiersBuilders.Modifiers.Builder()
+                        .setPadding(
+                            ModifiersBuilders.Padding.Builder()
+                                .setStart(DimensionBuilders.DpProp.Builder(35F).build())
+                                .setEnd(DimensionBuilders.DpProp.Builder(35F).build())
+                                .build()
+                        )
+                        .build()
+                )
                 .setText(text)
                 .setMaxLines(2)
                 .setFontStyle(
@@ -304,6 +315,16 @@ class EtaTileServiceCommon {
                 routeName.plus(" 往").plus(destName.optString("zh"))
             }
             return LayoutElementBuilders.Text.Builder()
+                .setModifiers(
+                    ModifiersBuilders.Modifiers.Builder()
+                        .setPadding(
+                            ModifiersBuilders.Padding.Builder()
+                                .setStart(DimensionBuilders.DpProp.Builder(20F).build())
+                                .setEnd(DimensionBuilders.DpProp.Builder(20F).build())
+                                .build()
+                        )
+                        .build()
+                )
                 .setText(name)
                 .setMaxLines(1)
                 .setFontStyle(
@@ -318,18 +339,28 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun etaText(eta: ETAQueryResult, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Text {
-            val text = HtmlCompat.fromHtml(eta.lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT).toAnnotatedString(context).text
+        @androidx.annotation.OptIn(androidx.wear.protolayout.expression.ProtoLayoutExperimental::class)
+        private fun etaText(eta: ETAQueryResult, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Spannable {
+            val text = HtmlCompat.fromHtml(eta.getLine(seq), HtmlCompat.FROM_HTML_MODE_COMPACT).asAnnotatedString()
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
             val maxLines = if (singleLine) 1 else 2
-            val textSize = clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 20) / 10 * 8, maxLines, 1F, maxTextSize), dpMax = maxTextSize)
+            val textSize = clampSp(context, StringUtils.findOptimalSp(context, text.annotatedString.text, targetWidth(context, 20) / 10 * 8, maxLines, 1F, maxTextSize), dpMax = maxTextSize)
 
-            return LayoutElementBuilders.Text.Builder()
-                //.setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
+            return LayoutElementBuilders.Spannable.Builder()
+                .setModifiers(
+                    ModifiersBuilders.Modifiers.Builder()
+                        .setPadding(
+                            ModifiersBuilders.Padding.Builder()
+                                .setStart(DimensionBuilders.DpProp.Builder(if (seq == 1) 20F else 35F).build())
+                                .setEnd(DimensionBuilders.DpProp.Builder(if (seq == 1) 20F else 35F).build())
+                                .build()
+                        )
+                        .build()
+                )
+                .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
                 .setMaxLines(maxLines)
-                .setText(text)
-                .setFontStyle(
+                .addContentAnnotatedString(text,
                     FontStyle.Builder()
                         .setSize(
                             DimensionBuilders.SpProp.Builder().setValue(textSize).build()
@@ -338,7 +369,8 @@ class EtaTileServiceCommon {
                             ColorProp.Builder(color).build()
                         )
                         .build()
-                ).build()
+                )
+                .build()
         }
 
         private fun lastUpdated(context: Context): LayoutElementBuilders.Text {
@@ -447,16 +479,6 @@ class EtaTileServiceCommon {
                             LayoutElementBuilders.Column.Builder()
                                 .setWidth(DimensionBuilders.wrap())
                                 .setHeight(DimensionBuilders.wrap())
-                                .setModifiers(
-                                    ModifiersBuilders.Modifiers.Builder()
-                                        .setPadding(
-                                            ModifiersBuilders.Padding.Builder()
-                                                .setStart(DimensionBuilders.DpProp.Builder(35F).build())
-                                                .setEnd(DimensionBuilders.DpProp.Builder(35F).build())
-                                                .build()
-                                        )
-                                        .build()
-                                )
                                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()

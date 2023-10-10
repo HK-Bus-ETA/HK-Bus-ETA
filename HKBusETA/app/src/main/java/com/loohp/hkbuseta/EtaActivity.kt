@@ -43,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -64,6 +65,8 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.rememberSwipeableState
 import androidx.wear.compose.material.swipeable
+import com.aghajari.compose.text.AnnotatedText
+import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.ScrollBarConfig
@@ -80,7 +83,6 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.sp
-import com.loohp.hkbuseta.utils.toAnnotatedString
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -162,7 +164,9 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
         Box (
             modifier = Modifier
                 .fillMaxSize()
-                .offset(0.dp, swipe.offset.value.coerceAtMost(0F).equivalentDp)
+                .composed {
+                    this.offset(0.dp, swipe.offset.value.coerceAtMost(0F).equivalentDp)
+                }
                 .swipeable(
                     state = swipe,
                     anchors = mapOf(0F to false, -ScreenSizeUtils.getScreenHeight(instance).toFloat() to true),
@@ -438,7 +442,7 @@ fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String
 @Composable
 fun EtaText(lines: ETAQueryResult, seq: Int, instance: EtaActivity) {
     val textSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp)
-    Text(
+    AnnotatedText(
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp, 0.dp)
@@ -447,6 +451,6 @@ fun EtaText(lines: ETAQueryResult, seq: Int, instance: EtaActivity) {
         fontSize = textSize,
         color = MaterialTheme.colors.primary,
         maxLines = 1,
-        text = HtmlCompat.fromHtml(lines.lines.getOrDefault(seq, "-"), HtmlCompat.FROM_HTML_MODE_COMPACT).toAnnotatedString(instance, textSize.value)
+        text = HtmlCompat.fromHtml(lines.getLine(seq), HtmlCompat.FROM_HTML_MODE_COMPACT).asAnnotatedString()
     )
 }

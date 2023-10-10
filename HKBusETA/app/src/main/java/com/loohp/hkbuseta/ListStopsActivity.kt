@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
+import com.aghajari.compose.text.AnnotatedText
+import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
@@ -79,7 +81,6 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.sp
-import com.loohp.hkbuseta.utils.toAnnotatedString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -558,14 +559,14 @@ fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Floa
                 val span2 = SpannableString(text2)
                 val size2 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(8F, instance))).roundToInt()
                 span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-                Text(
+                AnnotatedText(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.End,
                     fontSize = TextUnit(14F, TextUnitType.Sp),
                     color = Color(0xFFAAC3D5),
                     lineHeight = TextUnit(7F, TextUnitType.Sp),
                     maxLines = 2,
-                    text = SpannableString(TextUtils.concat(span1, "\n", span2)).toAnnotatedString(instance, 14F)
+                    text = SpannableString(TextUtils.concat(span1, "\n", span2)).asAnnotatedString()
                 )
             }
         }
