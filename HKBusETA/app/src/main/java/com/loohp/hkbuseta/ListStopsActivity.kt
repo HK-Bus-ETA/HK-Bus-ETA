@@ -118,9 +118,10 @@ class ListStopsActivity : ComponentActivity() {
 
         Shared.setDefaultExceptionHandler(this)
         val route = intent.extras!!.getString("route")?.let { JSONObject(it) }?: throw RuntimeException()
+        val scrollToStop = intent.extras!!.getString("scrollToStop")
 
         setContent {
-            MainElement(this, route) { isAdd, index, task ->
+            MainElement(this, route, scrollToStop) { isAdd, index, task ->
                 synchronized(etaUpdatesMap) {
                     if (isAdd) {
                         etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
@@ -167,7 +168,7 @@ class ListStopsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListStopsActivity, route: JSONObject, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: String?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val scroll = rememberLazyListState()
@@ -223,34 +224,44 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, schedule: (Boole
         LaunchedEffect (Unit) {
             focusRequester.requestFocus()
 
-            val scrollTask: (OriginData) -> Unit = { origin ->
-                stopsList.withIndex().map {
-                    val (index, entry) = it
-                    val stop = entry.stop
-                    val location = stop.optJSONObject("location")!!
-                    var stopStr = stop.optJSONObject("name")!!.optString(Shared.language)
-                    if (Shared.language == "en") {
-                        stopStr = StringUtils.capitalize(stopStr)
-                    }
-                    StopEntry(index + 1, stopStr, entry, location.optDouble("lat"), location.optDouble("lng"))
-                }.onEach {
-                    it.distance = DistanceUtils.findDistance(origin.lat, origin.lng, it.lat, it.lng)
-                    distances[it.stopIndex] = it.distance
-                }.minBy {
-                    it.distance
-                }.let {
-                    if (!origin.onlyInRange || it.distance <= 0.3) {
-                        closestIndex = it.stopIndex
+            val scrollTask: (OriginData?, String?) -> Unit = { origin, stopId ->
+                if (stopId != null) {
+                    stopsList.withIndex().find { it.value.stopId == stopId }?.let {
                         scope.launch {
-                            scroll.animateScrollToItem(it.stopIndex + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) - UnitUtils.spToPixels(instance, StringUtils.scaledSize(15F, instance)).roundToInt())
+                            scroll.animateScrollToItem(it.index + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) - UnitUtils.spToPixels(instance, StringUtils.scaledSize(15F, instance)).roundToInt())
+                        }
+                    }
+                } else if (origin != null) {
+                    stopsList.withIndex().map {
+                        val (index, entry) = it
+                        val stop = entry.stop
+                        val location = stop.optJSONObject("location")!!
+                        var stopStr = stop.optJSONObject("name")!!.optString(Shared.language)
+                        if (Shared.language == "en") {
+                            stopStr = StringUtils.capitalize(stopStr)
+                        }
+                        StopEntry(index + 1, stopStr, entry, location.optDouble("lat"), location.optDouble("lng"))
+                    }.onEach {
+                        it.distance = DistanceUtils.findDistance(origin.lat, origin.lng, it.lat, it.lng)
+                        distances[it.stopIndex] = it.distance
+                    }.minBy {
+                        it.distance
+                    }.let {
+                        if (!origin.onlyInRange || it.distance <= 0.3) {
+                            closestIndex = it.stopIndex
+                            scope.launch {
+                                scroll.animateScrollToItem(it.stopIndex + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) - UnitUtils.spToPixels(instance, StringUtils.scaledSize(15F, instance)).roundToInt())
+                            }
                         }
                     }
                 }
             }
 
-            if (route.has("origin")) {
+            if (scrollToStop != null) {
+                scrollTask.invoke(null, scrollToStop)
+            } else if (route.has("origin")) {
                 val origin = route.optJSONObject("origin")!!
-                scrollTask.invoke(OriginData(origin.optDouble("lat"), origin.optDouble("lng")))
+                scrollTask.invoke(OriginData(origin.optDouble("lat"), origin.optDouble("lng")), null)
             } else {
                 LocationUtils.checkLocationPermission(instance) {
                     if (it) {
@@ -260,7 +271,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, schedule: (Boole
                                 val locationResult = future.get()
                                 if (locationResult.isSuccess) {
                                     val location = locationResult.location
-                                    scrollTask.invoke(OriginData(location.latitude, location.longitude, true))
+                                    scrollTask.invoke(OriginData(location.latitude, location.longitude, true), null)
                                 }
                             } catch (e: Exception) {
                                 e.printStackTrace()

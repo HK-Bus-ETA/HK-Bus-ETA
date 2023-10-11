@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
         val queryDest = intent.extras?.getString("d")
         var queryGtfsId = intent.extras?.getString("g")
         val queryStop = intent.extras?.getString("s")
+        val queryStopDirectLaunch = intent.extras?.getBoolean("sd", false)?: false
 
         setContent {
             LaunchedEffect (Unit) {
@@ -111,22 +112,25 @@ class MainActivity : ComponentActivity() {
                                                 val it = filteredResult[0]
                                                 val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)
                                                 intent2.putExtra("route", it.toString())
+                                                intent2.putExtra("scrollToStop", queryStop)
                                                 startActivity(intent2)
 
-                                                val stops = Registry.getInstance(this@MainActivity).getAllStops(queryRouteNumber, queryBound, queryCo, queryGtfsId)
-                                                var i = 1
-                                                for (stopData in stops) {
-                                                    if (stopData.stopId == queryStop) {
-                                                        val intent3 = Intent(this@MainActivity, EtaActivity::class.java)
-                                                        intent3.putExtra("stopId", stopId)
-                                                        intent3.putExtra("co", queryCo)
-                                                        intent3.putExtra("index", i)
-                                                        intent3.putExtra("stop", stopData.stop.toString())
-                                                        intent3.putExtra("route", it.optJSONObject("route")!!.toString())
-                                                        startActivity(intent3)
-                                                        break
+                                                if (queryStopDirectLaunch) {
+                                                    val stops = Registry.getInstance(this@MainActivity).getAllStops(queryRouteNumber, queryBound, queryCo, queryGtfsId)
+                                                    var i = 1
+                                                    for (stopData in stops) {
+                                                        if (stopData.stopId == queryStop) {
+                                                            val intent3 = Intent(this@MainActivity, EtaActivity::class.java)
+                                                            intent3.putExtra("stopId", stopId)
+                                                            intent3.putExtra("co", queryCo)
+                                                            intent3.putExtra("index", i)
+                                                            intent3.putExtra("stop", stopData.stop.toString())
+                                                            intent3.putExtra("route", it.optJSONObject("route")!!.toString())
+                                                            startActivity(intent3)
+                                                            break
+                                                        }
+                                                        i++
                                                     }
-                                                    i++
                                                 }
                                             } else if (filteredResult.size == 1) {
                                                 val it = filteredResult[0]
