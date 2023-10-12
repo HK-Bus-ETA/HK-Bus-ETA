@@ -60,17 +60,18 @@ import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
-import com.loohp.hkbuseta.shared.ExtendedDataHolder
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import kotlinx.coroutines.delay
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -89,9 +90,11 @@ class ListRoutesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
 
-        val resultKey = intent.extras!!.getString("resultKey")!!
-        @Suppress("UNCHECKED_CAST")
-        val result = ExtendedDataHolder.get(resultKey)!!.getExtra("result") as List<JSONObject>
+        val result = JsonUtils.toList(JSONArray(intent.extras!!.getString("result")!!), JSONObject::class.java).onEach {
+            if (!it.has("route") && it.has("routeKey")) {
+                it.put("route", Registry.getInstance(this).findRouteByKey(it.getString("routeKey"), null))
+            }
+        }
         val showEta = intent.extras!!.getBoolean("showEta", false)
 
         setContent {

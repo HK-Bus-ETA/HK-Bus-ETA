@@ -4,7 +4,6 @@ import android.content.Context
 import android.text.format.DateFormat
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.core.text.HtmlCompat
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.ColorProp
 import androidx.wear.protolayout.DimensionBuilders
@@ -30,21 +29,62 @@ import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clampSp
+import com.loohp.hkbuseta.utils.toSpanned
 import org.json.JSONObject
+import java.math.BigInteger
+import java.security.MessageDigest
 import java.util.Date
 import java.util.Timer
 import java.util.TimerTask
+import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToInt
+
+data class InlineImageResource(val data: ByteArray, val width: Int, val height: Int) {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as InlineImageResource
+
+        if (!data.contentEquals(other.data)) return false
+        if (width != other.width) return false
+        if (height != other.height) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = data.contentHashCode()
+        result = 31 * result + width
+        result = 31 * result + height
+        return result
+    }
+}
 
 class EtaTileServiceCommon {
 
     companion object {
 
-        private const val RESOURCES_VERSION = "0"
+        private val RESOURCES_VERSION: AtomicReference<String> = AtomicReference(UUID.randomUUID().toString())
+
+        private val inlineImageResources: MutableMap<String, InlineImageResource> = ConcurrentHashMap()
+
+        private fun addInlineImageResource(resource: InlineImageResource): String {
+            val md = MessageDigest.getInstance("MD5")
+            val hash = BigInteger(1, md.digest(resource.data)).toString(16).padStart(32, '0')
+                .plus("_").plus(resource.width).plus("_").plus(resource.height)
+            inlineImageResources.computeIfAbsent(hash) {
+                RESOURCES_VERSION.set(UUID.randomUUID().toString())
+                resource
+            }
+            return hash
+        }
 
         private fun targetWidth(context: Context, padding: Int): Int {
             return ScreenSizeUtils.getScreenWidth(context) - UnitUtils.dpToPixels(context, (padding * 2).toFloat()).roundToInt()
@@ -341,11 +381,13 @@ class EtaTileServiceCommon {
 
         @androidx.annotation.OptIn(androidx.wear.protolayout.expression.ProtoLayoutExperimental::class)
         private fun etaText(eta: ETAQueryResult, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Spannable {
-            val text = HtmlCompat.fromHtml(eta.getLine(seq), HtmlCompat.FROM_HTML_MODE_COMPACT).asAnnotatedString()
+            val raw = eta.getLine(seq)
+            val measure = raw.toSpanned(context, 17F).asAnnotatedString().annotatedString.text
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
             val maxLines = if (singleLine) 1 else 2
-            val textSize = clampSp(context, StringUtils.findOptimalSp(context, text.annotatedString.text, targetWidth(context, 20) / 10 * 8, maxLines, 1F, maxTextSize), dpMax = maxTextSize)
+            val textSize = clampSp(context, StringUtils.findOptimalSp(context, measure, targetWidth(context, 20) / 10 * 8, maxLines, 1F, maxTextSize), dpMax = maxTextSize)
+            val text = raw.toSpanned(context, textSize).asAnnotatedString()
 
             return LayoutElementBuilders.Spannable.Builder()
                 .setModifiers(
@@ -360,7 +402,7 @@ class EtaTileServiceCommon {
                 )
                 .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
                 .setMaxLines(maxLines)
-                .addContentAnnotatedString(text,
+                .addContentAnnotatedString(context, text,
                     FontStyle.Builder()
                         .setSize(
                             DimensionBuilders.SpProp.Builder().setValue(textSize).build()
@@ -369,7 +411,7 @@ class EtaTileServiceCommon {
                             ColorProp.Builder(color).build()
                         )
                         .build()
-                )
+                ) { d, w, h -> addInlineImageResource(InlineImageResource(d, w, h)) }
                 .build()
         }
 
@@ -558,7 +600,7 @@ class EtaTileServiceCommon {
             }
             return Futures.submit(Callable {
                 TileBuilders.Tile.Builder()
-                    .setResourcesVersion(RESOURCES_VERSION)
+                    .setResourcesVersion(RESOURCES_VERSION.get().toString())
                     .setFreshnessIntervalMillis(0)
                     .setTileTimeline(
                         TimelineBuilders.Timeline.Builder().addTimelineEntry(
@@ -573,11 +615,23 @@ class EtaTileServiceCommon {
         }
 
         fun buildTileResourcesRequest(): ListenableFuture<ResourceBuilders.Resources> {
-            return Futures.immediateFuture(
-                ResourceBuilders.Resources.Builder()
-                    .setVersion(RESOURCES_VERSION)
-                    .build()
-            )
+            return Futures.submit(Callable {
+                val resourceBuilder = ResourceBuilders.Resources.Builder().setVersion(RESOURCES_VERSION.get().toString())
+                for ((key, resource) in inlineImageResources) {
+                    resourceBuilder.addIdToImageMapping(key, ResourceBuilders.ImageResource.Builder()
+                        .setInlineResource(
+                            ResourceBuilders.InlineImageResource.Builder()
+                                .setData(resource.data)
+                                .setFormat(ResourceBuilders.IMAGE_FORMAT_UNDEFINED)
+                                .setWidthPx(resource.width)
+                                .setHeightPx(resource.height)
+                                .build()
+                        )
+                        .build()
+                    )
+                }
+                return@Callable resourceBuilder.build()
+            }, ForkJoinPool.commonPool())
         }
 
         private val timerTasks: MutableMap<Int, TimerTask> = ConcurrentHashMap()

@@ -60,11 +60,11 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
-import com.loohp.hkbuseta.shared.ExtendedDataHolder
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.PossibleNextCharResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -285,7 +285,7 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
         val result = if (input == '!') Registry.getInstance(instance).findRoutes("", false) { it.optJSONObject("bound")!!.has("mtr") } else Registry.getInstance(instance).findRoutes(originalText, true)
         if (result != null && result.isNotEmpty()) {
             val intent = Intent(instance, ListRoutesActivity::class.java)
-            intent.putExtra("resultKey", ExtendedDataHolder.createNew().extra("result", result).buildAndRegisterData(ListRoutesActivity::class.java.name))
+            intent.putExtra("result", JsonUtils.fromCollection(result.onEach { it.remove("route") }).toString())
             instance.startActivity(intent)
         }
     } else {

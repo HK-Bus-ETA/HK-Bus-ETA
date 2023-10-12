@@ -17,10 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.MaterialTheme
-import com.loohp.hkbuseta.shared.ExtendedDataHolder
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import kotlinx.coroutines.delay
 import java.util.concurrent.ForkJoinPool
@@ -101,11 +101,11 @@ class MainActivity : ComponentActivity() {
                                         }
                                         if (filteredResult.isEmpty()) {
                                             val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                            intent.putExtra("resultKey", ExtendedDataHolder.createNew().extra("result", result).buildAndRegisterData(ListRoutesActivity::class.java.name))
+                                            intent.putExtra("result", JsonUtils.fromCollection(result.onEach { it.remove("route") }).toString())
                                             startActivity(intent)
                                         } else {
                                             val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                            intent.putExtra("resultKey", ExtendedDataHolder.createNew().extra("result", filteredResult).buildAndRegisterData(ListRoutesActivity::class.java.name))
+                                            intent.putExtra("result", JsonUtils.fromCollection(filteredResult.onEach { it.remove("route") }).toString())
                                             startActivity(intent)
 
                                             if (queryStop != null) {

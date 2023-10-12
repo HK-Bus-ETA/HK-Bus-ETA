@@ -8,6 +8,7 @@ import androidx.compose.runtime.Stable;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
+import com.loohp.hkbuseta.R;
 import com.loohp.hkbuseta.branchedlist.BranchedList;
 import com.loohp.hkbuseta.tiles.EtaTileServiceEight;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFive;
@@ -549,12 +550,14 @@ public class Registry {
                             int matchingType = Integer.parseInt(existingMatchingRoute.optJSONObject("route").optString("serviceType"));
 
                             if (type < matchingType) {
+                                existingMatchingRoute.put("routeKey", key);
                                 existingMatchingRoute.put("route", data);
                                 existingMatchingRoute.put("co", co);
                             }
                         } catch (NumberFormatException ignore) {}
                     } else {
                         JSONObject newMatchingRoute = new JSONObject();
+                        newMatchingRoute.put("routeKey", key);
                         newMatchingRoute.put("route", data);
                         newMatchingRoute.put("co", co);
                         matchingRoutes.put(key0, newMatchingRoute);
@@ -1605,11 +1608,13 @@ public class Registry {
                                             nextScheduledBus = lrt.getEta();
                                         }
                                         StringBuilder cartsMessage = new StringBuilder(Math.max(3, lrt.getTrainLength() * 2));
+                                        int lrv = R.mipmap.lrv;
+                                        int lrvEmpty = R.mipmap.lrv_empty;
                                         for (int u = 0; u < lrt.getTrainLength(); u++) {
-                                            cartsMessage.append("\uD83D\uDE83");
+                                            cartsMessage.append("<img src=\"lrv\">");
                                         }
                                         if (lrt.getTrainLength() == 1) {
-                                            cartsMessage.append(" ");
+                                            cartsMessage.append("<img src=\"lrv_empty\">");
                                         }
                                         String message = "<b></b><span style=\"color: #D3A809\">" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + "</span> " + cartsMessage + " " + minsMessage;
                                         lines.put(seq, message);

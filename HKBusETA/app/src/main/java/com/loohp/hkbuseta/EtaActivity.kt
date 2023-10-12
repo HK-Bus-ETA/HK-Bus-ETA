@@ -57,7 +57,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.text.HtmlCompat
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.ExperimentalWearMaterialApi
@@ -83,6 +82,7 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.sp
+import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -451,6 +451,6 @@ fun EtaText(lines: ETAQueryResult, seq: Int, instance: EtaActivity) {
         fontSize = textSize,
         color = MaterialTheme.colors.primary,
         maxLines = 1,
-        text = HtmlCompat.fromHtml(lines.getLine(seq), HtmlCompat.FROM_HTML_MODE_COMPACT).asAnnotatedString()
+        text = lines.getLine(seq).toSpanned(instance, textSize.value).asAnnotatedString()
     )
 }
