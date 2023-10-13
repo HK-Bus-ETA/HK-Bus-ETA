@@ -355,29 +355,14 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                                     instance.runOnUiThread {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         instance.runOnUiThread {
+                                            val prefix = if (co == "mtr" || co == "lightRail") "" else stopNumber.toString().plus(". ")
                                             val text = if (isClosest) {
-                                                ""
-                                                    .plus(stopNumber)
-                                                    .plus(". ")
-                                                    .plus(stopStr)
-                                                    .plus("\n")
-                                                    .plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
-                                                    .plus(
-                                                        ((distances[stopNumber]
-                                                            ?: Double.NaN) * 1000)
-                                                            .roundToInt()
-                                                            .formatDecimalSeparator()
-                                                    )
-                                                    .plus(if (Shared.language == "en") "m" else "米")
+                                                prefix.plus(stopStr).plus("\n").plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
+                                                    .plus(((distances[stopNumber]?: Double.NaN) * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
                                             } else {
-                                                ""
-                                                    .plus(stopNumber)
-                                                    .plus(". ")
-                                                    .plus(stopStr)
+                                                prefix.plus(stopStr)
                                             }
-                                            Toast
-                                                .makeText(instance, text, Toast.LENGTH_LONG)
-                                                .show()
+                                            Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
                                         }
                                     }
                                 }
