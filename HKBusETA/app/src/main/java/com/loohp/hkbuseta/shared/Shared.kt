@@ -185,6 +185,22 @@ class Shared {
             }
         }
 
+        fun getMtrLineSortingIndex(lineName: String): Int {
+            return when (lineName) {
+                "AEL" -> 8
+                "TCL" -> 7
+                "TML" -> 6
+                "TKL" -> 3
+                "EAL" -> 5
+                "SIL" -> 4
+                "TWL" -> 1
+                "ISL" -> 2
+                "KTL" -> 0
+                "DRL" -> 9
+                else -> 10
+            }
+        }
+
         fun getMtrLineName(lineName: String): String {
             return getMtrLineName(lineName) { lineName }
         }

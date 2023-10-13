@@ -43,7 +43,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -58,6 +57,7 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -589,7 +589,7 @@ public class Registry {
                 String routeNumberB = routeB.optString("route");
 
                 if (coA == 5 || coA == 6) {
-                    int lineDiff = routeNumberA.compareTo(routeNumberB);
+                    int lineDiff = Integer.compare(Shared.Companion.getMtrLineSortingIndex(routeNumberA), Shared.Companion.getMtrLineSortingIndex(routeNumberB));
                     if (lineDiff != 0) {
                         return lineDiff;
                     }
@@ -784,11 +784,12 @@ public class Registry {
                 String co = a.optString("co");
                 return co.equals("kmb") ? 0 : (co.equals("ctb") ? 1 : (co.equals("nlb") ? 2 : (co.equals("mtr-bus") ? 3 : (co.equals("gmb") ? 4 : (co.equals("lightRail") ? 5 : 6)))));
             }).thenComparing(Comparator.comparing((JSONObject a) -> {
-                JSONObject bound = a.optJSONObject("route").optJSONObject("bound");
+                JSONObject route = a.optJSONObject("route");
+                JSONObject bound = route.optJSONObject("bound");
                 if (bound.has("mtr")) {
-                    return bound.optString("mtr");
+                    return Shared.Companion.getMtrLineSortingIndex(route.optString("route"));
                 }
-                return "";
+                return 10;
             }).reversed()));
 
             Set<String> addedKeys = new HashSet<>();
@@ -995,6 +996,88 @@ public class Registry {
             }
         }
         return true;
+    }
+
+    public static MTRInterchangeData getMtrStationInterchange(String stopId, String lineName) {
+        Set<String> lines = new TreeSet<>(Comparator.comparing(Shared.Companion::getMtrLineSortingIndex));
+        Set<String> outOfStationLines = new TreeSet<>(Comparator.comparing(Shared.Companion::getMtrLineSortingIndex));
+        if (stopId.equals("KOW") || stopId.equals("AUS")) {
+            outOfStationLines.add("HighSpeed");
+        }
+        boolean isOutOfStationPaid = !stopId.equals("ETS") && !stopId.equals("TST") && !stopId.equals("KOW") && !stopId.equals("AUS");
+        boolean hasLightRail = false;
+        String outOfStationStopName;
+        switch (stopId) {
+            case "ETS":
+                outOfStationStopName = "尖沙咀";
+                break;
+            case "TST":
+                outOfStationStopName = "尖東";
+                break;
+            case "HOK":
+                outOfStationStopName = "中環";
+                break;
+            case "CEN":
+                outOfStationStopName = "香港";
+                break;
+            default:
+                outOfStationStopName = null;
+                break;
+        }
+        String stopName = DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId).optJSONObject("name").optString("zh");
+        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
+            String key = itr.next();
+            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
+            JSONObject bound = data.optJSONObject("bound");
+            String routeNumber = data.optString("route");
+            if (!routeNumber.equals(lineName)) {
+                if (bound.has("mtr")) {
+                    List<String> stopsList = JsonUtils.mapToList(data.optJSONObject("stops").optJSONArray("mtr"), id -> DATA_SHEET.optJSONObject("stopList").optJSONObject((String) id).optJSONObject("name").optString("zh"));
+                    if (stopsList.contains(stopName)) {
+                        lines.add(routeNumber);
+                    } else if (outOfStationStopName != null && stopsList.contains(outOfStationStopName)) {
+                        outOfStationLines.add(routeNumber);
+                    }
+                } else if (bound.has("lightRail") && !hasLightRail) {
+                    List<String> stopsList = JsonUtils.mapToList(data.optJSONObject("stops").optJSONArray("lightRail"), id -> DATA_SHEET.optJSONObject("stopList").optJSONObject((String) id).optJSONObject("name").optString("zh"));
+                    if (stopsList.contains(stopName)) {
+                        hasLightRail = true;
+                    }
+                }
+            }
+        }
+        return new MTRInterchangeData(lines, isOutOfStationPaid, outOfStationLines, hasLightRail);
+    }
+
+    public static class MTRInterchangeData {
+
+        private final Set<String> lines;
+        private final boolean isOutOfStationPaid;
+        private final Set<String> outOfStationLines;
+        private final boolean hasLightRail;
+
+        public MTRInterchangeData(Set<String> lines, boolean isOutOfStationPaid, Set<String> outOfStationLines, boolean hasLightRail) {
+            this.lines = lines;
+            this.isOutOfStationPaid = isOutOfStationPaid;
+            this.outOfStationLines = outOfStationLines;
+            this.hasLightRail = hasLightRail;
+        }
+
+        public Set<String> getLines() {
+            return lines;
+        }
+
+        public boolean isOutOfStationPaid() {
+            return isOutOfStationPaid;
+        }
+
+        public Set<String> getOutOfStationLines() {
+            return outOfStationLines;
+        }
+
+        public boolean isHasLightRail() {
+            return hasLightRail;
+        }
     }
 
     public static String getNoScheduledDepartureMessage(String altMessage, boolean isAboveTyphoonSignalEight, String typhoonWarningTitle) {

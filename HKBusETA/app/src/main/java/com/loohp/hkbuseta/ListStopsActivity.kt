@@ -223,7 +223,10 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
 
         val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId) }
         val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
-        val mtrLineCreator = remember { if (co == "mtr" || co == "lightRail") generateMTRLine(
+        val mtrStopsInterchange = remember { if (co == "mtr" || co == "lightRail") {
+            stopsList.map { Registry.getMtrStationInterchange(it.stopId, routeNumber) }
+        } else emptyList() }
+        val mtrLineCreator = remember { if (co == "mtr" || co == "lightRail") generateMTRLine(co,
             if (co == "lightRail") when (routeNumber) {
                 "505" -> Color(0xFFDA2127)
                 "507" -> Color(0xFF00A652)
@@ -237,7 +240,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                 "751" -> Color(0xFFF48221)
                 "761P" -> Color(0xFF6F2D91)
                 else -> coColor
-            } else coColor, stopsList, instance
+            } else coColor, stopsList, mtrStopsInterchange, instance
         ) else null }
 
         val distances: MutableMap<Int, Double> = remember { ConcurrentHashMap() }
@@ -380,7 +383,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                                 }
                             )
                     ) {
-                        StopRowElement(stopNumber, stopId, co, isClosest, kmbCtbJoint, rawColor, brightness, padding, stopStr, stopsList, mtrLineCreator?.get(index), route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                        StopRowElement(stopNumber, stopId, co, isClosest, kmbCtbJoint, mtrStopsInterchange, rawColor, brightness, padding, stopStr, stopsList, mtrLineCreator?.get(index), route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
                     }
                     Spacer(
                         modifier = Modifier
@@ -503,7 +506,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boolean, kmbCtbJoint: Boolean, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: List<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: List<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: List<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var height by remember { mutableStateOf(0) }
     Row (
         modifier = Modifier
@@ -535,7 +538,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boole
         if ((co == "mtr" || co == "lightRail") && mtrLineCreator != null) {
             Box(
                 modifier = Modifier
-                    .requiredWidth((if (stopList.map { it.serviceType }.distinct().size > 1) 50 else 35).sp.dp)
+                    .requiredWidth((if (stopList.map { it.serviceType }.distinct().size > 1 || mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }) 50 else 35).sp.dp)
                     .requiredHeight(height.toFloat().equivalentDp)
             ) {
                 mtrLineCreator.invoke()
@@ -797,12 +800,14 @@ fun isDashLineSpur(stopList: List<StopData>, stop: StopData): DashLineSpurResult
     return DashLineSpurResult.FALSE
 }
 
-fun generateMTRLine(color: Color, stopList: List<StopData>, instance: ListStopsActivity): List<@Composable () -> Unit> {
+fun generateMTRLine(co: String, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<Registry.MTRInterchangeData>, instance: ListStopsActivity): List<@Composable () -> Unit> {
     val creators: MutableList<@Composable () -> Unit> = ArrayList(stopList.size)
     val stopByBranchId: MutableMap<Int, MutableList<StopData>> = HashMap()
     stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.computeIfAbsent(it) { ArrayList() }.add(stop) } }
+    val hasOutOfStation = mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }
     for ((index, stop) in stopList.withIndex()) {
         val isMainLine = stop.serviceType == 1
+        val interchangeData = mtrStopsInterchange[index]
         creators.add {
             Canvas(
                 modifier = Modifier.fillMaxSize()
@@ -810,7 +815,8 @@ fun generateMTRLine(color: Color, stopList: List<StopData>, instance: ListStopsA
                 val width = size.width
                 val height = size.height
 
-                val horizontalCenter = width / 2F
+                val leftShift = if (hasOutOfStation) UnitUtils.pixelsToDp(instance, 22F).sp.toPx() else 0
+                val horizontalCenter = width / 2F - leftShift.toFloat()
                 val horizontalPartition = width / 10F
                 val horizontalCenterPrimary = if (stopByBranchId.size == 1) horizontalCenter else horizontalPartition * 3F
                 val horizontalCenterSecondary = horizontalPartition * 7F
@@ -962,33 +968,118 @@ fun generateMTRLine(color: Color, stopList: List<StopData>, instance: ListStopsA
                         )
                     }
                 }
-                val circleWidth = UnitUtils.pixelsToDp(instance, 20F).sp.toPx()
-                val circleCenter = Offset(if (isMainLine) horizontalCenterPrimary else horizontalCenterSecondary, verticalCenter)
-                if (useSpurStopCircle) {
+                val interchangeLineWidth = UnitUtils.pixelsToDp(instance, 14F).sp.toPx() * 2F
+                val interchangeLineHeight = UnitUtils.pixelsToDp(instance, 6F).sp.toPx() * 2F
+                val interchangeLineSpacing = interchangeLineHeight * 1.5F
+                if (interchangeData.isHasLightRail && co != "lightRail") {
                     drawRoundRect(
-                        color = Color(0xFF001F50),
-                        topLeft = circleCenter.minus(Offset(circleWidth / 1.4F, circleWidth / 1.4F)),
-                        size = Size((circleWidth / 1.4F * 2F) + lineWidth, circleWidth / 1.4F * 2F),
+                        color = Color(0xFFD3A809),
+                        topLeft = Offset(horizontalCenterPrimary - interchangeLineWidth, verticalCenter - interchangeLineHeight / 2F),
+                        size = Size(interchangeLineWidth, interchangeLineHeight),
+                        cornerRadius = CornerRadius(interchangeLineHeight / 2F)
+                    )
+                } else if (interchangeData.lines.isNotEmpty()) {
+                    var leftCorner = Offset(horizontalCenterPrimary - interchangeLineWidth, verticalCenter - ((interchangeData.lines.size - 1) * interchangeLineSpacing / 2F) - interchangeLineHeight / 2F)
+                    for (interchange in interchangeData.lines) {
+                        drawRoundRect(
+                            color = when (interchange) {
+                                "AEL" -> Color(0xFF00888E)
+                                "TCL" -> Color(0xFFF3982D)
+                                "TML" -> Color(0xFF9C2E00)
+                                "TKL" -> Color(0xFF7E3C93)
+                                "EAL" -> Color(0xFF5EB7E8)
+                                "SIL" -> Color(0xFFCBD300)
+                                "TWL" -> Color(0xFFE60012)
+                                "ISL" -> Color(0xFF0075C2)
+                                "KTL" -> Color(0xFF00A040)
+                                "DRL" -> Color(0xFFEB6EA5)
+                                "HighSpeed" -> Color(0xFFBCB0A4)
+                                else -> Color.White
+                            },
+                            topLeft = leftCorner,
+                            size = Size(interchangeLineWidth, interchangeLineHeight),
+                            cornerRadius = CornerRadius(interchangeLineHeight / 2F)
+                        )
+                        leftCorner += Offset(0F, interchangeLineSpacing)
+                    }
+                }
+
+                val circleWidth = UnitUtils.pixelsToDp(instance, 20F).sp.toPx()
+
+                if (interchangeData.outOfStationLines.isNotEmpty()) {
+                    val otherStationHorizontalCenter = horizontalCenterPrimary + circleWidth * 2F
+                    val connectionLineWidth = UnitUtils.pixelsToDp(instance, 5F).sp.toPx()
+                    if (interchangeData.isOutOfStationPaid) {
+                        drawLine(
+                            color = Color(0xFF003180),
+                            start = Offset(horizontalCenterPrimary, verticalCenter),
+                            end = Offset(otherStationHorizontalCenter, verticalCenter),
+                            strokeWidth = connectionLineWidth
+                        )
+                    } else {
+                        drawLine(
+                            color = Color(0xFF003180),
+                            start = Offset(horizontalCenterPrimary, verticalCenter),
+                            end = Offset(otherStationHorizontalCenter, verticalCenter),
+                            strokeWidth = connectionLineWidth,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(UnitUtils.pixelsToDp(instance, 4F).sp.toPx(), UnitUtils.pixelsToDp(instance, 2F).sp.toPx()), 0F)
+                        )
+                    }
+                    var leftCorner = Offset(otherStationHorizontalCenter, verticalCenter - ((interchangeData.outOfStationLines.size - 1) * interchangeLineSpacing / 2F) - interchangeLineHeight / 2F)
+                    for (interchange in interchangeData.outOfStationLines) {
+                        drawRoundRect(
+                            color = when (interchange) {
+                                "AEL" -> Color(0xFF00888E)
+                                "TCL" -> Color(0xFFF3982D)
+                                "TML" -> Color(0xFF9C2E00)
+                                "TKL" -> Color(0xFF7E3C93)
+                                "EAL" -> Color(0xFF5EB7E8)
+                                "SIL" -> Color(0xFFCBD300)
+                                "TWL" -> Color(0xFFE60012)
+                                "ISL" -> Color(0xFF0075C2)
+                                "KTL" -> Color(0xFF00A040)
+                                "DRL" -> Color(0xFFEB6EA5)
+                                "HighSpeed" -> Color(0xFFBCB0A4)
+                                else -> Color.White
+                            },
+                            topLeft = leftCorner,
+                            size = Size(interchangeLineWidth, interchangeLineHeight),
+                            cornerRadius = CornerRadius(interchangeLineHeight / 2F)
+                        )
+                        leftCorner += Offset(0F, interchangeLineSpacing)
+                    }
+
+                    val circleCenter = Offset(otherStationHorizontalCenter, verticalCenter)
+                    val heightExpand = ((interchangeData.outOfStationLines.size - 1) * interchangeLineSpacing).coerceAtLeast(0F)
+                    drawRoundRect(
+                        color = Color(0xFF003180),
+                        topLeft = circleCenter - Offset(circleWidth / 1.4F, circleWidth / 1.4F + heightExpand / 2F),
+                        size = Size((circleWidth / 1.4F * 2F), circleWidth / 1.4F * 2F + heightExpand),
                         cornerRadius = CornerRadius(circleWidth / 1.4F)
                     )
                     drawRoundRect(
                         color = Color(0xFFFFFFFF),
-                        topLeft = circleCenter.minus(Offset(circleWidth / 2F, circleWidth / 2F)),
-                        size = Size(circleWidth + lineWidth, circleWidth),
+                        topLeft = circleCenter - Offset(circleWidth / 2F, circleWidth / 2F + heightExpand / 2F),
+                        size = Size(circleWidth, circleWidth + heightExpand),
                         cornerRadius = CornerRadius(circleWidth / 2F)
                     )
-                } else {
-                    drawCircle(
-                        color = Color(0xFF001F50),
-                        center = circleCenter,
-                        radius = circleWidth / 1.4F
-                    )
-                    drawCircle(
-                        color = Color(0xFFFFFFFF),
-                        center = circleCenter,
-                        radius = circleWidth / 2F
-                    )
                 }
+
+                val circleCenter = Offset(if (isMainLine) horizontalCenterPrimary else horizontalCenterSecondary, verticalCenter)
+                val widthExpand = if (useSpurStopCircle) lineWidth else 0F
+                val heightExpand = ((interchangeData.lines.size - 1) * interchangeLineSpacing).coerceAtLeast(0F)
+                drawRoundRect(
+                    color = Color(0xFF003180),
+                    topLeft = circleCenter - Offset(circleWidth / 1.4F, circleWidth / 1.4F + heightExpand / 2F),
+                    size = Size((circleWidth / 1.4F * 2F) + widthExpand, circleWidth / 1.4F * 2F + heightExpand),
+                    cornerRadius = CornerRadius(circleWidth / 1.4F)
+                )
+                drawRoundRect(
+                    color = Color(0xFFFFFFFF),
+                    topLeft = circleCenter - Offset(circleWidth / 2F, circleWidth / 2F + heightExpand / 2F),
+                    size = Size(circleWidth + widthExpand, circleWidth + heightExpand),
+                    cornerRadius = CornerRadius(circleWidth / 2F)
+                )
             }
         }
     }
