@@ -351,7 +351,9 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
         },
         onLongClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            instance.startActivity(Intent(instance, FavActivity::class.java))
+            val intent = Intent(instance, FavActivity::class.java)
+            intent.putExtra("scrollToIndex", favoriteIndex)
+            instance.startActivity(intent)
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(24, instance).dp)

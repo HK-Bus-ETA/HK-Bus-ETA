@@ -143,10 +143,10 @@ fun Modifier.fullPageVerticalScrollbar(
         val knownAmount = actualItemLength.values.count()
         val knownAverageItemLength = knownLength / knownAmount
         val contentOffset = (0 until state.firstVisibleItemIndex).sumOf { actualItemLength.getOrDefault(it, knownAverageItemLength) }.toFloat() + state.firstVisibleItemScrollOffset
-        val contentLength = knownLength + (state.layoutInfo.totalItemsCount - knownAmount - 1) * (knownLength / knownAmount)
+        val contentLength = knownLength + (state.layoutInfo.totalItemsCount - knownAmount) * (knownLength / knownAmount)
 
         if (viewPortLength < contentLength) {
-            indicatorLength = (if (itemsVisible.last().index + 1 >= state.layoutInfo.totalItemsCount) 1F - (contentOffset / contentLength) else visibleItemsLength / contentLength).coerceAtLeast(0.05F)
+            indicatorLength = (if (itemsVisible.last { it.offset < viewPortLength }.index >= state.layoutInfo.totalItemsCount) 1F - (contentOffset / contentLength) else visibleItemsLength / contentLength).coerceAtLeast(0.05F)
             val indicatorThicknessPx = indicatorThickness.toPx()
             val halfIndicatorThicknessPx = (indicatorThickness.value / 2F).dp.toPx()
             scrollOffsetViewPort = contentOffset / contentLength

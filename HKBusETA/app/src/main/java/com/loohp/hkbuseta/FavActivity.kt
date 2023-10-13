@@ -20,7 +20,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,17 +31,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,31 +67,52 @@ import androidx.wear.compose.material.Text
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AdvanceButton
-import com.loohp.hkbuseta.compose.fullPageVerticalScrollWithScrollbar
+import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.JsonUtils
+import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.Timer
 import java.util.TimerTask
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 
 class FavActivity : ComponentActivity() {
 
+    private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 4)
+    private val etaUpdatesMap: MutableMap<Int, Pair<ScheduledFuture<*>?, () -> Unit>> = LinkedHashMap()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
+
+        val scrollToIndex = intent.extras?.getInt("scrollToIndex")?: 0
+
         setContent {
-            FavElements(this)
+            FavElements(scrollToIndex, this) { isAdd, index, task ->
+                synchronized(etaUpdatesMap) {
+                    if (isAdd) {
+                        etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
+                    } else {
+                        etaUpdatesMap.remove(index)?.first?.cancel(true)
+                    }
+                }
+            }
         }
     }
 
@@ -98,9 +121,27 @@ class FavActivity : ComponentActivity() {
         Shared.setSelfAsCurrentActivity(this)
     }
 
+    override fun onResume() {
+        super.onResume()
+        synchronized(etaUpdatesMap) {
+            etaUpdatesMap.replaceAll { _, value ->
+                value.first?.cancel(true)
+                executor.scheduleWithFixedDelay(value.second, 0, 30, TimeUnit.SECONDS) to value.second
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        synchronized(etaUpdatesMap) {
+            etaUpdatesMap.forEach { it.value.first?.cancel(true) }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (isFinishing) {
+            executor.shutdownNow()
             Shared.removeSelfFromCurrentActivity(this)
         }
     }
@@ -108,42 +149,49 @@ class FavActivity : ComponentActivity() {
 }
 
 @Composable
-fun FavElements(instance: FavActivity) {
+fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
-        val scroll = rememberScrollState()
+        val scope = rememberCoroutineScope()
+        val state = rememberLazyListState()
 
-        Column(
+        val etaUpdateTimes: MutableMap<Int, Long> = remember { ConcurrentHashMap() }
+        val etaResults: MutableMap<Int, Registry.ETAQueryResult> = remember { ConcurrentHashMap() }
+
+        LaunchedEffect (Unit) {
+            if (scrollToIndex in 1..8) {
+                scope.launch {
+                    state.scrollToItem(scrollToIndex + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) + UnitUtils.spToPixels(instance, StringUtils.scaledSize(35F, instance)).roundToInt())
+                }
+            }
+        }
+
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .fullPageVerticalScrollWithScrollbar(
-                    state = scroll,
-                    flingBehavior = ScrollableDefaults.flingBehavior()
+                .fullPageVerticalLazyScrollbar(
+                    state = state
                 )
-                .rotaryScroll(scroll, focusRequester),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .rotaryScroll(state, focusRequester),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            state = state
         ) {
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(20, instance).dp))
-            FavTitle(instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-            FavDescription(instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-            FavButton(1, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-            FavButton(2, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-            FavButton(3, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-            FavButton(4, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-            FavButton(5, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-            FavButton(6, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-            FavButton(7, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-            FavButton(8, instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
+            item {
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(20, instance).dp))
+            }
+            item {
+                FavTitle(instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                FavDescription(instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+            }
+            items(8) {
+                FavButton(it + 1, instance, etaResults, etaUpdateTimes, schedule)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+            }
+            item {
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(30, instance).dp))
+            }
         }
     }
 }
@@ -175,7 +223,7 @@ fun FavDescription(instance: FavActivity) {
 }
 
 @Composable
-fun FavButton(favoriteIndex: Int, instance: FavActivity) {
+fun FavButton(favoriteIndex: Int, instance: FavActivity, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     val favouriteStopRoute = remember { mutableStateOf(Shared.favoriteRouteStops[favoriteIndex]) }
     val deleteState = remember { mutableStateOf(false) }
 
@@ -189,12 +237,12 @@ fun FavButton(favoriteIndex: Int, instance: FavActivity) {
         }
     }
 
-    FavButtonInternal(favoriteIndex, favouriteStopRoute, deleteState, instance)
+    FavButtonInternal(favoriteIndex, favouriteStopRoute, deleteState, etaResults, etaUpdateTimes, instance, schedule)
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONObject?>, deleteState: MutableState<Boolean>, instance: FavActivity) {
+fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONObject?>, deleteState: MutableState<Boolean>, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     val haptic = LocalHapticFeedback.current
 
     AdvanceButton(
@@ -275,12 +323,21 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                 val co = favStopRoute.optString("co")
                 val route = favStopRoute.optJSONObject("route")!!
 
-                var eta: Registry.ETAQueryResult? by remember { mutableStateOf(Registry.ETAQueryResult.EMPTY) }
+                var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults[favoriteIndex]) }
 
                 LaunchedEffect (Unit) {
-                    while (true) {
-                        Thread { eta = Registry.getEta(stopId, co, route, instance) }.start()
-                        delay(30000)
+                    if (eta != null && !eta!!.isConnectionError) {
+                        delay(etaUpdateTimes[favoriteIndex]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+                    }
+                    schedule.invoke(true, favoriteIndex) {
+                        eta = Registry.getEta(stopId, co, route, instance)
+                        etaUpdateTimes[favoriteIndex] = System.currentTimeMillis()
+                        etaResults[favoriteIndex] = eta!!
+                    }
+                }
+                DisposableEffect (Unit) {
+                    onDispose {
+                        schedule.invoke(false, favoriteIndex, null)
                     }
                 }
 
