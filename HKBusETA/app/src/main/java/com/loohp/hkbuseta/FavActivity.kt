@@ -389,7 +389,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                             }
                         } else {
                             val text1 = (if (eta!!.nextScheduledBus == 0L) "-" else eta!!.nextScheduledBus.toString())
-                            val text2 = if (Shared.language == "en") "Min." else "分鐘"
+                            val text2 = if (Shared.language == "en") " Min." else "分鐘"
                             val span1 = SpannableString(text1)
                             val size1 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(14F, instance), dpMax = StringUtils.scaledSize(15F, instance))).roundToInt()
                             span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
@@ -531,9 +531,9 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                         "往".plus(destName.optString("zh"))
                     }
                     val subText = if (Shared.language == "en") {
-                        index.toString().plus(". ").plus(StringUtils.capitalize(stopName.optString("en")))
+                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(StringUtils.capitalize(stopName.optString("en")))
                     } else {
-                        index.toString().plus(". ").plus(stopName.optString("zh"))
+                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.optString("zh"))
                     }
                     Spacer(modifier = Modifier.size(5.dp))
                     Column {

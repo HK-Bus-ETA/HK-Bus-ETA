@@ -800,15 +800,15 @@ fun generateMTRLine(co: String, color: Color, stopList: List<StopData>, mtrStops
                 val width = size.width
                 val height = size.height
 
-                val leftShift = if (hasOutOfStation) UnitUtils.pixelsToDp(instance, 22F).sp.toPx() else 0
+                val leftShift = if (hasOutOfStation) StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 22F).sp.toPx(), instance) else 0
                 val horizontalCenter = width / 2F - leftShift.toFloat()
                 val horizontalPartition = width / 10F
                 val horizontalCenterPrimary = if (stopByBranchId.size == 1) horizontalCenter else horizontalPartition * 3F
                 val horizontalCenterSecondary = horizontalPartition * 7F
                 val verticalCenter = height / 2F
-                val lineWidth = UnitUtils.pixelsToDp(instance, 11F).sp.toPx()
-                val lineOffset = UnitUtils.pixelsToDp(instance, 8F).sp.toPx()
-                val dashEffect = floatArrayOf(UnitUtils.pixelsToDp(instance, 14F).sp.toPx(), UnitUtils.pixelsToDp(instance, 7F).sp.toPx())
+                val lineWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 11F).sp.toPx(), instance)
+                val lineOffset = StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 8F).sp.toPx(), instance)
+                val dashEffect = floatArrayOf(StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 14F).sp.toPx(), instance), StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 7F).sp.toPx(), instance))
 
                 var useSpurStopCircle = false
                 if (isMainLine) {
@@ -953,8 +953,8 @@ fun generateMTRLine(co: String, color: Color, stopList: List<StopData>, mtrStops
                         )
                     }
                 }
-                val interchangeLineWidth = UnitUtils.pixelsToDp(instance, 14F).sp.toPx() * 2F
-                val interchangeLineHeight = UnitUtils.pixelsToDp(instance, 6F).sp.toPx() * 2F
+                val interchangeLineWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 14F).sp.toPx(), instance) * 2F
+                val interchangeLineHeight = StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 6F).sp.toPx(), instance) * 2F
                 val interchangeLineSpacing = interchangeLineHeight * 1.5F
                 if (interchangeData.isHasLightRail && co != "lightRail") {
                     drawRoundRect(
@@ -989,11 +989,11 @@ fun generateMTRLine(co: String, color: Color, stopList: List<StopData>, mtrStops
                     }
                 }
 
-                val circleWidth = UnitUtils.pixelsToDp(instance, 20F).sp.toPx()
+                val circleWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 20F).sp.toPx(), instance)
 
                 if (interchangeData.outOfStationLines.isNotEmpty()) {
                     val otherStationHorizontalCenter = horizontalCenterPrimary + circleWidth * 2F
-                    val connectionLineWidth = UnitUtils.pixelsToDp(instance, 5F).sp.toPx()
+                    val connectionLineWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 5F).sp.toPx(), instance)
                     if (interchangeData.isOutOfStationPaid) {
                         drawLine(
                             color = Color(0xFF003180),
@@ -1007,7 +1007,7 @@ fun generateMTRLine(co: String, color: Color, stopList: List<StopData>, mtrStops
                             start = Offset(horizontalCenterPrimary, verticalCenter),
                             end = Offset(otherStationHorizontalCenter, verticalCenter),
                             strokeWidth = connectionLineWidth,
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(UnitUtils.pixelsToDp(instance, 4F).sp.toPx(), UnitUtils.pixelsToDp(instance, 2F).sp.toPx()), 0F)
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 4F).sp.toPx(), instance), StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 2F).sp.toPx(), instance)), 0F)
                         )
                     }
                     var leftCorner = Offset(otherStationHorizontalCenter, verticalCenter - ((interchangeData.outOfStationLines.size - 1) * interchangeLineSpacing / 2F) - interchangeLineHeight / 2F)
