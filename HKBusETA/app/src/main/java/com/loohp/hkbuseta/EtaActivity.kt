@@ -133,6 +133,8 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
     val swipe = rememberSwipeableState(initialValue = false)
     var swiping by remember { mutableStateOf(swipe.offset.value != 0F) }
 
+    val routeNumber = route.optString("route")
+
     if (swipe.currentValue) {
         instance.runOnUiThread {
             val text = if (Shared.language == "en") {
@@ -169,7 +171,12 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 }
                 .swipeable(
                     state = swipe,
-                    anchors = mapOf(0F to false, -ScreenSizeUtils.getScreenHeight(instance).toFloat() to true),
+                    anchors = mapOf(
+                        0F to false,
+                        -ScreenSizeUtils
+                            .getScreenHeight(instance)
+                            .toFloat() to true
+                    ),
                     orientation = Orientation.Vertical
                 )
         ) {
@@ -187,58 +194,17 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val focusRequester = remember { FocusRequester() }
-                val scroll = rememberScrollState()
-
-                var scrollCounter by remember { mutableStateOf(0) }
-                val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
-                val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
-                var scrollMoved by remember { mutableStateOf(0) }
-
-                val mutex by remember { mutableStateOf(Mutex()) }
-                var job: Job? = remember { null }
-                val animatedScrollValue = remember { Animatable(0F) }
-                var previousScrollValue by remember { mutableStateOf(0F) }
-                LaunchedEffect (animatedScrollValue.value) {
-                    if (scrollMoved > 0) {
-                        val diff = previousScrollValue - animatedScrollValue.value
-                        job?.cancel()
-                        job = launch { scroll.animateScrollBy(0F, TweenSpec(durationMillis = 500)) }
-                        scroll.scrollBy(diff)
-                        previousScrollValue -= diff
-                    }
-                }
-
-                LaunchedEffect (scrollInProgress) {
-                    if (scrollInProgress) {
-                        scrollCounter++
-                    }
-                }
-                LaunchedEffect (scrollCounter, scrollReachedEnd) {
-                    delay(50)
-                    if (scrollReachedEnd && scrollMoved > 1) {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    }
-                    if (scrollMoved <= 1) {
-                        scrollMoved++
-                    }
-                }
-
                 var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
 
                 val lat = stop.optJSONObject("location")!!.optDouble("lat")
                 val lng = stop.optJSONObject("location")!!.optDouble("lng")
 
                 LaunchedEffect (Unit) {
-                    focusRequester.requestFocus()
                     while (true) {
-                        Thread {
-                            eta = Registry.getEta(stopId, co, route, instance)
-                        }.start()
+                        Thread { eta = Registry.getEta(stopId, co, route, instance) }.start()
                         delay(Shared.ETA_UPDATE_INTERVAL)
                     }
                 }
-                val routeNumber = route.optString("route")
 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
                 Title(index, stop.optJSONObject("name")!!, lat, lng, routeNumber, co, instance)
@@ -250,55 +216,102 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
                 EtaText(eta, 3, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
-                Row(
-                    modifier = Modifier
-                        .width(StringUtils.scaledSize(113, instance).dp)
-                        .horizontalScrollWithScrollbar(
-                            state = scroll,
-                            flingBehavior = ScrollableDefaults.flingBehavior(),
-                            scrollbarConfig = ScrollBarConfig(
-                                indicatorThickness = 2.dp,
-                                padding = PaddingValues(2.dp, (-6).dp, 2.dp, (-6).dp)
-                            )
-                        )
-                        .onRotaryScrollEvent {
-                            scope.launch {
-                                mutex.withLock {
-                                    val target = it.horizontalScrollPixels + animatedScrollValue.value
-                                    animatedScrollValue.snapTo(target)
-                                    previousScrollValue = target
-                                }
-                                animatedScrollValue.animateTo(
-                                    0F,
-                                    TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing)
-                                )
-                            }
-                            true
-                        }
-                        .focusRequester(
-                            focusRequester = focusRequester
-                        )
-                        .focusable(),
-                    horizontalArrangement = Arrangement.Center
-                )  {
-                    FavButton(1, stopId, co, index, stop, route, instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                    FavButton(2, stopId, co, index, stop, route, instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                    FavButton(3, stopId, co, index, stop, route, instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                    FavButton(4, stopId, co, index, stop, route, instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                    FavButton(5, stopId, co, index, stop, route, instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                    FavButton(6, stopId, co, index, stop, route, instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                    FavButton(7, stopId, co, index, stop, route, instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                    FavButton(8, stopId, co, index, stop, route, instance)
-                }
+                FavRow(stopId, co, index, stop, route, instance)
             }
         }
+    }
+}
+
+@Composable
+fun FavRow(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity) {
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
+    val scroll = rememberScrollState()
+
+    var scrollCounter by remember { mutableStateOf(0) }
+    val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
+    val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
+    var scrollMoved by remember { mutableStateOf(0) }
+
+    val mutex by remember { mutableStateOf(Mutex()) }
+    var job: Job? = remember { null }
+    val animatedScrollValue = remember { Animatable(0F) }
+    var previousScrollValue by remember { mutableStateOf(0F) }
+
+    LaunchedEffect (animatedScrollValue.value) {
+        if (scrollMoved > 0) {
+            val diff = previousScrollValue - animatedScrollValue.value
+            job?.cancel()
+            job = launch { scroll.animateScrollBy(0F, TweenSpec(durationMillis = 500)) }
+            scroll.scrollBy(diff)
+            previousScrollValue -= diff
+        }
+    }
+    LaunchedEffect (scrollInProgress) {
+        if (scrollInProgress) {
+            scrollCounter++
+        }
+    }
+    LaunchedEffect (scrollCounter, scrollReachedEnd) {
+        delay(50)
+        if (scrollReachedEnd && scrollMoved > 1) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+        if (scrollMoved <= 1) {
+            scrollMoved++
+        }
+    }
+    LaunchedEffect (Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Row(
+        modifier = Modifier
+            .width(StringUtils.scaledSize(113, instance).dp)
+            .horizontalScrollWithScrollbar(
+                state = scroll,
+                flingBehavior = ScrollableDefaults.flingBehavior(),
+                scrollbarConfig = ScrollBarConfig(
+                    indicatorThickness = 2.dp,
+                    padding = PaddingValues(2.dp, (-6).dp, 2.dp, (-6).dp)
+                )
+            )
+            .onRotaryScrollEvent {
+                scope.launch {
+                    mutex.withLock {
+                        val target = it.horizontalScrollPixels + animatedScrollValue.value
+                        animatedScrollValue.snapTo(target)
+                        previousScrollValue = target
+                    }
+                    animatedScrollValue.animateTo(
+                        0F,
+                        TweenSpec(durationMillis = 500, easing = FastOutSlowInEasing)
+                    )
+                }
+                true
+            }
+            .focusRequester(
+                focusRequester = focusRequester
+            )
+            .focusable(),
+        horizontalArrangement = Arrangement.Center
+    )  {
+        FavButton(1, stopId, co, index, stop, route, instance)
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+        FavButton(2, stopId, co, index, stop, route, instance)
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+        FavButton(3, stopId, co, index, stop, route, instance)
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+        FavButton(4, stopId, co, index, stop, route, instance)
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+        FavButton(5, stopId, co, index, stop, route, instance)
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+        FavButton(6, stopId, co, index, stop, route, instance)
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+        FavButton(7, stopId, co, index, stop, route, instance)
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+        FavButton(8, stopId, co, index, stop, route, instance)
     }
 }
 
@@ -313,6 +326,17 @@ fun getFavState(favoriteIndex: Int, stopId: String, co: String, index: Int, stop
 @Composable
 fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity) {
     val state = remember { mutableStateOf(getFavState(favoriteIndex, stopId, co, index, stop, route, instance)) }
+
+    LaunchedEffect (Unit) {
+        while (true) {
+            delay(500)
+            val newState = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
+            if (newState != state.value) {
+                state.value = newState
+            }
+        }
+    }
+
     val haptic = LocalHapticFeedback.current
     AdvanceButton(
         onClick = {
