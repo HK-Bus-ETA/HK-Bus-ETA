@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
@@ -59,10 +60,75 @@ fun Modifier.rotaryScroll(
         }
         LaunchedEffect (scrollCounter, scrollReachedEnd) {
             delay(50)
-            if (scrollReachedEnd && scrollMoved > 1) {
+            if (scrollReachedEnd && scrollMoved > 0) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             }
-            if (scrollMoved <= 1) {
+            if (scrollMoved <= 0) {
+                scrollMoved++
+            }
+        }
+        LaunchedEffect (Unit) {
+            focusRequester.requestFocus()
+
+            rotaryHandler = {
+                scope.launch {
+                    mutex.withLock {
+                        val target = it.verticalScrollPixels + animatedScrollValue.value
+                        animatedScrollValue.snapTo(target)
+                        previousScrollValue = target
+                    }
+                    animatedScrollValue.animateTo(0F, animationSpec)
+                }
+                true
+            }
+        }
+
+        this
+    }.onRotaryScrollEvent {
+        rotaryHandler.invoke(it)
+    }
+    .focusRequester(
+        focusRequester = focusRequester
+    )
+    .focusable()
+}
+
+fun Modifier.rotaryScroll(
+    scroll: ScrollState,
+    focusRequester: FocusRequester,
+    animationSpec: AnimationSpec<Float> = TweenSpec(durationMillis = 300, easing = FastOutSlowInEasing),
+): Modifier {
+    var rotaryHandler: (RotaryScrollEvent) -> Boolean = { true }
+
+    return composed {
+        val scope = rememberCoroutineScope()
+        val haptic = LocalHapticFeedback.current
+        var scrollCounter by remember { mutableStateOf(0) }
+        val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
+        val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
+        var scrollMoved by remember { mutableStateOf(0) }
+
+        val mutex by remember { mutableStateOf(Mutex()) }
+        val animatedScrollValue = remember { Animatable(0F) }
+        var previousScrollValue by remember { mutableStateOf(0F) }
+
+        LaunchedEffect (animatedScrollValue.value) {
+            val diff = previousScrollValue - animatedScrollValue.value
+            scroll.scrollBy(diff)
+            previousScrollValue -= diff
+        }
+
+        LaunchedEffect (scrollInProgress) {
+            if (scrollInProgress) {
+                scrollCounter++
+            }
+        }
+        LaunchedEffect (scrollCounter, scrollReachedEnd) {
+            delay(50)
+            if (scrollReachedEnd && scrollMoved > 0) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            if (scrollMoved <= 0) {
                 scrollMoved++
             }
         }

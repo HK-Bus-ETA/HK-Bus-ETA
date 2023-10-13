@@ -57,7 +57,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.ExperimentalWearMaterialApi
 import androidx.wear.compose.material.MaterialTheme
@@ -66,6 +65,7 @@ import androidx.wear.compose.material.rememberSwipeableState
 import androidx.wear.compose.material.swipeable
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
+import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.ScrollBarConfig
@@ -313,7 +313,8 @@ fun getFavState(favoriteIndex: Int, stopId: String, co: String, index: Int, stop
 @Composable
 fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity) {
     val state = remember { mutableStateOf(getFavState(favoriteIndex, stopId, co, index, stop, route, instance)) }
-    Button(
+    val haptic = LocalHapticFeedback.current
+    AdvanceButton(
         onClick = {
             if (state.value == 2) {
                 Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
@@ -323,6 +324,10 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                 Toast.makeText(instance, if (Shared.language == "en") "Set Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已設置資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             }
             state.value = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
+        },
+        onLongClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            instance.startActivity(Intent(instance, FavActivity::class.java))
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(24, instance).dp)

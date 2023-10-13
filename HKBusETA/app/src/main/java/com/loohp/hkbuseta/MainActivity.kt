@@ -23,6 +23,7 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import kotlinx.coroutines.delay
+import org.json.JSONObject
 import java.util.concurrent.ForkJoinPool
 import java.util.regex.Pattern
 import kotlin.streams.toList
@@ -58,6 +59,20 @@ class MainActivity : ComponentActivity() {
                         Registry.State.READY -> {
                             Thread {
                                 if (stopId != null && co != null && stop != null && route != null) {
+                                    val routeParsed = JSONObject(route)
+                                    Registry.getInstance(this@MainActivity).findRoutes(routeParsed.optString("route"), true) {
+                                        val bound = it.optJSONObject("bound")!!
+                                        if (!bound.has(co) || bound.optString(co) != routeParsed.optJSONObject("bound")!!.optString(co)) {
+                                            return@findRoutes false
+                                        }
+                                        val stops = it.optJSONObject("stops")!!.optJSONArray(co)?: return@findRoutes false
+                                        return@findRoutes JsonUtils.contains(stops, stopId)
+                                    }.firstOrNull()?.let {
+                                        val intent = Intent(this@MainActivity, ListStopsActivity::class.java)
+                                        intent.putExtra("route", it.toString())
+                                        startActivity(intent)
+                                    }
+
                                     val intent = Intent(this@MainActivity, EtaActivity::class.java)
                                     intent.putExtra("stopId", stopId)
                                     intent.putExtra("co", co)

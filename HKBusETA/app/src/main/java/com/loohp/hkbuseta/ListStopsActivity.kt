@@ -16,6 +16,7 @@ import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,8 +51,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +89,7 @@ import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.sp
 import kotlinx.coroutines.delay
@@ -212,6 +223,22 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
 
         val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId) }
         val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
+        val mtrLineCreator = remember { if (co == "mtr" || co == "lightRail") generateMTRLine(
+            if (co == "lightRail") when (routeNumber) {
+                "505" -> Color(0xFFDA2127)
+                "507" -> Color(0xFF00A652)
+                "610" -> Color(0xFF551C15)
+                "614" -> Color(0xFF00BFF3)
+                "614P" -> Color(0xFFF4858E)
+                "615" -> Color(0xFFFFDD00)
+                "615P" -> Color(0xFF016682)
+                "705" -> Color(0xFF73BF43)
+                "706" -> Color(0xFFB47AB5)
+                "751" -> Color(0xFFF48221)
+                "761P" -> Color(0xFF6F2D91)
+                else -> coColor
+            } else coColor, stopsList, instance
+        ) else null }
 
         val distances: MutableMap<Int, Double> = remember { ConcurrentHashMap() }
         var closestIndex by remember { mutableStateOf(0) }
@@ -326,18 +353,34 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         instance.runOnUiThread {
                                             val text = if (isClosest) {
-                                                "".plus(stopNumber).plus(". ").plus(stopStr).plus("\n").plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
-                                                    .plus(((distances[stopNumber] ?: Double.NaN) * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
+                                                ""
+                                                    .plus(stopNumber)
+                                                    .plus(". ")
+                                                    .plus(stopStr)
+                                                    .plus("\n")
+                                                    .plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
+                                                    .plus(
+                                                        ((distances[stopNumber]
+                                                            ?: Double.NaN) * 1000)
+                                                            .roundToInt()
+                                                            .formatDecimalSeparator()
+                                                    )
+                                                    .plus(if (Shared.language == "en") "m" else "米")
                                             } else {
-                                                "".plus(stopNumber).plus(". ").plus(stopStr)
+                                                ""
+                                                    .plus(stopNumber)
+                                                    .plus(". ")
+                                                    .plus(stopStr)
                                             }
-                                            Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+                                            Toast
+                                                .makeText(instance, text, Toast.LENGTH_LONG)
+                                                .show()
                                         }
                                     }
                                 }
                             )
                     ) {
-                        StopRowElement(stopNumber, stopId, isClosest, kmbCtbJoint, rawColor, brightness, padding, stopStr, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                        StopRowElement(stopNumber, stopId, co, isClosest, kmbCtbJoint, rawColor, brightness, padding, stopStr, stopsList, mtrLineCreator?.get(index), route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
                     }
                     Spacer(
                         modifier = Modifier
@@ -382,11 +425,16 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
             coColor
         }
 
-        Text(
-            modifier = Modifier.fillMaxWidth(),
+        AutoResizeText(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(25.dp, 0.dp),
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
-            fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(20F, instance).dp),
+            fontSizeRange = FontSizeRange(
+                min = StringUtils.scaledSize(1F, instance).dp.sp,
+                max = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(20F, instance).dp)
+            ),
             lineHeight = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(20F, instance).dp),
             color = color,
             maxLines = 1,
@@ -415,7 +463,9 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
             }).plus(" ").plus(if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber)
         )
         AutoResizeText(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp, 0.dp),
             textAlign = TextAlign.Center,
             fontSizeRange = FontSizeRange(
                 min = StringUtils.scaledSize(1F, instance).dp.sp,
@@ -431,7 +481,9 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
         )
         if (specialDests.isNotEmpty()) {
             AutoResizeText(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .padding(5.dp, 0.dp)
+                    .fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 fontSizeRange = FontSizeRange(
                     min = StringUtils.scaledSize(1F, instance).dp.sp,
@@ -451,10 +503,14 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StopRowElement(stopNumber: Int, stopId: String, isClosest: Boolean, kmbCtbJoint: Boolean, rawColor: Color, brightness: Float, padding: Float, stopStr: String, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boolean, kmbCtbJoint: Boolean, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: List<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+    var height by remember { mutableStateOf(0) }
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
+            .onSizeChanged {
+                height = it.height
+            }
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
@@ -476,17 +532,27 @@ fun StopRowElement(stopNumber: Int, stopId: String, isClosest: Boolean, kmbCtbJo
             rawColor
         }
 
-        Text(
-            modifier = Modifier
-                .padding(0.dp, padding.dp)
-                .requiredWidth(30.dp),
-            textAlign = TextAlign.Start,
-            fontSize = TextUnit(StringUtils.scaledSize(15F, instance), TextUnitType.Sp),
-            fontWeight = if (isClosest) FontWeight.Bold else FontWeight.Normal,
-            color = color,
-            maxLines = 1,
-            text = stopNumber.toString().plus(".")
-        )
+        if ((co == "mtr" || co == "lightRail") && mtrLineCreator != null) {
+            Box(
+                modifier = Modifier
+                    .requiredWidth((if (stopList.map { it.serviceType }.distinct().size > 1) 50 else 35).sp.dp)
+                    .requiredHeight(height.toFloat().equivalentDp)
+            ) {
+                mtrLineCreator.invoke()
+            }
+        } else {
+            Text(
+                modifier = Modifier
+                    .padding(0.dp, padding.dp)
+                    .requiredWidth(30.dp),
+                textAlign = TextAlign.Start,
+                fontSize = TextUnit(StringUtils.scaledSize(15F, instance), TextUnitType.Sp),
+                fontWeight = if (isClosest) FontWeight.Bold else FontWeight.Normal,
+                color = color,
+                maxLines = 1,
+                text = stopNumber.toString().plus(".")
+            )
+        }
         Text(
             modifier = Modifier
                 .padding(0.dp, padding.dp)
@@ -538,24 +604,58 @@ fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Floa
                 if (eta!!.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(
+                                TextUnit(
+                                    StringUtils.scaledSize(16F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
+                            )
+                            .offset(
+                                0.dp,
+                                TextUnit(
+                                    StringUtils.scaledSize(3F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
+                            ),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
                     )
                 } else if (eta!!.isTyphoonSchedule) {
                     Image(
-                        modifier = Modifier.size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                        modifier = Modifier
+                            .size(
+                                TextUnit(
+                                    StringUtils.scaledSize(16F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
+                            )
+                            .offset(
+                                0.dp,
+                                TextUnit(
+                                    StringUtils.scaledSize(3F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
+                            ),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = Registry.getInstance(instance).typhoonWarningTitle
                     )
                 } else {
                     Icon(
                         modifier = Modifier
-                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(
+                                TextUnit(
+                                    StringUtils.scaledSize(16F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
+                            )
+                            .offset(
+                                0.dp,
+                                TextUnit(
+                                    StringUtils.scaledSize(3F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
+                            ),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),
@@ -582,4 +682,315 @@ fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Floa
             }
         }
     }
+}
+
+fun hasOtherParallelBranches(stopList: List<StopData>, stopByBranchId: MutableMap<Int, MutableList<StopData>>, stop: StopData): Boolean {
+    if (stopByBranchId.size == stopByBranchId.filter { it.value.contains(stop) }.size) {
+        return false
+    }
+    val mainIndex = stopList.indexOf(stop)
+    val branchIds = stop.branchIds
+    var branchStart = -1
+    var branchStartStop: StopData? = null
+    for (i in (mainIndex - 1) downTo 0) {
+        if (stopList[i].branchIds != branchIds && stopList[i].branchIds.containsAll(branchIds)) {
+            branchStart = i
+            branchStartStop = stopList[i]
+            break
+        }
+    }
+    if (branchStartStop == null) {
+        for (i in stopList.indices) {
+            if (stopList[i].branchIds != branchIds) {
+                branchStart = i
+                branchStartStop = stopList[i]
+                break
+            }
+        }
+    }
+    var branchEnd = stopList.size
+    var branchEndStop: StopData? = null
+    for (i in (mainIndex + 1) until stopList.size) {
+        if (stopList[i].branchIds != branchIds && stopList[i].branchIds.containsAll(branchIds)) {
+            branchEnd = i
+            branchEndStop = stopList[i]
+            break
+        }
+    }
+    if (branchEndStop == null) {
+        for (i in (stopList.size - 1) downTo 0) {
+            if (stopList[i].branchIds != branchIds) {
+                branchEnd = i
+                branchEndStop = stopList[i]
+                break
+            }
+        }
+    }
+    val matchingBranchStart = branchStart == mainIndex
+    val matchingBranchEnd = branchEnd == mainIndex
+    val isStartOfSpur = matchingBranchStart && stopByBranchId.values.none { it.indexOf(branchStartStop) <= 0 }
+    val isEndOfSpur = matchingBranchEnd && stopByBranchId.values.none { it.indexOf(branchEndStop) >= (it.size - 1) }
+    if (matchingBranchStart != isStartOfSpur || matchingBranchEnd != isEndOfSpur) {
+        return false
+    }
+    return mainIndex in branchStart..branchEnd
+}
+
+enum class SideSpurLineType {
+
+    NONE, COMBINE, DIVERGE
+
+}
+
+fun getSideSpurLineType(stopList: List<StopData>, stopByBranchId: MutableMap<Int, MutableList<StopData>>, stop: StopData): SideSpurLineType {
+    val mainIndex = stopList.indexOf(stop)
+    val branchIds = stop.branchIds
+    if (mainIndex > 0) {
+        if (stopList[mainIndex - 1].branchIds != branchIds) {
+            if (stopByBranchId.values.all { (!it.contains(stopList[mainIndex - 1]) || it.subList(0, it.indexOf(stopList[mainIndex - 1])).none { that -> that.branchIds.containsAll(branchIds) }) && it.indexOf(stop) != 0 }) {
+                return SideSpurLineType.COMBINE
+            }
+        }
+    }
+    if (mainIndex < stopList.size - 1) {
+        if (stopList[mainIndex + 1].branchIds != branchIds) {
+            if (stopByBranchId.values.all { (!it.contains(stopList[mainIndex + 1]) || it.subList(it.indexOf(stopList[mainIndex + 1]) + 1, it.size).none { that -> that.branchIds.containsAll(branchIds) }) && it.indexOf(stop) < it.size - 1 }) {
+                return SideSpurLineType.DIVERGE
+            }
+        }
+    }
+    return SideSpurLineType.NONE
+}
+
+data class DashLineSpurResult(val value: Boolean, val isStartOfSpur: Boolean, val isEndOfSpur: Boolean) {
+
+    companion object {
+
+        val FALSE = DashLineSpurResult(value = false, isStartOfSpur = false, isEndOfSpur = false)
+
+    }
+
+}
+
+fun isDashLineSpur(stopList: List<StopData>, stop: StopData): DashLineSpurResult {
+    val mainIndex = stopList.indexOf(stop)
+    val branchIds = stop.branchIds
+    var possible = false
+    var branchStart = false
+    for (i in (mainIndex - 1) downTo 0) {
+        if (stopList[i].branchIds.containsAll(branchIds)) {
+            if (i + 1 == mainIndex && stopList[i].branchIds != branchIds) {
+                branchStart = true
+            }
+            possible = true
+            break
+        }
+    }
+    if (!possible) {
+        return DashLineSpurResult.FALSE
+    }
+    for (i in (mainIndex + 1) until stopList.size) {
+        if (stopList[i].branchIds.containsAll(branchIds)) {
+            return DashLineSpurResult(true, branchStart, i - 1 == mainIndex && stopList[i].branchIds != branchIds)
+        }
+    }
+    return DashLineSpurResult.FALSE
+}
+
+fun generateMTRLine(color: Color, stopList: List<StopData>, instance: ListStopsActivity): List<@Composable () -> Unit> {
+    val creators: MutableList<@Composable () -> Unit> = ArrayList(stopList.size)
+    val stopByBranchId: MutableMap<Int, MutableList<StopData>> = HashMap()
+    stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.computeIfAbsent(it) { ArrayList() }.add(stop) } }
+    for ((index, stop) in stopList.withIndex()) {
+        val isMainLine = stop.serviceType == 1
+        creators.add {
+            Canvas(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                val width = size.width
+                val height = size.height
+
+                val horizontalCenter = width / 2F
+                val horizontalPartition = width / 10F
+                val horizontalCenterPrimary = if (stopByBranchId.size == 1) horizontalCenter else horizontalPartition * 3F
+                val horizontalCenterSecondary = horizontalPartition * 7F
+                val verticalCenter = height / 2F
+                val lineWidth = UnitUtils.pixelsToDp(instance, 11F).sp.toPx()
+                val lineOffset = UnitUtils.pixelsToDp(instance, 8F).sp.toPx()
+                val dashEffect = floatArrayOf(UnitUtils.pixelsToDp(instance, 14F).sp.toPx(), UnitUtils.pixelsToDp(instance, 7F).sp.toPx())
+
+                var useSpurStopCircle = false
+                if (isMainLine) {
+                    if (stopByBranchId.values.all { it.indexOf(stop) <= 0 }) {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterPrimary, verticalCenter),
+                            end = Offset(horizontalCenterPrimary, height),
+                            strokeWidth = lineWidth
+                        )
+                    } else if (stopByBranchId.values.all { it.indexOf(stop).let { x -> x < 0 || x >= it.size - 1 } }) {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterPrimary, 0F),
+                            end = Offset(horizontalCenterPrimary, verticalCenter),
+                            strokeWidth = lineWidth
+                        )
+                    } else {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterPrimary, 0F),
+                            end = Offset(horizontalCenterPrimary, height),
+                            strokeWidth = lineWidth
+                        )
+                    }
+                    if (hasOtherParallelBranches(stopList, stopByBranchId, stop)) {
+                        val path = Path()
+                        path.moveTo(horizontalCenterPrimary, lineOffset)
+                        path.lineTo(horizontalCenter, lineOffset)
+                        path.arcTo(Rect(horizontalCenterPrimary, lineOffset, horizontalCenterSecondary, (horizontalCenterSecondary - horizontalCenter) * 2F + lineOffset), -90F, 90F, true)
+                        path.lineTo(horizontalCenterSecondary, height)
+                        drawPath(
+                            color = color,
+                            path = path,
+                            style = Stroke(
+                                width = lineWidth,
+                                pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                            )
+                        )
+                    }
+                    when (getSideSpurLineType(stopList, stopByBranchId, stop)) {
+                        SideSpurLineType.COMBINE -> {
+                            useSpurStopCircle = true
+                            val path = Path()
+                            path.moveTo(horizontalCenterPrimary, verticalCenter)
+                            path.lineTo(horizontalCenter, verticalCenter)
+                            path.arcTo(Rect(horizontalCenterPrimary, verticalCenter - (horizontalCenterSecondary - horizontalCenter) * 2F, horizontalCenterSecondary, verticalCenter), 90F, -90F, true)
+                            path.lineTo(horizontalCenterSecondary, 0F)
+                            drawPath(
+                                color = color,
+                                path = path,
+                                style = Stroke(
+                                    width = lineWidth
+                                )
+                            )
+                        }
+                        SideSpurLineType.DIVERGE -> {
+                            useSpurStopCircle = true
+                            val path = Path()
+                            path.moveTo(horizontalCenterPrimary, verticalCenter)
+                            path.lineTo(horizontalCenter, verticalCenter)
+                            path.arcTo(Rect(horizontalCenterPrimary, verticalCenter, horizontalCenterSecondary, verticalCenter + (horizontalCenterSecondary - horizontalCenter) * 2F), -90F, 90F, true)
+                            path.lineTo(horizontalCenterSecondary, height)
+                            drawPath(
+                                color = color,
+                                path = path,
+                                style = Stroke(
+                                    width = lineWidth
+                                )
+                            )
+                        }
+                        else -> {}
+                    }
+                } else {
+                    if (index > 0 && index < stopList.size - 1) {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterPrimary, 0F),
+                            end = Offset(horizontalCenterPrimary, height),
+                            strokeWidth = lineWidth
+                        )
+                    }
+                    val dashLineResult = isDashLineSpur(stopList, stop)
+                    if (dashLineResult.value) {
+                        if (dashLineResult.isStartOfSpur) {
+                            val path = Path()
+                            path.moveTo(horizontalCenterPrimary, lineOffset)
+                            path.lineTo(horizontalCenter, lineOffset)
+                            path.arcTo(Rect(horizontalCenterPrimary, lineOffset, horizontalCenterSecondary, (horizontalCenterSecondary - horizontalCenter) * 2F + lineOffset), -90F, 90F, true)
+                            path.lineTo(horizontalCenterSecondary, height)
+                            drawPath(
+                                color = color,
+                                path = path,
+                                style = Stroke(
+                                    width = lineWidth,
+                                    pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                                )
+                            )
+                        } else if (dashLineResult.isEndOfSpur) {
+                            val path = Path()
+                            path.moveTo(horizontalCenterPrimary, height - lineOffset)
+                            path.lineTo(horizontalCenter, height - lineOffset)
+                            path.arcTo(Rect(horizontalCenterPrimary, height - (horizontalCenterSecondary - horizontalCenter) * 2F - lineOffset, horizontalCenterSecondary, height - lineOffset), 90F, -90F, true)
+                            path.lineTo(horizontalCenterSecondary, 0F)
+                            drawPath(
+                                color = color,
+                                path = path,
+                                style = Stroke(
+                                    width = lineWidth,
+                                    pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                                )
+                            )
+                        } else {
+                            drawLine(
+                                color = color,
+                                start = Offset(horizontalCenterSecondary, 0F),
+                                end = Offset(horizontalCenterSecondary, height),
+                                strokeWidth = lineWidth,
+                                pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                            )
+                        }
+                    } else if (stopByBranchId.values.all { it.indexOf(stop) <= 0 }) {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterSecondary, verticalCenter),
+                            end = Offset(horizontalCenterSecondary, height),
+                            strokeWidth = lineWidth
+                        )
+                    } else if (stopByBranchId.values.all { it.indexOf(stop).let { x -> x < 0 || x >= it.size - 1 } }) {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterSecondary, 0F),
+                            end = Offset(horizontalCenterSecondary, verticalCenter),
+                            strokeWidth = lineWidth
+                        )
+                    } else {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterSecondary, 0F),
+                            end = Offset(horizontalCenterSecondary, height),
+                            strokeWidth = lineWidth
+                        )
+                    }
+                }
+                val circleWidth = UnitUtils.pixelsToDp(instance, 20F).sp.toPx()
+                val circleCenter = Offset(if (isMainLine) horizontalCenterPrimary else horizontalCenterSecondary, verticalCenter)
+                if (useSpurStopCircle) {
+                    drawRoundRect(
+                        color = Color(0xFF001F50),
+                        topLeft = circleCenter.minus(Offset(circleWidth / 1.4F, circleWidth / 1.4F)),
+                        size = Size((circleWidth / 1.4F * 2F) + lineWidth, circleWidth / 1.4F * 2F),
+                        cornerRadius = CornerRadius(circleWidth / 1.4F)
+                    )
+                    drawRoundRect(
+                        color = Color(0xFFFFFFFF),
+                        topLeft = circleCenter.minus(Offset(circleWidth / 2F, circleWidth / 2F)),
+                        size = Size(circleWidth + lineWidth, circleWidth),
+                        cornerRadius = CornerRadius(circleWidth / 2F)
+                    )
+                } else {
+                    drawCircle(
+                        color = Color(0xFF001F50),
+                        center = circleCenter,
+                        radius = circleWidth / 1.4F
+                    )
+                    drawCircle(
+                        color = Color(0xFFFFFFFF),
+                        center = circleCenter,
+                        radius = circleWidth / 2F
+                    )
+                }
+            }
+        }
+    }
+    return creators
 }

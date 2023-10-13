@@ -43,6 +43,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -862,7 +863,7 @@ public class Registry {
             for (Pair<BranchedList<String, StopData>, Integer> pair : lists) {
                 result.merge(pair.first);
             }
-            return result.values();
+            return result.valuesWithBranchIds().stream().map(p -> p.first.withBranchIndex(p.second)).collect(Collectors.toList());
         } catch (Throwable e) {
             throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gtfsId + ": " + e.getMessage(), e);
         }
@@ -873,11 +874,17 @@ public class Registry {
         private final String stopId;
         private final int serviceType;
         private final JSONObject stop;
+        private final Set<Integer> branchIds;
 
-        public StopData(String stopId, int serviceType, JSONObject stop) {
+        private StopData(String stopId, int serviceType, JSONObject stop) {
+            this(stopId, serviceType, stop, Collections.emptySet());
+        }
+
+        public StopData(String stopId, int serviceType, JSONObject stop, Set<Integer> branchIds) {
             this.stopId = stopId;
             this.serviceType = serviceType;
             this.stop = stop;
+            this.branchIds = branchIds;
         }
 
         public String getStopId() {
@@ -890,6 +897,14 @@ public class Registry {
 
         public JSONObject getStop() {
             return stop;
+        }
+
+        public Set<Integer> getBranchIds() {
+            return branchIds;
+        }
+
+        public StopData withBranchIndex(Set<Integer> branchIds) {
+            return new StopData(stopId, serviceType, stop, branchIds);
         }
     }
 

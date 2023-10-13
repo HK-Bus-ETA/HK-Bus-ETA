@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
@@ -42,6 +43,7 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.dp
 
 
 class TitleActivity : ComponentActivity() {
@@ -206,7 +208,7 @@ fun FavButton(instance: TitleActivity) {
         ),
         content = {
             Icon(
-                modifier = Modifier.size(StringUtils.scaledSize(21, instance).dp),
+                modifier = Modifier.size(StringUtils.scaledSize(21, instance).sp.dp),
                 imageVector = Icons.Filled.Star,
                 tint = Color(0xFFFFFF00),
                 contentDescription = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"

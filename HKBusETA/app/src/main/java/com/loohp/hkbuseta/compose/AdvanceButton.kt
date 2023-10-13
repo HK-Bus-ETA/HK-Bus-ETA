@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.Role
 import androidx.wear.compose.material.ButtonColors
 import androidx.wear.compose.material.ButtonDefaults
@@ -36,6 +37,7 @@ fun AdvanceButton(
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.primaryButtonColors(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    shape: Shape = CircleShape,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
@@ -45,7 +47,7 @@ fun AdvanceButton(
                 minWidth = ButtonDefaults.DefaultButtonSize,
                 minHeight = ButtonDefaults.DefaultButtonSize
             )
-            .clip(CircleShape)
+            .clip(shape)
             .clickable(
                 onClick = onClick,
                 enabled = enabled,
@@ -64,7 +66,7 @@ fun AdvanceButton(
             )
             .background(
                 color = colors.backgroundColor(enabled = enabled).value,
-                shape = CircleShape
+                shape = shape
             )
     ) {
         val contentColor = colors.contentColor(enabled = enabled).value
