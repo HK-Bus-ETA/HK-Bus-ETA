@@ -1,4 +1,6 @@
 import json
+import re
+
 import requests
 
 BUS_ROUTE = set()
@@ -213,6 +215,24 @@ def download_and_process_mtr_bus_route_and_stops():
         DATA_SHEET["stopList"][key] = mtr_bus_stops[key]
 
 
+def capitalize(input_str, lower=True):
+    if lower:
+        input_str = input_str.lower()
+    return re.sub(r"(?:^|\s|[\"'(\[{/\-])+\S", lambda m: m.group().upper(), input_str)
+
+
+def capitalize_kmb_english_names():
+    global DATA_SHEET
+    for route in DATA_SHEET["routeList"].values():
+        if "kmb" in route["bound"]:
+            route["dest"]["en"] = capitalize(route["dest"]["en"])
+            route["orig"]["en"] = capitalize(route["orig"]["en"])
+
+    for stopId, stop in DATA_SHEET["stopList"].items():
+        if len(stopId) == 16:
+            stop["name"]["en"] = capitalize(stop["name"]["en"])
+
+
 download_and_process_kmb_route()
 download_and_process_ctb_route()
 download_and_process_nlb_route()
@@ -220,6 +240,7 @@ download_and_process_mtr_bus_stop_alias()
 download_and_process_gmb_route()
 download_and_process_data_sheet()
 download_and_process_mtr_bus_route_and_stops()
+capitalize_kmb_english_names()
 
 output = {
     "dataSheet": DATA_SHEET,
