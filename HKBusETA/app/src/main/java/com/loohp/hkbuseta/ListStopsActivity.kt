@@ -266,10 +266,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                         val (index, entry) = it
                         val stop = entry.stop
                         val location = stop.optJSONObject("location")!!
-                        var stopStr = stop.optJSONObject("name")!!.optString(Shared.language)
-                        if (Shared.language == "en") {
-                            stopStr = StringUtils.capitalize(stopStr)
-                        }
+                        val stopStr = stop.optJSONObject("name")!!.optString(Shared.language)
                         StopEntry(index + 1, stopStr, entry, location.optDouble("lat"), location.optDouble("lng"))
                     }.onEach {
                         it.distance = DistanceUtils.findDistance(origin.lat, origin.lng, it.lat, it.lng)
@@ -333,10 +330,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                     val stop = entry.stop
                     val brightness = if (entry.serviceType == lowestServiceType) 1F else 0.65F
                     val rawColor = (if (isClosest) coColor else Color.White).adjustBrightness(brightness)
-                    var stopStr = stop.optJSONObject("name")!!.optString(Shared.language)
-                    if (Shared.language == "en") {
-                        stopStr = StringUtils.capitalize(stopStr)
-                    }
+                    val stopStr = stop.optJSONObject("name")!!.optString(Shared.language)
 
                     Box (
                         modifier = Modifier
@@ -462,7 +456,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
             color = Color(0xFFFFFFFF),
             maxLines = 2,
             text = if (Shared.language == "en") {
-                "To ".plus(StringUtils.capitalize(destName.optString("en")))
+                "To ".plus(destName.optString("en"))
             } else {
                 "往".plus(destName.optString("zh"))
             }
@@ -480,7 +474,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
                 color = Color(0xFFFFFFFF).adjustBrightness(0.65F),
                 maxLines = 2,
                 text = if (Shared.language == "en") {
-                    "Special To ".plus(specialDests.joinToString("/") { StringUtils.capitalize(it.optString("en")) })
+                    "Special To ".plus(specialDests.joinToString("/") { it.optString("en") })
                 } else {
                     "特別班 往".plus(specialDests.joinToString("/") { it.optString("zh") })
                 }

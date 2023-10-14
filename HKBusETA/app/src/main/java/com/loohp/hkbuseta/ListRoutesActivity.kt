@@ -210,9 +210,6 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                         else -> Color.White
                     }
                     var dest = route.optJSONObject("route")!!.optJSONObject("dest")!!.optString(Shared.language)
-                    if (Shared.language == "en") {
-                        dest = StringUtils.capitalize(dest)
-                    }
                     dest = (if (Shared.language == "en") "To " else "往").plus(dest)
 
                     Box (

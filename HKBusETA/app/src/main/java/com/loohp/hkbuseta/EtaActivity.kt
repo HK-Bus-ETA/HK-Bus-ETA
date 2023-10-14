@@ -138,7 +138,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
     if (swipe.currentValue) {
         instance.runOnUiThread {
             val text = if (Shared.language == "en") {
-                "Nearby Interchange Routes of ".plus(StringUtils.capitalize(stop.optJSONObject("name")!!.optString("en")))
+                "Nearby Interchange Routes of ".plus(stop.optJSONObject("name")!!.optString("en"))
             } else {
                 "".plus(stop.optJSONObject("name")!!.optString("zh")).plus(" 附近轉乘路線")
             }
@@ -417,7 +417,7 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaActivit
 @Composable
 fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
-    val name = if (Shared.language == "en") StringUtils.capitalize(stopName.optString("en")) else stopName.optString("zh")
+    val name = if (Shared.language == "en") stopName.optString("en") else stopName.optString("zh")
     AutoResizeText (
         modifier = Modifier
             .fillMaxWidth()
@@ -444,7 +444,7 @@ fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String
     val haptic = LocalHapticFeedback.current
     val name = if (Shared.language == "en") {
         val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-        routeName.plus(" To ").plus(StringUtils.capitalize(destName.optString("en")))
+        routeName.plus(" To ").plus(destName.optString("en"))
     } else {
         val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
         routeName.plus(" 往").plus(destName.optString("zh"))

@@ -315,10 +315,7 @@ class EtaTileServiceCommon {
         }
 
         private fun title(index: Int, stopName: JSONObject, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
-            var name = stopName.optString(Shared.language)
-            if (Shared.language == "en") {
-                name = StringUtils.capitalize(name)
-            }
+            val name = stopName.optString(Shared.language)
             val text = if (co == "mtr") name else index.toString().plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
                 .setModifiers(
@@ -349,7 +346,7 @@ class EtaTileServiceCommon {
         private fun subTitle(destName: JSONObject, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
             val name = if (Shared.language == "en") {
                 val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-                routeName.plus(" To ").plus(StringUtils.capitalize(destName.optString("en")))
+                routeName.plus(" To ").plus(destName.optString("en"))
             } else {
                 val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
                 routeName.plus(" 往").plus(destName.optString("zh"))

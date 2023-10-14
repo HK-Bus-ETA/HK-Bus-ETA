@@ -9,8 +9,6 @@ import android.util.TypedValue;
 import android.widget.TextView;
 
 import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class StringUtils {
 
@@ -61,23 +59,6 @@ public class StringUtils {
             return "⓪";
         }
         return String.valueOf((char) (9312 + (number - 1)));
-    }
-
-    public static String capitalize(String str) {
-        return capitalize(str, true);
-    }
-
-    public static String capitalize(String str, boolean lower) {
-        if (lower) {
-            str = str.toLowerCase();
-        }
-        StringBuffer sb = new StringBuffer();
-        Matcher matcher = Pattern.compile("(?:^|\\s|[\\\"'(\\[{/\\-])+\\S").matcher(str);
-        while (matcher.find()) {
-            matcher.appendReplacement(sb, matcher.group().toUpperCase());
-        }
-        matcher.appendTail(sb);
-        return sb.toString();
     }
 
     public static String padStart(String inputString, int length, char c) {

@@ -526,12 +526,12 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                     }
                     val mainText = operator.plus(" ").plus(if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber)
                     val routeText = if (Shared.language == "en") {
-                        "To ".plus(StringUtils.capitalize(destName.optString("en")))
+                        "To ".plus(destName.optString("en"))
                     } else {
                         "往".plus(destName.optString("zh"))
                     }
                     val subText = if (Shared.language == "en") {
-                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(StringUtils.capitalize(stopName.optString("en")))
+                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.optString("en"))
                     } else {
                         (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.optString("zh"))
                     }

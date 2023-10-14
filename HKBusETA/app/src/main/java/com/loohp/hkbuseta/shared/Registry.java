@@ -1809,14 +1809,8 @@ public class Registry {
                                                         dest = "Airport & AsiaWorld-Expo";
                                                     }
                                                 }
-                                                if (Shared.Companion.getLanguage().equals("en")) {
-                                                    dest = StringUtils.capitalize(dest);
-                                                }
                                                 if (!specialRoute.isEmpty() && !isMtrStopOnOrAfter(stopId, specialRoute, lineName, bound)) {
                                                     String via = DATA_SHEET.optJSONObject("stopList").optJSONObject(specialRoute).optJSONObject("name").optString(Shared.Companion.getLanguage());
-                                                    if (Shared.Companion.getLanguage().equals("en")) {
-                                                        via = StringUtils.capitalize(via);
-                                                    }
                                                     dest += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " via " : " 經") + via + "</small>";
                                                 }
                                                 String eta = trainData.optString("time");
