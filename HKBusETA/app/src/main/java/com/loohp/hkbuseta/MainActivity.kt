@@ -70,6 +70,7 @@ class MainActivity : ComponentActivity() {
                                     }.firstOrNull()?.let {
                                         val intent = Intent(this@MainActivity, ListStopsActivity::class.java)
                                         intent.putExtra("route", it.toString())
+                                        intent.putExtra("scrollToStop", stopId)
                                         startActivity(intent)
                                     }
 

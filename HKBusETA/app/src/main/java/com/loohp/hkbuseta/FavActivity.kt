@@ -276,6 +276,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                     }.firstOrNull()?.let {
                         val intent = Intent(instance, ListStopsActivity::class.java)
                         intent.putExtra("route", it.toString())
+                        intent.putExtra("scrollToStop", stopId)
                         instance.startActivity(intent)
                     }
 
