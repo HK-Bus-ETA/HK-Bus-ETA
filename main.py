@@ -221,16 +221,29 @@ def capitalize(input_str, lower=True):
     return re.sub(r"(?:^|\s|[\"'(\[{/\-])+\S", lambda m: m.group().upper(), input_str)
 
 
+recapitalize_keywords = [
+    "BBI",
+    "apm"
+]
+
+
+def apply_recapitalize_keywords(input_str):
+    global recapitalize_keywords
+    for keyword in recapitalize_keywords:
+        input_str = re.sub(r"(?i)(?<![0-9a-zA-Z])" + keyword + "(?![0-9a-zA-Z])", keyword, input_str)
+    return input_str
+
+
 def capitalize_kmb_english_names():
     global DATA_SHEET
     for route in DATA_SHEET["routeList"].values():
         if "kmb" in route["bound"]:
-            route["dest"]["en"] = capitalize(route["dest"]["en"])
-            route["orig"]["en"] = capitalize(route["orig"]["en"])
+            route["dest"]["en"] = apply_recapitalize_keywords(capitalize(route["dest"]["en"]))
+            route["orig"]["en"] = apply_recapitalize_keywords(capitalize(route["orig"]["en"]))
 
     for stopId, stop in DATA_SHEET["stopList"].items():
         if len(stopId) == 16:
-            stop["name"]["en"] = capitalize(stop["name"]["en"])
+            stop["name"]["en"] = apply_recapitalize_keywords(capitalize(stop["name"]["en"]))
 
 
 download_and_process_kmb_route()
