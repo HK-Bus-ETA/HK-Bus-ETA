@@ -18,6 +18,7 @@ import com.loohp.hkbuseta.tiles.EtaTileServiceSeven;
 import com.loohp.hkbuseta.tiles.EtaTileServiceSix;
 import com.loohp.hkbuseta.tiles.EtaTileServiceThree;
 import com.loohp.hkbuseta.tiles.EtaTileServiceTwo;
+import com.loohp.hkbuseta.utils.CollectionsUtils;
 import com.loohp.hkbuseta.utils.ConnectionUtils;
 import com.loohp.hkbuseta.utils.DistanceUtils;
 import com.loohp.hkbuseta.utils.HTTPRequestUtils;
@@ -362,31 +363,96 @@ public class Registry {
                 } else {
                     state = State.UPDATING;
                     updatePercentage = 0F;
+                    float percentageOffset = Shared.Companion.getFavoriteRouteStops().isEmpty() ? 0.15F : 0F;
 
                     long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.dat"), -1);
-                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json", length, p -> updatePercentage = p * 0.85F);
-                    updatePercentage = 0.95F;
+                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json", length, p -> updatePercentage = p * (0.75F + percentageOffset));
+
                     MTR_BUS_STOP_ALIAS = data.optJSONObject("mtrBusStopAlias");
                     DATA_SHEET = data.optJSONObject("dataSheet");
                     BUS_ROUTE = JsonUtils.toSet(data.optJSONArray("busRoute"), String.class);
-                    updatePercentage = 1F;
+                    updatePercentage = 0.75F + percentageOffset;
 
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(MTR_BUS_STOP_ALIAS.toString());
                         pw.flush();
                     }
+                    updatePercentage = 0.775F + percentageOffset;
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(DATA_SHEET.toString());
                         pw.flush();
                     }
+                    updatePercentage = 0.8F + percentageOffset;
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(JsonUtils.fromCollection(BUS_ROUTE).toString());
                         pw.flush();
                     }
+                    updatePercentage = 0.825F + percentageOffset;
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CHECKSUM_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                         pw.write(checksum == null ? "" : checksum);
                         pw.flush();
                     }
+                    updatePercentage = 0.85F + percentageOffset;
+
+                    float localUpdatePercentage = updatePercentage;
+                    float percentagePerFav = 0.15F / Shared.Companion.getFavoriteRouteStops().size();
+                    List<Runnable> updatedFavouriteRouteTasks = new ArrayList<>();
+                    for (Map.Entry<Integer, JSONObject> entry : Shared.Companion.getFavoriteRouteStops().entrySet()) {
+                        try {
+                            int favouriteRouteIndex = entry.getKey();
+                            JSONObject favouriteRoute = entry.getValue();
+
+                            JSONObject oldRoute = favouriteRoute.optJSONObject("route");
+                            String stopId = favouriteRoute.optString("stopId");
+                            String co = favouriteRoute.optString("co");
+
+                            List<JSONObject> newRoutes = findRoutes(oldRoute.optString("route"), true, r -> {
+                                if (!r.optJSONObject("bound").has(co)) {
+                                    return false;
+                                }
+                                if (co.equals("gmb")) {
+                                    if (!r.optString("gtfsId").equals(oldRoute.optString("gtfsId"))) {
+                                        return false;
+                                    }
+                                } else if (co.equals("nlb")) {
+                                    return r.optString("nlbId").equals(oldRoute.optString("nlbId"));
+                                }
+                                return r.optJSONObject("bound").optString(co).equals(oldRoute.optJSONObject("bound").optString(co));
+                            });
+
+                            if (newRoutes.isEmpty()) {
+                                updatedFavouriteRouteTasks.add(() -> clearFavouriteRouteStop(favouriteRouteIndex, context));
+                                continue;
+                            }
+                            JSONObject newRouteData = newRoutes.get(0);
+                            JSONObject newRoute = newRouteData.optJSONObject("route");
+                            List<StopData> stopList = getAllStops(
+                                    newRoute.optString("route"),
+                                    co.equals("nlb") ? newRoute.optString("nlbId") : newRoute.optJSONObject("bound").optString(co),
+                                    co,
+                                    newRoute.optString("gtfsId")
+                            );
+
+                            String finalStopIdCompare = stopId;
+                            int index = CollectionsUtils.indexOf(stopList, d -> d.stopId.equals(finalStopIdCompare)) + 1;
+                            JSONObject stop;
+                            if (index < 1) {
+                                index = Math.max(1, Math.min(favouriteRoute.optInt("index", 0), stopList.size()));
+                                stopId = stopList.get(index - 1).getStopId();
+                            }
+                            stop = stopList.get(index - 1).getStop();
+
+                            String finalStopId = stopId;
+                            int finalIndex = index;
+                            updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, newRoute, context));
+                        } catch (Throwable e) {
+                            e.printStackTrace();
+                        }
+                        localUpdatePercentage += percentagePerFav;
+                        updatePercentage = localUpdatePercentage;
+                    }
+                    updatedFavouriteRouteTasks.forEach(Runnable::run);
+                    updatePercentage = 1F;
 
                     state = State.READY;
                     updateTileService(context);

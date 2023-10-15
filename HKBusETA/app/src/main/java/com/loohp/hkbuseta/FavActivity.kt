@@ -353,12 +353,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                             if (eta!!.isMtrEndOfLine) {
                                 Icon(
                                     modifier = Modifier
-                                        .size(
-                                            TextUnit(
-                                                StringUtils.scaledSize(16F, instance),
-                                                TextUnitType.Sp
-                                            ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
-                                        ),
+                                        .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                                     painter = painterResource(R.drawable.baseline_line_end_circle_24),
                                     contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                                     tint = Color(0xFF798996),

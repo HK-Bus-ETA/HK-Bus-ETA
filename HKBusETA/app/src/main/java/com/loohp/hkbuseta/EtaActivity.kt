@@ -7,14 +7,19 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +28,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,8 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,15 +54,16 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.ExperimentalWearMaterialApi
+import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.rememberSwipeableState
 import androidx.wear.compose.material.swipeable
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
+import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.shared.Registry
@@ -62,6 +75,7 @@ import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.clamp
+import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.sp
@@ -85,8 +99,9 @@ class EtaActivity : ComponentActivity() {
         if (stopId == null || co == null || stop == null || route == null) {
             throw RuntimeException()
         }
+        val offsetStart = intent.extras!!.getInt("offset", 0)
         setContent {
-            EtaElement(stopId, co, index, stop, route, this)
+            EtaElement(stopId, co, index, stop, route, offsetStart, this)
         }
     }
 
@@ -107,7 +122,7 @@ class EtaActivity : ComponentActivity() {
 @OptIn(ExperimentalWearMaterialApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
-fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaActivity) {
+fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, offsetStart: Int, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val swipe = rememberSwipeableState(initialValue = false)
@@ -142,18 +157,60 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
         swiping = false
     }
 
+    val stopList = remember { Registry.getInstance(instance).getAllStops(
+        route.optString("route"),
+        if (co == "nlb") route.optString("nlbId") else route.optJSONObject("bound")!!.optString(co),
+        co,
+        route.optString("gtfsId")
+    ) }
+
+    val focusRequester = remember { FocusRequester() }
+    var currentOffset by remember { mutableStateOf(offsetStart * ScreenSizeUtils.getScreenHeight(instance).toFloat()) }
+    var animatedOffsetTask: (Float) -> Unit by remember { mutableStateOf({}) }
+    val animatedOffset by animateFloatAsState(
+        targetValue = currentOffset,
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+        finishedListener = animatedOffsetTask,
+        label = "OffsetAnimation"
+    )
+
+    LaunchedEffect (Unit) {
+        focusRequester.requestFocus()
+        currentOffset = 0F
+    }
+
     HKBusETATheme {
         Box (
             modifier = Modifier
                 .fillMaxSize()
                 .composed {
-                    this.offset(0.dp, swipe.offset.value.coerceAtMost(0F).equivalentDp)
+                    this.offset(animatedOffset.equivalentDp, swipe.offset.value.coerceAtMost(0F).equivalentDp)
                 }
                 .swipeable(
                     state = swipe,
                     anchors = mapOf(0F to false, -ScreenSizeUtils.getScreenHeight(instance).toFloat() to true),
                     orientation = Orientation.Vertical
                 )
+                .onRotaryScrollEvent {
+                    if (it.horizontalScrollPixels > 0) {
+                        if (index < stopList.size) {
+                            currentOffset = -ScreenSizeUtils.getScreenWidth(instance).toFloat()
+                            animatedOffsetTask = { launchOtherStop(index + 1, co, route, stopList, true, 1, instance) }
+                        } else {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                    } else {
+                        if (index > 1) {
+                            currentOffset = ScreenSizeUtils.getScreenWidth(instance).toFloat()
+                            animatedOffsetTask = { launchOtherStop(index - 1, co, route, stopList, true, -1, instance) }
+                        } else {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                    }
+                    true
+                }
+                .focusRequester(focusRequester)
+                .focusable()
         ) {
             Column(
                 modifier = Modifier
@@ -191,35 +248,114 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
                 EtaText(eta, 3, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
-                Button(
-                    onClick = {
-                        val intent = Intent(instance, EtaMenuActivity::class.java)
-                        intent.putExtra("stopId", stopId)
-                        intent.putExtra("co", co)
-                        intent.putExtra("index", index)
-                        intent.putExtra("stop", stop.toString())
-                        intent.putExtra("route", route.toString())
-                        instance.startActivity(intent)
-                    },
-                    modifier = Modifier
-                        .width(StringUtils.scaledSize(55, instance).dp)
-                        .height(StringUtils.scaledSize(24, instance).dp),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = MaterialTheme.colors.secondary,
-                        contentColor = MaterialTheme.colors.primary
-                    ),
-                    content = {
-                        Text(
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colors.primary,
-                            fontSize = TextUnit(StringUtils.scaledSize(12F, instance), TextUnitType.Sp).clamp(max = 12.dp),
-                            text = if (Shared.language == "en") "More" else "更多"
-                        )
-                    }
-                )
+                ActionBar(stopId, co, index, stop, route, stopList, instance)
             }
         }
+    }
+}
+
+fun launchOtherStop(newIndex: Int, co: String, route: JSONObject, stopList: List<Registry.StopData>, animation: Boolean, offset: Int, instance: EtaActivity) {
+    val newStopData = stopList[newIndex - 1]
+    val intent = Intent(instance, EtaActivity::class.java)
+    intent.putExtra("stopId", newStopData.stopId)
+    intent.putExtra("co", co)
+    intent.putExtra("index", newIndex)
+    intent.putExtra("stop", newStopData.stop.toString())
+    intent.putExtra("route", route.toString())
+    intent.putExtra("offset", offset)
+    if (!animation) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
+    }
+    instance.startActivity(intent)
+    instance.finish()
+}
+
+@Composable
+fun ActionBar(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, stopList: List<Registry.StopData>, instance: EtaActivity) {
+    val haptic = LocalHapticFeedback.current
+    Row (
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AdvanceButton(
+            onClick = {
+                launchOtherStop(index - 1, co, route, stopList, true, -1, instance)
+            },
+            onLongClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                launchOtherStop(1, co, route, stopList, true, -1, instance)
+            },
+            modifier = Modifier
+                .width(StringUtils.scaledSize(24, instance).dp)
+                .height(StringUtils.scaledSize(24, instance).dp),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = MaterialTheme.colors.secondary,
+                contentColor = if (index > 1) Color(0xFFFFFFFF) else Color(0xFF494949)
+            ),
+            enabled = index > 1,
+            content = {
+                Icon(
+                    modifier = Modifier.size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = if (Shared.language == "en") "Previous Stop" else "上一站",
+                    tint = if (index > 1) Color(0xFFFFFFFF) else Color(0xFF494949),
+                )
+            }
+        )
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        AdvanceButton(
+            onClick = {
+                val intent = Intent(instance, EtaMenuActivity::class.java)
+                intent.putExtra("stopId", stopId)
+                intent.putExtra("co", co)
+                intent.putExtra("index", index)
+                intent.putExtra("stop", stop.toString())
+                intent.putExtra("route", route.toString())
+                instance.startActivity(intent)
+            },
+            modifier = Modifier
+                .width(StringUtils.scaledSize(55, instance).dp)
+                .height(StringUtils.scaledSize(24, instance).dp),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = MaterialTheme.colors.secondary,
+                contentColor = MaterialTheme.colors.primary
+            ),
+            content = {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colors.primary,
+                    fontSize = TextUnit(StringUtils.scaledSize(12F, instance), TextUnitType.Sp).clamp(max = 12.dp),
+                    text = if (Shared.language == "en") "More" else "更多"
+                )
+            }
+        )
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        AdvanceButton(
+            onClick = {
+                launchOtherStop(index + 1, co, route, stopList, true, 1, instance)
+            },
+            onLongClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                launchOtherStop(stopList.size, co, route, stopList, true, 1, instance)
+            },
+            modifier = Modifier
+                .width(StringUtils.scaledSize(24, instance).dp)
+                .height(StringUtils.scaledSize(24, instance).dp),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = MaterialTheme.colors.secondary,
+                contentColor = if (index < stopList.size) Color(0xFFFFFFFF) else Color(0xFF494949)
+            ),
+            enabled = index < stopList.size,
+            content = {
+                Icon(
+                    modifier = Modifier.size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
+                    imageVector = Icons.Filled.ArrowForward,
+                    contentDescription = if (Shared.language == "en") "Next Stop" else "下一站",
+                    tint = if (index < stopList.size) Color(0xFFFFFFFF) else Color(0xFF494949),
+                )
+            }
+        )
     }
 }
 
