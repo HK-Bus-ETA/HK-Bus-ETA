@@ -586,58 +586,26 @@ fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Floa
                 if (eta!!.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(
-                                TextUnit(
-                                    StringUtils.scaledSize(16F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
-                            )
-                            .offset(
-                                0.dp,
-                                TextUnit(
-                                    StringUtils.scaledSize(3F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
-                            ),
+                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
+                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
                     )
                 } else if (eta!!.isTyphoonSchedule) {
+                    val desc by remember { derivedStateOf { Registry.getCurrentTyphoonData().get().typhoonWarningTitle } }
                     Image(
                         modifier = Modifier
-                            .size(
-                                TextUnit(
-                                    StringUtils.scaledSize(16F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
-                            )
-                            .offset(
-                                0.dp,
-                                TextUnit(
-                                    StringUtils.scaledSize(3F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
-                            ),
+                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
+                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
-                        contentDescription = Registry.getInstance(instance).typhoonWarningTitle
+                        contentDescription = desc
                     )
                 } else {
                     Icon(
                         modifier = Modifier
-                            .size(
-                                TextUnit(
-                                    StringUtils.scaledSize(16F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
-                            )
-                            .offset(
-                                0.dp,
-                                TextUnit(
-                                    StringUtils.scaledSize(3F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
-                            ),
+                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
+                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),

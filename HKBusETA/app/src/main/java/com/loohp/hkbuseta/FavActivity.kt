@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -363,26 +364,15 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                                     tint = Color(0xFF798996),
                                 )
                             } else if (eta!!.isTyphoonSchedule) {
+                                val desc by remember { derivedStateOf { Registry.getCurrentTyphoonData().get().typhoonWarningTitle } }
                                 Image(
-                                    modifier = Modifier
-                                        .size(
-                                            TextUnit(
-                                                StringUtils.scaledSize(16F, instance),
-                                                TextUnitType.Sp
-                                            ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
-                                        ),
+                                    modifier = Modifier.size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                                     painter = painterResource(R.mipmap.cyclone),
-                                    contentDescription = Registry.getInstance(instance).typhoonWarningTitle
+                                    contentDescription = desc
                                 )
                             } else {
                                 Icon(
-                                    modifier = Modifier
-                                        .size(
-                                            TextUnit(
-                                                StringUtils.scaledSize(16F, instance),
-                                                TextUnitType.Sp
-                                            ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
-                                        ),
+                                    modifier = Modifier.size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                                     painter = painterResource(R.drawable.baseline_schedule_24),
                                     contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                                     tint = Color(0xFF798996),

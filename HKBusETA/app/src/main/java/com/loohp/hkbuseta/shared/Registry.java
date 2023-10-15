@@ -54,13 +54,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -102,14 +101,12 @@ public class Registry {
     private static Set<String> BUS_ROUTE = null;
     private static JSONObject MTR_BUS_STOP_ALIAS = null;
 
+    private static TyphoonInfo typhoonInfo = null;
+    private static long typhoonInfoLastUpdated = Long.MIN_VALUE;
+
     private volatile State state = State.LOADING;
     private volatile float updatePercentage = 0F;
     private volatile boolean preferencesLoaded = false;
-
-    private boolean isAboveTyphoonSignalEight = false;
-    private boolean isAboveTyphoonSignalNine = false;
-    private String typhoonWarningTitle = "";
-    private String currentTyphoonSignalId = "";
 
     private Registry(Context context) {
         try {
@@ -117,35 +114,6 @@ public class Registry {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=" + (Shared.Companion.getLanguage().equals("en") ? "en" : "tc"));
-                if (data != null && data.has("WTCSGNL")) {
-                    Matcher matcher = Pattern.compile("TC([0-9]+)(.*)").matcher(data.optJSONObject("WTCSGNL").optString("code"));
-                    if (matcher.find() && matcher.group(1) != null) {
-                        int signal = Integer.parseInt(matcher.group(1));
-                        isAboveTyphoonSignalEight = signal >= 8;
-                        isAboveTyphoonSignalNine = signal >= 9;
-                        if (Shared.Companion.getLanguage().equals("en")) {
-                            typhoonWarningTitle = data.optJSONObject("WTCSGNL").optString("type") + " is in force";
-                        } else {
-                            typhoonWarningTitle = data.optJSONObject("WTCSGNL").optString("type") + " 現正生效";
-                        }
-                        if (signal < 8) {
-                            currentTyphoonSignalId = "tc" + signal + (matcher.group(2) != null ? matcher.group(2) : "").toLowerCase();
-                        } else {
-                            currentTyphoonSignalId = "tc" + StringUtils.padStart(String.valueOf(signal), 2, '0') + (matcher.group(2) != null ? matcher.group(2) : "").toLowerCase();
-                        }
-                        return;
-                    }
-                }
-                isAboveTyphoonSignalEight = false;
-                isAboveTyphoonSignalNine = false;
-                typhoonWarningTitle = "";
-                currentTyphoonSignalId = "";
-            }
-        }, 0, Shared.ETA_UPDATE_INTERVAL);
     }
 
     public State getState() {
@@ -290,22 +258,6 @@ public class Registry {
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public boolean isAboveTyphoonSignalEight() {
-        return isAboveTyphoonSignalEight;
-    }
-
-    public boolean isAboveTyphoonSignalNine() {
-        return isAboveTyphoonSignalEight;
-    }
-
-    public String getTyphoonWarningTitle() {
-        return typhoonWarningTitle;
-    }
-
-    public String getCurrentTyphoonSignalId() {
-        return currentTyphoonSignalId;
     }
 
     private void ensureData(Context context) throws IOException {
@@ -1094,6 +1046,78 @@ public class Registry {
         }
     }
 
+    public static Future<TyphoonInfo> getCurrentTyphoonData() {
+        long now = System.currentTimeMillis();
+        if (typhoonInfo != null && now - typhoonInfoLastUpdated < 300000) {
+            return CompletableFuture.completedFuture(typhoonInfo);
+        }
+        CompletableFuture<TyphoonInfo> future = new CompletableFuture<>();
+        new Thread(() -> {
+            JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=" + (Shared.Companion.getLanguage().equals("en") ? "en" : "tc"));
+            if (data != null && data.has("WTCSGNL")) {
+                Matcher matcher = Pattern.compile("TC([0-9]+)(.*)").matcher(data.optJSONObject("WTCSGNL").optString("code"));
+                if (matcher.find() && matcher.group(1) != null) {
+                    int signal = Integer.parseInt(matcher.group(1));
+                    boolean isAboveTyphoonSignalEight = signal >= 8;
+                    boolean isAboveTyphoonSignalNine = signal >= 9;
+                    String typhoonWarningTitle;
+                    if (Shared.Companion.getLanguage().equals("en")) {
+                        typhoonWarningTitle = data.optJSONObject("WTCSGNL").optString("type") + " is in force";
+                    } else {
+                        typhoonWarningTitle = data.optJSONObject("WTCSGNL").optString("type") + " 現正生效";
+                    }
+                    String currentTyphoonSignalId;
+                    if (signal < 8) {
+                        currentTyphoonSignalId = "tc" + signal + (matcher.group(2) != null ? matcher.group(2) : "").toLowerCase();
+                    } else {
+                        currentTyphoonSignalId = "tc" + StringUtils.padStart(String.valueOf(signal), 2, '0') + (matcher.group(2) != null ? matcher.group(2) : "").toLowerCase();
+                    }
+                    typhoonInfo = new TyphoonInfo(isAboveTyphoonSignalEight, isAboveTyphoonSignalNine, typhoonWarningTitle, currentTyphoonSignalId);
+                    typhoonInfoLastUpdated = System.currentTimeMillis();
+                    future.complete(typhoonInfo);
+                    return;
+                }
+            }
+            typhoonInfo = TyphoonInfo.NO_TYPHOON;
+            typhoonInfoLastUpdated = System.currentTimeMillis();
+            future.complete(typhoonInfo);
+        }).start();
+        return future;
+    }
+
+    public static class TyphoonInfo {
+
+        public static final TyphoonInfo NO_TYPHOON = new TyphoonInfo(false, false, "", "");
+
+        private final boolean isAboveTyphoonSignalEight;
+        private final boolean isAboveTyphoonSignalNine;
+        private final String typhoonWarningTitle;
+        private final String currentTyphoonSignalId;
+
+        public TyphoonInfo(boolean isAboveTyphoonSignalEight, boolean isAboveTyphoonSignalNine, String typhoonWarningTitle, String currentTyphoonSignalId) {
+            this.isAboveTyphoonSignalEight = isAboveTyphoonSignalEight;
+            this.isAboveTyphoonSignalNine = isAboveTyphoonSignalNine;
+            this.typhoonWarningTitle = typhoonWarningTitle;
+            this.currentTyphoonSignalId = currentTyphoonSignalId;
+        }
+
+        public boolean isAboveTyphoonSignalEight() {
+            return isAboveTyphoonSignalEight;
+        }
+
+        public boolean isAboveTyphoonSignalNine() {
+            return isAboveTyphoonSignalNine;
+        }
+
+        public String getTyphoonWarningTitle() {
+            return typhoonWarningTitle;
+        }
+
+        public String getCurrentTyphoonSignalId() {
+            return currentTyphoonSignalId;
+        }
+    }
+
     public static ETAQueryResult getEta(String stopId, String co, JSONObject route, Context context) {
         if (!ConnectionUtils.getConnectionType(context).hasConnection()) {
             return ETAQueryResult.connectionError(co);
@@ -1101,15 +1125,17 @@ public class Registry {
         CompletableFuture<ETAQueryResult> future = new CompletableFuture<>();
         new Thread(() -> {
             try {
+                TyphoonInfo typhoonInfo = getCurrentTyphoonData().get();
+
                 Map<Integer, String> lines = new HashMap<>();
                 long nextScheduledBus = -999;
                 boolean isMtrEndOfLine = false;
                 boolean isTyphoonSchedule = false;
-                lines.put(1, getNoScheduledDepartureMessage(null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
+                lines.put(1, getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle()));
                 String language = Shared.Companion.getLanguage();
                 String nextCo = co;
                 if (route.optBoolean("kmbCtbJoint", false)) {
-                    isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+                    isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
                     String dest = route.optJSONObject("dest").optString("zh").replace(" ", "");
                     String orig = route.optJSONObject("orig").optString("zh").replace(" ", "");
                     Map<Long, Pair<String, String>> etaSorted = new TreeMap<>();
@@ -1172,8 +1198,8 @@ public class Registry {
                                                 .replaceAll("原定", "預定")
                                                 .replaceAll("最後班次", "尾班車")
                                                 .replaceAll("尾班車已過", "尾班車已過本站");
-                                        if (message.isEmpty() || (INSTANCE.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
-                                            message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                        if (message.isEmpty() || (typhoonInfo.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
+                                            message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
                                         } else {
                                             message = "<b></b>" + message;
                                         }
@@ -1247,7 +1273,7 @@ public class Registry {
 
                     if (etaSorted.isEmpty()) {
                         if (kmbSpecialMessage == null || kmbSpecialMessage.isEmpty()) {
-                            lines.put(1, getNoScheduledDepartureMessage(null, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle()));
+                            lines.put(1, getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle()));
                         } else {
                             lines.put(1, kmbSpecialMessage);
                         }
@@ -1280,7 +1306,7 @@ public class Registry {
                 } else {
                     switch (co) {
                         case "kmb": {
-                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+                            isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/" + stopId);
                             JSONArray buses = data.optJSONArray("data");
@@ -1332,9 +1358,9 @@ public class Registry {
                                                 .replaceAll("最後班次", "尾班車")
                                                 .replaceAll("尾班車已過", "尾班車已過本站");
 
-                                        if (message.isEmpty() || (INSTANCE.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
+                                        if (message.isEmpty() || (typhoonInfo.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
                                             if (seq == 1) {
-                                                message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                                message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
                                             } else {
                                                 message = "<b></b>-";
                                             }
@@ -1348,7 +1374,7 @@ public class Registry {
                             break;
                         }
                         case "ctb": {
-                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+                            isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                             String routeNumber = route.optString("route");
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + stopId + "/" + routeNumber);
@@ -1402,7 +1428,7 @@ public class Registry {
 
                                         if (message.isEmpty()) {
                                             if (seq == 1) {
-                                                message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                                message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
                                             } else {
                                                 message = "<b></b>-";
                                             }
@@ -1416,7 +1442,7 @@ public class Registry {
                             break;
                         }
                         case "nlb": {
-                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+                            isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=" + route.optString("nlbId") + "&stopId=" + stopId + "&language=" + Shared.Companion.getLanguage());
                             if (data == null || data.length() == 0 || !data.has("estimatedArrivals")) {
@@ -1467,7 +1493,7 @@ public class Registry {
 
                                 if (message.isEmpty()) {
                                     if (seq == 1) {
-                                        message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                        message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
                                     } else {
                                         message = "<b></b>-";
                                     }
@@ -1479,7 +1505,7 @@ public class Registry {
                             break;
                         }
                         case "mtr-bus": {
-                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+                            isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                             String routeNumber = route.optString("route");
                             JSONObject body = new JSONObject();
@@ -1560,7 +1586,7 @@ public class Registry {
 
                                         if (message.isEmpty()) {
                                             if (seq == 1) {
-                                                message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                                message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
                                             } else {
                                                 message = "<b></b>-";
                                             }
@@ -1574,7 +1600,7 @@ public class Registry {
                             break;
                         }
                         case "gmb": {
-                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalEight;
+                            isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/eta/stop/" + stopId);
                             List<Pair<Long, JSONObject>> busList = new ArrayList<>();
@@ -1645,7 +1671,7 @@ public class Registry {
 
                                 if (message.isEmpty()) {
                                     if (seq == 1) {
-                                        message = getNoScheduledDepartureMessage(message, INSTANCE.isAboveTyphoonSignalEight(), INSTANCE.getTyphoonWarningTitle());
+                                        message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
                                     } else {
                                         message = "<b></b>-";
                                     }
@@ -1657,7 +1683,7 @@ public class Registry {
                             break;
                         }
                         case "lightRail": {
-                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalNine;
+                            isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
 
                             JSONArray stopsList = route.optJSONObject("stops").optJSONArray("lightRail");
                             if (JsonUtils.indexOf(stopsList, stopId) + 1 >= stopsList.length()) {
@@ -1722,7 +1748,7 @@ public class Registry {
                             break;
                         }
                         case "mtr": {
-                            isTyphoonSchedule = Registry.getInstance(context).isAboveTyphoonSignalNine;
+                            isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
 
                             String lineName = route.optString("route");
                             String lineColor;
