@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -195,14 +196,14 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                     if (it.horizontalScrollPixels > 0) {
                         if (index < stopList.size) {
                             currentOffset = -ScreenSizeUtils.getScreenWidth(instance).toFloat()
-                            animatedOffsetTask = { launchOtherStop(index + 1, co, route, stopList, true, 1, instance) }
+                            animatedOffsetTask = { launchOtherStop(index + 1, co, stopList, true, 1, instance) }
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
                     } else {
                         if (index > 1) {
                             currentOffset = ScreenSizeUtils.getScreenWidth(instance).toFloat()
-                            animatedOffsetTask = { launchOtherStop(index - 1, co, route, stopList, true, -1, instance) }
+                            animatedOffsetTask = { launchOtherStop(index - 1, co, stopList, true, -1, instance) }
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
@@ -227,6 +228,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
+                val overrideDestName: String? by remember(eta) { derivedStateOf { eta.nextDest } }
 
                 val lat = stop.optJSONObject("location")!!.optDouble("lat")
                 val lng = stop.optJSONObject("location")!!.optDouble("lng")
@@ -240,7 +242,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
                 Title(index, stop.optJSONObject("name")!!, lat, lng, routeNumber, co, instance)
-                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route), lat, lng, routeNumber, co, instance)
+                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route), lat, lng, routeNumber, co, instance, overrideDestName)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(9, instance).dp))
                 EtaText(eta, 1, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
@@ -254,14 +256,14 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
     }
 }
 
-fun launchOtherStop(newIndex: Int, co: String, route: JSONObject, stopList: List<Registry.StopData>, animation: Boolean, offset: Int, instance: EtaActivity) {
+fun launchOtherStop(newIndex: Int, co: String, stopList: List<Registry.StopData>, animation: Boolean, offset: Int, instance: EtaActivity) {
     val newStopData = stopList[newIndex - 1]
     val intent = Intent(instance, EtaActivity::class.java)
     intent.putExtra("stopId", newStopData.stopId)
     intent.putExtra("co", co)
     intent.putExtra("index", newIndex)
     intent.putExtra("stop", newStopData.stop.toString())
-    intent.putExtra("route", route.toString())
+    intent.putExtra("route", newStopData.route.toString())
     intent.putExtra("offset", offset)
     if (!animation) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
@@ -279,11 +281,11 @@ fun ActionBar(stopId: String, co: String, index: Int, stop: JSONObject, route: J
     ) {
         AdvanceButton(
             onClick = {
-                launchOtherStop(index - 1, co, route, stopList, true, -1, instance)
+                launchOtherStop(index - 1, co, stopList, true, -1, instance)
             },
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                launchOtherStop(1, co, route, stopList, true, -1, instance)
+                launchOtherStop(1, co, stopList, true, -1, instance)
             },
             modifier = Modifier
                 .width(StringUtils.scaledSize(24, instance).dp)
@@ -333,11 +335,11 @@ fun ActionBar(stopId: String, co: String, index: Int, stop: JSONObject, route: J
         Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
         AdvanceButton(
             onClick = {
-                launchOtherStop(index + 1, co, route, stopList, true, 1, instance)
+                launchOtherStop(index + 1, co, stopList, true, 1, instance)
             },
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                launchOtherStop(stopList.size, co, route, stopList, true, 1, instance)
+                launchOtherStop(stopList.size, co, stopList, true, 1, instance)
             },
             modifier = Modifier
                 .width(StringUtils.scaledSize(24, instance).dp)
@@ -414,14 +416,14 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
+fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity, overrideDestName: String? = null) {
     val haptic = LocalHapticFeedback.current
     val name = if (Shared.language == "en") {
         val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-        routeName.plus(" To ").plus(destName.optString("en"))
+        routeName.plus(" To ").plus(overrideDestName?: destName.optString("en"))
     } else {
         val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-        routeName.plus(" 往").plus(destName.optString("zh"))
+        routeName.plus(" 往").plus(overrideDestName?: destName.optString("zh"))
     }
     AutoResizeText(
         modifier = Modifier

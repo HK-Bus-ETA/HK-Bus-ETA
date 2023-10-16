@@ -9,8 +9,13 @@ import android.util.TypedValue;
 import android.widget.TextView;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class StringUtils {
+
+    private static final List<String> RECAPITALIZE_KEYWORDS = List.of("BBI", "apm");
 
     public static int editDistance(String x, String y) {
         int[][] dp = new int[x.length() + 1][y.length() + 1];
@@ -107,6 +112,34 @@ public class StringUtils {
         TextView textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
         return UnitUtils.pixelsToDp(context, textView.getPaint().measureText(text));
+    }
+
+    public static String capitalize(String inputStr, boolean lower) {
+        if (lower) {
+            inputStr = inputStr.toLowerCase();
+        }
+        Pattern pattern = Pattern.compile("(?:^|\\s|[\"'(\\[{/-])+\\S");
+        Matcher matcher = pattern.matcher(inputStr);
+
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            matcher.appendReplacement(result, matcher.group().toUpperCase());
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
+    }
+
+    public static String applyRecapitalizeKeywords(String inputStr) {
+        for (String keyword : RECAPITALIZE_KEYWORDS) {
+            Pattern pattern = Pattern.compile("(?i)(?<![0-9a-zA-Z])" + keyword + "(?![0-9a-zA-Z])");
+            inputStr = pattern.matcher(inputStr).replaceAll(keyword);
+        }
+        return inputStr;
+    }
+
+    public static String applyKmbEnglishRecapitalization(String inputStr) {
+        return applyRecapitalizeKeywords(capitalize(inputStr, true));
     }
 
 }

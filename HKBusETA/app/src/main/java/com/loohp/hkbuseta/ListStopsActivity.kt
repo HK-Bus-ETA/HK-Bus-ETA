@@ -342,7 +342,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                                     intent.putExtra("co", co)
                                     intent.putExtra("index", stopNumber)
                                     intent.putExtra("stop", stop.toString())
-                                    intent.putExtra("route", route.optJSONObject("route")!!.toString())
+                                    intent.putExtra("route", entry.route.toString())
                                     instance.startActivity(intent)
                                 },
                                 onLongClick = {

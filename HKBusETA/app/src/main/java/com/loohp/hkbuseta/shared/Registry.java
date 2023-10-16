@@ -70,6 +70,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import kotlin.Triple;
+
 public class Registry {
 
     private static Registry INSTANCE = null;
@@ -436,15 +438,19 @@ public class Registry {
                             String finalStopIdCompare = stopId;
                             int index = CollectionsUtils.indexOf(stopList, d -> d.stopId.equals(finalStopIdCompare)) + 1;
                             JSONObject stop;
+                            StopData stopData;
                             if (index < 1) {
                                 index = Math.max(1, Math.min(favouriteRoute.optInt("index", 0), stopList.size()));
-                                stopId = stopList.get(index - 1).getStopId();
+                                stopData = stopList.get(index - 1);
+                                stopId = stopData.getStopId();
+                            } else {
+                                stopData = stopList.get(index - 1);
                             }
                             stop = stopList.get(index - 1).getStop();
 
                             String finalStopId = stopId;
                             int finalIndex = index;
-                            updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, newRoute, context));
+                            updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, stopData.getRoute(), context));
                         } catch (Throwable e) {
                             e.printStackTrace();
                         }
@@ -572,6 +578,14 @@ public class Registry {
                                 existingMatchingRoute.put("routeKey", key);
                                 existingMatchingRoute.put("route", data);
                                 existingMatchingRoute.put("co", co);
+                            } else if (type == matchingType) {
+                                int gtfs = IntUtils.parseOr(data.optString("gtfsId"), Integer.MAX_VALUE);
+                                int matchingGtfs = IntUtils.parseOr(existingMatchingRoute.optJSONObject("route").optString("gtfsId"), Integer.MAX_VALUE);
+                                if (gtfs < matchingGtfs) {
+                                    existingMatchingRoute.put("routeKey", key);
+                                    existingMatchingRoute.put("route", data);
+                                    existingMatchingRoute.put("co", co);
+                                }
                             }
                         } catch (NumberFormatException ignore) {}
                     } else {
@@ -730,6 +744,17 @@ public class Registry {
                                         existingNearbyRoute.put("co", co);
                                         existingNearbyRoute.put("origin", origin);
                                         existingNearbyRoute.put("interchangeSearch", isInterchangeSearch);
+                                    } else if (type == matchingType) {
+                                        int gtfs = IntUtils.parseOr(data.optString("gtfsId"), Integer.MAX_VALUE);
+                                        int matchingGtfs = IntUtils.parseOr(existingNearbyRoute.optJSONObject("route").optString("gtfsId"), Integer.MAX_VALUE);
+                                        if (gtfs < matchingGtfs) {
+                                            existingNearbyRoute.put("routeKey", key);
+                                            existingNearbyRoute.put("stop", nearbyStop);
+                                            existingNearbyRoute.put("route", data);
+                                            existingNearbyRoute.put("co", co);
+                                            existingNearbyRoute.put("origin", origin);
+                                            existingNearbyRoute.put("interchangeSearch", isInterchangeSearch);
+                                        }
                                     }
                                 } catch (NumberFormatException ignore) {
                                     existingNearbyRoute.put("routeKey", key);
@@ -871,14 +896,23 @@ public class Registry {
                         int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
                         for (int i = 0; i < stops.length(); i++) {
                             String stopId = stops.optString(i);
-                            localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId)));
+                            localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId), route));
                         }
                         lists.add(Pair.create(localStops, serviceType));
                     }
                 }
             }
             lists.sort(Comparator.comparing(p -> p.second));
-            BranchedList<String, StopData> result = new BranchedList<>((a, b) -> a.getServiceType() > b.getServiceType() ? b : a);
+            BranchedList<String, StopData> result = new BranchedList<>((a, b) -> {
+                int aType = a.getServiceType();
+                int bType = b.getServiceType();
+                if (aType == bType) {
+                    int aGtfs = IntUtils.parseOr(a.getRoute().optString("gtfsId"), Integer.MAX_VALUE);
+                    int bGtfs = IntUtils.parseOr(b.getRoute().optString("gtfsId"), Integer.MAX_VALUE);
+                    return aGtfs > bGtfs ? b : a;
+                }
+                return aType > bType ? b : a;
+            });
             for (Pair<BranchedList<String, StopData>, Integer> pair : lists) {
                 result.merge(pair.first);
             }
@@ -893,16 +927,18 @@ public class Registry {
         private final String stopId;
         private final int serviceType;
         private final JSONObject stop;
+        private final JSONObject route;
         private final Set<Integer> branchIds;
 
-        private StopData(String stopId, int serviceType, JSONObject stop) {
-            this(stopId, serviceType, stop, Collections.emptySet());
+        private StopData(String stopId, int serviceType, JSONObject stop, JSONObject route) {
+            this(stopId, serviceType, stop, route, Collections.emptySet());
         }
 
-        public StopData(String stopId, int serviceType, JSONObject stop, Set<Integer> branchIds) {
+        public StopData(String stopId, int serviceType, JSONObject stop, JSONObject route, Set<Integer> branchIds) {
             this.stopId = stopId;
             this.serviceType = serviceType;
             this.stop = stop;
+            this.route = route;
             this.branchIds = branchIds;
         }
 
@@ -918,12 +954,16 @@ public class Registry {
             return stop;
         }
 
+        public JSONObject getRoute() {
+            return route;
+        }
+
         public Set<Integer> getBranchIds() {
             return branchIds;
         }
 
         public StopData withBranchIndex(Set<Integer> branchIds) {
-            return new StopData(stopId, serviceType, stop, branchIds);
+            return new StopData(stopId, serviceType, stop, route, branchIds);
         }
     }
 
@@ -1197,14 +1237,16 @@ public class Registry {
                 long nextScheduledBus = -999;
                 boolean isMtrEndOfLine = false;
                 boolean isTyphoonSchedule = false;
+                String nextDest = null;
+                String nextCo = co;
+
                 lines.put(1, getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle()));
                 String language = Shared.Companion.getLanguage();
-                String nextCo = co;
                 if (route.optBoolean("kmbCtbJoint", false)) {
                     isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
                     String dest = route.optJSONObject("dest").optString("zh").replace(" ", "");
                     String orig = route.optJSONObject("orig").optString("zh").replace(" ", "");
-                    Map<Long, Pair<String, String>> etaSorted = new TreeMap<>();
+                    Map<Long, Triple<String, String, String>> etaSorted = new TreeMap<>();
                     String kmbSpecialMessage = null;
                     long kmbFirstScheduledBus = Long.MAX_VALUE;
                     {
@@ -1221,6 +1263,7 @@ public class Registry {
                                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                     if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
                                         long mins = Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                                        String liveDest = language.equals("en") ? StringUtils.applyRecapitalizeKeywords(bus.optString("dest_en")) : bus.optString("dest_tc");
                                         String message = "";
                                         if (language.equals("en")) {
                                             if (mins > 0) {
@@ -1248,7 +1291,7 @@ public class Registry {
                                         if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
                                             kmbFirstScheduledBus = mins;
                                         }
-                                        etaSorted.put(mins, Pair.create(message, "kmb"));
+                                        etaSorted.put(mins, new Triple<>(message, "kmb", liveDest));
                                     } else {
                                         String message = "";
                                         if (language.equals("en")) {
@@ -1287,7 +1330,7 @@ public class Registry {
                                 }
                             }
                         }
-                        Map<String, Map<Long, Pair<String, String>>> ctbEtaEntries = new HashMap<>();
+                        Map<String, Map<Long, Triple<String, String, String>>> ctbEtaEntries = new HashMap<>();
                         ctbEtaEntries.put(dest, new HashMap<>());
                         ctbEtaEntries.put(orig, new HashMap<>());
                         for (String ctbStopId : ctbStopIds) {
@@ -1303,6 +1346,7 @@ public class Registry {
                                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                         if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
                                             long mins = Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                                            String liveDest = language.equals("en") ? bus.optString("dest_en") : bus.optString("dest_tc");
                                             String message = "";
                                             if (language.equals("en")) {
                                                 if (mins > 0) {
@@ -1328,7 +1372,7 @@ public class Registry {
                                                     .replaceAll("最後班次", "尾班車")
                                                     .replaceAll("尾班車已過", "尾班車已過本站");
                                             ctbEtaEntries.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
-                                                    .getValue().put(mins, Pair.create(message, "ctb"));
+                                                    .getValue().put(mins, new Triple<>(message, "ctb", liveDest));
                                         }
                                     }
                                 }
@@ -1345,10 +1389,10 @@ public class Registry {
                         }
                     } else {
                         int counter = 0;
-                        for (Map.Entry<Long, Pair<String, String>> entry : etaSorted.entrySet()) {
+                        for (Map.Entry<Long, Triple<String, String, String>> entry : etaSorted.entrySet()) {
                             long mins = entry.getKey();
-                            String message = "<b></b>" + entry.getValue().first.replace("(尾班車)", "").replace("(Final Bus)", "").trim();
-                            String entryCo = entry.getValue().second;
+                            String message = "<b></b>" + entry.getValue().component1().replace("(尾班車)", "").replace("(Final Bus)", "").trim();
+                            String entryCo = entry.getValue().component2();
                             if (mins > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
                                 message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)") + "</small>";
                             }
@@ -1365,6 +1409,7 @@ public class Registry {
                             if (seq == 1) {
                                 nextScheduledBus = mins;
                                 nextCo = entryCo;
+                                nextDest = entry.getValue().component3();
                             }
                             lines.put(seq, message);
                         }
@@ -1387,17 +1432,20 @@ public class Registry {
                                         String eta = bus.optString("eta");
                                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                         long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                                        String dest = language.equals("en") ? StringUtils.applyKmbEnglishRecapitalization(bus.optString("dest_en")) : bus.optString("dest_tc");
                                         String message = "";
                                         if (language.equals("en")) {
                                             if (mins > 0) {
                                                 message = "<b>" + mins + "</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
+                                                    nextDest = dest;
                                                 }
                                             } else if (mins > -60) {
                                                 message = "<b>-</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
+                                                    nextDest = dest;
                                                 }
                                             }
                                             if (!bus.optString("rmk_en").isEmpty()) {
@@ -1408,11 +1456,13 @@ public class Registry {
                                                 message = "<b>" + mins + "</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
+                                                    nextDest = dest;
                                                 }
                                             } else if (mins > -60) {
                                                 message = "<b>-</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
+                                                    nextDest = dest;
                                                 }
                                             }
                                             if (!bus.optString("rmk_tc").isEmpty()) {
@@ -1455,17 +1505,20 @@ public class Registry {
                                         String eta = bus.optString("eta");
                                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                         long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                                        String dest = language.equals("en") ? bus.optString("dest_en") : bus.optString("dest_tc");
                                         String message = "";
                                         if (language.equals("en")) {
                                             if (mins > 0) {
                                                 message = "<b>" + mins + "</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
+                                                    nextDest = dest;
                                                 }
                                             } else if (mins > -60) {
                                                 message = "<b>-</b><small> Min.</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
+                                                    nextDest = dest;
                                                 }
                                             }
                                             if (!bus.optString("rmk_en").isEmpty()) {
@@ -1476,11 +1529,13 @@ public class Registry {
                                                 message = "<b>" + mins + "</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
+                                                    nextDest = dest;
                                                 }
                                             } else if (mins > -60) {
                                                 message = "<b>-</b><small> 分鐘</small>";
                                                 if (seq == 1) {
                                                     nextScheduledBus = mins;
+                                                    nextDest = dest;
                                                 }
                                             }
                                             if (!bus.optString("rmk_tc").isEmpty()) {
@@ -1938,7 +1993,7 @@ public class Registry {
                         }
                     }
                 }
-                future.complete(ETAQueryResult.result(nextScheduledBus > -60 ? Math.max(0, nextScheduledBus) : -1, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines));
+                future.complete(ETAQueryResult.result(nextScheduledBus > -60 ? Math.max(0, nextScheduledBus) : -1, isMtrEndOfLine, isTyphoonSchedule, nextCo, nextDest, lines));
             } catch (Throwable e) {
                 e.printStackTrace();
                 future.completeExceptionally(e);
@@ -2007,14 +2062,14 @@ public class Registry {
     @Stable
     public static class ETAQueryResult {
 
-        public static final ETAQueryResult EMPTY = new ETAQueryResult(true, -1, false, false, null, Collections.emptyMap());
+        public static final ETAQueryResult EMPTY = new ETAQueryResult(true, -1, false, false, null, null, Collections.emptyMap());
 
         public static ETAQueryResult connectionError(String co) {
-            return new ETAQueryResult(true, -1, false, false, co, Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"));
+            return new ETAQueryResult(true, -1, false, false, co, null, Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"));
         }
 
-        public static ETAQueryResult result(long nextScheduledBus, boolean isMtrEndOfLine, boolean isTyphoonSchedule, String nextCo, Map<Integer, String> lines) {
-            return new ETAQueryResult(false, nextScheduledBus, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
+        public static ETAQueryResult result(long nextScheduledBus, boolean isMtrEndOfLine, boolean isTyphoonSchedule, String nextCo, String nextDest, Map<Integer, String> lines) {
+            return new ETAQueryResult(false, nextScheduledBus, isMtrEndOfLine, isTyphoonSchedule, nextCo, nextDest, lines);
         }
 
         private final boolean isConnectionError;
@@ -2022,14 +2077,16 @@ public class Registry {
         private final boolean isMtrEndOfLine;
         private final boolean isTyphoonSchedule;
         private final String nextCo;
+        private final String nextDest;
         private final Map<Integer, String> lines;
 
-        private ETAQueryResult(boolean isConnectionError, long nextScheduledBus, boolean isMtrEndOfLine, boolean isTyphoonSchedule, String nextCo, Map<Integer, String> lines) {
+        private ETAQueryResult(boolean isConnectionError, long nextScheduledBus, boolean isMtrEndOfLine, boolean isTyphoonSchedule, String nextCo, String nextDest, Map<Integer, String> lines) {
             this.isConnectionError = isConnectionError;
             this.nextScheduledBus = nextScheduledBus;
             this.isMtrEndOfLine = isMtrEndOfLine;
             this.isTyphoonSchedule = isTyphoonSchedule;
             this.nextCo = nextCo;
+            this.nextDest = nextDest;
             this.lines = Collections.unmodifiableMap(lines);
         }
 
@@ -2053,6 +2110,10 @@ public class Registry {
             return nextCo;
         }
 
+        public String getNextDest() {
+            return nextDest;
+        }
+
         public String getLine(int index) {
             return lines.getOrDefault(index, "-");
         }
@@ -2061,13 +2122,13 @@ public class Registry {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            ETAQueryResult that = (ETAQueryResult) o;
-            return isConnectionError == that.isConnectionError && nextScheduledBus == that.nextScheduledBus && isMtrEndOfLine == that.isMtrEndOfLine && isTyphoonSchedule == that.isTyphoonSchedule && Objects.equals(nextCo, that.nextCo) && Objects.equals(lines, that.lines);
+            ETAQueryResult result = (ETAQueryResult) o;
+            return isConnectionError == result.isConnectionError && nextScheduledBus == result.nextScheduledBus && isMtrEndOfLine == result.isMtrEndOfLine && isTyphoonSchedule == result.isTyphoonSchedule && Objects.equals(nextCo, result.nextCo) && Objects.equals(nextDest, result.nextDest) && Objects.equals(lines, result.lines);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(isConnectionError, nextScheduledBus, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
+            return Objects.hash(isConnectionError, nextScheduledBus, isMtrEndOfLine, isTyphoonSchedule, nextCo, nextDest, lines);
         }
     }
 
