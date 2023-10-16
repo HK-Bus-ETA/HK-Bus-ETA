@@ -1018,6 +1018,12 @@ public class Registry {
                         return new JSONObject().put("zh", "北角/康城").put("en", "North Point/LOHAS Park");
                     }
                 }
+                case "AIR":
+                case "AWE": {
+                    if (bound.contains("UT")) {
+                        return new JSONObject().put("zh", "博覽館").put("en", "AsiaWorld-Expo");
+                    }
+                }
             }
         } catch (JSONException e) {
             e.printStackTrace();
