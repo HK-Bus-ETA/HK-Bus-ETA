@@ -10,6 +10,15 @@ DATA_SHEET = {}
 DATA_SHEET_FILE_NAME = "data.json"
 CHECKSUM_FILE_NAME = "checksum.md5"
 
+RECAPITALIZE_KEYWORDS = [
+    "BBI",
+    "STK",
+    "FCA",
+    "LMC",
+    "SL",
+    "apm"
+]
+
 
 def download_and_process_kmb_route():
     global BUS_ROUTE
@@ -221,15 +230,9 @@ def capitalize(input_str, lower=True):
     return re.sub(r"(?:^|\s|[\"'(\[{/\-])+\S", lambda m: m.group().upper(), input_str)
 
 
-recapitalize_keywords = [
-    "BBI",
-    "apm"
-]
-
-
 def apply_recapitalize_keywords(input_str):
-    global recapitalize_keywords
-    for keyword in recapitalize_keywords:
+    global RECAPITALIZE_KEYWORDS
+    for keyword in RECAPITALIZE_KEYWORDS:
         input_str = re.sub(r"(?i)(?<![0-9a-zA-Z])" + keyword + "(?![0-9a-zA-Z])", keyword, input_str)
     return input_str
 
