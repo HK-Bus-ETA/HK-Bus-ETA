@@ -200,7 +200,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     onClick = {
                         Shared.invalidateCache(instance)
                         val intent = Intent(instance, MainActivity::class.java)
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         instance.startActivity(intent)
                         instance.finishAffinity()
                     },

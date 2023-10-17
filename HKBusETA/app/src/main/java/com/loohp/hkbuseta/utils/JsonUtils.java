@@ -1,6 +1,7 @@
 package com.loohp.hkbuseta.utils;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -13,6 +14,22 @@ import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
 public class JsonUtils {
+
+    public static JSONObject clone(JSONObject jsonObject) {
+        try {
+            return new JSONObject(jsonObject.toString());
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static JSONArray clone(JSONArray jsonArray) {
+        try {
+            return new JSONArray(jsonArray.toString());
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static int indexOf(JSONArray array, Object obj) {
         for (int i = 0; i < array.length(); i++) {

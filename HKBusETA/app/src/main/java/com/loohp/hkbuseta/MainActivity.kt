@@ -117,11 +117,11 @@ class MainActivity : ComponentActivity() {
                                         }
                                         if (filteredResult.isEmpty()) {
                                             val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                            intent.putExtra("result", JsonUtils.fromCollection(result.onEach { it.remove("route") }).toString())
+                                            intent.putExtra("result", JsonUtils.fromCollection(result.map { JsonUtils.clone(it) }.onEach { it.remove("route") }).toString())
                                             startActivity(intent)
                                         } else {
                                             val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                            intent.putExtra("result", JsonUtils.fromCollection(filteredResult.onEach { it.remove("route") }).toString())
+                                            intent.putExtra("result", JsonUtils.fromCollection(filteredResult.map { JsonUtils.clone(it) }.onEach { it.remove("route") }).toString())
                                             startActivity(intent)
 
                                             if (queryStop != null) {
