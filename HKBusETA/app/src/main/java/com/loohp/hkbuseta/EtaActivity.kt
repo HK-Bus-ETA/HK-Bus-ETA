@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -228,7 +227,6 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
-                val overrideDestName: String? by remember(eta) { derivedStateOf { eta.nextDest } }
 
                 val lat = stop.optJSONObject("location")!!.optDouble("lat")
                 val lng = stop.optJSONObject("location")!!.optDouble("lng")
@@ -242,7 +240,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
                 Title(index, stop.optJSONObject("name")!!, lat, lng, routeNumber, co, instance)
-                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route), lat, lng, routeNumber, co, instance, overrideDestName)
+                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route), lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(9, instance).dp))
                 EtaText(eta, 1, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
@@ -416,14 +414,14 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity, overrideDestName: String? = null) {
+fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     val name = if (Shared.language == "en") {
         val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-        routeName.plus(" To ").plus(overrideDestName?: destName.optString("en"))
+        routeName.plus(" To ").plus(destName.optString("en"))
     } else {
         val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-        routeName.plus(" 往").plus(overrideDestName?: destName.optString("zh"))
+        routeName.plus(" 往").plus(destName.optString("zh"))
     }
     AutoResizeText(
         modifier = Modifier

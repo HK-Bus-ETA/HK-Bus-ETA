@@ -343,13 +343,13 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun subTitle(destName: JSONObject, routeNumber: String, co: String, context: Context, overrideDestName: String? = null): LayoutElementBuilders.Text {
+        private fun subTitle(destName: JSONObject, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
             val name = if (Shared.language == "en") {
                 val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-                routeName.plus(" To ").plus(overrideDestName?: destName.optString("en"))
+                routeName.plus(" To ").plus(destName.optString("en"))
             } else {
                 val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-                routeName.plus(" 往").plus(overrideDestName?: destName.optString("zh"))
+                routeName.plus(" 往").plus(destName.optString("zh"))
             }
             return LayoutElementBuilders.Text.Builder()
                 .setModifiers(
@@ -528,7 +528,7 @@ class EtaTileServiceCommon {
                                     title(index, stopName, routeNumber, co, context)
                                 )
                                 .addContent(
-                                    subTitle(destName, routeNumber, co, context, eta.nextDest)
+                                    subTitle(destName, routeNumber, co, context)
                                 )
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()

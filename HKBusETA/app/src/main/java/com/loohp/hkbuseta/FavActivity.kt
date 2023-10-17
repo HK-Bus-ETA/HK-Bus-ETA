@@ -320,13 +320,12 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
         enabled = favouriteStopRoute.value != null,
         content = {
             val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
-            var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults[favoriteIndex]) }
-            val overrideDestName: String? by remember(eta) { derivedStateOf { eta?.nextDest } }
-
             if (favStopRoute != null) {
                 val stopId = favStopRoute.optString("stopId")
                 val co = favStopRoute.optString("co")
                 val route = favStopRoute.optJSONObject("route")!!
+
+                var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults[favoriteIndex]) }
 
                 LaunchedEffect (Unit) {
                     if (eta != null && !eta!!.isConnectionError) {
@@ -513,9 +512,9 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                     }
                     val mainText = operator.plus(" ").plus(if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber)
                     val routeText = if (Shared.language == "en") {
-                        "To ".plus(overrideDestName?: destName.optString("en"))
+                        "To ".plus(destName.optString("en"))
                     } else {
-                        "往".plus(overrideDestName?: destName.optString("zh"))
+                        "往".plus(destName.optString("zh"))
                     }
                     val subText = if (Shared.language == "en") {
                         (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.optString("en"))
