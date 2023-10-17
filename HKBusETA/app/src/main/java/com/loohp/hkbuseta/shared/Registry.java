@@ -63,6 +63,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -110,6 +111,7 @@ public class Registry {
     private volatile State state = State.LOADING;
     private volatile float updatePercentage = 0F;
     private volatile boolean preferencesLoaded = false;
+    private final Object preferenceWriteLock = new Object();
 
     private Registry(Context context) {
         try {
@@ -187,9 +189,11 @@ public class Registry {
                 PREFERENCES = new JSONObject();
             }
             PREFERENCES.put("language", language);
-            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                pw.write(PREFERENCES.toString());
-                pw.flush();
+            synchronized (preferenceWriteLock) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    pw.write(PREFERENCES.toString());
+                    pw.flush();
+                }
             }
             updateTileService(context);
         } catch (IOException | JSONException e) {
@@ -226,9 +230,11 @@ public class Registry {
             Shared.Companion.getFavoriteRouteStops().remove(favoriteIndex);
             if (PREFERENCES != null && PREFERENCES.has("favouriteRouteStops")) {
                 PREFERENCES.optJSONObject("favouriteRouteStops").remove(String.valueOf(favoriteIndex));
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.toString());
-                    pw.flush();
+                synchronized (preferenceWriteLock) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                        pw.write(PREFERENCES.toString());
+                        pw.flush();
+                    }
                 }
             }
             updateTileService(favoriteIndex, context);
@@ -253,12 +259,48 @@ public class Registry {
                 PREFERENCES.put("favouriteRouteStops", new JSONObject());
             }
             PREFERENCES.optJSONObject("favouriteRouteStops").put(String.valueOf(favoriteIndex), json);
-            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                pw.write(PREFERENCES.toString());
-                pw.flush();
+            synchronized (preferenceWriteLock) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    pw.write(PREFERENCES.toString());
+                    pw.flush();
+                }
             }
             updateTileService(favoriteIndex, context);
         } catch (IOException | JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void addLastLookupRoute(String routeNumber, String co, Context context) {
+        try {
+            Shared.Companion.addLookupRoute(routeNumber, co);
+            JSONArray lastLookupRoutes = JsonUtils.fromStream(Shared.Companion.getLookupRoutes().stream().map(LastLookupRoute::serialize));
+            if (PREFERENCES == null) {
+                PREFERENCES = new JSONObject();
+            }
+            PREFERENCES.put("lastLookupRoutes", lastLookupRoutes);
+            synchronized (preferenceWriteLock) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    pw.write(PREFERENCES.toString());
+                    pw.flush();
+                }
+            }
+        } catch (IOException | JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void clearLastLookupRoutes(Context context) {
+        try {
+            Shared.Companion.clearLookupRoute();
+            PREFERENCES.remove("lastLookupRoutes");
+            synchronized (preferenceWriteLock) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    pw.write(PREFERENCES.toString());
+                    pw.flush();
+                }
+            }
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -281,6 +323,13 @@ public class Registry {
                     for (Iterator<String> itr = favoriteRouteStops.keys(); itr.hasNext(); ) {
                         String key = itr.next();
                         Shared.Companion.getFavoriteRouteStops().put(Integer.parseInt(key), favoriteRouteStops.optJSONObject(key));
+                    }
+                }
+                if (PREFERENCES.has("lastLookupRoutes")) {
+                    JSONArray lastLookupRoutes = PREFERENCES.optJSONArray("lastLookupRoutes");
+                    for (int i = 0; i < lastLookupRoutes.length(); i++) {
+                        LastLookupRoute lastLookupRoute = LastLookupRoute.Companion.deserialize(lastLookupRoutes.optJSONObject(i));
+                        Shared.Companion.addLookupRoute(lastLookupRoute.getRouteNumber(), lastLookupRoute.getCo());
                     }
                 }
             } catch (JSONException e) {
@@ -531,10 +580,18 @@ public class Registry {
     }
 
     public List<JSONObject> findRoutes(String input, boolean exact) {
-        return findRoutes(input, exact, r -> true);
+        return findRoutes(input, exact, r -> true, (r, c) -> true);
     }
 
     public List<JSONObject> findRoutes(String input, boolean exact, Predicate<JSONObject> predicate) {
+        return findRoutes(input, exact, predicate, (r, c) -> true);
+    }
+
+    public List<JSONObject> findRoutes(String input, boolean exact, BiPredicate<JSONObject, String> coPredicate) {
+        return findRoutes(input, exact, r -> true, coPredicate);
+    }
+
+    public List<JSONObject> findRoutes(String input, boolean exact, Predicate<JSONObject> predicate, BiPredicate<JSONObject, String> coPredicate) {
         Predicate<String> routeMatcher = exact ? r -> r.equals(input) : r -> r.startsWith(input);
         try {
             Map<String, JSONObject> matchingRoutes = new HashMap<>();
@@ -563,6 +620,9 @@ public class Registry {
                     } else if (bound.has("mtr")) {
                         co = "mtr";
                     } else {
+                        continue;
+                    }
+                    if (!coPredicate.test(data, co)) {
                         continue;
                     }
                     String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co));

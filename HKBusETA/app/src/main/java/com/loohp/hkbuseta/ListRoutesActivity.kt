@@ -33,8 +33,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -43,6 +47,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,9 +60,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
+import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.shared.Registry
@@ -71,6 +81,7 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
@@ -80,6 +91,11 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
+enum class RecentSortMode(val enabled: Boolean) {
+
+    DISABLED(false), CHOICE(true), FORCED(true)
+
+}
 
 class ListRoutesActivity : ComponentActivity() {
 
@@ -91,14 +107,15 @@ class ListRoutesActivity : ComponentActivity() {
         Shared.setDefaultExceptionHandler(this)
 
         val result = JsonUtils.toList(JSONArray(intent.extras!!.getString("result")!!), JSONObject::class.java).onEach {
-            if (!it.has("route") && it.has("routeKey")) {
+            if (!it.has("route")) {
                 it.put("route", Registry.getInstance(this).findRouteByKey(it.getString("routeKey"), null))
             }
         }
         val showEta = intent.extras!!.getBoolean("showEta", false)
+        val recentSort = RecentSortMode.values()[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
 
         setContent {
-            MainElement(this, result, showEta) { isAdd, index, task ->
+            MainElement(this, result, showEta, recentSort) { isAdd, index, task ->
                 synchronized(etaUpdatesMap) {
                     if (isAdd) {
                         etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
@@ -144,10 +161,11 @@ class ListRoutesActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta: Boolean, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta: Boolean, recentSort: RecentSortMode, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val scroll = rememberLazyListState()
+        val scope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
 
         val padding by remember { derivedStateOf { StringUtils.scaledSize(7.5F, instance) } }
@@ -162,6 +180,23 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
         val etaUpdateTimes: MutableMap<Int, Long> = remember { ConcurrentHashMap() }
         val etaResults: MutableMap<Int, ETAQueryResult> = remember { ConcurrentHashMap() }
 
+        var sortedResult: List<JSONObject> by remember { mutableStateOf(emptyList()) }
+
+        var recentSortEnabled by remember { mutableStateOf(recentSort == RecentSortMode.FORCED) }
+        val sortedResults by remember { derivedStateOf { if (recentSortEnabled) sortedResult else result } }
+
+        RestartEffect {
+            if (recentSort.enabled) {
+                val newSorted = result.sortedBy { Shared.getFavoriteAndLookupRouteIndex(it.optJSONObject("route")!!.optString("route"), it.optString("co")) }
+                if (newSorted != sortedResult) {
+                    sortedResult = newSorted
+                    if (recentSortEnabled) {
+                        scope.launch { scroll.scrollToItem(0) }
+                    }
+                }
+            }
+        }
+
         LazyColumn (
             modifier = Modifier
                 .fillMaxSize()
@@ -173,97 +208,156 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
             state = scroll
         ) {
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
-            }
-            for ((index, route) in result.withIndex()) {
-                item {
-                    val co = route.optString("co")
-                    val kmbCtbJoint = route.optJSONObject("route")!!.optBoolean("kmbCtbJoint", false)
-                    val routeNumber = if (co == "mtr" && Shared.language != "en") {
-                        Shared.getMtrLineName(route.optJSONObject("route")!!.optString("route"))
-                    } else {
-                        route.optJSONObject("route")!!.optString("route")
-                    }
-                    val routeTextWidth = if (Shared.language != "en" && co == "mtr") mtrTextWidth else defaultTextWidth
-                    val rawColor = when (co) {
-                        "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
-                        "ctb" -> Color(0xFFFFE15E)
-                        "nlb" -> Color(0xFF9BFFC6)
-                        "mtr-bus" -> Color(0xFFAAD4FF)
-                        "gmb" -> Color(0xFF36FF42)
-                        "lightRail" -> Color(0xFFD3A809)
-                        "mtr" -> {
-                            when (route.optJSONObject("route")!!.optString("route")) {
-                                "AEL" -> Color(0xFF00888E)
-                                "TCL" -> Color(0xFFF3982D)
-                                "TML" -> Color(0xFF9C2E00)
-                                "TKL" -> Color(0xFF7E3C93)
-                                "EAL" -> Color(0xFF5EB7E8)
-                                "SIL" -> Color(0xFFCBD300)
-                                "TWL" -> Color(0xFFE60012)
-                                "ISL" -> Color(0xFF0075C2)
-                                "KTL" -> Color(0xFF00A040)
-                                "DRL" -> Color(0xFFEB6EA5)
-                                else -> Color.White
-                            }
-                        }
-                        else -> Color.White
-                    }
-                    var dest = route.optJSONObject("route")!!.optJSONObject("dest")!!.optString(Shared.language)
-                    dest = (if (Shared.language == "en") "To " else "往").plus(dest)
-
-                    Box (
-                        modifier = Modifier
-                            .fillParentMaxWidth()
-                            .combinedClickable(
-                                onClick = {
-                                    val intent = Intent(instance, ListStopsActivity::class.java)
-                                    intent.putExtra("route", route.toString())
-                                    instance.startActivity(intent)
-                                },
-                                onLongClick = {
-                                    instance.runOnUiThread {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        val text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(
-                                            if (Shared.language == "en") {
-                                                when (route.optString("co")) {
-                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
-                                                    "ctb" -> "CTB"
-                                                    "nlb" -> "NLB"
-                                                    "mtr-bus" -> "MTR-Bus"
-                                                    "gmb" -> "GMB"
-                                                    "lightRail" -> "LRT"
-                                                    "mtr" -> "MTR"
-                                                    else -> "???"
-                                                }
-                                            } else {
-                                                when (route.optString("co")) {
-                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
-                                                    "ctb" -> "城巴"
-                                                    "nlb" -> "嶼巴"
-                                                    "mtr-bus" -> "港鐵巴士"
-                                                    "gmb" -> "專線小巴"
-                                                    "lightRail" -> "輕鐵"
-                                                    "mtr" -> "港鐵"
-                                                    else -> "???"
-                                                }
-                                            }
-                                        ).plus(")")
-                                        Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+                when (recentSort) {
+                    RecentSortMode.CHOICE -> {
+                        Button(
+                            onClick = {
+                                recentSortEnabled = !recentSortEnabled
+                            },
+                            modifier = Modifier
+                                .padding(20.dp, 15.dp, 20.dp, 0.dp)
+                                .fillMaxWidth(0.8F)
+                                .height(StringUtils.scaledSize(35, instance).dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = MaterialTheme.colors.secondary,
+                                contentColor = Color(0xFFFFFFFF)
+                            ),
+                            content = {
+                                Text(
+                                    modifier = Modifier.fillMaxWidth(0.9F),
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colors.primary,
+                                    fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = 14.dp),
+                                    text = if (recentSortEnabled) {
+                                        if (Shared.language == "en") "Sort: Fav/Recent" else "排序: 喜歡/最近瀏覽"
+                                    } else {
+                                        if (Shared.language == "en") "Sort: Normal" else "排序: 正常"
                                     }
-                                }
-                            )
-                    ) {
-                        RouteRow(index, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                                )
+                            }
+                        )
                     }
-                    Spacer(
-                        modifier = Modifier
-                            .padding(25.dp, 0.dp)
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color(0xFF333333))
-                    )
+                    RecentSortMode.FORCED -> {
+                        Button(
+                            onClick = {
+                                Registry.getInstance(instance).clearLastLookupRoutes(instance)
+                                instance.finish()
+                            },
+                            modifier = Modifier
+                                .padding(20.dp, 15.dp, 20.dp, 0.dp)
+                                .width(StringUtils.scaledSize(35, instance).dp)
+                                .height(StringUtils.scaledSize(35, instance).dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = MaterialTheme.colors.secondary,
+                                contentColor = Color(0xFFFF0000)
+                            ),
+                            content = {
+                                Icon(
+                                    modifier = Modifier.size(StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp).dp),
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = if (Shared.language == "en") "Clear" else "清除",
+                                    tint = Color(0xFFFF0000),
+                                )
+                            }
+                        )
+                    }
+                    else -> {
+                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
+                    }
                 }
+            }
+            itemsIndexed(
+                items = sortedResults,
+                key = { _, route -> route.optString("routeKey") }
+            ) { index, route ->
+                val co = route.optString("co")
+                val kmbCtbJoint = route.optJSONObject("route")!!.optBoolean("kmbCtbJoint", false)
+                val routeNumber = if (co == "mtr" && Shared.language != "en") {
+                    Shared.getMtrLineName(route.optJSONObject("route")!!.optString("route"))
+                } else {
+                    route.optJSONObject("route")!!.optString("route")
+                }
+                val routeTextWidth = if (Shared.language != "en" && co == "mtr") mtrTextWidth else defaultTextWidth
+                val rawColor = when (co) {
+                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
+                    "ctb" -> Color(0xFFFFE15E)
+                    "nlb" -> Color(0xFF9BFFC6)
+                    "mtr-bus" -> Color(0xFFAAD4FF)
+                    "gmb" -> Color(0xFF36FF42)
+                    "lightRail" -> Color(0xFFD3A809)
+                    "mtr" -> {
+                        when (route.optJSONObject("route")!!.optString("route")) {
+                            "AEL" -> Color(0xFF00888E)
+                            "TCL" -> Color(0xFFF3982D)
+                            "TML" -> Color(0xFF9C2E00)
+                            "TKL" -> Color(0xFF7E3C93)
+                            "EAL" -> Color(0xFF5EB7E8)
+                            "SIL" -> Color(0xFFCBD300)
+                            "TWL" -> Color(0xFFE60012)
+                            "ISL" -> Color(0xFF0075C2)
+                            "KTL" -> Color(0xFF00A040)
+                            "DRL" -> Color(0xFFEB6EA5)
+                            else -> Color.White
+                        }
+                    }
+                    else -> Color.White
+                }
+                var dest = route.optJSONObject("route")!!.optJSONObject("dest")!!.optString(Shared.language)
+                dest = (if (Shared.language == "en") "To " else "往").plus(dest)
+
+                Box (
+                    modifier = Modifier
+                        .fillParentMaxWidth()
+                        .animateItemPlacement()
+                        .combinedClickable(
+                            onClick = {
+                                Registry.getInstance(instance).addLastLookupRoute(routeNumber, co, instance)
+                                val intent = Intent(instance, ListStopsActivity::class.java)
+                                intent.putExtra("route", route.toString())
+                                instance.startActivity(intent)
+                            },
+                            onLongClick = {
+                                instance.runOnUiThread {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    val text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(if (Shared.language == "en") {
+                                            when (route.optString("co")) {
+                                                "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
+                                                "ctb" -> "CTB"
+                                                "nlb" -> "NLB"
+                                                "mtr-bus" -> "MTR-Bus"
+                                                "gmb" -> "GMB"
+                                                "lightRail" -> "LRT"
+                                                "mtr" -> "MTR"
+                                                else -> "???"
+                                            }
+                                        } else {
+                                            when (route.optString("co")) {
+                                                "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
+                                                "ctb" -> "城巴"
+                                                "nlb" -> "嶼巴"
+                                                "mtr-bus" -> "港鐵巴士"
+                                                "gmb" -> "專線小巴"
+                                                "lightRail" -> "輕鐵"
+                                                "mtr" -> "港鐵"
+                                                else -> "???"
+                                            }
+                                        }
+                                    ).plus(")")
+                                    Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        )
+                ) {
+                    RouteRow(index, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                }
+                Spacer(
+                    modifier = Modifier
+                        .padding(25.dp, 0.dp)
+                        .animateItemPlacement()
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Color(0xFF333333))
+                )
             }
             item {
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
@@ -375,8 +469,19 @@ fun ETAElement(index: Int, route: JSONObject, etaTextWidth: Float, etaResults: M
                 if (eta!!.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(
+                                TextUnit(
+                                    StringUtils.scaledSize(16F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
+                            )
+                            .offset(
+                                0.dp,
+                                TextUnit(
+                                    StringUtils.scaledSize(3F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
+                            ),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -384,16 +489,38 @@ fun ETAElement(index: Int, route: JSONObject, etaTextWidth: Float, etaResults: M
                 } else if (eta!!.isTyphoonSchedule) {
                     Image(
                         modifier = Modifier
-                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(
+                                TextUnit(
+                                    StringUtils.scaledSize(16F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
+                            )
+                            .offset(
+                                0.dp,
+                                TextUnit(
+                                    StringUtils.scaledSize(3F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
+                            ),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次"
                     )
                 } else {
                     Icon(
                         modifier = Modifier
-                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(
+                                TextUnit(
+                                    StringUtils.scaledSize(16F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
+                            )
+                            .offset(
+                                0.dp,
+                                TextUnit(
+                                    StringUtils.scaledSize(3F, instance),
+                                    TextUnitType.Sp
+                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
+                            ),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),

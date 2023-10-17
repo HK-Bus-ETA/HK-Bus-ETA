@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class JsonUtils {
@@ -79,6 +80,12 @@ public class JsonUtils {
         for (T t : list) {
             array.put(t);
         }
+        return array;
+    }
+
+    public static <T> JSONArray fromStream(Stream<T> stream) {
+        JSONArray array = new JSONArray();
+        stream.forEach(array::put);
         return array;
     }
 

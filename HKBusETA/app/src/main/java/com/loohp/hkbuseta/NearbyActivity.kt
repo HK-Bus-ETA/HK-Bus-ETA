@@ -192,6 +192,7 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
                 val intent = Intent(instance, ListRoutesActivity::class.java)
                 intent.putExtra("result", JsonUtils.fromCollection(list.onEach { it.remove("route") }).toString())
                 intent.putExtra("showEta", true)
+                intent.putExtra("recentSort", RecentSortMode.CHOICE.ordinal)
                 instance.startActivity(intent)
                 instance.finish()
             }

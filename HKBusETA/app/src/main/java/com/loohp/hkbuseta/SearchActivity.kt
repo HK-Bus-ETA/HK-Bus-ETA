@@ -58,6 +58,7 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.compose.AdvanceButton
+import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.shared.Registry
@@ -167,7 +168,7 @@ fun MainElement(instance: SearchActivity) {
                 KeyboardButton(instance, '7', state)
                 KeyboardButton(instance, '4', state)
                 KeyboardButton(instance, '1', state)
-                KeyboardButton(instance, '<', '-', state, Color.Red, Icons.Outlined.Delete)
+                KeyboardButton(instance, '<', '-', state, Color.Red, Icons.Outlined.Delete, R.drawable.baseline_history_24)
             }
             Column {
                 KeyboardButton(instance, '8', state)
@@ -281,11 +282,18 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
     if (originalText == defaultText()) {
         originalText = ""
     }
-    if (input == '/' || input == '!') {
-        val result = if (input == '!') Registry.getInstance(instance).findRoutes("", false) { it.optJSONObject("bound")!!.has("mtr") } else Registry.getInstance(instance).findRoutes(originalText, true)
+    if (input == '/' || input == '!' || (input == '<' && Shared.hasFavoriteAndLookupRoute() && originalText.isEmpty())) {
+        val result = when (input) {
+            '!' -> Registry.getInstance(instance).findRoutes("", false) { r -> r.optJSONObject("bound")!!.has("mtr") }
+            '<' -> Registry.getInstance(instance).findRoutes("", false) { r, c -> Shared.getFavoriteAndLookupRouteIndex(r.optString("route"), c) < Int.MAX_VALUE }
+            else -> Registry.getInstance(instance).findRoutes(originalText, true)
+        }
         if (result != null && result.isNotEmpty()) {
             val intent = Intent(instance, ListRoutesActivity::class.java)
             intent.putExtra("result", JsonUtils.fromCollection(result.onEach { it.remove("route") }).toString())
+            if (input == '<') {
+                intent.putExtra("recentSort", RecentSortMode.FORCED.ordinal)
+            }
             instance.startActivity(intent)
         }
     } else {
@@ -308,12 +316,13 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
 
 @Composable
 fun KeyboardButton(instance: SearchActivity, content: Char, state: MutableState<RouteKeyboardState>) {
-    KeyboardButton(instance, content, null, state, MaterialTheme.colors.primary, null)
+    KeyboardButton(instance, content, null, state, MaterialTheme.colors.primary)
 }
 
 
 @Composable
-fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, state: MutableState<RouteKeyboardState>, color: Color, icon: Any?) {
+fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, state: MutableState<RouteKeyboardState>, color: Color, vararg icons: Any) {
+    val icon = if (icons.isEmpty()) null else icons[0]
     val enabled = when (content) {
         '/' -> state.value.nextCharResult.hasExactMatch()
         '<' -> true
@@ -322,6 +331,12 @@ fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, 
     }
     val haptic = LocalHapticFeedback.current
     val actualColor = if (enabled) color else Color(0xFF444444)
+
+    var hasHistory by remember { mutableStateOf(Shared.hasFavoriteAndLookupRoute()) }
+    RestartEffect {
+        hasHistory = Shared.hasFavoriteAndLookupRoute()
+    }
+
     AdvanceButton(
         onClick = {
             handleInput(instance, state, content)
@@ -334,41 +349,45 @@ fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, 
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(35, instance).dp)
-            .height(
-                StringUtils.scaledSize(
-                    if (content.isLetter() || content == '!') 30 else 35,
-                    instance
-                ).dp
-            ),
+            .height(StringUtils.scaledSize(if (content.isLetter() || content == '!') 30 else 35, instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = Color.Transparent,
             contentColor = actualColor
         ),
         enabled = enabled,
         content = {
-            when (icon) {
-                null -> {
-                    Text(
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        color = actualColor,
-                        text = content.toString()
-                    )
-                }
-                is ImageVector -> {
-                    Icon(
-                        modifier = Modifier.size(17.dp),
-                        imageVector = icon,
-                        contentDescription = content.toString(),
-                        tint = actualColor,
-                    )
-                }
-                is Int -> {
-                    Image(
-                        modifier = Modifier.size(17.dp),
-                        painter = painterResource(icon),
-                        contentDescription = content.toString()
-                    )
+            if (content == '<' && hasHistory && state.value.text.let { it.isEmpty() || it == defaultText() } && icons.size > 1) {
+                Icon(
+                    modifier = Modifier.size(17.dp),
+                    painter = painterResource(icons[1] as Int),
+                    contentDescription = content.toString(),
+                    tint = Color(0xFF03A9F4),
+                )
+            } else {
+                when (icon) {
+                    null -> {
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            color = actualColor,
+                            text = content.toString()
+                        )
+                    }
+                    is ImageVector -> {
+                        Icon(
+                            modifier = Modifier.size(17.dp),
+                            imageVector = icon,
+                            contentDescription = content.toString(),
+                            tint = actualColor,
+                        )
+                    }
+                    is Int -> {
+                        Image(
+                            modifier = Modifier.size(17.dp),
+                            painter = painterResource(icon),
+                            contentDescription = content.toString()
+                        )
+                    }
                 }
             }
         }

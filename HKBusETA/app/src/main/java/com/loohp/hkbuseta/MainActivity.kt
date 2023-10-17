@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
                             Thread {
                                 if (stopId != null && co != null && stop != null && route != null) {
                                     val routeParsed = JSONObject(route)
-                                    Registry.getInstance(this@MainActivity).findRoutes(routeParsed.optString("route"), true) {
+                                    Registry.getInstance(this@MainActivity).findRoutes(routeParsed.optString("route"), true) { it ->
                                         val bound = it.optJSONObject("bound")!!
                                         if (!bound.has(co) || bound.optString(co) != routeParsed.optJSONObject("bound")!!.optString(co)) {
                                             return@findRoutes false
@@ -124,8 +124,10 @@ class MainActivity : ComponentActivity() {
                                             intent.putExtra("result", JsonUtils.fromCollection(filteredResult.map { JsonUtils.clone(it) }.onEach { it.remove("route") }).toString())
                                             startActivity(intent)
 
+                                            val it = filteredResult[0]
+                                            Registry.getInstance(this@MainActivity).addLastLookupRoute(queryRouteNumber, it.optString("co"), this@MainActivity)
+
                                             if (queryStop != null) {
-                                                val it = filteredResult[0]
                                                 val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)
                                                 intent2.putExtra("route", it.toString())
                                                 intent2.putExtra("scrollToStop", queryStop)
@@ -149,7 +151,6 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                 }
                                             } else if (filteredResult.size == 1) {
-                                                val it = filteredResult[0]
                                                 val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)
                                                 intent2.putExtra("route", it.toString())
                                                 startActivity(intent2)

@@ -39,6 +39,7 @@ import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -50,6 +51,45 @@ data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
         } else {
             false
         }
+    }
+
+}
+
+data class LastLookupRoute(val routeNumber: String, val co: String) {
+
+    companion object {
+
+        fun deserialize(json: JSONObject): LastLookupRoute {
+            val routeNumber = json.optString("r")
+            val co = json.optString("c")
+            return LastLookupRoute(routeNumber, co)
+        }
+
+    }
+
+    fun serialize(): JSONObject {
+        val json = JSONObject()
+        json.put("r", routeNumber)
+        json.put("c", co)
+        return json
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as LastLookupRoute
+
+        if (routeNumber != other.routeNumber) return false
+        if (co != other.co) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = routeNumber.hashCode()
+        result = 31 * result + co.hashCode()
+        return result
     }
 
 }
@@ -247,20 +287,7 @@ class Shared {
                 return true
             }
             return when (routeNumber) {
-                "N30" -> true
-                "N31" -> true
-                "N42" -> true
-                "N42A" -> true
-                "N64" -> true
-                "R8" -> true
-                "R33" -> true
-                "R42" -> true
-                "X1" -> true
-                "X33" -> true
-                "X34" -> true
-                "X40" -> true
-                "X43" -> true
-                "X47" -> true
+                "N30", "N31", "N42", "N42A", "N64", "R8", "R33", "R42", "X1", "X33", "X34", "X40", "X43", "X47" -> true
                 else -> false
             }
         }
@@ -268,6 +295,51 @@ class Shared {
         var language = "zh"
 
         val favoriteRouteStops: Map<Int, JSONObject> = ConcurrentHashMap()
+
+        private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
+        private val lastLookupRoutes: LinkedList<LastLookupRoute> = LinkedList()
+
+        fun addLookupRoute(routeNumber: String, co: String) {
+            synchronized(lastLookupRoutes) {
+                val data = LastLookupRoute(routeNumber, co)
+                lastLookupRoutes.removeIf { it == data }
+                lastLookupRoutes.add(data)
+                while (lastLookupRoutes.size > LAST_LOOKUP_ROUTES_MEM_SIZE) {
+                    lastLookupRoutes.removeFirst()
+                }
+            }
+        }
+
+        fun clearLookupRoute() {
+            lastLookupRoutes.clear()
+        }
+
+        fun getLookupRoutes(): List<LastLookupRoute> {
+            synchronized(lastLookupRoutes) {
+                return ArrayList(lastLookupRoutes)
+            }
+        }
+
+        fun getFavoriteAndLookupRouteIndex(routeNumber: String, co: String): Int {
+            for ((index, route) in favoriteRouteStops) {
+                if (route.optJSONObject("route")!!.optString("route") == routeNumber && route.optString("co") == co) {
+                    return index
+                }
+            }
+            synchronized(lastLookupRoutes) {
+                for ((index, data) in lastLookupRoutes.withIndex()) {
+                    val (lookupRouteNumber, lookupCo) = data
+                    if (lookupRouteNumber == routeNumber && lookupCo == co) {
+                        return (lastLookupRoutes.size - index) + 8
+                    }
+                }
+            }
+            return Int.MAX_VALUE
+        }
+
+        fun hasFavoriteAndLookupRoute(): Boolean {
+            return favoriteRouteStops.isNotEmpty() || lastLookupRoutes.isNotEmpty()
+        }
 
         private val currentActivityAccessLock = Object()
         private var currentActivity: CurrentActivityData? = null

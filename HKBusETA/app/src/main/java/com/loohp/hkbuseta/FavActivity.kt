@@ -267,7 +267,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                     val stop = favStopRoute.optJSONObject("stop")!!
                     val route = favStopRoute.optJSONObject("route")!!
 
-                    Registry.getInstance(instance).findRoutes(route.optString("route"), true) {
+                    Registry.getInstance(instance).findRoutes(route.optString("route"), true) { it ->
                         val bound = it.optJSONObject("bound")!!
                         if (!bound.has(co) || bound.optString(co) != route.optJSONObject("bound")!!.optString(co)) {
                             return@findRoutes false
