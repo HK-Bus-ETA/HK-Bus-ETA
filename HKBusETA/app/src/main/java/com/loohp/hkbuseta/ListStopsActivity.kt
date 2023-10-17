@@ -258,7 +258,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                 if (stopId != null) {
                     stopsList.withIndex().find { it.value.stopId == stopId }?.let {
                         scope.launch {
-                            scroll.animateScrollToItem(it.index + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) - UnitUtils.spToPixels(instance, StringUtils.scaledSize(15F, instance)).roundToInt())
+                            scroll.animateScrollToItem(it.index + 2, (-ScreenSizeUtils.getScreenHeight(instance) / 2) - UnitUtils.spToPixels(instance, StringUtils.scaledSize(15F, instance)).roundToInt())
                         }
                     }
                 } else if (origin != null) {
@@ -373,8 +373,8 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                     )
                 }
             }
-            items(5) {
-                Spacer(modifier = Modifier.size(7.dp))
+            item {
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
             }
         }
     }
@@ -384,7 +384,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
 fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor: Color, destName: JSONObject, specialDests: List<JSONObject>, instance: ListStopsActivity) {
     Column(
         modifier = Modifier
-            .defaultMinSize(minHeight = 35.dp)
+            .defaultMinSize(minHeight = StringUtils.scaledSize(35, instance).dp)
             .padding(20.dp, 20.dp, 20.dp, 5.dp)
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -191,7 +191,7 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(30, instance).dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
             }
         }
     }

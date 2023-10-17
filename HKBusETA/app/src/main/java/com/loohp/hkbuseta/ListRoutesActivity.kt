@@ -173,7 +173,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
             state = scroll
         ) {
             item {
-                Spacer(modifier = Modifier.size(35.dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
             }
             for ((index, route) in result.withIndex()) {
                 item {
@@ -265,8 +265,8 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                     )
                 }
             }
-            items(5) {
-                Spacer(modifier = Modifier.size(7.dp))
+            item {
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
             }
         }
     }
