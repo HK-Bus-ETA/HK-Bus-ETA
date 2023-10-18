@@ -73,8 +73,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import java.util.zip.GZIPInputStream;
 
-import kotlin.Triple;
-
 public class Registry {
 
     private static Registry INSTANCE = null;
@@ -641,7 +639,7 @@ public class Registry {
                     if (!coPredicate.test(data, co)) {
                         continue;
                     }
-                    String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co));
+                    String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co)) + (co.equals("gmb") ? ("," + data.optString("gtfsId")) : "");
 
                     if (matchingRoutes.containsKey(key0)) {
                         try {
@@ -803,7 +801,7 @@ public class Registry {
 
                     if (isKmb || isCtb || isNlb || isMtrBus || isGmb || isLrt || isMtr) {
                         String co = isKmb ? "kmb" : (isCtb ? "ctb" : (isNlb ? "nlb" : (isMtrBus ? "mtr-bus" : (isGmb ? "gmb" : (isLrt ? "lightRail" : "mtr")))));
-                        String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co));
+                        String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co)) + (co.equals("gmb") ? ("," + data.optString("gtfsId")) : "");
 
                         if (nearbyRoutes.containsKey(key0)) {
                             JSONObject existingNearbyRoute = nearbyRoutes.get(key0);
@@ -1043,8 +1041,9 @@ public class Registry {
         }
     }
 
-    public List<JSONObject> getAllDestinations(String routeNumber, String bound, String co, String gtfsId) {
+    public Pair<List<JSONObject>, List<JSONObject>> getAllOriginsAndDestinations(String routeNumber, String bound, String co, String gtfsId) {
         try {
+            List<Pair<JSONObject, Integer>> origs = new ArrayList<>();
             List<Pair<JSONObject, Integer>> dests = new ArrayList<>();
             for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
                 String key = itr.next();
@@ -1060,16 +1059,26 @@ public class Registry {
                         }
                     }
                     if (flag) {
-                        JSONObject dest = route.optJSONObject("dest");
                         int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
-                        Pair<JSONObject, Integer> old = dests.stream().filter(d -> d.first.optString("zh").equals(dest.optString("zh"))).findFirst().orElse(null);
-                        if (old == null || old.second > serviceType) {
+
+                        JSONObject orig = route.optJSONObject("orig");
+                        Pair<JSONObject, Integer> oldOrig = dests.stream().filter(d -> d.first.optString("zh").equals(orig.optString("zh"))).findFirst().orElse(null);
+                        if (oldOrig == null || oldOrig.second > serviceType) {
+                            origs.add(Pair.create(orig, serviceType));
+                        }
+
+                        JSONObject dest = route.optJSONObject("dest");
+                        Pair<JSONObject, Integer> oldDest = dests.stream().filter(d -> d.first.optString("zh").equals(dest.optString("zh"))).findFirst().orElse(null);
+                        if (oldDest == null || oldDest.second > serviceType) {
                             dests.add(Pair.create(dest, serviceType));
                         }
                     }
                 }
             }
-            return dests.stream().sorted(Comparator.comparing(p -> p.second)).map(p -> p.first).collect(Collectors.toList());
+            return Pair.create(
+                    origs.stream().sorted(Comparator.comparing(p -> p.second)).map(p -> p.first).collect(Collectors.toList()),
+                    dests.stream().sorted(Comparator.comparing(p -> p.second)).map(p -> p.first).collect(Collectors.toList())
+            );
         } catch (Throwable e) {
             throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gtfsId + ": " + e.getMessage(), e);
         }

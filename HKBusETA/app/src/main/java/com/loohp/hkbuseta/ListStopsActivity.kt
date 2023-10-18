@@ -194,8 +194,12 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
         val bound = remember { if (co.equals("nlb")) route.optJSONObject("route")!!.optString("nlbId") else route.optJSONObject("route")!!.optJSONObject("bound")!!.optString(co) }
         val gtfsId = remember { route.optJSONObject("route")!!.optString("gtfsId") }
         val interchangeSearch = remember { route.optBoolean("interchangeSearch", false) }
+        val origName = remember { route.optJSONObject("route")!!.optJSONObject("orig")!! }
         val destName = remember { route.optJSONObject("route")!!.optJSONObject("dest")!! }
-        val specialDests = remember { Registry.getInstance(instance).getAllDestinations(routeNumber, bound, co, gtfsId).filter { it.optString("zh") != destName.optString("zh") } }
+        val specialOrigsDests = remember { Registry.getInstance(instance).getAllOriginsAndDestinations(routeNumber, bound, co, gtfsId) }
+        val specialOrigs = remember { specialOrigsDests.first.filter { it.optString("zh") != origName.optString("zh") } }
+        val specialDests = remember { specialOrigsDests.second.filter { it.optString("zh") != destName.optString("zh") } }
+
         val coColor = remember { when (co) {
             "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
             "ctb" -> Color(0xFFFFE15E)
@@ -320,7 +324,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
             state = scroll
         ) {
             item {
-                HeaderElement(routeNumber, kmbCtbJoint, co, coColor, destName, specialDests, instance)
+                HeaderElement(routeNumber, kmbCtbJoint, co, coColor, destName, specialOrigs, specialDests, instance)
             }
             for ((index, entry) in stopsList.withIndex()) {
                 item {
@@ -381,7 +385,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
 }
 
 @Composable
-fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor: Color, destName: JSONObject, specialDests: List<JSONObject>, instance: ListStopsActivity) {
+fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor: Color, destName: JSONObject, specialOrigs: List<JSONObject>, specialDests: List<JSONObject>, instance: ListStopsActivity) {
     Column(
         modifier = Modifier
             .defaultMinSize(minHeight = StringUtils.scaledSize(35, instance).dp)
@@ -461,6 +465,25 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
                 "往".plus(destName.optString("zh"))
             }
         )
+        if (specialOrigs.isNotEmpty()) {
+            AutoResizeText(
+                modifier = Modifier
+                    .padding(5.dp, 0.dp)
+                    .fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                fontSizeRange = FontSizeRange(
+                    min = StringUtils.scaledSize(1F, instance).dp.sp,
+                    max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(14F, instance).dp)
+                ),
+                color = Color(0xFFFFFFFF).adjustBrightness(0.65F),
+                maxLines = 2,
+                text = if (Shared.language == "en") {
+                    "Special From ".plus(specialOrigs.joinToString("/") { it.optString("en") })
+                } else {
+                    "特別班 從".plus(specialOrigs.joinToString("/") { it.optString("zh") }).plus("開出")
+                }
+            )
+        }
         if (specialDests.isNotEmpty()) {
             AutoResizeText(
                 modifier = Modifier
