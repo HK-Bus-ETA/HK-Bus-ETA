@@ -249,6 +249,28 @@ def capitalize_kmb_english_names():
             stop["name"]["en"] = apply_recapitalize_keywords(capitalize(stop["name"]["en"]))
 
 
+def inject_nlb_origs():
+    global DATA_SHEET
+    nlb_routes_orig = {}
+    nlb_routes_lowest_id = {}
+    for route in DATA_SHEET["routeList"].values():
+        if "nlb" in route["bound"]:
+            route_number = route["route"]
+            nlb_id = route["nlbId"]
+            if route_number not in nlb_routes_orig:
+                nlb_routes_orig[route_number] = set()
+            nlb_routes_orig[route_number].add(route["orig"]["zh"])
+            if route_number not in nlb_routes_lowest_id or nlb_id < nlb_routes_lowest_id[route_number]:
+                nlb_routes_lowest_id[route_number] = nlb_id
+    for route in DATA_SHEET["routeList"].values():
+        if "nlb" in route["bound"]:
+            route_number = route["route"]
+            nlb_id = route["nlbId"]
+            if route_number in nlb_routes_lowest_id and nlb_id != nlb_routes_lowest_id[route_number] and route_number in nlb_routes_orig and len(nlb_routes_orig[route_number]) > 1:
+                route["dest"]["zh"] += " (從" + route["orig"]["zh"] + "開出)"
+                route["dest"]["en"] += " (From " + route["orig"]["en"] + ")"
+
+
 download_and_process_kmb_route()
 download_and_process_ctb_route()
 download_and_process_nlb_route()
@@ -257,6 +279,7 @@ download_and_process_gmb_route()
 download_and_process_data_sheet()
 download_and_process_mtr_bus_route_and_stops()
 capitalize_kmb_english_names()
+inject_nlb_origs()
 
 output = {
     "dataSheet": DATA_SHEET,
