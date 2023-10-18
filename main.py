@@ -252,21 +252,19 @@ def capitalize_kmb_english_names():
 def inject_nlb_origs():
     global DATA_SHEET
     nlb_routes_orig = {}
-    nlb_routes_lowest_id = {}
     for route in DATA_SHEET["routeList"].values():
         if "nlb" in route["bound"]:
             route_number = route["route"]
-            nlb_id = route["nlbId"]
+            nlb_id = int(route["nlbId"])
             if route_number not in nlb_routes_orig:
-                nlb_routes_orig[route_number] = set()
-            nlb_routes_orig[route_number].add(route["orig"]["zh"])
-            if route_number not in nlb_routes_lowest_id or nlb_id < nlb_routes_lowest_id[route_number]:
-                nlb_routes_lowest_id[route_number] = nlb_id
+                nlb_routes_orig[route_number] = {}
+            if route["orig"]["zh"] not in nlb_routes_orig[route_number] or nlb_id < nlb_routes_orig[route_number][route["orig"]["zh"]]:
+                nlb_routes_orig[route_number][route["orig"]["zh"]] = nlb_id
     for route in DATA_SHEET["routeList"].values():
         if "nlb" in route["bound"]:
             route_number = route["route"]
-            nlb_id = route["nlbId"]
-            if route_number in nlb_routes_lowest_id and nlb_id != nlb_routes_lowest_id[route_number] and route_number in nlb_routes_orig and len(nlb_routes_orig[route_number]) > 1:
+            nlb_id = int(route["nlbId"])
+            if nlb_id > nlb_routes_orig[route_number][route["orig"]["zh"]]:
                 route["dest"]["zh"] += " (從" + route["orig"]["zh"] + "開出)"
                 route["dest"]["en"] += " (From " + route["orig"]["en"] + ")"
 
