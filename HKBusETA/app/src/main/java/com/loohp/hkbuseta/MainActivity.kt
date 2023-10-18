@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
                                             startActivity(intent)
 
                                             val it = filteredResult[0]
-                                            Registry.getInstance(this@MainActivity).addLastLookupRoute(queryRouteNumber, it.optString("co"), this@MainActivity)
+                                            Registry.getInstance(this@MainActivity).addLastLookupRoute(queryRouteNumber, it.optString("co"), it.optJSONObject("route")!!.optString("gtfsId"), this@MainActivity)
 
                                             if (queryStop != null) {
                                                 val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)

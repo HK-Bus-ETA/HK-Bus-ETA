@@ -274,9 +274,9 @@ public class Registry {
         }
     }
 
-    public void addLastLookupRoute(String routeNumber, String co, Context context) {
+    public void addLastLookupRoute(String routeNumber, String co, String gtfsId, Context context) {
         try {
-            Shared.Companion.addLookupRoute(routeNumber, co);
+            Shared.Companion.addLookupRoute(routeNumber, co, gtfsId);
             JSONArray lastLookupRoutes = JsonUtils.fromStream(Shared.Companion.getLookupRoutes().stream().map(LastLookupRoute::serialize));
             if (PREFERENCES == null) {
                 PREFERENCES = new JSONObject();
@@ -332,7 +332,9 @@ public class Registry {
                     JSONArray lastLookupRoutes = PREFERENCES.optJSONArray("lastLookupRoutes");
                     for (int i = 0; i < lastLookupRoutes.length(); i++) {
                         LastLookupRoute lastLookupRoute = LastLookupRoute.Companion.deserialize(lastLookupRoutes.optJSONObject(i));
-                        Shared.Companion.addLookupRoute(lastLookupRoute.getRouteNumber(), lastLookupRoute.getCo());
+                        if (lastLookupRoute.isValid()) {
+                            Shared.Companion.addLookupRoute(lastLookupRoute);
+                        }
                     }
                 }
             } catch (JSONException e) {

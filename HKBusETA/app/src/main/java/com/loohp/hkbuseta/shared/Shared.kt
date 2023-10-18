@@ -55,22 +55,34 @@ data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
 
 }
 
-data class LastLookupRoute(val routeNumber: String, val co: String) {
+data class LastLookupRoute(val routeNumber: String, val co: String, val gtfsId: String) {
 
     companion object {
 
         fun deserialize(json: JSONObject): LastLookupRoute {
             val routeNumber = json.optString("r")
             val co = json.optString("c")
-            return LastLookupRoute(routeNumber, co)
+            val gtfsId = if (co == "gmb") json.optString("g") else ""
+            return LastLookupRoute(routeNumber, co, gtfsId)
         }
 
+    }
+
+    fun isValid(): Boolean {
+        if (routeNumber.isBlank() || co.isBlank()) {
+            return false
+        }
+        if (co == "gmb" && gtfsId.isBlank()) {
+            return false
+        }
+        return true
     }
 
     fun serialize(): JSONObject {
         val json = JSONObject()
         json.put("r", routeNumber)
         json.put("c", co)
+        if (co == "gmb") json.put("g", gtfsId)
         return json
     }
 
@@ -82,6 +94,7 @@ data class LastLookupRoute(val routeNumber: String, val co: String) {
 
         if (routeNumber != other.routeNumber) return false
         if (co != other.co) return false
+        if (co == "gmb" && gtfsId != other.gtfsId) return false
 
         return true
     }
@@ -89,6 +102,7 @@ data class LastLookupRoute(val routeNumber: String, val co: String) {
     override fun hashCode(): Int {
         var result = routeNumber.hashCode()
         result = 31 * result + co.hashCode()
+        if (co == "gmb") result = 31 * result + gtfsId.hashCode()
         return result
     }
 
@@ -299,9 +313,12 @@ class Shared {
         private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
         private val lastLookupRoutes: LinkedList<LastLookupRoute> = LinkedList()
 
-        fun addLookupRoute(routeNumber: String, co: String) {
+        fun addLookupRoute(routeNumber: String, co: String, gtfsId: String) {
+            addLookupRoute(LastLookupRoute(routeNumber, co, gtfsId))
+        }
+
+        fun addLookupRoute(data: LastLookupRoute) {
             synchronized(lastLookupRoutes) {
-                val data = LastLookupRoute(routeNumber, co)
                 lastLookupRoutes.removeIf { it == data }
                 lastLookupRoutes.add(data)
                 while (lastLookupRoutes.size > LAST_LOOKUP_ROUTES_MEM_SIZE) {
@@ -320,16 +337,17 @@ class Shared {
             }
         }
 
-        fun getFavoriteAndLookupRouteIndex(routeNumber: String, co: String): Int {
+        fun getFavoriteAndLookupRouteIndex(routeNumber: String, co: String, gtfsId: String): Int {
             for ((index, route) in favoriteRouteStops) {
-                if (route.optJSONObject("route")!!.optString("route") == routeNumber && route.optString("co") == co) {
+                val routeData = route.optJSONObject("route")!!
+                if (routeData.optString("route") == routeNumber && route.optString("co") == co && (co != "gmb" || routeData.optString("gtfsId") == gtfsId)) {
                     return index
                 }
             }
             synchronized(lastLookupRoutes) {
                 for ((index, data) in lastLookupRoutes.withIndex()) {
-                    val (lookupRouteNumber, lookupCo) = data
-                    if (lookupRouteNumber == routeNumber && lookupCo == co) {
+                    val (lookupRouteNumber, lookupCo, lookupGtfsId) = data
+                    if (lookupRouteNumber == routeNumber && lookupCo == co && (co != "gmb" || gtfsId == lookupGtfsId)) {
                         return (lastLookupRoutes.size - index) + 8
                     }
                 }

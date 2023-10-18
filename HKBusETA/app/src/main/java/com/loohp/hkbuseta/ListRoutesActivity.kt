@@ -187,7 +187,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
 
         RestartEffect {
             if (recentSort.enabled) {
-                val newSorted = result.sortedBy { Shared.getFavoriteAndLookupRouteIndex(it.optJSONObject("route")!!.optString("route"), it.optString("co")) }
+                val newSorted = result.sortedBy { Shared.getFavoriteAndLookupRouteIndex(it.optJSONObject("route")!!.optString("route"), it.optString("co"), it.optJSONObject("route")!!.optString("gtfsId")) }
                 if (newSorted != sortedResult) {
                     sortedResult = newSorted
                     if (recentSortEnabled) {
@@ -311,7 +311,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                         .animateItemPlacement()
                         .combinedClickable(
                             onClick = {
-                                Registry.getInstance(instance).addLastLookupRoute(routeNumber, co, instance)
+                                Registry.getInstance(instance).addLastLookupRoute(route.optJSONObject("route")!!.optString("route"), co, route.optJSONObject("route")!!.optString("gtfsId"), instance)
                                 val intent = Intent(instance, ListStopsActivity::class.java)
                                 intent.putExtra("route", route.toString())
                                 instance.startActivity(intent)
