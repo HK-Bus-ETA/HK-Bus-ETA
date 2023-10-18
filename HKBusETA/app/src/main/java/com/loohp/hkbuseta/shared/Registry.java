@@ -1062,7 +1062,7 @@ public class Registry {
                         int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
 
                         JSONObject orig = route.optJSONObject("orig");
-                        Pair<JSONObject, Integer> oldOrig = dests.stream().filter(d -> d.first.optString("zh").equals(orig.optString("zh"))).findFirst().orElse(null);
+                        Pair<JSONObject, Integer> oldOrig = origs.stream().filter(d -> d.first.optString("zh").equals(orig.optString("zh"))).findFirst().orElse(null);
                         if (oldOrig == null || oldOrig.second > serviceType) {
                             origs.add(Pair.create(orig, serviceType));
                         }
