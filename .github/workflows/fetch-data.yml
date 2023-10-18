@@ -39,6 +39,8 @@ jobs:
               data.json
               checksum.md5
               size.dat
+              data.json.gz
+              size.gz.dat
             commit-msg: Update resources
             github-token: ${{ secrets.GITHUB_TOKEN }}
             branch: data
