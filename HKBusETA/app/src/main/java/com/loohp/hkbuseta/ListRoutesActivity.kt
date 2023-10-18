@@ -77,9 +77,11 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
+import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.equivalentDp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -187,7 +189,15 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
 
         RestartEffect {
             if (recentSort.enabled) {
-                val newSorted = result.sortedBy { Shared.getFavoriteAndLookupRouteIndex(it.optJSONObject("route")!!.optString("route"), it.optString("co"), it.optJSONObject("route")!!.optString("gtfsId")) }
+                val newSorted = result.sortedBy {
+                    val co = it.optString("co")
+                    val meta = when (co) {
+                        "gmb" -> it.optJSONObject("route")!!.optString("gtfsId")
+                        "nlb" -> it.optJSONObject("route")!!.optString("nlbId")
+                        else -> ""
+                    }
+                    Shared.getFavoriteAndLookupRouteIndex(it.optJSONObject("route")!!.optString("route"), co, meta)
+                }
                 if (newSorted != sortedResult) {
                     sortedResult = newSorted
                     if (recentSortEnabled) {
@@ -304,6 +314,15 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                 }
                 var dest = route.optJSONObject("route")!!.optJSONObject("dest")!!.optString(Shared.language)
                 dest = (if (Shared.language == "en") "To " else "往").plus(dest)
+                val optOrig = if (co == "nlb") {
+                    if (Shared.language == "en") {
+                        "From ".plus(route.optJSONObject("route")!!.optJSONObject("orig")!!.optString("en"))
+                    } else {
+                        "從".plus(route.optJSONObject("route")!!.optJSONObject("orig")!!.optString("zh")).plus("開出")
+                    }
+                } else {
+                    null
+                }
 
                 Box (
                     modifier = Modifier
@@ -311,7 +330,12 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                         .animateItemPlacement()
                         .combinedClickable(
                             onClick = {
-                                Registry.getInstance(instance).addLastLookupRoute(route.optJSONObject("route")!!.optString("route"), co, route.optJSONObject("route")!!.optString("gtfsId"), instance)
+                                val meta = when (co) {
+                                    "gmb" -> route.optJSONObject("route")!!.optString("gtfsId")
+                                    "nlb" -> route.optJSONObject("route")!!.optString("nlbId")
+                                    else -> ""
+                                }
+                                Registry.getInstance(instance).addLastLookupRoute(route.optJSONObject("route")!!.optString("route"), co, meta, instance)
                                 val intent = Intent(instance, ListStopsActivity::class.java)
                                 intent.putExtra("route", route.toString())
                                 instance.startActivity(intent)
@@ -319,36 +343,37 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                             onLongClick = {
                                 instance.runOnUiThread {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    val text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(if (Shared.language == "en") {
-                                            when (route.optString("co")) {
-                                                "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
-                                                "ctb" -> "CTB"
-                                                "nlb" -> "NLB"
-                                                "mtr-bus" -> "MTR-Bus"
-                                                "gmb" -> "GMB"
-                                                "lightRail" -> "LRT"
-                                                "mtr" -> "MTR"
-                                                else -> "???"
+                                    val text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(
+                                            if (Shared.language == "en") {
+                                                when (route.optString("co")) {
+                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
+                                                    "ctb" -> "CTB"
+                                                    "nlb" -> "NLB"
+                                                    "mtr-bus" -> "MTR-Bus"
+                                                    "gmb" -> "GMB"
+                                                    "lightRail" -> "LRT"
+                                                    "mtr" -> "MTR"
+                                                    else -> "???"
+                                                }
+                                            } else {
+                                                when (route.optString("co")) {
+                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
+                                                    "ctb" -> "城巴"
+                                                    "nlb" -> "嶼巴"
+                                                    "mtr-bus" -> "港鐵巴士"
+                                                    "gmb" -> "專線小巴"
+                                                    "lightRail" -> "輕鐵"
+                                                    "mtr" -> "港鐵"
+                                                    else -> "???"
+                                                }
                                             }
-                                        } else {
-                                            when (route.optString("co")) {
-                                                "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
-                                                "ctb" -> "城巴"
-                                                "nlb" -> "嶼巴"
-                                                "mtr-bus" -> "港鐵巴士"
-                                                "gmb" -> "專線小巴"
-                                                "lightRail" -> "輕鐵"
-                                                "mtr" -> "港鐵"
-                                                else -> "???"
-                                            }
-                                        }
-                                    ).plus(")")
+                                        ).plus(")")
                                     Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
                                 }
                             }
                         )
                 ) {
-                    RouteRow(index, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                    RouteRow(index, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, optOrig, showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
                 }
                 Spacer(
                     modifier = Modifier
@@ -368,7 +393,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: String, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, showEta: Boolean, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: String, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, optOrig: String?, showEta: Boolean, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
@@ -407,25 +432,62 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
             maxLines = 1,
             text = routeNumber
         )
-        Text(
-            modifier = Modifier
-                .padding(0.dp, padding.dp)
-                .basicMarquee(iterations = Int.MAX_VALUE)
-                .offset(
-                    0.dp,
-                    if (co == "mtr" && Shared.language != "en") mtrBottomOffset.dp else bottomOffset.dp
-                )
-                .weight(1F),
-            textAlign = TextAlign.Start,
-            fontSize = if (co == "mtr" && Shared.language != "en") {
-                TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(17F, instance).dp)
+        if (optOrig == null) {
+            Text(
+                modifier = Modifier
+                    .padding(0.dp, padding.dp)
+                    .basicMarquee(iterations = Int.MAX_VALUE)
+                    .offset(0.dp, if (co == "mtr" && Shared.language != "en") mtrBottomOffset.dp else bottomOffset.dp)
+                    .weight(1F),
+                textAlign = TextAlign.Start,
+                fontSize = if (co == "mtr" && Shared.language != "en") {
+                    TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(17F, instance).dp)
+                } else {
+                    TextUnit(StringUtils.scaledSize(15F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp)
+                },
+                color = color,
+                maxLines = 1,
+                text = dest
+            )
+        } else {
+            val extraHeightUsed = if (co == "mtr" && Shared.language != "en") {
+                clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = 10F)
             } else {
-                TextUnit(StringUtils.scaledSize(15F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp)
-            },
-            color = color,
-            maxLines = 1,
-            text = dest
-        )
+                clampSp(instance, StringUtils.scaledSize(8F, instance), dpMax = 11F)
+            }
+            Column (
+                modifier = Modifier
+                    .padding(0.dp, (padding - extraHeightUsed.equivalentDp.value).coerceAtLeast(0F).dp)
+                    .offset(0.dp, (if (co == "mtr" && Shared.language != "en") mtrBottomOffset else bottomOffset).dp)
+                    .weight(1F),
+            ) {
+                Text(
+                    modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE),
+                    textAlign = TextAlign.Start,
+                    fontSize = if (co == "mtr" && Shared.language != "en") {
+                        TextUnit(StringUtils.scaledSize(13F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(16F, instance).dp)
+                    } else {
+                        TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(17F, instance).dp)
+                    },
+                    color = color,
+                    maxLines = 1,
+                    text = dest
+                )
+                Text(
+                    modifier = Modifier
+                        .basicMarquee(iterations = Int.MAX_VALUE),
+                    textAlign = TextAlign.Start,
+                    fontSize = if (co == "mtr" && Shared.language != "en") {
+                        TextUnit(StringUtils.scaledSize(7F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(10F, instance).dp)
+                    } else {
+                        TextUnit(StringUtils.scaledSize(8F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(11F, instance).dp)
+                    },
+                    color = color.adjustBrightness(0.75F),
+                    maxLines = 1,
+                    text = optOrig
+                )
+            }
+        }
 
         if (showEta) {
             Box (

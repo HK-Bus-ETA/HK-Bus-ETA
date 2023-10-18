@@ -285,7 +285,14 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
     if (input == '/' || input == '!' || (input == '<' && Shared.hasFavoriteAndLookupRoute() && originalText.isEmpty())) {
         val result = when (input) {
             '!' -> Registry.getInstance(instance).findRoutes("", false) { r -> r.optJSONObject("bound")!!.has("mtr") }
-            '<' -> Registry.getInstance(instance).findRoutes("", false) { r, c -> Shared.getFavoriteAndLookupRouteIndex(r.optString("route"), c, r.getString("gtfsId")) < Int.MAX_VALUE }
+            '<' -> Registry.getInstance(instance).findRoutes("", false) { r, c ->
+                val meta = when (c) {
+                    "gmb" -> r.getString("gtfsId")
+                    "nlb" -> r.getString("nlbId")
+                    else -> ""
+                }
+                Shared.getFavoriteAndLookupRouteIndex(r.optString("route"), c, meta) < Int.MAX_VALUE
+            }
             else -> Registry.getInstance(instance).findRoutes(originalText, true)
         }
         if (result != null && result.isNotEmpty()) {

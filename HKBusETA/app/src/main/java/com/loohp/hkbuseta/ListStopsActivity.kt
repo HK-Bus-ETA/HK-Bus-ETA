@@ -89,6 +89,7 @@ import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.eitherContains
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.sp
@@ -197,8 +198,8 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
         val origName = remember { route.optJSONObject("route")!!.optJSONObject("orig")!! }
         val destName = remember { route.optJSONObject("route")!!.optJSONObject("dest")!! }
         val specialOrigsDests = remember { Registry.getInstance(instance).getAllOriginsAndDestinations(routeNumber, bound, co, gtfsId) }
-        val specialOrigs = remember { specialOrigsDests.first.filter { it.optString("zh") != origName.optString("zh") } }
-        val specialDests = remember { specialOrigsDests.second.filter { it.optString("zh") != destName.optString("zh") } }
+        val specialOrigs = remember { specialOrigsDests.first.filter { !it.optString("zh").eitherContains(origName.optString("zh")) } }
+        val specialDests = remember { specialOrigsDests.second.filter { !it.optString("zh").eitherContains(destName.optString("zh")) } }
 
         val coColor = remember { when (co) {
             "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)

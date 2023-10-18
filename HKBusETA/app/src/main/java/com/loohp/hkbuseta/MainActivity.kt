@@ -124,7 +124,12 @@ class MainActivity : ComponentActivity() {
                                             startActivity(intent)
 
                                             val it = filteredResult[0]
-                                            Registry.getInstance(this@MainActivity).addLastLookupRoute(queryRouteNumber, it.optString("co"), it.optJSONObject("route")!!.optString("gtfsId"), this@MainActivity)
+                                            val meta = when (co) {
+                                                "gmb" -> it.optJSONObject("route")!!.optString("gtfsId")
+                                                "nlb" -> it.optJSONObject("route")!!.optString("nlbId")
+                                                else -> ""
+                                            }
+                                            Registry.getInstance(this@MainActivity).addLastLookupRoute(queryRouteNumber, it.optString("co"), meta, this@MainActivity)
 
                                             if (queryStop != null) {
                                                 val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)

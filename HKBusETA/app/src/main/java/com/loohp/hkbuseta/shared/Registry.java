@@ -272,9 +272,9 @@ public class Registry {
         }
     }
 
-    public void addLastLookupRoute(String routeNumber, String co, String gtfsId, Context context) {
+    public void addLastLookupRoute(String routeNumber, String co, String meta, Context context) {
         try {
-            Shared.Companion.addLookupRoute(routeNumber, co, gtfsId);
+            Shared.Companion.addLookupRoute(routeNumber, co, meta);
             JSONArray lastLookupRoutes = JsonUtils.fromStream(Shared.Companion.getLookupRoutes().stream().map(LastLookupRoute::serialize));
             if (PREFERENCES == null) {
                 PREFERENCES = new JSONObject();

@@ -55,8 +55,12 @@ class ResourceImageGetter(val context: Context, val height: Float) : Html.ImageG
 
 }
 
-fun CharSequence.toSpanned(context: Context, imageHeight: Float): Spanned {
-    return HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT, ResourceImageGetter(context, imageHeight), null)
+fun CharSequence.toSpanned(context: Context, imageHeight: Float = -1F): Spanned {
+    return if (imageHeight < 0) {
+        HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT)
+    } else {
+        HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT, ResourceImageGetter(context, imageHeight), null)
+    }
 }
 
 
@@ -166,4 +170,8 @@ fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: C
         currentLength += text.length
     }
     return this
+}
+
+fun CharSequence.eitherContains(other: CharSequence): Boolean {
+    return this.contains(other) || other.contains(this)
 }
