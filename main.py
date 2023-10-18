@@ -265,4 +265,4 @@ output = {
 }
 
 with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
-    json.dump(output, f, sort_keys=True, ensure_ascii=False)
+    json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
