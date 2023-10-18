@@ -336,13 +336,14 @@ fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, 
     RestartEffect {
         hasHistory = Shared.hasFavoriteAndLookupRoute()
     }
+    val isLookupButton by remember { derivedStateOf { content == '<' && hasHistory && state.value.text.let { it.isEmpty() || it == defaultText() } && icons.size > 1 } }
 
     AdvanceButton(
         onClick = {
             handleInput(instance, state, content)
         },
         onLongClick = {
-            if (longContent != null) {
+            if (longContent != null && !isLookupButton) {
                 handleInput(instance, state, longContent)
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             }
@@ -356,7 +357,7 @@ fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, 
         ),
         enabled = enabled,
         content = {
-            if (content == '<' && hasHistory && state.value.text.let { it.isEmpty() || it == defaultText() } && icons.size > 1) {
+            if (isLookupButton) {
                 Icon(
                     modifier = Modifier.size(17.dp),
                     painter = painterResource(icons[1] as Int),
