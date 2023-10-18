@@ -251,22 +251,10 @@ def capitalize_kmb_english_names():
 
 def inject_nlb_origs():
     global DATA_SHEET
-    nlb_routes_orig = {}
     for route in DATA_SHEET["routeList"].values():
         if "nlb" in route["bound"]:
-            route_number = route["route"]
-            nlb_id = int(route["nlbId"])
-            if route_number not in nlb_routes_orig:
-                nlb_routes_orig[route_number] = {}
-            if route["orig"]["zh"] not in nlb_routes_orig[route_number] or nlb_id < nlb_routes_orig[route_number][route["orig"]["zh"]]:
-                nlb_routes_orig[route_number][route["orig"]["zh"]] = nlb_id
-    for route in DATA_SHEET["routeList"].values():
-        if "nlb" in route["bound"]:
-            route_number = route["route"]
-            nlb_id = int(route["nlbId"])
-            if nlb_id > nlb_routes_orig[route_number][route["orig"]["zh"]]:
-                route["dest"]["zh"] += " (從" + route["orig"]["zh"] + "開出)"
-                route["dest"]["en"] += " (From " + route["orig"]["en"] + ")"
+            route["dest"]["zh"] += " (從" + route["orig"]["zh"] + "開出)"
+            route["dest"]["en"] += " (From " + route["orig"]["en"] + ")"
 
 
 download_and_process_kmb_route()
