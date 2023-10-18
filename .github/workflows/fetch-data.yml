@@ -28,6 +28,10 @@ jobs:
         run: md5sum data.json | cut -f1 -d ' ' | tr -d $'\n' > checksum.md5
       - name: Update Data Length
         run: du -sb data.json | cut -f -1 > size.dat
+      - name: GZip Data
+        run: gzip -k data.json
+      - name: Update GZip Data Length
+        run: du -sb data.json.gz | cut -f -1 > size.gz.dat
       - name: Update resources
         uses: test-room-7/action-update-file@v1
         with:
