@@ -249,14 +249,6 @@ def capitalize_kmb_english_names():
             stop["name"]["en"] = apply_recapitalize_keywords(capitalize(stop["name"]["en"]))
 
 
-def inject_nlb_origs():
-    global DATA_SHEET
-    for route in DATA_SHEET["routeList"].values():
-        if "nlb" in route["bound"]:
-            route["dest"]["zh"] += " (從" + route["orig"]["zh"] + "開出)"
-            route["dest"]["en"] += " (From " + route["orig"]["en"] + ")"
-
-
 download_and_process_kmb_route()
 download_and_process_ctb_route()
 download_and_process_nlb_route()
@@ -265,7 +257,6 @@ download_and_process_gmb_route()
 download_and_process_data_sheet()
 download_and_process_mtr_bus_route_and_stops()
 capitalize_kmb_english_names()
-inject_nlb_origs()
 
 output = {
     "dataSheet": DATA_SHEET,
