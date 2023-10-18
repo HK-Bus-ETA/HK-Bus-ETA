@@ -14,6 +14,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -42,6 +43,10 @@ public class HTTPRequestUtils {
     }
 
     public static JSONObject getJSONResponseWithPercentageCallback(String link, long customContentLength, Consumer<Float> percentageCallback) {
+        return getJSONResponseWithPercentageCallback(link, customContentLength, i -> i, percentageCallback);
+    }
+
+    public static JSONObject getJSONResponseWithPercentageCallback(String link, long customContentLength, IOFunction<InputStream, InputStream> inputStreamTransform, Consumer<Float> percentageCallback) {
         try {
             URL url = new URL(link);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -52,7 +57,7 @@ public class HTTPRequestUtils {
             connection.addRequestProperty("Pragma", "no-cache");
             if (connection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
                 float contentLength = customContentLength >= 0 ? customContentLength : connection.getContentLengthLong();
-                try (InputStream inputStream = connection.getInputStream()) {
+                try (InputStream inputStream = inputStreamTransform.apply(connection.getInputStream())) {
                     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                     int readTotal = 0;
                     int nRead;
@@ -74,6 +79,10 @@ public class HTTPRequestUtils {
     }
 
     public static JSONObject getJSONResponse(String link) {
+        return getJSONResponse(link, i -> i);
+    }
+
+    public static JSONObject getJSONResponse(String link, IOFunction<InputStream, InputStream> inputStreamTransform) {
         try {
             URL url = new URL(link);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -83,7 +92,7 @@ public class HTTPRequestUtils {
             connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
             connection.addRequestProperty("Pragma", "no-cache");
             if (connection.getResponseCode() == HttpsURLConnection.HTTP_OK) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStreamTransform.apply(connection.getInputStream())))) {
                     String reply = reader.lines().collect(Collectors.joining());
                     return new JSONObject(reply);
                 }

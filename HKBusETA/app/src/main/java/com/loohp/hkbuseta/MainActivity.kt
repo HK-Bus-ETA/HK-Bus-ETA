@@ -24,7 +24,6 @@ import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import kotlinx.coroutines.delay
 import org.json.JSONObject
-import java.util.concurrent.ForkJoinPool
 import java.util.regex.Pattern
 import kotlin.streams.toList
 
@@ -53,7 +52,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LaunchedEffect (Unit) {
-                ForkJoinPool.commonPool().execute { Registry.getInstance(this@MainActivity) }
+                Registry.getInstance(this@MainActivity).let { if (System.currentTimeMillis() - it.lastUpdateCheck > 10000) it.checkUpdate(this@MainActivity) }
                 loop@while (true) {
                     when (Registry.getInstance(this@MainActivity).state) {
                         Registry.State.READY -> {

@@ -63,6 +63,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -70,6 +71,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import java.util.zip.GZIPInputStream;
 
 import kotlin.Triple;
 
@@ -112,6 +114,7 @@ public class Registry {
     private volatile float updatePercentage = 0F;
     private volatile boolean preferencesLoaded = false;
     private final Object preferenceWriteLock = new Object();
+    private final AtomicLong lastUpdateCheck = new AtomicLong(Long.MIN_VALUE);
 
     private Registry(Context context) {
         try {
@@ -345,6 +348,17 @@ public class Registry {
         }
         preferencesLoaded = true;
 
+        checkUpdate(context);
+    }
+
+    public long getLastUpdateCheck() {
+        return lastUpdateCheck.get();
+    }
+
+    public void checkUpdate(Context context) {
+        state = State.LOADING;
+        lastUpdateCheck.set(System.currentTimeMillis());
+        List<String> files = Arrays.asList(context.getApplicationContext().fileList());
         new Thread(() -> {
             try {
                 ConnectionUtils.ConnectionType connectionType = ConnectionUtils.getConnectionType(context);
@@ -416,8 +430,8 @@ public class Registry {
                     updatePercentage = 0F;
                     float percentageOffset = Shared.Companion.getFavoriteRouteStops().isEmpty() ? 0.15F : 0F;
 
-                    long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.dat"), -1);
-                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json", length, p -> updatePercentage = p * (0.75F + percentageOffset));
+                    long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.gz.dat"), -1);
+                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, GZIPInputStream::new, p -> updatePercentage = p * (0.75F + percentageOffset));
 
                     MTR_BUS_STOP_ALIAS = data.optJSONObject("mtrBusStopAlias");
                     DATA_SHEET = data.optJSONObject("dataSheet");
