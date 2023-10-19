@@ -179,7 +179,7 @@ fun MoreInfoHeader(instance: EtaMenuActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = 14.dp),
+        fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
         text = if (Shared.language == "en") "More Info" else "更多資訊"
     )
 }
@@ -242,7 +242,7 @@ fun SearchNearbyButton(stop: JSONObject, route: JSONObject, instance: EtaMenuAct
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colors.primary,
-                    fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
+                    fontSize = StringUtils.scaledSize(14F, instance).sp,
                     text = if (Shared.language == "en") "Find Nearby Interchanges" else "尋找附近轉乘路線"
                 )
             }
@@ -296,7 +296,7 @@ fun OpenOnMapsButton(stopName: JSONObject, lat: Double, lng: Double, instance: E
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colors.primary,
-                    fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
+                    fontSize = StringUtils.scaledSize(14F, instance).sp,
                     text = if (Shared.language == "en") "Open Stop Location on Maps" else "在地圖上顯示巴士站位置"
                 )
             }
@@ -383,7 +383,7 @@ fun FavHeader(instance: EtaMenuActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = 14.dp),
+        fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
         text = if (Shared.language == "en") "Set Favourite Routes" else "設置最喜愛路線"
     )
     Text(
@@ -392,7 +392,7 @@ fun FavHeader(instance: EtaMenuActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(10F, instance), TextUnitType.Sp).clamp(max = 10.dp),
+        fontSize = StringUtils.scaledSize(10F, instance).sp.clamp(max = 10.dp),
         text = if (Shared.language == "en") {
             "Click below to set/clear this route stop from the corresponding indexed favourite route"
         } else {
@@ -473,7 +473,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
-                        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+                        fontSize = StringUtils.scaledSize(17F, instance).sp,
                         color = when (state.value) {
                             0 -> Color(0xFF444444)
                             1 -> Color(0xFF4E4E00)
@@ -489,7 +489,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = if (state.value == 2) Color(0xFFFFFFFF) else Color(0xFF3F3F3F),
-                    fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
+                    fontSize = StringUtils.scaledSize(14F, instance).sp,
                     text = when (state.value) {
                         0 -> if (Shared.language == "en") "No Route Stop Selected" else "未有設置路線巴士站"
                         1 -> if (Shared.language == "en") "Selected by Another Route Stop" else "已設置為另一路線巴士站"

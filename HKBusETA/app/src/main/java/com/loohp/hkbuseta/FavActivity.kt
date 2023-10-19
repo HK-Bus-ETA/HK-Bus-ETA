@@ -225,7 +225,7 @@ fun FavTitle(instance: FavActivity) {
             .padding(20.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp).clamp(max = 17.dp),
+        fontSize = StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp),
         text = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"
     )
 }
@@ -238,7 +238,7 @@ fun FavDescription(instance: FavActivity) {
             .padding(30.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(11F, instance), TextUnitType.Sp).clamp(max = 11.dp),
+        fontSize = StringUtils.scaledSize(11F, instance).sp.clamp(max = 11.dp),
         text = if (Shared.language == "en") "These routes will display in their corresponding indexed Tile" else "這些路線將顯示在其相應數字的資訊方塊中"
     )
 }
@@ -373,7 +373,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                             if (eta!!.isMtrEndOfLine) {
                                 Icon(
                                     modifier = Modifier
-                                        .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                                        .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                                     painter = painterResource(R.drawable.baseline_line_end_circle_24),
                                     contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                                     tint = Color(0xFF798996),
@@ -381,13 +381,13 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                             } else if (eta!!.isTyphoonSchedule) {
                                 val desc by remember { derivedStateOf { Registry.getCurrentTyphoonData().get().typhoonWarningTitle } }
                                 Image(
-                                    modifier = Modifier.size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                                    modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                                     painter = painterResource(R.mipmap.cyclone),
                                     contentDescription = desc
                                 )
                             } else {
                                 Icon(
-                                    modifier = Modifier.size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                                    modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                                     painter = painterResource(R.drawable.baseline_schedule_24),
                                     contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                                     tint = Color(0xFF798996),
@@ -405,9 +405,9 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                             AnnotatedText(
                                 modifier = Modifier.fillMaxWidth(),
                                 textAlign = TextAlign.Start,
-                                fontSize = TextUnit(14F, TextUnitType.Sp),
+                                fontSize = 14F.sp,
                                 color = Color(0xFFAAC3D5),
-                                lineHeight = TextUnit(7F, TextUnitType.Sp),
+                                lineHeight = 7F.sp,
                                 maxLines = 1,
                                 text = SpannableString(TextUtils.concat(span1, span2)).asAnnotatedString()
                             )
@@ -441,7 +441,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                         Text(
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
-                            fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+                            fontSize = StringUtils.scaledSize(17F, instance).sp,
                             color = if (favouriteStopRoute.value != null) Color(0xFFFFFF00) else Color(0xFF444444),
                             text = favoriteIndex.toString()
                         )
@@ -453,7 +453,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
                         color = Color(0xFF505050),
-                        fontSize = TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = 16.dp),
+                        fontSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = 16.dp),
                         text = if (Shared.language == "en") "No Route Selected" else "未有設置路線"
                     )
                 } else {
@@ -550,7 +550,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                             textAlign = TextAlign.Start,
                             color = color,
                             fontWeight = FontWeight.Bold,
-                            fontSize = TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = 16.dp),
+                            fontSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = 16.dp),
                             maxLines = 1,
                             text = mainText
                         )
@@ -561,7 +561,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                             textAlign = TextAlign.Start,
                             color = MaterialTheme.colors.primary,
                             fontWeight = FontWeight.Normal,
-                            fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = 14.dp),
+                            fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
                             maxLines = 1,
                             text = routeText
                         )
@@ -573,7 +573,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                             textAlign = TextAlign.Start,
                             fontWeight = FontWeight.Normal,
                             color = MaterialTheme.colors.primary,
-                            fontSize = TextUnit(StringUtils.scaledSize(11F, instance), TextUnitType.Sp).clamp(max = 11.dp),
+                            fontSize = StringUtils.scaledSize(11F, instance).sp.clamp(max = 11.dp),
                             maxLines = 1,
                             text = subText
                         )

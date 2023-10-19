@@ -85,8 +85,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
@@ -440,9 +438,9 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
             fontWeight = FontWeight.Bold,
             fontSizeRange = FontSizeRange(
                 min = StringUtils.scaledSize(1F, instance).dp.sp,
-                max = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(20F, instance).dp)
+                max = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(20F, instance).dp)
             ),
-            lineHeight = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(20F, instance).dp),
+            lineHeight = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(20F, instance).dp),
             color = color,
             maxLines = 1,
             text = (if (Shared.language == "en") {
@@ -572,7 +570,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boole
                     .padding(0.dp, padding.dp)
                     .requiredWidth(30.dp),
                 textAlign = TextAlign.Start,
-                fontSize = TextUnit(StringUtils.scaledSize(15F, instance), TextUnitType.Sp),
+                fontSize = StringUtils.scaledSize(15F, instance).sp,
                 fontWeight = if (isClosest) FontWeight.Bold else FontWeight.Normal,
                 color = color,
                 maxLines = 1,
@@ -585,7 +583,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boole
                 .basicMarquee(iterations = Int.MAX_VALUE)
                 .weight(1F),
             textAlign = TextAlign.Start,
-            fontSize = TextUnit(StringUtils.scaledSize(15F, instance), TextUnitType.Sp),
+            fontSize = StringUtils.scaledSize(15F, instance).sp,
             fontWeight = if (isClosest) FontWeight.Bold else FontWeight.Normal,
             color = color,
             maxLines = 1,
@@ -621,7 +619,7 @@ fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Floa
     Column (
         modifier = Modifier
             .requiredWidth(etaTextWidth.dp)
-            .offset(0.dp, -TextUnit(2F, TextUnitType.Sp).dp),
+            .offset(0.dp, -2F.sp.dp),
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.Center
     ) {
@@ -630,8 +628,8 @@ fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Floa
                 if (eta!!.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
+                            .offset(0.dp, StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -640,16 +638,16 @@ fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Floa
                     val desc by remember { derivedStateOf { Registry.getCurrentTyphoonData().get().typhoonWarningTitle } }
                     Image(
                         modifier = Modifier
-                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
+                            .offset(0.dp, StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = desc
                     )
                 } else {
                     Icon(
                         modifier = Modifier
-                            .size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, TextUnit(StringUtils.scaledSize(3F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
+                            .offset(0.dp, StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),
@@ -667,9 +665,9 @@ fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Floa
                 AnnotatedText(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.End,
-                    fontSize = TextUnit(14F, TextUnitType.Sp),
+                    fontSize = 14F.sp,
                     color = Color(0xFFAAC3D5),
-                    lineHeight = TextUnit(7F, TextUnitType.Sp),
+                    lineHeight = 7F.sp,
                     maxLines = 2,
                     text = SpannableString(TextUtils.concat(span1, "\n", span2)).asAnnotatedString()
                 )

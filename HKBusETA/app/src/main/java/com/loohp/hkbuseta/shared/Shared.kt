@@ -45,9 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
@@ -212,7 +211,7 @@ class Shared {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+                    fontSize = StringUtils.scaledSize(17F, instance).sp,
                     text = if (language == "en") "Updating..." else "更新數據中..."
                 )
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
@@ -220,7 +219,7 @@ class Shared {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
+                    fontSize = StringUtils.scaledSize(14F, instance).sp,
                     text = if (language == "en") "Might take a moment" else "更新需時 請稍等"
                 )
                 if (includeProgress) {
@@ -253,7 +252,7 @@ class Shared {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+                    fontSize = StringUtils.scaledSize(17F, instance).sp,
                     text = if (language == "en") "Loading..." else "載入中..."
                 )
             }

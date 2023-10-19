@@ -20,6 +20,7 @@
 
 package com.loohp.hkbuseta
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.text.SpannableString
@@ -29,10 +30,12 @@ import android.text.style.AbsoluteSizeSpan
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -77,8 +80,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Button
@@ -87,6 +88,8 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
+import com.google.common.collect.ImmutableMap
+import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
@@ -94,6 +97,7 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.DistanceUtils
 import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
@@ -101,7 +105,10 @@ import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
-import com.loohp.hkbuseta.utils.equivalentDp
+import com.loohp.hkbuseta.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.utils.set
+import com.loohp.hkbuseta.utils.toHexString
+import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -113,9 +120,30 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
-enum class RecentSortMode(val enabled: Boolean) {
+enum class RecentSortMode(val enabled: Boolean, val defaultActiveSortMode: ActiveSortMode = ActiveSortMode.NONE) {
 
-    DISABLED(false), CHOICE(true), FORCED(true)
+    DISABLED(false), CHOICE(true), FORCED(true, ActiveSortMode.RECENT);
+
+}
+
+enum class ActiveSortMode {
+
+    NONE, RECENT, PROXIMITY;
+
+    companion object {
+        private val values = values()
+    }
+
+    fun nextMode(allowRecentSort: Boolean = true, allowProximitySort: Boolean = true): ActiveSortMode {
+        val next = values[(ordinal + 1) % values.size]
+        return if (!allowProximitySort && next == PROXIMITY) {
+            next.nextMode(false)
+        } else if (!allowRecentSort && next == RECENT) {
+            next.nextMode(false)
+        } else {
+            next
+        }
+    }
 
 }
 
@@ -132,12 +160,16 @@ class ListRoutesActivity : ComponentActivity() {
             if (!it.has("route")) {
                 it.put("route", Registry.getInstance(this).findRouteByKey(it.getString("routeKey"), null))
             }
+            if (it.has("stop") && it.optJSONObject("stop")!!.has("stopId") && !it.optJSONObject("stop")!!.has("data")) {
+                it.optJSONObject("stop")!!.put("data", Registry.getInstance(this).getStopById(it.optJSONObject("stop")!!.optString("stopId")))
+            }
         }
         val showEta = intent.extras!!.getBoolean("showEta", false)
         val recentSort = RecentSortMode.values()[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
+        val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")
 
         setContent {
-            MainElement(this, result, showEta, recentSort) { isAdd, index, task ->
+            MainElement(this, result, showEta, recentSort, proximitySortOrigin) { isAdd, index, task ->
                 synchronized(etaUpdatesMap) {
                     if (isAdd) {
                         etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
@@ -183,9 +215,10 @@ class ListRoutesActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta: Boolean, recentSort: RecentSortMode, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: DoubleArray?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
+        val hapticsController = remember { HapticsController() }
         val scroll = rememberLazyListState()
         val scope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
@@ -202,14 +235,12 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
         val etaUpdateTimes: MutableMap<Int, Long> = remember { ConcurrentHashMap() }
         val etaResults: MutableMap<Int, ETAQueryResult> = remember { ConcurrentHashMap() }
 
-        var sortedResult: List<JSONObject> by remember { mutableStateOf(emptyList()) }
-
-        var recentSortEnabled by remember { mutableStateOf(recentSort == RecentSortMode.FORCED) }
-        val sortedResults by remember { derivedStateOf { if (recentSortEnabled) sortedResult else result } }
-
-        RestartEffect {
+        var activeSortMode by remember { mutableStateOf(recentSort.defaultActiveSortMode) }
+        val sortTask = remember { {
+            val map: ImmutableMap.Builder<ActiveSortMode, List<JSONObject>> = ImmutableMap.builder()
+            map[ActiveSortMode.NONE] = result
             if (recentSort.enabled) {
-                val newSorted = result.sortedBy {
+                map[ActiveSortMode.RECENT] = result.sortedBy {
                     val co = it.optString("co")
                     val meta = when (co) {
                         "gmb" -> it.optJSONObject("route")!!.optString("gtfsId")
@@ -218,11 +249,45 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                     }
                     Shared.getFavoriteAndLookupRouteIndex(it.optJSONObject("route")!!.optString("route"), co, meta)
                 }
-                if (newSorted != sortedResult) {
-                    sortedResult = newSorted
-                    if (recentSortEnabled) {
-                        scope.launch { scroll.scrollToItem(0) }
+            }
+            if (proximitySortOrigin != null) {
+                if (recentSort.enabled) {
+                    map[ActiveSortMode.PROXIMITY] = result.sortedWith(compareBy({
+                        val location = it.optJSONObject("stop")!!.optJSONObject("data")!!.optJSONObject("location")!!
+                        DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.optDouble("lat"), location.optDouble("lng"))
+                    }, {
+                        val co = it.optString("co")
+                        val meta = when (co) {
+                            "gmb" -> it.optJSONObject("route")!!.optString("gtfsId")
+                            "nlb" -> it.optJSONObject("route")!!.optString("nlbId")
+                            else -> ""
+                        }
+                        Shared.getFavoriteAndLookupRouteIndex(it.optJSONObject("route")!!.optString("route"), co, meta)
+                    }))
+                } else {
+                    map[ActiveSortMode.PROXIMITY] = result.sortedBy {
+                        val location = it.optJSONObject("stop")!!.optJSONObject("data")!!.optJSONObject("location")!!
+                        DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.optDouble("lat"), location.optDouble("lng"))
                     }
+                }
+            }
+            map.build()
+        } }
+        @SuppressLint("MutableCollectionMutableState")
+        var sortedByMode by remember { mutableStateOf(sortTask.invoke()) }
+        val sortedResults by remember { derivedStateOf { sortedByMode[activeSortMode]?: result } }
+
+        RestartEffect {
+            val newSorted = sortTask.invoke()
+            if (newSorted != sortedByMode) {
+                sortedByMode = newSorted
+                hapticsController.enabled = false
+                hapticsController.invokedCallback = {
+                    it.enabled = true
+                    it.invokedCallback = {}
+                }
+                scope.launch {
+                    scroll.scrollToItem(0)
                 }
             }
         }
@@ -233,67 +298,66 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                 .fullPageVerticalLazyScrollbar(
                     state = scroll
                 )
-                .rotaryScroll(scroll, focusRequester),
+                .rotaryScroll(scroll, focusRequester, hapticsController),
             horizontalAlignment = Alignment.CenterHorizontally,
             state = scroll
         ) {
             item {
-                when (recentSort) {
-                    RecentSortMode.CHOICE -> {
-                        Button(
-                            onClick = {
-                                recentSortEnabled = !recentSortEnabled
-                            },
-                            modifier = Modifier
-                                .padding(20.dp, 15.dp, 20.dp, 0.dp)
-                                .fillMaxWidth(0.8F)
-                                .height(StringUtils.scaledSize(35, instance).dp),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = MaterialTheme.colors.secondary,
-                                contentColor = Color(0xFFFFFFFF)
-                            ),
-                            content = {
-                                Text(
-                                    modifier = Modifier.fillMaxWidth(0.9F),
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colors.primary,
-                                    fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = 14.dp),
-                                    text = if (recentSortEnabled) {
-                                        if (Shared.language == "en") "Sort: Fav/Recent" else "排序: 喜歡/最近瀏覽"
-                                    } else {
-                                        if (Shared.language == "en") "Sort: Normal" else "排序: 正常"
-                                    }
-                                )
-                            }
-                        )
-                    }
-                    RecentSortMode.FORCED -> {
-                        Button(
-                            onClick = {
-                                Registry.getInstance(instance).clearLastLookupRoutes(instance)
-                                instance.finish()
-                            },
-                            modifier = Modifier
-                                .padding(20.dp, 15.dp, 20.dp, 0.dp)
-                                .width(StringUtils.scaledSize(35, instance).dp)
-                                .height(StringUtils.scaledSize(35, instance).dp),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = MaterialTheme.colors.secondary,
-                                contentColor = Color(0xFFFF0000)
-                            ),
-                            content = {
-                                Icon(
-                                    modifier = Modifier.size(StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp).dp),
-                                    imageVector = Icons.Outlined.Delete,
-                                    contentDescription = if (Shared.language == "en") "Clear" else "清除",
-                                    tint = Color(0xFFFF0000),
-                                )
-                            }
-                        )
-                    }
-                    else -> {
-                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
-                    }
+                if (recentSort == RecentSortMode.FORCED) {
+                    Button(
+                        onClick = {
+                            Registry.getInstance(instance).clearLastLookupRoutes(instance)
+                            instance.finish()
+                        },
+                        modifier = Modifier
+                            .padding(20.dp, 15.dp, 20.dp, 0.dp)
+                            .width(StringUtils.scaledSize(35, instance).dp)
+                            .height(StringUtils.scaledSize(35, instance).dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = MaterialTheme.colors.secondary,
+                            contentColor = Color(0xFFFF0000)
+                        ),
+                        content = {
+                            Icon(
+                                modifier = Modifier.size(StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp).dp),
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = if (Shared.language == "en") "Clear" else "清除",
+                                tint = Color(0xFFFF0000),
+                            )
+                        }
+                    )
+                } else if (recentSort == RecentSortMode.CHOICE || proximitySortOrigin != null) {
+                    Button(
+                        onClick = {
+                            activeSortMode = activeSortMode.nextMode(
+                                allowRecentSort = recentSort == RecentSortMode.CHOICE,
+                                allowProximitySort = proximitySortOrigin != null
+                            )
+                        },
+                        modifier = Modifier
+                            .padding(20.dp, 15.dp, 20.dp, 0.dp)
+                            .fillMaxWidth(0.8F)
+                            .height(StringUtils.scaledSize(35, instance).dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = MaterialTheme.colors.secondary,
+                            contentColor = Color(0xFFFFFFFF)
+                        ),
+                        content = {
+                            Text(
+                                modifier = Modifier.fillMaxWidth(0.9F),
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colors.primary,
+                                fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                                text = when (activeSortMode) {
+                                    ActiveSortMode.PROXIMITY -> if (Shared.language == "en") "Sort: Proximity" else "排序: 巴士站距離"
+                                    ActiveSortMode.RECENT -> if (Shared.language == "en") "Sort: Fav/Recent" else "排序: 喜歡/最近瀏覽"
+                                    else -> if (Shared.language == "en") "Sort: Normal" else "排序: 正常"
+                                }
+                            )
+                        }
+                    )
+                } else {
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
                 }
             }
             itemsIndexed(
@@ -334,14 +398,22 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                 }
                 var dest = route.optJSONObject("route")!!.optJSONObject("dest")!!.optString(Shared.language)
                 dest = (if (Shared.language == "en") "To " else "往").plus(dest)
-                val optOrig = if (co == "nlb") {
-                    if (Shared.language == "en") {
+
+                val secondLine: MutableList<String> = ArrayList()
+                if (route.has("stop")) {
+                    val stop = route.optJSONObject("stop")!!.optJSONObject("data")!!
+                    secondLine.add(if (Shared.language == "en") {
+                        stop.optJSONObject("name")!!.optString("en")
+                    } else {
+                        stop.optJSONObject("name")!!.optString("zh")
+                    })
+                }
+                if (co == "nlb") {
+                    secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
                         "From ".plus(route.optJSONObject("route")!!.optJSONObject("orig")!!.optString("en"))
                     } else {
                         "從".plus(route.optJSONObject("route")!!.optJSONObject("orig")!!.optString("zh")).plus("開出")
-                    }
-                } else {
-                    null
+                    }).plus("</span>"))
                 }
 
                 Box (
@@ -363,7 +435,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                             onLongClick = {
                                 instance.runOnUiThread {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    val text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(
+                                    var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(
                                             if (Shared.language == "en") {
                                                 when (route.optString("co")) {
                                                     "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
@@ -388,12 +460,17 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                                                 }
                                             }
                                         ).plus(")")
+                                    if (proximitySortOrigin != null && route.has("stop")) {
+                                        val location = route.optJSONObject("stop")!!.optJSONObject("data")!!.optJSONObject("location")!!
+                                        val distance = DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.optDouble("lat"), location.optDouble("lng"))
+                                        text = text.plus(" - ").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
+                                    }
                                     Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
                                 }
                             }
                         )
                 ) {
-                    RouteRow(index, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, optOrig, showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                    RouteRow(index, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, secondLine, showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
                 }
                 Spacer(
                     modifier = Modifier
@@ -413,7 +490,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: String, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, optOrig: String?, showEta: Boolean, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: String, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: List<String>, showEta: Boolean, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
@@ -444,15 +521,15 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
                 .requiredWidth(routeTextWidth.dp),
             textAlign = TextAlign.Start,
             fontSize = if (co == "mtr" && Shared.language != "en") {
-                TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(19F, instance).dp)
+                StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(19F, instance).dp)
             } else {
-                TextUnit(StringUtils.scaledSize(20F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(23F, instance).dp)
+                StringUtils.scaledSize(20F, instance).sp.clamp(max = StringUtils.scaledSize(23F, instance).dp)
             },
             color = color,
             maxLines = 1,
             text = routeNumber
         )
-        if (optOrig == null) {
+        if (secondLine.isEmpty()) {
             Text(
                 modifier = Modifier
                     .padding(0.dp, padding.dp)
@@ -461,57 +538,75 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
                     .weight(1F),
                 textAlign = TextAlign.Start,
                 fontSize = if (co == "mtr" && Shared.language != "en") {
-                    TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(17F, instance).dp)
+                    StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
                 } else {
-                    TextUnit(StringUtils.scaledSize(15F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(18F, instance).dp)
+                    StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp)
                 },
                 color = color,
                 maxLines = 1,
                 text = dest
             )
         } else {
-            val extraHeightUsed = if (co == "mtr" && Shared.language != "en") {
-                clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = 10F)
+            val extraHeightPadding = (padding - UnitUtils.spToDp(instance, if (co == "mtr" && Shared.language != "en") {
+                clampSp(instance, StringUtils.scaledSize(4.5F, instance), dpMax = 6F)
             } else {
-                clampSp(instance, StringUtils.scaledSize(8F, instance), dpMax = 11F)
-            }
+                clampSp(instance, StringUtils.scaledSize(5F, instance), dpMax = 6.5F)
+            })).coerceAtLeast(0F)
             Column (
                 modifier = Modifier
-                    .padding(0.dp, (padding - extraHeightUsed.equivalentDp.value).coerceAtLeast(0F).dp)
-                    .offset(0.dp, (if (co == "mtr" && Shared.language != "en") mtrBottomOffset else bottomOffset).dp)
+                    .padding(0.dp, extraHeightPadding.dp)
                     .weight(1F),
             ) {
                 Text(
                     modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE),
                     textAlign = TextAlign.Start,
                     fontSize = if (co == "mtr" && Shared.language != "en") {
-                        TextUnit(StringUtils.scaledSize(13F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(16F, instance).dp)
+                        StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
                     } else {
-                        TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(17F, instance).dp)
+                        StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(19F, instance).dp)
                     },
                     color = color,
                     maxLines = 1,
                     text = dest
                 )
-                Text(
-                    modifier = Modifier
-                        .basicMarquee(iterations = Int.MAX_VALUE),
-                    textAlign = TextAlign.Start,
-                    fontSize = if (co == "mtr" && Shared.language != "en") {
-                        TextUnit(StringUtils.scaledSize(7F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(10F, instance).dp)
-                    } else {
-                        TextUnit(StringUtils.scaledSize(8F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(11F, instance).dp)
-                    },
-                    color = color.adjustBrightness(0.75F),
-                    maxLines = 1,
-                    text = optOrig
+                val infiniteTransition = rememberInfiniteTransition(label = "SecondLineCrossFade")
+                val animatedCurrentLineFloat by infiniteTransition.animateFloat(
+                    initialValue = -0.5F,
+                    targetValue = secondLine.size - 0.5001F,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(5500 * secondLine.size, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "SecondLineCrossFade"
                 )
+                val animatedCurrentLine by remember { derivedStateOf { animatedCurrentLineFloat.roundToInt() } }
+                Crossfade(
+                    targetState = animatedCurrentLine,
+                    animationSpec = tween(durationMillis = 500, easing = LinearEasing),
+                    label = "SecondLineCrossFade"
+                ) {
+                    AnnotatedText(
+                        modifier = Modifier
+                            .basicMarquee(iterations = Int.MAX_VALUE),
+                        textAlign = TextAlign.Start,
+                        fontSize = if (co == "mtr" && Shared.language != "en") {
+                            StringUtils.scaledSize(9F, instance).sp.clamp(max = StringUtils.scaledSize(12F, instance).dp)
+                        } else {
+                            StringUtils.scaledSize(10F, instance).sp.clamp(max = StringUtils.scaledSize(13F, instance).dp)
+                        },
+                        color = Color(0xFFFFFFFF).adjustBrightness(0.75F),
+                        maxLines = 1,
+                        text = secondLine[it].toSpanned(instance).asAnnotatedString()
+                    )
+                }
             }
         }
 
         if (showEta) {
-            Box (
-                modifier = Modifier.align(Alignment.CenterVertically)
+            Box(
+                modifier = Modifier
+                    .padding(0.dp, 0.dp, 0.dp, padding.dp)
+                    .offset(0.dp, if (co == "mtr" && Shared.language != "en") mtrBottomOffset.dp else bottomOffset.dp)
             ) {
                 ETAElement(index, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
             }
@@ -540,9 +635,7 @@ fun ETAElement(index: Int, route: JSONObject, etaTextWidth: Float, etaResults: M
     }
 
     Column (
-        modifier = Modifier
-            .requiredWidth(etaTextWidth.dp)
-            .offset(0.dp, -TextUnit(2F, TextUnitType.Sp).clamp(max = 4.dp).dp),
+        modifier = Modifier.requiredWidth(etaTextWidth.dp),
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.Center
     ) {
@@ -551,19 +644,8 @@ fun ETAElement(index: Int, route: JSONObject, etaTextWidth: Float, etaResults: M
                 if (eta!!.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(
-                                TextUnit(
-                                    StringUtils.scaledSize(16F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
-                            )
-                            .offset(
-                                0.dp,
-                                TextUnit(
-                                    StringUtils.scaledSize(3F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
-                            ),
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
+                            .offset(0.dp, -StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -571,38 +653,16 @@ fun ETAElement(index: Int, route: JSONObject, etaTextWidth: Float, etaResults: M
                 } else if (eta!!.isTyphoonSchedule) {
                     Image(
                         modifier = Modifier
-                            .size(
-                                TextUnit(
-                                    StringUtils.scaledSize(16F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
-                            )
-                            .offset(
-                                0.dp,
-                                TextUnit(
-                                    StringUtils.scaledSize(3F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
-                            ),
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
+                            .offset(0.dp, -StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次"
                     )
                 } else {
                     Icon(
                         modifier = Modifier
-                            .size(
-                                TextUnit(
-                                    StringUtils.scaledSize(16F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(18F, instance).dp).dp
-                            )
-                            .offset(
-                                0.dp,
-                                TextUnit(
-                                    StringUtils.scaledSize(3F, instance),
-                                    TextUnitType.Sp
-                                ).clamp(max = StringUtils.scaledSize(4F, instance).dp).dp
-                            ),
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
+                            .offset(0.dp, -StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),
@@ -620,9 +680,9 @@ fun ETAElement(index: Int, route: JSONObject, etaTextWidth: Float, etaResults: M
                 AnnotatedText(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.End,
-                    fontSize = TextUnit(14F, TextUnitType.Sp).clamp(max = 15.dp),
+                    fontSize = 14F.sp.clamp(max = 15.dp),
                     color = Color(0xFFAAC3D5),
-                    lineHeight = TextUnit(7F, TextUnitType.Sp).clamp(max = 9.dp),
+                    lineHeight = 7F.sp.clamp(max = 9.dp),
                     maxLines = 2,
                     text = SpannableString(TextUtils.concat(span1, "\n", span2)).asAnnotatedString()
                 )

@@ -62,8 +62,6 @@ import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
@@ -202,7 +200,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                         .focusable()
                         .padding(20.dp, 0.dp),
                     textAlign = TextAlign.Left,
-                    fontSize = TextUnit(8F.dp.sp.value, TextUnitType.Sp),
+                    fontSize = 8F.dp.sp,
                     color = Color(0xFF7C7C7C),
                     text = exception
                 )

@@ -315,7 +315,7 @@ fun ActionBar(stopId: String, co: String, index: Int, stop: JSONObject, route: J
             enabled = index > 1,
             content = {
                 Icon(
-                    modifier = Modifier.size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
+                    modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
                     imageVector = Icons.Filled.ArrowBack,
                     contentDescription = if (Shared.language == "en") "Previous Stop" else "上一站",
                     tint = if (index > 1) Color(0xFFFFFFFF) else Color(0xFF494949),
@@ -345,7 +345,7 @@ fun ActionBar(stopId: String, co: String, index: Int, stop: JSONObject, route: J
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = TextUnit(StringUtils.scaledSize(12F, instance), TextUnitType.Sp).clamp(max = 12.dp),
+                    fontSize = StringUtils.scaledSize(12F, instance).sp.clamp(max = 12.dp),
                     text = if (Shared.language == "en") "More" else "更多"
                 )
             }
@@ -369,7 +369,7 @@ fun ActionBar(stopId: String, co: String, index: Int, stop: JSONObject, route: J
             enabled = index < stopList.size,
             content = {
                 Icon(
-                    modifier = Modifier.size(TextUnit(StringUtils.scaledSize(16F, instance), TextUnitType.Sp).clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
+                    modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
                     imageVector = Icons.Filled.ArrowForward,
                     contentDescription = if (Shared.language == "en") "Next Stop" else "下一站",
                     tint = if (index < stopList.size) Color(0xFFFFFFFF) else Color(0xFF494949),

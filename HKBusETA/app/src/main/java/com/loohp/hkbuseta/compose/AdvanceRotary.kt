@@ -48,9 +48,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+class HapticsController(@Volatile var enabled: Boolean = true, @Volatile var invokedCallback: (HapticsController) -> Unit = {})
+
 fun Modifier.rotaryScroll(
     scroll: LazyListState,
     focusRequester: FocusRequester,
+    hapticsController: HapticsController = HapticsController(),
     animationSpec: AnimationSpec<Float> = TweenSpec(durationMillis = 300, easing = FastOutSlowInEasing),
 ): Modifier {
     var rotaryHandler: (RotaryScrollEvent) -> Boolean = { true }
@@ -80,8 +83,9 @@ fun Modifier.rotaryScroll(
         }
         LaunchedEffect (scrollCounter, scrollReachedEnd) {
             delay(50)
-            if (scrollReachedEnd && scrollMoved > 0) {
+            if (scrollReachedEnd && scrollMoved > 0 && hapticsController.enabled) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                hapticsController.invokedCallback.invoke(hapticsController)
             }
             if (scrollMoved <= 0) {
                 scrollMoved++
@@ -116,6 +120,7 @@ fun Modifier.rotaryScroll(
 fun Modifier.rotaryScroll(
     scroll: ScrollState,
     focusRequester: FocusRequester,
+    hapticsController: HapticsController = HapticsController(),
     animationSpec: AnimationSpec<Float> = TweenSpec(durationMillis = 300, easing = FastOutSlowInEasing),
 ): Modifier {
     var rotaryHandler: (RotaryScrollEvent) -> Boolean = { true }
@@ -145,7 +150,7 @@ fun Modifier.rotaryScroll(
         }
         LaunchedEffect (scrollCounter, scrollReachedEnd) {
             delay(50)
-            if (scrollReachedEnd && scrollMoved > 0) {
+            if (scrollReachedEnd && scrollMoved > 0 && hapticsController.enabled) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             }
             if (scrollMoved <= 0) {

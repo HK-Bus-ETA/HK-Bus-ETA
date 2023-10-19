@@ -42,3 +42,7 @@ fun Color.adjustBrightness(percentage: Float): Color {
     }
     return Color(android.graphics.Color.HSVToColor(argb.alpha, hsv))
 }
+
+fun Color.toHexString(): String {
+    return "#${(this.toArgb() and 0xFFFFFF).toString(16).padStart(6, '0')}"
+}

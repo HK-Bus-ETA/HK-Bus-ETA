@@ -146,7 +146,7 @@ fun SearchButton(instance: TitleActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+                fontSize = StringUtils.scaledSize(17F, instance).sp,
                 text = if (Shared.language == "en") "Input Route" else "輸入巴士路線"
             )
         }
@@ -179,7 +179,7 @@ fun NearbyButton(instance: TitleActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+                fontSize = StringUtils.scaledSize(17F, instance).sp,
                 text = if (Shared.language == "en") "Search Nearby" else "附近巴士路線"
             )
         }
@@ -206,7 +206,7 @@ fun LanguageButton(instance: TitleActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+                fontSize = StringUtils.scaledSize(17F, instance).sp,
                 text = if (Shared.language == "en") "中文" else "English"
             )
         }

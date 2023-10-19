@@ -40,9 +40,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.shared.Registry
@@ -126,7 +125,7 @@ fun WaitingText(usingGps: Boolean, instance: NearbyActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+        fontSize = StringUtils.scaledSize(17F, instance).sp,
         text = if (usingGps) {
             if (Shared.language == "en") "Locating..." else "正在讀取你的位置..."
         } else {
@@ -142,7 +141,7 @@ fun FailedText(instance: NearbyActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+        fontSize = StringUtils.scaledSize(17F, instance).sp,
         text = if (Shared.language == "en") "Unable to read your location" else "無法讀取你的位置"
     )
     Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
@@ -151,7 +150,7 @@ fun FailedText(instance: NearbyActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(14F, instance), TextUnitType.Sp),
+        fontSize = StringUtils.scaledSize(14F, instance).sp,
         text = if (Shared.language == "en") "Please check whether your GPS is enabled" else "請檢查你的定位服務是否已開啟"
     )
 }
@@ -163,7 +162,7 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(17F, instance), TextUnitType.Sp),
+        fontSize = StringUtils.scaledSize(17F, instance).sp,
         text = if (Shared.language == "en") "There are no nearby bus stops" else "附近沒有巴士站"
     )
     Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
@@ -172,7 +171,7 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(12.5F, instance), TextUnitType.Sp),
+        fontSize = StringUtils.scaledSize(12.5F, instance).sp,
         text = if (Shared.language == "en")
             "Nearest Stop: ".plus(closestStop.optJSONObject("name")!!.optString("en")).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("m)")
         else
@@ -210,9 +209,10 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
                 NoNearbyText(result.closestStop, result.closestDistance, instance)
             } else {
                 val intent = Intent(instance, ListRoutesActivity::class.java)
-                intent.putExtra("result", JsonUtils.fromCollection(list.onEach { it.remove("route") }).toString())
+                intent.putExtra("result", JsonUtils.fromCollection(list.onEach { it.remove("route"); it.optJSONObject("stop")!!.remove("data") }).toString())
                 intent.putExtra("showEta", true)
                 intent.putExtra("recentSort", RecentSortMode.CHOICE.ordinal)
+                intent.putExtra("proximitySortOrigin", doubleArrayOf(result.lat, result.lng))
                 instance.startActivity(intent)
                 instance.finish()
             }

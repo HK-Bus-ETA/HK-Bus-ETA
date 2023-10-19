@@ -578,6 +578,10 @@ public class Registry {
         return DATA_SHEET.optJSONObject("routeList").optJSONObject(nearestKey);
     }
 
+    public JSONObject getStopById(String stopId) {
+        return DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId);
+    }
+
     public PossibleNextCharResult getPossibleNextChar(String input) {
         Set<Character> result = new HashSet<>();
         boolean exactMatch = false;
@@ -874,7 +878,7 @@ public class Registry {
             }
 
             if (nearbyRoutes.isEmpty()) {
-                return new NearbyRoutesResult(Collections.emptyList(), closestStop, closestDistance);
+                return new NearbyRoutesResult(Collections.emptyList(), closestStop, closestDistance, lat, lng);
             }
 
             List<JSONObject> routes = new ArrayList<>(nearbyRoutes.values());
@@ -937,7 +941,7 @@ public class Registry {
                 }
             }
 
-            return new NearbyRoutesResult(distinctRoutes, closestStop, closestDistance);
+            return new NearbyRoutesResult(distinctRoutes, closestStop, closestDistance, lat, lng);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -948,11 +952,15 @@ public class Registry {
         private final List<JSONObject> result;
         private final JSONObject closestStop;
         private final double closestDistance;
+        private final double lat;
+        private final double lng;
 
-        public NearbyRoutesResult(List<JSONObject> result, JSONObject closestStop, double closestDistance) {
+        public NearbyRoutesResult(List<JSONObject> result, JSONObject closestStop, double closestDistance, double lat, double lng) {
             this.result = result;
             this.closestStop = closestStop;
             this.closestDistance = closestDistance;
+            this.lat = lat;
+            this.lng = lng;
         }
 
         public List<JSONObject> getResult() {
@@ -965,6 +973,14 @@ public class Registry {
 
         public double getClosestDistance() {
             return closestDistance;
+        }
+
+        public double getLat() {
+            return lat;
+        }
+
+        public double getLng() {
+            return lng;
         }
     }
 
