@@ -1,0 +1,48 @@
+name: Data Fetching Processing
+on: 
+  push:
+  schedule:
+    - cron: "30 20 * * *"
+  workflow_dispatch:
+
+jobs:
+  Fetch-Process-Data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+        with:
+          ref: data-generation
+      - name: Setup Python environment
+        uses: actions/setup-python@v2
+        with:
+            python-version: '3.8'
+            architecture: 'x64'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ./requirements.txt
+      - name: Fetching & Processing resources
+        run: |
+          python ./main.py
+      - name: Update MD5
+        run: md5sum data.json | cut -f1 -d ' ' | tr -d $'\n' > checksum.md5
+      - name: Update Data Length
+        run: du -sb data.json | cut -f -1 > size.dat
+      - name: GZip Data
+        run: gzip -k -f -9 data.json
+      - name: Update GZip Data Length
+        run: du -sb data.json.gz | cut -f -1 > size.gz.dat
+      - name: Update resources
+        uses: test-room-7/action-update-file@v1
+        with:
+            file-path: |
+              data.json
+              checksum.md5
+              size.dat
+              data.json.gz
+              size.gz.dat
+            commit-msg: Update resources
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            branch: data
