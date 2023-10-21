@@ -663,7 +663,7 @@ public class Registry {
                     if (!coPredicate.test(data, co)) {
                         continue;
                     }
-                    String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co)) + (co.equals("gmb") ? ("," + data.optString("gtfsId")) : "");
+                    String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co)) + (co.equals("gmb") ? ("," + data.optString("gtfsId").substring(0, 4)) : "");
 
                     if (matchingRoutes.containsKey(key0)) {
                         try {
@@ -825,7 +825,7 @@ public class Registry {
 
                     if (isKmb || isCtb || isNlb || isMtrBus || isGmb || isLrt || isMtr) {
                         String co = isKmb ? "kmb" : (isCtb ? "ctb" : (isNlb ? "nlb" : (isMtrBus ? "mtr-bus" : (isGmb ? "gmb" : (isLrt ? "lightRail" : "mtr")))));
-                        String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co)) + (co.equals("gmb") ? ("," + data.optString("gtfsId")) : "");
+                        String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co)) + (co.equals("gmb") ? ("," + data.optString("gtfsId").substring(0, 4)) : "");
 
                         if (nearbyRoutes.containsKey(key0)) {
                             JSONObject existingNearbyRoute = nearbyRoutes.get(key0);
@@ -997,7 +997,7 @@ public class Registry {
                     } else {
                         flag = bound.equals(route.optJSONObject("bound").optString(co));
                         if (co.equals("gmb")) {
-                            flag &= gtfsId.equals(route.optString("gtfsId"));
+                            flag &= gtfsId.substring(0, 4).equals(route.optString("gtfsId").substring(0, 4));
                         }
                     }
                     if (flag) {
