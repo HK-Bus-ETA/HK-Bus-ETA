@@ -70,8 +70,6 @@ import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.ButtonDefaults
@@ -86,6 +84,7 @@ import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
@@ -436,11 +435,16 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
 @Composable
 fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
+    val routeName = if (co == "mtr") {
+        Shared.getMtrLineName(routeNumber, "???")
+    } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+        "NR".plus(routeNumber)
+    } else {
+        routeNumber
+    }
     val name = if (Shared.language == "en") {
-        val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
         routeName.plus(" To ").plus(destName.optString("en"))
     } else {
-        val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
         routeName.plus(" 往").plus(destName.optString("zh"))
     }
     AutoResizeText(

@@ -93,6 +93,7 @@ import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
@@ -385,7 +386,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                 }
                 val routeTextWidth = if (Shared.language != "en" && co == "mtr") mtrTextWidth else defaultTextWidth
                 val rawColor = when (co) {
-                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
+                    "kmb" -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
                     "ctb" -> Color(0xFFFFE15E)
                     "nlb" -> Color(0xFF9BFFC6)
                     "mtr-bus" -> Color(0xFFAAD4FF)
@@ -426,6 +427,12 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                     } else {
                         "從".plus(route.optJSONObject("route")!!.optJSONObject("orig")!!.optString("zh")).plus("開出")
                     }).plus("</span>"))
+                } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+                    secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
+                        "Sun-Bus (NR$routeNumber)"
+                    } else {
+                        "陽光巴士 (NR$routeNumber)"
+                    }).plus("</span>"))
                 }
 
                 Box (
@@ -450,7 +457,11 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                                     var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(
                                             if (Shared.language == "en") {
                                                 when (route.optString("co")) {
-                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
+                                                    "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
+                                                        KMBSubsidiary.SUNB -> "Sun-Bus"
+                                                        KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
+                                                        else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
+                                                    }
                                                     "ctb" -> "CTB"
                                                     "nlb" -> "NLB"
                                                     "mtr-bus" -> "MTR-Bus"
@@ -461,7 +472,11 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                                                 }
                                             } else {
                                                 when (route.optString("co")) {
-                                                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
+                                                    "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
+                                                        KMBSubsidiary.SUNB -> "陽光巴士"
+                                                        KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
+                                                        else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"
+                                                    }
                                                     "ctb" -> "城巴"
                                                     "nlb" -> "嶼巴"
                                                     "mtr-bus" -> "港鐵巴士"

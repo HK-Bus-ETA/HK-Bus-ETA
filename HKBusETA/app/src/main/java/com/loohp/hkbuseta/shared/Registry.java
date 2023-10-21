@@ -1521,7 +1521,7 @@ public class Registry {
                                 message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)") + "</small>";
                             }
                             if (entryCo.equals("kmb")) {
-                                if (Shared.Companion.isLWBRoute(route.optString("route"))) {
+                                if (Shared.Companion.getKMBSubsidiary(route.optString("route")) == KMBSubsidiary.LWB) {
                                     message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " - LWB" : " - 龍運") + "</small>";
                                 } else {
                                     message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " - KMB" : " - 九巴") + "</small>";

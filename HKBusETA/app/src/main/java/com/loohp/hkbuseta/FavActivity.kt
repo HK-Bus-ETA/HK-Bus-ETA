@@ -77,8 +77,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.ButtonDefaults
@@ -90,6 +88,7 @@ import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -467,7 +466,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                     val stopId = currentFavouriteStopRoute.optString("stopId")
                     val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route)
                     val rawColor = when (co) {
-                        "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
+                        "kmb" -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
                         "ctb" -> Color(0xFFFFE15E)
                         "nlb" -> Color(0xFF9BFFC6)
                         "mtr-bus" -> Color(0xFFAAD4FF)
@@ -509,7 +508,11 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
 
                     val operator = if (Shared.language == "en") {
                         when (co) {
-                            "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
+                            "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
+                                KMBSubsidiary.SUNB -> "Sun-Bus"
+                                KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
+                                else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
+                            }
                             "ctb" -> "CTB"
                             "nlb" -> "NLB"
                             "mtr-bus" -> "MTR-Bus"
@@ -520,7 +523,11 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                         }
                     } else {
                         when (co) {
-                            "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
+                            "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
+                                KMBSubsidiary.SUNB -> "陽光巴士"
+                                KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
+                                else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"
+                            }
                             "ctb" -> "城巴"
                             "nlb" -> "嶼巴"
                             "mtr-bus" -> "港鐵巴士"
@@ -530,7 +537,13 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                             else -> "???"
                         }
                     }
-                    val mainText = operator.plus(" ").plus(if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber)
+                    val mainText = operator.plus(" ").plus(if (co == "mtr") {
+                        Shared.getMtrLineName(routeNumber, "???")
+                    } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+                        "NR".plus(routeNumber)
+                    } else {
+                        routeNumber
+                    })
                     val routeText = if (Shared.language == "en") {
                         "To ".plus(destName.optString("en"))
                     } else {

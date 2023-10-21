@@ -127,6 +127,12 @@ data class LastLookupRoute(val routeNumber: String, val co: String, val meta: St
 
 }
 
+enum class KMBSubsidiary {
+
+    KMB, LWB, SUNB
+
+}
+
 class Shared {
 
     companion object {
@@ -314,15 +320,17 @@ class Shared {
             }
         }
 
-        fun isLWBRoute(routeNumber: String): Boolean {
+        fun getKMBSubsidiary(routeNumber: String): KMBSubsidiary {
             val routeNumberFiltered = if (routeNumber.startsWith("N")) routeNumber.substring(1) else routeNumber
             if (routeNumberFiltered.startsWith("A") || routeNumberFiltered.startsWith("E") || routeNumberFiltered.startsWith("S")) {
-                return true
+                return KMBSubsidiary.LWB
             }
             return when (routeNumber) {
-                "N30", "N31", "N42", "N42A", "N64", "R8", "R33", "R42", "X1", "X33", "X34", "X40", "X43", "X47" -> true
-                else -> false
+                "N30", "N31", "N42", "N42A", "N64", "R8", "R33", "R42", "X1", "X33", "X34", "X40", "X43", "X47" -> KMBSubsidiary.LWB
+                "331", "331S", "917", "918", "945" -> KMBSubsidiary.SUNB
+                else -> KMBSubsidiary.KMB
             }
+
         }
 
         var language = "zh"

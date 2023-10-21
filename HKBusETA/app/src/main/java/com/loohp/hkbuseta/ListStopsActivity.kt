@@ -94,6 +94,7 @@ import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
@@ -220,7 +221,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
         val specialDests = remember { specialOrigsDests.second.filter { !it.optString("zh").eitherContains(destName.optString("zh")) } }
 
         val coColor = remember { when (co) {
-            "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
+            "kmb" -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
             "ctb" -> Color(0xFFFFE15E)
             "nlb" -> Color(0xFF9BFFC6)
             "mtr-bus" -> Color(0xFFAAD4FF)
@@ -445,7 +446,11 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
             maxLines = 1,
             text = (if (Shared.language == "en") {
                 when (co) {
-                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "LWB/CTB" else "LWB") else (if (kmbCtbJoint) "KMB/CTB" else "KMB")
+                    "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
+                        KMBSubsidiary.SUNB -> "Sun-Bus"
+                        KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
+                        else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
+                    }
                     "ctb" -> "CTB"
                     "nlb" -> "NLB"
                     "mtr-bus" -> "MTR-Bus"
@@ -456,7 +461,11 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
                 }
             } else {
                 when (co) {
-                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) (if (kmbCtbJoint) "龍運/城巴" else "龍運") else (if (kmbCtbJoint) "九巴/城巴" else "九巴")
+                    "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
+                        KMBSubsidiary.SUNB -> "陽光巴士"
+                        KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
+                        else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"
+                    }
                     "ctb" -> "城巴"
                     "nlb" -> "嶼巴"
                     "mtr-bus" -> "港鐵巴士"
@@ -465,7 +474,13 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
                     "mtr" -> "港鐵"
                     else -> "???"
                 }
-            }).plus(" ").plus(if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber)
+            }).plus(" ").plus(if (co == "mtr") {
+                Shared.getMtrLineName(routeNumber, "???")
+            } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+                "NR".plus(routeNumber)
+            } else {
+                routeNumber
+            })
         )
         AutoResizeText(
             modifier = Modifier

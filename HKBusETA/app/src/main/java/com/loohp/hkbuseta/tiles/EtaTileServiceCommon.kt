@@ -40,6 +40,7 @@ import com.aghajari.compose.text.asAnnotatedString
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
+import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
@@ -364,11 +365,16 @@ class EtaTileServiceCommon {
         }
 
         private fun subTitle(destName: JSONObject, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
+            val routeName = if (co == "mtr") {
+                Shared.getMtrLineName(routeNumber, "???")
+            } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+                "NR".plus(routeNumber)
+            } else {
+                routeNumber
+            }
             val name = if (Shared.language == "en") {
-                val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
                 routeName.plus(" To ").plus(destName.optString("en"))
             } else {
-                val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
                 routeName.plus(" 往").plus(destName.optString("zh"))
             }
             return LayoutElementBuilders.Text.Builder()
@@ -461,7 +467,7 @@ class EtaTileServiceCommon {
                 Color.DarkGray
             } else {
                 when (eta.nextCo) {
-                    "kmb" -> if (Shared.isLWBRoute(routeNumber)) Color(0xFFF26C33) else Color(0xFFFF4747)
+                    "kmb" -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
                     "ctb" -> Color(0xFFFFE15E)
                     "nlb" -> Color(0xFF9BFFC6)
                     "mtr-bus" -> Color(0xFFAAD4FF)
