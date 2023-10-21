@@ -21,7 +21,13 @@
 package com.loohp.hkbuseta.utils
 
 import com.google.common.collect.ImmutableMap
+import java.util.function.Predicate
 
 operator fun <K, V> ImmutableMap.Builder<K, V>.set(key: K & Any, value: V & Any): ImmutableMap.Builder<K, V> {
     return this.put(key, value)
+}
+
+fun <T, C: MutableCollection<T>> C.chainedRemoveIf(predicate: Predicate<T>): C {
+    removeIf(predicate)
+    return this
 }

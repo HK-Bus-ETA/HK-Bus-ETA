@@ -451,7 +451,7 @@ public class Registry {
                     float percentageOffset = Shared.Companion.getFavoriteRouteStops().isEmpty() ? 0.15F : 0F;
 
                     long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.gz.dat"), -1);
-                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, GZIPInputStream::new, p -> updatePercentage = p * (0.75F + percentageOffset));
+                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, GZIPInputStream::new, p -> updatePercentage = p * 0.75F + percentageOffset);
 
                     MTR_BUS_STOP_ALIAS = data.optJSONObject("mtrBusStopAlias");
                     DATA_SHEET = data.optJSONObject("dataSheet");

@@ -102,6 +102,7 @@ import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.chainedRemoveIf
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
@@ -156,13 +157,24 @@ class ListRoutesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
 
-        val result = JsonUtils.toList(JSONArray(intent.extras!!.getString("result")!!), JSONObject::class.java).onEach {
+        val result = JsonUtils.toList(JSONArray(intent.extras!!.getString("result")!!), JSONObject::class.java).chainedRemoveIf {
             if (!it.has("route")) {
-                it.put("route", Registry.getInstance(this).findRouteByKey(it.getString("routeKey"), null))
+                val route = Registry.getInstance(this).findRouteByKey(it.getString("routeKey"), null)
+                if (route == null) {
+                    return@chainedRemoveIf true
+                } else {
+                    it.put("route", route)
+                }
             }
             if (it.has("stop") && it.optJSONObject("stop")!!.has("stopId") && !it.optJSONObject("stop")!!.has("data")) {
-                it.optJSONObject("stop")!!.put("data", Registry.getInstance(this).getStopById(it.optJSONObject("stop")!!.optString("stopId")))
+                val stop = Registry.getInstance(this).getStopById(it.optJSONObject("stop")!!.optString("stopId"))
+                if (stop == null) {
+                    return@chainedRemoveIf true
+                } else {
+                    it.optJSONObject("stop")!!.put("data", stop)
+                }
             }
+            return@chainedRemoveIf false
         }
         val showEta = intent.extras!!.getBoolean("showEta", false)
         val recentSort = RecentSortMode.values()[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
