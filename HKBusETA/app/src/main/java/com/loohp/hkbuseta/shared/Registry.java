@@ -1183,6 +1183,7 @@ public class Registry {
         return new MTRInterchangeData(lines, isOutOfStationPaid, outOfStationLines, hasLightRail);
     }
 
+    @Immutable
     public static class MTRInterchangeData {
 
         private final Set<String> lines;
