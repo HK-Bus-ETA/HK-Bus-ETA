@@ -62,6 +62,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -104,11 +105,13 @@ import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.DistanceUtils
+import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
@@ -116,6 +119,10 @@ import com.loohp.hkbuseta.utils.eitherContains
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.sp
+import com.loohp.hkbuseta.utils.toImmutableList
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -142,7 +149,7 @@ data class OriginData(
     val onlyInRange: Boolean = false
 )
 
-
+@Stable
 class ListStopsActivity : ComponentActivity() {
 
     private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 4)
@@ -221,16 +228,16 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
         val origName = remember { route.route.orig }
         val destName = remember { route.route.dest }
         val specialOrigsDests = remember { Registry.getInstance(instance).getAllOriginsAndDestinations(routeNumber, bound, co, gtfsId) }
-        val specialOrigs = remember { specialOrigsDests.first.filter { !it.zh.eitherContains(origName.zh) } }
-        val specialDests = remember { specialOrigsDests.second.filter { !it.zh.eitherContains(destName.zh) } }
+        val specialOrigs = remember { specialOrigsDests.first.stream().filter { !it.zh.eitherContains(origName.zh) }.toImmutableList() }
+        val specialDests = remember { specialOrigsDests.second.stream().filter { !it.zh.eitherContains(destName.zh) }.toImmutableList() }
 
         val coColor = remember { co.coColor(routeNumber, Color.White) }
 
-        val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId) }
+        val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId).toImmutableList() }
         val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
         val mtrStopsInterchange = remember { if (co == "mtr" || co == "lightRail") {
-            stopsList.map { Registry.getMtrStationInterchange(it.stopId, routeNumber) }
-        } else emptyList() }
+            stopsList.stream().map { Registry.getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
+        } else persistentListOf() }
         val mtrLineCreator = remember { if (co == "mtr" || co == "lightRail") generateMTRLine(co,
             if (co == "lightRail") when (routeNumber) {
                 "505" -> Color(0xFFDA2127)
@@ -253,8 +260,8 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
 
         val etaTextWidth by remember { derivedStateOf { StringUtils.findTextLengthDp(instance, "99", StringUtils.scaledSize(16F, instance)) + 1F } }
 
-        val etaUpdateTimes: MutableMap<Int, Long> = remember { ConcurrentHashMap() }
-        val etaResults: MutableMap<Int, Registry.ETAQueryResult> = remember { ConcurrentHashMap() }
+        val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
+        val etaResults = remember { ConcurrentHashMap<Int, Registry.ETAQueryResult>().asImmutableState() }
 
         LaunchedEffect (Unit) {
             focusRequester.requestFocus()
@@ -386,7 +393,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
 }
 
 @Composable
-fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor: Color, destName: BilingualText, specialOrigs: List<BilingualText>, specialDests: List<BilingualText>, instance: ListStopsActivity) {
+fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor: Color, destName: BilingualText, specialOrigs: ImmutableList<BilingualText>, specialDests: ImmutableList<BilingualText>, instance: ListStopsActivity) {
     Column(
         modifier = Modifier
             .defaultMinSize(minHeight = StringUtils.scaledSize(35, instance).dp)
@@ -487,7 +494,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: List<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: List<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: ImmutableList<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var height by remember { mutableStateOf(0) }
     Row (
         modifier = Modifier
@@ -558,17 +565,17 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boole
 }
 
 @Composable
-fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
-    var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults[index]) }
+fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+    var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults.value[index]) }
 
     LaunchedEffect (Unit) {
         if (eta != null && !eta!!.isConnectionError) {
-            delay(etaUpdateTimes[index]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+            delay(etaUpdateTimes.value[index]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
             eta = Registry.getEta(stopId, route.co, route.route, instance)
-            etaUpdateTimes[index] = System.currentTimeMillis()
-            etaResults[index] = eta!!
+            etaUpdateTimes.value[index] = System.currentTimeMillis()
+            etaResults.value[index] = eta!!
         }
     }
     DisposableEffect (Unit) {

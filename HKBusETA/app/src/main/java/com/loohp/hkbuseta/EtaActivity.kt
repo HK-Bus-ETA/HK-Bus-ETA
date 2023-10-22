@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -102,11 +103,14 @@ import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toSpanned
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 
+@Stable
 class EtaActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -184,7 +188,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: Stop, route: Route,
         if (co == "nlb") route.nlbId else route.bound[co],
         co,
         route.gtfsId
-    ) }
+    ).toImmutableList() }
 
     val focusRequester = remember { FocusRequester() }
     var currentOffset by remember { mutableStateOf(offsetStart * ScreenSizeUtils.getScreenHeight(instance).toFloat()) }
@@ -293,7 +297,7 @@ fun launchOtherStop(newIndex: Int, co: String, stopList: List<Registry.StopData>
 }
 
 @Composable
-fun ActionBar(stopId: String, co: String, index: Int, stop: Stop, route: Route, stopList: List<Registry.StopData>, instance: EtaActivity) {
+fun ActionBar(stopId: String, co: String, index: Int, stop: Stop, route: Route, stopList: ImmutableList<Registry.StopData>, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     Row (
         horizontalArrangement = Arrangement.Center,

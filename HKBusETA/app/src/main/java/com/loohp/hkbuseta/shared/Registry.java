@@ -24,6 +24,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.Pair;
 
+import androidx.compose.runtime.Immutable;
 import androidx.compose.runtime.Stable;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
@@ -585,6 +586,7 @@ public class Registry {
         return new PossibleNextCharResult(result, exactMatch);
     }
 
+    @Immutable
     public static class PossibleNextCharResult {
 
         private final Set<Character> characters;
@@ -908,6 +910,7 @@ public class Registry {
         return new NearbyRoutesResult(distinctRoutes, closestStop, closestDistance, lat, lng);
     }
 
+    @Immutable
     public static class NearbyRoutesResult {
 
         private final List<RouteSearchResultEntry> result;

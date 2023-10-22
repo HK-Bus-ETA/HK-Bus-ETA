@@ -61,6 +61,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -92,13 +93,14 @@ import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.coColor
 import com.loohp.hkbuseta.objects.coName
 import com.loohp.hkbuseta.objects.displayRouteNumber
-import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
+import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
@@ -114,6 +116,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 
+@Stable
 class FavActivity : ComponentActivity() {
 
     private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 4)
@@ -177,8 +180,8 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
         val scope = rememberCoroutineScope()
         val state = rememberLazyListState()
 
-        val etaUpdateTimes: MutableMap<Int, Long> = remember { ConcurrentHashMap() }
-        val etaResults: MutableMap<Int, Registry.ETAQueryResult> = remember { ConcurrentHashMap() }
+        val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
+        val etaResults = remember { ConcurrentHashMap<Int, Registry.ETAQueryResult>().asImmutableState() }
 
         LaunchedEffect (Unit) {
             if (scrollToIndex in 1..8) {
@@ -245,7 +248,7 @@ fun FavDescription(instance: FavActivity) {
 }
 
 @Composable
-fun FavButton(favoriteIndex: Int, instance: FavActivity, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun FavButton(favoriteIndex: Int, instance: FavActivity, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     val favouriteStopRoute = remember { mutableStateOf(Shared.favoriteRouteStops[favoriteIndex]) }
     val deleteState = remember { mutableStateOf(false) }
 
@@ -264,7 +267,7 @@ fun FavButton(favoriteIndex: Int, instance: FavActivity, etaResults: MutableMap<
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<FavouriteRouteStop?>, deleteState: MutableState<Boolean>, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<FavouriteRouteStop?>, deleteState: MutableState<Boolean>, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     val haptic = LocalHapticFeedback.current
 
     AdvanceButton(
@@ -346,16 +349,16 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<Favou
                 val co = favStopRoute.co
                 val route = favStopRoute.route
 
-                var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults[favoriteIndex]) }
+                var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults.value[favoriteIndex]) }
 
                 LaunchedEffect (Unit) {
                     if (eta != null && !eta!!.isConnectionError) {
-                        delay(etaUpdateTimes[favoriteIndex]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+                        delay(etaUpdateTimes.value[favoriteIndex]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
                     }
                     schedule.invoke(true, favoriteIndex) {
                         eta = Registry.getEta(stopId, co, route, instance)
-                        etaUpdateTimes[favoriteIndex] = System.currentTimeMillis()
-                        etaResults[favoriteIndex] = eta!!
+                        etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
+                        etaResults.value[favoriteIndex] = eta!!
                     }
                 }
                 DisposableEffect (Unit) {

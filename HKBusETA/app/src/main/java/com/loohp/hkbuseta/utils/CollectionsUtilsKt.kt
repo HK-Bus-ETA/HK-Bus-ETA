@@ -21,7 +21,12 @@
 package com.loohp.hkbuseta.utils
 
 import com.google.common.collect.ImmutableMap
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import java.util.function.Predicate
+import java.util.stream.Stream
 
 operator fun <K, V> ImmutableMap.Builder<K, V>.set(key: K & Any, value: V & Any): ImmutableMap.Builder<K, V> {
     return this.put(key, value)
@@ -30,4 +35,16 @@ operator fun <K, V> ImmutableMap.Builder<K, V>.set(key: K & Any, value: V & Any)
 fun <T, C: MutableCollection<T>> C.chainedRemoveIf(predicate: Predicate<T>): C {
     removeIf(predicate)
     return this
+}
+
+fun <T> Stream<T>.toImmutableList(): ImmutableList<T> {
+    val builder = persistentListOf<T>().builder()
+    forEach { builder.add(it) }
+    return builder.build()
+}
+
+fun <T> Stream<T>.toImmutableSet(): ImmutableSet<T> {
+    val builder = persistentSetOf<T>().builder()
+    forEach { builder.add(it) }
+    return builder.build()
 }

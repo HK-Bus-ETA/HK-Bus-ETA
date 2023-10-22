@@ -29,6 +29,7 @@ import android.location.LocationManager;
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.compose.runtime.Immutable;
 import androidx.core.app.ActivityCompat;
 
 import com.google.android.gms.location.CurrentLocationRequest;
@@ -96,6 +97,7 @@ public class LocationUtils {
         return future;
     }
 
+    @Immutable
     public static class LocationResult {
 
         public static final LocationResult FAILED_RESULT = new LocationResult(null);

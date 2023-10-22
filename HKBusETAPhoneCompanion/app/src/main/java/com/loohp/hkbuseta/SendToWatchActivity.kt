@@ -35,7 +35,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.loohp.hkbuseta.ui.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.HTTPRequestUtils
+import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
+import com.loohp.hkbuseta.utils.asImmutableState
 import org.json.JSONObject
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -60,7 +62,7 @@ class SendToWatchActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF1A1A1A)
                 ) {
-                    DisplayElements(intent, this)
+                    DisplayElements(intent.asImmutableState(), this)
                 }
             }
         }
@@ -89,9 +91,10 @@ fun sendPayload(instance: SendToWatchActivity, payload: JSONObject) {
 }
 
 @Composable
-fun DisplayElements(intent: Intent, instance: SendToWatchActivity) {
+fun DisplayElements(intentState: ImmutableState<Intent>, instance: SendToWatchActivity) {
     LaunchedEffect (Unit) {
         ForkJoinPool.commonPool().execute {
+            val intent = intentState.value
             val action = intent.action
             val type = intent.type
 
@@ -105,12 +108,18 @@ fun DisplayElements(intent: Intent, instance: SendToWatchActivity) {
                     val parameter = urlDecoded.substring("https://m4.kmb.hk/kmb-ws/share.php?parameter=".length)
                     val data = JSONObject(String(Base64.decode(parameter, Base64.DEFAULT)))
                     val route = data.optString("r")
-                    val bound = if (data.optString("b") == "1") "O" else "I"
+                    val co = when (data.optString("c").substring(0, 2)) {
+                        "NL" -> "nlb"
+                        "GB" -> "gmb"
+                        else -> "kmb"
+                    }
 
                     val payload = JSONObject()
                     payload.put("r", route)
-                    payload.put("b", bound)
-                    payload.put("c", "kmb")
+                    payload.put("c", co)
+                    if (co == "kmb") {
+                        payload.put("b", if (data.optString("b") == "1") "O" else "I")
+                    }
 
                     sendPayload(instance, payload)
                 } else if (CTB_URL_PATTERN.matcher(url).also { matcher = it }.find()) {

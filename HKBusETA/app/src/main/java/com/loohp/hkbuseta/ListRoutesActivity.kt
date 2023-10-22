@@ -66,6 +66,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -94,18 +95,22 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.objects.StopLocation
 import com.loohp.hkbuseta.objects.coColor
 import com.loohp.hkbuseta.objects.coName
+import com.loohp.hkbuseta.objects.toStopLocation
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.DistanceUtils
+import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.chainedRemoveIf
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
@@ -114,6 +119,8 @@ import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.set
 import com.loohp.hkbuseta.utils.toHexString
 import com.loohp.hkbuseta.utils.toSpanned
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -152,6 +159,7 @@ enum class ActiveSortMode {
 
 }
 
+@Stable
 class ListRoutesActivity : ComponentActivity() {
 
     private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 4)
@@ -179,10 +187,10 @@ class ListRoutesActivity : ComponentActivity() {
                 }
             }
             return@chainedRemoveIf false
-        }
+        }.toImmutableList()
         val showEta = intent.extras!!.getBoolean("showEta", false)
         val recentSort = RecentSortMode.values()[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
-        val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")
+        val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")?.toStopLocation()
 
         setContent {
             MainElement(this, result, showEta, recentSort, proximitySortOrigin) { isAdd, index, task ->
@@ -231,7 +239,7 @@ class ListRoutesActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListRoutesActivity, result: List<RouteSearchResultEntry>, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: DoubleArray?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchResultEntry>, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: StopLocation?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val hapticsController = remember { HapticsController() }
@@ -248,8 +256,8 @@ fun MainElement(instance: ListRoutesActivity, result: List<RouteSearchResultEntr
         val bottomOffset by remember { derivedStateOf { -UnitUtils.spToDp(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(7F, instance))) / 2.7F } }
         val mtrBottomOffset by remember { derivedStateOf { -UnitUtils.spToDp(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(7F, instance))) / 10.7F } }
 
-        val etaUpdateTimes: MutableMap<Int, Long> = remember { ConcurrentHashMap() }
-        val etaResults: MutableMap<Int, ETAQueryResult> = remember { ConcurrentHashMap() }
+        val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
+        val etaResults = remember { ConcurrentHashMap<Int, ETAQueryResult>().asImmutableState() }
 
         var activeSortMode by remember { mutableStateOf(recentSort.defaultActiveSortMode) }
         val sortTask = remember { {
@@ -270,7 +278,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<RouteSearchResultEntr
                 if (recentSort.enabled) {
                     map[ActiveSortMode.PROXIMITY] = result.sortedWith(compareBy({
                         val location = it.stopInfo.data.location
-                        DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.lat, location.lng)
+                        DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
                     }, {
                         val co = it.co
                         val meta = when (co) {
@@ -283,7 +291,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<RouteSearchResultEntr
                 } else {
                     map[ActiveSortMode.PROXIMITY] = result.sortedBy {
                         val location = it.stopInfo.data.location
-                        DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.lat, location.lng)
+                        DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
                     }
                 }
             }
@@ -433,7 +441,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<RouteSearchResultEntr
                                     var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(route.co.coName(routeNumber, kmbCtbJoint, Shared.language)).plus(")")
                                     if (proximitySortOrigin != null && route.stopInfo != null) {
                                         val location = route.stopInfo.data.location
-                                        val distance = DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.lat, location.lng)
+                                        val distance = DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
                                         text = text.plus(" - ").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
                                     }
                                     Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
@@ -441,7 +449,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<RouteSearchResultEntr
                             }
                         )
                 ) {
-                    RouteRow(index, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, secondLine, showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                    RouteRow(index, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, secondLine.toImmutableList(), showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
                 }
                 Spacer(
                     modifier = Modifier
@@ -461,7 +469,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<RouteSearchResultEntr
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: String, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: List<String>, showEta: Boolean, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: String, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: ImmutableList<String>, showEta: Boolean, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
@@ -586,17 +594,17 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
 }
 
 @Composable
-fun ETAElement(index: Int, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
-    var eta: ETAQueryResult? by remember { mutableStateOf(etaResults[index]) }
+fun ETAElement(index: Int, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+    var eta: ETAQueryResult? by remember { mutableStateOf(etaResults.value[index]) }
 
     LaunchedEffect (Unit) {
         if (eta != null && !eta!!.isConnectionError) {
-            delay(etaUpdateTimes[index]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+            delay(etaUpdateTimes.value[index]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
             eta = Registry.getEta(route.stopInfo.stopId, route.co, route.route, instance)
-            etaUpdateTimes[index] = System.currentTimeMillis()
-            etaResults[index] = eta!!
+            etaUpdateTimes.value[index] = System.currentTimeMillis()
+            etaResults.value[index] = eta!!
         }
     }
     DisposableEffect (Unit) {

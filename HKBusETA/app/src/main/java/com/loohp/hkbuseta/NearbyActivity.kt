@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,17 +54,21 @@ import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableSet
 import java.util.concurrent.ForkJoinPool
 import kotlin.math.roundToInt
 
 
+@Stable
 class NearbyActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
         var location: LocationResult? = null
-        var exclude: Set<String> = emptySet()
+        var exclude: ImmutableSet<String> = persistentSetOf()
         var interchangeSearch = false
         if (intent.extras != null) {
             if (intent.extras!!.containsKey("lat") && intent.extras!!.containsKey("lng")) {
@@ -72,7 +77,7 @@ class NearbyActivity : ComponentActivity() {
                 location = LocationResult.fromLatLng(lat, lng)
             }
             if (intent.extras!!.containsKey("exclude")) {
-                exclude = HashSet(intent.extras!!.getStringArrayList("exclude")!!)
+                exclude = intent.extras!!.getStringArrayList("exclude")!!.toImmutableSet()
             }
             interchangeSearch = intent.extras!!.getBoolean("interchangeSearch", false)
         }
@@ -97,7 +102,7 @@ class NearbyActivity : ComponentActivity() {
 }
 
 @Composable
-fun NearbyPage(location: LocationResult?, exclude: Set<String>, interchangeSearch: Boolean, instance: NearbyActivity) {
+fun NearbyPage(location: LocationResult?, exclude: ImmutableSet<String>, interchangeSearch: Boolean, instance: NearbyActivity) {
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -180,7 +185,7 @@ fun NoNearbyText(closestStop: Stop, distance: Double, instance: NearbyActivity) 
 }
 
 @Composable
-fun MainElement(location: LocationResult?, exclude: Set<String>, interchangeSearch: Boolean, instance: NearbyActivity) {
+fun MainElement(location: LocationResult?, exclude: ImmutableSet<String>, interchangeSearch: Boolean, instance: NearbyActivity) {
     var state by remember { mutableStateOf(false) }
     var result: Registry.NearbyRoutesResult? by remember { mutableStateOf(null) }
 

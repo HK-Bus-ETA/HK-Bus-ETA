@@ -54,8 +54,10 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,15 +87,19 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.PossibleNextCharResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.asImmutableState
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-
+@Immutable
 data class RouteKeyboardState(val text: String, val nextCharResult: PossibleNextCharResult) {
 
     fun withText(text: String): RouteKeyboardState {
@@ -107,6 +113,7 @@ data class RouteKeyboardState(val text: String, val nextCharResult: PossibleNext
 }
 
 
+@Stable
 class SearchActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -188,7 +195,7 @@ fun MainElement(instance: SearchActivity) {
                 KeyboardButton(instance, '7', state)
                 KeyboardButton(instance, '4', state)
                 KeyboardButton(instance, '1', state)
-                KeyboardButton(instance, '<', '-', state, Color.Red, Icons.Outlined.Delete, R.drawable.baseline_history_24)
+                KeyboardButton(instance, '<', '-', state, Color.Red, persistentListOf(Icons.Outlined.Delete.asImmutableState(), R.drawable.baseline_history_24.asImmutableState()))
             }
             Column {
                 KeyboardButton(instance, '8', state)
@@ -200,7 +207,7 @@ fun MainElement(instance: SearchActivity) {
                 KeyboardButton(instance, '9', state)
                 KeyboardButton(instance, '6', state)
                 KeyboardButton(instance, '3', state)
-                KeyboardButton(instance, '/', null, state, Color.Green, Icons.Outlined.Done)
+                KeyboardButton(instance, '/', null, state, Color.Green, persistentListOf(Icons.Outlined.Done.asImmutableState()))
             }
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             Box (
@@ -289,7 +296,7 @@ fun MainElement(instance: SearchActivity) {
                     }
                     val currentText = state.value.text
                     if (currentText.isEmpty() || currentText == defaultText()) {
-                        KeyboardButton(instance, '!', null, state, Color.Red, R.mipmap.mtr)
+                        KeyboardButton(instance, '!', null, state, Color.Red, persistentListOf(R.mipmap.mtr.asImmutableState()))
                     }
                 }
             }
@@ -343,13 +350,12 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
 
 @Composable
 fun KeyboardButton(instance: SearchActivity, content: Char, state: MutableState<RouteKeyboardState>) {
-    KeyboardButton(instance, content, null, state, MaterialTheme.colors.primary)
+    KeyboardButton(instance, content, null, state, MaterialTheme.colors.primary, persistentListOf())
 }
 
-
 @Composable
-fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, state: MutableState<RouteKeyboardState>, color: Color, vararg icons: Any) {
-    val icon = if (icons.isEmpty()) null else icons[0]
+fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, state: MutableState<RouteKeyboardState>, color: Color, icons: ImmutableList<ImmutableState<Any>>) {
+    val icon = if (icons.isEmpty()) null else icons[0].value
     val enabled = when (content) {
         '/' -> state.value.nextCharResult.hasExactMatch()
         '<' -> true
@@ -387,7 +393,7 @@ fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, 
             if (isLookupButton) {
                 Icon(
                     modifier = Modifier.size(17.dp),
-                    painter = painterResource(icons[1] as Int),
+                    painter = painterResource(icons[1].value as Int),
                     contentDescription = content.toString(),
                     tint = Color(0xFF03A9F4),
                 )

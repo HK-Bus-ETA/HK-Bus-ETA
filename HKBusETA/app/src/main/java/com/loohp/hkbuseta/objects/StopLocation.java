@@ -38,6 +38,10 @@ public class StopLocation implements JSONSerializable {
         return new StopLocation(lat, lng);
     }
 
+    public static StopLocation fromArray(double[] array) {
+        return new StopLocation(array[0], array[1]);
+    }
+
     private final double lat;
     private final double lng;
 
@@ -52,6 +56,10 @@ public class StopLocation implements JSONSerializable {
 
     public double getLng() {
         return lng;
+    }
+
+    public double[] toArray() {
+        return new double[] {lat, lng};
     }
 
     @Override

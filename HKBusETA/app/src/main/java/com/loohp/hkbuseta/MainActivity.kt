@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -43,12 +44,14 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.asImmutableState
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.util.regex.Pattern
 import kotlin.streams.toList
 
 
+@Stable
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -243,9 +246,9 @@ fun Loading(instance: MainActivity) {
                 .padding(20.dp, 0.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Shared.LoadingLabel(language = "zh", includeImage = true, includeProgress = false, instance = instance)
+            Shared.LoadingLabel(language = "zh", includeImage = true, includeProgress = false, instance = instance.asImmutableState())
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
-            Shared.LoadingLabel(language = "en", includeImage = false, includeProgress = true, instance = instance)
+            Shared.LoadingLabel(language = "en", includeImage = false, includeProgress = true, instance = instance.asImmutableState())
         }
     }
 }

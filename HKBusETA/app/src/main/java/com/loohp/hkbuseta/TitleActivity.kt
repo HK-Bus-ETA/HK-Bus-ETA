@@ -42,6 +42,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -66,6 +67,7 @@ import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.dp
 
 
+@Stable
 class TitleActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

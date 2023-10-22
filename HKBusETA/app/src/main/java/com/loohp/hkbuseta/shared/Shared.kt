@@ -37,6 +37,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +55,7 @@ import androidx.wear.compose.material.TimeText
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.isEqualTo
 import kotlinx.coroutines.delay
@@ -138,6 +140,7 @@ enum class KMBSubsidiary {
 
 class Shared {
 
+    @Stable
     companion object {
 
         const val ETA_UPDATE_INTERVAL: Long = 15000
@@ -183,13 +186,13 @@ class Shared {
         }
 
         @Composable
-        fun LoadingLabel(language: String, includeImage: Boolean, includeProgress: Boolean, instance: Context) {
+        fun LoadingLabel(language: String, includeImage: Boolean, includeProgress: Boolean, instance: ImmutableState<Context>) {
             var state by remember { mutableStateOf(false) }
 
             LaunchedEffect (Unit) {
                 while (true) {
                     delay(500)
-                    if (Registry.getInstance(instance).state == Registry.State.UPDATING) {
+                    if (Registry.getInstance(instance.value).state == Registry.State.UPDATING) {
                         state = true
                     }
                 }
@@ -199,7 +202,7 @@ class Shared {
         }
 
         @Composable
-        private fun LoadingLabelText(updating: Boolean, language: String, includeImage: Boolean, includeProgress: Boolean, instance: Context) {
+        private fun LoadingLabelText(updating: Boolean, language: String, includeImage: Boolean, includeProgress: Boolean, instance: ImmutableState<Context>) {
             if (updating) {
                 var currentProgress by remember { mutableStateOf(0F) }
                 val progressAnimation by animateFloatAsState(
@@ -210,7 +213,7 @@ class Shared {
                 if (includeProgress) {
                     LaunchedEffect (Unit) {
                         while (true) {
-                            currentProgress = Registry.getInstance(instance).updatePercentage
+                            currentProgress = Registry.getInstance(instance.value).updatePercentage
                             delay(500)
                         }
                     }
@@ -220,19 +223,19 @@ class Shared {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(17F, instance).sp,
+                    fontSize = StringUtils.scaledSize(17F, instance.value).sp,
                     text = if (language == "en") "Updating..." else "更新數據中..."
                 )
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance.value).dp))
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    fontSize = StringUtils.scaledSize(14F, instance.value).sp,
                     text = if (language == "en") "Might take a moment" else "更新需時 請稍等"
                 )
                 if (includeProgress) {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance.value).dp))
                     LinearProgressIndicator(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -249,10 +252,10 @@ class Shared {
                     ) {
                         Image(
                             modifier = Modifier
-                                .size(StringUtils.scaledSize(50, instance).dp)
+                                .size(StringUtils.scaledSize(50, instance.value).dp)
                                 .align(Alignment.Center),
                             painter = painterResource(R.mipmap.icon_full_smaller),
-                            contentDescription = instance.resources.getString(R.string.app_name)
+                            contentDescription = instance.value.resources.getString(R.string.app_name)
                         )
                     }
                     Spacer(modifier = Modifier.size(10.dp))
@@ -261,7 +264,7 @@ class Shared {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(17F, instance).sp,
+                    fontSize = StringUtils.scaledSize(17F, instance.value).sp,
                     text = if (language == "en") "Loading..." else "載入中..."
                 )
             }

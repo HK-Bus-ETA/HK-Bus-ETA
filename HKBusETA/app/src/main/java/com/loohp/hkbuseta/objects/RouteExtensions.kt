@@ -95,3 +95,7 @@ fun CharSequence.coName(routeNumber: String, kmbCtbJoint: Boolean, language: Str
         }
     }
 }
+
+fun DoubleArray.toStopLocation(): StopLocation {
+    return StopLocation.fromArray(this)
+}
