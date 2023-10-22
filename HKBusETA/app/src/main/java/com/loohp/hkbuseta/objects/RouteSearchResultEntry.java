@@ -35,7 +35,7 @@ public class RouteSearchResultEntry implements JSONSerializable {
     public static RouteSearchResultEntry deserialize(JSONObject json) throws JSONException {
         String routeKey = json.optString("routeKey");
         Route route = json.has("route") ? Route.deserialize(json.optJSONObject("route")) : null;
-        String co = json.optString("co");
+        Operator co = Operator.valueOf(json.optString("co"));
         StopInfo stop = json.has("stop") ? StopInfo.deserialize(json.optJSONObject("stop")) : null;
         StopLocation origin = json.has("origin") ? StopLocation.deserialize(json.optJSONObject("origin")) : null;
         boolean isInterchangeSearch = json.optBoolean("isInterchangeSearch");
@@ -44,18 +44,18 @@ public class RouteSearchResultEntry implements JSONSerializable {
 
     private String routeKey;
     private Route route;
-    private String co;
+    private Operator co;
     private StopInfo stopInfo;
     private StopLocation origin;
     private boolean isInterchangeSearch;
 
-    public RouteSearchResultEntry(String routeKey, Route route, String co) {
+    public RouteSearchResultEntry(String routeKey, Route route, Operator co) {
         this.routeKey = routeKey;
         this.route = route;
         this.co = co;
     }
 
-    public RouteSearchResultEntry(String routeKey, Route route, String co, StopInfo stopInfo, StopLocation origin, boolean isInterchangeSearch) {
+    public RouteSearchResultEntry(String routeKey, Route route, Operator co, StopInfo stopInfo, StopLocation origin, boolean isInterchangeSearch) {
         this.routeKey = routeKey;
         this.route = route;
         this.co = co;
@@ -80,11 +80,11 @@ public class RouteSearchResultEntry implements JSONSerializable {
         this.route = route;
     }
 
-    public String getCo() {
+    public Operator getCo() {
         return co;
     }
 
-    public void setCo(String co) {
+    public void setCo(Operator co) {
         this.co = co;
     }
 
@@ -130,7 +130,7 @@ public class RouteSearchResultEntry implements JSONSerializable {
         if (route != null) {
             json.put("route", route.serialize());
         }
-        json.put("co", co);
+        json.put("co", co.name());
         if (stopInfo != null) {
             json.put("stop", stopInfo.serialize());
         }
@@ -161,16 +161,16 @@ public class RouteSearchResultEntry implements JSONSerializable {
             String stopId = json.optString("stopId");
             Stop data = json.has("data") ? Stop.deserialize(json.optJSONObject("data")) : null;
             double distance = json.optDouble("distance");
-            String co = json.optString("co");
+            Operator co = Operator.valueOf(json.optString("co"));
             return new StopInfo(stopId, data, distance, co);
         }
 
         private final String stopId;
         private Stop data;
         private final double distance;
-        private final String co;
+        private final Operator co;
 
-        public StopInfo(String stopId, Stop data, double distance, String co) {
+        public StopInfo(String stopId, Stop data, double distance, Operator co) {
             this.stopId = stopId;
             this.data = data;
             this.distance = distance;
@@ -193,7 +193,7 @@ public class RouteSearchResultEntry implements JSONSerializable {
             return distance;
         }
 
-        public String getCo() {
+        public Operator getCo() {
             return co;
         }
 
@@ -209,7 +209,7 @@ public class RouteSearchResultEntry implements JSONSerializable {
                 json.put("data", data.serialize());
             }
             json.put("distance", distance);
-            json.put("co", co);
+            json.put("co", co.name());
             return json;
         }
 

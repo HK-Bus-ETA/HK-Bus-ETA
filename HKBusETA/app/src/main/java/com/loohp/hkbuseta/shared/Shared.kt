@@ -55,6 +55,8 @@ import androidx.wear.compose.material.TimeText
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.isEqualTo
@@ -79,24 +81,24 @@ data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
 }
 
 @Immutable
-data class LastLookupRoute(val routeNumber: String, val co: String, val meta: String) {
+data class LastLookupRoute(val routeNumber: String, val co: Operator, val meta: String) {
 
     companion object {
 
         fun deserialize(json: JSONObject): LastLookupRoute {
             val routeNumber = json.optString("r")
-            val co = json.optString("c")
-            val gtfsId = if (co == "gmb" || co == "nlb") json.optString("m") else ""
+            val co = json.optString("c").operator
+            val gtfsId = if (co == Operator.GMB || co == Operator.NLB) json.optString("m") else ""
             return LastLookupRoute(routeNumber, co, gtfsId)
         }
 
     }
 
     fun isValid(): Boolean {
-        if (routeNumber.isBlank() || co.isBlank()) {
+        if (routeNumber.isBlank() || co.isBuiltIn) {
             return false
         }
-        if ((co == "gmb" || co == "nlb") && meta.isBlank()) {
+        if ((co == Operator.GMB || co == Operator.NLB) && meta.isBlank()) {
             return false
         }
         return true
@@ -106,7 +108,7 @@ data class LastLookupRoute(val routeNumber: String, val co: String, val meta: St
         val json = JSONObject()
         json.put("r", routeNumber)
         json.put("c", co)
-        if (co == "gmb" || co == "nlb") json.put("m", meta)
+        if (co == Operator.GMB || co == Operator.NLB) json.put("m", meta)
         return json
     }
 
@@ -118,7 +120,7 @@ data class LastLookupRoute(val routeNumber: String, val co: String, val meta: St
 
         if (routeNumber != other.routeNumber) return false
         if (co != other.co) return false
-        if ((co == "gmb" || co == "nlb") && meta != other.meta) return false
+        if ((co == Operator.GMB || co == Operator.NLB) && meta != other.meta) return false
 
         return true
     }
@@ -126,7 +128,7 @@ data class LastLookupRoute(val routeNumber: String, val co: String, val meta: St
     override fun hashCode(): Int {
         var result = routeNumber.hashCode()
         result = 31 * result + co.hashCode()
-        if (co == "gmb" || co == "nlb") result = 31 * result + meta.hashCode()
+        if (co == Operator.GMB || co == Operator.NLB) result = 31 * result + meta.hashCode()
         return result
     }
 
@@ -346,7 +348,7 @@ class Shared {
         private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
         private val lastLookupRoutes: LinkedList<LastLookupRoute> = LinkedList()
 
-        fun addLookupRoute(routeNumber: String, co: String, gtfsId: String) {
+        fun addLookupRoute(routeNumber: String, co: Operator, gtfsId: String) {
             addLookupRoute(LastLookupRoute(routeNumber, co, gtfsId))
         }
 
@@ -370,17 +372,17 @@ class Shared {
             }
         }
 
-        fun getFavoriteAndLookupRouteIndex(routeNumber: String, co: String, meta: String): Int {
+        fun getFavoriteAndLookupRouteIndex(routeNumber: String, co: Operator, meta: String): Int {
             for ((index, route) in favoriteRouteStops) {
                 val routeData = route.route
-                if (routeData.routeNumber == routeNumber && route.co == co && (co != "gmb" || routeData.gtfsId.substring(0, 4) == meta.substring(0, 4)) && (co != "nlb" || routeData.nlbId == meta)) {
+                if (routeData.routeNumber == routeNumber && route.co == co && (co != Operator.GMB || routeData.gtfsId.substring(0, 4) == meta.substring(0, 4)) && (co != Operator.NLB || routeData.nlbId == meta)) {
                     return index
                 }
             }
             synchronized(lastLookupRoutes) {
                 for ((index, data) in lastLookupRoutes.withIndex()) {
                     val (lookupRouteNumber, lookupCo, lookupMeta) = data
-                    if (lookupRouteNumber == routeNumber && lookupCo == co && ((co != "gmb" && co != "nlb") || meta == lookupMeta)) {
+                    if (lookupRouteNumber == routeNumber && lookupCo == co && ((co != Operator.GMB && co != Operator.NLB) || meta == lookupMeta)) {
                         return (lastLookupRoutes.size - index) + 8
                     }
                 }

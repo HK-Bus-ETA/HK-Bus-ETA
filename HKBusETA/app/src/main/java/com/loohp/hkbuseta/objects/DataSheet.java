@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import kotlin.Pair;
+
 @Immutable
 public class DataSheet implements JSONSerializable {
 
@@ -44,16 +46,19 @@ public class DataSheet implements JSONSerializable {
         List<LocalDate> holidays = JsonUtils.mapToList(json.optJSONArray("holidays"), v -> LocalDate.parse((String) v, DATE_FORMATTER));
         Map<String, Route> routeList = JsonUtils.toMap(json.optJSONObject("routeList"), v -> Route.deserialize((JSONObject) v));
         Map<String, Stop> stopList = JsonUtils.toMap(json.optJSONObject("stopList"), v -> Stop.deserialize((JSONObject) v));
-        Map<String, List<List<String>>> stopMap = JsonUtils.toMap(json.optJSONObject("stopMap"), v -> JsonUtils.mapToList((JSONArray) v, vv -> JsonUtils.toList((JSONArray) vv, String.class)));
+        Map<String, List<Pair<Operator, String>>> stopMap = JsonUtils.toMap(json.optJSONObject("stopMap"), v -> JsonUtils.mapToList((JSONArray) v, vv -> {
+            JSONArray array = (JSONArray) vv;
+            return new Pair<>(Operator.valueOf(array.optString(0)), array.optString(1));
+        }));
         return new DataSheet(holidays, routeList, stopList, stopMap);
     }
 
     public final List<LocalDate> holidays;
     public final Map<String, Route> routeList;
     public final Map<String, Stop> stopList;
-    public final Map<String, List<List<String>>> stopMap;
+    public final Map<String, List<Pair<Operator, String>>> stopMap;
 
-    public DataSheet(List<LocalDate> holidays, Map<String, Route> routeList, Map<String, Stop> stopList, Map<String, List<List<String>>> stopMap) {
+    public DataSheet(List<LocalDate> holidays, Map<String, Route> routeList, Map<String, Stop> stopList, Map<String, List<Pair<Operator, String>>> stopMap) {
         this.holidays = holidays;
         this.routeList = routeList;
         this.stopList = stopList;
@@ -72,7 +77,7 @@ public class DataSheet implements JSONSerializable {
         return stopList;
     }
 
-    public Map<String, List<List<String>>> getStopMap() {
+    public Map<String, List<Pair<Operator, String>>> getStopMap() {
         return stopMap;
     }
 
@@ -82,7 +87,7 @@ public class DataSheet implements JSONSerializable {
         json.put("holidays", JsonUtils.fromStream(holidays.stream().map(DATE_FORMATTER::format)));
         json.put("routeList", JsonUtils.fromMap(routeList, Route::serialize));
         json.put("stopList", JsonUtils.fromMap(stopList, Stop::serialize));
-        json.put("stopMap", JsonUtils.fromMap(stopMap, v -> JsonUtils.fromStream(v.stream().map(JsonUtils::fromCollection))));
+        json.put("stopMap", JsonUtils.fromMap(stopMap, v -> JsonUtils.fromStream(v.stream().map(p -> JsonUtils.fromCollection(List.of(p.getFirst().name(), p.getSecond()))))));
         return json;
     }
 

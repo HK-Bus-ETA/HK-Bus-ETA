@@ -38,7 +38,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.MaterialTheme
+import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
+import com.loohp.hkbuseta.objects.name
+import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -60,7 +63,7 @@ class MainActivity : ComponentActivity() {
         Shared.setDefaultExceptionHandler(this)
 
         val stopId = intent.extras?.getString("stopId")
-        val co = intent.extras?.getString("co")
+        val co = intent.extras?.getString("co")?.operator
         val index = intent.extras?.getInt("index")
         val stop = intent.extras?.getString("stop")
         val route = intent.extras?.getString("route")
@@ -68,7 +71,7 @@ class MainActivity : ComponentActivity() {
         val queryKey = intent.extras?.getString("k")
         var queryRouteNumber = intent.extras?.getString("r")
         var queryBound = intent.extras?.getString("b")
-        var queryCo = intent.extras?.getString("c").orEmpty()
+        var queryCo = intent.extras?.getString("c")?.operator
         val queryDest = intent.extras?.getString("d")
         var queryGtfsId = intent.extras?.getString("g")
         val queryStop = intent.extras?.getString("s")
@@ -99,7 +102,7 @@ class MainActivity : ComponentActivity() {
 
                                     val intent = Intent(this@MainActivity, EtaActivity::class.java)
                                     intent.putExtra("stopId", stopId)
-                                    intent.putExtra("co", co)
+                                    intent.putExtra("co", co.name)
                                     intent.putExtra("index", index)
                                     intent.putExtra("stop", stop)
                                     intent.putExtra("route", route)
@@ -110,8 +113,8 @@ class MainActivity : ComponentActivity() {
                                         val routeNumber = Pattern.compile("^([0-9a-zA-Z]+)").matcher(queryKey).let { if (it.find()) it.group(1) else null }
                                         val nearestRoute = Registry.getInstance(this@MainActivity).findRouteByKey(queryKey, routeNumber)
                                         queryRouteNumber = nearestRoute.routeNumber
-                                        queryCo = if (nearestRoute.isKmbCtbJoint) "kmb" else nearestRoute.co[0]
-                                        queryBound = if (queryCo == "nlb") nearestRoute.nlbId else nearestRoute.bound[queryCo]
+                                        queryCo = if (nearestRoute.isKmbCtbJoint) Operator.KMB else nearestRoute.co[0]
+                                        queryBound = if (queryCo == Operator.NLB) nearestRoute.nlbId else nearestRoute.bound[queryCo]
                                         queryGtfsId = nearestRoute.gtfsId
                                     }
 
@@ -121,12 +124,12 @@ class MainActivity : ComponentActivity() {
                                     if (result != null && result.isNotEmpty()) {
                                         var filteredResult = result.stream().filter {
                                             return@filter when (queryCo) {
-                                                "nlb" -> (queryCo.isEmpty() || it.co == queryCo) && (queryBound == null || it.route.nlbId == queryBound)
-                                                "gmb" -> {
+                                                Operator.NLB -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route.nlbId == queryBound)
+                                                Operator.GMB -> {
                                                     val r = it.route
-                                                    (queryCo.isEmpty() || it.co == queryCo) && (queryBound == null || r.bound[queryCo] == queryBound) && r.gtfsId == queryGtfsId
+                                                    (queryCo == null || it.co == queryCo) && (queryBound == null || r.bound[queryCo] == queryBound) && r.gtfsId == queryGtfsId
                                                 }
-                                                else -> (queryCo.isEmpty() || it.co == queryCo) && (queryBound == null || it.route.bound[queryCo] == queryBound)
+                                                else -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route.bound[queryCo] == queryBound)
                                             }
                                         }.toList()
                                         if (queryDest != null) {
@@ -156,9 +159,9 @@ class MainActivity : ComponentActivity() {
                                             startActivity(intent)
 
                                             val it = filteredResult[0]
-                                            val meta = when (co) {
-                                                "gmb" -> it.route.gtfsId
-                                                "nlb" -> it.route.nlbId
+                                            val meta = when (it.co) {
+                                                Operator.GMB -> it.route.gtfsId
+                                                Operator.NLB -> it.route.nlbId
                                                 else -> ""
                                             }
                                             Registry.getInstance(this@MainActivity).addLastLookupRoute(queryRouteNumber, it.co, meta, this@MainActivity)
@@ -176,7 +179,7 @@ class MainActivity : ComponentActivity() {
                                                         if (stopData.stopId == queryStop) {
                                                             val intent3 = Intent(this@MainActivity, EtaActivity::class.java)
                                                             intent3.putExtra("stopId", stopId)
-                                                            intent3.putExtra("co", queryCo)
+                                                            intent3.putExtra("co", it.co.name)
                                                             intent3.putExtra("index", i)
                                                             intent3.putExtra("stop", stopData.stop.serialize().toString())
                                                             intent3.putExtra("route", it.route.serialize().toString())

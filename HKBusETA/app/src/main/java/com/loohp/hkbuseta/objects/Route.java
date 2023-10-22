@@ -38,8 +38,8 @@ public class Route implements JSONSerializable {
 
     public static Route deserialize(JSONObject json) throws JSONException {
         String route = json.optString("route");
-        Map<String, String> bound = JsonUtils.toMap(json.optJSONObject("bound"), v -> (String) v);
-        List<String> co = JsonUtils.toList(json.optJSONArray("co"), String.class);
+        Map<Operator, String> bound = JsonUtils.toMap(json.optJSONObject("bound"), Operator::valueOf, v -> (String) v);
+        List<Operator> co = JsonUtils.mapToList(json.optJSONArray("co"), v -> Operator.valueOf((String) v));
         String serviceType = json.optString("serviceType");
         String nlbId = json.optString("nlbId");
         String gtfsId = json.optString("gtfsId");
@@ -47,13 +47,13 @@ public class Route implements JSONSerializable {
         boolean kmbCtbJoint = json.optBoolean("kmbCtbJoint");
         BilingualText dest = BilingualText.deserialize(json.optJSONObject("dest"));
         BilingualText orig = BilingualText.deserialize(json.optJSONObject("orig"));
-        Map<String, List<String>> stops = JsonUtils.toMap(json.optJSONObject("stops"), v -> JsonUtils.toList((JSONArray) v, String.class));
+        Map<Operator, List<String>> stops = JsonUtils.toMap(json.optJSONObject("stops"), Operator::valueOf, v -> JsonUtils.toList((JSONArray) v, String.class));
         return new Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, dest, orig, stops);
     }
 
     private final String route;
-    private final Map<String, String> bound;
-    private final List<String> co;
+    private final Map<Operator, String> bound;
+    private final List<Operator> co;
     private final String serviceType;
     private final String nlbId;
     private final String gtfsId;
@@ -61,9 +61,9 @@ public class Route implements JSONSerializable {
     private final boolean kmbCtbJoint;
     private final BilingualText dest;
     private final BilingualText orig;
-    private final Map<String, List<String>> stops;
+    private final Map<Operator, List<String>> stops;
 
-    public Route(String route, Map<String, String> bound, List<String> co, String serviceType, String nlbId, String gtfsId, boolean ctbIsCircular, boolean kmbCtbJoint, BilingualText dest, BilingualText orig, Map<String, List<String>> stops) {
+    public Route(String route, Map<Operator, String> bound, List<Operator> co, String serviceType, String nlbId, String gtfsId, boolean ctbIsCircular, boolean kmbCtbJoint, BilingualText dest, BilingualText orig, Map<Operator, List<String>> stops) {
         this.route = route;
         this.bound = bound;
         this.co = co;
@@ -81,11 +81,11 @@ public class Route implements JSONSerializable {
         return route;
     }
 
-    public Map<String, String> getBound() {
+    public Map<Operator, String> getBound() {
         return bound;
     }
 
-    public List<String> getCo() {
+    public List<Operator> getCo() {
         return co;
     }
 
@@ -117,7 +117,7 @@ public class Route implements JSONSerializable {
         return orig;
     }
 
-    public Map<String, List<String>> getStops() {
+    public Map<Operator, List<String>> getStops() {
         return stops;
     }
 
@@ -126,7 +126,7 @@ public class Route implements JSONSerializable {
         JSONObject json = new JSONObject();
         json.put("route", route);
         json.put("bound", JsonUtils.fromMap(bound, v -> v));
-        json.put("co", JsonUtils.fromCollection(co));
+        json.put("co", JsonUtils.fromStream(co.stream().map(Operator::name)));
         json.put("serviceType", serviceType);
         json.put("nlbId", nlbId);
         json.put("gtfsId", gtfsId);

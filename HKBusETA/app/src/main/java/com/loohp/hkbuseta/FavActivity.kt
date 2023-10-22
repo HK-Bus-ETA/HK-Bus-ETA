@@ -89,9 +89,11 @@ import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
-import com.loohp.hkbuseta.objects.coColor
-import com.loohp.hkbuseta.objects.coName
-import com.loohp.hkbuseta.objects.displayRouteNumber
+import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.getColor
+import com.loohp.hkbuseta.objects.getDisplayName
+import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -297,7 +299,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
 
                     val intent = Intent(instance, EtaActivity::class.java)
                     intent.putExtra("stopId", stopId)
-                    intent.putExtra("co", co)
+                    intent.putExtra("co", co.name)
                     intent.putExtra("index", index)
                     intent.putExtra("stop", stop.serialize().toString())
                     intent.putExtra("route", route.serialize().toString())
@@ -457,7 +459,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     val routeNumber = route.routeNumber
                     val stopId = currentFavouriteStopRoute.stopId
                     val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route)
-                    val rawColor = co.coColor(routeNumber, Color.White)
+                    val rawColor = co.getColor(routeNumber, Color.White)
                     val color = if (kmbCtbJoint) {
                         val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
                         val animatedColor by infiniteTransition.animateColor(
@@ -475,17 +477,17 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         rawColor
                     }
 
-                    val operator = co.coName(routeNumber, kmbCtbJoint, Shared.language)
-                    val mainText = operator.plus(" ").plus(co.displayRouteNumber(routeNumber))
+                    val operator = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)
+                    val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
                     val routeText = if (Shared.language == "en") {
                         "To ".plus(destName.en)
                     } else {
                         "往".plus(destName.zh)
                     }
                     val subText = if (Shared.language == "en") {
-                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.en)
+                        (if (co == Operator.MTR || co == Operator.LRT) "" else index.toString().plus(". ")).plus(stopName.en)
                     } else {
-                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.zh)
+                        (if (co == Operator.MTR || co == Operator.LRT) "" else index.toString().plus(". ")).plus(stopName.zh)
                     }
                     Spacer(modifier = Modifier.size(5.dp))
                     Column {

@@ -25,15 +25,17 @@ import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Shared
 
 
-fun CharSequence.coColor(routeNumber: String, elseColor: Color): Color {
+inline val Operator.name: String get() = name()
+
+fun Operator.getColor(routeNumber: String, elseColor: Color): Color {
     return when (this) {
-        "kmb" -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
-        "ctb" -> Color(0xFFFFE15E)
-        "nlb" -> Color(0xFF9BFFC6)
-        "mtr-bus" -> Color(0xFFAAD4FF)
-        "gmb" -> Color(0xFF36FF42)
-        "lightRail" -> Color(0xFFD3A809)
-        "mtr" -> {
+        Operator.KMB -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
+        Operator.CTB -> Color(0xFFFFE15E)
+        Operator.NLB -> Color(0xFF9BFFC6)
+        Operator.MTR_BUS -> Color(0xFFAAD4FF)
+        Operator.GMB -> Color(0xFF36FF42)
+        Operator.LRT -> Color(0xFFD3A809)
+        Operator.MTR -> {
             when (routeNumber) {
                 "AEL" -> Color(0xFF00888E)
                 "TCL" -> Color(0xFFF3982D)
@@ -52,45 +54,45 @@ fun CharSequence.coColor(routeNumber: String, elseColor: Color): Color {
     }
 }
 
-fun CharSequence.displayRouteNumber(routeNumber: String): String {
-    return if (this == "mtr") {
+fun Operator.getDisplayRouteNumber(routeNumber: String): String {
+    return if (this == Operator.MTR) {
         Shared.getMtrLineName(routeNumber, "???")
-    } else if (this == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+    } else if (this == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
         "NR".plus(routeNumber)
     } else {
         routeNumber
     }
 }
 
-fun CharSequence.coName(routeNumber: String, kmbCtbJoint: Boolean, language: String): String {
+fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language: String): String {
     return if (language == "en") {
         when (this) {
-            "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
+            Operator.KMB -> when (Shared.getKMBSubsidiary(routeNumber)) {
                 KMBSubsidiary.SUNB -> "Sun-Bus"
                 KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
                 else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
             }
-            "ctb" -> "CTB"
-            "nlb" -> "NLB"
-            "mtr-bus" -> "MTR-Bus"
-            "gmb" -> "GMB"
-            "lightRail" -> "LRT"
-            "mtr" -> "MTR"
+            Operator.CTB -> "CTB"
+            Operator.NLB -> "NLB"
+            Operator.MTR_BUS -> "MTR-Bus"
+            Operator.GMB -> "GMB"
+            Operator.LRT -> "LRT"
+            Operator.MTR -> "MTR"
             else -> "???"
         }
     } else {
         when (this) {
-            "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
+            Operator.KMB -> when (Shared.getKMBSubsidiary(routeNumber)) {
                 KMBSubsidiary.SUNB -> "陽光巴士"
                 KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
                 else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"
             }
-            "ctb" -> "城巴"
-            "nlb" -> "嶼巴"
-            "mtr-bus" -> "港鐵巴士"
-            "gmb" -> "專線小巴"
-            "lightRail" -> "輕鐵"
-            "mtr" -> "港鐵"
+            Operator.CTB -> "城巴"
+            Operator.NLB -> "嶼巴"
+            Operator.MTR_BUS -> "港鐵巴士"
+            Operator.GMB -> "專線小巴"
+            Operator.LRT -> "輕鐵"
+            Operator.MTR -> "港鐵"
             else -> "???"
         }
     }
@@ -99,3 +101,5 @@ fun CharSequence.coName(routeNumber: String, kmbCtbJoint: Boolean, language: Str
 fun DoubleArray.toStopLocation(): StopLocation {
     return StopLocation.fromArray(this)
 }
+
+inline val CharSequence.operator: Operator get() = Operator.valueOf(toString())

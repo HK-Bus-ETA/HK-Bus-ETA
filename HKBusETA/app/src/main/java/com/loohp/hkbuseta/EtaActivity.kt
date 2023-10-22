@@ -87,9 +87,12 @@ import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
-import com.loohp.hkbuseta.objects.displayRouteNumber
+import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.name
+import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
@@ -126,7 +129,7 @@ class EtaActivity : ComponentActivity() {
         Shared.setDefaultExceptionHandler(this)
 
         val stopId = intent.extras!!.getString("stopId")
-        val co = intent.extras!!.getString("co")
+        val co = intent.extras!!.getString("co")?.operator
         val index = intent.extras!!.getInt("index")
         val stop = intent.extras!!.getString("stop")?.let { Stop.deserialize(JSONObject(it)) }
         val route = intent.extras!!.getString("route")?.let { Route.deserialize(JSONObject(it)) }
@@ -183,7 +186,7 @@ class EtaActivity : ComponentActivity() {
 @OptIn(ExperimentalWearMaterialApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
-fun EtaElement(stopId: String, co: String, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: EtaActivity, schedule: (Boolean, (() -> Unit)?) -> Unit) {
+fun EtaElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: EtaActivity, schedule: (Boolean, (() -> Unit)?) -> Unit) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val swipe = rememberSwipeableState(initialValue = false)
@@ -220,7 +223,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: Stop, route: Route,
 
     val stopList = remember { Registry.getInstance(instance).getAllStops(
         route.routeNumber,
-        if (co == "nlb") route.nlbId else route.bound[co],
+        if (co == Operator.NLB) route.nlbId else route.bound[co],
         co,
         route.gtfsId
     ).toImmutableList() }
@@ -320,11 +323,11 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: Stop, route: Route,
     }
 }
 
-fun launchOtherStop(newIndex: Int, co: String, stopList: List<Registry.StopData>, animation: Boolean, offset: Int, instance: EtaActivity) {
+fun launchOtherStop(newIndex: Int, co: Operator, stopList: List<Registry.StopData>, animation: Boolean, offset: Int, instance: EtaActivity) {
     val newStopData = stopList[newIndex - 1]
     val intent = Intent(instance, EtaActivity::class.java)
     intent.putExtra("stopId", newStopData.stopId)
-    intent.putExtra("co", co)
+    intent.putExtra("co", co.name)
     intent.putExtra("index", newIndex)
     intent.putExtra("stop", newStopData.stop.serialize().toString())
     intent.putExtra("route", newStopData.route.serialize().toString())
@@ -337,7 +340,7 @@ fun launchOtherStop(newIndex: Int, co: String, stopList: List<Registry.StopData>
 }
 
 @Composable
-fun ActionBar(stopId: String, co: String, index: Int, stop: Stop, route: Route, stopList: ImmutableList<Registry.StopData>, instance: EtaActivity) {
+fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route, stopList: ImmutableList<Registry.StopData>, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     Row (
         horizontalArrangement = Arrangement.Center,
@@ -373,7 +376,7 @@ fun ActionBar(stopId: String, co: String, index: Int, stop: Stop, route: Route, 
             onClick = {
                 val intent = Intent(instance, EtaMenuActivity::class.java)
                 intent.putExtra("stopId", stopId)
-                intent.putExtra("co", co)
+                intent.putExtra("co", co.name)
                 intent.putExtra("index", index)
                 intent.putExtra("stop", stop.serialize().toString())
                 intent.putExtra("route", route.serialize().toString())
@@ -455,7 +458,7 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaActivit
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Title(index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
+fun Title(index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     val name = if (Shared.language == "en") stopName.en else stopName.zh
     AutoResizeText (
@@ -468,7 +471,7 @@ fun Title(index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNu
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        text = if (co == "mtr") name else index.toString().plus(". ").plus(name),
+        text = if (co == Operator.MTR) name else index.toString().plus(". ").plus(name),
         maxLines = 2,
         fontWeight = FontWeight(900),
         fontSizeRange = FontSizeRange(
@@ -480,9 +483,9 @@ fun Title(index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNu
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SubTitle(destName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
+fun SubTitle(destName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
-    val routeName = co.displayRouteNumber(routeNumber)
+    val routeName = co.getDisplayRouteNumber(routeNumber)
     val name = if (Shared.language == "en") {
         routeName.plus(" To ").plus(destName.en)
     } else {

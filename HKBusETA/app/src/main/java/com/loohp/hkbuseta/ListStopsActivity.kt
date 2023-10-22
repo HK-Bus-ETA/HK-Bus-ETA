@@ -96,10 +96,12 @@ import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
-import com.loohp.hkbuseta.objects.coColor
-import com.loohp.hkbuseta.objects.coName
-import com.loohp.hkbuseta.objects.displayRouteNumber
+import com.loohp.hkbuseta.objects.getColor
+import com.loohp.hkbuseta.objects.getDisplayName
+import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
@@ -222,7 +224,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
         val kmbCtbJoint = remember { route.route.isKmbCtbJoint }
         val routeNumber = remember { route.route.routeNumber }
         val co = remember { route.co }
-        val bound = remember { if (co.equals("nlb")) route.route.nlbId else route.route.bound[co] }
+        val bound = remember { if (co.equals(Operator.NLB)) route.route.nlbId else route.route.bound[co] }
         val gtfsId = remember { route.route.gtfsId }
         val interchangeSearch = remember { route.isInterchangeSearch }
         val origName = remember { route.route.orig }
@@ -231,15 +233,15 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
         val specialOrigs = remember { specialOrigsDests.first.stream().filter { !it.zh.eitherContains(origName.zh) }.toImmutableList() }
         val specialDests = remember { specialOrigsDests.second.stream().filter { !it.zh.eitherContains(destName.zh) }.toImmutableList() }
 
-        val coColor = remember { co.coColor(routeNumber, Color.White) }
+        val coColor = remember { co.getColor(routeNumber, Color.White) }
 
         val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId).toImmutableList() }
         val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
-        val mtrStopsInterchange = remember { if (co == "mtr" || co == "lightRail") {
+        val mtrStopsInterchange = remember { if (co == Operator.MTR || co == Operator.LRT) {
             stopsList.stream().map { Registry.getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
         } else persistentListOf() }
-        val mtrLineCreator = remember { if (co == "mtr" || co == "lightRail") generateMTRLine(co,
-            if (co == "lightRail") when (routeNumber) {
+        val mtrLineCreator = remember { if (co == Operator.MTR || co == Operator.LRT) generateMTRLine(co,
+            if (co == Operator.LRT) when (routeNumber) {
                 "505" -> Color(0xFFDA2127)
                 "507" -> Color(0xFF00A652)
                 "610" -> Color(0xFF551C15)
@@ -351,7 +353,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
                                 onClick = {
                                     val intent = Intent(instance, EtaActivity::class.java)
                                     intent.putExtra("stopId", stopId)
-                                    intent.putExtra("co", co)
+                                    intent.putExtra("co", co.name)
                                     intent.putExtra("index", stopNumber)
                                     intent.putExtra("stop", stop.serialize().toString())
                                     intent.putExtra("route", entry.route.serialize().toString())
@@ -361,7 +363,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
                                     instance.runOnUiThread {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         instance.runOnUiThread {
-                                            val prefix = if (co == "mtr" || co == "lightRail") "" else stopNumber.toString().plus(". ")
+                                            val prefix = if (co == Operator.MTR || co == Operator.LRT) "" else stopNumber.toString().plus(". ")
                                             val text = if (isClosest) {
                                                 prefix.plus(stopStr).plus("\n").plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
                                                     .plus(((distances[stopNumber]?: Double.NaN) * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
@@ -393,7 +395,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
 }
 
 @Composable
-fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor: Color, destName: BilingualText, specialOrigs: ImmutableList<BilingualText>, specialDests: ImmutableList<BilingualText>, instance: ListStopsActivity) {
+fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coColor: Color, destName: BilingualText, specialOrigs: ImmutableList<BilingualText>, specialDests: ImmutableList<BilingualText>, instance: ListStopsActivity) {
     Column(
         modifier = Modifier
             .defaultMinSize(minHeight = StringUtils.scaledSize(35, instance).dp)
@@ -432,7 +434,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
             lineHeight = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(20F, instance).dp),
             color = color,
             maxLines = 1,
-            text = co.coName(routeNumber, kmbCtbJoint, Shared.language).plus(" ").plus(co.displayRouteNumber(routeNumber))
+            text = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language).plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
         )
         AutoResizeText(
             modifier = Modifier
@@ -494,7 +496,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: ImmutableList<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, isClosest: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: ImmutableList<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var height by remember { mutableStateOf(0) }
     Row (
         modifier = Modifier
@@ -523,7 +525,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boole
             rawColor
         }
 
-        if ((co == "mtr" || co == "lightRail") && mtrLineCreator != null) {
+        if ((co == Operator.MTR || co == Operator.LRT) && mtrLineCreator != null) {
             Box(
                 modifier = Modifier
                     .requiredWidth((if (stopList.map { it.serviceType }.distinct().size > 1 || mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }) 50 else 35).sp.dp)
@@ -756,7 +758,7 @@ fun isDashLineSpur(stopList: List<StopData>, stop: StopData): DashLineSpurResult
     return DashLineSpurResult.FALSE
 }
 
-fun generateMTRLine(co: String, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<Registry.MTRInterchangeData>, instance: ListStopsActivity): List<@Composable () -> Unit> {
+fun generateMTRLine(co: Operator, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<Registry.MTRInterchangeData>, instance: ListStopsActivity): List<@Composable () -> Unit> {
     val creators: MutableList<@Composable () -> Unit> = ArrayList(stopList.size)
     val stopByBranchId: MutableMap<Int, MutableList<StopData>> = HashMap()
     stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.computeIfAbsent(it) { ArrayList() }.add(stop) } }
@@ -927,7 +929,7 @@ fun generateMTRLine(co: String, color: Color, stopList: List<StopData>, mtrStops
                 val interchangeLineWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 14F).sp.toPx(), instance) * 2F
                 val interchangeLineHeight = StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 6F).sp.toPx(), instance) * 2F
                 val interchangeLineSpacing = interchangeLineHeight * 1.5F
-                if (interchangeData.isHasLightRail && co != "lightRail") {
+                if (interchangeData.isHasLightRail && co != Operator.LRT) {
                     drawRoundRect(
                         color = Color(0xFFD3A809),
                         topLeft = Offset(horizontalCenterPrimary - interchangeLineWidth, verticalCenter - interchangeLineHeight / 2F),

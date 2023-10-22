@@ -83,6 +83,7 @@ import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
+import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.PossibleNextCharResult
 import com.loohp.hkbuseta.shared.Shared
@@ -311,11 +312,11 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
     }
     if (input == '/' || input == '!' || (input == '<' && Shared.hasFavoriteAndLookupRoute() && originalText.isEmpty())) {
         val result = when (input) {
-            '!' -> Registry.getInstance(instance).findRoutes("", false) { r -> r.bound.containsKey("mtr") }
+            '!' -> Registry.getInstance(instance).findRoutes("", false) { r -> r.bound.containsKey(Operator.MTR) }
             '<' -> Registry.getInstance(instance).findRoutes("", false) { r, c ->
                 val meta = when (c) {
-                    "gmb" -> r.gtfsId
-                    "nlb" -> r.nlbId
+                    Operator.GMB -> r.gtfsId
+                    Operator.NLB -> r.nlbId
                     else -> ""
                 }
                 Shared.getFavoriteAndLookupRouteIndex(r.routeNumber, c, meta) < Int.MAX_VALUE

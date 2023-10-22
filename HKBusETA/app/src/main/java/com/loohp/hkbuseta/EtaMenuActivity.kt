@@ -70,9 +70,11 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
-import com.loohp.hkbuseta.objects.displayRouteNumber
+import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -84,6 +86,12 @@ import com.loohp.hkbuseta.utils.sp
 import org.json.JSONObject
 
 
+enum class FavouriteRouteState {
+
+    NOT_USED, USED_OTHER, USED_SELF
+
+}
+
 @Stable
 class EtaMenuActivity : ComponentActivity() {
 
@@ -92,7 +100,7 @@ class EtaMenuActivity : ComponentActivity() {
         Shared.setDefaultExceptionHandler(this)
 
         val stopId = intent.extras!!.getString("stopId")
-        val co = intent.extras!!.getString("co")
+        val co = intent.extras!!.getString("co")?.operator
         val index = intent.extras!!.getInt("index")
         val stop = intent.extras!!.getString("stop")?.let { Stop.deserialize(JSONObject(it)) }
         val route = intent.extras!!.getString("route")?.let { Route.deserialize(JSONObject(it)) }
@@ -119,7 +127,7 @@ class EtaMenuActivity : ComponentActivity() {
 }
 
 @Composable
-fun EtaMenuElement(stopId: String, co: String, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
+fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val scroll = rememberLazyListState()
@@ -338,7 +346,7 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaMenuAct
 }
 
 @Composable
-fun Title(index: Int, stopName: BilingualText, routeNumber: String, co: String, instance: EtaMenuActivity) {
+fun Title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator, instance: EtaMenuActivity) {
     val name = if (Shared.language == "en") stopName.en else stopName.zh
     AutoResizeText (
         modifier = Modifier
@@ -346,7 +354,7 @@ fun Title(index: Int, stopName: BilingualText, routeNumber: String, co: String, 
             .padding(40.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        text = if (co == "mtr") name else index.toString().plus(". ").plus(name),
+        text = if (co == Operator.MTR) name else index.toString().plus(". ").plus(name),
         maxLines = 2,
         fontWeight = FontWeight(900),
         fontSizeRange = FontSizeRange(
@@ -357,12 +365,12 @@ fun Title(index: Int, stopName: BilingualText, routeNumber: String, co: String, 
 }
 
 @Composable
-fun SubTitle(destName: BilingualText, routeNumber: String, co: String, instance: EtaMenuActivity) {
+fun SubTitle(destName: BilingualText, routeNumber: String, co: Operator, instance: EtaMenuActivity) {
     val name = if (Shared.language == "en") {
-        val routeName = co.displayRouteNumber(routeNumber)
+        val routeName = co.getDisplayRouteNumber(routeNumber)
         routeName.plus(" To ").plus(destName.en)
     } else {
-        val routeName = co.displayRouteNumber(routeNumber)
+        val routeName = co.getDisplayRouteNumber(routeNumber)
         routeName.plus(" 往").plus(destName.zh)
     }
     AutoResizeText(
@@ -406,16 +414,16 @@ fun FavHeader(instance: EtaMenuActivity) {
     )
 }
 
-fun getFavState(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity): Int {
+fun getFavState(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity): FavouriteRouteState {
     val registry = Registry.getInstance(instance)
     if (registry.hasFavouriteRouteStop(favoriteIndex)) {
-        return if (registry.isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)) 2 else 1
+        return if (registry.isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)) FavouriteRouteState.USED_SELF else FavouriteRouteState.USED_OTHER
     }
-    return 0
+    return FavouriteRouteState.NOT_USED
 }
 
 @Composable
-fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
+fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
     var state by remember { mutableStateOf(getFavState(favoriteIndex, stopId, co, index, stop, route, instance)) }
 
     RestartEffect {
@@ -428,7 +436,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
     val haptic = LocalHapticFeedback.current
     AdvanceButton(
         onClick = {
-            if (state == 2) {
+            if (state == FavouriteRouteState.USED_SELF) {
                 Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
                 Toast.makeText(instance, if (Shared.language == "en") "Cleared Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已清除資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             } else {
@@ -450,10 +458,9 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = when (state) {
-                0 -> Color(0xFF444444)
-                1 -> Color(0xFF4E4E00)
-                2 -> Color(0xFFFFFF00)
-                else -> Color(0xFF444444)
+                FavouriteRouteState.NOT_USED -> Color(0xFF444444)
+                FavouriteRouteState.USED_OTHER -> Color(0xFF4E4E00)
+                FavouriteRouteState.USED_SELF -> Color(0xFFFFFF00)
             }
         ),
         content = {
@@ -468,7 +475,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                         .width(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
                         .height(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
                         .clip(CircleShape)
-                        .background(if (state == 2) Color(0xFF3D3D3D) else Color(0xFF131313))
+                        .background(if (state == FavouriteRouteState.USED_SELF) Color(0xFF3D3D3D) else Color(0xFF131313))
                         .align(Alignment.Top),
                     contentAlignment = Alignment.Center
                 ) {
@@ -477,10 +484,9 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                         textAlign = TextAlign.Center,
                         fontSize = StringUtils.scaledSize(17F, instance).sp,
                         color = when (state) {
-                            0 -> Color(0xFF444444)
-                            1 -> Color(0xFF4E4E00)
-                            2 -> Color(0xFFFFFF00)
-                            else -> Color(0xFF444444)
+                            FavouriteRouteState.NOT_USED -> Color(0xFF444444)
+                            FavouriteRouteState.USED_OTHER -> Color(0xFF4E4E00)
+                            FavouriteRouteState.USED_SELF -> Color(0xFFFFFF00)
                         },
                         text = favoriteIndex.toString()
                     )
@@ -490,13 +496,12 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                         .padding(0.dp, 0.dp, 5.dp, 0.dp)
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
-                    color = if (state == 2) Color(0xFFFFFFFF) else Color(0xFF3F3F3F),
+                    color = if (state == FavouriteRouteState.USED_SELF) Color(0xFFFFFFFF) else Color(0xFF3F3F3F),
                     fontSize = StringUtils.scaledSize(14F, instance).sp,
                     text = when (state) {
-                        0 -> if (Shared.language == "en") "No Route Stop Selected" else "未有設置路線巴士站"
-                        1 -> if (Shared.language == "en") "Selected by Another Route Stop" else "已設置為另一路線巴士站"
-                        2 -> if (Shared.language == "en") "Selected as This Route Stop" else "已設置為本路線巴士站"
-                        else -> ""
+                        FavouriteRouteState.NOT_USED -> if (Shared.language == "en") "No Route Stop Selected" else "未有設置路線巴士站"
+                        FavouriteRouteState.USED_OTHER -> if (Shared.language == "en") "Selected by Another Route Stop" else "已設置為另一路線巴士站"
+                        FavouriteRouteState.USED_SELF -> if (Shared.language == "en") "Selected as This Route Stop" else "已設置為本路線巴士站"
                     }
                 )
             }

@@ -42,8 +42,10 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
-import com.loohp.hkbuseta.objects.coColor
-import com.loohp.hkbuseta.objects.displayRouteNumber
+import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.getColor
+import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
@@ -338,9 +340,9 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun title(index: Int, stopName: BilingualText, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
+        private fun title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator, context: Context): LayoutElementBuilders.Text {
             val name = stopName[Shared.language]
-            val text = if (co == "mtr") name else index.toString().plus(". ").plus(name)
+            val text = if (co == Operator.MTR) name else index.toString().plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
                 .setModifiers(
                     ModifiersBuilders.Modifiers.Builder()
@@ -367,8 +369,8 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun subTitle(destName: BilingualText, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
-            val routeName = co.displayRouteNumber(routeNumber)
+        private fun subTitle(destName: BilingualText, routeNumber: String, co: Operator, context: Context): LayoutElementBuilders.Text {
+            val routeName = co.getDisplayRouteNumber(routeNumber)
             val name = if (Shared.language == "en") {
                 routeName.plus(" To ").plus(destName.en)
             } else {
@@ -463,7 +465,7 @@ class EtaTileServiceCommon {
             val color = if (eta.isConnectionError) {
                 Color.DarkGray
             } else {
-                eta.nextCo.coColor(routeNumber, Color.LightGray).adjustBrightness(if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) 0.2F else 1F)
+                eta.nextCo.getColor(routeNumber, Color.LightGray).adjustBrightness(if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) 0.2F else 1F)
             }
 
             return LayoutElementBuilders.Box.Builder()
@@ -480,7 +482,7 @@ class EtaTileServiceCommon {
                                             ActionBuilders.AndroidActivity.Builder()
                                                 .setClassName(MainActivity::class.java.name)
                                                 .addKeyToExtraMapping("stopId", ActionBuilders.AndroidStringExtra.Builder().setValue(stopId).build())
-                                                .addKeyToExtraMapping("co", ActionBuilders.AndroidStringExtra.Builder().setValue(co).build())
+                                                .addKeyToExtraMapping("co", ActionBuilders.AndroidStringExtra.Builder().setValue(co.name).build())
                                                 .addKeyToExtraMapping("index", ActionBuilders.AndroidIntExtra.Builder().setValue(index).build())
                                                 .addKeyToExtraMapping("stop", ActionBuilders.AndroidStringExtra.Builder().setValue(stop.serialize().toString()).build())
                                                 .addKeyToExtraMapping("route", ActionBuilders.AndroidStringExtra.Builder().setValue(route.serialize().toString()).build())
@@ -536,7 +538,7 @@ class EtaTileServiceCommon {
                                             DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(12F, context)).build()
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 1, co == "mtr" || co == "lightRail", context)
+                                    etaText(eta, 1, co == Operator.MTR || co == Operator.LRT, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(

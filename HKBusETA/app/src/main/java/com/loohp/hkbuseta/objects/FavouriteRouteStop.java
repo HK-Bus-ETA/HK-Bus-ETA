@@ -34,7 +34,7 @@ public class FavouriteRouteStop implements JSONSerializable {
 
     public static FavouriteRouteStop deserialize(JSONObject json) throws JSONException {
         String stopId = json.optString("stopId");
-        String co = json.optString("co");
+        Operator co = Operator.valueOf(json.optString("co"));
         int index = json.optInt("index");
         Stop stop = Stop.deserialize(json.optJSONObject("stop"));
         Route route = Route.deserialize(json.optJSONObject("route"));
@@ -42,12 +42,12 @@ public class FavouriteRouteStop implements JSONSerializable {
     }
 
     private final String stopId;
-    private final String co;
+    private final Operator co;
     private final int index;
     private final Stop stop;
     private final Route route;
 
-    public FavouriteRouteStop(String stopId, String co, int index, Stop stop, Route route) {
+    public FavouriteRouteStop(String stopId, Operator co, int index, Stop stop, Route route) {
         this.stopId = stopId;
         this.co = co;
         this.index = index;
@@ -59,7 +59,7 @@ public class FavouriteRouteStop implements JSONSerializable {
         return stopId;
     }
 
-    public String getCo() {
+    public Operator getCo() {
         return co;
     }
 
@@ -79,7 +79,7 @@ public class FavouriteRouteStop implements JSONSerializable {
     public JSONObject serialize() throws JSONException {
         JSONObject json = new JSONObject();
         json.put("stopId", stopId);
-        json.put("co", co);
+        json.put("co", co.name());
         json.put("index", index);
         json.put("stop", stop.serialize());
         json.put("route", route.serialize());

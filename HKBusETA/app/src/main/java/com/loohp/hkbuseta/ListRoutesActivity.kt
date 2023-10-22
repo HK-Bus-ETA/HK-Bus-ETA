@@ -94,10 +94,11 @@ import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.objects.StopLocation
-import com.loohp.hkbuseta.objects.coColor
-import com.loohp.hkbuseta.objects.coName
+import com.loohp.hkbuseta.objects.getColor
+import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.toStopLocation
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
@@ -267,8 +268,8 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                 map[ActiveSortMode.RECENT] = result.sortedBy {
                     val co = it.co
                     val meta = when (co) {
-                        "gmb" -> it.route.gtfsId
-                        "nlb" -> it.route.nlbId
+                        Operator.GMB -> it.route.gtfsId
+                        Operator.NLB -> it.route.nlbId
                         else -> ""
                     }
                     Shared.getFavoriteAndLookupRouteIndex(it.route.routeNumber, co, meta)
@@ -282,8 +283,8 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                     }, {
                         val co = it.co
                         val meta = when (co) {
-                            "gmb" -> it.route.gtfsId
-                            "nlb" -> it.route.nlbId
+                            Operator.GMB -> it.route.gtfsId
+                            Operator.NLB -> it.route.nlbId
                             else -> ""
                         }
                         Shared.getFavoriteAndLookupRouteIndex(it.route.routeNumber, co, meta)
@@ -390,13 +391,13 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
             ) { index, route ->
                 val co = route.co
                 val kmbCtbJoint = route.route.isKmbCtbJoint
-                val routeNumber = if (co == "mtr" && Shared.language != "en") {
+                val routeNumber = if (co == Operator.MTR && Shared.language != "en") {
                     Shared.getMtrLineName(route.route.routeNumber)
                 } else {
                     route.route.routeNumber
                 }
-                val routeTextWidth = if (Shared.language != "en" && co == "mtr") mtrTextWidth else defaultTextWidth
-                val rawColor = co.coColor(route.route.routeNumber, Color.White)
+                val routeTextWidth = if (Shared.language != "en" && co == Operator.MTR) mtrTextWidth else defaultTextWidth
+                val rawColor = co.getColor(route.route.routeNumber, Color.White)
                 var dest = route.route.dest[Shared.language]
                 dest = (if (Shared.language == "en") "To " else "往").plus(dest)
 
@@ -405,13 +406,13 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                     val stop = route.stopInfo.data
                     secondLine.add(if (Shared.language == "en") stop.name.en else stop.name.zh)
                 }
-                if (co == "nlb") {
+                if (co == Operator.NLB) {
                     secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
                         "From ".plus(route.route.orig.en)
                     } else {
                         "從".plus(route.route.orig.zh).plus("開出")
                     }).plus("</span>"))
-                } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+                } else if (co == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
                     secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
                         "Sun-Bus (NR$routeNumber)"
                     } else {
@@ -426,8 +427,8 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                         .combinedClickable(
                             onClick = {
                                 val meta = when (co) {
-                                    "gmb" -> route.route.gtfsId
-                                    "nlb" -> route.route.nlbId
+                                    Operator.GMB -> route.route.gtfsId
+                                    Operator.NLB -> route.route.nlbId
                                     else -> ""
                                 }
                                 Registry.getInstance(instance).addLastLookupRoute(route.route.routeNumber, co, meta, instance)
@@ -438,7 +439,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                             onLongClick = {
                                 instance.runOnUiThread {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(route.co.coName(routeNumber, kmbCtbJoint, Shared.language)).plus(")")
+                                    var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(route.co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)).plus(")")
                                     if (proximitySortOrigin != null && route.stopInfo != null) {
                                         val location = route.stopInfo.data.location
                                         val distance = DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
@@ -469,7 +470,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: String, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: ImmutableList<String>, showEta: Boolean, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: Operator, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: ImmutableList<String>, showEta: Boolean, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
@@ -499,7 +500,7 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
                 .padding(0.dp, padding.dp)
                 .requiredWidth(routeTextWidth.dp),
             textAlign = TextAlign.Start,
-            fontSize = if (co == "mtr" && Shared.language != "en") {
+            fontSize = if (co == Operator.MTR && Shared.language != "en") {
                 StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(19F, instance).dp)
             } else {
                 StringUtils.scaledSize(20F, instance).sp.clamp(max = StringUtils.scaledSize(23F, instance).dp)
@@ -513,10 +514,10 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
                 modifier = Modifier
                     .padding(0.dp, padding.dp)
                     .basicMarquee(iterations = Int.MAX_VALUE)
-                    .offset(0.dp, if (co == "mtr" && Shared.language != "en") mtrBottomOffset.dp else bottomOffset.dp)
+                    .offset(0.dp, if (co == Operator.MTR && Shared.language != "en") mtrBottomOffset.dp else bottomOffset.dp)
                     .weight(1F),
                 textAlign = TextAlign.Start,
-                fontSize = if (co == "mtr" && Shared.language != "en") {
+                fontSize = if (co == Operator.MTR && Shared.language != "en") {
                     StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
                 } else {
                     StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp)
@@ -526,7 +527,7 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
                 text = dest
             )
         } else {
-            val extraHeightPadding = (padding - UnitUtils.spToDp(instance, if (co == "mtr" && Shared.language != "en") {
+            val extraHeightPadding = (padding - UnitUtils.spToDp(instance, if (co == Operator.MTR && Shared.language != "en") {
                 clampSp(instance, StringUtils.scaledSize(4.5F, instance), dpMax = 6F)
             } else {
                 clampSp(instance, StringUtils.scaledSize(5F, instance), dpMax = 6.5F)
@@ -539,7 +540,7 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
                 Text(
                     modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE),
                     textAlign = TextAlign.Start,
-                    fontSize = if (co == "mtr" && Shared.language != "en") {
+                    fontSize = if (co == Operator.MTR && Shared.language != "en") {
                         StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
                     } else {
                         StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(19F, instance).dp)
@@ -568,7 +569,7 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
                         modifier = Modifier
                             .basicMarquee(iterations = Int.MAX_VALUE),
                         textAlign = TextAlign.Start,
-                        fontSize = if (co == "mtr" && Shared.language != "en") {
+                        fontSize = if (co == Operator.MTR && Shared.language != "en") {
                             StringUtils.scaledSize(9F, instance).sp.clamp(max = StringUtils.scaledSize(12F, instance).dp)
                         } else {
                             StringUtils.scaledSize(10F, instance).sp.clamp(max = StringUtils.scaledSize(13F, instance).dp)
@@ -585,7 +586,7 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
             Box(
                 modifier = Modifier
                     .padding(0.dp, 0.dp, 0.dp, padding.dp)
-                    .offset(0.dp, if (co == "mtr" && Shared.language != "en") mtrBottomOffset.dp else bottomOffset.dp)
+                    .offset(0.dp, if (co == Operator.MTR && Shared.language != "en") mtrBottomOffset.dp else bottomOffset.dp)
             ) {
                 ETAElement(index, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
             }
