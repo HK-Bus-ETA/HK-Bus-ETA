@@ -98,6 +98,7 @@ import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ActivityUtils
+import com.loohp.hkbuseta.utils.MutableHolder
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
@@ -121,8 +122,8 @@ import java.util.concurrent.TimeUnit
 @Stable
 class EtaActivity : ComponentActivity() {
 
-    private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 4)
-    private val etaUpdatesMap: MutableMap<Int, Pair<ScheduledFuture<*>?, () -> Unit>> = LinkedHashMap()
+    private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+    private val etaUpdatesMap: MutableHolder<Pair<ScheduledFuture<*>?, () -> Unit>> = MutableHolder()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -142,9 +143,9 @@ class EtaActivity : ComponentActivity() {
             EtaElement(stopId, co, index, stop, route, offsetStart, this) { isAdd, task ->
                 synchronized(etaUpdatesMap) {
                     if (isAdd) {
-                        etaUpdatesMap.computeIfAbsent(1) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
+                        etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
                     } else {
-                        etaUpdatesMap.remove(1)?.first?.cancel(true)
+                        etaUpdatesMap.remove()?.first?.cancel(true)
                     }
                 }
             }
@@ -159,7 +160,7 @@ class EtaActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         synchronized(etaUpdatesMap) {
-            etaUpdatesMap.replaceAll { _, value ->
+            etaUpdatesMap.replace { value ->
                 value.first?.cancel(true)
                 executor.scheduleWithFixedDelay(value.second, 0, 30, TimeUnit.SECONDS) to value.second
             }
@@ -169,7 +170,7 @@ class EtaActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         synchronized(etaUpdatesMap) {
-            etaUpdatesMap.forEach { it.value.first?.cancel(true) }
+            etaUpdatesMap.ifPresent { it.first?.cancel(true) }
         }
     }
 
