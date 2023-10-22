@@ -55,8 +55,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.ButtonDefaults
@@ -68,6 +66,10 @@ import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.Route
+import com.loohp.hkbuseta.objects.Stop
+import com.loohp.hkbuseta.objects.displayRouteNumber
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -89,8 +91,8 @@ class EtaMenuActivity : ComponentActivity() {
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")
         val index = intent.extras!!.getInt("index")
-        val stop = intent.extras!!.getString("stop")?.let { JSONObject(it) }
-        val route = intent.extras!!.getString("route")?.let { JSONObject(it) }
+        val stop = intent.extras!!.getString("stop")?.let { Stop.deserialize(JSONObject(it)) }
+        val route = intent.extras!!.getString("route")?.let { Route.deserialize(JSONObject(it)) }
         if (stopId == null || co == null || stop == null || route == null) {
             throw RuntimeException()
         }
@@ -114,14 +116,14 @@ class EtaMenuActivity : ComponentActivity() {
 }
 
 @Composable
-fun EtaMenuElement(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaMenuActivity) {
+fun EtaMenuElement(stopId: String, co: String, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val scroll = rememberLazyListState()
 
-        val routeNumber = route.optString("route")
-        val lat = stop.optJSONObject("location")!!.optDouble("lat")
-        val lng = stop.optJSONObject("location")!!.optDouble("lng")
+        val routeNumber = route.routeNumber
+        val lat = stop.location.lat
+        val lng = stop.location.lng
 
         LazyColumn (
             modifier = Modifier
@@ -137,7 +139,7 @@ fun EtaMenuElement(stopId: String, co: String, index: Int, stop: JSONObject, rou
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(20, instance).dp))
             }
             item {
-                Title(index, stop.optJSONObject("name")!!, routeNumber, co, instance)
+                Title(index, stop.name, routeNumber, co, instance)
                 SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route), routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             }
@@ -150,7 +152,7 @@ fun EtaMenuElement(stopId: String, co: String, index: Int, stop: JSONObject, rou
                 Spacer(modifier = Modifier.size(10.dp))
             }
             item {
-                OpenOnMapsButton(stop.optJSONObject("name")!!, lat, lng, instance)
+                OpenOnMapsButton(stop.name, lat, lng, instance)
                 Spacer(modifier = Modifier.size(10.dp))
             }
             item {
@@ -185,7 +187,7 @@ fun MoreInfoHeader(instance: EtaMenuActivity) {
 }
 
 @Composable
-fun SearchNearbyButton(stop: JSONObject, route: JSONObject, instance: EtaMenuActivity) {
+fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
@@ -194,17 +196,17 @@ fun SearchNearbyButton(stop: JSONObject, route: JSONObject, instance: EtaMenuAct
         onClick = {
             instance.runOnUiThread {
                 val text = if (Shared.language == "en") {
-                    "Nearby Interchange Routes of ".plus(stop.optJSONObject("name")!!.optString("en"))
+                    "Nearby Interchange Routes of ".plus(stop.name.en)
                 } else {
-                    "".plus(stop.optJSONObject("name")!!.optString("zh")).plus(" 附近轉乘路線")
+                    "".plus(stop.name.zh).plus(" 附近轉乘路線")
                 }
                 Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
             }
             val intent = Intent(instance, NearbyActivity::class.java)
             intent.putExtra("interchangeSearch", true)
-            intent.putExtra("lat", stop.optJSONObject("location")!!.optDouble("lat"))
-            intent.putExtra("lng", stop.optJSONObject("location")!!.optDouble("lng"))
-            intent.putExtra("exclude", arrayListOf(route.optString("route")))
+            intent.putExtra("lat", stop.location.lat)
+            intent.putExtra("lng", stop.location.lng)
+            intent.putExtra("exclude", arrayListOf(route.routeNumber))
             instance.startActivity(intent)
         },
         colors = ButtonDefaults.buttonColors(
@@ -251,9 +253,9 @@ fun SearchNearbyButton(stop: JSONObject, route: JSONObject, instance: EtaMenuAct
 }
 
 @Composable
-fun OpenOnMapsButton(stopName: JSONObject, lat: Double, lng: Double, instance: EtaMenuActivity) {
+fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance: EtaMenuActivity) {
     val haptic = LocalHapticFeedback.current
-    val name = if (Shared.language == "en") stopName.optString("en") else stopName.optString("zh")
+    val name = if (Shared.language == "en") stopName.en else stopName.zh
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
@@ -333,12 +335,12 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaMenuAct
 }
 
 @Composable
-fun Title(index: Int, stopName: JSONObject, routeNumber: String, co: String, instance: EtaMenuActivity) {
-    val name = if (Shared.language == "en") stopName.optString("en") else stopName.optString("zh")
+fun Title(index: Int, stopName: BilingualText, routeNumber: String, co: String, instance: EtaMenuActivity) {
+    val name = if (Shared.language == "en") stopName.en else stopName.zh
     AutoResizeText (
         modifier = Modifier
             .fillMaxWidth()
-            .padding(37.dp, 0.dp),
+            .padding(40.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         text = if (co == "mtr") name else index.toString().plus(". ").plus(name),
@@ -352,13 +354,13 @@ fun Title(index: Int, stopName: JSONObject, routeNumber: String, co: String, ins
 }
 
 @Composable
-fun SubTitle(destName: JSONObject, routeNumber: String, co: String, instance: EtaMenuActivity) {
+fun SubTitle(destName: BilingualText, routeNumber: String, co: String, instance: EtaMenuActivity) {
     val name = if (Shared.language == "en") {
-        val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-        routeName.plus(" To ").plus(destName.optString("en"))
+        val routeName = co.displayRouteNumber(routeNumber)
+        routeName.plus(" To ").plus(destName.en)
     } else {
-        val routeName = if (co == "mtr") Shared.getMtrLineName(routeNumber, "???") else routeNumber
-        routeName.plus(" 往").plus(destName.optString("zh"))
+        val routeName = co.displayRouteNumber(routeNumber)
+        routeName.plus(" 往").plus(destName.zh)
     }
     AutoResizeText(
         modifier = Modifier
@@ -401,7 +403,7 @@ fun FavHeader(instance: EtaMenuActivity) {
     )
 }
 
-fun getFavState(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaMenuActivity): Int {
+fun getFavState(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity): Int {
     val registry = Registry.getInstance(instance)
     if (registry.hasFavouriteRouteStop(favoriteIndex)) {
         return if (registry.isFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route)) 2 else 1
@@ -410,7 +412,7 @@ fun getFavState(favoriteIndex: Int, stopId: String, co: String, index: Int, stop
 }
 
 @Composable
-fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, instance: EtaMenuActivity) {
+fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
     val state = remember { mutableStateOf(getFavState(favoriteIndex, stopId, co, index, stop, route, instance)) }
 
     LaunchedEffect (Unit) {

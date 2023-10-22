@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.MaterialTheme
+import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -78,17 +79,17 @@ class MainActivity : ComponentActivity() {
                         Registry.State.READY -> {
                             Thread {
                                 if (stopId != null && co != null && stop != null && route != null) {
-                                    val routeParsed = JSONObject(route)
-                                    Registry.getInstance(this@MainActivity).findRoutes(routeParsed.optString("route"), true) { it ->
-                                        val bound = it.optJSONObject("bound")!!
-                                        if (!bound.has(co) || bound.optString(co) != routeParsed.optJSONObject("bound")!!.optString(co)) {
+                                    val routeParsed = Route.deserialize(JSONObject(route))
+                                    Registry.getInstance(this@MainActivity).findRoutes(routeParsed.routeNumber, true) { it ->
+                                        val bound = it.bound
+                                        if (!bound.containsKey(co) || bound[co] != routeParsed.bound[co]) {
                                             return@findRoutes false
                                         }
-                                        val stops = it.optJSONObject("stops")!!.optJSONArray(co)?: return@findRoutes false
-                                        return@findRoutes JsonUtils.contains(stops, stopId)
+                                        val stops = it.stops[co]?: return@findRoutes false
+                                        return@findRoutes stops.contains(stopId)
                                     }.firstOrNull()?.let {
                                         val intent = Intent(this@MainActivity, ListStopsActivity::class.java)
-                                        intent.putExtra("route", it.toString())
+                                        intent.putExtra("route", it.serialize().toString())
                                         intent.putExtra("scrollToStop", stopId)
                                         startActivity(intent)
                                     }
@@ -105,10 +106,10 @@ class MainActivity : ComponentActivity() {
                                     if (queryKey != null) {
                                         val routeNumber = Pattern.compile("^([0-9a-zA-Z]+)").matcher(queryKey).let { if (it.find()) it.group(1) else null }
                                         val nearestRoute = Registry.getInstance(this@MainActivity).findRouteByKey(queryKey, routeNumber)
-                                        queryRouteNumber = nearestRoute.optString("route")
-                                        queryCo = if (nearestRoute.optBoolean("kmbCtbJoint", false)) "kmb" else nearestRoute.optJSONArray("co")!!.optString(0)
-                                        queryBound = if (queryCo == "nlb") nearestRoute.optString("nlbId") else nearestRoute.optJSONObject("bound")!!.optString(queryCo)
-                                        queryGtfsId = nearestRoute.optString("gtfsId")
+                                        queryRouteNumber = nearestRoute.routeNumber
+                                        queryCo = if (nearestRoute.isKmbCtbJoint) "kmb" else nearestRoute.co[0]
+                                        queryBound = if (queryCo == "nlb") nearestRoute.nlbId else nearestRoute.bound[queryCo]
+                                        queryGtfsId = nearestRoute.gtfsId
                                     }
 
                                     startActivity(Intent(this@MainActivity, TitleActivity::class.java))
@@ -117,18 +118,18 @@ class MainActivity : ComponentActivity() {
                                     if (result != null && result.isNotEmpty()) {
                                         var filteredResult = result.stream().filter {
                                             return@filter when (queryCo) {
-                                                "nlb" -> (queryCo.isEmpty() || it.optString("co") == queryCo) && (queryBound == null || it.optJSONObject("route")!!.optString("nlbId") == queryBound)
+                                                "nlb" -> (queryCo.isEmpty() || it.co == queryCo) && (queryBound == null || it.route.nlbId == queryBound)
                                                 "gmb" -> {
-                                                    val r = it.optJSONObject("route")!!
-                                                    (queryCo.isEmpty() || it.optString("co") == queryCo) && (queryBound == null || r.optJSONObject("bound")!!.optString(queryCo) == queryBound) && r.optString("gtfsId") == queryGtfsId
+                                                    val r = it.route
+                                                    (queryCo.isEmpty() || it.co == queryCo) && (queryBound == null || r.bound[queryCo] == queryBound) && r.gtfsId == queryGtfsId
                                                 }
-                                                else -> (queryCo.isEmpty() || it.optString("co") == queryCo) && (queryBound == null || it.optJSONObject("route")!!.optJSONObject("bound")!!.optString(queryCo) == queryBound)
+                                                else -> (queryCo.isEmpty() || it.co == queryCo) && (queryBound == null || it.route.bound[queryCo] == queryBound)
                                             }
                                         }.toList()
                                         if (queryDest != null) {
                                             val destFiltered = filteredResult.stream().filter {
-                                                val dest = it.optJSONObject("route")!!.optJSONObject("dest")!!
-                                                return@filter queryDest == dest.optString("zh") || queryDest == dest.optString("en")
+                                                val dest = it.route.dest
+                                                return@filter queryDest == dest.zh || queryDest == dest.en
                                             }.toList()
                                             if (destFiltered.isNotEmpty()) {
                                                 filteredResult = destFiltered
@@ -136,24 +137,32 @@ class MainActivity : ComponentActivity() {
                                         }
                                         if (filteredResult.isEmpty()) {
                                             val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                            intent.putExtra("result", JsonUtils.fromCollection(result.map { JsonUtils.clone(it) }.onEach { it.remove("route") }).toString())
+                                            intent.putExtra("result", JsonUtils.fromStream(result.stream().map {
+                                                val clone = it.deepClone()
+                                                clone.strip()
+                                                clone.serialize()
+                                            }).toString())
                                             startActivity(intent)
                                         } else {
                                             val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                            intent.putExtra("result", JsonUtils.fromCollection(filteredResult.map { JsonUtils.clone(it) }.onEach { it.remove("route") }).toString())
+                                            intent.putExtra("result", JsonUtils.fromStream(filteredResult.stream().map {
+                                                val clone = it.deepClone()
+                                                clone.strip()
+                                                clone.serialize()
+                                            }).toString())
                                             startActivity(intent)
 
                                             val it = filteredResult[0]
                                             val meta = when (co) {
-                                                "gmb" -> it.optJSONObject("route")!!.optString("gtfsId")
-                                                "nlb" -> it.optJSONObject("route")!!.optString("nlbId")
+                                                "gmb" -> it.route.gtfsId
+                                                "nlb" -> it.route.nlbId
                                                 else -> ""
                                             }
-                                            Registry.getInstance(this@MainActivity).addLastLookupRoute(queryRouteNumber, it.optString("co"), meta, this@MainActivity)
+                                            Registry.getInstance(this@MainActivity).addLastLookupRoute(queryRouteNumber, it.co, meta, this@MainActivity)
 
                                             if (queryStop != null) {
                                                 val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)
-                                                intent2.putExtra("route", it.toString())
+                                                intent2.putExtra("route", it.serialize().toString())
                                                 intent2.putExtra("scrollToStop", queryStop)
                                                 startActivity(intent2)
 
@@ -166,8 +175,8 @@ class MainActivity : ComponentActivity() {
                                                             intent3.putExtra("stopId", stopId)
                                                             intent3.putExtra("co", queryCo)
                                                             intent3.putExtra("index", i)
-                                                            intent3.putExtra("stop", stopData.stop.toString())
-                                                            intent3.putExtra("route", it.optJSONObject("route")!!.toString())
+                                                            intent3.putExtra("stop", stopData.stop.serialize().toString())
+                                                            intent3.putExtra("route", it.route.serialize().toString())
                                                             startActivity(intent3)
                                                             break
                                                         }
@@ -176,7 +185,7 @@ class MainActivity : ComponentActivity() {
                                                 }
                                             } else if (filteredResult.size == 1) {
                                                 val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)
-                                                intent2.putExtra("route", it.toString())
+                                                intent2.putExtra("route", it.serialize().toString())
                                                 startActivity(intent2)
                                             }
                                         }

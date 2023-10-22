@@ -304,20 +304,20 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
     }
     if (input == '/' || input == '!' || (input == '<' && Shared.hasFavoriteAndLookupRoute() && originalText.isEmpty())) {
         val result = when (input) {
-            '!' -> Registry.getInstance(instance).findRoutes("", false) { r -> r.optJSONObject("bound")!!.has("mtr") }
+            '!' -> Registry.getInstance(instance).findRoutes("", false) { r -> r.bound.containsKey("mtr") }
             '<' -> Registry.getInstance(instance).findRoutes("", false) { r, c ->
                 val meta = when (c) {
-                    "gmb" -> r.getString("gtfsId")
-                    "nlb" -> r.getString("nlbId")
+                    "gmb" -> r.gtfsId
+                    "nlb" -> r.nlbId
                     else -> ""
                 }
-                Shared.getFavoriteAndLookupRouteIndex(r.optString("route"), c, meta) < Int.MAX_VALUE
+                Shared.getFavoriteAndLookupRouteIndex(r.routeNumber, c, meta) < Int.MAX_VALUE
             }
             else -> Registry.getInstance(instance).findRoutes(originalText, true)
         }
         if (result != null && result.isNotEmpty()) {
             val intent = Intent(instance, ListRoutesActivity::class.java)
-            intent.putExtra("result", JsonUtils.fromCollection(result.onEach { it.remove("route") }).toString())
+            intent.putExtra("result", JsonUtils.fromCollection(result.map { it.strip(); it.serialize() }).toString())
             if (input == '<') {
                 intent.putExtra("recentSort", RecentSortMode.FORCED.ordinal)
             }

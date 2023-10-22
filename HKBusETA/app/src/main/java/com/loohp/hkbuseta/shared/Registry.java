@@ -30,6 +30,14 @@ import androidx.wear.tiles.TileUpdateRequester;
 
 import com.loohp.hkbuseta.R;
 import com.loohp.hkbuseta.branchedlist.BranchedList;
+import com.loohp.hkbuseta.objects.BilingualText;
+import com.loohp.hkbuseta.objects.DataSheet;
+import com.loohp.hkbuseta.objects.FavouriteRouteStop;
+import com.loohp.hkbuseta.objects.Preferences;
+import com.loohp.hkbuseta.objects.Route;
+import com.loohp.hkbuseta.objects.RouteSearchResultEntry;
+import com.loohp.hkbuseta.objects.Stop;
+import com.loohp.hkbuseta.objects.StopLocation;
 import com.loohp.hkbuseta.tiles.EtaTileServiceEight;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFive;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFour;
@@ -59,6 +67,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -90,7 +99,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import java.util.zip.GZIPInputStream;
 
 public class Registry {
@@ -120,10 +128,10 @@ public class Registry {
         } catch (Throwable ignore) {}
     }
 
-    private static JSONObject PREFERENCES = null;
-    private static JSONObject DATA_SHEET = null;
+    private static Preferences PREFERENCES = null;
+    private static DataSheet DATA_SHEET = null;
     private static Set<String> BUS_ROUTE = null;
-    private static JSONObject MTR_BUS_STOP_ALIAS = null;
+    private static Map<String, List<String>> MTR_BUS_STOP_ALIAS = null;
 
     private static TyphoonInfo typhoonInfo = null;
     private static long typhoonInfoLastUpdated = Long.MIN_VALUE;
@@ -207,12 +215,12 @@ public class Registry {
         Shared.Companion.setLanguage(language);
         try {
             if (PREFERENCES == null) {
-                PREFERENCES = new JSONObject();
+                PREFERENCES = Preferences.createDefault();
             }
-            PREFERENCES.put("language", language);
+            PREFERENCES.setLanguage(language);
             synchronized (preferenceWriteLock) {
                 try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.toString());
+                    pw.write(PREFERENCES.serialize().toString());
                     pw.flush();
                 }
             }
@@ -226,63 +234,55 @@ public class Registry {
         return Shared.Companion.getFavoriteRouteStops().get(favoriteIndex) != null;
     }
 
-    public boolean isFavouriteRouteStop(int favoriteIndex, String stopId, String co, int index, JSONObject stop, JSONObject route) {
-        JSONObject json = Shared.Companion.getFavoriteRouteStops().get(favoriteIndex);
-        if (json == null) {
+    public boolean isFavouriteRouteStop(int favoriteIndex, String stopId, String co, int index, Stop stop, Route route) {
+        FavouriteRouteStop favouriteRouteStop = Shared.Companion.getFavoriteRouteStops().get(favoriteIndex);
+        if (favouriteRouteStop == null) {
             return false;
         }
-        if (!stopId.equals(json.optString("stopId"))) {
+        if (!stopId.equals(favouriteRouteStop.getStopId())) {
             return false;
         }
-        if (!co.equals(json.optString("co"))) {
+        if (!co.equals(favouriteRouteStop.getCo())) {
             return false;
         }
-        if (index != json.optInt("index")) {
+        if (index != favouriteRouteStop.getIndex()) {
             return false;
         }
-        if (!stop.optJSONObject("name").optString("zh").equals(json.optJSONObject("stop").optJSONObject("name").optString("zh"))) {
+        if (!stop.getName().getZh().equals(favouriteRouteStop.getStop().getName().getZh())) {
             return false;
         }
-        return route.optString("route").equals(json.optJSONObject("route").optString("route"));
+        return route.getRouteNumber().equals(favouriteRouteStop.getRoute().getRouteNumber());
     }
 
     public void clearFavouriteRouteStop(int favoriteIndex, Context context) {
         try {
             Shared.Companion.getFavoriteRouteStops().remove(favoriteIndex);
-            if (PREFERENCES != null && PREFERENCES.has("favouriteRouteStops")) {
-                PREFERENCES.optJSONObject("favouriteRouteStops").remove(String.valueOf(favoriteIndex));
+            if (PREFERENCES != null && !PREFERENCES.getFavouriteRouteStops().isEmpty()) {
+                PREFERENCES.getFavouriteRouteStops().remove(favoriteIndex);
                 synchronized (preferenceWriteLock) {
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(PREFERENCES.toString());
+                        pw.write(PREFERENCES.serialize().toString());
                         pw.flush();
                     }
                 }
             }
             updateTileService(favoriteIndex, context);
-        } catch (IOException e) {
+        } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void setFavouriteRouteStop(int favoriteIndex, String stopId, String co, int index, JSONObject stop, JSONObject route, Context context) {
+    public void setFavouriteRouteStop(int favoriteIndex, String stopId, String co, int index, Stop stop, Route route, Context context) {
         try {
-            JSONObject json = new JSONObject();
-            json.put("stopId", stopId);
-            json.put("co", co);
-            json.put("index", index);
-            json.put("stop", stop);
-            json.put("route", route);
-            Shared.Companion.getFavoriteRouteStops().put(favoriteIndex, json);
+            FavouriteRouteStop favouriteRouteStop = new FavouriteRouteStop(stopId, co, index, stop, route);
+            Shared.Companion.getFavoriteRouteStops().put(favoriteIndex, favouriteRouteStop);
             if (PREFERENCES == null) {
-                PREFERENCES = new JSONObject();
+                PREFERENCES = Preferences.createDefault();
             }
-            if (!PREFERENCES.has("favouriteRouteStops")) {
-                PREFERENCES.put("favouriteRouteStops", new JSONObject());
-            }
-            PREFERENCES.optJSONObject("favouriteRouteStops").put(String.valueOf(favoriteIndex), json);
+            PREFERENCES.getFavouriteRouteStops().put(favoriteIndex, favouriteRouteStop);
             synchronized (preferenceWriteLock) {
                 try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.toString());
+                    pw.write(PREFERENCES.serialize().toString());
                     pw.flush();
                 }
             }
@@ -295,14 +295,15 @@ public class Registry {
     public void addLastLookupRoute(String routeNumber, String co, String meta, Context context) {
         try {
             Shared.Companion.addLookupRoute(routeNumber, co, meta);
-            JSONArray lastLookupRoutes = JsonUtils.fromStream(Shared.Companion.getLookupRoutes().stream().map(LastLookupRoute::serialize));
+            List<LastLookupRoute> lastLookupRoutes = Shared.Companion.getLookupRoutes();
             if (PREFERENCES == null) {
-                PREFERENCES = new JSONObject();
+                PREFERENCES = Preferences.createDefault();
             }
-            PREFERENCES.put("lastLookupRoutes", lastLookupRoutes);
+            PREFERENCES.getLastLookupRoutes().clear();
+            PREFERENCES.getLastLookupRoutes().addAll(lastLookupRoutes);
             synchronized (preferenceWriteLock) {
                 try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.toString());
+                    pw.write(PREFERENCES.serialize().toString());
                     pw.flush();
                 }
             }
@@ -314,14 +315,14 @@ public class Registry {
     public void clearLastLookupRoutes(Context context) {
         try {
             Shared.Companion.clearLookupRoute();
-            PREFERENCES.remove("lastLookupRoutes");
+            PREFERENCES.getLastLookupRoutes().clear();
             synchronized (preferenceWriteLock) {
                 try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.toString());
+                    pw.write(PREFERENCES.serialize().toString());
                     pw.flush();
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
     }
@@ -337,34 +338,23 @@ public class Registry {
         List<String> files = Arrays.asList(context.getApplicationContext().fileList());
         if (files.contains(PREFERENCES_FILE_NAME)) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(PREFERENCES_FILE_NAME), StandardCharsets.UTF_8))) {
-                PREFERENCES = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
-                Shared.Companion.setLanguage(PREFERENCES.optString("language", "zh"));
-                if (PREFERENCES.has("favouriteRouteStops")) {
-                    JSONObject favoriteRouteStops = PREFERENCES.optJSONObject("favouriteRouteStops");
-                    for (Iterator<String> itr = favoriteRouteStops.keys(); itr.hasNext(); ) {
-                        String key = itr.next();
-                        Shared.Companion.getFavoriteRouteStops().put(Integer.parseInt(key), favoriteRouteStops.optJSONObject(key));
-                    }
-                }
-                if (PREFERENCES.has("lastLookupRoutes")) {
-                    JSONArray lastLookupRoutes = PREFERENCES.optJSONArray("lastLookupRoutes");
-                    for (int i = 0; i < lastLookupRoutes.length(); i++) {
-                        LastLookupRoute lastLookupRoute = LastLookupRoute.Companion.deserialize(lastLookupRoutes.optJSONObject(i));
-                        if (lastLookupRoute.isValid()) {
-                            Shared.Companion.addLookupRoute(lastLookupRoute);
-                        }
+                PREFERENCES = Preferences.deserialize(new JSONObject(reader.lines().collect(Collectors.joining())));
+                Shared.Companion.setLanguage(PREFERENCES.getLanguage());
+                Shared.Companion.getFavoriteRouteStops().putAll(PREFERENCES.getFavouriteRouteStops());
+                List<LastLookupRoute> lastLookupRoutes = PREFERENCES.getLastLookupRoutes();
+                for (Iterator<LastLookupRoute> itr = lastLookupRoutes.iterator(); itr.hasNext();) {
+                    LastLookupRoute lastLookupRoute = itr.next();
+                    if (lastLookupRoute.isValid()) {
+                        Shared.Companion.addLookupRoute(lastLookupRoute);
+                    } else {
+                        itr.remove();
                     }
                 }
             } catch (JSONException e) {
                 throw new RuntimeException(e);
             }
         } else {
-            try {
-                PREFERENCES = new JSONObject();
-                PREFERENCES.put("language", "zh");
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
-            }
+            PREFERENCES = Preferences.createDefault();
         }
         preferencesLoaded = true;
 
@@ -418,10 +408,7 @@ public class Registry {
 
                 if (cached) {
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_SHEET_FILE_NAME), StandardCharsets.UTF_8))) {
-                        DATA_SHEET = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
-                        if (DATA_SHEET.length() == 0) {
-                            throw new RuntimeException();
-                        }
+                        DATA_SHEET = DataSheet.deserialize(new JSONObject(reader.lines().collect(Collectors.joining("\n"))));
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
@@ -434,8 +421,8 @@ public class Registry {
                         throw new RuntimeException(e);
                     }
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(MTR_BUS_STOP_ALIAS_FILE_NAME), StandardCharsets.UTF_8))) {
-                        MTR_BUS_STOP_ALIAS = new JSONObject(reader.lines().collect(Collectors.joining("\n")));
-                        if (MTR_BUS_STOP_ALIAS.length() == 0) {
+                        MTR_BUS_STOP_ALIAS = JsonUtils.toMap(new JSONObject(reader.lines().collect(Collectors.joining("\n"))), v -> JsonUtils.toList((JSONArray) v, String.class));
+                        if (MTR_BUS_STOP_ALIAS.isEmpty()) {
                             throw new RuntimeException();
                         }
                     } catch (JSONException e) {
@@ -453,18 +440,18 @@ public class Registry {
                     long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.gz.dat"), -1);
                     JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, GZIPInputStream::new, p -> updatePercentage = p * 0.75F + percentageOffset);
 
-                    MTR_BUS_STOP_ALIAS = data.optJSONObject("mtrBusStopAlias");
-                    DATA_SHEET = data.optJSONObject("dataSheet");
+                    MTR_BUS_STOP_ALIAS = JsonUtils.toMap(data.optJSONObject("mtrBusStopAlias"), v -> JsonUtils.toList((JSONArray) v, String.class));
+                    DATA_SHEET = DataSheet.deserialize(data.optJSONObject("dataSheet"));
                     BUS_ROUTE = JsonUtils.toSet(data.optJSONArray("busRoute"), String.class);
                     updatePercentage = 0.75F + percentageOffset;
 
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(MTR_BUS_STOP_ALIAS.toString());
+                        pw.write(JsonUtils.fromMap(MTR_BUS_STOP_ALIAS, JsonUtils::fromCollection).toString());
                         pw.flush();
                     }
                     updatePercentage = 0.775F + percentageOffset;
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(DATA_SHEET.toString());
+                        pw.write(DATA_SHEET.serialize().toString());
                         pw.flush();
                     }
                     updatePercentage = 0.8F + percentageOffset;
@@ -482,48 +469,48 @@ public class Registry {
                     float localUpdatePercentage = updatePercentage;
                     float percentagePerFav = 0.15F / Shared.Companion.getFavoriteRouteStops().size();
                     List<Runnable> updatedFavouriteRouteTasks = new ArrayList<>();
-                    for (Map.Entry<Integer, JSONObject> entry : Shared.Companion.getFavoriteRouteStops().entrySet()) {
+                    for (Map.Entry<Integer, FavouriteRouteStop> entry : Shared.Companion.getFavoriteRouteStops().entrySet()) {
                         try {
                             int favouriteRouteIndex = entry.getKey();
-                            JSONObject favouriteRoute = entry.getValue();
+                            FavouriteRouteStop favouriteRoute = entry.getValue();
 
-                            JSONObject oldRoute = favouriteRoute.optJSONObject("route");
-                            String stopId = favouriteRoute.optString("stopId");
-                            String co = favouriteRoute.optString("co");
+                            Route oldRoute = favouriteRoute.getRoute();
+                            String stopId = favouriteRoute.getStopId();
+                            String co = favouriteRoute.getCo();
 
-                            List<JSONObject> newRoutes = findRoutes(oldRoute.optString("route"), true, r -> {
-                                if (!r.optJSONObject("bound").has(co)) {
+                            List<RouteSearchResultEntry> newRoutes = findRoutes(oldRoute.getRouteNumber(), true, r -> {
+                                if (!r.getBound().containsKey(co)) {
                                     return false;
                                 }
                                 if (co.equals("gmb")) {
-                                    if (!r.optString("gtfsId").equals(oldRoute.optString("gtfsId"))) {
+                                    if (!r.getGtfsId().equals(oldRoute.getGtfsId())) {
                                         return false;
                                     }
                                 } else if (co.equals("nlb")) {
-                                    return r.optString("nlbId").equals(oldRoute.optString("nlbId"));
+                                    return r.getNlbId().equals(oldRoute.getNlbId());
                                 }
-                                return r.optJSONObject("bound").optString(co).equals(oldRoute.optJSONObject("bound").optString(co));
+                                return r.getBound().get(co).equals(oldRoute.getBound().get(co));
                             });
 
                             if (newRoutes.isEmpty()) {
                                 updatedFavouriteRouteTasks.add(() -> clearFavouriteRouteStop(favouriteRouteIndex, context));
                                 continue;
                             }
-                            JSONObject newRouteData = newRoutes.get(0);
-                            JSONObject newRoute = newRouteData.optJSONObject("route");
+                            RouteSearchResultEntry newRouteData = newRoutes.get(0);
+                            Route newRoute = newRouteData.getRoute();
                             List<StopData> stopList = getAllStops(
-                                    newRoute.optString("route"),
-                                    co.equals("nlb") ? newRoute.optString("nlbId") : newRoute.optJSONObject("bound").optString(co),
+                                    newRoute.getRouteNumber(),
+                                    co.equals("nlb") ? newRoute.getNlbId() : newRoute.getBound().get(co),
                                     co,
-                                    newRoute.optString("gtfsId")
+                                    newRoute.getGtfsId()
                             );
 
                             String finalStopIdCompare = stopId;
                             int index = CollectionsUtils.indexOf(stopList, d -> d.stopId.equals(finalStopIdCompare)) + 1;
-                            JSONObject stop;
+                            Stop stop;
                             StopData stopData;
                             if (index < 1) {
-                                index = Math.max(1, Math.min(favouriteRoute.optInt("index", 0), stopList.size()));
+                                index = Math.max(1, Math.min(favouriteRoute.getIndex(), stopList.size()));
                                 stopData = stopList.get(index - 1);
                                 stopId = stopData.getStopId();
                             } else {
@@ -557,29 +544,30 @@ public class Registry {
         }).start();
     }
 
-    public JSONObject findRouteByKey(String inputKey, String routeNumber) {
-        JSONObject exact = DATA_SHEET.optJSONObject("routeList").optJSONObject(inputKey);
+    public Route findRouteByKey(String inputKey, String routeNumber) {
+        Route exact = DATA_SHEET.getRouteList().get(inputKey);
         if (exact != null) {
             return exact;
         }
         inputKey = inputKey.toLowerCase();
-        String nearestKey = "";
+        Route nearestRoute = null;
         int distance = Integer.MAX_VALUE;
-        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-            String key = itr.next();
-            if (routeNumber == null || DATA_SHEET.optJSONObject("routeList").optJSONObject(key).optString("route").equalsIgnoreCase(routeNumber)) {
+        for (Map.Entry<String, Route> entry : DATA_SHEET.getRouteList().entrySet()) {
+            String key = entry.getKey();
+            Route route = entry.getValue();
+            if (routeNumber == null || route.getRouteNumber().equalsIgnoreCase(routeNumber)) {
                 int editDistance = StringUtils.editDistance(key.toLowerCase(), inputKey);
                 if (editDistance < distance) {
-                    nearestKey = key;
+                    nearestRoute = route;
                     distance = editDistance;
                 }
             }
         }
-        return DATA_SHEET.optJSONObject("routeList").optJSONObject(nearestKey);
+        return nearestRoute;
     }
 
-    public JSONObject getStopById(String stopId) {
-        return DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId);
+    public Stop getStopById(String stopId) {
+        return DATA_SHEET.getStopList().get(stopId);
     }
 
     public PossibleNextCharResult getPossibleNextChar(String input) {
@@ -617,345 +605,318 @@ public class Registry {
 
     }
 
-    public List<JSONObject> findRoutes(String input, boolean exact) {
+    public List<RouteSearchResultEntry> findRoutes(String input, boolean exact) {
         return findRoutes(input, exact, r -> true, (r, c) -> true);
     }
 
-    public List<JSONObject> findRoutes(String input, boolean exact, Predicate<JSONObject> predicate) {
+    public List<RouteSearchResultEntry> findRoutes(String input, boolean exact, Predicate<Route> predicate) {
         return findRoutes(input, exact, predicate, (r, c) -> true);
     }
 
-    public List<JSONObject> findRoutes(String input, boolean exact, BiPredicate<JSONObject, String> coPredicate) {
+    public List<RouteSearchResultEntry> findRoutes(String input, boolean exact, BiPredicate<Route, String> coPredicate) {
         return findRoutes(input, exact, r -> true, coPredicate);
     }
 
-    public List<JSONObject> findRoutes(String input, boolean exact, Predicate<JSONObject> predicate, BiPredicate<JSONObject, String> coPredicate) {
+    public List<RouteSearchResultEntry> findRoutes(String input, boolean exact, Predicate<Route> predicate, BiPredicate<Route, String> coPredicate) {
         Predicate<String> routeMatcher = exact ? r -> r.equals(input) : r -> r.startsWith(input);
-        try {
-            Map<String, JSONObject> matchingRoutes = new HashMap<>();
+        Map<String, RouteSearchResultEntry> matchingRoutes = new HashMap<>();
 
-            for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                String key = itr.next();
-                JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                if (data.optBoolean("ctbIsCircular")) {
+        for (Map.Entry<String, Route> entry : DATA_SHEET.getRouteList().entrySet()) {
+            String key = entry.getKey();
+            Route data = entry.getValue();
+            if (data.isCtbIsCircular()) {
+                continue;
+            }
+            if (routeMatcher.test(data.getRouteNumber()) && predicate.test(data)) {
+                String co;
+                Map<String, String> bound = data.getBound();
+                if (bound.containsKey("kmb")) {
+                    co = "kmb";
+                } else if (bound.containsKey("ctb")) {
+                    co = "ctb";
+                } else if (bound.containsKey("nlb")) {
+                    co = "nlb";
+                } else if (bound.containsKey("mtr-bus")) {
+                    co = "mtr-bus";
+                } else if (bound.containsKey("gmb")) {
+                    co = "gmb";
+                } else if (bound.containsKey("lightRail")) {
+                    co = "lightRail";
+                } else if (bound.containsKey("mtr")) {
+                    co = "mtr";
+                } else {
                     continue;
                 }
-                if (routeMatcher.test(data.optString("route")) && predicate.test(data)) {
-                    String co;
-                    JSONObject bound = data.optJSONObject("bound");
-                    if (bound.has("kmb")) {
-                        co = "kmb";
-                    } else if (bound.has("ctb")) {
-                        co = "ctb";
-                    } else if (bound.has("nlb")) {
-                        co = "nlb";
-                    } else if (bound.has("mtr-bus")) {
-                        co = "mtr-bus";
-                    } else if (bound.has("gmb")) {
-                        co = "gmb";
-                    } else if (bound.has("lightRail")) {
-                        co = "lightRail";
-                    } else if (bound.has("mtr")) {
-                        co = "mtr";
-                    } else {
-                        continue;
-                    }
-                    if (!coPredicate.test(data, co)) {
-                        continue;
-                    }
-                    String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co)) + (co.equals("gmb") ? ("," + data.optString("gtfsId").substring(0, 4)) : "");
+                if (!coPredicate.test(data, co)) {
+                    continue;
+                }
+                String key0 = data.getRouteNumber() + "," + co + "," + (co.equals("nlb") ? data.getNlbId() : data.getBound().get(co)) + (co.equals("gmb") ? ("," + data.getGtfsId().substring(0, 4)) : "");
 
-                    if (matchingRoutes.containsKey(key0)) {
-                        try {
-                            JSONObject existingMatchingRoute = matchingRoutes.get(key0);
+                if (matchingRoutes.containsKey(key0)) {
+                    try {
+                        RouteSearchResultEntry existingMatchingRoute = matchingRoutes.get(key0);
 
-                            int type = Integer.parseInt(data.optString("serviceType"));
-                            int matchingType = Integer.parseInt(existingMatchingRoute.optJSONObject("route").optString("serviceType"));
+                        int type = Integer.parseInt(data.getServiceType());
+                        int matchingType = Integer.parseInt(existingMatchingRoute.getRoute().getServiceType());
 
-                            if (type < matchingType) {
-                                existingMatchingRoute.put("routeKey", key);
-                                existingMatchingRoute.put("route", data);
-                                existingMatchingRoute.put("co", co);
-                            } else if (type == matchingType) {
-                                int gtfs = IntUtils.parseOr(data.optString("gtfsId"), Integer.MAX_VALUE);
-                                int matchingGtfs = IntUtils.parseOr(existingMatchingRoute.optJSONObject("route").optString("gtfsId"), Integer.MAX_VALUE);
-                                if (gtfs < matchingGtfs) {
-                                    existingMatchingRoute.put("routeKey", key);
-                                    existingMatchingRoute.put("route", data);
-                                    existingMatchingRoute.put("co", co);
-                                }
+                        if (type < matchingType) {
+                            existingMatchingRoute.setRouteKey(key);
+                            existingMatchingRoute.setRoute(data);
+                            existingMatchingRoute.setCo(co);
+                        } else if (type == matchingType) {
+                            int gtfs = IntUtils.parseOr(data.getGtfsId(), Integer.MAX_VALUE);
+                            int matchingGtfs = IntUtils.parseOr(existingMatchingRoute.getRoute().getGtfsId(), Integer.MAX_VALUE);
+                            if (gtfs < matchingGtfs) {
+                                existingMatchingRoute.setRouteKey(key);
+                                existingMatchingRoute.setRoute(data);
+                                existingMatchingRoute.setCo(co);
                             }
-                        } catch (NumberFormatException ignore) {}
-                    } else {
-                        JSONObject newMatchingRoute = new JSONObject();
-                        newMatchingRoute.put("routeKey", key);
-                        newMatchingRoute.put("route", data);
-                        newMatchingRoute.put("co", co);
-                        matchingRoutes.put(key0, newMatchingRoute);
-                    }
+                        }
+                    } catch (NumberFormatException ignore) {}
+                } else {
+                    matchingRoutes.put(key0, new RouteSearchResultEntry(key, data, co));
                 }
             }
-
-            if (matchingRoutes.isEmpty()) {
-                return null;
-            }
-
-            List<JSONObject> routes = new ArrayList<>(matchingRoutes.values());
-            routes.sort((a, b) -> {
-                JSONObject boundA = a.optJSONObject("route").optJSONObject("bound");
-                JSONObject boundB = b.optJSONObject("route").optJSONObject("bound");
-                String coAStr = boundA.has("kmb") ? "kmb" : (boundA.has("ctb") ? "ctb" : (boundA.has("nlb") ? "nlb" : (boundA.has("mtr-bus") ? "mtr-bus" : (boundA.has("gmb") ? "gmb" : (boundA.has("lightRail") ? "lightRail" : "mtr")))));
-                String coBStr = boundB.has("kmb") ? "kmb" : (boundB.has("ctb") ? "ctb" : (boundB.has("nlb") ? "nlb" : (boundB.has("mtr-bus") ? "mtr-bus" : (boundB.has("gmb") ? "gmb" : (boundB.has("lightRail") ? "lightRail" : "mtr")))));
-                int coA = coAStr.equals("kmb") ? 0 : (coAStr.equals("ctb") ? 1 : (coAStr.equals("nlb") ? 2 : (coAStr.equals("mtr-bus") ? 3 : (coAStr.equals("gmb") ? 4 : (coAStr.equals("lightRail") ? 5 : 6)))));
-                int coB = coBStr.equals("kmb") ? 0 : (coBStr.equals("ctb") ? 1 : (coBStr.equals("nlb") ? 2 : (coBStr.equals("mtr-bus") ? 3 : (coBStr.equals("gmb") ? 4 : (coBStr.equals("lightRail") ? 5 : 6)))));
-                if (coA != coB) {
-                    return coA - coB;
-                }
-
-                JSONObject routeA = a.optJSONObject("route");
-                JSONObject routeB = b.optJSONObject("route");
-
-                String routeNumberA = routeA.optString("route");
-                String routeNumberB = routeB.optString("route");
-
-                if (coA == 5 || coA == 6) {
-                    int lineDiff = Integer.compare(Shared.Companion.getMtrLineSortingIndex(routeNumberA), Shared.Companion.getMtrLineSortingIndex(routeNumberB));
-                    if (lineDiff != 0) {
-                        return lineDiff;
-                    }
-                    return -boundA.optString("mtr").compareTo(boundB.optString("mtr"));
-                }
-                if (coA == 2) {
-                    return IntUtils.parseOrZero(routeA.optString("nlbId")) - IntUtils.parseOrZero(routeB.optString("nlbId"));
-                }
-                if (coA == 4) {
-                    int gtfsDiff = IntUtils.parseOrZero(routeA.optString("gtfsId")) - IntUtils.parseOrZero(routeB.optString("gtfsId"));
-                    if (gtfsDiff != 0) {
-                        return gtfsDiff;
-                    }
-                }
-                int typeDiff = IntUtils.parseOrZero(routeA.optString("serviceType")) - IntUtils.parseOrZero(routeB.optString("serviceType"));
-                if (typeDiff == 0) {
-                    if (coA == 1) {
-                        return Boolean.compare(routeA.has("ctbSpecial"), routeB.has("ctbSpecial"));
-                    }
-                    return -boundA.optString(coAStr).compareTo(boundB.optString(coBStr));
-                }
-                return typeDiff;
-            });
-            return routes;
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
         }
+
+        if (matchingRoutes.isEmpty()) {
+            return null;
+        }
+
+        List<RouteSearchResultEntry> routes = new ArrayList<>(matchingRoutes.values());
+        routes.sort((a, b) -> {
+            Map<String, String> boundA = a.getRoute().getBound();
+            Map<String, String> boundB = b.getRoute().getBound();
+            String coAStr = boundA.containsKey("kmb") ? "kmb" : (boundA.containsKey("ctb") ? "ctb" : (boundA.containsKey("nlb") ? "nlb" : (boundA.containsKey("mtr-bus") ? "mtr-bus" : (boundA.containsKey("gmb") ? "gmb" : (boundA.containsKey("lightRail") ? "lightRail" : "mtr")))));
+            String coBStr = boundB.containsKey("kmb") ? "kmb" : (boundB.containsKey("ctb") ? "ctb" : (boundB.containsKey("nlb") ? "nlb" : (boundB.containsKey("mtr-bus") ? "mtr-bus" : (boundB.containsKey("gmb") ? "gmb" : (boundB.containsKey("lightRail") ? "lightRail" : "mtr")))));
+            int coA = coAStr.equals("kmb") ? 0 : (coAStr.equals("ctb") ? 1 : (coAStr.equals("nlb") ? 2 : (coAStr.equals("mtr-bus") ? 3 : (coAStr.equals("gmb") ? 4 : (coAStr.equals("lightRail") ? 5 : 6)))));
+            int coB = coBStr.equals("kmb") ? 0 : (coBStr.equals("ctb") ? 1 : (coBStr.equals("nlb") ? 2 : (coBStr.equals("mtr-bus") ? 3 : (coBStr.equals("gmb") ? 4 : (coBStr.equals("lightRail") ? 5 : 6)))));
+            if (coA != coB) {
+                return coA - coB;
+            }
+
+            Route routeA = a.getRoute();
+            Route routeB = b.getRoute();
+
+            String routeNumberA = routeA.getRouteNumber();
+            String routeNumberB = routeB.getRouteNumber();
+
+            if (coA == 5 || coA == 6) {
+                int lineDiff = Integer.compare(Shared.Companion.getMtrLineSortingIndex(routeNumberA), Shared.Companion.getMtrLineSortingIndex(routeNumberB));
+                if (lineDiff != 0) {
+                    return lineDiff;
+                }
+                return -boundA.get("mtr").compareTo(boundB.get("mtr"));
+            }
+            if (coA == 2) {
+                return IntUtils.parseOrZero(routeA.getNlbId()) - IntUtils.parseOrZero(routeB.getNlbId());
+            }
+            if (coA == 4) {
+                int gtfsDiff = IntUtils.parseOrZero(routeA.getGtfsId()) - IntUtils.parseOrZero(routeB.getGtfsId());
+                if (gtfsDiff != 0) {
+                    return gtfsDiff;
+                }
+            }
+            int typeDiff = IntUtils.parseOrZero(routeA.getServiceType()) - IntUtils.parseOrZero(routeB.getServiceType());
+            if (typeDiff == 0) {
+                if (coA == 1) {
+                    return 0;
+                }
+                return -boundA.get(coAStr).compareTo(boundB.get(coBStr));
+            }
+            return typeDiff;
+        });
+        return routes;
     }
 
     public NearbyRoutesResult getNearbyRoutes(double lat, double lng, Set<String> excludedRouteNumbers, boolean isInterchangeSearch) {
-        try {
-            JSONObject origin = new JSONObject().put("lat", lat).put("lng", lng);
+        StopLocation origin = new StopLocation(lat, lng);
 
-            JSONObject stops = DATA_SHEET.optJSONObject("stopList");
-            List<JSONObject> nearbyStops = new ArrayList<>();
+        Map<String, Stop> stops = DATA_SHEET.getStopList();
+        List<RouteSearchResultEntry.StopInfo> nearbyStops = new ArrayList<>();
 
-            JSONObject closestStop = null;
-            double closestDistance = Double.MAX_VALUE;
+        Stop closestStop = null;
+        double closestDistance = Double.MAX_VALUE;
 
-            for (Iterator<String> itr = stops.keys(); itr.hasNext(); ) {
-                String stopId = itr.next();
-                JSONObject entry = stops.optJSONObject(stopId);
-                JSONObject location = entry.optJSONObject("location");
-                double distance = DistanceUtils.findDistance(lat, lng, location.optDouble("lat"), location.optDouble("lng"));
+        for (Map.Entry<String, Stop> stopEntry : stops.entrySet()) {
+            String stopId = stopEntry.getKey();
+            Stop entry = stopEntry.getValue();
+            StopLocation location = entry.getLocation();
+            double distance = DistanceUtils.findDistance(lat, lng, location.getLat(), location.getLng());
 
-                if (distance < closestDistance) {
-                    closestStop = entry;
-                    closestDistance = distance;
-                }
-
-                if (distance <= 0.3) {
-                    String co;
-                    if (stopId.matches("^[0-9A-Z]{16}$")) {
-                        co = "kmb";
-                    } else if (stopId.matches("^[0-9]{6}$")) {
-                        co = "ctb";
-                    } else if (stopId.matches("^[0-9]{1,4}$")) {
-                        co = "nlb";
-                    } else if (stopId.matches("^[A-Z]?[0-9]{1,3}[A-Z]?-[A-Z][0-9]{3}$")) {
-                        co = "mtr-bus";
-                    } else if (stopId.matches("^[0-9]{8}$")) {
-                        co = "gmb";
-                    } else if (stopId.matches("^LR[0-9]+$")) {
-                        co = "lightRail";
-                    } else if (stopId.matches("^[A-Z]{3}$")) {
-                        co = "mtr";
-                    } else {
-                        continue;
-                    }
-
-                    JSONObject nearbyStop = new JSONObject();
-                    nearbyStop.put("stopId", stopId);
-                    nearbyStop.put("data", entry);
-                    nearbyStop.put("distance", distance);
-                    nearbyStop.put("co", co);
-                    nearbyStops.add(nearbyStop);
-                }
+            if (distance < closestDistance) {
+                closestStop = entry;
+                closestDistance = distance;
             }
 
-            Map<String, JSONObject> nearbyRoutes = new HashMap<>();
-
-            for (JSONObject nearbyStop : nearbyStops) {
-                String stopId = nearbyStop.optString("stopId");
-
-                for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                    String key = itr.next();
-                    JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-
-                    if (excludedRouteNumbers.contains(data.optString("route"))) {
-                        continue;
-                    }
-                    if (data.optBoolean("ctbIsCircular")) {
-                        continue;
-                    }
-
-                    boolean isKmb = data.has("bound") && data.optJSONObject("bound").has("kmb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("kmb"), stopId);
-                    boolean isCtb = data.has("bound") && data.optJSONObject("bound").has("ctb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("ctb"), stopId);
-                    boolean isNlb = data.has("bound") && data.optJSONObject("bound").has("nlb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("nlb"), stopId);
-                    boolean isMtrBus = data.has("bound") && data.optJSONObject("bound").has("mtr-bus") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("mtr-bus"), stopId);
-                    boolean isGmb = data.has("bound") && data.optJSONObject("bound").has("gmb") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("gmb"), stopId);
-                    boolean isLrt = data.has("bound") && data.optJSONObject("bound").has("lightRail") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("lightRail"), stopId);
-                    boolean isMtr = data.has("bound") && data.optJSONObject("bound").has("mtr") && JsonUtils.contains(data.optJSONObject("stops").optJSONArray("mtr"), stopId);
-
-                    if (isKmb || isCtb || isNlb || isMtrBus || isGmb || isLrt || isMtr) {
-                        String co = isKmb ? "kmb" : (isCtb ? "ctb" : (isNlb ? "nlb" : (isMtrBus ? "mtr-bus" : (isGmb ? "gmb" : (isLrt ? "lightRail" : "mtr")))));
-                        String key0 = data.optString("route") + "," + co + "," + (co.equals("nlb") ? data.optString("nlbId") : data.optJSONObject("bound").optString(co)) + (co.equals("gmb") ? ("," + data.optString("gtfsId").substring(0, 4)) : "");
-
-                        if (nearbyRoutes.containsKey(key0)) {
-                            JSONObject existingNearbyRoute = nearbyRoutes.get(key0);
-
-                            if (existingNearbyRoute.optJSONObject("stop").optDouble("distance") > nearbyStop.optDouble("distance")) {
-                                try {
-                                    int type = Integer.parseInt(data.optString("serviceType"));
-                                    int matchingType = Integer.parseInt(existingNearbyRoute.optJSONObject("route").optString("serviceType"));
-
-                                    if (type < matchingType) {
-                                        existingNearbyRoute.put("routeKey", key);
-                                        existingNearbyRoute.put("stop", nearbyStop);
-                                        existingNearbyRoute.put("route", data);
-                                        existingNearbyRoute.put("co", co);
-                                        existingNearbyRoute.put("origin", origin);
-                                        existingNearbyRoute.put("interchangeSearch", isInterchangeSearch);
-                                    } else if (type == matchingType) {
-                                        int gtfs = IntUtils.parseOr(data.optString("gtfsId"), Integer.MAX_VALUE);
-                                        int matchingGtfs = IntUtils.parseOr(existingNearbyRoute.optJSONObject("route").optString("gtfsId"), Integer.MAX_VALUE);
-                                        if (gtfs < matchingGtfs) {
-                                            existingNearbyRoute.put("routeKey", key);
-                                            existingNearbyRoute.put("stop", nearbyStop);
-                                            existingNearbyRoute.put("route", data);
-                                            existingNearbyRoute.put("co", co);
-                                            existingNearbyRoute.put("origin", origin);
-                                            existingNearbyRoute.put("interchangeSearch", isInterchangeSearch);
-                                        }
-                                    }
-                                } catch (NumberFormatException ignore) {
-                                    existingNearbyRoute.put("routeKey", key);
-                                    existingNearbyRoute.put("stop", nearbyStop);
-                                    existingNearbyRoute.put("route", data);
-                                    existingNearbyRoute.put("co", co);
-                                    existingNearbyRoute.put("origin", origin);
-                                    existingNearbyRoute.put("interchangeSearch", isInterchangeSearch);
-                                }
-                            }
-                        } else {
-                            JSONObject newNearbyRoute = new JSONObject();
-                            newNearbyRoute.put("routeKey", key);
-                            newNearbyRoute.put("stop", nearbyStop);
-                            newNearbyRoute.put("route", data);
-                            newNearbyRoute.put("co", co);
-                            newNearbyRoute.put("origin", origin);
-                            newNearbyRoute.put("interchangeSearch", isInterchangeSearch);
-                            nearbyRoutes.put(key0, newNearbyRoute);
-                        }
-                    }
+            if (distance <= 0.3) {
+                String co;
+                if (stopId.matches("^[0-9A-Z]{16}$")) {
+                    co = "kmb";
+                } else if (stopId.matches("^[0-9]{6}$")) {
+                    co = "ctb";
+                } else if (stopId.matches("^[0-9]{1,4}$")) {
+                    co = "nlb";
+                } else if (stopId.matches("^[A-Z]?[0-9]{1,3}[A-Z]?-[A-Z][0-9]{3}$")) {
+                    co = "mtr-bus";
+                } else if (stopId.matches("^[0-9]{8}$")) {
+                    co = "gmb";
+                } else if (stopId.matches("^LR[0-9]+$")) {
+                    co = "lightRail";
+                } else if (stopId.matches("^[A-Z]{3}$")) {
+                    co = "mtr";
+                } else {
+                    continue;
                 }
+
+                nearbyStops.add(new RouteSearchResultEntry.StopInfo(stopId, entry, distance, co));
             }
-
-            if (nearbyRoutes.isEmpty()) {
-                return new NearbyRoutesResult(Collections.emptyList(), closestStop, closestDistance, lat, lng);
-            }
-
-            List<JSONObject> routes = new ArrayList<>(nearbyRoutes.values());
-            ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
-            int hour = hongKongTime.getHour();
-            boolean isNight = hour >= 1 && hour < 5;
-            DayOfWeek weekday = hongKongTime.getDayOfWeek();
-            String date = hongKongTime.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-
-            boolean isHoliday = weekday.equals(DayOfWeek.SATURDAY) || weekday.equals(DayOfWeek.SUNDAY) || JsonUtils.contains(DATA_SHEET.optJSONArray("holidays"), date);
-
-            routes.sort(Comparator.comparing((JSONObject a) -> {
-                JSONObject route = a.optJSONObject("route");
-                String routeNumber = route.optString("route");
-                JSONObject bound = route.optJSONObject("bound");
-
-                String pa = String.valueOf(routeNumber.charAt(0));
-                String sa = String.valueOf(routeNumber.charAt(routeNumber.length() - 1));
-                int na = IntUtils.parseOrZero(routeNumber.replaceAll("[^0-9]", ""));
-
-                if (bound.has("gmb")) {
-                    na += 1000;
-                } else if (bound.has("mtr")) {
-                    na += isInterchangeSearch ? -2000 : 2000;
-                }
-                if (pa.equals("N") || routeNumber.equals("270S") || routeNumber.equals("271S") || routeNumber.equals("293S") || routeNumber.equals("701S") || routeNumber.equals("796S")) {
-                    na -= (isNight ? 1 : -1) * 10000;
-                }
-                if (sa.equals("S") && !routeNumber.equals("89S") && !routeNumber.equals("796S")) {
-                    na += 3000;
-                }
-                if (!isHoliday && (pa.equals("R") || sa.equals("R"))) {
-                    na += 100000;
-                }
-                if (!pa.matches("[0-9]") && !pa.equals("K")) {
-                    na += 400;
-                }
-                return na;
-            }).thenComparing(a -> {
-                return a.optJSONObject("route").optString("route");
-            }).thenComparing(a -> {
-                return IntUtils.parseOrZero(a.optJSONObject("route").optString("serviceType"));
-            }).thenComparing(a -> {
-                String co = a.optString("co");
-                return co.equals("kmb") ? 0 : (co.equals("ctb") ? 1 : (co.equals("nlb") ? 2 : (co.equals("mtr-bus") ? 3 : (co.equals("gmb") ? 4 : (co.equals("lightRail") ? 5 : 6)))));
-            }).thenComparing(Comparator.comparing((JSONObject a) -> {
-                JSONObject route = a.optJSONObject("route");
-                JSONObject bound = route.optJSONObject("bound");
-                if (bound.has("mtr")) {
-                    return Shared.Companion.getMtrLineSortingIndex(route.optString("route"));
-                }
-                return 10;
-            }).reversed()));
-
-            Set<String> addedKeys = new HashSet<>();
-            List<JSONObject> distinctRoutes = new ArrayList<>();
-            for (JSONObject value : routes) {
-                if (addedKeys.add(value.optString("routeKey"))) {
-                    distinctRoutes.add(value);
-                }
-            }
-
-            return new NearbyRoutesResult(distinctRoutes, closestStop, closestDistance, lat, lng);
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
         }
+
+        Map<String, RouteSearchResultEntry> nearbyRoutes = new HashMap<>();
+
+        for (RouteSearchResultEntry.StopInfo nearbyStop : nearbyStops) {
+            String stopId = nearbyStop.getStopId();
+
+            for (Map.Entry<String, Route> entry : DATA_SHEET.getRouteList().entrySet()) {
+                String key = entry.getKey();
+                Route data = entry.getValue();
+
+                if (excludedRouteNumbers.contains(data.getRouteNumber())) {
+                    continue;
+                }
+                if (data.isCtbIsCircular()) {
+                    continue;
+                }
+
+                boolean isKmb = data.getBound().containsKey("kmb") && data.getStops().get("kmb").contains(stopId);
+                boolean isCtb = data.getBound().containsKey("ctb") && data.getStops().get("ctb").contains(stopId);
+                boolean isNlb = data.getBound().containsKey("nlb") && data.getStops().get("nlb").contains(stopId);
+                boolean isMtrBus = data.getBound().containsKey("mtr-bus") && data.getStops().get("mtr-bus").contains(stopId);
+                boolean isGmb = data.getBound().containsKey("gmb") && data.getStops().get("gmb").contains(stopId);
+                boolean isLrt = data.getBound().containsKey("lightRail") && data.getStops().get("lightRail").contains(stopId);
+                boolean isMtr = data.getBound().containsKey("mtr") && data.getStops().get("mtr").contains(stopId);
+
+                if (isKmb || isCtb || isNlb || isMtrBus || isGmb || isLrt || isMtr) {
+                    String co = isKmb ? "kmb" : (isCtb ? "ctb" : (isNlb ? "nlb" : (isMtrBus ? "mtr-bus" : (isGmb ? "gmb" : (isLrt ? "lightRail" : "mtr")))));
+                    String key0 = data.getRouteNumber() + "," + co + "," + (co.equals("nlb") ? data.getNlbId() : data.getBound().get(co)) + (co.equals("gmb") ? ("," + data.getGtfsId().substring(0, 4)) : "");
+
+                    if (nearbyRoutes.containsKey(key0)) {
+                        RouteSearchResultEntry existingNearbyRoute = nearbyRoutes.get(key0);
+
+                        if (existingNearbyRoute.getStopInfo().getDistance() > nearbyStop.getDistance()) {
+                            try {
+                                int type = Integer.parseInt(data.getServiceType());
+                                int matchingType = Integer.parseInt(existingNearbyRoute.getRoute().getServiceType());
+
+                                if (type < matchingType) {
+                                    existingNearbyRoute.setRouteKey(key);
+                                    existingNearbyRoute.setStopInfo(nearbyStop);
+                                    existingNearbyRoute.setRoute(data);
+                                    existingNearbyRoute.setCo(co);
+                                    existingNearbyRoute.setOrigin(origin);
+                                    existingNearbyRoute.setInterchangeSearch(isInterchangeSearch);
+                                } else if (type == matchingType) {
+                                    int gtfs = IntUtils.parseOr(data.getGtfsId(), Integer.MAX_VALUE);
+                                    int matchingGtfs = IntUtils.parseOr(existingNearbyRoute.getRoute().getGtfsId(), Integer.MAX_VALUE);
+                                    if (gtfs < matchingGtfs) {
+                                        existingNearbyRoute.setRouteKey(key);
+                                        existingNearbyRoute.setStopInfo(nearbyStop);
+                                        existingNearbyRoute.setRoute(data);
+                                        existingNearbyRoute.setCo(co);
+                                        existingNearbyRoute.setOrigin(origin);
+                                        existingNearbyRoute.setInterchangeSearch(isInterchangeSearch);
+                                    }
+                                }
+                            } catch (NumberFormatException ignore) {
+                                existingNearbyRoute.setRouteKey(key);
+                                existingNearbyRoute.setStopInfo(nearbyStop);
+                                existingNearbyRoute.setRoute(data);
+                                existingNearbyRoute.setCo(co);
+                                existingNearbyRoute.setOrigin(origin);
+                                existingNearbyRoute.setInterchangeSearch(isInterchangeSearch);
+                            }
+                        }
+                    } else {
+                        nearbyRoutes.put(key0, new RouteSearchResultEntry(key, data, co, nearbyStop, origin, isInterchangeSearch));
+                    }
+                }
+            }
+        }
+
+        if (nearbyRoutes.isEmpty()) {
+            return new NearbyRoutesResult(Collections.emptyList(), closestStop, closestDistance, lat, lng);
+        }
+
+        List<RouteSearchResultEntry> routes = new ArrayList<>(nearbyRoutes.values());
+        ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
+        int hour = hongKongTime.getHour();
+        boolean isNight = hour >= 1 && hour < 5;
+        DayOfWeek weekday = hongKongTime.getDayOfWeek();
+        LocalDate date = hongKongTime.toLocalDate();
+
+        boolean isHoliday = weekday.equals(DayOfWeek.SATURDAY) || weekday.equals(DayOfWeek.SUNDAY) || DATA_SHEET.getHolidays().contains(date);
+
+        routes.sort(Comparator.comparing((RouteSearchResultEntry a) -> {
+            Route route = a.getRoute();
+            String routeNumber = route.getRouteNumber();
+            Map<String, String> bound = route.getBound();
+
+            String pa = String.valueOf(routeNumber.charAt(0));
+            String sa = String.valueOf(routeNumber.charAt(routeNumber.length() - 1));
+            int na = IntUtils.parseOrZero(routeNumber.replaceAll("[^0-9]", ""));
+
+            if (bound.containsKey("gmb")) {
+                na += 1000;
+            } else if (bound.containsKey("mtr")) {
+                na += isInterchangeSearch ? -2000 : 2000;
+            }
+            if (pa.equals("N") || routeNumber.equals("270S") || routeNumber.equals("271S") || routeNumber.equals("293S") || routeNumber.equals("701S") || routeNumber.equals("796S")) {
+                na -= (isNight ? 1 : -1) * 10000;
+            }
+            if (sa.equals("S") && !routeNumber.equals("89S") && !routeNumber.equals("796S")) {
+                na += 3000;
+            }
+            if (!isHoliday && (pa.equals("R") || sa.equals("R"))) {
+                na += 100000;
+            }
+            return na;
+        }).thenComparing(a -> {
+            return a.getRoute().getRouteNumber();
+        }).thenComparing(a -> {
+            return IntUtils.parseOrZero(a.getRoute().getServiceType());
+        }).thenComparing(a -> {
+            String co = a.getCo();
+            return co.equals("kmb") ? 0 : (co.equals("ctb") ? 1 : (co.equals("nlb") ? 2 : (co.equals("mtr-bus") ? 3 : (co.equals("gmb") ? 4 : (co.equals("lightRail") ? 5 : 6)))));
+        }).thenComparing(Comparator.comparing((RouteSearchResultEntry a) -> {
+            Route route = a.getRoute();
+            Map<String, String> bound = route.getBound();
+            if (bound.containsKey("mtr")) {
+                return Shared.Companion.getMtrLineSortingIndex(route.getRouteNumber());
+            }
+            return 10;
+        }).reversed()));
+
+        Set<String> addedKeys = new HashSet<>();
+        List<RouteSearchResultEntry> distinctRoutes = new ArrayList<>();
+        for (RouteSearchResultEntry value : routes) {
+            if (addedKeys.add(value.getRouteKey())) {
+                distinctRoutes.add(value);
+            }
+        }
+
+        return new NearbyRoutesResult(distinctRoutes, closestStop, closestDistance, lat, lng);
     }
 
     public static class NearbyRoutesResult {
 
-        private final List<JSONObject> result;
-        private final JSONObject closestStop;
+        private final List<RouteSearchResultEntry> result;
+        private final Stop closestStop;
         private final double closestDistance;
         private final double lat;
         private final double lng;
 
-        public NearbyRoutesResult(List<JSONObject> result, JSONObject closestStop, double closestDistance, double lat, double lng) {
+        public NearbyRoutesResult(List<RouteSearchResultEntry> result, Stop closestStop, double closestDistance, double lat, double lng) {
             this.result = result;
             this.closestStop = closestStop;
             this.closestDistance = closestDistance;
@@ -963,11 +924,11 @@ public class Registry {
             this.lng = lng;
         }
 
-        public List<JSONObject> getResult() {
+        public List<RouteSearchResultEntry> getResult() {
             return result;
         }
 
-        public JSONObject getClosestStop() {
+        public Stop getClosestStop() {
             return closestStop;
         }
 
@@ -987,26 +948,23 @@ public class Registry {
     public List<StopData> getAllStops(String routeNumber, String bound, String co, String gtfsId) {
         try {
             List<Pair<BranchedList<String, StopData>, Integer>> lists = new ArrayList<>();
-            for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                String key = itr.next();
-                JSONObject route = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                if (routeNumber.equals(route.optString("route")) && JsonUtils.contains(route.optJSONArray("co"), co)) {
+            for (Route route : DATA_SHEET.getRouteList().values()) {
+                if (routeNumber.equals(route.getRouteNumber()) && route.getCo().contains(co)) {
                     boolean flag;
                     if (co.equals("nlb")) {
-                        flag = bound.equals(route.optString("nlbId"));
+                        flag = bound.equals(route.getNlbId());
                     } else {
-                        flag = bound.equals(route.optJSONObject("bound").optString(co));
+                        flag = bound.equals(route.getBound().get(co));
                         if (co.equals("gmb")) {
-                            flag &= gtfsId.substring(0, 4).equals(route.optString("gtfsId").substring(0, 4));
+                            flag &= gtfsId.substring(0, 4).equals(route.getGtfsId().substring(0, 4));
                         }
                     }
                     if (flag) {
                         BranchedList<String, StopData> localStops = new BranchedList<>();
-                        JSONArray stops = route.optJSONObject("stops").optJSONArray(co);
-                        int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
-                        for (int i = 0; i < stops.length(); i++) {
-                            String stopId = stops.optString(i);
-                            localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId), route));
+                        List<String> stops = route.getStops().get(co);
+                        int serviceType = IntUtils.parseOr(route.getServiceType(), 1);
+                        for (String stopId : stops) {
+                            localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.getStopList().get(stopId), route));
                         }
                         lists.add(Pair.create(localStops, serviceType));
                     }
@@ -1017,8 +975,8 @@ public class Registry {
                 int aType = a.getServiceType();
                 int bType = b.getServiceType();
                 if (aType == bType) {
-                    int aGtfs = IntUtils.parseOr(a.getRoute().optString("gtfsId"), Integer.MAX_VALUE);
-                    int bGtfs = IntUtils.parseOr(b.getRoute().optString("gtfsId"), Integer.MAX_VALUE);
+                    int aGtfs = IntUtils.parseOr(a.getRoute().getGtfsId(), Integer.MAX_VALUE);
+                    int bGtfs = IntUtils.parseOr(b.getRoute().getGtfsId(), Integer.MAX_VALUE);
                     return aGtfs > bGtfs ? b : a;
                 }
                 return aType > bType ? b : a;
@@ -1036,15 +994,15 @@ public class Registry {
 
         private final String stopId;
         private final int serviceType;
-        private final JSONObject stop;
-        private final JSONObject route;
+        private final Stop stop;
+        private final Route route;
         private final Set<Integer> branchIds;
 
-        private StopData(String stopId, int serviceType, JSONObject stop, JSONObject route) {
+        private StopData(String stopId, int serviceType, Stop stop, Route route) {
             this(stopId, serviceType, stop, route, Collections.emptySet());
         }
 
-        public StopData(String stopId, int serviceType, JSONObject stop, JSONObject route, Set<Integer> branchIds) {
+        public StopData(String stopId, int serviceType, Stop stop, Route route, Set<Integer> branchIds) {
             this.stopId = stopId;
             this.serviceType = serviceType;
             this.stop = stop;
@@ -1060,11 +1018,11 @@ public class Registry {
             return serviceType;
         }
 
-        public JSONObject getStop() {
+        public Stop getStop() {
             return stop;
         }
 
-        public JSONObject getRoute() {
+        public Route getRoute() {
             return route;
         }
 
@@ -1077,34 +1035,32 @@ public class Registry {
         }
     }
 
-    public Pair<List<JSONObject>, List<JSONObject>> getAllOriginsAndDestinations(String routeNumber, String bound, String co, String gtfsId) {
+    public Pair<List<BilingualText>, List<BilingualText>> getAllOriginsAndDestinations(String routeNumber, String bound, String co, String gtfsId) {
         try {
-            List<Pair<JSONObject, Integer>> origs = new ArrayList<>();
-            List<Pair<JSONObject, Integer>> dests = new ArrayList<>();
-            for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-                String key = itr.next();
-                JSONObject route = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-                if (routeNumber.equals(route.optString("route")) && JsonUtils.contains(route.optJSONArray("co"), co)) {
+            List<Pair<BilingualText, Integer>> origs = new ArrayList<>();
+            List<Pair<BilingualText, Integer>> dests = new ArrayList<>();
+            for (Route route : DATA_SHEET.getRouteList().values()) {
+                if (routeNumber.equals(route.getRouteNumber()) && route.getCo().contains(co)) {
                     boolean flag;
                     if (co.equals("nlb")) {
-                        flag = bound.equals(route.optString("nlbId"));
+                        flag = bound.equals(route.getNlbId());
                     } else {
-                        flag = bound.equals(route.optJSONObject("bound").optString(co));
+                        flag = bound.equals(route.getBound().get(co));
                         if (co.equals("gmb")) {
-                            flag &= gtfsId.equals(route.optString("gtfsId"));
+                            flag &= gtfsId.equals(route.getGtfsId());
                         }
                     }
                     if (flag) {
-                        int serviceType = IntUtils.parseOr(route.optString("serviceType"), 1);
+                        int serviceType = IntUtils.parseOr(route.getServiceType(), 1);
 
-                        JSONObject orig = route.optJSONObject("orig");
-                        Pair<JSONObject, Integer> oldOrig = origs.stream().filter(d -> d.first.optString("zh").equals(orig.optString("zh"))).findFirst().orElse(null);
+                        BilingualText orig = route.getOrig();
+                        Pair<BilingualText, Integer> oldOrig = origs.stream().filter(d -> d.first.getZh().equals(orig.getZh())).findFirst().orElse(null);
                         if (oldOrig == null || oldOrig.second > serviceType) {
                             origs.add(Pair.create(orig, serviceType));
                         }
 
-                        JSONObject dest = route.optJSONObject("dest");
-                        Pair<JSONObject, Integer> oldDest = dests.stream().filter(d -> d.first.optString("zh").equals(dest.optString("zh"))).findFirst().orElse(null);
+                        BilingualText dest = route.getDest();
+                        Pair<BilingualText, Integer> oldDest = dests.stream().filter(d -> d.first.getZh().equals(dest.getZh())).findFirst().orElse(null);
                         if (oldDest == null || oldDest.second > serviceType) {
                             dests.add(Pair.create(dest, serviceType));
                         }
@@ -1120,46 +1076,40 @@ public class Registry {
         }
     }
 
-    public JSONObject getStopSpecialDestinations(String stopId, String co, JSONObject route) {
-        String bound = route.optJSONObject("bound").optString(co);
-        try {
-            switch (stopId) {
-                case "LHP": {
-                    if (bound.contains("UT")) {
-                        return new JSONObject().put("zh", "康城").put("en", "LOHAS Park");
-                    } else {
-                        return new JSONObject().put("zh", "北角/寶琳").put("en", "North Point/Po Lam");
-                    }
-                }
-                case "HAH":
-                case "POA": {
-                    if (bound.contains("UT")) {
-                        return new JSONObject().put("zh", "寶琳").put("en", "Po Lam");
-                    } else {
-                        return new JSONObject().put("zh", "北角/康城").put("en", "North Point/LOHAS Park");
-                    }
-                }
-                case "AIR":
-                case "AWE": {
-                    if (bound.contains("UT")) {
-                        return new JSONObject().put("zh", "博覽館").put("en", "AsiaWorld-Expo");
-                    }
+    public BilingualText getStopSpecialDestinations(String stopId, String co, Route route) {
+        String bound = route.getBound().get(co);
+        switch (stopId) {
+            case "LHP": {
+                if (bound.contains("UT")) {
+                    return new BilingualText("康城", "LOHAS Park");
+                } else {
+                    return new BilingualText("北角/寶琳", "North Point/Po Lam");
                 }
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
+            case "HAH":
+            case "POA": {
+                if (bound.contains("UT")) {
+                    return new BilingualText("寶琳", "Po Lam");
+                } else {
+                    return new BilingualText("北角/康城", "North Point/LOHAS Park");
+                }
+            }
+            case "AIR":
+            case "AWE": {
+                if (bound.contains("UT")) {
+                    return new BilingualText("博覽館", "AsiaWorld-Expo");
+                }
+            }
         }
-        return route.optJSONObject("dest");
+        return route.getDest();
     }
 
     public static boolean isMtrStopOnOrAfter(String stopId, String relativeTo, String lineName, String bound) {
-        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-            String key = itr.next();
-            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-            if (lineName.equals(data.optString("route")) && data.optJSONObject("bound").optString("mtr").endsWith(bound)) {
-                JSONArray stopsList = data.optJSONObject("stops").optJSONArray("mtr");
-                int index = JsonUtils.indexOf(stopsList, stopId);
-                int indexRef = JsonUtils.indexOf(stopsList, relativeTo);
+        for (Route data : DATA_SHEET.getRouteList().values()) {
+            if (lineName.equals(data.getRouteNumber()) && data.getBound().get("mtr").endsWith(bound)) {
+                List<String> stopsList = data.getStops().get("mtr");
+                int index = stopsList.indexOf(stopId);
+                int indexRef = stopsList.indexOf(relativeTo);
                 if (indexRef >= 0 && index >= indexRef) {
                     return true;
                 }
@@ -1169,13 +1119,11 @@ public class Registry {
     }
 
     public static boolean isMtrStopEndOfLine(String stopId, String lineName, String bound) {
-        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-            String key = itr.next();
-            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-            if (lineName.equals(data.optString("route")) && data.optJSONObject("bound").optString("mtr").endsWith(bound)) {
-                JSONArray stopsList = data.optJSONObject("stops").optJSONArray("mtr");
-                int index = JsonUtils.indexOf(stopsList, stopId);
-                if (index >= 0 && index + 1 < stopsList.length()) {
+        for (Route data : DATA_SHEET.getRouteList().values()) {
+            if (lineName.equals(data.getRouteNumber()) && data.getBound().get("mtr").endsWith(bound)) {
+                List<String> stopsList = data.getStops().get("mtr");
+                int index = stopsList.indexOf(stopId);
+                if (index >= 0 && index + 1 < stopsList.size()) {
                     return false;
                 }
             }
@@ -1209,23 +1157,20 @@ public class Registry {
                 outOfStationStopName = null;
                 break;
         }
-        String stopName = DATA_SHEET.optJSONObject("stopList").optJSONObject(stopId).optJSONObject("name").optString("zh");
-        for (Iterator<String> itr = DATA_SHEET.optJSONObject("routeList").keys(); itr.hasNext(); ) {
-            String key = itr.next();
-            JSONObject data = DATA_SHEET.optJSONObject("routeList").optJSONObject(key);
-            JSONObject bound = data.optJSONObject("bound");
-            String routeNumber = data.optString("route");
+        String stopName = DATA_SHEET.getStopList().get(stopId).getName().getZh();
+        for (Route data : DATA_SHEET.getRouteList().values()) {
+            Map<String, String> bound = data.getBound();
+            String routeNumber = data.getRouteNumber();
             if (!routeNumber.equals(lineName)) {
-                if (bound.has("mtr")) {
-                    List<String> stopsList = JsonUtils.mapToList(data.optJSONObject("stops").optJSONArray("mtr"), id -> DATA_SHEET.optJSONObject("stopList").optJSONObject((String) id).optJSONObject("name").optString("zh"));
+                if (bound.containsKey("mtr")) {
+                    List<String> stopsList = data.getStops().get("mtr").stream().map(id -> DATA_SHEET.getStopList().get(id).getName().getZh()).collect(Collectors.toList());
                     if (stopsList.contains(stopName)) {
                         lines.add(routeNumber);
                     } else if (outOfStationStopName != null && stopsList.contains(outOfStationStopName)) {
                         outOfStationLines.add(routeNumber);
                     }
-                } else if (bound.has("lightRail") && !hasLightRail) {
-                    List<String> stopsList = JsonUtils.mapToList(data.optJSONObject("stops").optJSONArray("lightRail"), id -> DATA_SHEET.optJSONObject("stopList").optJSONObject((String) id).optJSONObject("name").optString("zh"));
-                    if (stopsList.contains(stopName)) {
+                } else if (bound.containsKey("lightRail") && !hasLightRail) {
+                    if (data.getStops().get("lightRail").stream().anyMatch(id -> DATA_SHEET.getStopList().get((String) id).getName().getZh().equals(stopName))) {
                         hasLightRail = true;
                     }
                 }
@@ -1351,7 +1296,7 @@ public class Registry {
         }
     }
 
-    public static ETAQueryResult getEta(String stopId, String co, JSONObject route, Context context) {
+    public static ETAQueryResult getEta(String stopId, String co, Route route, Context context) {
         if (!ConnectionUtils.getConnectionType(context).hasConnection()) {
             return ETAQueryResult.connectionError(co);
         }
@@ -1368,10 +1313,10 @@ public class Registry {
 
                 lines.put(1, getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle()));
                 String language = Shared.Companion.getLanguage();
-                if (route.optBoolean("kmbCtbJoint", false)) {
+                if (route.isKmbCtbJoint()) {
                     isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
-                    String dest = route.optJSONObject("dest").optString("zh").replace(" ", "");
-                    String orig = route.optJSONObject("orig").optString("zh").replace(" ", "");
+                    String dest = route.getDest().getZh().replace(" ", "");
+                    String orig = route.getOrig().getZh().replace(" ", "");
                     Map<Long, Pair<String, String>> etaSorted = new TreeMap<>();
                     String kmbSpecialMessage = null;
                     long kmbFirstScheduledBus = Long.MAX_VALUE;
@@ -1384,7 +1329,7 @@ public class Registry {
                             if ("KMB".equals(bus.optString("co"))) {
                                 String routeNumber = bus.optString("route");
                                 String bound = bus.optString("dir");
-                                if (routeNumber.equals(route.optString("route")) && bound.equals(route.optJSONObject("bound").optString("kmb"))) {
+                                if (routeNumber.equals(route.getRouteNumber()) && bound.equals(route.getBound().get("kmb"))) {
                                     String eta = bus.optString("eta");
                                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                     if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
@@ -1444,14 +1389,13 @@ public class Registry {
                         }
                     }
                     {
-                        String routeNumber = route.optString("route");
-                        JSONArray matchingStops = DATA_SHEET.optJSONObject("stopMap").optJSONArray(stopId);
+                        String routeNumber = route.getRouteNumber();
+                        List<List<String>> matchingStops = DATA_SHEET.getStopMap().get(stopId);
                         List<String> ctbStopIds = new ArrayList<>();
                         if (matchingStops != null) {
-                            for (int k = 0; k < matchingStops.length(); k++) {
-                                JSONArray stopArray = matchingStops.optJSONArray(k);
-                                if ("ctb".equals(stopArray.optString(0))) {
-                                    ctbStopIds.add(stopArray.optString(1));
+                            for (List<String> stopArray : matchingStops) {
+                                if ("ctb".equals(stopArray.get(0))) {
+                                    ctbStopIds.add(stopArray.get(1));
                                 }
                             }
                         }
@@ -1521,7 +1465,7 @@ public class Registry {
                                 message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)") + "</small>";
                             }
                             if (entryCo.equals("kmb")) {
-                                if (Shared.Companion.getKMBSubsidiary(route.optString("route")) == KMBSubsidiary.LWB) {
+                                if (Shared.Companion.getKMBSubsidiary(route.getRouteNumber()) == KMBSubsidiary.LWB) {
                                     message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " - LWB" : " - 龍運") + "</small>";
                                 } else {
                                     message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " - KMB" : " - 九巴") + "</small>";
@@ -1550,7 +1494,7 @@ public class Registry {
                                 if ("KMB".equals(bus.optString("co"))) {
                                     String routeNumber = bus.optString("route");
                                     String bound = bus.optString("dir");
-                                    if (routeNumber.equals(route.optString("route")) && bound.equals(route.optJSONObject("bound").optString("kmb"))) {
+                                    if (routeNumber.equals(route.getRouteNumber()) && bound.equals(route.getBound().get("kmb"))) {
                                         int seq = bus.optInt("eta_seq");
                                         String eta = bus.optString("eta");
                                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
@@ -1610,7 +1554,7 @@ public class Registry {
                         case "ctb": {
                             isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
-                            String routeNumber = route.optString("route");
+                            String routeNumber = route.getRouteNumber();
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + stopId + "/" + routeNumber);
                             JSONArray buses = data.optJSONArray("data");
 
@@ -1618,7 +1562,7 @@ public class Registry {
                                 JSONObject bus = buses.optJSONObject(u);
                                 if ("CTB".equals(bus.optString("co"))) {
                                     String bound = bus.optString("dir");
-                                    if (routeNumber.equals(bus.optString("route")) && bound.equals(route.optJSONObject("bound").optString("ctb"))) {
+                                    if (routeNumber.equals(bus.optString("route")) && bound.equals(route.getBound().get("ctb"))) {
                                         int seq = bus.optInt("eta_seq");
                                         String eta = bus.optString("eta");
                                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
@@ -1678,7 +1622,7 @@ public class Registry {
                         case "nlb": {
                             isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
-                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=" + route.optString("nlbId") + "&stopId=" + stopId + "&language=" + Shared.Companion.getLanguage());
+                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=" + route.getNlbId() + "&stopId=" + stopId + "&language=" + Shared.Companion.getLanguage());
                             if (data == null || data.length() == 0 || !data.has("estimatedArrivals")) {
                                 return;
                             }
@@ -1741,7 +1685,7 @@ public class Registry {
                         case "mtr-bus": {
                             isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
-                            String routeNumber = route.optString("route");
+                            String routeNumber = route.getRouteNumber();
                             JSONObject body = new JSONObject();
                             try {
                                 body.put("language", Shared.Companion.getLanguage());
@@ -1783,7 +1727,7 @@ public class Registry {
 
                                     long mins = (long) Math.floor(eta / 60);
 
-                                    if (JsonUtils.contains(MTR_BUS_STOP_ALIAS.optJSONArray(stopId), busStopId)) {
+                                    if (MTR_BUS_STOP_ALIAS.get(stopId).contains(busStopId)) {
                                         String message = "";
                                         if (language.equals("en")) {
                                             if (mins > 0) {
@@ -1841,19 +1785,17 @@ public class Registry {
                             for (int i = 0; i < data.optJSONArray("data").length(); i++) {
                                 JSONObject routeData = data.optJSONArray("data").optJSONObject(i);
                                 JSONArray buses = routeData.optJSONArray("eta");
-                                Iterable<String> iterable = () -> DATA_SHEET.optJSONObject("routeList").keys();
-                                Optional<JSONObject> filteredEntry = StreamSupport.stream(iterable.spliterator(), false)
-                                        .map(k -> DATA_SHEET.optJSONObject("routeList").optJSONObject(k))
-                                        .filter(r -> r.optJSONObject("bound").has("gmb") && r.optString("gtfsId").equals(routeData.optString("route_id")))
+                                Optional<Route> filteredEntry = DATA_SHEET.getRouteList().values().stream()
+                                        .filter(r -> r.getBound().containsKey("gmb") && r.getGtfsId().equals(routeData.optString("route_id")))
                                         .findFirst();
                                 if (filteredEntry.isPresent() && buses != null) {
-                                    String routeNumber = filteredEntry.get().optString("route");
+                                    String routeNumber = filteredEntry.get().getRouteNumber();
                                     for (int u = 0; u < buses.length(); u++) {
                                         JSONObject bus = buses.optJSONObject(u);
                                         String eta = bus.optString("timestamp");
                                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
                                         long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
-                                        if (routeNumber.equals(route.optString("route"))) {
+                                        if (routeNumber.equals(route.getRouteNumber())) {
                                             busList.add(Pair.create(mins, bus));
                                         }
                                     }
@@ -1919,8 +1861,8 @@ public class Registry {
                         case "lightRail": {
                             isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
 
-                            JSONArray stopsList = route.optJSONObject("stops").optJSONArray("lightRail");
-                            if (JsonUtils.indexOf(stopsList, stopId) + 1 >= stopsList.length()) {
+                            List<String> stopsList = route.getStops().get("lightRail");
+                            if (stopsList.indexOf(stopId) + 1 >= stopsList.size()) {
                                 isMtrEndOfLine = true;
                                 lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
                             } else {
@@ -1938,7 +1880,7 @@ public class Registry {
                                             for (int u = 0; u < routeList.length(); u++) {
                                                 JSONObject routeData = routeList.optJSONObject(u);
                                                 String routeNumber = routeData.optString("route_no");
-                                                if (routeNumber.equals(route.optString("route"))) {
+                                                if (routeNumber.equals(route.getRouteNumber())) {
                                                     Matcher matcher = Pattern.compile("([0-9]+) *min").matcher(routeData.optString("time_en"));
                                                     long mins = matcher.find() ? Long.parseLong(matcher.group(1)) : 0;
                                                     String minsMsg = routeData.optString(Shared.Companion.getLanguage().equals("en") ? "time_en" : "time_ch");
@@ -1984,7 +1926,7 @@ public class Registry {
                         case "mtr": {
                             isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
 
-                            String lineName = route.optString("route");
+                            String lineName = route.getRouteNumber();
                             String lineColor;
                             switch (lineName) {
                                 case "AEL":
@@ -2021,7 +1963,7 @@ public class Registry {
                                     lineColor = "#FFFFFF";
                             }
 
-                            String bound = route.optJSONObject("bound").optString("mtr");
+                            String bound = route.getBound().get("mtr");
                             if (isMtrStopEndOfLine(stopId, lineName, bound)) {
                                 isMtrEndOfLine = true;
                                 lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
@@ -2061,7 +2003,7 @@ public class Registry {
                                                 int seq = Integer.parseInt(trainData.optString("seq"));
                                                 int platform = Integer.parseInt(trainData.optString("plat"));
                                                 String specialRoute = trainData.optString("route");
-                                                String dest = DATA_SHEET.optJSONObject("stopList").optJSONObject(trainData.optString("dest")).optJSONObject("name").optString(Shared.Companion.getLanguage());
+                                                String dest = DATA_SHEET.getStopList().get(trainData.optString("dest")).getName().get(Shared.Companion.getLanguage());
                                                 if (!stopId.equals("AIR")) {
                                                     if (dest.equals("博覽館")) {
                                                         dest = "機場及博覽館";
@@ -2070,7 +2012,7 @@ public class Registry {
                                                     }
                                                 }
                                                 if (!specialRoute.isEmpty() && !isMtrStopOnOrAfter(stopId, specialRoute, lineName, bound)) {
-                                                    String via = DATA_SHEET.optJSONObject("stopList").optJSONObject(specialRoute).optJSONObject("name").optString(Shared.Companion.getLanguage());
+                                                    String via = DATA_SHEET.getStopList().get(specialRoute).getName().get(Shared.Companion.getLanguage());
                                                     dest += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " via " : " 經") + via + "</small>";
                                                 }
                                                 String eta = trainData.optString("time");

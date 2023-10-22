@@ -40,6 +40,10 @@ import com.aghajari.compose.text.asAnnotatedString
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
+import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.objects.coColor
+import com.loohp.hkbuseta.objects.displayRouteNumber
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
@@ -51,7 +55,6 @@ import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.toSpanned
-import org.json.JSONObject
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.util.Date
@@ -335,8 +338,8 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun title(index: Int, stopName: JSONObject, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
-            val name = stopName.optString(Shared.language)
+        private fun title(index: Int, stopName: BilingualText, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
+            val name = stopName[Shared.language]
             val text = if (co == "mtr") name else index.toString().plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
                 .setModifiers(
@@ -364,18 +367,12 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun subTitle(destName: JSONObject, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
-            val routeName = if (co == "mtr") {
-                Shared.getMtrLineName(routeNumber, "???")
-            } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
-                "NR".plus(routeNumber)
-            } else {
-                routeNumber
-            }
+        private fun subTitle(destName: BilingualText, routeNumber: String, co: String, context: Context): LayoutElementBuilders.Text {
+            val routeName = co.displayRouteNumber(routeNumber)
             val name = if (Shared.language == "en") {
-                routeName.plus(" To ").plus(destName.optString("en"))
+                routeName.plus(" To ").plus(destName.en)
             } else {
-                routeName.plus(" 往").plus(destName.optString("zh"))
+                routeName.plus(" 往").plus(destName.zh)
             }
             return LayoutElementBuilders.Text.Builder()
                 .setModifiers(
@@ -450,15 +447,15 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun buildLayout(favoriteIndex: Int, favouriteStopRoute: JSONObject, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
-            val stopId = favouriteStopRoute.optString("stopId")
-            val co = favouriteStopRoute.optString("co")
-            val index = favouriteStopRoute.optInt("index")
-            val stop = favouriteStopRoute.optJSONObject("stop")!!
-            val route = favouriteStopRoute.optJSONObject("route")!!
+        private fun buildLayout(favoriteIndex: Int, favouriteStopRoute: FavouriteRouteStop, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+            val stopId = favouriteStopRoute.stopId
+            val co = favouriteStopRoute.co
+            val index = favouriteStopRoute.index
+            val stop = favouriteStopRoute.stop
+            val route = favouriteStopRoute.route
 
-            val routeNumber = route.optString("route")
-            val stopName = stop.optJSONObject("name")!!
+            val routeNumber = route.routeNumber
+            val stopName = stop.name
             val destName = Registry.getInstance(context).getStopSpecialDestinations(stopId, co, route)
 
             val eta = Registry.getEta(stopId, co, route, context)
@@ -466,30 +463,7 @@ class EtaTileServiceCommon {
             val color = if (eta.isConnectionError) {
                 Color.DarkGray
             } else {
-                when (eta.nextCo) {
-                    "kmb" -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
-                    "ctb" -> Color(0xFFFFE15E)
-                    "nlb" -> Color(0xFF9BFFC6)
-                    "mtr-bus" -> Color(0xFFAAD4FF)
-                    "gmb" -> Color(0xFF36FF42)
-                    "lightRail" -> Color(0xFFD3A809)
-                    "mtr" -> {
-                        when (route.optString("route")) {
-                            "AEL" -> Color(0xFF00888E)
-                            "TCL" -> Color(0xFFF3982D)
-                            "TML" -> Color(0xFF9C2E00)
-                            "TKL" -> Color(0xFF7E3C93)
-                            "EAL" -> Color(0xFF5EB7E8)
-                            "SIL" -> Color(0xFFCBD300)
-                            "TWL" -> Color(0xFFE60012)
-                            "ISL" -> Color(0xFF0075C2)
-                            "KTL" -> Color(0xFF00A040)
-                            "DRL" -> Color(0xFFEB6EA5)
-                            else -> Color.LightGray
-                        }
-                    }
-                    else -> Color.LightGray
-                }.adjustBrightness(if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) 0.2F else 1F)
+                eta.nextCo.coColor(routeNumber, Color.LightGray).adjustBrightness(if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) 0.2F else 1F)
             }
 
             return LayoutElementBuilders.Box.Builder()
@@ -508,8 +482,8 @@ class EtaTileServiceCommon {
                                                 .addKeyToExtraMapping("stopId", ActionBuilders.AndroidStringExtra.Builder().setValue(stopId).build())
                                                 .addKeyToExtraMapping("co", ActionBuilders.AndroidStringExtra.Builder().setValue(co).build())
                                                 .addKeyToExtraMapping("index", ActionBuilders.AndroidIntExtra.Builder().setValue(index).build())
-                                                .addKeyToExtraMapping("stop", ActionBuilders.AndroidStringExtra.Builder().setValue(stop.toString()).build())
-                                                .addKeyToExtraMapping("route", ActionBuilders.AndroidStringExtra.Builder().setValue(route.toString()).build())
+                                                .addKeyToExtraMapping("stop", ActionBuilders.AndroidStringExtra.Builder().setValue(stop.serialize().toString()).build())
+                                                .addKeyToExtraMapping("route", ActionBuilders.AndroidStringExtra.Builder().setValue(route.serialize().toString()).build())
                                                 .setPackageName(packageName)
                                                 .build()
                                         ).build()

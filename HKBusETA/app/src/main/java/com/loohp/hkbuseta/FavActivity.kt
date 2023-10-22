@@ -88,11 +88,14 @@ import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.objects.coColor
+import com.loohp.hkbuseta.objects.coName
+import com.loohp.hkbuseta.objects.displayRouteNumber
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
@@ -101,7 +104,6 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.util.Timer
 import java.util.TimerTask
 import java.util.concurrent.ConcurrentHashMap
@@ -262,7 +264,7 @@ fun FavButton(favoriteIndex: Int, instance: FavActivity, etaResults: MutableMap<
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONObject?>, deleteState: MutableState<Boolean>, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<FavouriteRouteStop?>, deleteState: MutableState<Boolean>, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     val haptic = LocalHapticFeedback.current
 
     AdvanceButton(
@@ -280,22 +282,22 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
             } else {
                 val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
                 if (favStopRoute != null) {
-                    val stopId = favStopRoute.optString("stopId")
-                    val co = favStopRoute.optString("co")
-                    val index = favStopRoute.optInt("index")
-                    val stop = favStopRoute.optJSONObject("stop")!!
-                    val route = favStopRoute.optJSONObject("route")!!
+                    val stopId = favStopRoute.stopId
+                    val co = favStopRoute.co
+                    val index = favStopRoute.index
+                    val stop = favStopRoute.stop
+                    val route = favStopRoute.route
 
-                    Registry.getInstance(instance).findRoutes(route.optString("route"), true) { it ->
-                        val bound = it.optJSONObject("bound")!!
-                        if (!bound.has(co) || bound.optString(co) != route.optJSONObject("bound")!!.optString(co)) {
+                    Registry.getInstance(instance).findRoutes(route.routeNumber, true) { it ->
+                        val bound = it.bound
+                        if (!bound.containsKey(co) || bound[co] != route.bound[co]) {
                             return@findRoutes false
                         }
-                        val stops = it.optJSONObject("stops")!!.optJSONArray(co)?: return@findRoutes false
-                        return@findRoutes JsonUtils.contains(stops, stopId)
+                        val stops = it.stops[co]?: return@findRoutes false
+                        return@findRoutes stops.contains(stopId)
                     }.firstOrNull()?.let {
                         val intent = Intent(instance, ListStopsActivity::class.java)
-                        intent.putExtra("route", it.toString())
+                        intent.putExtra("route", it.serialize().toString())
                         intent.putExtra("scrollToStop", stopId)
                         instance.startActivity(intent)
                     }
@@ -304,8 +306,8 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                     intent.putExtra("stopId", stopId)
                     intent.putExtra("co", co)
                     intent.putExtra("index", index)
-                    intent.putExtra("stop", stop.toString())
-                    intent.putExtra("route", route.toString())
+                    intent.putExtra("stop", stop.serialize().toString())
+                    intent.putExtra("route", route.serialize().toString())
                     instance.startActivity(intent)
                 }
             }
@@ -340,9 +342,9 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
         content = {
             val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
             if (favStopRoute != null) {
-                val stopId = favStopRoute.optString("stopId")
-                val co = favStopRoute.optString("co")
-                val route = favStopRoute.optJSONObject("route")!!
+                val stopId = favStopRoute.stopId
+                val co = favStopRoute.co
+                val route = favStopRoute.route
 
                 var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults[favoriteIndex]) }
 
@@ -456,39 +458,16 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                         text = if (Shared.language == "en") "No Route Selected" else "未有設置路線"
                     )
                 } else {
-                    val index = currentFavouriteStopRoute.optInt("index")
-                    val stop = currentFavouriteStopRoute.optJSONObject("stop")!!
-                    val stopName = stop.optJSONObject("name")!!
-                    val route = currentFavouriteStopRoute.optJSONObject("route")!!
-                    val kmbCtbJoint = route.optBoolean("kmbCtbJoint", false)
-                    val co = currentFavouriteStopRoute.optString("co")
-                    val routeNumber = route.optString("route")
-                    val stopId = currentFavouriteStopRoute.optString("stopId")
+                    val index = currentFavouriteStopRoute.index
+                    val stop = currentFavouriteStopRoute.stop
+                    val stopName = stop.name
+                    val route = currentFavouriteStopRoute.route
+                    val kmbCtbJoint = route.isKmbCtbJoint
+                    val co = currentFavouriteStopRoute.co
+                    val routeNumber = route.routeNumber
+                    val stopId = currentFavouriteStopRoute.stopId
                     val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route)
-                    val rawColor = when (co) {
-                        "kmb" -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
-                        "ctb" -> Color(0xFFFFE15E)
-                        "nlb" -> Color(0xFF9BFFC6)
-                        "mtr-bus" -> Color(0xFFAAD4FF)
-                        "gmb" -> Color(0xFF36FF42)
-                        "lightRail" -> Color(0xFFD3A809)
-                        "mtr" -> {
-                            when (routeNumber) {
-                                "AEL" -> Color(0xFF00888E)
-                                "TCL" -> Color(0xFFF3982D)
-                                "TML" -> Color(0xFF9C2E00)
-                                "TKL" -> Color(0xFF7E3C93)
-                                "EAL" -> Color(0xFF5EB7E8)
-                                "SIL" -> Color(0xFFCBD300)
-                                "TWL" -> Color(0xFFE60012)
-                                "ISL" -> Color(0xFF0075C2)
-                                "KTL" -> Color(0xFF00A040)
-                                "DRL" -> Color(0xFFEB6EA5)
-                                else -> Color.White
-                            }
-                        }
-                        else -> Color.White
-                    }
+                    val rawColor = co.coColor(routeNumber, Color.White)
                     val color = if (kmbCtbJoint) {
                         val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
                         val animatedColor by infiniteTransition.animateColor(
@@ -506,53 +485,17 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<JSONO
                         rawColor
                     }
 
-                    val operator = if (Shared.language == "en") {
-                        when (co) {
-                            "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
-                                KMBSubsidiary.SUNB -> "Sun-Bus"
-                                KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
-                                else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
-                            }
-                            "ctb" -> "CTB"
-                            "nlb" -> "NLB"
-                            "mtr-bus" -> "MTR-Bus"
-                            "gmb" -> "GMB"
-                            "lightRail" -> "LRT"
-                            "mtr" -> "MTR"
-                            else -> "???"
-                        }
-                    } else {
-                        when (co) {
-                            "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
-                                KMBSubsidiary.SUNB -> "陽光巴士"
-                                KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
-                                else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"
-                            }
-                            "ctb" -> "城巴"
-                            "nlb" -> "嶼巴"
-                            "mtr-bus" -> "港鐵巴士"
-                            "gmb" -> "專線小巴"
-                            "lightRail" -> "輕鐵"
-                            "mtr" -> "港鐵"
-                            else -> "???"
-                        }
-                    }
-                    val mainText = operator.plus(" ").plus(if (co == "mtr") {
-                        Shared.getMtrLineName(routeNumber, "???")
-                    } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
-                        "NR".plus(routeNumber)
-                    } else {
-                        routeNumber
-                    })
+                    val operator = co.coName(routeNumber, kmbCtbJoint, Shared.language)
+                    val mainText = operator.plus(" ").plus(co.displayRouteNumber(routeNumber))
                     val routeText = if (Shared.language == "en") {
-                        "To ".plus(destName.optString("en"))
+                        "To ".plus(destName.en)
                     } else {
-                        "往".plus(destName.optString("zh"))
+                        "往".plus(destName.zh)
                     }
                     val subText = if (Shared.language == "en") {
-                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.optString("en"))
+                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.en)
                     } else {
-                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.optString("zh"))
+                        (if (co == "mtr" || co == "lightRail") "" else index.toString().plus(". ")).plus(stopName.zh)
                     }
                     Spacer(modifier = Modifier.size(5.dp))
                     Column {

@@ -26,8 +26,11 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -95,6 +98,19 @@ public class JsonUtils {
         return set;
     }
 
+    public static <K, V> Map<K, V> toMap(JSONObject json, JSONFunction<String, K> keyDeserializer, JSONFunction<Object, V> valueDeserializer) throws JSONException {
+        Map<K, V> map = new LinkedHashMap<>();
+        for (Iterator<String> itr = json.keys(); itr.hasNext(); ) {
+            String key = itr.next();
+            map.put(keyDeserializer.apply(key), valueDeserializer.apply(json.opt(key)));
+        }
+        return map;
+    }
+
+    public static <V> Map<String, V> toMap(JSONObject json, JSONFunction<Object, V> valueDeserializer) throws JSONException {
+        return toMap(json, k -> k, valueDeserializer);
+    }
+
     public static <T> JSONArray fromCollection(Collection<T> list) {
         JSONArray array = new JSONArray();
         for (T t : list) {
@@ -107,6 +123,14 @@ public class JsonUtils {
         JSONArray array = new JSONArray();
         stream.forEach(array::put);
         return array;
+    }
+
+    public static <V> JSONObject fromMap(Map<?, V> map, JSONFunction<V, Object> valueSerializer) throws JSONException {
+        JSONObject json = new JSONObject();
+        for (Map.Entry<?, V> entry : map.entrySet()) {
+            json.put(String.valueOf(entry.getKey()), valueSerializer.apply(entry.getValue()));
+        }
+        return json;
     }
 
 }

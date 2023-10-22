@@ -94,7 +94,11 @@ import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
-import com.loohp.hkbuseta.shared.KMBSubsidiary
+import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.objects.coColor
+import com.loohp.hkbuseta.objects.coName
+import com.loohp.hkbuseta.objects.displayRouteNumber
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
@@ -148,7 +152,7 @@ class ListStopsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         Shared.setDefaultExceptionHandler(this)
-        val route = intent.extras!!.getString("route")?.let { JSONObject(it) }?: throw RuntimeException()
+        val route = intent.extras!!.getString("route")?.let { RouteSearchResultEntry.deserialize(JSONObject(it)) }?: throw RuntimeException()
         val scrollToStop = intent.extras!!.getString("scrollToStop")
 
         setContent {
@@ -199,7 +203,7 @@ class ListStopsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: String?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scrollToStop: String?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val scroll = rememberLazyListState()
@@ -208,42 +212,19 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
 
         val padding by remember { derivedStateOf { StringUtils.scaledSize(7.5F, instance) } }
 
-        val kmbCtbJoint = remember { route.optJSONObject("route")!!.optBoolean("kmbCtbJoint", false) }
-        val routeNumber = remember { route.optJSONObject("route")!!.optString("route") }
-        val co = remember { route.optString("co") }
-        val bound = remember { if (co.equals("nlb")) route.optJSONObject("route")!!.optString("nlbId") else route.optJSONObject("route")!!.optJSONObject("bound")!!.optString(co) }
-        val gtfsId = remember { route.optJSONObject("route")!!.optString("gtfsId") }
-        val interchangeSearch = remember { route.optBoolean("interchangeSearch", false) }
-        val origName = remember { route.optJSONObject("route")!!.optJSONObject("orig")!! }
-        val destName = remember { route.optJSONObject("route")!!.optJSONObject("dest")!! }
+        val kmbCtbJoint = remember { route.route.isKmbCtbJoint }
+        val routeNumber = remember { route.route.routeNumber }
+        val co = remember { route.co }
+        val bound = remember { if (co.equals("nlb")) route.route.nlbId else route.route.bound[co] }
+        val gtfsId = remember { route.route.gtfsId }
+        val interchangeSearch = remember { route.isInterchangeSearch }
+        val origName = remember { route.route.orig }
+        val destName = remember { route.route.dest }
         val specialOrigsDests = remember { Registry.getInstance(instance).getAllOriginsAndDestinations(routeNumber, bound, co, gtfsId) }
-        val specialOrigs = remember { specialOrigsDests.first.filter { !it.optString("zh").eitherContains(origName.optString("zh")) } }
-        val specialDests = remember { specialOrigsDests.second.filter { !it.optString("zh").eitherContains(destName.optString("zh")) } }
+        val specialOrigs = remember { specialOrigsDests.first.filter { !it.zh.eitherContains(origName.zh) } }
+        val specialDests = remember { specialOrigsDests.second.filter { !it.zh.eitherContains(destName.zh) } }
 
-        val coColor = remember { when (co) {
-            "kmb" -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
-            "ctb" -> Color(0xFFFFE15E)
-            "nlb" -> Color(0xFF9BFFC6)
-            "mtr-bus" -> Color(0xFFAAD4FF)
-            "gmb" -> Color(0xFF36FF42)
-            "lightRail" -> Color(0xFFD3A809)
-            "mtr" -> {
-                when (route.optJSONObject("route")!!.optString("route")) {
-                    "AEL" -> Color(0xFF00888E)
-                    "TCL" -> Color(0xFFF3982D)
-                    "TML" -> Color(0xFF9C2E00)
-                    "TKL" -> Color(0xFF7E3C93)
-                    "EAL" -> Color(0xFF5EB7E8)
-                    "SIL" -> Color(0xFFCBD300)
-                    "TWL" -> Color(0xFFE60012)
-                    "ISL" -> Color(0xFF0075C2)
-                    "KTL" -> Color(0xFF00A040)
-                    "DRL" -> Color(0xFFEB6EA5)
-                    else -> Color.White
-                }
-            }
-            else -> Color.White
-        } }
+        val coColor = remember { co.coColor(routeNumber, Color.White) }
 
         val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId) }
         val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
@@ -289,9 +270,9 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                     stopsList.withIndex().map {
                         val (index, entry) = it
                         val stop = entry.stop
-                        val location = stop.optJSONObject("location")!!
-                        val stopStr = stop.optJSONObject("name")!!.optString(Shared.language)
-                        StopEntry(index + 1, stopStr, entry, location.optDouble("lat"), location.optDouble("lng"))
+                        val location = stop.location
+                        val stopStr = stop.name[Shared.language]
+                        StopEntry(index + 1, stopStr, entry, location.lat, location.lng)
                     }.onEach {
                         it.distance = DistanceUtils.findDistance(origin.lat, origin.lng, it.lat, it.lng)
                         distances[it.stopIndex] = it.distance
@@ -310,9 +291,9 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
 
             if (scrollToStop != null) {
                 scrollTask.invoke(null, scrollToStop)
-            } else if (route.has("origin")) {
-                val origin = route.optJSONObject("origin")!!
-                scrollTask.invoke(OriginData(origin.optDouble("lat"), origin.optDouble("lng")), null)
+            } else if (route.origin != null) {
+                val origin = route.origin
+                scrollTask.invoke(OriginData(origin.lat, origin.lng), null)
             } else {
                 LocationUtils.checkLocationPermission(instance) {
                     if (it) {
@@ -354,7 +335,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                     val stop = entry.stop
                     val brightness = if (entry.serviceType == lowestServiceType) 1F else 0.65F
                     val rawColor = (if (isClosest) coColor else Color.White).adjustBrightness(brightness)
-                    val stopStr = stop.optJSONObject("name")!!.optString(Shared.language)
+                    val stopStr = stop.name[Shared.language]
 
                     Box (
                         modifier = Modifier
@@ -365,8 +346,8 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
                                     intent.putExtra("stopId", stopId)
                                     intent.putExtra("co", co)
                                     intent.putExtra("index", stopNumber)
-                                    intent.putExtra("stop", stop.toString())
-                                    intent.putExtra("route", entry.route.toString())
+                                    intent.putExtra("stop", stop.serialize().toString())
+                                    intent.putExtra("route", entry.route.serialize().toString())
                                     instance.startActivity(intent)
                                 },
                                 onLongClick = {
@@ -405,7 +386,7 @@ fun MainElement(instance: ListStopsActivity, route: JSONObject, scrollToStop: St
 }
 
 @Composable
-fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor: Color, destName: JSONObject, specialOrigs: List<JSONObject>, specialDests: List<JSONObject>, instance: ListStopsActivity) {
+fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor: Color, destName: BilingualText, specialOrigs: List<BilingualText>, specialDests: List<BilingualText>, instance: ListStopsActivity) {
     Column(
         modifier = Modifier
             .defaultMinSize(minHeight = StringUtils.scaledSize(35, instance).dp)
@@ -444,43 +425,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
             lineHeight = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(20F, instance).dp),
             color = color,
             maxLines = 1,
-            text = (if (Shared.language == "en") {
-                when (co) {
-                    "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
-                        KMBSubsidiary.SUNB -> "Sun-Bus"
-                        KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
-                        else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
-                    }
-                    "ctb" -> "CTB"
-                    "nlb" -> "NLB"
-                    "mtr-bus" -> "MTR-Bus"
-                    "gmb" -> "GMB"
-                    "lightRail" -> "LRT"
-                    "mtr" -> "MTR"
-                    else -> "???"
-                }
-            } else {
-                when (co) {
-                    "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
-                        KMBSubsidiary.SUNB -> "陽光巴士"
-                        KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
-                        else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"
-                    }
-                    "ctb" -> "城巴"
-                    "nlb" -> "嶼巴"
-                    "mtr-bus" -> "港鐵巴士"
-                    "gmb" -> "專線小巴"
-                    "lightRail" -> "輕鐵"
-                    "mtr" -> "港鐵"
-                    else -> "???"
-                }
-            }).plus(" ").plus(if (co == "mtr") {
-                Shared.getMtrLineName(routeNumber, "???")
-            } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
-                "NR".plus(routeNumber)
-            } else {
-                routeNumber
-            })
+            text = co.coName(routeNumber, kmbCtbJoint, Shared.language).plus(" ").plus(co.displayRouteNumber(routeNumber))
         )
         AutoResizeText(
             modifier = Modifier
@@ -494,9 +439,9 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
             color = Color(0xFFFFFFFF),
             maxLines = 2,
             text = if (Shared.language == "en") {
-                "To ".plus(destName.optString("en"))
+                "To ".plus(destName.en)
             } else {
-                "往".plus(destName.optString("zh"))
+                "往".plus(destName.zh)
             }
         )
         if (specialOrigs.isNotEmpty()) {
@@ -512,9 +457,9 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
                 color = Color(0xFFFFFFFF).adjustBrightness(0.65F),
                 maxLines = 2,
                 text = if (Shared.language == "en") {
-                    "Special From ".plus(specialOrigs.joinToString("/") { it.optString("en") })
+                    "Special From ".plus(specialOrigs.joinToString("/") { it.en })
                 } else {
-                    "特別班 從".plus(specialOrigs.joinToString("/") { it.optString("zh") }).plus("開出")
+                    "特別班 從".plus(specialOrigs.joinToString("/") { it.zh }).plus("開出")
                 }
             )
         }
@@ -531,9 +476,9 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
                 color = Color(0xFFFFFFFF).adjustBrightness(0.65F),
                 maxLines = 2,
                 text = if (Shared.language == "en") {
-                    "Special To ".plus(specialDests.joinToString("/") { it.optString("en") })
+                    "Special To ".plus(specialDests.joinToString("/") { it.en })
                 } else {
-                    "特別班 往".plus(specialDests.joinToString("/") { it.optString("zh") })
+                    "特別班 往".plus(specialDests.joinToString("/") { it.zh })
                 }
             )
         }
@@ -542,7 +487,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: String, coColor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: List<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: List<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: List<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: List<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var height by remember { mutableStateOf(0) }
     Row (
         modifier = Modifier
@@ -613,7 +558,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: String, isClosest: Boole
 }
 
 @Composable
-fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: MutableMap<Int, Registry.ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults[index]) }
 
     LaunchedEffect (Unit) {
@@ -621,7 +566,7 @@ fun ETAElement(index: Int, stopId: String, route: JSONObject, etaTextWidth: Floa
             delay(etaUpdateTimes[index]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
-            eta = Registry.getEta(stopId, route.optString("co"), route.optJSONObject("route")!!, instance)
+            eta = Registry.getEta(stopId, route.co, route.route, instance)
             etaUpdateTimes[index] = System.currentTimeMillis()
             etaResults[index] = eta!!
         }

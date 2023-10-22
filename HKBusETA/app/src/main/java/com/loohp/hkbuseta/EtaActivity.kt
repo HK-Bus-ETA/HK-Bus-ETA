@@ -84,7 +84,10 @@ import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
-import com.loohp.hkbuseta.shared.KMBSubsidiary
+import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.Route
+import com.loohp.hkbuseta.objects.Stop
+import com.loohp.hkbuseta.objects.displayRouteNumber
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
@@ -113,8 +116,8 @@ class EtaActivity : ComponentActivity() {
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")
         val index = intent.extras!!.getInt("index")
-        val stop = intent.extras!!.getString("stop")?.let { JSONObject(it) }
-        val route = intent.extras!!.getString("route")?.let { JSONObject(it) }
+        val stop = intent.extras!!.getString("stop")?.let { Stop.deserialize(JSONObject(it)) }
+        val route = intent.extras!!.getString("route")?.let { Route.deserialize(JSONObject(it)) }
         if (stopId == null || co == null || stop == null || route == null) {
             throw RuntimeException()
         }
@@ -141,28 +144,28 @@ class EtaActivity : ComponentActivity() {
 @OptIn(ExperimentalWearMaterialApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
-fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, offsetStart: Int, instance: EtaActivity) {
+fun EtaElement(stopId: String, co: String, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val swipe = rememberSwipeableState(initialValue = false)
     var swiping by remember { mutableStateOf(swipe.offset.value != 0F) }
 
-    val routeNumber = route.optString("route")
+    val routeNumber = route.routeNumber
 
     if (swipe.currentValue) {
         instance.runOnUiThread {
             val text = if (Shared.language == "en") {
-                "Nearby Interchange Routes of ".plus(stop.optJSONObject("name")!!.optString("en"))
+                "Nearby Interchange Routes of ".plus(stop.name.en)
             } else {
-                "".plus(stop.optJSONObject("name")!!.optString("zh")).plus(" 附近轉乘路線")
+                "".plus(stop.name.zh).plus(" 附近轉乘路線")
             }
             Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
         }
         val intent = Intent(instance, NearbyActivity::class.java)
         intent.putExtra("interchangeSearch", true)
-        intent.putExtra("lat", stop.optJSONObject("location")!!.optDouble("lat"))
-        intent.putExtra("lng", stop.optJSONObject("location")!!.optDouble("lng"))
-        intent.putExtra("exclude", arrayListOf(route.optString("route")))
+        intent.putExtra("lat", stop.location.lat)
+        intent.putExtra("lng", stop.location.lng)
+        intent.putExtra("exclude", arrayListOf(route.routeNumber))
         ActivityUtils.startActivity(instance, intent) { _ ->
             scope.launch {
                 swipe.snapTo(false)
@@ -177,10 +180,10 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
     }
 
     val stopList = remember { Registry.getInstance(instance).getAllStops(
-        route.optString("route"),
-        if (co == "nlb") route.optString("nlbId") else route.optJSONObject("bound")!!.optString(co),
+        route.routeNumber,
+        if (co == "nlb") route.nlbId else route.bound[co],
         co,
-        route.optString("gtfsId")
+        route.gtfsId
     ) }
 
     val focusRequester = remember { FocusRequester() }
@@ -247,8 +250,8 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
             ) {
                 var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
 
-                val lat = stop.optJSONObject("location")!!.optDouble("lat")
-                val lng = stop.optJSONObject("location")!!.optDouble("lng")
+                val lat = stop.location.lat
+                val lng = stop.location.lng
 
                 LaunchedEffect (Unit) {
                     while (true) {
@@ -258,7 +261,7 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: JSONObject, route: 
                 }
 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
-                Title(index, stop.optJSONObject("name")!!, lat, lng, routeNumber, co, instance)
+                Title(index, stop.name, lat, lng, routeNumber, co, instance)
                 SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route), lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(9, instance).dp))
                 EtaText(eta, 1, instance)
@@ -279,8 +282,8 @@ fun launchOtherStop(newIndex: Int, co: String, stopList: List<Registry.StopData>
     intent.putExtra("stopId", newStopData.stopId)
     intent.putExtra("co", co)
     intent.putExtra("index", newIndex)
-    intent.putExtra("stop", newStopData.stop.toString())
-    intent.putExtra("route", newStopData.route.toString())
+    intent.putExtra("stop", newStopData.stop.serialize().toString())
+    intent.putExtra("route", newStopData.route.serialize().toString())
     intent.putExtra("offset", offset)
     if (!animation) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
@@ -290,7 +293,7 @@ fun launchOtherStop(newIndex: Int, co: String, stopList: List<Registry.StopData>
 }
 
 @Composable
-fun ActionBar(stopId: String, co: String, index: Int, stop: JSONObject, route: JSONObject, stopList: List<Registry.StopData>, instance: EtaActivity) {
+fun ActionBar(stopId: String, co: String, index: Int, stop: Stop, route: Route, stopList: List<Registry.StopData>, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     Row (
         horizontalArrangement = Arrangement.Center,
@@ -328,8 +331,8 @@ fun ActionBar(stopId: String, co: String, index: Int, stop: JSONObject, route: J
                 intent.putExtra("stopId", stopId)
                 intent.putExtra("co", co)
                 intent.putExtra("index", index)
-                intent.putExtra("stop", stop.toString())
-                intent.putExtra("route", route.toString())
+                intent.putExtra("stop", stop.serialize().toString())
+                intent.putExtra("route", route.serialize().toString())
                 instance.startActivity(intent)
             },
             modifier = Modifier
@@ -408,9 +411,9 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaActivit
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
+fun Title(index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
-    val name = if (Shared.language == "en") stopName.optString("en") else stopName.optString("zh")
+    val name = if (Shared.language == "en") stopName.en else stopName.zh
     AutoResizeText (
         modifier = Modifier
             .fillMaxWidth()
@@ -433,19 +436,13 @@ fun Title(index: Int, stopName: JSONObject, lat: Double, lng: Double, routeNumbe
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SubTitle(destName: JSONObject, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
+fun SubTitle(destName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: String, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
-    val routeName = if (co == "mtr") {
-        Shared.getMtrLineName(routeNumber, "???")
-    } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
-        "NR".plus(routeNumber)
-    } else {
-        routeNumber
-    }
+    val routeName = co.displayRouteNumber(routeNumber)
     val name = if (Shared.language == "en") {
-        routeName.plus(" To ").plus(destName.optString("en"))
+        routeName.plus(" To ").plus(destName.en)
     } else {
-        routeName.plus(" 往").plus(destName.optString("zh"))
+        routeName.plus(" 往").plus(destName.zh)
     }
     AutoResizeText(
         modifier = Modifier

@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -52,7 +53,6 @@ import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
-import org.json.JSONObject
 import java.util.concurrent.ForkJoinPool
 import kotlin.math.roundToInt
 
@@ -156,7 +156,7 @@ fun FailedText(instance: NearbyActivity) {
 }
 
 @Composable
-fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActivity) {
+fun NoNearbyText(closestStop: Stop, distance: Double, instance: NearbyActivity) {
     Text(
         modifier = Modifier
             .fillMaxWidth(),
@@ -173,9 +173,9 @@ fun NoNearbyText(closestStop: JSONObject, distance: Double, instance: NearbyActi
         color = MaterialTheme.colors.primary,
         fontSize = StringUtils.scaledSize(12.5F, instance).sp,
         text = if (Shared.language == "en")
-            "Nearest Stop: ".plus(closestStop.optJSONObject("name")!!.optString("en")).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("m)")
+            "Nearest Stop: ".plus(closestStop.name.en).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("m)")
         else
-            "最近的巴士站: ".plus(closestStop.optJSONObject("name")!!.optString("zh")).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("米)")
+            "最近的巴士站: ".plus(closestStop.name.zh).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("米)")
     )
 }
 
@@ -209,7 +209,7 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
                 NoNearbyText(result.closestStop, result.closestDistance, instance)
             } else {
                 val intent = Intent(instance, ListRoutesActivity::class.java)
-                intent.putExtra("result", JsonUtils.fromCollection(list.onEach { it.remove("route"); it.optJSONObject("stop")!!.remove("data") }).toString())
+                intent.putExtra("result", JsonUtils.fromStream(list.stream().map { it.strip(); it.serialize() }).toString())
                 intent.putExtra("showEta", true)
                 intent.putExtra("recentSort", RecentSortMode.CHOICE.ordinal)
                 intent.putExtra("proximitySortOrigin", doubleArrayOf(result.lat, result.lng))

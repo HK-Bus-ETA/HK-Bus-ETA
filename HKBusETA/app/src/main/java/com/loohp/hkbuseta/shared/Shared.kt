@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +53,7 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.R
+import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.isEqualTo
 import kotlinx.coroutines.delay
@@ -74,6 +76,7 @@ data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
 
 }
 
+@Immutable
 data class LastLookupRoute(val routeNumber: String, val co: String, val meta: String) {
 
     companion object {
@@ -335,7 +338,7 @@ class Shared {
 
         var language = "zh"
 
-        val favoriteRouteStops: Map<Int, JSONObject> = ConcurrentHashMap()
+        val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentHashMap()
 
         private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
         private val lastLookupRoutes: LinkedList<LastLookupRoute> = LinkedList()
@@ -366,8 +369,8 @@ class Shared {
 
         fun getFavoriteAndLookupRouteIndex(routeNumber: String, co: String, meta: String): Int {
             for ((index, route) in favoriteRouteStops) {
-                val routeData = route.optJSONObject("route")!!
-                if (routeData.optString("route") == routeNumber && route.optString("co") == co && (co != "gmb" || routeData.optString("gtfsId") == meta) && (co != "nlb" || routeData.optString("nlbId") == meta)) {
+                val routeData = route.route
+                if (routeData.routeNumber == routeNumber && route.co == co && (co != "gmb" || routeData.gtfsId.substring(0, 4) == meta.substring(0, 4)) && (co != "nlb" || routeData.nlbId == meta)) {
                     return index
                 }
             }

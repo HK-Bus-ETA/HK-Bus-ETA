@@ -93,6 +93,9 @@ import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.objects.coColor
+import com.loohp.hkbuseta.objects.coName
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
@@ -158,21 +161,21 @@ class ListRoutesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
 
-        val result = JsonUtils.toList(JSONArray(intent.extras!!.getString("result")!!), JSONObject::class.java).chainedRemoveIf {
-            if (!it.has("route")) {
-                val route = Registry.getInstance(this).findRouteByKey(it.getString("routeKey"), null)
+        val result = JsonUtils.mapToList(JSONArray(intent.extras!!.getString("result")!!)) { RouteSearchResultEntry.deserialize(it as JSONObject) }.chainedRemoveIf {
+            if (it.route == null) {
+                val route = Registry.getInstance(this).findRouteByKey(it.routeKey, null)
                 if (route == null) {
                     return@chainedRemoveIf true
                 } else {
-                    it.put("route", route)
+                    it.route = route
                 }
             }
-            if (it.has("stop") && it.optJSONObject("stop")!!.has("stopId") && !it.optJSONObject("stop")!!.has("data")) {
-                val stop = Registry.getInstance(this).getStopById(it.optJSONObject("stop")!!.optString("stopId"))
+            if (it.stopInfo != null && it.stopInfo.data == null) {
+                val stop = Registry.getInstance(this).getStopById(it.stopInfo.stopId)
                 if (stop == null) {
                     return@chainedRemoveIf true
                 } else {
-                    it.optJSONObject("stop")!!.put("data", stop)
+                    it.stopInfo.data = stop
                 }
             }
             return@chainedRemoveIf false
@@ -228,7 +231,7 @@ class ListRoutesActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: DoubleArray?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListRoutesActivity, result: List<RouteSearchResultEntry>, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: DoubleArray?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val hapticsController = remember { HapticsController() }
@@ -250,37 +253,37 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
 
         var activeSortMode by remember { mutableStateOf(recentSort.defaultActiveSortMode) }
         val sortTask = remember { {
-            val map: ImmutableMap.Builder<ActiveSortMode, List<JSONObject>> = ImmutableMap.builder()
+            val map: ImmutableMap.Builder<ActiveSortMode, List<RouteSearchResultEntry>> = ImmutableMap.builder()
             map[ActiveSortMode.NONE] = result
             if (recentSort.enabled) {
                 map[ActiveSortMode.RECENT] = result.sortedBy {
-                    val co = it.optString("co")
+                    val co = it.co
                     val meta = when (co) {
-                        "gmb" -> it.optJSONObject("route")!!.optString("gtfsId")
-                        "nlb" -> it.optJSONObject("route")!!.optString("nlbId")
+                        "gmb" -> it.route.gtfsId
+                        "nlb" -> it.route.nlbId
                         else -> ""
                     }
-                    Shared.getFavoriteAndLookupRouteIndex(it.optJSONObject("route")!!.optString("route"), co, meta)
+                    Shared.getFavoriteAndLookupRouteIndex(it.route.routeNumber, co, meta)
                 }
             }
             if (proximitySortOrigin != null) {
                 if (recentSort.enabled) {
                     map[ActiveSortMode.PROXIMITY] = result.sortedWith(compareBy({
-                        val location = it.optJSONObject("stop")!!.optJSONObject("data")!!.optJSONObject("location")!!
-                        DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.optDouble("lat"), location.optDouble("lng"))
+                        val location = it.stopInfo.data.location
+                        DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.lat, location.lng)
                     }, {
-                        val co = it.optString("co")
+                        val co = it.co
                         val meta = when (co) {
-                            "gmb" -> it.optJSONObject("route")!!.optString("gtfsId")
-                            "nlb" -> it.optJSONObject("route")!!.optString("nlbId")
+                            "gmb" -> it.route.gtfsId
+                            "nlb" -> it.route.nlbId
                             else -> ""
                         }
-                        Shared.getFavoriteAndLookupRouteIndex(it.optJSONObject("route")!!.optString("route"), co, meta)
+                        Shared.getFavoriteAndLookupRouteIndex(it.route.routeNumber, co, meta)
                     }))
                 } else {
                     map[ActiveSortMode.PROXIMITY] = result.sortedBy {
-                        val location = it.optJSONObject("stop")!!.optJSONObject("data")!!.optJSONObject("location")!!
-                        DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.optDouble("lat"), location.optDouble("lng"))
+                        val location = it.stopInfo.data.location
+                        DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.lat, location.lng)
                     }
                 }
             }
@@ -375,57 +378,30 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
             }
             itemsIndexed(
                 items = sortedResults,
-                key = { _, route -> route.optString("routeKey") }
+                key = { _, route -> route.routeKey }
             ) { index, route ->
-                val co = route.optString("co")
-                val kmbCtbJoint = route.optJSONObject("route")!!.optBoolean("kmbCtbJoint", false)
+                val co = route.co
+                val kmbCtbJoint = route.route.isKmbCtbJoint
                 val routeNumber = if (co == "mtr" && Shared.language != "en") {
-                    Shared.getMtrLineName(route.optJSONObject("route")!!.optString("route"))
+                    Shared.getMtrLineName(route.route.routeNumber)
                 } else {
-                    route.optJSONObject("route")!!.optString("route")
+                    route.route.routeNumber
                 }
                 val routeTextWidth = if (Shared.language != "en" && co == "mtr") mtrTextWidth else defaultTextWidth
-                val rawColor = when (co) {
-                    "kmb" -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
-                    "ctb" -> Color(0xFFFFE15E)
-                    "nlb" -> Color(0xFF9BFFC6)
-                    "mtr-bus" -> Color(0xFFAAD4FF)
-                    "gmb" -> Color(0xFF36FF42)
-                    "lightRail" -> Color(0xFFD3A809)
-                    "mtr" -> {
-                        when (route.optJSONObject("route")!!.optString("route")) {
-                            "AEL" -> Color(0xFF00888E)
-                            "TCL" -> Color(0xFFF3982D)
-                            "TML" -> Color(0xFF9C2E00)
-                            "TKL" -> Color(0xFF7E3C93)
-                            "EAL" -> Color(0xFF5EB7E8)
-                            "SIL" -> Color(0xFFCBD300)
-                            "TWL" -> Color(0xFFE60012)
-                            "ISL" -> Color(0xFF0075C2)
-                            "KTL" -> Color(0xFF00A040)
-                            "DRL" -> Color(0xFFEB6EA5)
-                            else -> Color.White
-                        }
-                    }
-                    else -> Color.White
-                }
-                var dest = route.optJSONObject("route")!!.optJSONObject("dest")!!.optString(Shared.language)
+                val rawColor = co.coColor(route.route.routeNumber, Color.White)
+                var dest = route.route.dest[Shared.language]
                 dest = (if (Shared.language == "en") "To " else "往").plus(dest)
 
                 val secondLine: MutableList<String> = ArrayList()
-                if (route.has("stop")) {
-                    val stop = route.optJSONObject("stop")!!.optJSONObject("data")!!
-                    secondLine.add(if (Shared.language == "en") {
-                        stop.optJSONObject("name")!!.optString("en")
-                    } else {
-                        stop.optJSONObject("name")!!.optString("zh")
-                    })
+                if (route.stopInfo != null) {
+                    val stop = route.stopInfo.data
+                    secondLine.add(if (Shared.language == "en") stop.name.en else stop.name.zh)
                 }
                 if (co == "nlb") {
                     secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
-                        "From ".plus(route.optJSONObject("route")!!.optJSONObject("orig")!!.optString("en"))
+                        "From ".plus(route.route.orig.en)
                     } else {
-                        "從".plus(route.optJSONObject("route")!!.optJSONObject("orig")!!.optString("zh")).plus("開出")
+                        "從".plus(route.route.orig.zh).plus("開出")
                     }).plus("</span>"))
                 } else if (co == "kmb" && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
                     secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
@@ -442,54 +418,22 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
                         .combinedClickable(
                             onClick = {
                                 val meta = when (co) {
-                                    "gmb" -> route.optJSONObject("route")!!.optString("gtfsId")
-                                    "nlb" -> route.optJSONObject("route")!!.optString("nlbId")
+                                    "gmb" -> route.route.gtfsId
+                                    "nlb" -> route.route.nlbId
                                     else -> ""
                                 }
-                                Registry.getInstance(instance).addLastLookupRoute(route.optJSONObject("route")!!.optString("route"), co, meta, instance)
+                                Registry.getInstance(instance).addLastLookupRoute(route.route.routeNumber, co, meta, instance)
                                 val intent = Intent(instance, ListStopsActivity::class.java)
-                                intent.putExtra("route", route.toString())
+                                intent.putExtra("route", route.serialize().toString())
                                 instance.startActivity(intent)
                             },
                             onLongClick = {
                                 instance.runOnUiThread {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(
-                                            if (Shared.language == "en") {
-                                                when (route.optString("co")) {
-                                                    "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
-                                                        KMBSubsidiary.SUNB -> "Sun-Bus"
-                                                        KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
-                                                        else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
-                                                    }
-                                                    "ctb" -> "CTB"
-                                                    "nlb" -> "NLB"
-                                                    "mtr-bus" -> "MTR-Bus"
-                                                    "gmb" -> "GMB"
-                                                    "lightRail" -> "LRT"
-                                                    "mtr" -> "MTR"
-                                                    else -> "???"
-                                                }
-                                            } else {
-                                                when (route.optString("co")) {
-                                                    "kmb" -> when (Shared.getKMBSubsidiary(routeNumber)) {
-                                                        KMBSubsidiary.SUNB -> "陽光巴士"
-                                                        KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
-                                                        else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"
-                                                    }
-                                                    "ctb" -> "城巴"
-                                                    "nlb" -> "嶼巴"
-                                                    "mtr-bus" -> "港鐵巴士"
-                                                    "gmb" -> "專線小巴"
-                                                    "lightRail" -> "輕鐵"
-                                                    "mtr" -> "港鐵"
-                                                    else -> "???"
-                                                }
-                                            }
-                                        ).plus(")")
-                                    if (proximitySortOrigin != null && route.has("stop")) {
-                                        val location = route.optJSONObject("stop")!!.optJSONObject("data")!!.optJSONObject("location")!!
-                                        val distance = DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.optDouble("lat"), location.optDouble("lng"))
+                                    var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(route.co.coName(routeNumber, kmbCtbJoint, Shared.language)).plus(")")
+                                    if (proximitySortOrigin != null && route.stopInfo != null) {
+                                        val location = route.stopInfo.data.location
+                                        val distance = DistanceUtils.findDistance(proximitySortOrigin[0], proximitySortOrigin[1], location.lat, location.lng)
                                         text = text.plus(" - ").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
                                     }
                                     Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
@@ -517,7 +461,7 @@ fun MainElement(instance: ListRoutesActivity, result: List<JSONObject>, showEta:
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: String, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: List<String>, showEta: Boolean, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: String, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: List<String>, showEta: Boolean, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
@@ -642,7 +586,7 @@ fun RouteRow(index: Int, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, 
 }
 
 @Composable
-fun ETAElement(index: Int, route: JSONObject, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun ETAElement(index: Int, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: MutableMap<Int, ETAQueryResult>, etaUpdateTimes: MutableMap<Int, Long>, instance: ListRoutesActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var eta: ETAQueryResult? by remember { mutableStateOf(etaResults[index]) }
 
     LaunchedEffect (Unit) {
@@ -650,7 +594,7 @@ fun ETAElement(index: Int, route: JSONObject, etaTextWidth: Float, etaResults: M
             delay(etaUpdateTimes[index]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
-            eta = Registry.getEta(route.optJSONObject("stop")!!.optString("stopId"), route.optString("co"), route.optJSONObject("route")!!, instance)
+            eta = Registry.getEta(route.stopInfo.stopId, route.co, route.route, instance)
             etaUpdateTimes[index] = System.currentTimeMillis()
             etaResults[index] = eta!!
         }
