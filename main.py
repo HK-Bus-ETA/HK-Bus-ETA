@@ -12,6 +12,7 @@ CHECKSUM_FILE_NAME = "checksum.md5"
 
 RECAPITALIZE_KEYWORDS = [
     "BBI",
+    "MTR",
     "STK",
     "FCA",
     "LMC",
