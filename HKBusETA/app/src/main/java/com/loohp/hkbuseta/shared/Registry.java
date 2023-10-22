@@ -993,6 +993,7 @@ public class Registry {
         }
     }
 
+    @Immutable
     public static class StopData {
 
         private final String stopId;

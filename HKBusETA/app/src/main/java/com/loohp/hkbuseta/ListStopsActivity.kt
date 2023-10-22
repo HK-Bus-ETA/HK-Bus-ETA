@@ -570,7 +570,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaTex
 
     LaunchedEffect (Unit) {
         if (eta != null && !eta!!.isConnectionError) {
-            delay(etaUpdateTimes.value[index]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+            delay(etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
             eta = Registry.getEta(stopId, route.co, route.route, instance)

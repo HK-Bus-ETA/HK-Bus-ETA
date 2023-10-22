@@ -52,6 +52,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -108,10 +109,17 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 
 @Stable
 class EtaActivity : ComponentActivity() {
+
+    private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 4)
+    private val etaUpdatesMap: MutableMap<Int, Pair<ScheduledFuture<*>?, () -> Unit>> = LinkedHashMap()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -126,8 +134,17 @@ class EtaActivity : ComponentActivity() {
             throw RuntimeException()
         }
         val offsetStart = intent.extras!!.getInt("offset", 0)
+
         setContent {
-            EtaElement(stopId, co, index, stop, route, offsetStart, this)
+            EtaElement(stopId, co, index, stop, route, offsetStart, this) { isAdd, task ->
+                synchronized(etaUpdatesMap) {
+                    if (isAdd) {
+                        etaUpdatesMap.computeIfAbsent(1) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
+                    } else {
+                        etaUpdatesMap.remove(1)?.first?.cancel(true)
+                    }
+                }
+            }
         }
     }
 
@@ -136,9 +153,27 @@ class EtaActivity : ComponentActivity() {
         Shared.setSelfAsCurrentActivity(this)
     }
 
+    override fun onResume() {
+        super.onResume()
+        synchronized(etaUpdatesMap) {
+            etaUpdatesMap.replaceAll { _, value ->
+                value.first?.cancel(true)
+                executor.scheduleWithFixedDelay(value.second, 0, 30, TimeUnit.SECONDS) to value.second
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        synchronized(etaUpdatesMap) {
+            etaUpdatesMap.forEach { it.value.first?.cancel(true) }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (isFinishing) {
+            executor.shutdownNow()
             Shared.removeSelfFromCurrentActivity(this)
         }
     }
@@ -148,7 +183,7 @@ class EtaActivity : ComponentActivity() {
 @OptIn(ExperimentalWearMaterialApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
-fun EtaElement(stopId: String, co: String, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: EtaActivity) {
+fun EtaElement(stopId: String, co: String, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: EtaActivity, schedule: (Boolean, (() -> Unit)?) -> Unit) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val swipe = rememberSwipeableState(initialValue = false)
@@ -252,15 +287,20 @@ fun EtaElement(stopId: String, co: String, index: Int, stop: Stop, route: Route,
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                var eta: ETAQueryResult by remember { mutableStateOf(ETAQueryResult.EMPTY) }
-
                 val lat = stop.location.lat
                 val lng = stop.location.lng
 
+                var eta: ETAQueryResult? by remember { mutableStateOf(null) }
+
                 LaunchedEffect (Unit) {
-                    while (true) {
-                        Thread { eta = Registry.getEta(stopId, co, route, instance) }.start()
+                    if (eta != null && !eta!!.isConnectionError) {
                         delay(Shared.ETA_UPDATE_INTERVAL)
+                    }
+                    schedule.invoke(true) { eta = Registry.getEta(stopId, co, route, instance) }
+                }
+                DisposableEffect (Unit) {
+                    onDispose {
+                        schedule.invoke(false, null)
                     }
                 }
 
@@ -470,7 +510,7 @@ fun SubTitle(destName: BilingualText, lat: Double, lng: Double, routeNumber: Str
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EtaText(lines: ETAQueryResult, seq: Int, instance: EtaActivity) {
+fun EtaText(lines: ETAQueryResult?, seq: Int, instance: EtaActivity) {
     val textSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp)
     AnnotatedText(
         modifier = Modifier
@@ -481,6 +521,6 @@ fun EtaText(lines: ETAQueryResult, seq: Int, instance: EtaActivity) {
         fontSize = textSize,
         color = MaterialTheme.colors.primary,
         maxLines = 1,
-        text = lines.getLine(seq).toSpanned(instance, textSize.value).asAnnotatedString()
+        text = (lines?.getLine(seq)?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else "").toSpanned(instance, textSize.value).asAnnotatedString()
     )
 }

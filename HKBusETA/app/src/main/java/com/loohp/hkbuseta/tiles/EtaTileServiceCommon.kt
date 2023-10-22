@@ -44,12 +44,12 @@ import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.coColor
 import com.loohp.hkbuseta.objects.displayRouteNumber
-import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.TimerUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -637,11 +637,9 @@ class EtaTileServiceCommon {
         fun handleTileEnterEvent(favoriteIndex: Int, context: TileService) {
             timerTasks.compute(favoriteIndex) { _, currentValue ->
                 currentValue?.cancel()
-                val timerTask = object : TimerTask() {
-                    override fun run() {
-                        TileService.getUpdater(context).requestUpdate(context.javaClass)
-                        lastUpdate[favoriteIndex] = System.currentTimeMillis()
-                    }
+                val timerTask = TimerUtils.newTimerTask {
+                    TileService.getUpdater(context).requestUpdate(context.javaClass)
+                    lastUpdate[favoriteIndex] = System.currentTimeMillis()
                 }
                 val lastUpdated = Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - lastUpdate.getOrDefault(favoriteIndex, 0))
                 Timer().schedule(timerTask, lastUpdated.coerceAtLeast(0), Shared.ETA_UPDATE_INTERVAL)

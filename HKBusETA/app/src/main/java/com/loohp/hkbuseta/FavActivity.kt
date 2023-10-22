@@ -60,7 +60,6 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -87,9 +86,9 @@ import androidx.wear.compose.material.Text
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AdvanceButton
+import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
-import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.coColor
 import com.loohp.hkbuseta.objects.coName
 import com.loohp.hkbuseta.objects.displayRouteNumber
@@ -99,6 +98,7 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.TimerUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
@@ -107,7 +107,6 @@ import com.loohp.hkbuseta.utils.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Timer
-import java.util.TimerTask
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -211,7 +210,7 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             }
             items(8) {
-                FavButton(it + 1, instance, etaResults, etaUpdateTimes, schedule)
+                FavButton(it + 1, etaResults, etaUpdateTimes, instance, schedule)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             }
             item {
@@ -247,41 +246,32 @@ fun FavDescription(instance: FavActivity) {
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FavButton(favoriteIndex: Int, instance: FavActivity, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
-    val favouriteStopRoute = remember { mutableStateOf(Shared.favoriteRouteStops[favoriteIndex]) }
-    val deleteState = remember { mutableStateOf(false) }
+fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+    var favouriteStopRoute by remember { mutableStateOf(Shared.favoriteRouteStops[favoriteIndex]) }
+    var deleteState by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
 
-    LaunchedEffect (Unit) {
-        while (true) {
-            delay(500)
-            val newState = Shared.favoriteRouteStops[favoriteIndex]
-            if (newState != favouriteStopRoute.value) {
-                favouriteStopRoute.value = newState
-            }
+    RestartEffect {
+        val newState = Shared.favoriteRouteStops[favoriteIndex]
+        if (newState != favouriteStopRoute) {
+            favouriteStopRoute = newState
         }
     }
 
-    FavButtonInternal(favoriteIndex, favouriteStopRoute, deleteState, etaResults, etaUpdateTimes, instance, schedule)
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<FavouriteRouteStop?>, deleteState: MutableState<Boolean>, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
-    val haptic = LocalHapticFeedback.current
-
     AdvanceButton(
         onClick = {
-            if (deleteState.value) {
+            if (deleteState) {
                 if (Registry.getInstance(instance).hasFavouriteRouteStop(favoriteIndex)) {
                     Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
                     Toast.makeText(instance, if (Shared.language == "en") "Cleared Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已清除資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
                 }
                 val newState = Shared.favoriteRouteStops[favoriteIndex]
-                if (newState != favouriteStopRoute.value) {
-                    favouriteStopRoute.value = newState
+                if (newState != favouriteStopRoute) {
+                    favouriteStopRoute = newState
                 }
-                deleteState.value = false
+                deleteState = false
             } else {
                 val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
                 if (favStopRoute != null) {
@@ -316,17 +306,10 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<Favou
             }
         },
         onLongClick = {
-            if (!deleteState.value) {
-                deleteState.value = true
+            if (!deleteState) {
+                deleteState = true
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                Timer().schedule(object : TimerTask() {
-                    override fun run() {
-                        if (deleteState.value) {
-                            deleteState.value = false
-                        }
-                    }
-                }, 5000)
-
+                Timer().schedule(TimerUtils.newTimerTask { if (deleteState) deleteState = false }, 5000)
                 val text = if (Shared.language == "en") "Click again to confirm delete" else "再次點擊確認刪除"
                 instance.runOnUiThread {
                     Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
@@ -337,11 +320,11 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<Favou
             .fillMaxWidth()
             .padding(20.dp, 0.dp),
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = if (deleteState.value) Color(0xFF633A3A) else MaterialTheme.colors.secondary,
-            contentColor = if (deleteState.value) Color(0xFFFF0000) else if (favouriteStopRoute.value != null) Color(0xFFFFFF00) else Color(0xFF444444),
+            backgroundColor = if (deleteState) Color(0xFF633A3A) else MaterialTheme.colors.secondary,
+            contentColor = if (deleteState) Color(0xFFFF0000) else if (favouriteStopRoute != null) Color(0xFFFFFF00) else Color(0xFF444444),
         ),
         shape = RoundedCornerShape(15.dp),
-        enabled = favouriteStopRoute.value != null,
+        enabled = favouriteStopRoute != null,
         content = {
             val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
             if (favStopRoute != null) {
@@ -353,7 +336,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<Favou
 
                 LaunchedEffect (Unit) {
                     if (eta != null && !eta!!.isConnectionError) {
-                        delay(etaUpdateTimes.value[favoriteIndex]?.let { (30000 - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+                        delay(etaUpdateTimes.value[favoriteIndex]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
                     }
                     schedule.invoke(true, favoriteIndex) {
                         eta = Registry.getEta(stopId, co, route, instance)
@@ -430,11 +413,15 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<Favou
                         .width(StringUtils.scaledSize(35, instance).sp.clamp(max = 35.dp).dp)
                         .height(StringUtils.scaledSize(35, instance).sp.clamp(max = 35.dp).dp)
                         .clip(CircleShape)
-                        .background(if (favouriteStopRoute.value != null) Color(0xFF3D3D3D) else Color(0xFF131313))
+                        .background(
+                            if (favouriteStopRoute != null) Color(0xFF3D3D3D) else Color(
+                                0xFF131313
+                            )
+                        )
                         .align(Alignment.Top),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (deleteState.value) {
+                    if (deleteState) {
                         Icon(
                             modifier = Modifier.size(StringUtils.scaledSize(21, instance).dp),
                             imageVector = Icons.Filled.Clear,
@@ -446,7 +433,7 @@ fun FavButtonInternal(favoriteIndex: Int, favouriteStopRoute: MutableState<Favou
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
                             fontSize = StringUtils.scaledSize(17F, instance).sp,
-                            color = if (favouriteStopRoute.value != null) Color(0xFFFFFF00) else Color(0xFF444444),
+                            color = if (favouriteStopRoute != null) Color(0xFFFFFF00) else Color(0xFF444444),
                             text = favoriteIndex.toString()
                         )
                     }

@@ -41,10 +41,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +66,7 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.BilingualText
@@ -79,7 +81,6 @@ import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.sp
-import kotlinx.coroutines.delay
 import org.json.JSONObject
 
 
@@ -415,29 +416,26 @@ fun getFavState(favoriteIndex: Int, stopId: String, co: String, index: Int, stop
 
 @Composable
 fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
-    val state = remember { mutableStateOf(getFavState(favoriteIndex, stopId, co, index, stop, route, instance)) }
+    var state by remember { mutableStateOf(getFavState(favoriteIndex, stopId, co, index, stop, route, instance)) }
 
-    LaunchedEffect (Unit) {
-        while (true) {
-            delay(500)
-            val newState = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
-            if (newState != state.value) {
-                state.value = newState
-            }
+    RestartEffect {
+        val newState = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
+        if (newState != state) {
+            state = newState
         }
     }
 
     val haptic = LocalHapticFeedback.current
     AdvanceButton(
         onClick = {
-            if (state.value == 2) {
+            if (state == 2) {
                 Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
                 Toast.makeText(instance, if (Shared.language == "en") "Cleared Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已清除資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             } else {
                 Registry.getInstance(instance).setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, instance)
                 Toast.makeText(instance, if (Shared.language == "en") "Set Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已設置資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             }
-            state.value = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
+            state = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
         },
         onLongClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -451,7 +449,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
             .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
-            contentColor = when (state.value) {
+            contentColor = when (state) {
                 0 -> Color(0xFF444444)
                 1 -> Color(0xFF4E4E00)
                 2 -> Color(0xFFFFFF00)
@@ -470,7 +468,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                         .width(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
                         .height(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
                         .clip(CircleShape)
-                        .background(if (state.value == 2) Color(0xFF3D3D3D) else Color(0xFF131313))
+                        .background(if (state == 2) Color(0xFF3D3D3D) else Color(0xFF131313))
                         .align(Alignment.Top),
                     contentAlignment = Alignment.Center
                 ) {
@@ -478,7 +476,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
                         fontSize = StringUtils.scaledSize(17F, instance).sp,
-                        color = when (state.value) {
+                        color = when (state) {
                             0 -> Color(0xFF444444)
                             1 -> Color(0xFF4E4E00)
                             2 -> Color(0xFFFFFF00)
@@ -492,9 +490,9 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: String, index: Int, stop: 
                         .padding(0.dp, 0.dp, 5.dp, 0.dp)
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
-                    color = if (state.value == 2) Color(0xFFFFFFFF) else Color(0xFF3F3F3F),
+                    color = if (state == 2) Color(0xFFFFFFFF) else Color(0xFF3F3F3F),
                     fontSize = StringUtils.scaledSize(14F, instance).sp,
-                    text = when (state.value) {
+                    text = when (state) {
                         0 -> if (Shared.language == "en") "No Route Stop Selected" else "未有設置路線巴士站"
                         1 -> if (Shared.language == "en") "Selected by Another Route Stop" else "已設置為另一路線巴士站"
                         2 -> if (Shared.language == "en") "Selected as This Route Stop" else "已設置為本路線巴士站"
