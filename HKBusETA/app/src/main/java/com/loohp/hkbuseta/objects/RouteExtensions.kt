@@ -35,20 +35,18 @@ fun Operator.getColor(routeNumber: String, elseColor: Color): Color {
         Operator.MTR_BUS -> Color(0xFFAAD4FF)
         Operator.GMB -> Color(0xFF36FF42)
         Operator.LRT -> Color(0xFFD3A809)
-        Operator.MTR -> {
-            when (routeNumber) {
-                "AEL" -> Color(0xFF00888E)
-                "TCL" -> Color(0xFFF3982D)
-                "TML" -> Color(0xFF9C2E00)
-                "TKL" -> Color(0xFF7E3C93)
-                "EAL" -> Color(0xFF5EB7E8)
-                "SIL" -> Color(0xFFCBD300)
-                "TWL" -> Color(0xFFE60012)
-                "ISL" -> Color(0xFF0075C2)
-                "KTL" -> Color(0xFF00A040)
-                "DRL" -> Color(0xFFEB6EA5)
-                else -> Color.LightGray
-            }
+        Operator.MTR -> when (routeNumber) {
+            "AEL" -> Color(0xFF00888E)
+            "TCL" -> Color(0xFFF3982D)
+            "TML" -> Color(0xFF9C2E00)
+            "TKL" -> Color(0xFF7E3C93)
+            "EAL" -> Color(0xFF5EB7E8)
+            "SIL" -> Color(0xFFCBD300)
+            "TWL" -> Color(0xFFE60012)
+            "ISL" -> Color(0xFF0075C2)
+            "KTL" -> Color(0xFF00A040)
+            "DRL" -> Color(0xFFEB6EA5)
+            else -> elseColor
         }
         else -> elseColor
     }
@@ -64,37 +62,33 @@ fun Operator.getDisplayRouteNumber(routeNumber: String): String {
     }
 }
 
-fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language: String): String {
-    return if (language == "en") {
-        when (this) {
-            Operator.KMB -> when (Shared.getKMBSubsidiary(routeNumber)) {
-                KMBSubsidiary.SUNB -> "Sun-Bus"
-                KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
-                else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
-            }
-            Operator.CTB -> "CTB"
-            Operator.NLB -> "NLB"
-            Operator.MTR_BUS -> "MTR-Bus"
-            Operator.GMB -> "GMB"
-            Operator.LRT -> "LRT"
-            Operator.MTR -> "MTR"
-            else -> "???"
+fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language: String, elseName: String = "???"): String {
+    return if (language == "en") when (this) {
+        Operator.KMB -> when (Shared.getKMBSubsidiary(routeNumber)) {
+            KMBSubsidiary.SUNB -> "Sun-Bus"
+            KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
+            else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
         }
-    } else {
-        when (this) {
-            Operator.KMB -> when (Shared.getKMBSubsidiary(routeNumber)) {
-                KMBSubsidiary.SUNB -> "陽光巴士"
-                KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
-                else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"
-            }
-            Operator.CTB -> "城巴"
-            Operator.NLB -> "嶼巴"
-            Operator.MTR_BUS -> "港鐵巴士"
-            Operator.GMB -> "專線小巴"
-            Operator.LRT -> "輕鐵"
-            Operator.MTR -> "港鐵"
-            else -> "???"
+        Operator.CTB -> "CTB"
+        Operator.NLB -> "NLB"
+        Operator.MTR_BUS -> "MTR-Bus"
+        Operator.GMB -> "GMB"
+        Operator.LRT -> "LRT"
+        Operator.MTR -> "MTR"
+        else -> elseName
+    } else when (this) {
+        Operator.KMB -> when (Shared.getKMBSubsidiary(routeNumber)) {
+            KMBSubsidiary.SUNB -> "陽光巴士"
+            KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
+            else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"
         }
+        Operator.CTB -> "城巴"
+        Operator.NLB -> "嶼巴"
+        Operator.MTR_BUS -> "港鐵巴士"
+        Operator.GMB -> "專線小巴"
+        Operator.LRT -> "輕鐵"
+        Operator.MTR -> "港鐵"
+        else -> elseName
     }
 }
 
