@@ -216,6 +216,55 @@ def download_and_process_data_sheet():
     for key in keys_to_remove:
         del DATA_SHEET["routeList"][key]
 
+    kmb_bbi_map = {
+        "0028": ["上水"],
+        "0007": ["粉嶺站"],
+        "0027": ["華明"],
+        "0009": ["粉嶺公路"],
+        "0030": ["廣福道"],
+        "0006": ["石門"],
+        "0025": ["大欖隧道"],
+        "0018": ["大圍"],
+        "0013": ["城門隧道"],
+        "0023": ["青沙公路"],
+        "0024": ["大老山隧道"],
+        "0020": ["寶田"],
+        "0001": ["黃大仙"],
+        "0005": ["屯門公路"],
+        "0021": ["屯赤隧道"],
+        "0016": ["彩虹"],
+        "0029": ["寶達"],
+        "0017": ["牛池灣"],
+        "0011": ["大窩口"],
+        "0003": ["美孚"],
+        "0031": ["青衣"],
+        "0022": ["青嶼幹線"],
+        "0008": ["九龍城"],
+        "0026": ["觀塘", "牛頭角站", "apm創紀之城5期"],
+        "0004": ["將軍澳隧道"],
+        "0002": ["啟德隧道"],
+        "0012": ["將藍隧道"],
+        "0019": ["尖沙咀"],
+        "0015": ["西隧"],
+        "0014": ["紅隧"],
+        "0010": ["東隧"]
+    }
+
+    bbi_regex = "(?<!,)(?:^|[> ;]){name}(?:轉車站(?:[ ]*-?[ ]*[^(\\n<]+)?(?:[ ]*\([A-Z0-9]+\))?)|{name}(?:[ ]*\([A-Z0-9]+\))?(?=[ \\n<]|$)(?! \()"
+    for key, stop in DATA_SHEET["stopList"].items():
+        if re.match("^[0-9A-Z]{16}$", key):
+            found = False
+            stop_name_zh = stop["name"]["zh"]
+            for bbi_id, bbi_names in kmb_bbi_map.items():
+                for bbi_name in bbi_names:
+                    if re.match(bbi_regex.format(name=bbi_name), stop_name_zh):
+                        found = True
+                        stop["kmbBbiId"] = bbi_id
+                        print(stop_name_zh + " is " + bbi_id)
+                        break
+                if found:
+                    break
+
 
 def download_and_process_mtr_bus_route_and_stops():
     url = "https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_routes.json"
