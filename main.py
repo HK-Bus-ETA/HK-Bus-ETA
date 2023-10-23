@@ -1,5 +1,7 @@
 import json
 import re
+import urllib.request
+import concurrent.futures
 
 import requests
 
@@ -19,6 +21,11 @@ RECAPITALIZE_KEYWORDS = [
     "SL",
     "apm"
 ]
+
+
+def get_web_json(url):
+    with urllib.request.urlopen(url) as data:
+        return json.load(data)
 
 
 def download_and_process_kmb_route():
@@ -144,7 +151,8 @@ def download_and_process_data_sheet():
             else:
                 mtr_orig.setdefault(line_name + "_" + bound, []).insert(0, data.get("orig"))
                 mtr_dest.setdefault(line_name + "_" + bound, []).insert(0, data.get("dest"))
-            mtr_stops_lists.setdefault(line_name + "_" + bound, []).append([DATA_SHEET["stopList"][s]["name"]["zh"] for s in stops])
+            mtr_stops_lists.setdefault(line_name + "_" + bound, []).append(
+                [DATA_SHEET["stopList"][s]["name"]["zh"] for s in stops])
         elif "kmb" in bounds:
             if "ctb" in data["co"]:
                 data["kmbCtbJoint"] = True
@@ -250,14 +258,68 @@ def capitalize_kmb_english_names():
             stop["name"]["en"] = apply_recapitalize_keywords(capitalize(stop["name"]["en"]))
 
 
+def inject_gmb_region():
+    global DATA_SHEET
+    regions = ["HKI", "KLM", "NT"]
+    lookup_url = "https://data.etagmb.gov.hk/route/{region}/{route}"
+    cached_lookups = {}
+    route_numbers = set()
+    for key, route in DATA_SHEET["routeList"].items():
+        if "gmb" in route["bound"]:
+            route_numbers.add(route["route"])
+
+    def lookup(route_number, region):
+        print("Downloading GMB data for " + route_number + " in " + region)
+        cached_lookups[route_number + "_" + region] = get_web_json(lookup_url.format(region=region, route=route_number))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = []
+        for route_number in route_numbers:
+            for region in regions:
+                futures.append(executor.submit(lookup, route_number=route_number, region=region))
+    for _ in concurrent.futures.as_completed(futures):
+        pass
+
+    keys_to_remove = []
+    for key, route in DATA_SHEET["routeList"].items():
+        if "gmb" in route["bound"]:
+            route_number = route["route"]
+            gtfs_id = route["gtfsId"]
+            found = False
+            for region in regions:
+                lookup_key = route_number + "_" + region
+                for gmb_data in cached_lookups[lookup_key]["data"]:
+                    if gtfs_id == str(gmb_data["route_id"]):
+                        route["gmbRegion"] = gmb_data["region"]
+                        found = True
+                        break
+                if found:
+                    break
+            if found:
+                continue
+            keys_to_remove.append(key)
+    for key in keys_to_remove:
+        del DATA_SHEET["routeList"][key]
+
+
+print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
+print("Downloading & Processing CTB Routes")
 download_and_process_ctb_route()
+print("Downloading & Processing NLB Routes")
 download_and_process_nlb_route()
+print("Downloading & Processing MTR-Bus Stop Aliases")
 download_and_process_mtr_bus_stop_alias()
+print("Downloading & Processing GMB Routes")
 download_and_process_gmb_route()
+print("Downloading & Processing Data Sheet")
 download_and_process_data_sheet()
+print("Downloading & Processing MTR-Bus Routes & Stops")
 download_and_process_mtr_bus_route_and_stops()
+print("Capitalizing KMB English Names")
 capitalize_kmb_english_names()
+print("Searching & Injecting GMB Region")
+inject_gmb_region()
 
 output = {
     "dataSheet": DATA_SHEET,
