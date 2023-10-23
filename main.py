@@ -260,7 +260,7 @@ def capitalize_kmb_english_names():
 
 def inject_gmb_region():
     global DATA_SHEET
-    regions = ["HKI", "KLM", "NT"]
+    regions = ["HKI", "KLN", "NT"]
     lookup_url = "https://data.etagmb.gov.hk/route/{region}/{route}"
     cached_lookups = {}
     route_numbers = set()
