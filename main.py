@@ -260,7 +260,6 @@ def download_and_process_data_sheet():
                     if re.match(bbi_regex.format(name=bbi_name), stop_name_zh):
                         found = True
                         stop["kmbBbiId"] = bbi_id
-                        print(stop_name_zh + " is " + bbi_id)
                         break
                 if found:
                     break
