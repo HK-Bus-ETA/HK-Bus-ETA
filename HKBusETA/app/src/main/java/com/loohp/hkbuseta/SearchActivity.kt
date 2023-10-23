@@ -290,14 +290,14 @@ fun MainElement(instance: SearchActivity) {
                         )
                         .focusable()
                 ) {
+                    val currentText = state.value.text
+                    if (currentText.isEmpty() || currentText == defaultText()) {
+                        KeyboardButton(instance, '!', null, state, Color.Red, persistentListOf(R.mipmap.mtr.asImmutableState()))
+                    }
                     for (alphabet in 'A'..'Z') {
                         if (possibleValues.contains(alphabet)) {
                             KeyboardButton(instance, alphabet, state)
                         }
-                    }
-                    val currentText = state.value.text
-                    if (currentText.isEmpty() || currentText == defaultText()) {
-                        KeyboardButton(instance, '!', null, state, Color.Red, persistentListOf(R.mipmap.mtr.asImmutableState()))
                     }
                 }
             }
