@@ -45,10 +45,11 @@ public class Route implements JSONSerializable {
         String gtfsId = json.optString("gtfsId");
         boolean ctbIsCircular = json.optBoolean("ctbIsCircular");
         boolean kmbCtbJoint = json.optBoolean("kmbCtbJoint");
+        GMBRegion gmbRegion = json.has("gmbRegion") ? GMBRegion.valueOfOrNull(json.optString("gmbRegion")) : null;
         BilingualText dest = BilingualText.deserialize(json.optJSONObject("dest"));
         BilingualText orig = BilingualText.deserialize(json.optJSONObject("orig"));
         Map<Operator, List<String>> stops = JsonUtils.toMap(json.optJSONObject("stops"), Operator::valueOf, v -> JsonUtils.toList((JSONArray) v, String.class));
-        return new Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, dest, orig, stops);
+        return new Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, dest, orig, stops);
     }
 
     private final String route;
@@ -59,11 +60,12 @@ public class Route implements JSONSerializable {
     private final String gtfsId;
     private final boolean ctbIsCircular;
     private final boolean kmbCtbJoint;
+    private final GMBRegion gmbRegion;
     private final BilingualText dest;
     private final BilingualText orig;
     private final Map<Operator, List<String>> stops;
 
-    public Route(String route, Map<Operator, String> bound, List<Operator> co, String serviceType, String nlbId, String gtfsId, boolean ctbIsCircular, boolean kmbCtbJoint, BilingualText dest, BilingualText orig, Map<Operator, List<String>> stops) {
+    public Route(String route, Map<Operator, String> bound, List<Operator> co, String serviceType, String nlbId, String gtfsId, boolean ctbIsCircular, boolean kmbCtbJoint, GMBRegion gmbRegion, BilingualText dest, BilingualText orig, Map<Operator, List<String>> stops) {
         this.route = route;
         this.bound = bound;
         this.co = co;
@@ -72,6 +74,7 @@ public class Route implements JSONSerializable {
         this.gtfsId = gtfsId;
         this.ctbIsCircular = ctbIsCircular;
         this.kmbCtbJoint = kmbCtbJoint;
+        this.gmbRegion = gmbRegion;
         this.dest = dest;
         this.orig = orig;
         this.stops = stops;
@@ -109,6 +112,10 @@ public class Route implements JSONSerializable {
         return kmbCtbJoint;
     }
 
+    public GMBRegion getGmbRegion() {
+        return gmbRegion;
+    }
+
     public BilingualText getDest() {
         return dest;
     }
@@ -132,6 +139,9 @@ public class Route implements JSONSerializable {
         json.put("gtfsId", gtfsId);
         json.put("ctbIsCircular", ctbIsCircular);
         json.put("kmbCtbJoint", kmbCtbJoint);
+        if (gmbRegion != null) {
+            json.put("gmbRegion", gmbRegion.name());
+        }
         json.put("dest", dest.serialize());
         json.put("orig", orig.serialize());
         json.put("stops", JsonUtils.fromMap(stops, JsonUtils::fromCollection));
@@ -143,11 +153,11 @@ public class Route implements JSONSerializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Route route1 = (Route) o;
-        return ctbIsCircular == route1.ctbIsCircular && kmbCtbJoint == route1.kmbCtbJoint && Objects.equals(route, route1.route) && Objects.equals(bound, route1.bound) && Objects.equals(co, route1.co) && Objects.equals(serviceType, route1.serviceType) && Objects.equals(nlbId, route1.nlbId) && Objects.equals(gtfsId, route1.gtfsId) && Objects.equals(dest, route1.dest) && Objects.equals(orig, route1.orig) && Objects.equals(stops, route1.stops);
+        return ctbIsCircular == route1.ctbIsCircular && kmbCtbJoint == route1.kmbCtbJoint && Objects.equals(route, route1.route) && Objects.equals(bound, route1.bound) && Objects.equals(co, route1.co) && Objects.equals(serviceType, route1.serviceType) && Objects.equals(nlbId, route1.nlbId) && Objects.equals(gtfsId, route1.gtfsId) && gmbRegion == route1.gmbRegion && Objects.equals(dest, route1.dest) && Objects.equals(orig, route1.orig) && Objects.equals(stops, route1.stops);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, dest, orig, stops);
+        return Objects.hash(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, dest, orig, stops);
     }
 }

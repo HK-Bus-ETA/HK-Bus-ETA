@@ -34,6 +34,7 @@ import com.loohp.hkbuseta.branchedlist.BranchedList;
 import com.loohp.hkbuseta.objects.BilingualText;
 import com.loohp.hkbuseta.objects.DataSheet;
 import com.loohp.hkbuseta.objects.FavouriteRouteStop;
+import com.loohp.hkbuseta.objects.GMBRegion;
 import com.loohp.hkbuseta.objects.Operator;
 import com.loohp.hkbuseta.objects.Preferences;
 import com.loohp.hkbuseta.objects.Route;
@@ -485,7 +486,7 @@ public class Registry {
                                     return false;
                                 }
                                 if (co.equals(Operator.GMB)) {
-                                    if (!r.getGtfsId().equals(oldRoute.getGtfsId())) {
+                                    if (!Objects.equals(r.getGmbRegion(), oldRoute.getGmbRegion())) {
                                         return false;
                                     }
                                 } else if (co.equals(Operator.NLB)) {
@@ -504,7 +505,7 @@ public class Registry {
                                     newRoute.getRouteNumber(),
                                     co.equals(Operator.NLB) ? newRoute.getNlbId() : newRoute.getBound().get(co),
                                     co,
-                                    newRoute.getGtfsId()
+                                    newRoute.getGmbRegion()
                             );
 
                             String finalStopIdCompare = stopId;
@@ -653,7 +654,7 @@ public class Registry {
                 if (!coPredicate.test(data, co)) {
                     continue;
                 }
-                String key0 = data.getRouteNumber() + "," + co.name() + "," + (co.equals(Operator.NLB) ? data.getNlbId() : data.getBound().get(co)) + (co.equals(Operator.GMB) ? ("," + data.getGtfsId().substring(0, 4)) : "");
+                String key0 = data.getRouteNumber() + "," + co.name() + "," + (co.equals(Operator.NLB) ? data.getNlbId() : data.getBound().get(co)) + (co.equals(Operator.GMB) ? ("," + data.getGmbRegion()) : "");
 
                 if (matchingRoutes.containsKey(key0)) {
                     try {
@@ -802,7 +803,7 @@ public class Registry {
 
                 if (isKmb || isCtb || isNlb || isMtrBus || isGmb || isLrt || isMtr) {
                     Operator co = isKmb ? Operator.KMB : (isCtb ? Operator.CTB : (isNlb ? Operator.NLB : (isMtrBus ? Operator.MTR_BUS : (isGmb ? Operator.GMB : (isLrt ? Operator.LRT : Operator.MTR)))));
-                    String key0 = data.getRouteNumber() + "," + co.name() + "," + (co.equals(Operator.NLB) ? data.getNlbId() : data.getBound().get(co)) + (co.equals(Operator.GMB) ? ("," + data.getGtfsId().substring(0, 4)) : "");
+                    String key0 = data.getRouteNumber() + "," + co.name() + "," + (co.equals(Operator.NLB) ? data.getNlbId() : data.getBound().get(co)) + (co.equals(Operator.GMB) ? ("," + data.getGmbRegion()) : "");
 
                     if (nearbyRoutes.containsKey(key0)) {
                         RouteSearchResultEntry existingNearbyRoute = nearbyRoutes.get(key0);
@@ -949,7 +950,7 @@ public class Registry {
         }
     }
 
-    public List<StopData> getAllStops(String routeNumber, String bound, Operator co, String gtfsId) {
+    public List<StopData> getAllStops(String routeNumber, String bound, Operator co, GMBRegion gmbRegion) {
         try {
             List<Pair<BranchedList<String, StopData>, Integer>> lists = new ArrayList<>();
             for (Route route : DATA_SHEET.getRouteList().values()) {
@@ -960,7 +961,7 @@ public class Registry {
                     } else {
                         flag = bound.equals(route.getBound().get(co));
                         if (co.equals(Operator.GMB)) {
-                            flag &= gtfsId.substring(0, 4).equals(route.getGtfsId().substring(0, 4));
+                            flag &= Objects.equals(gmbRegion, route.getGmbRegion());
                         }
                     }
                     if (flag) {
@@ -990,7 +991,7 @@ public class Registry {
             }
             return result.valuesWithBranchIds().stream().map(p -> p.first.withBranchIndex(p.second)).collect(Collectors.toList());
         } catch (Throwable e) {
-            throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gtfsId + ": " + e.getMessage(), e);
+            throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gmbRegion + ": " + e.getMessage(), e);
         }
     }
 
@@ -1040,7 +1041,7 @@ public class Registry {
         }
     }
 
-    public Pair<List<BilingualText>, List<BilingualText>> getAllOriginsAndDestinations(String routeNumber, String bound, Operator co, String gtfsId) {
+    public Pair<List<BilingualText>, List<BilingualText>> getAllOriginsAndDestinations(String routeNumber, String bound, Operator co, GMBRegion gmbRegion) {
         try {
             List<Pair<BilingualText, Integer>> origs = new ArrayList<>();
             List<Pair<BilingualText, Integer>> dests = new ArrayList<>();
@@ -1052,7 +1053,7 @@ public class Registry {
                     } else {
                         flag = bound.equals(route.getBound().get(co));
                         if (co.equals(Operator.GMB)) {
-                            flag &= gtfsId.equals(route.getGtfsId());
+                            flag &= Objects.equals(gmbRegion, route.getGmbRegion());
                         }
                     }
                     if (flag) {
@@ -1077,7 +1078,7 @@ public class Registry {
                     dests.stream().sorted(Comparator.comparing(p -> p.second)).map(p -> p.first).collect(Collectors.toList())
             );
         } catch (Throwable e) {
-            throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gtfsId + ": " + e.getMessage(), e);
+            throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gmbRegion + ": " + e.getMessage(), e);
         }
     }
 

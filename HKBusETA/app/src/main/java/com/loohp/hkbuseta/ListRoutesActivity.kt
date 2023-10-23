@@ -268,7 +268,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                 map[ActiveSortMode.RECENT] = result.sortedBy {
                     val co = it.co
                     val meta = when (co) {
-                        Operator.GMB -> it.route.gtfsId
+                        Operator.GMB -> it.route.gmbRegion.name
                         Operator.NLB -> it.route.nlbId
                         else -> ""
                     }
@@ -283,7 +283,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                     }, {
                         val co = it.co
                         val meta = when (co) {
-                            Operator.GMB -> it.route.gtfsId
+                            Operator.GMB -> it.route.gmbRegion.name
                             Operator.NLB -> it.route.nlbId
                             else -> ""
                         }
@@ -427,7 +427,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                         .combinedClickable(
                             onClick = {
                                 val meta = when (co) {
-                                    Operator.GMB -> route.route.gtfsId
+                                    Operator.GMB -> route.route.gmbRegion.name
                                     Operator.NLB -> route.route.nlbId
                                     else -> ""
                                 }

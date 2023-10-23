@@ -315,7 +315,7 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
             '!' -> Registry.getInstance(instance).findRoutes("", false) { r -> r.bound.containsKey(Operator.MTR) }
             '<' -> Registry.getInstance(instance).findRoutes("", false) { r, c ->
                 val meta = when (c) {
-                    Operator.GMB -> r.gtfsId
+                    Operator.GMB -> r.gmbRegion.name
                     Operator.NLB -> r.nlbId
                     else -> ""
                 }

@@ -103,3 +103,5 @@ fun DoubleArray.toStopLocation(): StopLocation {
 }
 
 inline val CharSequence.operator: Operator get() = Operator.valueOf(toString())
+
+inline val CharSequence.gmbRegion: GMBRegion? get() = GMBRegion.valueOfOrNull(toString().uppercase())

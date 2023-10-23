@@ -40,6 +40,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.MaterialTheme
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
+import com.loohp.hkbuseta.objects.gmbRegion
 import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.shared.Registry
@@ -73,7 +74,7 @@ class MainActivity : ComponentActivity() {
         var queryBound = intent.extras?.getString("b")
         var queryCo = intent.extras?.getString("c")?.operator
         val queryDest = intent.extras?.getString("d")
-        var queryGtfsId = intent.extras?.getString("g")
+        var queryGMBRegion = intent.extras?.getString("g")?.gmbRegion
         val queryStop = intent.extras?.getString("s")
         val queryStopDirectLaunch = intent.extras?.getBoolean("sd", false)?: false
 
@@ -115,7 +116,7 @@ class MainActivity : ComponentActivity() {
                                         queryRouteNumber = nearestRoute.routeNumber
                                         queryCo = if (nearestRoute.isKmbCtbJoint) Operator.KMB else nearestRoute.co[0]
                                         queryBound = if (queryCo == Operator.NLB) nearestRoute.nlbId else nearestRoute.bound[queryCo]
-                                        queryGtfsId = nearestRoute.gtfsId
+                                        queryGMBRegion = nearestRoute.gmbRegion
                                     }
 
                                     startActivity(Intent(this@MainActivity, TitleActivity::class.java))
@@ -127,7 +128,7 @@ class MainActivity : ComponentActivity() {
                                                 Operator.NLB -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route.nlbId == queryBound)
                                                 Operator.GMB -> {
                                                     val r = it.route
-                                                    (queryCo == null || it.co == queryCo) && (queryBound == null || r.bound[queryCo] == queryBound) && r.gtfsId == queryGtfsId
+                                                    (queryCo == null || it.co == queryCo) && (queryBound == null || r.bound[queryCo] == queryBound) && r.gmbRegion == queryGMBRegion
                                                 }
                                                 else -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route.bound[queryCo] == queryBound)
                                             }
@@ -160,7 +161,7 @@ class MainActivity : ComponentActivity() {
 
                                             val it = filteredResult[0]
                                             val meta = when (it.co) {
-                                                Operator.GMB -> it.route.gtfsId
+                                                Operator.GMB -> it.route.gmbRegion.name
                                                 Operator.NLB -> it.route.nlbId
                                                 else -> ""
                                             }
@@ -173,7 +174,7 @@ class MainActivity : ComponentActivity() {
                                                 startActivity(intent2)
 
                                                 if (queryStopDirectLaunch) {
-                                                    val stops = Registry.getInstance(this@MainActivity).getAllStops(queryRouteNumber, queryBound, queryCo, queryGtfsId)
+                                                    val stops = Registry.getInstance(this@MainActivity).getAllStops(queryRouteNumber, queryBound, queryCo, queryGMBRegion)
                                                     var i = 1
                                                     for (stopData in stops) {
                                                         if (stopData.stopId == queryStop) {

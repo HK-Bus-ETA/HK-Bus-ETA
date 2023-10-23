@@ -226,7 +226,7 @@ fun EtaElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Rout
         route.routeNumber,
         if (co == Operator.NLB) route.nlbId else route.bound[co],
         co,
-        route.gtfsId
+        route.gmbRegion
     ).toImmutableList() }
 
     val focusRequester = remember { FocusRequester() }

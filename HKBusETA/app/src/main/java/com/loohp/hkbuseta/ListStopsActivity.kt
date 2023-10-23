@@ -225,17 +225,17 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
         val routeNumber = remember { route.route.routeNumber }
         val co = remember { route.co }
         val bound = remember { if (co.equals(Operator.NLB)) route.route.nlbId else route.route.bound[co] }
-        val gtfsId = remember { route.route.gtfsId }
+        val gmbRegion = remember { route.route.gmbRegion }
         val interchangeSearch = remember { route.isInterchangeSearch }
         val origName = remember { route.route.orig }
         val destName = remember { route.route.dest }
-        val specialOrigsDests = remember { Registry.getInstance(instance).getAllOriginsAndDestinations(routeNumber, bound, co, gtfsId) }
+        val specialOrigsDests = remember { Registry.getInstance(instance).getAllOriginsAndDestinations(routeNumber, bound, co, gmbRegion) }
         val specialOrigs = remember { specialOrigsDests.first.stream().filter { !it.zh.eitherContains(origName.zh) }.toImmutableList() }
         val specialDests = remember { specialOrigsDests.second.stream().filter { !it.zh.eitherContains(destName.zh) }.toImmutableList() }
 
         val coColor = remember { co.getColor(routeNumber, Color.White) }
 
-        val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gtfsId).toImmutableList() }
+        val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).toImmutableList() }
         val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
         val mtrStopsInterchange = remember { if (co == Operator.MTR || co == Operator.LRT) {
             stopsList.stream().map { Registry.getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()

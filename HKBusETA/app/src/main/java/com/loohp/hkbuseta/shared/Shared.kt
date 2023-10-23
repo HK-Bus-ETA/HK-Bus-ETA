@@ -56,6 +56,7 @@ import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.gmbRegion
 import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.StringUtils
@@ -88,8 +89,8 @@ data class LastLookupRoute(val routeNumber: String, val co: Operator, val meta: 
         fun deserialize(json: JSONObject): LastLookupRoute {
             val routeNumber = json.optString("r")
             val co = json.optString("c").operator
-            val gtfsId = if (co == Operator.GMB || co == Operator.NLB) json.optString("m") else ""
-            return LastLookupRoute(routeNumber, co, gtfsId)
+            val meta = if (co == Operator.GMB || co == Operator.NLB) json.optString("m") else ""
+            return LastLookupRoute(routeNumber, co, meta)
         }
 
     }
@@ -99,6 +100,9 @@ data class LastLookupRoute(val routeNumber: String, val co: Operator, val meta: 
             return false
         }
         if ((co == Operator.GMB || co == Operator.NLB) && meta.isBlank()) {
+            return false
+        }
+        if (co == Operator.GMB && meta.gmbRegion == null) {
             return false
         }
         return true
@@ -348,8 +352,8 @@ class Shared {
         private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
         private val lastLookupRoutes: LinkedList<LastLookupRoute> = LinkedList()
 
-        fun addLookupRoute(routeNumber: String, co: Operator, gtfsId: String) {
-            addLookupRoute(LastLookupRoute(routeNumber, co, gtfsId))
+        fun addLookupRoute(routeNumber: String, co: Operator, meta: String) {
+            addLookupRoute(LastLookupRoute(routeNumber, co, meta))
         }
 
         fun addLookupRoute(data: LastLookupRoute) {
@@ -375,7 +379,7 @@ class Shared {
         fun getFavoriteAndLookupRouteIndex(routeNumber: String, co: Operator, meta: String): Int {
             for ((index, route) in favoriteRouteStops) {
                 val routeData = route.route
-                if (routeData.routeNumber == routeNumber && route.co == co && (co != Operator.GMB || routeData.gtfsId.substring(0, 4) == meta.substring(0, 4)) && (co != Operator.NLB || routeData.nlbId == meta)) {
+                if (routeData.routeNumber == routeNumber && route.co == co && (co != Operator.GMB || routeData.gmbRegion == meta.gmbRegion) && (co != Operator.NLB || routeData.nlbId == meta)) {
                     return index
                 }
             }
