@@ -312,7 +312,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
                                 val locationResult = future.get()
                                 if (locationResult.isSuccess) {
                                     val location = locationResult.location
-                                    scrollTask.invoke(OriginData(location.latitude, location.longitude, true), null)
+                                    scrollTask.invoke(OriginData(location.lat, location.lng, true), null)
                                 }
                             } catch (e: Exception) {
                                 e.printStackTrace()

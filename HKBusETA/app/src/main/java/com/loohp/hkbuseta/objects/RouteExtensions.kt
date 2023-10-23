@@ -98,8 +98,8 @@ fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language:
     }
 }
 
-fun DoubleArray.toStopLocation(): StopLocation {
-    return StopLocation.fromArray(this)
+fun DoubleArray.toCoordinates(): Coordinates {
+    return Coordinates.fromArray(this)
 }
 
 inline val CharSequence.operator: Operator get() = Operator.valueOf(toString())

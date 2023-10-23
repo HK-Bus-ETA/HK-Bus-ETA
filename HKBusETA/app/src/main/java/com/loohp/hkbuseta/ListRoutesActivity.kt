@@ -96,10 +96,10 @@ import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
-import com.loohp.hkbuseta.objects.StopLocation
+import com.loohp.hkbuseta.objects.Coordinates
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
-import com.loohp.hkbuseta.objects.toStopLocation
+import com.loohp.hkbuseta.objects.toCoordinates
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
@@ -191,7 +191,7 @@ class ListRoutesActivity : ComponentActivity() {
         }.toImmutableList()
         val showEta = intent.extras!!.getBoolean("showEta", false)
         val recentSort = RecentSortMode.values()[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
-        val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")?.toStopLocation()
+        val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")?.toCoordinates()
 
         setContent {
             MainElement(this, result, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
@@ -240,7 +240,7 @@ class ListRoutesActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchResultEntry>, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: StopLocation?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchResultEntry>, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val hapticsController = remember { HapticsController() }

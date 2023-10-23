@@ -40,7 +40,7 @@ import com.loohp.hkbuseta.objects.Preferences;
 import com.loohp.hkbuseta.objects.Route;
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry;
 import com.loohp.hkbuseta.objects.Stop;
-import com.loohp.hkbuseta.objects.StopLocation;
+import com.loohp.hkbuseta.objects.Coordinates;
 import com.loohp.hkbuseta.tiles.EtaTileServiceEight;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFive;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFour;
@@ -734,7 +734,7 @@ public class Registry {
     }
 
     public NearbyRoutesResult getNearbyRoutes(double lat, double lng, Set<String> excludedRouteNumbers, boolean isInterchangeSearch) {
-        StopLocation origin = new StopLocation(lat, lng);
+        Coordinates origin = new Coordinates(lat, lng);
 
         Map<String, Stop> stops = DATA_SHEET.getStopList();
         List<RouteSearchResultEntry.StopInfo> nearbyStops = new ArrayList<>();
@@ -745,7 +745,7 @@ public class Registry {
         for (Map.Entry<String, Stop> stopEntry : stops.entrySet()) {
             String stopId = stopEntry.getKey();
             Stop entry = stopEntry.getValue();
-            StopLocation location = entry.getLocation();
+            Coordinates location = entry.getLocation();
             double distance = DistanceUtils.findDistance(lat, lng, location.getLat(), location.getLng());
 
             if (distance < closestDistance) {

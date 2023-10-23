@@ -30,22 +30,22 @@ import org.json.JSONObject;
 import java.util.Objects;
 
 @Immutable
-public class StopLocation implements JSONSerializable {
+public class Coordinates implements JSONSerializable {
 
-    public static StopLocation deserialize(JSONObject json) {
+    public static Coordinates deserialize(JSONObject json) {
         double lat = json.optDouble("lat");
         double lng = json.optDouble("lng");
-        return new StopLocation(lat, lng);
+        return new Coordinates(lat, lng);
     }
 
-    public static StopLocation fromArray(double[] array) {
-        return new StopLocation(array[0], array[1]);
+    public static Coordinates fromArray(double[] array) {
+        return new Coordinates(array[0], array[1]);
     }
 
     private final double lat;
     private final double lng;
 
-    public StopLocation(double lat, double lng) {
+    public Coordinates(double lat, double lng) {
         this.lat = lat;
         this.lng = lng;
     }
@@ -74,7 +74,7 @@ public class StopLocation implements JSONSerializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        StopLocation that = (StopLocation) o;
+        Coordinates that = (Coordinates) o;
         return Double.compare(that.lat, lat) == 0 && Double.compare(that.lng, lng) == 0;
     }
 

@@ -33,20 +33,20 @@ import java.util.Objects;
 public class Stop implements JSONSerializable {
 
     public static Stop deserialize(JSONObject json) {
-        StopLocation location = StopLocation.deserialize(json.optJSONObject("location"));
+        Coordinates location = Coordinates.deserialize(json.optJSONObject("location"));
         BilingualText name = BilingualText.deserialize(json.optJSONObject("name"));
         return new Stop(location, name);
     }
 
-    private final StopLocation location;
+    private final Coordinates location;
     private final BilingualText name;
 
-    public Stop(StopLocation location, BilingualText name) {
+    public Stop(Coordinates location, BilingualText name) {
         this.location = location;
         this.name = name;
     }
 
-    public StopLocation getLocation() {
+    public Coordinates getLocation() {
         return location;
     }
 

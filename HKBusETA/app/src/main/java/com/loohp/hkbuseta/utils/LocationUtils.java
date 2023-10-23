@@ -36,6 +36,7 @@ import com.google.android.gms.location.CurrentLocationRequest;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.Task;
+import com.loohp.hkbuseta.objects.Coordinates;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -85,9 +86,9 @@ public class LocationUtils {
                 } else {
                     LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
                     if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                        locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, ForkJoinPool.commonPool(), loc -> future.complete(LocationResult.ofNullable(loc)));
+                        locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, ForkJoinPool.commonPool(), loc -> future.complete(LocationResult.fromLocationNullable(loc)));
                     } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                        locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, ForkJoinPool.commonPool(), loc -> future.complete(LocationResult.ofNullable(loc)));
+                        locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, ForkJoinPool.commonPool(), loc -> future.complete(LocationResult.fromLocationNullable(loc)));
                     } else {
                         future.complete(LocationResult.FAILED_RESULT);
                     }
@@ -106,23 +107,24 @@ public class LocationUtils {
             if (!task.isSuccessful()) {
                 return FAILED_RESULT;
             }
-            return new LocationResult(task.getResult());
+            return fromLocationNullable(task.getResult());
         }
 
         public static LocationResult fromLatLng(double lat, double lng) {
-            Location location = new Location("custom");
-            location.setLatitude(lat);
-            location.setLongitude(lng);
+            return new LocationResult(new Coordinates(lat, lng));
+        }
+
+        public static LocationResult fromLocationNullable(Location location) {
+            return new LocationResult(location == null ? null : new Coordinates(location.getLatitude(), location.getLongitude()));
+        }
+        
+        public static LocationResult fromStopLocationNullable(Coordinates location) {
             return new LocationResult(location);
         }
 
-        public static LocationResult ofNullable(Location location) {
-            return new LocationResult(location);
-        }
+        private final Coordinates location;
 
-        private final Location location;
-
-        private LocationResult(Location location) {
+        private LocationResult(Coordinates location) {
             this.location = location;
         }
 
@@ -130,7 +132,7 @@ public class LocationUtils {
             return location != null;
         }
 
-        public Location getLocation() {
+        public Coordinates getLocation() {
             return location;
         }
 

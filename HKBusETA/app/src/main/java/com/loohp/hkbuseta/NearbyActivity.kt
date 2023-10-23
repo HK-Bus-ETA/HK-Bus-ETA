@@ -194,7 +194,7 @@ fun MainElement(location: LocationResult?, exclude: ImmutableSet<String>, interc
             val locationResult = location?: LocationUtils.getGPSLocation(instance).get()
             if (locationResult.isSuccess) {
                 val loc = locationResult.location
-                result = Registry.getInstance(instance).getNearbyRoutes(loc!!.latitude, loc.longitude, exclude, interchangeSearch)
+                result = Registry.getInstance(instance).getNearbyRoutes(loc.lat, loc.lng, exclude, interchangeSearch)
             }
             state = true
         }

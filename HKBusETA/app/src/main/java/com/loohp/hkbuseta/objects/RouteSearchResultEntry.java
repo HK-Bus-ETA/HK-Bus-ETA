@@ -37,7 +37,7 @@ public class RouteSearchResultEntry implements JSONSerializable {
         Route route = json.has("route") ? Route.deserialize(json.optJSONObject("route")) : null;
         Operator co = Operator.valueOf(json.optString("co"));
         StopInfo stop = json.has("stop") ? StopInfo.deserialize(json.optJSONObject("stop")) : null;
-        StopLocation origin = json.has("origin") ? StopLocation.deserialize(json.optJSONObject("origin")) : null;
+        Coordinates origin = json.has("origin") ? Coordinates.deserialize(json.optJSONObject("origin")) : null;
         boolean isInterchangeSearch = json.optBoolean("isInterchangeSearch");
         return new RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch);
     }
@@ -46,7 +46,7 @@ public class RouteSearchResultEntry implements JSONSerializable {
     private Route route;
     private Operator co;
     private StopInfo stopInfo;
-    private StopLocation origin;
+    private Coordinates origin;
     private boolean isInterchangeSearch;
 
     public RouteSearchResultEntry(String routeKey, Route route, Operator co) {
@@ -55,7 +55,7 @@ public class RouteSearchResultEntry implements JSONSerializable {
         this.co = co;
     }
 
-    public RouteSearchResultEntry(String routeKey, Route route, Operator co, StopInfo stopInfo, StopLocation origin, boolean isInterchangeSearch) {
+    public RouteSearchResultEntry(String routeKey, Route route, Operator co, StopInfo stopInfo, Coordinates origin, boolean isInterchangeSearch) {
         this.routeKey = routeKey;
         this.route = route;
         this.co = co;
@@ -96,11 +96,11 @@ public class RouteSearchResultEntry implements JSONSerializable {
         this.stopInfo = stopInfo;
     }
 
-    public StopLocation getOrigin() {
+    public Coordinates getOrigin() {
         return origin;
     }
 
-    public void setOrigin(StopLocation origin) {
+    public void setOrigin(Coordinates origin) {
         this.origin = origin;
     }
 
