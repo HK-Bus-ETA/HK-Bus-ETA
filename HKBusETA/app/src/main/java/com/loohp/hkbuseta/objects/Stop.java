@@ -35,15 +35,18 @@ public class Stop implements JSONSerializable {
     public static Stop deserialize(JSONObject json) {
         Coordinates location = Coordinates.deserialize(json.optJSONObject("location"));
         BilingualText name = BilingualText.deserialize(json.optJSONObject("name"));
-        return new Stop(location, name);
+        String kmbBbiId = json.has("kmbBbiId") ? json.optString("kmbBbiId") : null;
+        return new Stop(location, name, kmbBbiId);
     }
 
     private final Coordinates location;
     private final BilingualText name;
+    private final String kmbBbiId;
 
-    public Stop(Coordinates location, BilingualText name) {
+    public Stop(Coordinates location, BilingualText name, String kmbBbiId) {
         this.location = location;
         this.name = name;
+        this.kmbBbiId = kmbBbiId;
     }
 
     public Coordinates getLocation() {
@@ -54,11 +57,18 @@ public class Stop implements JSONSerializable {
         return name;
     }
 
+    public String getKmbBbiId() {
+        return kmbBbiId;
+    }
+
     @Override
     public JSONObject serialize() throws JSONException {
         JSONObject json = new JSONObject();
         json.put("location", location.serialize());
         json.put("name", name.serialize());
+        if (kmbBbiId != null) {
+            json.put("kmbBbiId", kmbBbiId);
+        }
         return json;
     }
 
@@ -67,11 +77,11 @@ public class Stop implements JSONSerializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Stop stop = (Stop) o;
-        return Objects.equals(location, stop.location) && Objects.equals(name, stop.name);
+        return Objects.equals(location, stop.location) && Objects.equals(name, stop.name) && Objects.equals(kmbBbiId, stop.kmbBbiId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(location, name);
+        return Objects.hash(location, name, kmbBbiId);
     }
 }

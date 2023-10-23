@@ -158,6 +158,12 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
                 MoreInfoHeader(instance)
                 Spacer(modifier = Modifier.size(10.dp))
             }
+            if (stop.kmbBbiId != null) {
+                item {
+                    OpenOpenKmbBbiMapButton(stop.kmbBbiId, instance)
+                    Spacer(modifier = Modifier.size(10.dp))
+                }
+            }
             item {
                 SearchNearbyButton(stop, route, instance)
                 Spacer(modifier = Modifier.size(10.dp))
@@ -245,7 +251,7 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
                             .padding(3.dp, 3.dp)
                             .size(StringUtils.scaledSize(17F, instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_sync_alt_24),
-                        tint = Color(0xFFFF0000),
+                        tint = Color(0xFFFFE15E),
                         contentDescription = if (Shared.language == "en") "Find Nearby Interchanges" else "尋找附近轉乘路線"
                     )
                 }
@@ -346,12 +352,96 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaMenuAct
 }
 
 @Composable
+fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: EtaMenuActivity) {
+    val haptic = LocalHapticFeedback.current
+    AdvanceButton (
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .width(StringUtils.scaledSize(220, instance).dp)
+            .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp),
+        onClick = handleOpenKmbBbiMap(kmbBbiId, instance, false, haptic),
+        onLongClick = handleOpenKmbBbiMap(kmbBbiId, instance, true, haptic),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.secondary,
+            contentColor = MaterialTheme.colors.primary
+        ),
+        content = {
+            Row (
+                modifier = Modifier.padding(5.dp, 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Box (
+                    modifier = Modifier
+                        .padding(5.dp, 5.dp)
+                        .width(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
+                        .height(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF3D3D3D))
+                        .align(Alignment.Top),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .padding(3.dp, 3.dp)
+                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                        painter = painterResource(R.drawable.baseline_transfer_within_a_station_24),
+                        tint = Color(0xFFFF0000),
+                        contentDescription = if (Shared.language == "en") "Open KMB BBI Layout Map" else "顯示九巴轉車站位置圖"
+                    )
+                }
+                Text(
+                    modifier = Modifier
+                        .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                    color = MaterialTheme.colors.primary,
+                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    text = if (Shared.language == "en") "Open KMB BBI Layout Map" else "顯示九巴轉車站位置圖"
+                )
+            }
+        }
+    )
+}
+
+fun handleOpenKmbBbiMap(kmbBbiId: String, instance: EtaMenuActivity, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
+    return {
+        val url = "https://app.kmb.hk/app1933/BBI/map/".plus(kmbBbiId).plus(".jpg")
+        val phoneIntent = Intent(instance, URLImageActivity::class.java)
+        phoneIntent.putExtra("url", url)
+        if (longClick) {
+            instance.startActivity(phoneIntent)
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        } else {
+            val intent = Intent(Intent.ACTION_VIEW)
+                .addCategory(Intent.CATEGORY_BROWSABLE)
+                .setData(Uri.parse(url))
+            RemoteActivityUtils.intentToPhone(
+                instance = instance,
+                intent = intent,
+                noPhone = {
+                    instance.startActivity(phoneIntent)
+                },
+                failed = {
+                    instance.startActivity(phoneIntent)
+                },
+                success = {
+                    instance.runOnUiThread {
+                        Toast.makeText(instance, if (Shared.language == "en") "Please check your phone" else "請在手機上繼續", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
 fun Title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator, instance: EtaMenuActivity) {
     val name = if (Shared.language == "en") stopName.en else stopName.zh
     AutoResizeText (
         modifier = Modifier
             .fillMaxWidth()
-            .padding(40.dp, 0.dp),
+            .padding(45.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         text = if (co == Operator.MTR) name else index.toString().plus(". ").plus(name),
