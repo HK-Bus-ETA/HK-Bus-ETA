@@ -22,7 +22,6 @@ package com.loohp.hkbuseta.shared;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.util.Pair;
 
 import androidx.compose.runtime.Immutable;
 import androidx.compose.runtime.Stable;
@@ -103,6 +102,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
+
+import kotlin.Pair;
+import kotlin.Triple;
 
 public class Registry {
 
@@ -705,12 +707,15 @@ public class Registry {
             String routeNumberA = routeA.getRouteNumber();
             String routeNumberB = routeB.getRouteNumber();
 
+            if (!routeNumberA.equals(routeNumberB)) {
+                return routeNumberA.compareTo(routeNumberB);
+            }
             if (coA == 5 || coA == 6) {
                 int lineDiff = Integer.compare(Shared.Companion.getMtrLineSortingIndex(routeNumberA), Shared.Companion.getMtrLineSortingIndex(routeNumberB));
                 if (lineDiff != 0) {
                     return lineDiff;
                 }
-                return -boundA.get(Operator.MTR).compareTo(boundB.get(Operator.MTR));
+                return -boundA.get(coAStr).compareTo(boundB.get(coBStr));
             }
             if (coA == 2) {
                 return IntUtils.parseOrZero(routeA.getNlbId()) - IntUtils.parseOrZero(routeB.getNlbId());
@@ -971,11 +976,11 @@ public class Registry {
                         for (String stopId : stops) {
                             localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.getStopList().get(stopId), route));
                         }
-                        lists.add(Pair.create(localStops, serviceType));
+                        lists.add(new Pair<>(localStops, serviceType));
                     }
                 }
             }
-            lists.sort(Comparator.comparing(p -> p.second));
+            lists.sort(Comparator.comparing(Pair<BranchedList<String, StopData>, Integer>::getSecond));
             BranchedList<String, StopData> result = new BranchedList<>((a, b) -> {
                 int aType = a.getServiceType();
                 int bType = b.getServiceType();
@@ -987,9 +992,9 @@ public class Registry {
                 return aType > bType ? b : a;
             });
             for (Pair<BranchedList<String, StopData>, Integer> pair : lists) {
-                result.merge(pair.first);
+                result.merge(pair.getFirst());
             }
-            return result.valuesWithBranchIds().stream().map(p -> p.first.withBranchIndex(p.second)).collect(Collectors.toList());
+            return result.valuesWithBranchIds().stream().map(p -> p.getFirst().withBranchIndex(p.getSecond())).collect(Collectors.toList());
         } catch (Throwable e) {
             throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gmbRegion + ": " + e.getMessage(), e);
         }
@@ -1043,8 +1048,10 @@ public class Registry {
 
     public Pair<List<BilingualText>, List<BilingualText>> getAllOriginsAndDestinations(String routeNumber, String bound, Operator co, GMBRegion gmbRegion) {
         try {
-            List<Pair<BilingualText, Integer>> origs = new ArrayList<>();
+            List<Triple<BilingualText, Integer, String>> origs = new ArrayList<>();
             List<Pair<BilingualText, Integer>> dests = new ArrayList<>();
+            int mainRouteServiceType = Integer.MAX_VALUE;
+            List<String> mainRouteStops = Collections.emptyList();
             for (Route route : DATA_SHEET.getRouteList().values()) {
                 if (routeNumber.equals(route.getRouteNumber()) && route.getCo().contains(co)) {
                     boolean flag;
@@ -1058,24 +1065,28 @@ public class Registry {
                     }
                     if (flag) {
                         int serviceType = IntUtils.parseOr(route.getServiceType(), 1);
-
-                        BilingualText orig = route.getOrig();
-                        Pair<BilingualText, Integer> oldOrig = origs.stream().filter(d -> d.first.getZh().equals(orig.getZh())).findFirst().orElse(null);
-                        if (oldOrig == null || oldOrig.second > serviceType) {
-                            origs.add(Pair.create(orig, serviceType));
+                        List<String> stops = route.getStops().get(co);
+                        if (mainRouteServiceType > serviceType || (mainRouteServiceType == serviceType && stops.size() > mainRouteStops.size())) {
+                            mainRouteServiceType = serviceType;
+                            mainRouteStops = stops;
                         }
-
+                        BilingualText orig = route.getOrig();
+                        Triple<BilingualText, Integer, String> oldOrig = origs.stream().filter(d -> d.getFirst().getZh().equals(orig.getZh())).findFirst().orElse(null);
+                        if (oldOrig == null || oldOrig.getSecond() > serviceType) {
+                            origs.add(new Triple<>(orig, serviceType, stops.get(0)));
+                        }
                         BilingualText dest = route.getDest();
-                        Pair<BilingualText, Integer> oldDest = dests.stream().filter(d -> d.first.getZh().equals(dest.getZh())).findFirst().orElse(null);
-                        if (oldDest == null || oldDest.second > serviceType) {
-                            dests.add(Pair.create(dest, serviceType));
+                        Pair<BilingualText, Integer> oldDest = dests.stream().filter(d -> d.getFirst().getZh().equals(dest.getZh())).findFirst().orElse(null);
+                        if (oldDest == null || oldDest.getSecond() > serviceType) {
+                            dests.add(new Pair<>(dest, serviceType));
                         }
                     }
                 }
             }
-            return Pair.create(
-                    origs.stream().sorted(Comparator.comparing(p -> p.second)).map(p -> p.first).collect(Collectors.toList()),
-                    dests.stream().sorted(Comparator.comparing(p -> p.second)).map(p -> p.first).collect(Collectors.toList())
+            List<String> finalMainRouteStops = mainRouteStops;
+            return new Pair<>(
+                    origs.stream().filter(p -> !finalMainRouteStops.contains(p.getThird())).sorted(Comparator.comparing(p -> p.getSecond())).map(p -> p.getFirst()).collect(Collectors.toList()),
+                    dests.stream().sorted(Comparator.comparing(p -> p.getSecond())).map(p -> p.getFirst()).collect(Collectors.toList())
             );
         } catch (Throwable e) {
             throw new RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gmbRegion + ": " + e.getMessage(), e);
@@ -1176,7 +1187,7 @@ public class Registry {
                         outOfStationLines.add(routeNumber);
                     }
                 } else if (bound.containsKey(Operator.LRT) && !hasLightRail) {
-                    if (data.getStops().get(Operator.LRT).stream().anyMatch(id -> DATA_SHEET.getStopList().get((String) id).getName().getZh().equals(stopName))) {
+                    if (data.getStops().get(Operator.LRT).stream().anyMatch(id -> DATA_SHEET.getStopList().get(id).getName().getZh().equals(stopName))) {
                         hasLightRail = true;
                     }
                 }
@@ -1270,6 +1281,7 @@ public class Registry {
         return future;
     }
 
+    @Immutable
     public static class TyphoonInfo {
 
         public static final TyphoonInfo NO_TYPHOON = new TyphoonInfo(false, false, "", "");
@@ -1368,7 +1380,7 @@ public class Registry {
                                         if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
                                             kmbFirstScheduledBus = mins;
                                         }
-                                        etaSorted.put(mins, Pair.create(message, Operator.KMB));
+                                        etaSorted.put(mins, new Pair<>(message, Operator.KMB));
                                     } else {
                                         String message = "";
                                         if (language.equals("en")) {
@@ -1447,7 +1459,7 @@ public class Registry {
                                                     .replaceAll("最後班次", "尾班車")
                                                     .replaceAll("尾班車已過", "尾班車已過本站");
                                             ctbEtaEntries.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
-                                                    .getValue().put(mins, Pair.create(message, Operator.CTB));
+                                                    .getValue().put(mins, new Pair<>(message, Operator.CTB));
                                         }
                                     }
                                 }
@@ -1466,8 +1478,8 @@ public class Registry {
                         int counter = 0;
                         for (Map.Entry<Long, Pair<String, Operator>> entry : etaSorted.entrySet()) {
                             long mins = entry.getKey();
-                            String message = "<b></b>" + entry.getValue().first.replace("(尾班車)", "").replace("(Final Bus)", "").trim();
-                            Operator entryCo = entry.getValue().second;
+                            String message = "<b></b>" + entry.getValue().getFirst().replace("(尾班車)", "").replace("(Final Bus)", "").trim();
+                            Operator entryCo = entry.getValue().getSecond();
                             if (mins > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
                                 message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)") + "</small>";
                             }
@@ -1793,21 +1805,21 @@ public class Registry {
                                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
                                 long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
                                 if (routeNumber.equals(route.getRouteNumber())) {
-                                    busList.add(Pair.create(mins, bus));
+                                    busList.add(new Pair<>(mins, bus));
                                 }
                             }
                         }
                     }
-                    busList.sort(Comparator.comparing(p -> p.first));
+                    busList.sort(Comparator.comparing(p -> p.getFirst()));
                     for (int i = 0; i < busList.size(); i++) {
                         Pair<Long, JSONObject> entry = busList.get(i);
-                        JSONObject bus = entry.second;
+                        JSONObject bus = entry.getSecond();
                         int seq = i + 1;
                         String remark = language.equals("en") ? bus.optString("remarks_en") : bus.optString("remarks_tc");
                         if (remark == null || remark.equalsIgnoreCase("null")) {
                             remark = "";
                         }
-                        long mins = entry.first;
+                        long mins = entry.getFirst();
                         String message = "";
                         if (language.equals("en")) {
                             if (mins > 0) {

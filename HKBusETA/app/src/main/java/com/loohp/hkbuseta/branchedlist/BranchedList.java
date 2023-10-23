@@ -20,8 +20,6 @@
 
 package com.loohp.hkbuseta.branchedlist;
 
-import android.util.Pair;
-
 import com.google.common.collect.Lists;
 
 import java.util.Collection;
@@ -30,10 +28,10 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Random;
-import java.util.RandomAccess;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.BinaryOperator;
+
+import kotlin.Pair;
 
 public class BranchedList<K, V> extends LinkedList<BranchedListEntry<K, V>> {
 
@@ -134,7 +132,7 @@ public class BranchedList<K, V> extends LinkedList<BranchedListEntry<K, V>> {
 
     /** @noinspection StaticPseudoFunctionalStyleMethod*/
     public List<Pair<V, Set<Integer>>> valuesWithBranchIds() {
-        return Lists.transform(this, e -> Pair.create(e.getValue(), e.getBranchIds()));
+        return Lists.transform(this, e -> new Pair<>(e.getValue(), e.getBranchIds()));
     }
 
 }
