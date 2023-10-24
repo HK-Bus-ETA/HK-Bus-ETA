@@ -30,9 +30,14 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColor
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -70,8 +75,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -79,6 +89,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
@@ -98,9 +109,9 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
+import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.TimerUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
@@ -108,7 +119,6 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Timer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -182,6 +192,7 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
         val state = rememberLazyListState()
 
         val maxFavItems by remember { Shared.getCurrentMaxFavouriteRouteStopState() }
+        val showRouteListViewButton by remember { derivedStateOf { Shared.favoriteRouteStops.keys.max() > 2 } }
 
         val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
         val etaResults = remember { ConcurrentHashMap<Int, Registry.ETAQueryResult>().asImmutableState() }
@@ -209,6 +220,12 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
                 FavTitle(instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
                 FavDescription(instance)
+            }
+            if (showRouteListViewButton) {
+                item {
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    RouteListViewButton(instance)
+                }
             }
             items(maxFavItems) {
                 if (it == 8) {
@@ -257,12 +274,52 @@ fun FavDescription(instance: FavActivity) {
     )
 }
 
+@Composable
+fun RouteListViewButton(instance: FavActivity) {
+    Button(
+        onClick = {
+            LocationUtils.checkLocationPermission(instance) {
+                val intent = Intent(instance, FavRouteListViewActivity::class.java)
+                intent.putExtra("usingGps", it)
+                instance.startActivity(intent)
+            }
+        },
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .fillMaxWidth(0.8F)
+            .height(StringUtils.scaledSize(35, instance).dp),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.secondary,
+            contentColor = Color(0xFFFFFFFF)
+        ),
+        content = {
+            Text(
+                modifier = Modifier.fillMaxWidth(0.9F),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colors.primary,
+                fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                text = if (Shared.language == "en") "Route List View" else "路線一覽列表"
+            )
+        }
+    )
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var favouriteStopRoute by remember { mutableStateOf(Shared.favoriteRouteStops[favoriteIndex]) }
-    var deleteState by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val deleteAnimatable = remember { Animatable(0F) }
+    val deleteTimer by remember { deleteAnimatable.asState() }
+    val deleteState by remember { derivedStateOf { deleteTimer > 0.001F } }
+
+    val backgroundColor by remember { derivedStateOf { if (deleteState) Color(0xFF633A3A) else Color(0xFF1A1A1A) } }
+    val animatedBackgroundColor by animateColorAsState(
+        targetValue = backgroundColor,
+        animationSpec = TweenSpec(durationMillis = 500, easing = LinearEasing),
+        label = ""
+    )
 
     RestartEffect {
         val newState = Shared.favoriteRouteStops[favoriteIndex]
@@ -282,7 +339,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                 if (newState != favouriteStopRoute) {
                     favouriteStopRoute = newState
                 }
-                deleteState = false
+                scope.launch { deleteAnimatable.snapTo(0F) }
             } else {
                 val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
                 if (favStopRoute != null) {
@@ -318,20 +375,25 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
         },
         onLongClick = {
             if (!deleteState) {
-                deleteState = true
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                Timer().schedule(TimerUtils.newTimerTask { if (deleteState) deleteState = false }, 5000)
                 val text = if (Shared.language == "en") "Click again to confirm delete" else "再次點擊確認刪除"
                 instance.runOnUiThread {
                     Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+                }
+                scope.launch {
+                    deleteAnimatable.snapTo(1F)
+                    deleteAnimatable.animateTo(0F, tween(durationMillis = 5000, easing = LinearEasing))
                 }
             }
         },
         modifier = Modifier
             .fillMaxWidth()
+            .animateContentSize(
+                TweenSpec(durationMillis = 200, easing = FastOutSlowInEasing)
+            )
             .padding(20.dp, 0.dp),
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = if (deleteState) Color(0xFF633A3A) else MaterialTheme.colors.secondary,
+            backgroundColor = animatedBackgroundColor,
             contentColor = if (deleteState) Color(0xFFFF0000) else if (favouriteStopRoute != null) Color(0xFFFFFF00) else Color(0xFF444444),
         ),
         shape = RoundedCornerShape(15.dp),
@@ -424,11 +486,22 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         .width(StringUtils.scaledSize(35, instance).sp.clamp(max = 35.dp).dp)
                         .height(StringUtils.scaledSize(35, instance).sp.clamp(max = 35.dp).dp)
                         .clip(CircleShape)
-                        .background(
-                            if (favouriteStopRoute != null) Color(0xFF3D3D3D) else Color(
-                                0xFF131313
-                            )
-                        )
+                        .background(if (favouriteStopRoute != null) Color(0xFF3D3D3D) else Color(0xFF131313))
+                        .drawWithContent {
+                            if (deleteState) {
+                                drawArc(
+                                    startAngle = -90F,
+                                    sweepAngle = deleteTimer * 360F,
+                                    useCenter = false,
+                                    color = Color(0xFFFF0000),
+                                    topLeft = Offset.Zero + Offset(1.sp.toPx(), 1.sp.toPx()),
+                                    size = Size(size.width - 2.sp.toPx(), size.height - 2.sp.toPx()),
+                                    alpha = 1F,
+                                    style = Stroke(width = 2.sp.toPx(), cap = StrokeCap.Round)
+                                )
+                            }
+                            drawContent()
+                        }
                         .align(Alignment.Top),
                     contentAlignment = Alignment.Center
                 ) {

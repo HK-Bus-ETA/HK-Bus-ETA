@@ -100,6 +100,7 @@ import com.loohp.hkbuseta.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.toCoordinates
+import com.loohp.hkbuseta.objects.uniqueKey
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
@@ -387,7 +388,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
             }
             items(
                 items = sortedResults,
-                key = { route -> route.routeKey }
+                key = { route -> route.uniqueKey }
             ) { route ->
                 val co = route.co
                 val kmbCtbJoint = route.route.isKmbCtbJoint
@@ -450,7 +451,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                             }
                         )
                 ) {
-                    RouteRow(route.routeKey, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, secondLine.toImmutableList(), showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                    RouteRow(route.uniqueKey, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, secondLine.toImmutableList(), showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
                 }
                 Spacer(
                     modifier = Modifier

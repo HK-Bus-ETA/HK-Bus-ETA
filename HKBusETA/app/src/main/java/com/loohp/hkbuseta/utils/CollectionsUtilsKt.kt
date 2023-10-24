@@ -25,8 +25,10 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
+import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Predicate
 import java.util.stream.Stream
+
 
 operator fun <K, V> ImmutableMap.Builder<K, V>.set(key: K & Any, value: V & Any): ImmutableMap.Builder<K, V> {
     return this.put(key, value)
@@ -47,4 +49,9 @@ fun <T> Stream<T>.toImmutableSet(): ImmutableSet<T> {
     val builder = persistentSetOf<T>().builder()
     forEach { builder.add(it) }
     return builder.build()
+}
+
+fun <T> Stream<T>.distinctBy(keyExtractor: (T) -> Any): Stream<T> {
+    val seen: MutableMap<Any, Boolean> = ConcurrentHashMap()
+    return this.filter { t -> seen.putIfAbsent(keyExtractor.invoke(t), true) == null }
 }

@@ -20,8 +20,10 @@
 
 package com.loohp.hkbuseta.objects
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
 import com.loohp.hkbuseta.shared.KMBSubsidiary
+import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 
 
@@ -94,6 +96,14 @@ fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language:
 
 fun DoubleArray.toCoordinates(): Coordinates {
     return Coordinates.fromArray(this)
+}
+
+fun Route.getRouteKey(context: Context): String? {
+    return Registry.getInstance(context).getRouteKey(this)
+}
+
+inline val RouteSearchResultEntry.uniqueKey: String get() {
+    return if (stopInfo == null) routeKey else routeKey.plus(":").plus(stopInfo.stopId)
 }
 
 inline val CharSequence.operator: Operator get() = Operator.valueOf(toString())

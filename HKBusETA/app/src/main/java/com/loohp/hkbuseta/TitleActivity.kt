@@ -58,6 +58,7 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -217,9 +218,20 @@ fun LanguageButton(instance: TitleActivity) {
 
 @Composable
 fun FavButton(instance: TitleActivity) {
-    Button(
+    val haptic = LocalHapticFeedback.current
+    AdvanceButton(
         onClick = {
             instance.startActivity(Intent(instance, FavActivity::class.java))
+        },
+        onLongClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            if (Shared.favoriteRouteStops.isNotEmpty()) {
+                LocationUtils.checkLocationPermission(instance) {
+                    val intent = Intent(instance, FavRouteListViewActivity::class.java)
+                    intent.putExtra("usingGps", it)
+                    instance.startActivity(intent)
+                }
+            }
         },
         modifier = Modifier
             .width(StringUtils.scaledSize(35, instance).dp)
