@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,6 +68,7 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
+import java.util.function.Consumer
 
 
 data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
@@ -347,7 +349,26 @@ class Shared {
 
         var language = "zh"
 
+        private val suggestedMaxFavouriteRouteStop = mutableStateOf(0)
+        private val currentMaxFavouriteRouteStop = mutableStateOf(0)
         val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentHashMap()
+
+        fun updateFavoriteRouteStops(mutation: Consumer<Map<Int, FavouriteRouteStop>>) {
+            synchronized(favoriteRouteStops) {
+                mutation.accept(favoriteRouteStops)
+                val max = favoriteRouteStops.maxOfOrNull { it.key }?: 0
+                currentMaxFavouriteRouteStop.value = max.coerceAtLeast(8)
+                suggestedMaxFavouriteRouteStop.value = (max + 1).coerceIn(8, 30)
+            }
+        }
+
+        fun getSuggestedMaxFavouriteRouteStopState(): State<Int> {
+            return suggestedMaxFavouriteRouteStop
+        }
+
+        fun getCurrentMaxFavouriteRouteStopState(): State<Int> {
+            return currentMaxFavouriteRouteStop
+        }
 
         private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
         private val lastLookupRoutes: LinkedList<LastLookupRoute> = LinkedList()

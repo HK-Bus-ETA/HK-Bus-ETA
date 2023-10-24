@@ -261,7 +261,7 @@ public class Registry {
 
     public void clearFavouriteRouteStop(int favoriteIndex, Context context) {
         try {
-            Shared.Companion.getFavoriteRouteStops().remove(favoriteIndex);
+            Shared.Companion.updateFavoriteRouteStops(m -> m.remove(favoriteIndex));
             if (PREFERENCES != null && !PREFERENCES.getFavouriteRouteStops().isEmpty()) {
                 PREFERENCES.getFavouriteRouteStops().remove(favoriteIndex);
                 synchronized (preferenceWriteLock) {
@@ -280,7 +280,7 @@ public class Registry {
     public void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, Context context) {
         try {
             FavouriteRouteStop favouriteRouteStop = new FavouriteRouteStop(stopId, co, index, stop, route);
-            Shared.Companion.getFavoriteRouteStops().put(favoriteIndex, favouriteRouteStop);
+            Shared.Companion.updateFavoriteRouteStops(m -> m.put(favoriteIndex, favouriteRouteStop));
             if (PREFERENCES == null) {
                 PREFERENCES = Preferences.createDefault();
             }
@@ -345,7 +345,7 @@ public class Registry {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(PREFERENCES_FILE_NAME), StandardCharsets.UTF_8))) {
                 PREFERENCES = Preferences.deserialize(new JSONObject(reader.lines().collect(Collectors.joining())));
                 Shared.Companion.setLanguage(PREFERENCES.getLanguage());
-                Shared.Companion.getFavoriteRouteStops().putAll(PREFERENCES.getFavouriteRouteStops());
+                Shared.Companion.updateFavoriteRouteStops(m -> m.putAll(PREFERENCES.getFavouriteRouteStops()));
                 List<LastLookupRoute> lastLookupRoutes = PREFERENCES.getLastLookupRoutes();
                 for (Iterator<LastLookupRoute> itr = lastLookupRoutes.iterator(); itr.hasNext();) {
                     LastLookupRoute lastLookupRoute = itr.next();

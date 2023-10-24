@@ -181,14 +181,14 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
         val scope = rememberCoroutineScope()
         val state = rememberLazyListState()
 
+        val maxFavItems by remember { Shared.getCurrentMaxFavouriteRouteStopState() }
+
         val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
         val etaResults = remember { ConcurrentHashMap<Int, Registry.ETAQueryResult>().asImmutableState() }
 
         LaunchedEffect (Unit) {
-            if (scrollToIndex in 1..8) {
-                scope.launch {
-                    state.scrollToItem(scrollToIndex + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) + UnitUtils.spToPixels(instance, StringUtils.scaledSize(35F, instance)).roundToInt())
-                }
+            scope.launch {
+                state.scrollToItem(scrollToIndex.coerceIn(1, maxFavItems) + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) + UnitUtils.spToPixels(instance, StringUtils.scaledSize(35F, instance)).roundToInt())
             }
         }
 
@@ -209,14 +209,23 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
                 FavTitle(instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
                 FavDescription(instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             }
-            items(8) {
-                FavButton(it + 1, etaResults, etaUpdateTimes, instance, schedule)
+            items(maxFavItems) {
+                if (it == 8) {
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    Spacer(
+                        modifier = Modifier
+                            .padding(20.dp, 0.dp)
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFF333333))
+                    )
+                }
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                FavButton(it + 1, etaResults, etaUpdateTimes, instance, schedule)
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(45, instance).dp))
             }
         }
     }
@@ -244,7 +253,7 @@ fun FavDescription(instance: FavActivity) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = StringUtils.scaledSize(11F, instance).sp.clamp(max = 11.dp),
-        text = if (Shared.language == "en") "These routes will display in their corresponding indexed Tile" else "這些路線將顯示在其相應數字的資訊方塊中"
+        text = if (Shared.language == "en") "Routes 1-8 will display in their corresponding indexed Tile" else "路線1-8將顯示在其相應數字的資訊方塊中"
     )
 }
 
@@ -267,7 +276,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
             if (deleteState) {
                 if (Registry.getInstance(instance).hasFavouriteRouteStop(favoriteIndex)) {
                     Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
-                    Toast.makeText(instance, if (Shared.language == "en") "Cleared Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已清除資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(instance, if (Shared.language == "en") "Cleared Favourite Route ".plus(favoriteIndex) else "已清除最喜愛路線".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
                 }
                 val newState = Shared.favoriteRouteStops[favoriteIndex]
                 if (newState != favouriteStopRoute) {

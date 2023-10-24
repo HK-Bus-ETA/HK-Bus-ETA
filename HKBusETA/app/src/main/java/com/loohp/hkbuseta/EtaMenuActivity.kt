@@ -132,6 +132,8 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
         val focusRequester = remember { FocusRequester() }
         val scroll = rememberLazyListState()
 
+        val maxFavItems by remember { Shared.getSuggestedMaxFavouriteRouteStopState() }
+
         val routeNumber = route.routeNumber
         val lat = stop.location.lat
         val lng = stop.location.lng
@@ -152,39 +154,48 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             item {
                 Title(index, stop.name, routeNumber, co, instance)
                 SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route), routeNumber, co, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             }
             item {
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 MoreInfoHeader(instance)
-                Spacer(modifier = Modifier.size(10.dp))
             }
             if (stop.kmbBbiId != null) {
                 item {
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                     OpenOpenKmbBbiMapButton(stop.kmbBbiId, instance)
-                    Spacer(modifier = Modifier.size(10.dp))
                 }
             }
             item {
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 SearchNearbyButton(stop, route, instance)
-                Spacer(modifier = Modifier.size(10.dp))
             }
             item {
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 OpenOnMapsButton(stop.name, lat, lng, instance)
-                Spacer(modifier = Modifier.size(10.dp))
             }
             item {
-                Spacer(modifier = Modifier.size(10.dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
             }
             item {
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 FavHeader(instance)
-                Spacer(modifier = Modifier.size(10.dp))
             }
-            items(8) {
+            items(maxFavItems) {
+                if (it == 8) {
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    Spacer(
+                        modifier = Modifier
+                            .padding(20.dp, 0.dp)
+                            .width(StringUtils.scaledSize(220, instance).dp)
+                            .height(1.dp)
+                            .background(Color(0xFF333333))
+                    )
+                }
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 FavButton(it + 1, stopId, co, index, stop, route, instance)
-                Spacer(modifier = Modifier.size(10.dp))
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(30, instance).dp))
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
             }
         }
     }
@@ -502,6 +513,19 @@ fun FavHeader(instance: EtaMenuActivity) {
             "點擊可設置/清除對應的最喜愛路線"
         }
     )
+    Text(
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .fillMaxWidth(),
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colors.primary,
+        fontSize = StringUtils.scaledSize(10F, instance).sp.clamp(max = 10.dp),
+        text = if (Shared.language == "en") {
+            "Route stop 1-8 can be used in Tiles"
+        } else {
+            "最喜愛路線1-8可於資訊方塊中顯示"
+        }
+    )
 }
 
 fun getFavState(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity): FavouriteRouteState {
@@ -528,10 +552,10 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
         onClick = {
             if (state == FavouriteRouteState.USED_SELF) {
                 Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
-                Toast.makeText(instance, if (Shared.language == "en") "Cleared Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已清除資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
+                Toast.makeText(instance, if (Shared.language == "en") "Cleared Favourite Route ".plus(favoriteIndex) else "已清除最喜愛路線".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             } else {
                 Registry.getInstance(instance).setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, instance)
-                Toast.makeText(instance, if (Shared.language == "en") "Set Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "已設置資訊方塊路線巴士站預計到達時間".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
+                Toast.makeText(instance, if (Shared.language == "en") "Set Favourite Route ".plus(favoriteIndex) else "已設置最喜愛路線".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             }
             state = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
         },
