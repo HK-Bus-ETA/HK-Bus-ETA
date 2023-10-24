@@ -335,17 +335,6 @@ public class Registry {
         if (files.contains(PREFERENCES_FILE_NAME)) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(PREFERENCES_FILE_NAME), StandardCharsets.UTF_8))) {
                 PREFERENCES = Preferences.deserialize(new JSONObject(reader.lines().collect(Collectors.joining())));
-                Shared.Companion.setLanguage(PREFERENCES.getLanguage());
-                Shared.Companion.updateFavoriteRouteStops(m -> m.putAll(PREFERENCES.getFavouriteRouteStops()));
-                List<LastLookupRoute> lastLookupRoutes = PREFERENCES.getLastLookupRoutes();
-                for (Iterator<LastLookupRoute> itr = lastLookupRoutes.iterator(); itr.hasNext();) {
-                    LastLookupRoute lastLookupRoute = itr.next();
-                    if (lastLookupRoute.isValid()) {
-                        Shared.Companion.addLookupRoute(lastLookupRoute);
-                    } else {
-                        itr.remove();
-                    }
-                }
             } catch (Throwable e) {
                 e.printStackTrace();
             }
@@ -361,6 +350,19 @@ public class Registry {
                 }
             }
         }
+
+        Shared.Companion.setLanguage(PREFERENCES.getLanguage());
+        Shared.Companion.updateFavoriteRouteStops(m -> m.putAll(PREFERENCES.getFavouriteRouteStops()));
+        List<LastLookupRoute> lastLookupRoutes = PREFERENCES.getLastLookupRoutes();
+        for (Iterator<LastLookupRoute> itr = lastLookupRoutes.iterator(); itr.hasNext();) {
+            LastLookupRoute lastLookupRoute = itr.next();
+            if (lastLookupRoute.isValid()) {
+                Shared.Companion.addLookupRoute(lastLookupRoute);
+            } else {
+                itr.remove();
+            }
+        }
+
         preferencesLoaded = true;
 
         checkUpdate(context);
