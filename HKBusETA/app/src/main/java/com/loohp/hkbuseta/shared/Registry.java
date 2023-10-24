@@ -219,9 +219,6 @@ public class Registry {
     public void setLanguage(String language, Context context) {
         Shared.Companion.setLanguage(language);
         try {
-            if (PREFERENCES == null) {
-                PREFERENCES = Preferences.createDefault();
-            }
             PREFERENCES.setLanguage(language);
             synchronized (preferenceWriteLock) {
                 try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
@@ -281,9 +278,6 @@ public class Registry {
         try {
             FavouriteRouteStop favouriteRouteStop = new FavouriteRouteStop(stopId, co, index, stop, route);
             Shared.Companion.updateFavoriteRouteStops(m -> m.put(favoriteIndex, favouriteRouteStop));
-            if (PREFERENCES == null) {
-                PREFERENCES = Preferences.createDefault();
-            }
             PREFERENCES.getFavouriteRouteStops().put(favoriteIndex, favouriteRouteStop);
             synchronized (preferenceWriteLock) {
                 try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
@@ -301,9 +295,6 @@ public class Registry {
         try {
             Shared.Companion.addLookupRoute(routeNumber, co, meta);
             List<LastLookupRoute> lastLookupRoutes = Shared.Companion.getLookupRoutes();
-            if (PREFERENCES == null) {
-                PREFERENCES = Preferences.createDefault();
-            }
             PREFERENCES.getLastLookupRoutes().clear();
             PREFERENCES.getLastLookupRoutes().addAll(lastLookupRoutes);
             synchronized (preferenceWriteLock) {
@@ -355,11 +346,20 @@ public class Registry {
                         itr.remove();
                     }
                 }
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
+            } catch (Throwable e) {
+                e.printStackTrace();
             }
-        } else {
+        }
+        if (PREFERENCES == null) {
             PREFERENCES = Preferences.createDefault();
+            synchronized (preferenceWriteLock) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    pw.write(PREFERENCES.serialize().toString());
+                    pw.flush();
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
         preferencesLoaded = true;
 
@@ -547,6 +547,10 @@ public class Registry {
                 state = State.ERROR;
             }
         }).start();
+    }
+
+    public String getRouteKey(Route route) {
+        return DATA_SHEET.getRouteList().entrySet().stream().filter(e -> e.getValue().equals(route)).findFirst().map(Map.Entry::getKey).orElse(null);
     }
 
     public Route findRouteByKey(String inputKey, String routeNumber) {
