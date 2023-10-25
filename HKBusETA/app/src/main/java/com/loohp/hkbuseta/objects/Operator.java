@@ -22,14 +22,14 @@ package com.loohp.hkbuseta.objects;
 
 import androidx.compose.runtime.Immutable;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Immutable
 public class Operator {
 
-    private static final Map<String, Operator> VALUES = new LinkedHashMap<>();
+    private static final Map<String, Operator> VALUES = new ConcurrentHashMap<>();
 
     public static final Operator KMB = createBuiltIn("kmb");
     public static final Operator CTB = createBuiltIn("ctb");
@@ -40,15 +40,11 @@ public class Operator {
     public static final Operator MTR = createBuiltIn("mtr");
 
     private static Operator createBuiltIn(String name) {
-        return VALUES.computeIfAbsent(name.toLowerCase(), name1 -> new Operator(name1, true));
+        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, true));
     }
 
-    public synchronized static Operator valueOf(String name) {
-        return VALUES.computeIfAbsent(name.toLowerCase(), name1 -> new Operator(name1, false));
-    }
-
-    public static Operator[] values() {
-        return VALUES.values().toArray(new Operator[0]);
+    public static Operator valueOf(String name) {
+        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, false));
     }
 
     private final String name;
@@ -69,7 +65,7 @@ public class Operator {
 
     @Override
     public String toString() {
-        return name();
+        return name;
     }
 
     @Override

@@ -98,7 +98,7 @@ data class LastLookupRoute(val routeNumber: String, val co: Operator, val meta: 
     }
 
     fun isValid(): Boolean {
-        if (routeNumber.isBlank() || co.isBuiltIn) {
+        if (routeNumber.isBlank() || !co.isBuiltIn) {
             return false
         }
         if ((co == Operator.GMB || co == Operator.NLB) && meta.isBlank()) {
