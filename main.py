@@ -188,8 +188,7 @@ def download_and_process_data_sheet():
             mtr_joined_dest[key] = ("/".join(list(dict.fromkeys(dest_zh))), "/".join(list(dict.fromkeys(dest_en))))
 
     keys_to_remove = []
-    for key in DATA_SHEET["routeList"]:
-        data = DATA_SHEET["routeList"][key]
+    for key, data in DATA_SHEET["routeList"].items():
         route_number = data["route"]
         bounds = data["bound"]
 
@@ -213,6 +212,32 @@ def download_and_process_data_sheet():
                 keys_to_remove.append(key)
             elif route_number in ctb_circular and len(bounds.get("ctb")) < 2:
                 data["ctbIsCircular"] = True
+    for key in keys_to_remove:
+        del DATA_SHEET["routeList"][key]
+
+    keys_to_remove = []
+    for key, data in DATA_SHEET["routeList"].items():
+        bound = data["bound"]
+        if "kmb" in bound:
+            co = "kmb"
+        elif "ctb" in bound:
+            co = "ctb"
+        elif "nlb" in bound:
+            co = "nlb"
+        elif "mtr-bus" in bound:
+            co = "mtr-bus"
+        elif "gmb" in bound:
+            co = "gmb"
+        elif "lightRail" in bound:
+            co = "lightRail"
+        elif "mtr" in bound:
+            co = "mtr"
+        else:
+            keys_to_remove.append(key)
+            break
+        if co not in data["stops"]:
+            keys_to_remove.append(key)
+
     for key in keys_to_remove:
         del DATA_SHEET["routeList"][key]
 
