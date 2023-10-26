@@ -24,6 +24,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 
 import androidx.compose.runtime.Immutable;
+import androidx.compose.runtime.MutableState;
 import androidx.compose.runtime.Stable;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
@@ -54,6 +55,7 @@ import com.loohp.hkbuseta.utils.DistanceUtils;
 import com.loohp.hkbuseta.utils.HTTPRequestUtils;
 import com.loohp.hkbuseta.utils.IntUtils;
 import com.loohp.hkbuseta.utils.JsonUtils;
+import com.loohp.hkbuseta.utils.StateUtilsKtKt;
 import com.loohp.hkbuseta.utils.StringUtils;
 
 import org.json.JSONArray;
@@ -94,6 +96,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -128,9 +131,7 @@ public class Registry {
     private static final String MTR_BUS_STOP_ALIAS_FILE_NAME = "mtr_bus_stop_alias.json";
 
     public static void invalidateCache(Context context) {
-        try {
-            context.getApplicationContext().deleteFile(CHECKSUM_FILE_NAME);
-        } catch (Throwable ignore) {}
+        try { context.getApplicationContext().deleteFile(CHECKSUM_FILE_NAME); } catch (Throwable ignore) {}
     }
 
     private static Preferences PREFERENCES = null;
@@ -141,9 +142,9 @@ public class Registry {
     private static TyphoonInfo typhoonInfo = null;
     private static long typhoonInfoLastUpdated = Long.MIN_VALUE;
 
-    private volatile State state = State.LOADING;
-    private volatile float updatePercentage = 0F;
-    private volatile boolean preferencesLoaded = false;
+    private final MutableState<State> state = StateUtilsKtKt.asMutableState(State.LOADING);
+    private final MutableState<Float> updatePercentageState = StateUtilsKtKt.asMutableState(0F);
+    private final AtomicBoolean preferencesLoaded = new AtomicBoolean(false);
     private final Object preferenceWriteLock = new Object();
     private final AtomicLong lastUpdateCheck = new AtomicLong(Long.MIN_VALUE);
 
@@ -155,16 +156,16 @@ public class Registry {
         }
     }
 
-    public State getState() {
+    public MutableState<State> getState() {
         return state;
     }
 
-    public float getUpdatePercentage() {
-        return updatePercentage;
+    public MutableState<Float> getUpdatePercentageState() {
+        return updatePercentageState;
     }
 
     public boolean isPreferencesLoaded() {
-        return preferencesLoaded;
+        return preferencesLoaded.get();
     }
 
     public void updateTileService(Context context) {
@@ -324,7 +325,7 @@ public class Registry {
     }
 
     private void ensureData(Context context) throws IOException {
-        if (state == State.READY) {
+        if (state.getValue() == State.READY) {
             return;
         }
         if (PREFERENCES != null && DATA_SHEET != null && BUS_ROUTE != null && MTR_BUS_STOP_ALIAS != null) {
@@ -363,7 +364,7 @@ public class Registry {
             }
         }
 
-        preferencesLoaded = true;
+        preferencesLoaded.set(true);
 
         checkUpdate(context);
     }
@@ -373,7 +374,7 @@ public class Registry {
     }
 
     public void checkUpdate(Context context) {
-        state = State.LOADING;
+        state.setValue(State.LOADING);
         lastUpdateCheck.set(System.currentTimeMillis());
         List<String> files = Arrays.asList(context.getApplicationContext().fileList());
         new Thread(() -> {
@@ -414,139 +415,141 @@ public class Registry {
                 }
 
                 if (cached) {
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_SHEET_FILE_NAME), StandardCharsets.UTF_8))) {
-                        DATA_SHEET = DataSheet.deserialize(new JSONObject(reader.lines().collect(Collectors.joining("\n"))));
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
-                    }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(BUS_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
-                        BUS_ROUTE = JsonUtils.toSet(new JSONArray(reader.lines().collect(Collectors.joining("\n"))), String.class);
-                        if (BUS_ROUTE.isEmpty()) {
-                            throw new RuntimeException();
+                    try {
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_SHEET_FILE_NAME), StandardCharsets.UTF_8))) {
+                            DATA_SHEET = DataSheet.deserialize(new JSONObject(reader.lines().collect(Collectors.joining("\n"))));
                         }
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
-                    }
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(MTR_BUS_STOP_ALIAS_FILE_NAME), StandardCharsets.UTF_8))) {
-                        MTR_BUS_STOP_ALIAS = JsonUtils.toMap(new JSONObject(reader.lines().collect(Collectors.joining("\n"))), v -> JsonUtils.toList((JSONArray) v, String.class));
-                        if (MTR_BUS_STOP_ALIAS.isEmpty()) {
-                            throw new RuntimeException();
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(BUS_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
+                            BUS_ROUTE = JsonUtils.toSet(new JSONArray(reader.lines().collect(Collectors.joining("\n"))), String.class);
+                            if (BUS_ROUTE.isEmpty()) {
+                                throw new RuntimeException();
+                            }
                         }
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(MTR_BUS_STOP_ALIAS_FILE_NAME), StandardCharsets.UTF_8))) {
+                            MTR_BUS_STOP_ALIAS = JsonUtils.toMap(new JSONObject(reader.lines().collect(Collectors.joining("\n"))), v -> JsonUtils.toList((JSONArray) v, String.class));
+                            if (MTR_BUS_STOP_ALIAS.isEmpty()) {
+                                throw new RuntimeException();
+                            }
+                        }
+                        state.setValue(State.READY);
+                        updateTileService(context);
+                    } catch (Throwable e) {
+                        e.printStackTrace();
                     }
-                    state = State.READY;
-                    updateTileService(context);
-                } else if (!connectionType.hasConnection()) {
-                    state = State.ERROR;
-                } else {
-                    state = State.UPDATING;
-                    updatePercentage = 0F;
-                    float percentageOffset = Shared.Companion.getFavoriteRouteStops().isEmpty() ? 0.15F : 0F;
+                }
+                if (state.getValue() != State.READY) {
+                    if (!connectionType.hasConnection()) {
+                        state.setValue(State.ERROR);
+                        try { context.getApplicationContext().deleteFile(CHECKSUM_FILE_NAME); } catch (Throwable ignore) {}
+                    } else {
+                        state.setValue(State.UPDATING);
+                        updatePercentageState.setValue(0F);
+                        float percentageOffset = Shared.Companion.getFavoriteRouteStops().isEmpty() ? 0.15F : 0F;
 
-                    long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.gz.dat"), -1);
-                    JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, GZIPInputStream::new, p -> updatePercentage = p * 0.75F + percentageOffset);
+                        long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.gz.dat"), -1);
+                        JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, GZIPInputStream::new, p -> updatePercentageState.setValue(p * 0.75F + percentageOffset));
 
-                    MTR_BUS_STOP_ALIAS = JsonUtils.toMap(data.optJSONObject("mtrBusStopAlias"), v -> JsonUtils.toList((JSONArray) v, String.class));
-                    DATA_SHEET = DataSheet.deserialize(data.optJSONObject("dataSheet"));
-                    BUS_ROUTE = JsonUtils.toSet(data.optJSONArray("busRoute"), String.class);
-                    updatePercentage = 0.75F + percentageOffset;
+                        MTR_BUS_STOP_ALIAS = JsonUtils.toMap(data.optJSONObject("mtrBusStopAlias"), v -> JsonUtils.toList((JSONArray) v, String.class));
+                        DATA_SHEET = DataSheet.deserialize(data.optJSONObject("dataSheet"));
+                        BUS_ROUTE = JsonUtils.toSet(data.optJSONArray("busRoute"), String.class);
+                        updatePercentageState.setValue(0.75F + percentageOffset);
 
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(JsonUtils.fromMap(MTR_BUS_STOP_ALIAS, JsonUtils::fromCollection).toString());
-                        pw.flush();
-                    }
-                    updatePercentage = 0.775F + percentageOffset;
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(DATA_SHEET.serialize().toString());
-                        pw.flush();
-                    }
-                    updatePercentage = 0.8F + percentageOffset;
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(JsonUtils.fromCollection(BUS_ROUTE).toString());
-                        pw.flush();
-                    }
-                    updatePercentage = 0.825F + percentageOffset;
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CHECKSUM_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(checksum == null ? "" : checksum);
-                        pw.flush();
-                    }
-                    updatePercentage = 0.85F + percentageOffset;
+                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                            pw.write(JsonUtils.fromMap(MTR_BUS_STOP_ALIAS, JsonUtils::fromCollection).toString());
+                            pw.flush();
+                        }
+                        updatePercentageState.setValue(0.775F + percentageOffset);
+                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                            pw.write(DATA_SHEET.serialize().toString());
+                            pw.flush();
+                        }
+                        updatePercentageState.setValue(0.8F + percentageOffset);
+                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                            pw.write(JsonUtils.fromCollection(BUS_ROUTE).toString());
+                            pw.flush();
+                        }
+                        updatePercentageState.setValue(0.825F + percentageOffset);
+                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CHECKSUM_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                            pw.write(checksum == null ? "" : checksum);
+                            pw.flush();
+                        }
+                        updatePercentageState.setValue(0.85F + percentageOffset);
 
-                    float localUpdatePercentage = updatePercentage;
-                    float percentagePerFav = 0.15F / Shared.Companion.getFavoriteRouteStops().size();
-                    List<Runnable> updatedFavouriteRouteTasks = new ArrayList<>();
-                    for (Map.Entry<Integer, FavouriteRouteStop> entry : Shared.Companion.getFavoriteRouteStops().entrySet()) {
-                        try {
-                            int favouriteRouteIndex = entry.getKey();
-                            FavouriteRouteStop favouriteRoute = entry.getValue();
+                        float localUpdatePercentage = updatePercentageState.getValue();
+                        float percentagePerFav = 0.15F / Shared.Companion.getFavoriteRouteStops().size();
+                        List<Runnable> updatedFavouriteRouteTasks = new ArrayList<>();
+                        for (Map.Entry<Integer, FavouriteRouteStop> entry : Shared.Companion.getFavoriteRouteStops().entrySet()) {
+                            try {
+                                int favouriteRouteIndex = entry.getKey();
+                                FavouriteRouteStop favouriteRoute = entry.getValue();
 
-                            Route oldRoute = favouriteRoute.getRoute();
-                            String stopId = favouriteRoute.getStopId();
-                            Operator co = favouriteRoute.getCo();
+                                Route oldRoute = favouriteRoute.getRoute();
+                                String stopId = favouriteRoute.getStopId();
+                                Operator co = favouriteRoute.getCo();
 
-                            List<RouteSearchResultEntry> newRoutes = findRoutes(oldRoute.getRouteNumber(), true, r -> {
-                                if (!r.getBound().containsKey(co)) {
-                                    return false;
-                                }
-                                if (co.equals(Operator.GMB)) {
-                                    if (!Objects.equals(r.getGmbRegion(), oldRoute.getGmbRegion())) {
+                                List<RouteSearchResultEntry> newRoutes = findRoutes(oldRoute.getRouteNumber(), true, r -> {
+                                    if (!r.getBound().containsKey(co)) {
                                         return false;
                                     }
-                                } else if (co.equals(Operator.NLB)) {
-                                    return r.getNlbId().equals(oldRoute.getNlbId());
+                                    if (co.equals(Operator.GMB)) {
+                                        if (!Objects.equals(r.getGmbRegion(), oldRoute.getGmbRegion())) {
+                                            return false;
+                                        }
+                                    } else if (co.equals(Operator.NLB)) {
+                                        return r.getNlbId().equals(oldRoute.getNlbId());
+                                    }
+                                    return r.getBound().get(co).equals(oldRoute.getBound().get(co));
+                                });
+
+                                if (newRoutes.isEmpty()) {
+                                    updatedFavouriteRouteTasks.add(() -> clearFavouriteRouteStop(favouriteRouteIndex, context));
+                                    continue;
                                 }
-                                return r.getBound().get(co).equals(oldRoute.getBound().get(co));
-                            });
+                                RouteSearchResultEntry newRouteData = newRoutes.get(0);
+                                Route newRoute = newRouteData.getRoute();
+                                List<StopData> stopList = getAllStops(
+                                        newRoute.getRouteNumber(),
+                                        co.equals(Operator.NLB) ? newRoute.getNlbId() : newRoute.getBound().get(co),
+                                        co,
+                                        newRoute.getGmbRegion()
+                                );
 
-                            if (newRoutes.isEmpty()) {
-                                updatedFavouriteRouteTasks.add(() -> clearFavouriteRouteStop(favouriteRouteIndex, context));
-                                continue;
+                                String finalStopIdCompare = stopId;
+                                int index = CollectionsUtils.indexOf(stopList, d -> d.stopId.equals(finalStopIdCompare)) + 1;
+                                Stop stop;
+                                StopData stopData;
+                                if (index < 1) {
+                                    index = Math.max(1, Math.min(favouriteRoute.getIndex(), stopList.size()));
+                                    stopData = stopList.get(index - 1);
+                                    stopId = stopData.getStopId();
+                                } else {
+                                    stopData = stopList.get(index - 1);
+                                }
+                                stop = stopList.get(index - 1).getStop();
+
+                                String finalStopId = stopId;
+                                int finalIndex = index;
+                                updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, stopData.getRoute(), context));
+                            } catch (Throwable e) {
+                                e.printStackTrace();
                             }
-                            RouteSearchResultEntry newRouteData = newRoutes.get(0);
-                            Route newRoute = newRouteData.getRoute();
-                            List<StopData> stopList = getAllStops(
-                                    newRoute.getRouteNumber(),
-                                    co.equals(Operator.NLB) ? newRoute.getNlbId() : newRoute.getBound().get(co),
-                                    co,
-                                    newRoute.getGmbRegion()
-                            );
-
-                            String finalStopIdCompare = stopId;
-                            int index = CollectionsUtils.indexOf(stopList, d -> d.stopId.equals(finalStopIdCompare)) + 1;
-                            Stop stop;
-                            StopData stopData;
-                            if (index < 1) {
-                                index = Math.max(1, Math.min(favouriteRoute.getIndex(), stopList.size()));
-                                stopData = stopList.get(index - 1);
-                                stopId = stopData.getStopId();
-                            } else {
-                                stopData = stopList.get(index - 1);
-                            }
-                            stop = stopList.get(index - 1).getStop();
-
-                            String finalStopId = stopId;
-                            int finalIndex = index;
-                            updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, stopData.getRoute(), context));
-                        } catch (Throwable e) {
-                            e.printStackTrace();
+                            localUpdatePercentage += percentagePerFav;
+                            updatePercentageState.setValue(localUpdatePercentage);
                         }
-                        localUpdatePercentage += percentagePerFav;
-                        updatePercentage = localUpdatePercentage;
-                    }
-                    updatedFavouriteRouteTasks.forEach(Runnable::run);
-                    updatePercentage = 1F;
+                        updatedFavouriteRouteTasks.forEach(Runnable::run);
+                        updatePercentageState.setValue(1F);
 
-                    state = State.READY;
-                    updateTileService(context);
+                        state.setValue(State.READY);
+                        updateTileService(context);
+                    }
                 }
-                updatePercentage = 1F;
+                updatePercentageState.setValue(1F);
             } catch (Exception e) {
                 e.printStackTrace();
-                state = State.ERROR;
+                state.setValue(State.ERROR);
             }
-            if (state != State.READY) {
-                state = State.ERROR;
+            if (state.getValue() != State.READY) {
+                state.setValue(State.ERROR);
             }
         }).start();
     }

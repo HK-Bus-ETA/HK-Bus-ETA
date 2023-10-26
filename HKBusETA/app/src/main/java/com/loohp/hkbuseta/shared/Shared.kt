@@ -39,6 +39,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,7 +63,6 @@ import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.isEqualTo
-import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -195,37 +195,28 @@ class Shared {
 
         @Composable
         fun LoadingLabel(language: String, includeImage: Boolean, includeProgress: Boolean, instance: ImmutableState<Context>) {
-            var state by remember { mutableStateOf(false) }
+            val state by remember { Registry.getInstance(instance.value).state }
+            var wasUpdating by remember { mutableStateOf(state == Registry.State.UPDATING) }
+            val updating by remember { derivedStateOf { wasUpdating || state == Registry.State.UPDATING } }
 
-            LaunchedEffect (Unit) {
-                while (true) {
-                    delay(500)
-                    if (Registry.getInstance(instance.value).state == Registry.State.UPDATING) {
-                        state = true
-                    }
+            LaunchedEffect (updating, state) {
+                if (updating) {
+                    wasUpdating = true
                 }
             }
 
-            LoadingLabelText(state, language, includeImage, includeProgress, instance)
+            LoadingLabelText(updating, language, includeImage, includeProgress, instance)
         }
 
         @Composable
         private fun LoadingLabelText(updating: Boolean, language: String, includeImage: Boolean, includeProgress: Boolean, instance: ImmutableState<Context>) {
             if (updating) {
-                var currentProgress by remember { mutableStateOf(0F) }
+                val currentProgress by remember { Registry.getInstance(instance.value).updatePercentageState }
                 val progressAnimation by animateFloatAsState(
                     targetValue = currentProgress,
                     animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
                     label = "LoadingProgressAnimation"
                 )
-                if (includeProgress) {
-                    LaunchedEffect (Unit) {
-                        while (true) {
-                            currentProgress = Registry.getInstance(instance.value).updatePercentage
-                            delay(500)
-                        }
-                    }
-                }
 
                 Text(
                     modifier = Modifier.fillMaxWidth(),
