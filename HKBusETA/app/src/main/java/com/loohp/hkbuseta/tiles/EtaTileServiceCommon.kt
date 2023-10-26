@@ -424,16 +424,15 @@ class EtaTileServiceCommon {
                 )
                 .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
                 .setMaxLines(maxLines)
-                .addContentAnnotatedString(context, text,
-                    FontStyle.Builder()
+                .addContentAnnotatedString(context, text, {
+                    it
                         .setSize(
                             DimensionBuilders.SpProp.Builder().setValue(textSize).build()
                         )
                         .setColor(
                             ColorProp.Builder(color).build()
                         )
-                        .build()
-                ) { d, w, h -> addInlineImageResource(InlineImageResource(d, w, h)) }
+                }, { d, w, h -> addInlineImageResource(InlineImageResource(d, w, h)) })
                 .build()
         }
 

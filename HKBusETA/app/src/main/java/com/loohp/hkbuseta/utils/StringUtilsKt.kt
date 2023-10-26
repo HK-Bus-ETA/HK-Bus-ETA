@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
 import androidx.core.content.res.ResourcesCompat
@@ -45,6 +46,7 @@ import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
 import com.aghajari.compose.text.ContentAnnotatedString
 import com.aghajari.compose.text.InlineContent
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 
@@ -105,13 +107,22 @@ data class CharacterData(val style: List<AnnotatedString.Range<SpanStyle>>, val 
     }
 }
 
-fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: Context, contentAnnotatedString: ContentAnnotatedString, defaultFontStyle: LayoutElementBuilders.FontStyle? = null, inlineImageHandler: ((ByteArray, Int, Int) -> String)? = null): LayoutElementBuilders.Spannable.Builder {
+private val layoutFontValues = setOf(LayoutElementBuilders.FONT_WEIGHT_NORMAL, LayoutElementBuilders.FONT_WEIGHT_BOLD)
+
+fun FontWeight?.snapToClosestLayoutWeight(): Int {
+    if (this == null) {
+        return LayoutElementBuilders.FONT_WEIGHT_NORMAL
+    }
+    val weight = this.weight.coerceIn(1, 1000)
+    return layoutFontValues.minBy { (it - weight).absoluteValue }
+}
+
+fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: Context, contentAnnotatedString: ContentAnnotatedString, defaultFontStyle: (LayoutElementBuilders.FontStyle.Builder) -> Unit = {}, inlineImageHandler: ((ByteArray, Int, Int) -> String)? = null): LayoutElementBuilders.Spannable.Builder {
     if (contentAnnotatedString.isEmpty()) {
         val span = LayoutElementBuilders.SpanText.Builder().setText("")
-        if (defaultFontStyle != null) {
-            span.setFontStyle(defaultFontStyle)
-        }
-        return this.addSpan(span.build())
+        val fontStyleBuilder = LayoutElementBuilders.FontStyle.Builder()
+        defaultFontStyle.invoke(fontStyleBuilder)
+        return this.addSpan(span.setFontStyle(fontStyleBuilder.build()).build())
     }
     val text = contentAnnotatedString.annotatedString.text
     val style = contentAnnotatedString.annotatedString.spanStyles
@@ -142,23 +153,17 @@ fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: C
     for ((s, d) in mergedData) {
         val str = s.substring((jumpTo - currentLength).coerceAtLeast(0))
         val fontStyleBuilder = LayoutElementBuilders.FontStyle.Builder()
-        if (defaultFontStyle != null) {
-            defaultFontStyle.size?.let { fontStyleBuilder.setSize(DimensionBuilders.sp(it.value)) }
-            defaultFontStyle.italic?.let { fontStyleBuilder.setItalic(it.value) }
-            defaultFontStyle.underline?.let { fontStyleBuilder.setUnderline(it.value) }
-            defaultFontStyle.color?.let { fontStyleBuilder.setColor(ColorBuilders.ColorProp.Builder(it.argb).build()) }
-            defaultFontStyle.weight?.let { fontStyleBuilder.setWeight(it.value) }
-            defaultFontStyle.letterSpacing?.let { fontStyleBuilder.setLetterSpacing(DimensionBuilders.em(it.value)) }
-        }
+        defaultFontStyle.invoke(fontStyleBuilder)
         d.style.forEach {
             val spanStyle = it.item
             if (spanStyle.fontSize != TextUnit.Unspecified) fontStyleBuilder.setSize(DimensionBuilders.sp(if (spanStyle.fontSize.isEm) (spanStyle.fontSize.value * 14F) else spanStyle.fontSize.value))
             spanStyle.fontStyle?.let { fontStyle -> if (fontStyle == FontStyle.Italic) fontStyleBuilder.setItalic(true) }
             spanStyle.textDecoration?.let { textDecoration -> if (textDecoration.contains(TextDecoration.Underline)) fontStyleBuilder.setUnderline(true) }
             if (spanStyle.color != Color.Unspecified) fontStyleBuilder.setColor(ColorBuilders.ColorProp.Builder(spanStyle.color.toArgb()).build())
-            spanStyle.fontWeight?.let { fontWeight -> fontStyleBuilder.setWeight(fontWeight.weight) }
+            spanStyle.fontWeight?.let { fontWeight -> fontStyleBuilder.setWeight(fontWeight.snapToClosestLayoutWeight()) }
             if (spanStyle.letterSpacing != TextUnit.Unspecified) fontStyleBuilder.setLetterSpacing(DimensionBuilders.em(spanStyle.letterSpacing.value))
         }
+        val fontStyle = fontStyleBuilder.build()
         val imageEndPos = if (inlineImageHandler != null) {
             d.inline.filter { it.span is ImageSpan }.minByOrNull { it.start }?.let {
                 val span = it.span as ImageSpan
@@ -185,7 +190,7 @@ fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: C
         if (imageEndPos >= 0) {
             jumpTo = imageEndPos
         } else {
-            this.addSpan(LayoutElementBuilders.SpanText.Builder().setText(str).setFontStyle(fontStyleBuilder.build()).build())
+            this.addSpan(LayoutElementBuilders.SpanText.Builder().setText(str).setFontStyle(fontStyle).build())
         }
         currentLength += text.length
     }
