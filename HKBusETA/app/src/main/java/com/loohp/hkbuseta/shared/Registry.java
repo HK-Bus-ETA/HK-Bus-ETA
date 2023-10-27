@@ -1325,9 +1325,6 @@ public class Registry {
     }
 
     public static ETAQueryResult getEta(String stopId, Operator co, Route route, Context context) {
-        if (!ConnectionUtils.getConnectionType(context).hasConnection()) {
-            return ETAQueryResult.connectionError(co);
-        }
         CompletableFuture<ETAQueryResult> future = new CompletableFuture<>();
         new Thread(() -> {
             try {

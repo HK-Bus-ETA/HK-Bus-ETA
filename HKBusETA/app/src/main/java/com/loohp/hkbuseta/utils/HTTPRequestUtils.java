@@ -45,6 +45,8 @@ public class HTTPRequestUtils {
         try {
             URL url = new URL(link);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            connection.setConnectTimeout(20000);
+            connection.setReadTimeout(20000);
             connection.setUseCaches(false);
             connection.setDefaultUseCaches(false);
             connection.addRequestProperty("User-Agent", "Mozilla/5.0");
@@ -70,6 +72,8 @@ public class HTTPRequestUtils {
         try {
             URL url = new URL(link);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            connection.setConnectTimeout(20000);
+            connection.setReadTimeout(20000);
             connection.setUseCaches(false);
             connection.setDefaultUseCaches(false);
             connection.addRequestProperty("User-Agent", "Mozilla/5.0");
@@ -106,6 +110,8 @@ public class HTTPRequestUtils {
         try {
             URL url = new URL(link);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            connection.setConnectTimeout(20000);
+            connection.setReadTimeout(20000);
             connection.setUseCaches(false);
             connection.setDefaultUseCaches(false);
             connection.addRequestProperty("User-Agent", "Mozilla/5.0");
@@ -128,6 +134,8 @@ public class HTTPRequestUtils {
         try {
             URL url = new URL(link);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            connection.setConnectTimeout(20000);
+            connection.setReadTimeout(20000);
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setDoOutput(true);
@@ -155,6 +163,8 @@ public class HTTPRequestUtils {
 
     public static InputStream getInputStream(String link) throws IOException {
         URLConnection connection = new URL(link).openConnection();
+        connection.setConnectTimeout(20000);
+        connection.setReadTimeout(20000);
         connection.setUseCaches(false);
         connection.setDefaultUseCaches(false);
         connection.addRequestProperty("User-Agent", "Mozilla/5.0");
@@ -178,6 +188,8 @@ public class HTTPRequestUtils {
     public static long getContentSize(String link) {
         try {
             URLConnection connection = new URL(link).openConnection();
+            connection.setConnectTimeout(20000);
+            connection.setReadTimeout(20000);
             connection.setUseCaches(false);
             connection.setDefaultUseCaches(false);
             connection.addRequestProperty("User-Agent", "Mozilla/5.0");
@@ -195,6 +207,8 @@ public class HTTPRequestUtils {
     public static String getContentType(String link) {
         try {
             URLConnection connection = new URL(link).openConnection();
+            connection.setConnectTimeout(20000);
+            connection.setReadTimeout(20000);
             connection.setUseCaches(false);
             connection.setDefaultUseCaches(false);
             connection.addRequestProperty("User-Agent", "Mozilla/5.0");
