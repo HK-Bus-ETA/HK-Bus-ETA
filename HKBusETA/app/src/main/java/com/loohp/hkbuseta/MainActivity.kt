@@ -64,6 +64,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
 
+        setShowWhenLocked(true)
+        setTurnScreenOn(true)
+
         val stopId = intent.extras?.getString("stopId")
         val co = intent.extras?.getString("co")?.operator
         val index = intent.extras?.getInt("index")
