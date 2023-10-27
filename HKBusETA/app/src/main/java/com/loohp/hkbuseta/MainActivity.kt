@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.MaterialTheme
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
@@ -86,7 +87,7 @@ class MainActivity : ComponentActivity() {
             val state by remember { Registry.getInstance(this@MainActivity).let {
                 if (System.currentTimeMillis() - it.lastUpdateCheck > 10000) it.checkUpdate(this@MainActivity)
                 it
-            }.state }
+            }.state }.collectAsStateWithLifecycle()
 
             LaunchedEffect (state) {
                 when (state) {

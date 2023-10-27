@@ -20,9 +20,8 @@
 
 package com.loohp.hkbuseta.utils
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.flow.MutableStateFlow
 
-fun <T> T.asMutableState(): MutableState<T> {
-    return mutableStateOf(this)
+fun <T> T.asMutableStateFlow(): MutableStateFlow<T> {
+    return MutableStateFlow(this)
 }

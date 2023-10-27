@@ -24,7 +24,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 
 import androidx.compose.runtime.Immutable;
-import androidx.compose.runtime.MutableState;
 import androidx.compose.runtime.Stable;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
@@ -108,6 +107,8 @@ import java.util.zip.GZIPInputStream;
 
 import kotlin.Pair;
 import kotlin.Triple;
+import kotlinx.coroutines.flow.MutableStateFlow;
+import kotlinx.coroutines.flow.StateFlow;
 
 public class Registry {
 
@@ -142,8 +143,8 @@ public class Registry {
     private static TyphoonInfo typhoonInfo = null;
     private static long typhoonInfoLastUpdated = Long.MIN_VALUE;
 
-    private final MutableState<State> state = StateUtilsKtKt.asMutableState(State.LOADING);
-    private final MutableState<Float> updatePercentageState = StateUtilsKtKt.asMutableState(0F);
+    private final MutableStateFlow<State> state = StateUtilsKtKt.asMutableStateFlow(State.LOADING);
+    private final MutableStateFlow<Float> updatePercentageState = StateUtilsKtKt.asMutableStateFlow(0F);
     private final AtomicBoolean preferencesLoaded = new AtomicBoolean(false);
     private final Object preferenceWriteLock = new Object();
     private final AtomicLong lastUpdateCheck = new AtomicLong(Long.MIN_VALUE);
@@ -156,11 +157,11 @@ public class Registry {
         }
     }
 
-    public MutableState<State> getState() {
+    public StateFlow<State> getState() {
         return state;
     }
 
-    public MutableState<Float> getUpdatePercentageState() {
+    public StateFlow<Float> getUpdatePercentageState() {
         return updatePercentageState;
     }
 
@@ -182,38 +183,14 @@ public class Registry {
     public void updateTileService(int favoriteIndex, Context context) {
         TileUpdateRequester updater = TileService.getUpdater(context);
         switch (favoriteIndex) {
-            case 1: {
-                updater.requestUpdate(EtaTileServiceOne.class);
-                break;
-            }
-            case 2: {
-                updater.requestUpdate(EtaTileServiceTwo.class);
-                break;
-            }
-            case 3: {
-                updater.requestUpdate(EtaTileServiceThree.class);
-                break;
-            }
-            case 4: {
-                updater.requestUpdate(EtaTileServiceFour.class);
-                break;
-            }
-            case 5: {
-                updater.requestUpdate(EtaTileServiceFive.class);
-                break;
-            }
-            case 6: {
-                updater.requestUpdate(EtaTileServiceSix.class);
-                break;
-            }
-            case 7: {
-                updater.requestUpdate(EtaTileServiceSeven.class);
-                break;
-            }
-            case 8: {
-                updater.requestUpdate(EtaTileServiceEight.class);
-                break;
-            }
+            case 1: { updater.requestUpdate(EtaTileServiceOne.class); break; }
+            case 2: { updater.requestUpdate(EtaTileServiceTwo.class); break; }
+            case 3: { updater.requestUpdate(EtaTileServiceThree.class); break; }
+            case 4: { updater.requestUpdate(EtaTileServiceFour.class); break; }
+            case 5: { updater.requestUpdate(EtaTileServiceFive.class); break; }
+            case 6: { updater.requestUpdate(EtaTileServiceSix.class); break; }
+            case 7: { updater.requestUpdate(EtaTileServiceSeven.class); break; }
+            case 8: { updater.requestUpdate(EtaTileServiceEight.class); break; }
         }
     }
 
@@ -2191,8 +2168,17 @@ public class Registry {
 
     public enum State {
 
-        LOADING, UPDATING, READY, ERROR;
+        LOADING(true), UPDATING(true), READY(false), ERROR(false);
 
+        private final boolean isProcessing;
+
+        State(boolean isProcessing) {
+            this.isProcessing = isProcessing;
+        }
+
+        public boolean isProcessing() {
+            return isProcessing;
+        }
     }
 
 }

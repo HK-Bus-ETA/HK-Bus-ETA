@@ -51,6 +51,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
@@ -195,7 +196,7 @@ class Shared {
 
         @Composable
         fun LoadingLabel(language: String, includeImage: Boolean, includeProgress: Boolean, instance: ImmutableState<Context>) {
-            val state by remember { Registry.getInstance(instance.value).state }
+            val state by remember { Registry.getInstance(instance.value).state }.collectAsStateWithLifecycle()
             var wasUpdating by remember { mutableStateOf(state == Registry.State.UPDATING) }
             val updating by remember { derivedStateOf { wasUpdating || state == Registry.State.UPDATING } }
 
@@ -211,7 +212,7 @@ class Shared {
         @Composable
         private fun LoadingLabelText(updating: Boolean, language: String, includeImage: Boolean, includeProgress: Boolean, instance: ImmutableState<Context>) {
             if (updating) {
-                val currentProgress by remember { Registry.getInstance(instance.value).updatePercentageState }
+                val currentProgress by remember { Registry.getInstance(instance.value).updatePercentageState }.collectAsStateWithLifecycle()
                 val progressAnimation by animateFloatAsState(
                     targetValue = currentProgress,
                     animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
