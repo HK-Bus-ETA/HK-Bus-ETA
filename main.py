@@ -122,9 +122,8 @@ def download_and_process_data_sheet():
     lrt_705_2_stops.pop(0)
     DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai"] = DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Wing"]
     DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai"]["dest"] = DATA_SHEET["routeList"]["705+1+Tin Wing+Tin Shui Wai"]["dest"]
-    DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai"]["dest"]["zh"] += " (天水圍循環綫)"
-    DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai"]["dest"]["en"] += " (TSW Circular)"
     DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai"]["stops"]["lightRail"] = lrt_705_1_stops + lrt_705_2_stops
+    DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai"]["lrtCircular"] = {"en": "TSW Circular", "zh": "天水圍循環綫"}
     del DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Wing"]
     del DATA_SHEET["routeList"]["705+1+Tin Wing+Tin Shui Wai"]
 
@@ -133,9 +132,8 @@ def download_and_process_data_sheet():
     lrt_706_2_stops.pop(0)
     DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai"] = DATA_SHEET["routeList"]["706+1+Tin Wing+Tin Shui Wai"]
     DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai"]["orig"] = DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Wing"]["orig"]
-    DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai"]["dest"]["zh"] += " (天水圍循環綫)"
-    DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai"]["dest"]["en"] += " (TSW Circular)"
     DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai"]["stops"]["lightRail"] = lrt_706_1_stops + lrt_706_2_stops
+    DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai"]["lrtCircular"] = {"en": "TSW Circular", "zh": "天水圍循環綫"}
     del DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Wing"]
     del DATA_SHEET["routeList"]["706+1+Tin Wing+Tin Shui Wai"]
 
