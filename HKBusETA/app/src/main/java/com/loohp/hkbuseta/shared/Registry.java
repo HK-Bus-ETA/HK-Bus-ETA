@@ -2040,7 +2040,7 @@ public class Registry {
             }
         }).start();
         try {
-            return future.get(9, TimeUnit.SECONDS);
+            return future.get(30, TimeUnit.SECONDS);
         } catch (ExecutionException | InterruptedException | TimeoutException | CancellationException e) {
             try {
                 future.cancel(true);

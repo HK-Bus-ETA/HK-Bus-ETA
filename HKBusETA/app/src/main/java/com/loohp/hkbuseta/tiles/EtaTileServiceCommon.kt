@@ -37,6 +37,7 @@ import androidx.wear.protolayout.TimelineBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.aghajari.compose.text.asAnnotatedString
+import com.google.common.cache.CacheBuilder
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
@@ -59,6 +60,7 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.toSpanned
 import java.math.BigInteger
 import java.security.MessageDigest
+import java.time.Duration
 import java.util.Date
 import java.util.Timer
 import java.util.TimerTask
@@ -97,16 +99,19 @@ class EtaTileServiceCommon {
 
     companion object {
 
-        private val RESOURCES_VERSION: AtomicReference<String> = AtomicReference(UUID.randomUUID().toString())
-
+        private val resourceVersion: AtomicReference<String> = AtomicReference(UUID.randomUUID().toString())
         private val inlineImageResources: MutableMap<String, InlineImageResource> = ConcurrentHashMap()
+        private val states: MutableMap<Int, Boolean> = ConcurrentHashMap()
+        private val timerTasks: MutableMap<Int, TimerTask> = ConcurrentHashMap()
+        private val lastUpdate: MutableMap<Int, Long> = ConcurrentHashMap()
+        private val etaResults: MutableMap<Int, ETAQueryResult> = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofSeconds(10)).build<Int, ETAQueryResult>().asMap()
 
         private fun addInlineImageResource(resource: InlineImageResource): String {
             val md = MessageDigest.getInstance("MD5")
             val hash = BigInteger(1, md.digest(resource.data)).toString(16).padStart(32, '0')
                 .plus("_").plus(resource.width).plus("_").plus(resource.height)
             inlineImageResources.computeIfAbsent(hash) {
-                RESOURCES_VERSION.set(UUID.randomUUID().toString())
+                resourceVersion.set(UUID.randomUUID().toString())
                 resource
             }
             return hash
@@ -459,7 +464,7 @@ class EtaTileServiceCommon {
             val stopName = stop.name
             val destName = Registry.getInstance(context).getStopSpecialDestinations(stopId, co, route)
 
-            val eta = Registry.getEta(stopId, co, route, context)
+            val eta = etaResults.remove(favoriteIndex)?: Registry.getEta(stopId, co, route, context)
 
             val color = if (eta.isConnectionError) {
                 Color.DarkGray
@@ -571,19 +576,13 @@ class EtaTileServiceCommon {
                     return pleaseWait(etaIndex, packageName, context)
                 }
             }
-            return if (!Shared.favoriteRouteStops.containsKey(etaIndex)) noFavouriteRouteStop(
-                etaIndex,
-                packageName,
-                context
-            ) else buildLayout(
-                etaIndex,
-                Shared.favoriteRouteStops[etaIndex]!!,
-                packageName,
-                context
-            )
+            val favouriteStopRoute = Shared.favoriteRouteStops[etaIndex]
+            return if (favouriteStopRoute == null) {
+                noFavouriteRouteStop(etaIndex, packageName, context)
+            } else {
+                buildLayout(etaIndex, favouriteStopRoute, packageName, context)
+            }
         }
-
-        private val states: MutableMap<Int, Boolean> = ConcurrentHashMap()
 
         fun buildTileRequest(etaIndex: Int, packageName: String, context: TileService): ListenableFuture<TileBuilders.Tile> {
             val element = buildSuitableElement(etaIndex, packageName, context)
@@ -598,7 +597,7 @@ class EtaTileServiceCommon {
             }
             return Futures.submit(Callable {
                 TileBuilders.Tile.Builder()
-                    .setResourcesVersion(RESOURCES_VERSION.get().toString())
+                    .setResourcesVersion(resourceVersion.get().toString())
                     .setFreshnessIntervalMillis(0)
                     .setTileTimeline(
                         TimelineBuilders.Timeline.Builder().addTimelineEntry(
@@ -614,7 +613,7 @@ class EtaTileServiceCommon {
 
         fun buildTileResourcesRequest(): ListenableFuture<ResourceBuilders.Resources> {
             return Futures.submit(Callable {
-                val resourceBuilder = ResourceBuilders.Resources.Builder().setVersion(RESOURCES_VERSION.get().toString())
+                val resourceBuilder = ResourceBuilders.Resources.Builder().setVersion(resourceVersion.get().toString())
                 for ((key, resource) in inlineImageResources) {
                     resourceBuilder.addIdToImageMapping(key, ResourceBuilders.ImageResource.Builder()
                         .setInlineResource(
@@ -632,13 +631,13 @@ class EtaTileServiceCommon {
             }, ForkJoinPool.commonPool())
         }
 
-        private val timerTasks: MutableMap<Int, TimerTask> = ConcurrentHashMap()
-        private val lastUpdate: MutableMap<Int, Long> = ConcurrentHashMap()
-
         fun handleTileEnterEvent(favoriteIndex: Int, context: TileService) {
             timerTasks.compute(favoriteIndex) { _, currentValue ->
                 currentValue?.cancel()
                 val timerTask = TimerUtils.newTimerTask {
+                    Shared.favoriteRouteStops[favoriteIndex]?.let {
+                        etaResults[favoriteIndex] = Registry.getEta(it.stopId, it.co, it.route, context)
+                    }
                     TileService.getUpdater(context).requestUpdate(context.javaClass)
                     lastUpdate[favoriteIndex] = System.currentTimeMillis()
                 }
