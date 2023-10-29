@@ -99,6 +99,7 @@ import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
+import com.loohp.hkbuseta.objects.resolvedDest
 import com.loohp.hkbuseta.objects.toCoordinates
 import com.loohp.hkbuseta.objects.uniqueKey
 import com.loohp.hkbuseta.shared.KMBSubsidiary
@@ -399,8 +400,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                 }
                 val routeTextWidth = if (Shared.language != "en" && co == Operator.MTR) mtrTextWidth else defaultTextWidth
                 val rawColor = co.getColor(route.route.routeNumber, Color.White)
-                var dest = route.route.dest[Shared.language]
-                dest = (if (Shared.language == "en") "To " else "往").plus(dest)
+                val dest = route.route.resolvedDest(true)[Shared.language]
 
                 val secondLine: MutableList<String> = ArrayList()
                 if (route.stopInfo != null) {

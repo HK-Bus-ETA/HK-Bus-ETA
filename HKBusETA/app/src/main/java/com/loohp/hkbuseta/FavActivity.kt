@@ -540,7 +540,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     val co = currentFavouriteStopRoute.co
                     val routeNumber = route.routeNumber
                     val stopId = currentFavouriteStopRoute.stopId
-                    val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route)
+                    val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true)
                     val rawColor = co.getColor(routeNumber, Color.White)
                     val color = if (kmbCtbJoint) {
                         val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
@@ -561,11 +561,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
 
                     val operator = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)
                     val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
-                    val routeText = if (Shared.language == "en") {
-                        "To ".plus(destName.en)
-                    } else {
-                        "往".plus(destName.zh)
-                    }
+                    val routeText = destName[Shared.language]
                     val subText = if (Shared.language == "en") {
                         (if (co == Operator.MTR || co == Operator.LRT) "" else index.toString().plus(". ")).plus(stopName.en)
                     } else {

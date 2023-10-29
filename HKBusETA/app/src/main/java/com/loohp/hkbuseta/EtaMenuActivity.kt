@@ -153,7 +153,7 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             }
             item {
                 Title(index, stop.name, routeNumber, co, instance)
-                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route), routeNumber, co, instance)
+                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), routeNumber, co, instance)
             }
             item {
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
@@ -467,13 +467,7 @@ fun Title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator
 
 @Composable
 fun SubTitle(destName: BilingualText, routeNumber: String, co: Operator, instance: EtaMenuActivity) {
-    val name = if (Shared.language == "en") {
-        val routeName = co.getDisplayRouteNumber(routeNumber)
-        routeName.plus(" To ").plus(destName.en)
-    } else {
-        val routeName = co.getDisplayRouteNumber(routeNumber)
-        routeName.plus(" 往").plus(destName.zh)
-    }
+    val name = co.getDisplayRouteNumber(routeNumber).plus(" ").plus(destName[Shared.language])
     AutoResizeText(
         modifier = Modifier
             .fillMaxWidth()

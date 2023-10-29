@@ -375,12 +375,7 @@ class EtaTileServiceCommon {
         }
 
         private fun subTitle(destName: BilingualText, routeNumber: String, co: Operator, context: Context): LayoutElementBuilders.Text {
-            val routeName = co.getDisplayRouteNumber(routeNumber)
-            val name = if (Shared.language == "en") {
-                routeName.plus(" To ").plus(destName.en)
-            } else {
-                routeName.plus(" 往").plus(destName.zh)
-            }
+            val name = co.getDisplayRouteNumber(routeNumber).plus(" ").plus(destName[Shared.language])
             return LayoutElementBuilders.Text.Builder()
                 .setModifiers(
                     ModifiersBuilders.Modifiers.Builder()
@@ -462,7 +457,7 @@ class EtaTileServiceCommon {
 
             val routeNumber = route.routeNumber
             val stopName = stop.name
-            val destName = Registry.getInstance(context).getStopSpecialDestinations(stopId, co, route)
+            val destName = Registry.getInstance(context).getStopSpecialDestinations(stopId, co, route, true)
 
             val eta = etaResults.remove(favoriteIndex)?: Registry.getEta(stopId, co, route, context)
 

@@ -20,6 +20,8 @@
 
 package com.loohp.hkbuseta.shared;
 
+import static com.loohp.hkbuseta.objects.RouteExtensionsKt.prependTo;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 
@@ -362,7 +364,8 @@ public class Registry {
                     CompletableFuture<String> future = new CompletableFuture<>();
                     new Thread(() -> {
                         try {
-                            future.complete(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5"));
+                            long version = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).getLongVersionCode();
+                            future.complete(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5") + "_" + version);
                         } catch (Exception e) {
                             e.printStackTrace();
                             future.complete(null);
@@ -1079,32 +1082,57 @@ public class Registry {
         }
     }
 
-    public BilingualText getStopSpecialDestinations(String stopId, Operator co, Route route) {
+    public BilingualText getStopSpecialDestinations(String stopId, Operator co, Route route, boolean prependTo) {
+        if (route.getLrtCircular() != null) {
+            return route.getLrtCircular();
+        }
         String bound = route.getBound().get(co);
         switch (stopId) {
             case "LHP": {
                 if (bound.contains("UT")) {
-                    return new BilingualText("康城", "LOHAS Park");
+                    return prependTo(new BilingualText("康城", "LOHAS Park"));
                 } else {
-                    return new BilingualText("北角/寶琳", "North Point/Po Lam");
+                    return prependTo(new BilingualText("北角/寶琳", "North Point/Po Lam"));
                 }
             }
             case "HAH":
             case "POA": {
                 if (bound.contains("UT")) {
-                    return new BilingualText("寶琳", "Po Lam");
+                    return prependTo(new BilingualText("寶琳", "Po Lam"));
                 } else {
-                    return new BilingualText("北角/康城", "North Point/LOHAS Park");
+                    return prependTo(new BilingualText("北角/康城", "North Point/LOHAS Park"));
                 }
             }
             case "AIR":
             case "AWE": {
                 if (bound.contains("UT")) {
-                    return new BilingualText("博覽館", "AsiaWorld-Expo");
+                    return prependTo(new BilingualText("博覽館", "AsiaWorld-Expo"));
                 }
             }
         }
-        return route.getDest();
+        return prependTo(route.getDest());
+    }
+
+    public static boolean isLrtStopOnOrAfter(String thisStopId, String targetStopNameZh, Route route) {
+        if (route.getLrtCircular() != null && targetStopNameZh.equals(route.getLrtCircular().getZh())) {
+            return true;
+        }
+        List<String> stopIds = route.getStops().get(Operator.LRT);
+        if (stopIds == null) {
+            return false;
+        }
+        int stopIndex = stopIds.indexOf(thisStopId);
+        if (stopIndex < 0) {
+            return false;
+        }
+        for (int i = stopIndex; i < stopIds.size(); i++) {
+            String stopId = stopIds.get(i);
+            Stop stop = DATA_SHEET.getStopList().get(stopId);
+            if (stop != null && stop.getName().getZh().equals(targetStopNameZh)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean isMtrStopOnOrAfter(String stopId, String relativeTo, String lineName, String bound) {
@@ -1870,7 +1898,8 @@ public class Registry {
                                     for (int u = 0; u < routeList.length(); u++) {
                                         JSONObject routeData = routeList.optJSONObject(u);
                                         String routeNumber = routeData.optString("route_no");
-                                        if (routeNumber.equals(route.getRouteNumber())) {
+                                        String destCh = routeData.optString("dest_ch");
+                                        if (routeNumber.equals(route.getRouteNumber()) && isLrtStopOnOrAfter(stopId, destCh, route)) {
                                             Matcher matcher = Pattern.compile("([0-9]+) *min").matcher(routeData.optString("time_en"));
                                             long mins = matcher.find() ? Long.parseLong(matcher.group(1)) : 0;
                                             String minsMsg = routeData.optString(Shared.Companion.getLanguage().equals("en") ? "time_en" : "time_ch");

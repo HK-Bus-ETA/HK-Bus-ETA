@@ -310,7 +310,7 @@ fun EtaElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Rout
 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
                 Title(index, stop.name, lat, lng, routeNumber, co, instance)
-                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route), lat, lng, routeNumber, co, instance)
+                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(9, instance).dp))
                 EtaText(eta, 1, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
@@ -486,12 +486,7 @@ fun Title(index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNu
 @Composable
 fun SubTitle(destName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
-    val routeName = co.getDisplayRouteNumber(routeNumber)
-    val name = if (Shared.language == "en") {
-        routeName.plus(" To ").plus(destName.en)
-    } else {
-        routeName.plus(" 往").plus(destName.zh)
-    }
+    val name = co.getDisplayRouteNumber(routeNumber).plus(" ").plus(destName[Shared.language])
     AutoResizeText(
         modifier = Modifier
             .fillMaxWidth()

@@ -76,6 +76,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -102,6 +103,7 @@ import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.name
+import com.loohp.hkbuseta.objects.resolvedDest
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
@@ -122,6 +124,7 @@ import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toImmutableList
+import com.loohp.hkbuseta.utils.withAlpha
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -229,6 +232,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
         val interchangeSearch = remember { route.isInterchangeSearch }
         val origName = remember { route.route.orig }
         val destName = remember { route.route.dest }
+        val resolvedDestName = remember { route.route.resolvedDest(true) }
         val specialOrigsDests = remember { Registry.getInstance(instance).getAllOriginsAndDestinations(routeNumber, bound, co, gmbRegion) }
         val specialOrigs = remember { specialOrigsDests.first.stream().filter { !it.zh.eitherContains(origName.zh) }.toImmutableList() }
         val specialDests = remember { specialOrigsDests.second.stream().filter { !it.zh.eitherContains(destName.zh) }.toImmutableList() }
@@ -240,6 +244,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
         val mtrStopsInterchange = remember { if (co == Operator.MTR || co == Operator.LRT) {
             stopsList.stream().map { Registry.getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
         } else persistentListOf() }
+        val isLrtCircular = remember { route.route.lrtCircular != null }
         val mtrLineCreator = remember { if (co == Operator.MTR || co == Operator.LRT) generateMTRLine(co,
             if (co == Operator.LRT) when (routeNumber) {
                 "505" -> Color(0xFFDA2127)
@@ -254,7 +259,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
                 "751" -> Color(0xFFF48221)
                 "761P" -> Color(0xFF6F2D91)
                 else -> coColor
-            } else coColor, stopsList, mtrStopsInterchange, instance
+            } else coColor, stopsList, mtrStopsInterchange, isLrtCircular, instance
         ) else null }
 
         val distances: MutableMap<Int, Double> = remember { ConcurrentHashMap() }
@@ -334,7 +339,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
             state = scroll
         ) {
             item {
-                HeaderElement(routeNumber, kmbCtbJoint, co, coColor, destName, specialOrigs, specialDests, instance)
+                HeaderElement(routeNumber, kmbCtbJoint, co, coColor, resolvedDestName, specialOrigs, specialDests, instance)
             }
             for ((index, entry) in stopsList.withIndex()) {
                 item {
@@ -447,11 +452,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coCol
             ),
             color = Color(0xFFFFFFFF),
             maxLines = 2,
-            text = if (Shared.language == "en") {
-                "To ".plus(destName.en)
-            } else {
-                "往".plus(destName.zh)
-            }
+            text = destName[Shared.language]
         )
         if (specialOrigs.isNotEmpty()) {
             AutoResizeText(
@@ -758,7 +759,7 @@ fun isDashLineSpur(stopList: List<StopData>, stop: StopData): DashLineSpurResult
     return DashLineSpurResult.FALSE
 }
 
-fun generateMTRLine(co: Operator, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<Registry.MTRInterchangeData>, instance: ListStopsActivity): List<@Composable () -> Unit> {
+fun generateMTRLine(co: Operator, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<Registry.MTRInterchangeData>, isLrtCircular: Boolean, instance: ListStopsActivity): List<@Composable () -> Unit> {
     val creators: MutableList<@Composable () -> Unit> = ArrayList(stopList.size)
     val stopByBranchId: MutableMap<Int, MutableList<StopData>> = HashMap()
     stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.computeIfAbsent(it) { ArrayList() }.add(stop) } }
@@ -792,6 +793,19 @@ fun generateMTRLine(co: Operator, color: Color, stopList: List<StopData>, mtrSto
                             end = Offset(horizontalCenterPrimary, height),
                             strokeWidth = lineWidth
                         )
+                        if (isLrtCircular) {
+                            drawLine(
+                                brush = Brush.linearGradient(
+                                    0F to color.withAlpha(0),
+                                    1F to color,
+                                    start = Offset(horizontalCenterPrimary, -verticalCenter / 2),
+                                    end = Offset(horizontalCenterPrimary, verticalCenter)
+                                ),
+                                start = Offset(horizontalCenterPrimary, -verticalCenter),
+                                end = Offset(horizontalCenterPrimary, verticalCenter),
+                                strokeWidth = lineWidth
+                            )
+                        }
                     } else if (stopByBranchId.values.all { it.indexOf(stop).let { x -> x < 0 || x >= it.size - 1 } }) {
                         drawLine(
                             color = color,
@@ -799,6 +813,19 @@ fun generateMTRLine(co: Operator, color: Color, stopList: List<StopData>, mtrSto
                             end = Offset(horizontalCenterPrimary, verticalCenter),
                             strokeWidth = lineWidth
                         )
+                        if (isLrtCircular) {
+                            drawLine(
+                                brush = Brush.linearGradient(
+                                    0F to color,
+                                    1F to color.withAlpha(0),
+                                    start = Offset(horizontalCenterPrimary, verticalCenter),
+                                    end = Offset(horizontalCenterPrimary, height + verticalCenter / 2)
+                                ),
+                                start = Offset(horizontalCenterPrimary, verticalCenter),
+                                end = Offset(horizontalCenterPrimary, height + verticalCenter),
+                                strokeWidth = lineWidth
+                            )
+                        }
                     } else {
                         drawLine(
                             color = color,

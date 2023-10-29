@@ -94,6 +94,14 @@ fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language:
     }
 }
 
+fun Route.resolvedDest(prependTo: Boolean): BilingualText {
+    return lrtCircular?: dest.let { if (prependTo) it.prependTo() else it }
+}
+
+fun BilingualText.prependTo(): BilingualText {
+    return BilingualText("往$zh", "To $en")
+}
+
 fun DoubleArray.toCoordinates(): Coordinates {
     return Coordinates.fromArray(this)
 }
