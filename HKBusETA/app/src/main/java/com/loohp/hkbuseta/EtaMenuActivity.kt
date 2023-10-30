@@ -63,6 +63,8 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.aghajari.compose.text.AnnotatedText
+import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
@@ -75,14 +77,18 @@ import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.operator
+import com.loohp.hkbuseta.services.AlightReminderService
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.LocationUtils
+import com.loohp.hkbuseta.utils.NotificationUtils
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.sp
+import com.loohp.hkbuseta.utils.toSpanned
 import org.json.JSONObject
 
 
@@ -171,6 +177,10 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             }
             item {
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                AlightReminderButton(stopId, index, stop, route, co, instance)
+            }
+            item {
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 OpenOnMapsButton(stop.name, lat, lng, instance)
             }
             item {
@@ -210,7 +220,7 @@ fun MoreInfoHeader(instance: EtaMenuActivity) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
-        text = if (Shared.language == "en") "More Info" else "更多資訊"
+        text = if (Shared.language == "en") "More Info & Actions" else "更多資訊及功能"
     )
 }
 
@@ -274,6 +284,90 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
                     color = MaterialTheme.colors.primary,
                     fontSize = StringUtils.scaledSize(14F, instance).sp,
                     text = if (Shared.language == "en") "Find Nearby Interchanges" else "尋找附近轉乘路線"
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, co: Operator, instance: EtaMenuActivity) {
+    AdvanceButton (
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .width(StringUtils.scaledSize(220, instance).dp)
+            .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp),
+        onClick = {
+            LocationUtils.checkLocationPermission(instance) { locationGranted ->
+                if (locationGranted) {
+                    NotificationUtils.checkNotificationPermission(instance) { notificationGranted ->
+                        if (notificationGranted) {
+                            Registry.getInstance(instance).findRoutes(route.routeNumber, true) { it -> it == route }.first().let {
+                                AlightReminderService.terminate()
+
+                                val intent = Intent(instance, AlightReminderService::class.java)
+                                intent.putExtra("stop", stop.serialize().toString())
+                                intent.putExtra("route", route.serialize().toString())
+                                intent.putExtra("index", index)
+                                intent.putExtra("co", co.name())
+                                instance.startForegroundService(intent)
+
+                                val stopListIntent = Intent(instance, ListStopsActivity::class.java)
+                                stopListIntent.putExtra("route", it.serialize().toString())
+                                stopListIntent.putExtra("scrollToStop", stopId)
+                                stopListIntent.putExtra("showEta", false)
+                                stopListIntent.putExtra("isAlightReminder", true)
+                                instance.startActivity(stopListIntent)
+
+                                Toast.makeText(instance, if (Shared.language == "en") "You might need to\n\"Allow Background Activity\"\nfor this to continue working while the screen is off" else "你可能需要\n「允許背景活動」\n讓此功能正常在螢幕關閉時繼續運作", Toast.LENGTH_LONG).show()
+                            }
+                        } else {
+                            Toast.makeText(instance, if (Shared.language == "en") "Notification Permission Denied" else "推送通知權限被拒絕", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    Toast.makeText(instance, if (Shared.language == "en") "Location Access Permission Denied" else "位置存取權限被拒絕", Toast.LENGTH_SHORT).show()
+                }
+            }
+        },
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.secondary,
+            contentColor = MaterialTheme.colors.primary
+        ),
+        content = {
+            Row (
+                modifier = Modifier.padding(5.dp, 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Box (
+                    modifier = Modifier
+                        .padding(5.dp, 5.dp)
+                        .width(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
+                        .height(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF3D3D3D))
+                        .align(Alignment.Top),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .padding(3.dp, 3.dp)
+                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                        painter = painterResource(R.drawable.baseline_notifications_active_24),
+                        tint = Color(0xFFFF9800),
+                        contentDescription = if (Shared.language == "en") "Enable Alight Reminder" else "開啟落車提示"
+                    )
+                }
+                AnnotatedText(
+                    modifier = Modifier
+                        .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                    color = MaterialTheme.colors.primary,
+                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    maxLines = 2,
+                    text = (if (Shared.language == "en") "<b>Enable Alight Reminder</b> <small>Beta</small>" else "<b>開啟落車提示</b><br><small>測試版</small>").toSpanned(instance).asAnnotatedString()
                 )
             }
         }

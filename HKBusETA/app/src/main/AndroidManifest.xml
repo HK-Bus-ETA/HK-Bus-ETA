@@ -27,6 +27,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:ignore="CoarseFineLocation" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <uses-feature android:name="android.hardware.type.watch" />
 
@@ -118,6 +122,12 @@
             android:name="com.loohp.hkbuseta.FatalErrorActivity"
             android:theme="@android:style/Theme.DeviceDefault">
         </activity>
+
+        <service
+            android:name="com.loohp.hkbuseta.services.AlightReminderService"
+            android:foregroundServiceType="location"
+            android:exported="false">
+        </service>
 
         <service
             android:name="com.loohp.hkbuseta.tiles.EtaTileServiceOne"

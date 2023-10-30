@@ -56,8 +56,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -71,6 +73,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -89,21 +93,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
+import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.objects.resolvedDest
+import com.loohp.hkbuseta.services.AlightReminderService
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
@@ -166,9 +177,11 @@ class ListStopsActivity : ComponentActivity() {
         Shared.setDefaultExceptionHandler(this)
         val route = intent.extras!!.getString("route")?.let { RouteSearchResultEntry.deserialize(JSONObject(it)) }?: throw RuntimeException()
         val scrollToStop = intent.extras!!.getString("scrollToStop")
+        val showEta = intent.extras!!.getBoolean("showEta", true)
+        val isAlightReminder = intent.extras!!.getBoolean("isAlightReminder", false)
 
         setContent {
-            MainElement(this, route, scrollToStop) { isAdd, index, task ->
+            MainElement(this, route, showEta, scrollToStop, isAlightReminder) { isAdd, index, task ->
                 synchronized(etaUpdatesMap) {
                     if (isAdd) {
                         etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
@@ -215,7 +228,7 @@ class ListStopsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scrollToStop: String?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, showEta: Boolean, scrollToStop: String?, isAlightReminder: Boolean, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val scroll = rememberLazyListState()
@@ -263,12 +276,20 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
         ) else null }
 
         val distances: MutableMap<Int, Double> = remember { ConcurrentHashMap() }
-        var closestIndex by remember { mutableStateOf(0) }
 
         val etaTextWidth by remember { derivedStateOf { StringUtils.findTextLengthDp(instance, "99", StringUtils.scaledSize(16F, instance)) + 1F } }
 
         val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
         val etaResults = remember { ConcurrentHashMap<Int, Registry.ETAQueryResult>().asImmutableState() }
+
+        val rawAlightReminderData by remember { AlightReminderService.getCurrentState() }.collectAsStateWithLifecycle()
+        val alightReminderData by remember { derivedStateOf { if (isAlightReminder) rawAlightReminderData else null } }
+
+        var targetStop: Stop? by remember { mutableStateOf(null) }
+        val targetStopIndex by remember { derivedStateOf { targetStop?.let { target -> stopsList.indexOfFirst { it.stop == target } + 1 }?: -1 } }
+        var isTargetActive by remember { mutableStateOf(isAlightReminder) }
+
+        var closestIndex by remember { mutableStateOf(0) }
 
         LaunchedEffect (Unit) {
             focusRequester.requestFocus()
@@ -334,7 +355,37 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
                 .fullPageVerticalLazyScrollbar(
                     state = scroll
                 )
-                .rotaryScroll(scroll, focusRequester),
+                .rotaryScroll(scroll, focusRequester)
+                .composed {
+                    RestartEffect {
+                        if (isAlightReminder && (alightReminderData == null || !alightReminderData!!.active || route.route != alightReminderData!!.route)) {
+                            instance.finish()
+                        }
+                    }
+
+                    LaunchedEffect (rawAlightReminderData) {
+                        delay(1000)
+                        if (alightReminderData != null) {
+                            targetStop = alightReminderData?.targetStop
+                            if (route.route == alightReminderData!!.route) {
+                                if (!alightReminderData!!.active) {
+                                    isTargetActive = false
+                                }
+                                if (alightReminderData!!.currentLocation.isSuccess) {
+                                    val location = alightReminderData!!.currentLocation.location
+                                    closestIndex = (stopsList.withIndex().minBy {
+                                        DistanceUtils.findDistance(it.value.stop.location.lat, it.value.stop.location.lng, location.lat, location.lng)
+                                    }.index + 1).coerceAtMost(targetStopIndex)
+                                }
+                            } else if (alightReminderData!!.active) {
+                                isTargetActive = false
+                                instance.finish()
+                            }
+                        }
+                    }
+
+                    this
+                },
             horizontalAlignment = Alignment.CenterHorizontally,
             state = scroll
         ) {
@@ -345,13 +396,14 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
                 item {
                     val stopNumber = index + 1
                     val isClosest = closestIndex == stopNumber
+                    val isTargetStop = targetStopIndex == stopNumber
                     val stopId = entry.stopId
                     val stop = entry.stop
                     val brightness = if (entry.serviceType == lowestServiceType) 1F else 0.65F
                     val rawColor = (if (isClosest) coColor else Color.White).adjustBrightness(brightness)
                     val stopStr = stop.name[Shared.language]
 
-                    Box (
+                    Column (
                         modifier = Modifier
                             .fillParentMaxWidth()
                             .combinedClickable(
@@ -368,10 +420,17 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
                                     instance.runOnUiThread {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         instance.runOnUiThread {
-                                            val prefix = if (co == Operator.MTR || co == Operator.LRT) "" else stopNumber.toString().plus(". ")
-                                            val text = if (isClosest) {
-                                                prefix.plus(stopStr).plus("\n").plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
-                                                    .plus(((distances[stopNumber]?: Double.NaN) * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
+                                            val prefix =
+                                                if (co == Operator.MTR || co == Operator.LRT) "" else stopNumber
+                                                    .toString()
+                                                    .plus(". ")
+                                            val text = if (isClosest && !isAlightReminder) {
+                                                prefix
+                                                    .plus(stopStr)
+                                                    .plus("\n")
+                                                    .plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
+                                                    .plus(((distances[stopNumber] ?: Double.NaN) * 1000).roundToInt().formatDecimalSeparator())
+                                                    .plus(if (Shared.language == "en") "m" else "米")
                                             } else {
                                                 prefix.plus(stopStr)
                                             }
@@ -381,7 +440,40 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
                                 }
                             )
                     ) {
-                        StopRowElement(stopNumber, stopId, co, isClosest, kmbCtbJoint, mtrStopsInterchange, rawColor, brightness, padding, stopStr, stopsList, mtrLineCreator?.get(index), route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                        val (mtrLineSection, bottomExtensionSection) = mtrLineCreator?.get(index)?: (null to null)
+                        StopRowElement(stopNumber, stopId, co, showEta, isAlightReminder, isClosest, isTargetStop, kmbCtbJoint, mtrStopsInterchange, rawColor, brightness, padding, stopStr, stopsList, mtrLineSection, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                        if (isAlightReminder && isTargetStop) {
+                            var height by remember { mutableStateOf(0) }
+                            Box (
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onSizeChanged {
+                                        height = it.height
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if ((co == Operator.MTR || co == Operator.LRT) && bottomExtensionSection != null) {
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(25.dp, 0.dp)
+                                            .requiredWidth((if (stopsList.map { it.serviceType }.distinct().size > 1 || mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }) 50 else 35).sp.dp)
+                                            .requiredHeight(height.toFloat().equivalentDp)
+                                            .align(Alignment.CenterStart)
+                                    ) {
+                                        bottomExtensionSection.invoke()
+                                    }
+                                }
+                                Column {
+                                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                                    if (isTargetActive) {
+                                        TerminateAlightReminderButton(instance)
+                                    } else {
+                                        AlightReminderCompleted(instance)
+                                    }
+                                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                                }
+                            }
+                        }
                     }
                     Spacer(
                         modifier = Modifier
@@ -397,6 +489,113 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, scro
             }
         }
     }
+}
+
+@Composable
+fun AlightReminderCompleted(instance: ListStopsActivity) {
+    AdvanceButton (
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .width(StringUtils.scaledSize(220, instance).dp)
+            .height(StringUtils.scaledSize(40, instance).sp.clamp(min = 40.dp).dp),
+        onClick = {
+            instance.finish()
+        },
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.secondary,
+            contentColor = MaterialTheme.colors.primary
+        ),
+        content = {
+            Row (
+                modifier = Modifier.padding(5.dp, 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Box (
+                    modifier = Modifier
+                        .padding(5.dp, 5.dp)
+                        .width(StringUtils.scaledSize(20, instance).sp.clamp(max = 20.dp).dp)
+                        .height(StringUtils.scaledSize(20, instance).sp.clamp(max = 20.dp).dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF3D3D3D))
+                        .align(Alignment.Top),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .padding(3.dp, 3.dp)
+                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                        painter = painterResource(R.drawable.baseline_location_on_24),
+                        tint = Color(0xFFFF9800),
+                        contentDescription = if (Shared.language == "en") "Arrived" else "已到達"
+                    )
+                }
+                Text(
+                    modifier = Modifier
+                        .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                    color = MaterialTheme.colors.primary,
+                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    text = if (Shared.language == "en") "Arrived" else "已到達"
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun TerminateAlightReminderButton(instance: ListStopsActivity) {
+    AdvanceButton (
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .width(StringUtils.scaledSize(220, instance).dp)
+            .height(StringUtils.scaledSize(40, instance).sp.clamp(min = 40.dp).dp),
+        onClick = {
+            instance.finish()
+            AlightReminderService.terminate()
+        },
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.secondary,
+            contentColor = MaterialTheme.colors.primary
+        ),
+        content = {
+            Row (
+                modifier = Modifier.padding(5.dp, 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Box (
+                    modifier = Modifier
+                        .padding(5.dp, 5.dp)
+                        .width(StringUtils.scaledSize(20, instance).sp.clamp(max = 20.dp).dp)
+                        .height(StringUtils.scaledSize(20, instance).sp.clamp(max = 20.dp).dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF3D3D3D))
+                        .align(Alignment.Top),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .padding(3.dp, 3.dp)
+                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                        painter = painterResource(R.drawable.baseline_notifications_off_24),
+                        tint = Color(0xFFFF0000),
+                        contentDescription = if (Shared.language == "en") "Disable Reminder" else "關閉落車提示"
+                    )
+                }
+                Text(
+                    modifier = Modifier
+                        .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                    color = MaterialTheme.colors.primary,
+                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    text = if (Shared.language == "en") "Disable Reminder" else "關閉落車提示"
+                )
+            }
+        }
+    )
 }
 
 @Composable
@@ -497,7 +696,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coCol
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, isClosest: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: ImmutableList<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boolean, isAlightReminder: Boolean, isClosest: Boolean, isTargetStop: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: ImmutableList<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var height by remember { mutableStateOf(0) }
     Row (
         modifier = Modifier
@@ -509,21 +708,31 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, isClosest: Boo
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
     ) {
-        val color = if (isClosest && kmbCtbJoint) {
-            val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
-            val animatedColor by infiniteTransition.animateColor(
-                initialValue = rawColor,
-                targetValue = Color(0xFFFFE15E).adjustBrightness(brightness),
-                animationSpec = infiniteRepeatable(
-                    animation = tween(5000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse,
-                    initialStartOffset = StartOffset(1500)
-                ),
-                label = "JointColor"
-            )
-            animatedColor
+        val color = if (isAlightReminder) {
+            if (isTargetStop) {
+                Color(0xFFFF9800)
+            } else if (isClosest) {
+                Color(0xFFFF0000)
+            } else {
+                rawColor
+            }
         } else {
-            rawColor
+            if (isClosest && kmbCtbJoint) {
+                val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
+                val animatedColor by infiniteTransition.animateColor(
+                    initialValue = rawColor,
+                    targetValue = Color(0xFFFFE15E).adjustBrightness(brightness),
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(5000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse,
+                        initialStartOffset = StartOffset(1500)
+                    ),
+                    label = "JointColor"
+                )
+                animatedColor
+            } else {
+                rawColor
+            }
         }
 
         if ((co == Operator.MTR || co == Operator.LRT) && mtrLineCreator != null) {
@@ -541,7 +750,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, isClosest: Boo
                     .requiredWidth(30.dp),
                 textAlign = TextAlign.Start,
                 fontSize = StringUtils.scaledSize(15F, instance).sp,
-                fontWeight = if (isClosest) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (isClosest || isTargetStop) FontWeight.Bold else FontWeight.Normal,
                 color = color,
                 maxLines = 1,
                 text = stopNumber.toString().plus(".")
@@ -554,7 +763,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, isClosest: Boo
                 .weight(1F),
             textAlign = TextAlign.Start,
             fontSize = StringUtils.scaledSize(15F, instance).sp,
-            fontWeight = if (isClosest) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (isClosest || isTargetStop) FontWeight.Bold else FontWeight.Normal,
             color = color,
             maxLines = 1,
             text = stopStr
@@ -562,7 +771,23 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, isClosest: Boo
         Box (
             modifier = Modifier.align(Alignment.CenterVertically)
         ) {
-            ETAElement(stopNumber, stopId, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+            if (isAlightReminder && isTargetStop && !isClosest) {
+                Icon (
+                    modifier = Modifier.requiredWidth(etaTextWidth.dp),
+                    painter = painterResource(R.drawable.baseline_notifications_active_24),
+                    tint = Color(0xFFFF9800),
+                    contentDescription = if (Shared.language == "en") "Alight Reminder" else "落車提示"
+                )
+            } else if (isAlightReminder && isClosest) {
+                Icon (
+                    modifier = Modifier.requiredWidth(etaTextWidth.dp),
+                    painter = painterResource(R.drawable.baseline_location_on_24),
+                    tint = Color(0xFFFF0000),
+                    contentDescription = if (Shared.language == "en") "Alight Reminder" else "落車提示"
+                )
+            } else if (showEta) {
+                ETAElement(stopNumber, stopId, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+            }
         }
     }
 }
@@ -759,15 +984,15 @@ fun isDashLineSpur(stopList: List<StopData>, stop: StopData): DashLineSpurResult
     return DashLineSpurResult.FALSE
 }
 
-fun generateMTRLine(co: Operator, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<Registry.MTRInterchangeData>, isLrtCircular: Boolean, instance: ListStopsActivity): List<@Composable () -> Unit> {
-    val creators: MutableList<@Composable () -> Unit> = ArrayList(stopList.size)
+fun generateMTRLine(co: Operator, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<Registry.MTRInterchangeData>, isLrtCircular: Boolean, instance: ListStopsActivity): List<Pair<@Composable () -> Unit, @Composable () -> Unit>> {
+    val creators: MutableList<Pair<@Composable () -> Unit, @Composable () -> Unit>> = ArrayList(stopList.size)
     val stopByBranchId: MutableMap<Int, MutableList<StopData>> = HashMap()
     stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.computeIfAbsent(it) { ArrayList() }.add(stop) } }
     val hasOutOfStation = mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }
     for ((index, stop) in stopList.withIndex()) {
         val isMainLine = stop.serviceType == 1
         val interchangeData = mtrStopsInterchange[index]
-        creators.add {
+        creators.add(@Composable {
             Canvas(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -1066,7 +1291,96 @@ fun generateMTRLine(co: Operator, color: Color, stopList: List<StopData>, mtrSto
                     cornerRadius = CornerRadius(circleWidth / 2F)
                 )
             }
-        }
+        } to @Composable {
+            Canvas(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (index + 1 >= stopList.size) {
+                    return@Canvas
+                }
+
+                val width = size.width
+                val height = size.height
+
+                val leftShift = if (hasOutOfStation) StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 22F).sp.toPx(), instance) else 0
+                val horizontalCenter = width / 2F - leftShift.toFloat()
+                val horizontalPartition = width / 10F
+                val horizontalCenterPrimary = if (stopByBranchId.size == 1) horizontalCenter else horizontalPartition * 3F
+                val horizontalCenterSecondary = horizontalPartition * 7F
+                val lineWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 11F).sp.toPx(), instance)
+                val dashEffect = floatArrayOf(StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 14F).sp.toPx(), instance), StringUtils.scaledSize(UnitUtils.pixelsToDp(instance, 7F).sp.toPx(), instance))
+
+                if (isMainLine) {
+                    drawLine(
+                        color = color,
+                        start = Offset(horizontalCenterPrimary, 0F),
+                        end = Offset(horizontalCenterPrimary, height),
+                        strokeWidth = lineWidth
+                    )
+                    if (hasOtherParallelBranches(stopList, stopByBranchId, stop)) {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterSecondary, 0F),
+                            end = Offset(horizontalCenterSecondary, height),
+                            strokeWidth = lineWidth,
+                            pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                        )
+                    }
+                    when (getSideSpurLineType(stopList, stopByBranchId, stop)) {
+                        SideSpurLineType.DIVERGE -> {
+                            drawLine(
+                                color = color,
+                                start = Offset(horizontalCenterSecondary, 0F),
+                                end = Offset(horizontalCenterSecondary, height),
+                                strokeWidth = lineWidth
+                            )
+                        }
+                        else -> {}
+                    }
+                } else {
+                    drawLine(
+                        color = color,
+                        start = Offset(horizontalCenterPrimary, 0F),
+                        end = Offset(horizontalCenterPrimary, height),
+                        strokeWidth = lineWidth
+                    )
+                    val dashLineResult = isDashLineSpur(stopList, stop)
+                    if (dashLineResult.value) {
+                        if (dashLineResult.isStartOfSpur) {
+                            drawLine(
+                                color = color,
+                                start = Offset(horizontalCenterSecondary, 0F),
+                                end = Offset(horizontalCenterSecondary, height),
+                                strokeWidth = lineWidth,
+                                pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                            )
+                        } else if (!dashLineResult.isEndOfSpur) {
+                            drawLine(
+                                color = color,
+                                start = Offset(horizontalCenterSecondary, 0F),
+                                end = Offset(horizontalCenterSecondary, height),
+                                strokeWidth = lineWidth,
+                                pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                            )
+                        }
+                    } else if (stopByBranchId.values.all { it.indexOf(stop) <= 0 }) {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterSecondary, 0F),
+                            end = Offset(horizontalCenterSecondary, height),
+                            strokeWidth = lineWidth
+                        )
+                    } else if (!stopByBranchId.values.all { it.indexOf(stop).let { x -> x < 0 || x >= it.size - 1 } }) {
+                        drawLine(
+                            color = color,
+                            start = Offset(horizontalCenterSecondary, 0F),
+                            end = Offset(horizontalCenterSecondary, height),
+                            strokeWidth = lineWidth
+                        )
+                    }
+                }
+            }
+        })
     }
     return creators
 }

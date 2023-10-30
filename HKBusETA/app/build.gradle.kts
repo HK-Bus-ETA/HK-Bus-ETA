@@ -31,8 +31,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 33
-        versionCode = 219
-        versionName = "1.6.3"
+        versionCode = 225
+        versionName = "1.7.0"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -83,7 +83,7 @@ kotlin {
 dependencies {
     implementation("com.google.guava:guava:31.0.1-android")
     implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.core:core-ktx:1.10.1")
     implementation("com.google.android.gms:play-services-wearable:18.0.0")
     implementation("androidx.percentlayout:percentlayout:1.0.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
@@ -96,9 +96,9 @@ dependencies {
     implementation("androidx.wear.compose:compose-material:1.0.0")
     implementation("androidx.wear.compose:compose-foundation:1.0.0")
     implementation("androidx.wear:wear:1.3.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.5.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
-    implementation("androidx.activity:activity-compose:1.5.1")
+    implementation("androidx.activity:activity-compose:1.7.2")
     implementation("androidx.wear.tiles:tiles:1.2.0-alpha07")
     implementation("androidx.concurrent:concurrent-futures-ktx:1.1.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")

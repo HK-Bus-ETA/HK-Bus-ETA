@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.utils.DistanceUtils
 
 
 inline val Operator.name: String get() = name()
@@ -108,6 +109,14 @@ fun DoubleArray.toCoordinates(): Coordinates {
 
 fun Route.getRouteKey(context: Context): String? {
     return Registry.getInstance(context).getRouteKey(this)
+}
+
+fun String.asStop(context: Context): Stop? {
+    return Registry.getInstance(context).getStopById(this)
+}
+
+fun Coordinates.distance(other: Coordinates): Double {
+    return DistanceUtils.findDistance(lat, lng, other.lat, other.lng);
 }
 
 inline val RouteSearchResultEntry.uniqueKey: String get() {
