@@ -81,6 +81,7 @@ import com.loohp.hkbuseta.services.AlightReminderService
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.ActivityUtils
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.NotificationUtils
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
@@ -303,23 +304,31 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                     NotificationUtils.checkNotificationPermission(instance) { notificationGranted ->
                         if (notificationGranted) {
                             Registry.getInstance(instance).findRoutes(route.routeNumber, true) { it -> it == route }.first().let {
-                                AlightReminderService.terminate()
-
                                 val intent = Intent(instance, AlightReminderService::class.java)
                                 intent.putExtra("stop", stop.serialize().toString())
                                 intent.putExtra("route", route.serialize().toString())
                                 intent.putExtra("index", index)
                                 intent.putExtra("co", co.name())
-                                instance.startForegroundService(intent)
 
                                 val stopListIntent = Intent(instance, ListStopsActivity::class.java)
                                 stopListIntent.putExtra("route", it.serialize().toString())
                                 stopListIntent.putExtra("scrollToStop", stopId)
                                 stopListIntent.putExtra("showEta", false)
                                 stopListIntent.putExtra("isAlightReminder", true)
-                                instance.startActivity(stopListIntent)
 
-                                Toast.makeText(instance, if (Shared.language == "en") "You might need to\n\"Allow Background Activity\"\nfor this to continue working while the screen is off" else "你可能需要\n「允許背景活動」\n讓此功能正常在螢幕關閉時繼續運作", Toast.LENGTH_LONG).show()
+                                val noticeIntent = Intent(instance, DismissibleTextDisplayActivity::class.java)
+                                val notice = BilingualText(
+                                    "你可能需要「<b>允許背景活動</b>」讓此功能在螢幕關閉時繼續正常運作<br><br>此功能目前在<b>測試階段</b>, 運作可能不穩定",
+                                    "You might need to \"<b>Allow Background Activity</b>\" for this feature to continue working while the screen is off.<br><br>This feature is currently in <b>beta</b>, which might be unstable."
+                                )
+                                noticeIntent.putExtra("text", notice.serialize().toString())
+                                ActivityUtils.startActivity(instance, noticeIntent) { result ->
+                                    if (result.resultCode == 1) {
+                                        AlightReminderService.terminate()
+                                        instance.startForegroundService(intent)
+                                        instance.startActivity(stopListIntent)
+                                    }
+                                }
                             }
                         } else {
                             Toast.makeText(instance, if (Shared.language == "en") "Notification Permission Denied" else "推送通知權限被拒絕", Toast.LENGTH_SHORT).show()

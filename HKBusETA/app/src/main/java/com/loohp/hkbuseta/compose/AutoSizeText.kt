@@ -23,6 +23,7 @@ package com.loohp.hkbuseta.compose
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,7 +60,7 @@ fun AutoResizeText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     var previousText by remember { mutableStateOf(text) }
-    var fontSizeValue by remember { mutableStateOf(fontSizeRange.max.value) }
+    var fontSizeValue by remember { mutableFloatStateOf(fontSizeRange.max.value) }
     var readyToDraw by remember { mutableStateOf(false) }
 
     Text(

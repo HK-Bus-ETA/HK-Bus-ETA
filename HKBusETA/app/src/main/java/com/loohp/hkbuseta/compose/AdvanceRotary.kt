@@ -31,6 +31,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -61,14 +63,14 @@ fun Modifier.rotaryScroll(
     return composed {
         val scope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
-        var scrollCounter by remember { mutableStateOf(0) }
+        var scrollCounter by remember { mutableIntStateOf(0) }
         val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
         val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
-        var scrollMoved by remember { mutableStateOf(0) }
+        var scrollMoved by remember { mutableIntStateOf(0) }
 
         val mutex by remember { mutableStateOf(Mutex()) }
         val animatedScrollValue = remember { Animatable(0F) }
-        var previousScrollValue by remember { mutableStateOf(0F) }
+        var previousScrollValue by remember { mutableFloatStateOf(0F) }
 
         LaunchedEffect (animatedScrollValue.value) {
             val diff = previousScrollValue - animatedScrollValue.value
@@ -128,14 +130,14 @@ fun Modifier.rotaryScroll(
     return composed {
         val scope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
-        var scrollCounter by remember { mutableStateOf(0) }
+        var scrollCounter by remember { mutableIntStateOf(0) }
         val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
         val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
-        var scrollMoved by remember { mutableStateOf(0) }
+        var scrollMoved by remember { mutableIntStateOf(0) }
 
         val mutex by remember { mutableStateOf(Mutex()) }
         val animatedScrollValue = remember { Animatable(0F) }
-        var previousScrollValue by remember { mutableStateOf(0F) }
+        var previousScrollValue by remember { mutableFloatStateOf(0F) }
 
         LaunchedEffect (animatedScrollValue.value) {
             val diff = previousScrollValue - animatedScrollValue.value

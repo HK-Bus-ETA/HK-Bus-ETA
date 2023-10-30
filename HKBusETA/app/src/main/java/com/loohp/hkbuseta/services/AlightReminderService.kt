@@ -28,9 +28,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
 import android.os.IBinder
 import android.os.PowerManager
-import android.os.PowerManager.PARTIAL_WAKE_LOCK
 import android.os.PowerManager.WakeLock
-import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.core.app.NotificationCompat
@@ -192,16 +190,17 @@ class AlightReminderService : Service() {
             } }
         }
 
-        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PARTIAL_WAKE_LOCK, "hkbuseta:alight_reminder")
-        wakeLock!!.setReferenceCounted(false)
-        wakeLock!!.acquire(10800000)
+        if (wakeLock?.isHeld != true) {
+            val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "hkbuseta:alight_reminder")
+            wakeLock!!.setReferenceCounted(false)
+            wakeLock!!.acquire(10800000)
+        }
 
         if (future == null) {
             executor.scheduleWithFixedDelay({
                 val currentValue = getCurrentValue()
                 if (currentValue?.active == true) {
-                    Log.d("0", "Ran")
                     val currentLocation = LocationUtils.getGPSLocation(this).getOr(10, TimeUnit.SECONDS) { currentValue.currentLocation }!!
                     if (currentLocation.isSuccess) {
                         val distance = DistanceUtils.findDistance(currentValue.targetStop.location.lat, currentValue.targetStop.location.lng, currentLocation.location.lat, currentLocation.location.lng)

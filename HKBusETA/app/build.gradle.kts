@@ -25,13 +25,13 @@ plugins {
 
 android {
     namespace = "com.loohp.hkbuseta"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 33
-        versionCode = 225
+        versionCode = 228
         versionName = "1.7.0"
         vectorDrawables {
             useSupportLibrary = true
@@ -83,23 +83,23 @@ kotlin {
 dependencies {
     implementation("com.google.guava:guava:31.0.1-android")
     implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.core:core-ktx:1.10.1")
-    implementation("com.google.android.gms:play-services-wearable:18.0.0")
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("com.google.android.gms:play-services-wearable:18.1.0")
     implementation("androidx.percentlayout:percentlayout:1.0.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
-    implementation("androidx.recyclerview:recyclerview:1.3.0")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation(platform("androidx.compose:compose-bom:2023.03.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3:1.1.1")
-    implementation("androidx.compose.material3:material3-window-size-class:1.1.1")
-    implementation("androidx.wear.compose:compose-material:1.0.0")
-    implementation("androidx.wear.compose:compose-foundation:1.0.0")
+    implementation("androidx.compose.material3:material3:1.1.2")
+    implementation("androidx.compose.material3:material3-window-size-class:1.1.2")
+    implementation("androidx.wear.compose:compose-material:1.2.1")
+    implementation("androidx.wear.compose:compose-foundation:1.2.1")
     implementation("androidx.wear:wear:1.3.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
-    implementation("androidx.activity:activity-compose:1.7.2")
-    implementation("androidx.wear.tiles:tiles:1.2.0-alpha07")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+    implementation("androidx.activity:activity-compose:1.8.0")
+    implementation("androidx.wear.tiles:tiles:1.3.0-alpha01")
     implementation("androidx.concurrent:concurrent-futures-ktx:1.1.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("androidx.wear:wear-input:1.1.0")
@@ -107,10 +107,11 @@ dependencies {
     implementation("androidx.wear:wear-ongoing:1.0.0")
     implementation("androidx.wear:wear-phone-interactions:1.0.1")
     implementation("androidx.wear:wear-remote-interactions:1.0.0")
-    implementation("androidx.wear.protolayout:protolayout-material:1.0.0-alpha11")
+    implementation("androidx.wear.protolayout:protolayout-material:1.1.0-alpha01")
     implementation("io.github.aghajari:AnnotatedText:1.0.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("me.saket.telephoto:zoomable:0.5.0")
+    implementation("com.google.android.horologist:horologist-compose-layout:0.5.9")
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")

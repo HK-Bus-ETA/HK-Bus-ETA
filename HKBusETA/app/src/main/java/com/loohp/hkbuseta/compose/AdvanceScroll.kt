@@ -36,6 +36,8 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -61,7 +63,7 @@ fun Modifier.fullPageVerticalScrollbar(
     alpha: Float = 0.8f
 ): Modifier = composed {
     val configuration = LocalConfiguration.current
-    var scrollOffsetViewPort by remember { mutableStateOf(0F) }
+    var scrollOffsetViewPort by remember { mutableFloatStateOf(0F) }
     val animatedScrollOffsetViewPort by animateFloatAsState(
         targetValue = scrollOffsetViewPort,
         animationSpec = TweenSpec(durationMillis = 100, easing = LinearEasing),
@@ -134,9 +136,9 @@ fun Modifier.fullPageVerticalScrollbar(
 ): Modifier = composed {
     val configuration = LocalConfiguration.current
     val actualItemLength: MutableMap<Int, Int> = remember { mutableMapOf() }
-    var totalItemCount by remember { mutableStateOf(0) }
-    var indicatorLength by remember { mutableStateOf(0F) }
-    var scrollOffsetViewPort by remember { mutableStateOf(0F) }
+    var totalItemCount by remember { mutableIntStateOf(0) }
+    var indicatorLength by remember { mutableFloatStateOf(0F) }
+    var scrollOffsetViewPort by remember { mutableFloatStateOf(0F) }
     val animatedIndicatorLength by animateFloatAsState(
         targetValue = indicatorLength,
         animationSpec = TweenSpec(durationMillis = 300, easing = LinearEasing),

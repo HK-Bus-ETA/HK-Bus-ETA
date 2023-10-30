@@ -44,18 +44,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -83,9 +85,15 @@ import androidx.wear.compose.material.rememberSwipeableState
 import androidx.wear.compose.material.swipeable
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
+import com.google.android.horologist.compose.ambient.AmbientAware
+import com.google.android.horologist.compose.ambient.AmbientStateUpdate
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.PauseEffect
+import com.loohp.hkbuseta.compose.RestartEffect
+import com.loohp.hkbuseta.compose.ambientMode
+import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
@@ -102,6 +110,7 @@ import com.loohp.hkbuseta.utils.MutableHolder
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
@@ -110,7 +119,6 @@ import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.concurrent.Executors
@@ -140,12 +148,14 @@ class EtaActivity : ComponentActivity() {
         val offsetStart = intent.extras!!.getInt("offset", 0)
 
         setContent {
-            EtaElement(stopId, co, index, stop, route, offsetStart, this) { isAdd, task ->
-                synchronized(etaUpdatesMap) {
-                    if (isAdd) {
-                        etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
-                    } else {
-                        etaUpdatesMap.remove()?.first?.cancel(true)
+            AmbientAware {
+                EtaElement(it, stopId, co, index, stop, route, offsetStart, this) { isAdd, task ->
+                    synchronized(etaUpdatesMap) {
+                        if (isAdd) {
+                            etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
+                        } else {
+                            etaUpdatesMap.remove()?.first?.cancel(true)
+                        }
                     }
                 }
             }
@@ -187,11 +197,12 @@ class EtaActivity : ComponentActivity() {
 @OptIn(ExperimentalWearMaterialApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
-fun EtaElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: EtaActivity, schedule: (Boolean, (() -> Unit)?) -> Unit) {
+fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: EtaActivity, schedule: (Boolean, (() -> Unit)?) -> Unit) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val swipe = rememberSwipeableState(initialValue = false)
     var swiping by remember { mutableStateOf(swipe.offset.value != 0F) }
+    val ambientMode = rememberIsInAmbientMode(ambientStateUpdate)
 
     val routeNumber = route.routeNumber
 
@@ -230,7 +241,7 @@ fun EtaElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Rout
     ).toImmutableList() }
 
     val focusRequester = remember { FocusRequester() }
-    var currentOffset by remember { mutableStateOf(offsetStart * ScreenSizeUtils.getScreenHeight(instance).toFloat()) }
+    var currentOffset by remember { mutableFloatStateOf(offsetStart * ScreenSizeUtils.getScreenHeight(instance).toFloat()) }
     var animatedOffsetTask: (Float) -> Unit by remember { mutableStateOf({}) }
     val animatedOffset by animateFloatAsState(
         targetValue = currentOffset,
@@ -247,27 +258,42 @@ fun EtaElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Rout
     HKBusETATheme {
         Box (
             modifier = Modifier
+                .ambientMode(ambientStateUpdate)
                 .fillMaxSize()
                 .composed {
-                    this.offset(animatedOffset.equivalentDp, swipe.offset.value.coerceAtMost(0F).equivalentDp)
+                    this.offset(
+                        animatedOffset.equivalentDp,
+                        swipe.offset.value.coerceAtMost(0F).equivalentDp
+                    )
                 }
                 .swipeable(
                     state = swipe,
-                    anchors = mapOf(0F to false, -ScreenSizeUtils.getScreenHeight(instance).toFloat() to true),
+                    anchors = mapOf(
+                        0F to false,
+                        -ScreenSizeUtils
+                            .getScreenHeight(instance)
+                            .toFloat() to true
+                    ),
                     orientation = Orientation.Vertical
                 )
                 .onRotaryScrollEvent {
                     if (it.horizontalScrollPixels > 0) {
                         if (index < stopList.size) {
-                            currentOffset = -ScreenSizeUtils.getScreenWidth(instance).toFloat()
-                            animatedOffsetTask = { launchOtherStop(index + 1, co, stopList, true, 1, instance) }
+                            currentOffset = -ScreenSizeUtils
+                                .getScreenWidth(instance)
+                                .toFloat()
+                            animatedOffsetTask =
+                                { launchOtherStop(index + 1, co, stopList, true, 1, instance) }
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
                     } else {
                         if (index > 1) {
-                            currentOffset = ScreenSizeUtils.getScreenWidth(instance).toFloat()
-                            animatedOffsetTask = { launchOtherStop(index - 1, co, stopList, true, -1, instance) }
+                            currentOffset = ScreenSizeUtils
+                                .getScreenWidth(instance)
+                                .toFloat()
+                            animatedOffsetTask =
+                                { launchOtherStop(index - 1, co, stopList, true, -1, instance) }
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
@@ -294,13 +320,23 @@ fun EtaElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Rout
                 val lat = stop.location.lat
                 val lng = stop.location.lng
 
+                var active by remember { mutableStateOf(true) }
                 var eta: ETAQueryResult? by remember { mutableStateOf(null) }
 
+                PauseEffect {
+                    active = false
+                }
+                RestartEffect {
+                    active = true
+                }
+
                 LaunchedEffect (Unit) {
-                    if (eta != null && !eta!!.isConnectionError) {
-                        delay(Shared.ETA_UPDATE_INTERVAL)
+                    schedule.invoke(true) {
+                        val result = Registry.getEta(stopId, co, route, instance)
+                        if (active) {
+                            eta = result
+                        }
                     }
-                    schedule.invoke(true) { eta = Registry.getEta(stopId, co, route, instance) }
                 }
                 DisposableEffect (Unit) {
                     onDispose {
@@ -309,16 +345,20 @@ fun EtaElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Rout
                 }
 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
-                Title(index, stop.name, lat, lng, routeNumber, co, instance)
-                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), lat, lng, routeNumber, co, instance)
+                Title(ambientMode, index, stop.name, lat, lng, routeNumber, co, instance)
+                SubTitle(ambientMode, Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(9, instance).dp))
-                EtaText(eta, 1, instance)
+                EtaText(ambientMode, eta, 1, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
-                EtaText(eta, 2, instance)
+                EtaText(ambientMode, eta, 2, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
-                EtaText(eta, 3, instance)
+                EtaText(ambientMode, eta, 3, instance)
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
-                ActionBar(stopId, co, index, stop, route, stopList, instance)
+                if (ambientMode) {
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(24, instance).dp))
+                } else {
+                    ActionBar(stopId, co, index, stop, route, stopList, instance)
+                }
             }
         }
     }
@@ -366,7 +406,7 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
             content = {
                 Icon(
                     modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
-                    imageVector = Icons.Filled.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = if (Shared.language == "en") "Previous Stop" else "上一站",
                     tint = if (index > 1) Color(0xFFFFFFFF) else Color(0xFF494949),
                 )
@@ -420,7 +460,7 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
             content = {
                 Icon(
                     modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
-                    imageVector = Icons.Filled.ArrowForward,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = if (Shared.language == "en") "Next Stop" else "下一站",
                     tint = if (index < stopList.size) Color(0xFFFFFFFF) else Color(0xFF494949),
                 )
@@ -459,7 +499,7 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaActivit
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Title(index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: EtaActivity) {
+fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     val name = if (Shared.language == "en") stopName.en else stopName.zh
     AutoResizeText (
@@ -471,7 +511,7 @@ fun Title(index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNu
                 onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic)
             ),
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
+        color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
         text = if (co == Operator.MTR) name else index.toString().plus(". ").plus(name),
         maxLines = 2,
         fontWeight = FontWeight(900),
@@ -484,7 +524,7 @@ fun Title(index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNu
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SubTitle(destName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: EtaActivity) {
+fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
     val name = co.getDisplayRouteNumber(routeNumber).plus(" ").plus(destName[Shared.language])
     AutoResizeText(
@@ -496,7 +536,7 @@ fun SubTitle(destName: BilingualText, lat: Double, lng: Double, routeNumber: Str
                 onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic)
             ),
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
+        color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
         text = name,
         maxLines = 1,
         fontSizeRange = FontSizeRange(
@@ -509,17 +549,25 @@ fun SubTitle(destName: BilingualText, lat: Double, lng: Double, routeNumber: Str
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EtaText(lines: ETAQueryResult?, seq: Int, instance: EtaActivity) {
+fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: EtaActivity) {
     val textSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp)
-    AnnotatedText(
+    Box (
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(
+                min = textSize.dp + 7.dp
+            )
             .padding(20.dp, 0.dp)
-            .basicMarquee(iterations = Int.MAX_VALUE),
-        textAlign = TextAlign.Center,
-        fontSize = textSize,
-        color = MaterialTheme.colors.primary,
-        maxLines = 1,
-        text = (lines?.getLine(seq)?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else "").toSpanned(instance, textSize.value).asAnnotatedString()
-    )
+    ) {
+        AnnotatedText(
+            modifier = Modifier
+                .fillMaxWidth()
+                .basicMarquee(iterations = Int.MAX_VALUE),
+            textAlign = TextAlign.Center,
+            fontSize = textSize,
+            color = MaterialTheme.colors.primary.adjustBrightness(if (lines == null || (ambientMode && seq > 1)) 0.7F else 1F),
+            maxLines = 1,
+            text = (lines?.getLine(seq)?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else "").toSpanned(instance, textSize.value).asAnnotatedString()
+        )
+    }
 }

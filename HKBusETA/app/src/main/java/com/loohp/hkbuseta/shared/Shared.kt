@@ -41,6 +41,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -341,16 +342,16 @@ class Shared {
 
         var language = "zh"
 
-        private val suggestedMaxFavouriteRouteStop = mutableStateOf(0)
-        private val currentMaxFavouriteRouteStop = mutableStateOf(0)
+        private val suggestedMaxFavouriteRouteStop = mutableIntStateOf(0)
+        private val currentMaxFavouriteRouteStop = mutableIntStateOf(0)
         val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentHashMap()
 
         fun updateFavoriteRouteStops(mutation: Consumer<Map<Int, FavouriteRouteStop>>) {
             synchronized(favoriteRouteStops) {
                 mutation.accept(favoriteRouteStops)
                 val max = favoriteRouteStops.maxOfOrNull { it.key }?: 0
-                currentMaxFavouriteRouteStop.value = max.coerceAtLeast(8)
-                suggestedMaxFavouriteRouteStop.value = (max + 1).coerceIn(8, 30)
+                currentMaxFavouriteRouteStop.intValue = max.coerceAtLeast(8)
+                suggestedMaxFavouriteRouteStop.intValue = (max + 1).coerceIn(8, 30)
             }
         }
 

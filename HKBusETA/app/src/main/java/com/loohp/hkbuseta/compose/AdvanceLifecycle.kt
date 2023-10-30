@@ -39,6 +39,16 @@ fun RestartEffect(onRestart: () -> Unit) {
 }
 
 @Composable
+fun PauseEffect(onPause: () -> Unit) {
+    LifecycleEffect { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> onPause.invoke()
+            else -> {}
+        }
+    }
+}
+
+@Composable
 fun LifecycleEffect(onEvent: (owner: LifecycleOwner, event: Lifecycle.Event) -> Unit) {
     val eventHandler = rememberUpdatedState(onEvent)
     val lifecycleOwner = rememberUpdatedState(LocalLifecycleOwner.current)

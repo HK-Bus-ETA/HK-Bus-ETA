@@ -514,9 +514,9 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
             Text(
                 modifier = Modifier
                     .padding(0.dp, padding.dp)
-                    .basicMarquee(iterations = Int.MAX_VALUE)
                     .offset(0.dp, if (co == Operator.MTR && Shared.language != "en") mtrBottomOffset.dp else bottomOffset.dp)
-                    .weight(1F),
+                    .weight(1F)
+                    .basicMarquee(iterations = Int.MAX_VALUE),
                 textAlign = TextAlign.Start,
                 fontSize = if (co == Operator.MTR && Shared.language != "en") {
                     StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)

@@ -32,6 +32,8 @@ import java.util.Objects;
 @Immutable
 public class BilingualText implements JSONSerializable {
 
+    public static final BilingualText EMPTY = new BilingualText("", "");
+
     public static BilingualText deserialize(JSONObject json) {
         String zh = json.optString("zh");
         String en = json.optString("en");

@@ -50,6 +50,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -154,7 +155,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                 val scope = rememberCoroutineScope()
                 val haptic = LocalHapticFeedback.current
 
-                var scrollCounter by remember { mutableStateOf(0) }
+                var scrollCounter by remember { mutableIntStateOf(0) }
                 val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
                 val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
                 var scrollMoved by remember { mutableStateOf(false) }

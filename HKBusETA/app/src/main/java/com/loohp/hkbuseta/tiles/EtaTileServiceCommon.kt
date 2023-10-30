@@ -402,8 +402,8 @@ class EtaTileServiceCommon {
         }
 
         @androidx.annotation.OptIn(androidx.wear.protolayout.expression.ProtoLayoutExperimental::class)
-        private fun etaText(eta: ETAQueryResult, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Spannable {
-            val raw = eta.getLine(seq)
+        private fun etaText(eta: ETAQueryResult?, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Spannable {
+            val raw = eta?.getLine(seq)?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else ""
             val measure = raw.toSpanned(context, 17F).asAnnotatedString().annotatedString.text
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
@@ -461,7 +461,7 @@ class EtaTileServiceCommon {
 
             val eta = etaResults.remove(favoriteIndex)?: Registry.getEta(stopId, co, route, context)
 
-            val color = if (eta.isConnectionError) {
+            val color = if (eta == null || eta.isConnectionError) {
                 Color.DarkGray
             } else {
                 eta.nextCo.getColor(routeNumber, Color.LightGray).adjustBrightness(if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) 0.2F else 1F)

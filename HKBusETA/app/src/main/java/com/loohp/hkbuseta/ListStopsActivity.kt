@@ -67,6 +67,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -289,7 +290,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
         val targetStopIndex by remember { derivedStateOf { targetStop?.let { target -> stopsList.indexOfFirst { it.stop == target } + 1 }?: -1 } }
         var isTargetActive by remember { mutableStateOf(isAlightReminder) }
 
-        var closestIndex by remember { mutableStateOf(0) }
+        var closestIndex by remember { mutableIntStateOf(0) }
 
         LaunchedEffect (Unit) {
             focusRequester.requestFocus()
@@ -443,7 +444,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
                         val (mtrLineSection, bottomExtensionSection) = mtrLineCreator?.get(index)?: (null to null)
                         StopRowElement(stopNumber, stopId, co, showEta, isAlightReminder, isClosest, isTargetStop, kmbCtbJoint, mtrStopsInterchange, rawColor, brightness, padding, stopStr, stopsList, mtrLineSection, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
                         if (isAlightReminder && isTargetStop) {
-                            var height by remember { mutableStateOf(0) }
+                            var height by remember { mutableIntStateOf(0) }
                             Box (
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -697,7 +698,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coCol
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boolean, isAlightReminder: Boolean, isClosest: Boolean, isTargetStop: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: ImmutableList<StopData>, mtrLineCreator: (@Composable () -> Unit)?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
-    var height by remember { mutableStateOf(0) }
+    var height by remember { mutableIntStateOf(0) }
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
@@ -759,8 +760,8 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boole
         Text(
             modifier = Modifier
                 .padding(0.dp, padding.dp)
-                .basicMarquee(iterations = Int.MAX_VALUE)
-                .weight(1F),
+                .weight(1F)
+                .basicMarquee(iterations = Int.MAX_VALUE),
             textAlign = TextAlign.Start,
             fontSize = StringUtils.scaledSize(15F, instance).sp,
             fontWeight = if (isClosest || isTargetStop) FontWeight.Bold else FontWeight.Normal,
@@ -768,32 +769,34 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boole
             maxLines = 1,
             text = stopStr
         )
-        Box (
-            modifier = Modifier.align(Alignment.CenterVertically)
-        ) {
-            if (isAlightReminder && isTargetStop && !isClosest) {
-                Icon (
-                    modifier = Modifier.requiredWidth(etaTextWidth.dp),
-                    painter = painterResource(R.drawable.baseline_notifications_active_24),
-                    tint = Color(0xFFFF9800),
-                    contentDescription = if (Shared.language == "en") "Alight Reminder" else "落車提示"
-                )
-            } else if (isAlightReminder && isClosest) {
-                Icon (
-                    modifier = Modifier.requiredWidth(etaTextWidth.dp),
-                    painter = painterResource(R.drawable.baseline_location_on_24),
-                    tint = Color(0xFFFF0000),
-                    contentDescription = if (Shared.language == "en") "Alight Reminder" else "落車提示"
-                )
-            } else if (showEta) {
-                ETAElement(stopNumber, stopId, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+        if ((isAlightReminder && isTargetStop && !isClosest) || (isAlightReminder && isClosest) || showEta) {
+            Box (
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .requiredWidth(etaTextWidth.dp)
+            ) {
+                if (isAlightReminder && isTargetStop && !isClosest) {
+                    Icon (
+                        painter = painterResource(R.drawable.baseline_notifications_active_24),
+                        tint = Color(0xFFFF9800),
+                        contentDescription = if (Shared.language == "en") "Alight Reminder" else "落車提示"
+                    )
+                } else if (isAlightReminder && isClosest) {
+                    Icon (
+                        painter = painterResource(R.drawable.baseline_location_on_24),
+                        tint = Color(0xFFFF0000),
+                        contentDescription = if (Shared.language == "en") "Alight Reminder" else "落車提示"
+                    )
+                } else {
+                    ETAElement(stopNumber, stopId, route, etaResults, etaUpdateTimes, instance, schedule)
+                }
             }
         }
     }
 }
 
 @Composable
-fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults.value[index]) }
 
     LaunchedEffect (Unit) {
@@ -813,7 +816,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaTex
     }
     Column (
         modifier = Modifier
-            .requiredWidth(etaTextWidth.dp)
+            .fillMaxWidth()
             .offset(0.dp, -2F.sp.dp),
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.Center

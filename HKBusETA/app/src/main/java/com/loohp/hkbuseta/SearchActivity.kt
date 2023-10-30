@@ -60,6 +60,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -221,15 +223,15 @@ fun MainElement(instance: SearchActivity) {
                 val scope = rememberCoroutineScope()
                 val haptic = LocalHapticFeedback.current
                 val possibleValues by remember { derivedStateOf { state.value.nextCharResult.characters } }
-                var scrollCounter by remember { mutableStateOf(0) }
+                var scrollCounter by remember { mutableIntStateOf(0) }
                 val scrollInProgress by remember { derivedStateOf { scroll.isScrollInProgress } }
                 val scrollReachedEnd by remember { derivedStateOf { scroll.canScrollBackward != scroll.canScrollForward } }
-                var scrollMoved by remember { mutableStateOf(0) }
+                var scrollMoved by remember { mutableIntStateOf(0) }
 
                 val mutex by remember { mutableStateOf(Mutex()) }
                 var job: Job? = remember { null }
                 val animatedScrollValue = remember { Animatable(0F) }
-                var previousScrollValue by remember { mutableStateOf(0F) }
+                var previousScrollValue by remember { mutableFloatStateOf(0F) }
                 LaunchedEffect (animatedScrollValue.value) {
                     if (scrollMoved > 0) {
                         val diff = previousScrollValue - animatedScrollValue.value

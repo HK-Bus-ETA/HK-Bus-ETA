@@ -53,6 +53,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -198,8 +199,10 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
         val etaResults = remember { ConcurrentHashMap<Int, Registry.ETAQueryResult>().asImmutableState() }
 
         LaunchedEffect (Unit) {
-            scope.launch {
-                state.scrollToItem(scrollToIndex.coerceIn(1, maxFavItems.coerceAtLeast(1)) + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) + UnitUtils.spToPixels(instance, StringUtils.scaledSize(35F, instance)).roundToInt())
+            if (scrollToIndex > 0) {
+                scope.launch {
+                    state.scrollToItem(scrollToIndex.coerceIn(1, maxFavItems.coerceAtLeast(1)) + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) + UnitUtils.spToPixels(instance, StringUtils.scaledSize(35F, instance)).roundToInt())
+                }
             }
         }
 
@@ -425,7 +428,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
 
                 Box(
                     modifier = Modifier
-                        .padding(10.dp, 8.dp)
+                        .padding(10.dp, (if (Shared.language == "en") 7.5 else 8.5).dp)
                         .align(Alignment.BottomStart),
                 ) {
                     if (eta != null && !eta!!.isConnectionError) {
@@ -568,7 +571,13 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         (if (co == Operator.MTR || co == Operator.LRT) "" else index.toString().plus(". ")).plus(stopName.zh)
                     }
                     Spacer(modifier = Modifier.size(5.dp))
-                    Column {
+                    Column (
+                        modifier = Modifier
+                            .heightIn(
+                                min = StringUtils.scaledSize(60, instance).sp.clamp(max = 60.dp).dp
+                            ),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
                             modifier = Modifier
                                 .fillMaxWidth()

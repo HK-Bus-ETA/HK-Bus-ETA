@@ -2131,8 +2131,6 @@ public class Registry {
     @Stable
     public static class ETAQueryResult {
 
-        public static final ETAQueryResult EMPTY = new ETAQueryResult(true, -1, false, false, null, Collections.emptyMap());
-
         public static ETAQueryResult connectionError(Operator co) {
             return new ETAQueryResult(true, -1, false, false, co, Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"));
         }
