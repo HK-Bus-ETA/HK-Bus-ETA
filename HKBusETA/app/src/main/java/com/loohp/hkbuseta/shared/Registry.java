@@ -2075,7 +2075,8 @@ public class Registry {
             try {
                 future.cancel(true);
             } catch (Throwable ignore) {}
-            return ETAQueryResult.connectionError(!(context instanceof ComponentActivity) && ConnectionUtils.isBackgroundRestricted(context), co);
+            ConnectionUtils.BackgroundRestrictionType restrictionType = context instanceof ComponentActivity ? ConnectionUtils.BackgroundRestrictionType.NONE : ConnectionUtils.isBackgroundRestricted(context);
+            return ETAQueryResult.connectionError(restrictionType, co);
         }
     }
 
@@ -2132,12 +2133,36 @@ public class Registry {
     @Stable
     public static class ETAQueryResult {
 
-        public static ETAQueryResult connectionError(boolean backgroundNetworkRestricted, Operator co) {
+        public static ETAQueryResult connectionError(ConnectionUtils.BackgroundRestrictionType restrictionType, Operator co) {
             Map<Integer, String> lines;
-            if (backgroundNetworkRestricted) {
-                lines = Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制");
-            } else {
-                lines = Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器");
+            switch (restrictionType) {
+                case POWER_SAVE_MODE: {
+                    lines = Map.of(
+                            1, Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制",
+                            2, Shared.Companion.getLanguage().equals("en") ? "Power Saving" : "省電模式"
+                    );
+                    break;
+                }
+                case RESTRICT_BACKGROUND_STATUS: {
+                    lines = Map.of(
+                            1, Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制",
+                            2, Shared.Companion.getLanguage().equals("en") ? "Data Saver" : "數據節省器"
+                    );
+                    break;
+                }
+                case LOW_POWER_STANDBY: {
+                    lines = Map.of(
+                            1, Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制",
+                            2, Shared.Companion.getLanguage().equals("en") ? "Low Power Standby" : "低耗電待機"
+                    );
+                    break;
+                }
+                default: {
+                    lines = Map.of(
+                            1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"
+                    );
+                    break;
+                }
             }
             return new ETAQueryResult(true, -1, false, false, co, lines);
         }
