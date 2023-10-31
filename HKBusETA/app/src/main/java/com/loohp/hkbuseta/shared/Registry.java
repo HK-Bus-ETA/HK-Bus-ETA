@@ -27,6 +27,7 @@ import android.content.Context;
 
 import androidx.compose.runtime.Immutable;
 import androidx.compose.runtime.Stable;
+import androidx.core.app.ComponentActivity;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
@@ -2074,7 +2075,7 @@ public class Registry {
             try {
                 future.cancel(true);
             } catch (Throwable ignore) {}
-            return ETAQueryResult.connectionError(co);
+            return ETAQueryResult.connectionError(!(context instanceof ComponentActivity) && ConnectionUtils.isBackgroundRestricted(context), co);
         }
     }
 
@@ -2131,8 +2132,14 @@ public class Registry {
     @Stable
     public static class ETAQueryResult {
 
-        public static ETAQueryResult connectionError(Operator co) {
-            return new ETAQueryResult(true, -1, false, false, co, Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"));
+        public static ETAQueryResult connectionError(boolean backgroundNetworkRestricted, Operator co) {
+            Map<Integer, String> lines;
+            if (backgroundNetworkRestricted) {
+                lines = Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制");
+            } else {
+                lines = Collections.singletonMap(1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器");
+            }
+            return new ETAQueryResult(true, -1, false, false, co, lines);
         }
 
         public static ETAQueryResult result(long nextScheduledBus, boolean isMtrEndOfLine, boolean isTyphoonSchedule, Operator nextCo, Map<Integer, String> lines) {
