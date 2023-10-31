@@ -2070,7 +2070,7 @@ public class Registry {
             }
         }).start();
         try {
-            return future.get(30, TimeUnit.SECONDS);
+            return future.get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.SECONDS);
         } catch (ExecutionException | InterruptedException | TimeoutException | CancellationException e) {
             try {
                 future.cancel(true);
