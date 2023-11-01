@@ -97,7 +97,7 @@ data class InlineImageResource(val data: ByteArray, val width: Int, val height: 
 
 class TileState {
 
-    private var updateTask: AtomicReference<ScheduledFuture<*>?> = AtomicReference(null)
+    private val updateTask: AtomicReference<ScheduledFuture<*>?> = AtomicReference(null)
     private val lastUpdated: AtomicLong = AtomicLong(0)
     private val cachedETAQueryResult: AtomicReference<Pair<ETAQueryResult?, Long>> = AtomicReference(null to 0)
     private val tileLayoutState: AtomicBoolean = AtomicBoolean(false)
