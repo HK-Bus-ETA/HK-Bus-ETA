@@ -135,6 +135,41 @@
         </service>
 
         <service
+            android:name="com.loohp.hkbuseta.tiles.EtaTileService"
+            android:exported="true"
+            android:label="@string/route_stop_eta_tile_name"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@mipmap/route_stop_tile" />
+            <meta-data
+                android:name="com.google.android.clockwork.tiles.MULTI_INSTANCES_SUPPORTED"
+                android:value="true"/>
+            <meta-data
+                android:name="com.google.android.clockwork.tiles.PROVIDER_CONFIG_ACTION"
+                android:value="ConfigEtaTile"/>
+        </service>
+
+        <activity
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleInstancePerTask"
+            android:name="com.loohp.hkbuseta.tiles.EtaTileConfigureActivity"
+            android:taskAffinity="SingleNoteTile.Config">
+
+            <intent-filter>
+                <action android:name="ConfigEtaTile"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="com.google.android.clockwork.tiles.category.PROVIDER_CONFIG"/>
+            </intent-filter>
+        </activity>
+
+        <service
             android:name="com.loohp.hkbuseta.tiles.EtaTileServiceOne"
             android:exported="true"
             android:label="@string/route_stop_eta_tile_name_1"
@@ -144,7 +179,6 @@
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
 
-            <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@mipmap/route_stop_tile_1" />
@@ -160,7 +194,6 @@
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
 
-            <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@mipmap/route_stop_tile_2" />
@@ -176,7 +209,6 @@
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
 
-            <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@mipmap/route_stop_tile_3" />
@@ -192,7 +224,6 @@
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
 
-            <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@mipmap/route_stop_tile_4" />
@@ -208,7 +239,6 @@
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
 
-            <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@mipmap/route_stop_tile_5" />
@@ -224,7 +254,6 @@
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
 
-            <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@mipmap/route_stop_tile_6" />
@@ -240,7 +269,6 @@
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
 
-            <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@mipmap/route_stop_tile_7" />
@@ -256,7 +284,6 @@
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
 
-            <!-- The tile preview shown when configuring tiles on your phone -->
             <meta-data
                 android:name="androidx.wear.tiles.PREVIEW"
                 android:resource="@mipmap/route_stop_tile_8" />

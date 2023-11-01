@@ -20,12 +20,13 @@
 
 <resources>
     <string name="app_name">HK Bus ETA</string>
-    <string name="route_stop_eta_tile_name_1">Route Stop ETA 1</string>
-    <string name="route_stop_eta_tile_name_2">Route Stop ETA 2</string>
-    <string name="route_stop_eta_tile_name_3">Route Stop ETA 3</string>
-    <string name="route_stop_eta_tile_name_4">Route Stop ETA 4</string>
-    <string name="route_stop_eta_tile_name_5">Route Stop ETA 5</string>
-    <string name="route_stop_eta_tile_name_6">Route Stop ETA 6</string>
-    <string name="route_stop_eta_tile_name_7">Route Stop ETA 7</string>
-    <string name="route_stop_eta_tile_name_8">Route Stop ETA 8</string>
+    <string name="route_stop_eta_tile_name">Favourite Route ETA</string>
+    <string name="route_stop_eta_tile_name_1">Route ETA 1 (Single)</string>
+    <string name="route_stop_eta_tile_name_2">Route ETA 2 (Single)</string>
+    <string name="route_stop_eta_tile_name_3">Route ETA 3 (Single)</string>
+    <string name="route_stop_eta_tile_name_4">Route ETA 4 (Single)</string>
+    <string name="route_stop_eta_tile_name_5">Route ETA 5 (Single)</string>
+    <string name="route_stop_eta_tile_name_6">Route ETA 6 (Single)</string>
+    <string name="route_stop_eta_tile_name_7">Route ETA 7 (Single)</string>
+    <string name="route_stop_eta_tile_name_8">Route ETA 8 (Single)</string>
 </resources>

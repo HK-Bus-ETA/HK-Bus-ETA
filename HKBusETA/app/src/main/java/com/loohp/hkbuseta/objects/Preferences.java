@@ -24,6 +24,7 @@ import com.loohp.hkbuseta.shared.LastLookupRoute;
 import com.loohp.hkbuseta.utils.JSONSerializable;
 import com.loohp.hkbuseta.utils.JsonUtils;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -38,21 +39,24 @@ public class Preferences implements JSONSerializable {
         String language = json.optString("language");
         Map<Integer, FavouriteRouteStop> favouriteRouteStops = JsonUtils.toMap(json.optJSONObject("favouriteRouteStops"), Integer::parseInt, v -> FavouriteRouteStop.deserialize((JSONObject) v));
         List<LastLookupRoute> lastLookupRoutes = JsonUtils.mapToList(json.optJSONArray("lastLookupRoutes"), v -> LastLookupRoute.Companion.deserialize((JSONObject) v));
-        return new Preferences(language, favouriteRouteStops, lastLookupRoutes);
+        Map<Integer, List<Integer>> etaTileConfigurations = json.has("etaTileConfigurations") ? JsonUtils.toMap(json.optJSONObject("etaTileConfigurations"), Integer::parseInt, v -> JsonUtils.toList((JSONArray) v, int.class)) : new HashMap<>();
+        return new Preferences(language, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations);
     }
 
     public static Preferences createDefault() {
-        return new Preferences("zh", new HashMap<>(), new ArrayList<>());
+        return new Preferences("zh", new HashMap<>(), new ArrayList<>(), new HashMap<>());
     }
 
     private String language;
     private final Map<Integer, FavouriteRouteStop> favouriteRouteStops;
     private final List<LastLookupRoute> lastLookupRoutes;
+    private final Map<Integer, List<Integer>> etaTileConfigurations;
 
-    public Preferences(String language, Map<Integer, FavouriteRouteStop> favouriteRouteStops, List<LastLookupRoute> lastLookupRoutes) {
+    public Preferences(String language, Map<Integer, FavouriteRouteStop> favouriteRouteStops, List<LastLookupRoute> lastLookupRoutes, Map<Integer, List<Integer>> etaTileConfigurations) {
         this.language = language;
         this.favouriteRouteStops = favouriteRouteStops;
         this.lastLookupRoutes = lastLookupRoutes;
+        this.etaTileConfigurations = etaTileConfigurations;
     }
 
     public String getLanguage() {
@@ -71,12 +75,17 @@ public class Preferences implements JSONSerializable {
         return lastLookupRoutes;
     }
 
+    public Map<Integer, List<Integer>> getEtaTileConfigurations() {
+        return etaTileConfigurations;
+    }
+
     @Override
     public JSONObject serialize() throws JSONException {
         JSONObject json = new JSONObject();
         json.put("language", language);
         json.put("favouriteRouteStops", JsonUtils.fromMap(favouriteRouteStops, FavouriteRouteStop::serialize));
         json.put("lastLookupRoutes", JsonUtils.fromStream(lastLookupRoutes.stream().map(LastLookupRoute::serialize)));
+        json.put("etaTileConfigurations", JsonUtils.fromMap(etaTileConfigurations, JsonUtils::fromCollection));
         return json;
     }
 

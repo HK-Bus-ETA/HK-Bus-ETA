@@ -28,7 +28,7 @@ import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.shared.Shared
 
-private const val ETA_TILE_INDEX = 5
+private const val ETA_TILE_INDEX = 5 or Int.MIN_VALUE
 
 class EtaTileServiceFive : TileService() {
 

@@ -26,7 +26,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 
 import androidx.compose.runtime.Immutable;
-import androidx.compose.runtime.Stable;
 import androidx.core.app.ComponentActivity;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
@@ -43,6 +42,7 @@ import com.loohp.hkbuseta.objects.Route;
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry;
 import com.loohp.hkbuseta.objects.Stop;
 import com.loohp.hkbuseta.objects.Coordinates;
+import com.loohp.hkbuseta.tiles.EtaTileService;
 import com.loohp.hkbuseta.tiles.EtaTileServiceEight;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFive;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFour;
@@ -98,7 +98,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
@@ -175,6 +174,7 @@ public class Registry {
     }
 
     public void updateTileService(Context context) {
+        updateTileService(0, context);
         updateTileService(1, context);
         updateTileService(2, context);
         updateTileService(3, context);
@@ -188,6 +188,7 @@ public class Registry {
     public void updateTileService(int favoriteIndex, Context context) {
         TileUpdateRequester updater = TileService.getUpdater(context);
         switch (favoriteIndex) {
+            case 0: { updater.requestUpdate(EtaTileService.class); break; }
             case 1: { updater.requestUpdate(EtaTileServiceOne.class); break; }
             case 2: { updater.requestUpdate(EtaTileServiceTwo.class); break; }
             case 3: { updater.requestUpdate(EtaTileServiceThree.class); break; }
@@ -274,6 +275,39 @@ public class Registry {
         }
     }
 
+    public void clearEtaTileConfiguration(int tileId, Context context) {
+        try {
+            Shared.Companion.updateEtaTileConfigurations(m -> m.remove(tileId));
+            if (PREFERENCES != null && !PREFERENCES.getFavouriteRouteStops().isEmpty()) {
+                PREFERENCES.getEtaTileConfigurations().remove(tileId);
+                synchronized (preferenceWriteLock) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                        pw.write(PREFERENCES.serialize().toString());
+                        pw.flush();
+                    }
+                }
+            }
+        } catch (IOException | JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void setEtaTileConfiguration(int tileId, List<Integer> favouriteIndexes, Context context) {
+        try {
+            Shared.Companion.updateEtaTileConfigurations(m -> m.put(tileId, favouriteIndexes));
+            PREFERENCES.getEtaTileConfigurations().put(tileId, favouriteIndexes);
+            synchronized (preferenceWriteLock) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    pw.write(PREFERENCES.serialize().toString());
+                    pw.flush();
+                }
+            }
+            updateTileService(0, context);
+        } catch (IOException | JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void addLastLookupRoute(String routeNumber, Operator co, String meta, Context context) {
         try {
             Shared.Companion.addLookupRoute(routeNumber, co, meta);
@@ -336,6 +370,7 @@ public class Registry {
 
         Shared.Companion.setLanguage(PREFERENCES.getLanguage());
         Shared.Companion.updateFavoriteRouteStops(m -> m.putAll(PREFERENCES.getFavouriteRouteStops()));
+        Shared.Companion.updateEtaTileConfigurations(m -> m.putAll(PREFERENCES.getEtaTileConfigurations()));
         List<LastLookupRoute> lastLookupRoutes = PREFERENCES.getLastLookupRoutes();
         for (Iterator<LastLookupRoute> itr = lastLookupRoutes.iterator(); itr.hasNext();) {
             LastLookupRoute lastLookupRoute = itr.next();
@@ -1338,13 +1373,12 @@ public class Registry {
             try {
                 TyphoonInfo typhoonInfo = getCurrentTyphoonData().get();
 
-                Map<Integer, String> lines = new HashMap<>();
-                long nextScheduledBus = -999;
+                Map<Integer, ETALineEntry> lines = new HashMap<>();
                 boolean isMtrEndOfLine = false;
                 boolean isTyphoonSchedule = false;
                 Operator nextCo = co;
 
-                lines.put(1, getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle()));
+                lines.put(1, ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle())));
                 String language = Shared.Companion.getLanguage();
                 if (route.isKmbCtbJoint()) {
                     isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
@@ -1423,10 +1457,10 @@ public class Registry {
                     }
                     {
                         String routeNumber = route.getRouteNumber();
-                        List<kotlin.Pair<Operator, String>> matchingStops = DATA_SHEET.getStopMap().get(stopId);
+                        List<Pair<Operator, String>> matchingStops = DATA_SHEET.getStopMap().get(stopId);
                         List<String> ctbStopIds = new ArrayList<>();
                         if (matchingStops != null) {
-                            for (kotlin.Pair<Operator, String> stopArray : matchingStops) {
+                            for (Pair<Operator, String> stopArray : matchingStops) {
                                 if (Operator.CTB.equals(stopArray.getFirst())) {
                                     ctbStopIds.add(stopArray.getSecond());
                                 }
@@ -1484,9 +1518,9 @@ public class Registry {
 
                     if (etaSorted.isEmpty()) {
                         if (kmbSpecialMessage == null || kmbSpecialMessage.isEmpty()) {
-                            lines.put(1, getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle()));
+                            lines.put(1, ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle())));
                         } else {
-                            lines.put(1, kmbSpecialMessage);
+                            lines.put(1, ETALineEntry.textEntry(kmbSpecialMessage));
                         }
                     } else {
                         int counter = 0;
@@ -1508,10 +1542,9 @@ public class Registry {
                             }
                             int seq = ++counter;
                             if (seq == 1) {
-                                nextScheduledBus = mins;
                                 nextCo = entryCo;
                             }
-                            lines.put(seq, message);
+                            lines.put(seq, ETALineEntry.etaEntry(message, mins));
                         }
                     }
                 } else if (co.equals(Operator.KMB)) {
@@ -1534,14 +1567,8 @@ public class Registry {
                                 if (language.equals("en")) {
                                     if (mins > 0) {
                                         message = "<b>" + mins + "</b><small> Min.</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     } else if (mins > -60) {
                                         message = "<b>-</b><small> Min.</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     }
                                     if (!bus.optString("rmk_en").isEmpty()) {
                                         message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
@@ -1549,14 +1576,8 @@ public class Registry {
                                 } else {
                                     if (mins > 0) {
                                         message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     } else if (mins > -60) {
                                         message = "<b>-</b><small> 分鐘</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     }
                                     if (!bus.optString("rmk_tc").isEmpty()) {
                                         message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
@@ -1576,7 +1597,7 @@ public class Registry {
                                 } else {
                                     message = "<b></b>" + message;
                                 }
-                                lines.put(seq, message);
+                                lines.put(seq, ETALineEntry.etaEntry(message, mins));
                             }
                         }
                     }
@@ -1600,14 +1621,8 @@ public class Registry {
                                 if (language.equals("en")) {
                                     if (mins > 0) {
                                         message = "<b>" + mins + "</b><small> Min.</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     } else if (mins > -60) {
                                         message = "<b>-</b><small> Min.</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     }
                                     if (!bus.optString("rmk_en").isEmpty()) {
                                         message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
@@ -1615,14 +1630,8 @@ public class Registry {
                                 } else {
                                     if (mins > 0) {
                                         message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     } else if (mins > -60) {
                                         message = "<b>-</b><small> 分鐘</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     }
                                     if (!bus.optString("rmk_tc").isEmpty()) {
                                         message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
@@ -1642,7 +1651,7 @@ public class Registry {
                                 } else {
                                     message = "<b></b>" + message;
                                 }
-                                lines.put(seq, message);
+                                lines.put(seq, ETALineEntry.etaEntry(message, mins));
                             }
                         }
                     }
@@ -1666,26 +1675,14 @@ public class Registry {
                         if (language.equals("en")) {
                             if (mins > 0) {
                                 message = "<b>" + mins + "</b><small> Min.</small>";
-                                if (seq == 1) {
-                                    nextScheduledBus = mins;
-                                }
                             } else if (mins > -60) {
                                 message = "<b>-</b><small> Min.</small>";
-                                if (seq == 1) {
-                                    nextScheduledBus = mins;
-                                }
                             }
                         } else {
                             if (mins > 0) {
                                 message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                if (seq == 1) {
-                                    nextScheduledBus = mins;
-                                }
                             } else if (mins > -60) {
                                 message = "<b>-</b><small> 分鐘</small>";
-                                if (seq == 1) {
-                                    nextScheduledBus = mins;
-                                }
                             }
                         }
                         if (!variant.isEmpty()) {
@@ -1705,7 +1702,7 @@ public class Registry {
                         } else {
                             message = "<b></b>" + message;
                         }
-                        lines.put(seq, message);
+                        lines.put(seq, ETALineEntry.etaEntry(message, mins));
                     }
                 } else if (co.equals(Operator.MTR_BUS)) {
                     isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
@@ -1757,26 +1754,14 @@ public class Registry {
                                 if (language.equals("en")) {
                                     if (mins > 0) {
                                         message = "<b>" + mins + "</b><small> Min.</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     } else if (mins > -60) {
                                         message = "<b>-</b><small> Min.</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     }
                                 } else {
                                     if (mins > 0) {
                                         message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     } else if (mins > -60) {
                                         message = "<b>-</b><small> 分鐘</small>";
-                                        if (seq == 1) {
-                                            nextScheduledBus = mins;
-                                        }
                                     }
                                 }
                                 if (!remark.isEmpty()) {
@@ -1796,7 +1781,7 @@ public class Registry {
                                 } else {
                                     message = "<b></b>" + message;
                                 }
-                                lines.put(seq, message);
+                                lines.put(seq, ETALineEntry.etaEntry(message, mins));
                             }
                         }
                     }
@@ -1838,26 +1823,14 @@ public class Registry {
                         if (language.equals("en")) {
                             if (mins > 0) {
                                 message = "<b>" + mins + "</b><small> Min.</small>";
-                                if (seq == 1) {
-                                    nextScheduledBus = mins;
-                                }
                             } else if (mins > -60) {
                                 message = "<b>-</b><small> Min.</small>";
-                                if (seq == 1) {
-                                    nextScheduledBus = mins;
-                                }
                             }
                         } else {
                             if (mins > 0) {
                                 message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                if (seq == 1) {
-                                    nextScheduledBus = mins;
-                                }
                             } else if (mins > -60) {
                                 message = "<b>-</b><small> 分鐘</small>";
-                                if (seq == 1) {
-                                    nextScheduledBus = mins;
-                                }
                             }
                         }
                         if (!remark.isEmpty()) {
@@ -1877,7 +1850,7 @@ public class Registry {
                         } else {
                             message = "<b></b>" + message;
                         }
-                        lines.put(seq, message);
+                        lines.put(seq, ETALineEntry.etaEntry(message, mins));
                     }
                 } else if (co.equals(Operator.LRT)) {
                     isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
@@ -1885,12 +1858,12 @@ public class Registry {
                     List<String> stopsList = route.getStops().get(Operator.LRT);
                     if (stopsList.indexOf(stopId) + 1 >= stopsList.size()) {
                         isMtrEndOfLine = true;
-                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
+                        lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站"));
                     } else {
                         List<LrtETAData> results = new ArrayList<>();
                         JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=" + stopId.substring(2));
                         if (data.optInt("status") == 0) {
-                            lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                            lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
                         } else {
                             JSONArray platformList = data.optJSONArray("platform_list");
                             for (int i = 0; i < platformList.length(); i++) {
@@ -1926,9 +1899,6 @@ public class Registry {
                                 } else {
                                     minsMessage = minsMessage.replaceAll("^([0-9]+)", "<b>$1</b>").replace(" min", "<small> Min.</small>").replace(" 分鐘", "<small> 分鐘</small>");
                                 }
-                                if (seq == 1) {
-                                    nextScheduledBus = lrt.getEta();
-                                }
                                 StringBuilder cartsMessage = new StringBuilder(Math.max(3, lrt.getTrainLength() * 2));
                                 int lrv = R.mipmap.lrv;
                                 int lrvEmpty = R.mipmap.lrv_empty;
@@ -1939,7 +1909,7 @@ public class Registry {
                                     cartsMessage.append("<img src=\"lrv_empty\">");
                                 }
                                 String message = "<b></b><span style=\"color: #D3A809\">" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + "</span> " + cartsMessage + " " + minsMessage;
-                                lines.put(seq, message);
+                                lines.put(seq, ETALineEntry.etaEntry(message, lrt.getEta()));
                             }
                         }
                     }
@@ -1986,7 +1956,7 @@ public class Registry {
                     String bound = route.getBound().get(Operator.MTR);
                     if (isMtrStopEndOfLine(stopId, lineName, bound)) {
                         isMtrEndOfLine = true;
-                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站");
+                        lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站"));
                     } else {
                         ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
                         int hour = hongKongTime.getHour();
@@ -1994,16 +1964,16 @@ public class Registry {
 
                         JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=" + lineName + "&sta=" + stopId);
                         if (data.optInt("status") == 0) {
-                            lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                            lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
                         } else {
                             JSONObject lineStops = data.optJSONObject("data").optJSONObject(lineName + "-" + stopId);
                             if (lineStops == null) {
                                 if (stopId.equals("RAC")) {
-                                    lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務");
+                                    lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
                                 } else if (isOutOfServiceHours) {
-                                    lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出");
+                                    lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
                                 } else {
-                                    lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                                    lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
                                 }
                             } else {
                                 boolean delayed = !data.optString("isdelay", "N").equals("N");
@@ -2011,11 +1981,11 @@ public class Registry {
                                 JSONArray trains = lineStops.optJSONArray(dir);
                                 if (trains == null || trains.length() == 0) {
                                     if (stopId.equals("RAC")) {
-                                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務");
+                                        lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
                                     } else if (isOutOfServiceHours) {
-                                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出");
+                                        lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
                                     } else {
-                                        lines.put(1, Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊");
+                                        lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
                                     }
                                 } else {
                                     for (int u = 0; u < trains.length(); u++) {
@@ -2053,19 +2023,18 @@ public class Registry {
 
                                         String message = "<b></b><span style=\"color: " + lineColor + "\">" + StringUtils.getCircledNumber(platform) + "</span> " + dest + " " + minsMessage;
                                         if (seq == 1) {
-                                            nextScheduledBus = mins;
                                             if (delayed) {
                                                 message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Delayed)" : " (服務延誤)") + "</small>";
                                             }
                                         }
-                                        lines.put(seq, message);
+                                        lines.put(seq, ETALineEntry.etaEntry(message, mins));
                                     }
                                 }
                             }
                         }
                     }
                 }
-                future.complete(ETAQueryResult.result(nextScheduledBus > -60 ? Math.max(0, nextScheduledBus) : -1, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines));
+                future.complete(ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, nextCo, lines));
             } catch (Throwable e) {
                 e.printStackTrace();
                 future.completeExceptionally(e);
@@ -2132,57 +2101,98 @@ public class Registry {
         }
     }
 
-    @Stable
+    @Immutable
+    public static class ETALineEntry {
+
+        public static final ETALineEntry EMPTY = new ETALineEntry("-", -1);
+
+        public static ETALineEntry textEntry(String text) {
+            return new ETALineEntry(text, -1);
+        }
+
+        public static ETALineEntry etaEntry(String text, long eta) {
+            return new ETALineEntry(text, eta > -60 ? Math.max(0, eta) : -1);
+        }
+
+        private final String text;
+        private final long eta;
+
+        private ETALineEntry(String text, long eta) {
+            this.text = text;
+            this.eta = eta;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public long getEta() {
+            return eta;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ETALineEntry that = (ETALineEntry) o;
+            return eta == that.eta && Objects.equals(text, that.text);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(text, eta);
+        }
+    }
+
+    @Immutable
     public static class ETAQueryResult {
 
         public static ETAQueryResult connectionError(ConnectionUtils.BackgroundRestrictionType restrictionType, Operator co) {
-            Map<Integer, String> lines;
+            Map<Integer, ETALineEntry> lines;
             switch (restrictionType) {
                 case POWER_SAVE_MODE: {
                     lines = Map.of(
-                            1, Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制",
-                            2, Shared.Companion.getLanguage().equals("en") ? "Power Saving" : "省電模式"
+                            1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制"),
+                            2, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Power Saving" : "省電模式")
                     );
                     break;
                 }
                 case RESTRICT_BACKGROUND_STATUS: {
                     lines = Map.of(
-                            1, Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制",
-                            2, Shared.Companion.getLanguage().equals("en") ? "Data Saver" : "數據節省器"
+                            1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制"),
+                            2, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Data Saver" : "數據節省器")
                     );
                     break;
                 }
                 case LOW_POWER_STANDBY: {
                     lines = Map.of(
-                            1, Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制",
-                            2, Shared.Companion.getLanguage().equals("en") ? "Low Power Standby" : "低耗電待機"
+                            1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Background Internet Restricted" : "背景網絡存取被限制"),
+                            2, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Low Power Standby" : "低耗電待機")
                     );
                     break;
                 }
                 default: {
                     lines = Map.of(
-                            1, Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器"
+                            1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Unable to Connect" : "無法連接伺服器")
                     );
                     break;
                 }
             }
-            return new ETAQueryResult(true, -1, false, false, co, lines);
+            return new ETAQueryResult(true, false, false, co, lines);
         }
 
-        public static ETAQueryResult result(long nextScheduledBus, boolean isMtrEndOfLine, boolean isTyphoonSchedule, Operator nextCo, Map<Integer, String> lines) {
-            return new ETAQueryResult(false, nextScheduledBus, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
+        public static ETAQueryResult result(boolean isMtrEndOfLine, boolean isTyphoonSchedule, Operator nextCo, Map<Integer, ETALineEntry> lines) {
+            return new ETAQueryResult(false, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
         }
 
         private final boolean isConnectionError;
-        private final long nextScheduledBus;
         private final boolean isMtrEndOfLine;
         private final boolean isTyphoonSchedule;
         private final Operator nextCo;
-        private final Map<Integer, String> lines;
+        private final Map<Integer, ETALineEntry> lines;
 
-        private ETAQueryResult(boolean isConnectionError, long nextScheduledBus, boolean isMtrEndOfLine, boolean isTyphoonSchedule, Operator nextCo, Map<Integer, String> lines) {
+        private ETAQueryResult(boolean isConnectionError, boolean isMtrEndOfLine, boolean isTyphoonSchedule, Operator nextCo, Map<Integer, ETALineEntry> lines) {
             this.isConnectionError = isConnectionError;
-            this.nextScheduledBus = nextScheduledBus;
             this.isMtrEndOfLine = isMtrEndOfLine;
             this.isTyphoonSchedule = isTyphoonSchedule;
             this.nextCo = nextCo;
@@ -2194,7 +2204,7 @@ public class Registry {
         }
 
         public long getNextScheduledBus() {
-            return nextScheduledBus;
+            return lines.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey)).findFirst().map(e -> e.getValue().getEta()).orElse(-1L);
         }
 
         public boolean isMtrEndOfLine() {
@@ -2209,8 +2219,12 @@ public class Registry {
             return nextCo;
         }
 
-        public String getLine(int index) {
-            return lines.getOrDefault(index, "-");
+        public Map<Integer, ETALineEntry> getRawLines() {
+            return lines;
+        }
+
+        public ETALineEntry getLine(int index) {
+            return lines.getOrDefault(index, ETALineEntry.EMPTY);
         }
 
         @Override
@@ -2218,12 +2232,12 @@ public class Registry {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ETAQueryResult result = (ETAQueryResult) o;
-            return isConnectionError == result.isConnectionError && nextScheduledBus == result.nextScheduledBus && isMtrEndOfLine == result.isMtrEndOfLine && isTyphoonSchedule == result.isTyphoonSchedule && Objects.equals(nextCo, result.nextCo) && Objects.equals(lines, result.lines);
+            return isConnectionError == result.isConnectionError && isMtrEndOfLine == result.isMtrEndOfLine && isTyphoonSchedule == result.isTyphoonSchedule && Objects.equals(nextCo, result.nextCo) && Objects.equals(lines, result.lines);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(isConnectionError, nextScheduledBus, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
+            return Objects.hash(isConnectionError, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
         }
     }
 

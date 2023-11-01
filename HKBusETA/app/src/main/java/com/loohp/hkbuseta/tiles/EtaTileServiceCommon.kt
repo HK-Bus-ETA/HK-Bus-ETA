@@ -22,12 +22,14 @@ package com.loohp.hkbuseta.tiles
 
 import android.content.Context
 import android.text.format.DateFormat
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.ColorProp
 import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.DimensionBuilders.expand
+import androidx.wear.protolayout.DimensionBuilders.wrap
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.LayoutElementBuilders.ArcLine
 import androidx.wear.protolayout.LayoutElementBuilders.FontStyle
@@ -47,6 +49,7 @@ import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.shared.Registry
+import com.loohp.hkbuseta.shared.Registry.ETALineEntry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
@@ -56,6 +59,8 @@ import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.getAndNegate
+import com.loohp.hkbuseta.utils.parallelMap
+import com.loohp.hkbuseta.utils.parallelMapNotNull
 import com.loohp.hkbuseta.utils.toSpanned
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -64,13 +69,14 @@ import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
+import java.util.stream.Collectors
 import kotlin.math.roundToInt
+
 
 data class InlineImageResource(val data: ByteArray, val width: Int, val height: Int) {
 
@@ -95,11 +101,72 @@ data class InlineImageResource(val data: ByteArray, val width: Int, val height: 
     }
 }
 
+@Immutable
+class MergedETAQueryResult<T> private constructor(
+    val isConnectionError: Boolean,
+    val isMtrEndOfLine: Boolean,
+    val isTyphoonSchedule: Boolean,
+    val nextCo: Operator,
+    private val lines: Map<Int, Pair<T, ETALineEntry>>,
+    val mergedCount: Int
+) {
+
+    val nextScheduledBus: Long
+        get() = lines.entries.stream()
+            .sorted(Comparator.comparing { it.key })
+            .findFirst()
+            .map { it.value.second.eta }
+            .orElse(-1)
+
+    fun getLine(index: Int): Pair<T?, ETALineEntry> {
+        return lines[index]?: (null to ETALineEntry.EMPTY)
+    }
+
+    fun firstKey(): T? {
+        return lines.minByOrNull { it.key }?.value?.first
+    }
+
+    fun allKeys(): Set<T> {
+        return lines.entries.stream().map { it.value.first }.collect(Collectors.toSet())
+    }
+
+    companion object {
+
+        fun <T> merge(etaQueryResult: List<Pair<T, ETAQueryResult>>): MergedETAQueryResult<T> {
+            if (etaQueryResult.size == 1) {
+                val (key, value) = etaQueryResult[0]
+                val lines: MutableMap<Int, Pair<T, ETALineEntry>> = HashMap()
+                value.rawLines.entries.forEach { lines[it.key] = key to it.value }
+                return MergedETAQueryResult(value.isConnectionError, value.isMtrEndOfLine, value.isTyphoonSchedule, value.nextCo, lines, 1)
+            }
+            val isConnectionError = etaQueryResult.all { it.second.isConnectionError }
+            val isMtrEndOfLine = etaQueryResult.all { it.second.isMtrEndOfLine }
+            val isTyphoonSchedule = etaQueryResult.any { it.second.isTyphoonSchedule }
+            val linesSorted: MutableList<Triple<T, ETALineEntry, Operator>> = etaQueryResult.toList().stream()
+                .flatMap { it.second.rawLines.values.stream().map { line -> Triple(it.first, line, it.second.nextCo) } }
+                .sorted(Comparator
+                    .comparing<Triple<T, ETALineEntry, Operator>?, Long?> { it.second.eta.let { v -> if (v < 0) Long.MAX_VALUE else v } }
+                    .thenComparing(Comparator.comparing { etaQueryResult.indexOfFirst { i -> i.first == it.first } })
+                )
+                .collect(Collectors.toCollection { ArrayList() })
+            val nextCo = if (linesSorted.isEmpty()) etaQueryResult[0].second.nextCo else linesSorted[0].third
+            val lines: MutableMap<Int, Pair<T, ETALineEntry>> = HashMap()
+            if (linesSorted.any { it.second.eta >= 0 }) {
+                linesSorted.removeIf { it.second.eta < 0 }
+            }
+            linesSorted.withIndex().forEach { lines[it.index + 1] = it.value.first to it.value.second }
+            return MergedETAQueryResult(isConnectionError, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines, etaQueryResult.size)
+        }
+
+    }
+
+}
+
 class TileState {
 
     private val updateTask: AtomicReference<ScheduledFuture<*>?> = AtomicReference(null)
     private val lastUpdated: AtomicLong = AtomicLong(0)
-    private val cachedETAQueryResult: AtomicReference<Pair<ETAQueryResult?, Long>> = AtomicReference(null to 0)
+    private val cachedETAQueryResult: AtomicReference<Pair<MergedETAQueryResult<FavouriteRouteStop>?, Long>> = AtomicReference(null to 0)
     private val tileLayoutState: AtomicBoolean = AtomicBoolean(false)
     private val lastUpdateSuccessful: AtomicBoolean = AtomicBoolean(false)
 
@@ -123,11 +190,11 @@ class TileState {
         return System.currentTimeMillis() - lastUpdated.get() > Shared.ETA_UPDATE_INTERVAL
     }
 
-    fun cacheETAQueryResult(eta: ETAQueryResult?) {
+    fun cacheETAQueryResult(eta: MergedETAQueryResult<FavouriteRouteStop>?) {
         cachedETAQueryResult.set(eta to System.currentTimeMillis())
     }
 
-    fun getETAQueryResult(orElse: (TileState) -> ETAQueryResult?): ETAQueryResult? {
+    fun getETAQueryResult(orElse: (TileState) -> MergedETAQueryResult<FavouriteRouteStop>?): MergedETAQueryResult<FavouriteRouteStop>? {
         val (cache, time) = cachedETAQueryResult.getAndUpdate { null to 0 }
         return if (cache == null || System.currentTimeMillis() - time > 10000) orElse.invoke(this) else cache
     }
@@ -152,7 +219,7 @@ class EtaTileServiceCommon {
         private val resourceVersion: AtomicReference<String> = AtomicReference(UUID.randomUUID().toString())
         private val inlineImageResources: MutableMap<String, InlineImageResource> = ConcurrentHashMap()
 
-        private val executor = Executors.newScheduledThreadPool(8)
+        private val executor = Executors.newScheduledThreadPool(16)
         private val internalTileStates: MutableMap<Int, TileState> = ConcurrentHashMap()
 
         private fun tileState(etaIndex: Int): TileState {
@@ -174,93 +241,224 @@ class EtaTileServiceCommon {
             return ScreenSizeUtils.getScreenWidth(context) - UnitUtils.dpToPixels(context, (padding * 2).toFloat()).roundToInt()
         }
 
-        private fun noFavouriteRouteStop(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
-            return LayoutElementBuilders.Box.Builder()
-                .setWidth(expand())
-                .setHeight(expand())
-                .setModifiers(
-                    ModifiersBuilders.Modifiers.Builder()
-                        .setClickable(
-                            ModifiersBuilders.Clickable.Builder()
-                                .setId("open")
-                                .setOnClick(
-                                    ActionBuilders.LaunchAction.Builder()
-                                        .setAndroidActivity(
-                                            ActionBuilders.AndroidActivity.Builder()
-                                                .setClassName(MainActivity::class.java.name)
-                                                .setPackageName(packageName)
-                                                .build()
-                                        ).build()
-                                ).build()
-                        ).build()
-                )
-                .addContent(
-                    LayoutElementBuilders.Arc.Builder()
-                        .setAnchorAngle(
-                            DimensionBuilders.DegreesProp.Builder(0F).build()
-                        )
-                        .setAnchorType(LayoutElementBuilders.ARC_ANCHOR_START)
-                        .addContent(
-                            ArcLine.Builder()
-                                .setLength(
-                                    DimensionBuilders.DegreesProp.Builder(360F).build()
-                                )
-                                .setThickness(
-                                    DimensionBuilders.DpProp.Builder(7F).build()
-                                )
-                                .setColor(
-                                    ColorProp.Builder(android.graphics.Color.DKGRAY).build()
-                                ).build()
-                        ).build()
-                )
-                .addContent(
-                    LayoutElementBuilders.Row.Builder()
-                        .setWidth(DimensionBuilders.wrap())
-                        .setHeight(DimensionBuilders.wrap())
-                        .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-                        .addContent(
-                            LayoutElementBuilders.Column.Builder()
-                                .setWidth(DimensionBuilders.wrap())
-                                .setHeight(DimensionBuilders.wrap())
-                                .setModifiers(
-                                    ModifiersBuilders.Modifiers.Builder()
-                                        .setPadding(
-                                            ModifiersBuilders.Padding.Builder()
-                                                .setStart(DimensionBuilders.DpProp.Builder(20F).build())
-                                                .setEnd(DimensionBuilders.DpProp.Builder(20F).build())
-                                                .build()
-                                        )
-                                        .build()
-                                )
-                                .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-                                .addContent(
-                                    LayoutElementBuilders.Text.Builder()
-                                        .setMaxLines(Int.MAX_VALUE)
-                                        .setFontStyle(
-                                            FontStyle.Builder()
-                                                .setSize(
-                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(25F, context)).build()
-                                                )
-                                                .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
-                                                .setColor(
-                                                    ColorProp.Builder(Color.Yellow.toArgb()).build()
-                                                ).build()
-                                        )
-                                        .setText(favoriteIndex.toString())
-                                        .build()
-                                )
-                                .addContent(
-                                    LayoutElementBuilders.Text.Builder()
-                                        .setMaxLines(Int.MAX_VALUE)
-                                        .setText(if (Shared.language == "en") {
-                                            "\nNo selected route stop\nYou can set the route stop in the app."
-                                        } else {
-                                            "\n未有選擇路線巴士站\n你可在應用程式中選取"
-                                        })
-                                        .build()
-                                ).build()
-                        ).build()
-                ).build()
+        private fun noFavouriteRouteStop(tileId: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+            tileState(tileId).setLastUpdateSuccessful(true)
+            return if (tileId in (1 or Int.MIN_VALUE)..(8 or Int.MIN_VALUE)) {
+                LayoutElementBuilders.Box.Builder()
+                    .setWidth(expand())
+                    .setHeight(expand())
+                    .setModifiers(
+                        ModifiersBuilders.Modifiers.Builder()
+                            .setClickable(
+                                ModifiersBuilders.Clickable.Builder()
+                                    .setId("open")
+                                    .setOnClick(
+                                        ActionBuilders.LaunchAction.Builder()
+                                            .setAndroidActivity(
+                                                ActionBuilders.AndroidActivity.Builder()
+                                                    .setClassName(MainActivity::class.java.name)
+                                                    .setPackageName(packageName)
+                                                    .build()
+                                            ).build()
+                                    ).build()
+                            ).build()
+                    )
+                    .addContent(
+                        LayoutElementBuilders.Arc.Builder()
+                            .setAnchorAngle(
+                                DimensionBuilders.DegreesProp.Builder(0F).build()
+                            )
+                            .setAnchorType(LayoutElementBuilders.ARC_ANCHOR_START)
+                            .addContent(
+                                ArcLine.Builder()
+                                    .setLength(
+                                        DimensionBuilders.DegreesProp.Builder(360F).build()
+                                    )
+                                    .setThickness(
+                                        DimensionBuilders.DpProp.Builder(7F).build()
+                                    )
+                                    .setColor(
+                                        ColorProp.Builder(android.graphics.Color.DKGRAY).build()
+                                    ).build()
+                            ).build()
+                    )
+                    .addContent(
+                        LayoutElementBuilders.Row.Builder()
+                            .setWidth(wrap())
+                            .setHeight(wrap())
+                            .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+                            .addContent(
+                                LayoutElementBuilders.Column.Builder()
+                                    .setWidth(wrap())
+                                    .setHeight(wrap())
+                                    .setModifiers(
+                                        ModifiersBuilders.Modifiers.Builder()
+                                            .setPadding(
+                                                ModifiersBuilders.Padding.Builder()
+                                                    .setStart(DimensionBuilders.DpProp.Builder(20F).build())
+                                                    .setEnd(DimensionBuilders.DpProp.Builder(20F).build())
+                                                    .build()
+                                            )
+                                            .build()
+                                    )
+                                    .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                                    .addContent(
+                                        LayoutElementBuilders.Text.Builder()
+                                            .setMaxLines(Int.MAX_VALUE)
+                                            .setFontStyle(
+                                                FontStyle.Builder()
+                                                    .setSize(
+                                                        DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(25F, context)).build()
+                                                    )
+                                                    .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
+                                                    .setColor(
+                                                        ColorProp.Builder(Color.Yellow.toArgb()).build()
+                                                    ).build()
+                                            )
+                                            .setText((tileId and Int.MAX_VALUE).toString())
+                                            .build()
+                                    )
+                                    .addContent(
+                                        LayoutElementBuilders.Text.Builder()
+                                            .setMaxLines(Int.MAX_VALUE)
+                                            .setText(if (Shared.language == "en") {
+                                                "\nNo selected route stop\nYou can set the route stop in the app."
+                                            } else {
+                                                "\n未有選擇路線巴士站\n你可在應用程式中選取"
+                                            })
+                                            .build()
+                                    ).build()
+                            ).build()
+                    ).build()
+            } else {
+                LayoutElementBuilders.Box.Builder()
+                    .setWidth(expand())
+                    .setHeight(expand())
+                    .setModifiers(
+                        ModifiersBuilders.Modifiers.Builder()
+                            .setClickable(
+                                ModifiersBuilders.Clickable.Builder()
+                                    .setId("open")
+                                    .setOnClick(
+                                        ActionBuilders.LaunchAction.Builder()
+                                            .setAndroidActivity(
+                                                ActionBuilders.AndroidActivity.Builder()
+                                                    .setClassName(MainActivity::class.java.name)
+                                                    .setPackageName(packageName)
+                                                    .build()
+                                            ).build()
+                                    ).build()
+                            ).build()
+                    )
+                    .addContent(
+                        LayoutElementBuilders.Arc.Builder()
+                            .setAnchorAngle(
+                                DimensionBuilders.DegreesProp.Builder(0F).build()
+                            )
+                            .setAnchorType(LayoutElementBuilders.ARC_ANCHOR_START)
+                            .addContent(
+                                ArcLine.Builder()
+                                    .setLength(
+                                        DimensionBuilders.DegreesProp.Builder(360F).build()
+                                    )
+                                    .setThickness(
+                                        DimensionBuilders.DpProp.Builder(7F).build()
+                                    )
+                                    .setColor(
+                                        ColorProp.Builder(android.graphics.Color.DKGRAY).build()
+                                    ).build()
+                            ).build()
+                    )
+                    .addContent(
+                        LayoutElementBuilders.Row.Builder()
+                            .setWidth(wrap())
+                            .setHeight(wrap())
+                            .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+                            .addContent(
+                                LayoutElementBuilders.Column.Builder()
+                                    .setWidth(wrap())
+                                    .setHeight(wrap())
+                                    .setModifiers(
+                                        ModifiersBuilders.Modifiers.Builder()
+                                            .setPadding(
+                                                ModifiersBuilders.Padding.Builder()
+                                                    .setStart(DimensionBuilders.DpProp.Builder(20F).build())
+                                                    .setEnd(DimensionBuilders.DpProp.Builder(20F).build())
+                                                    .build()
+                                            )
+                                            .build()
+                                    )
+                                    .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                                    .addContent(
+                                        LayoutElementBuilders.Text.Builder()
+                                            .setMaxLines(Int.MAX_VALUE)
+                                            .setFontStyle(
+                                                FontStyle.Builder()
+                                                    .setSize(
+                                                        DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(15F, context)).build()
+                                                    ).build()
+                                            )
+                                            .setText(if (Shared.language == "en") {
+                                                "Display selected favourite routes here\n"
+                                            } else {
+                                                "選擇最喜愛路線在此顯示\n"
+                                            })
+                                            .build()
+                                    )
+                                    .addContent(
+                                        LayoutElementBuilders.Box.Builder()
+                                            .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+                                            .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+                                            .setModifiers(
+                                                ModifiersBuilders.Modifiers.Builder()
+                                                    .setBackground(
+                                                        ModifiersBuilders.Background.Builder()
+                                                            .setCorner(ModifiersBuilders.Corner.Builder().setRadius(DimensionBuilders.dp(StringUtils.scaledSize(17.5F, context))).build())
+                                                            .setColor(ColorProp.Builder(Color(0xFF1A1A1A).toArgb()).build())
+                                                            .build()
+                                                    )
+                                                    .setClickable(
+                                                        ModifiersBuilders.Clickable.Builder()
+                                                            .setOnClick(
+                                                                ActionBuilders.LaunchAction.Builder()
+                                                                    .setAndroidActivity(
+                                                                        ActionBuilders.AndroidActivity.Builder()
+                                                                            .setClassName(EtaTileConfigureActivity::class.java.name)
+                                                                            .addKeyToExtraMapping("com.google.android.clockwork.EXTRA_PROVIDER_CONFIG_TILE_ID", ActionBuilders.intExtra(tileId))
+                                                                            .setPackageName(packageName)
+                                                                            .build()
+                                                                    ).build()
+                                                            ).build()
+                                                    )
+                                                    .build()
+                                            )
+                                            .setWidth(DimensionBuilders.dp(StringUtils.scaledSize(135F, context)))
+                                            .setHeight(DimensionBuilders.dp(StringUtils.scaledSize(35F, context)))
+                                            .addContent(
+                                                LayoutElementBuilders.Text.Builder()
+                                                    .setMaxLines(1)
+                                                    .setText(if (Shared.language == "en") {
+                                                        "Select Route"
+                                                    } else {
+                                                        "選取路線"
+                                                    })
+                                                    .setFontStyle(
+                                                        FontStyle.Builder()
+                                                            .setSize(
+                                                                DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(17F, context)).build()
+                                                            )
+                                                            .setColor(
+                                                                ColorProp.Builder(Color.Yellow.toArgb()).build()
+                                                            ).build()
+                                                    )
+                                                    .build()
+                                            )
+                                            .build()
+                                    )
+                                    .build()
+                            ).build()
+                    ).build()
+            }
         }
 
         private fun title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator, context: Context): LayoutElementBuilders.Text {
@@ -320,8 +518,15 @@ class EtaTileServiceCommon {
         }
 
         @androidx.annotation.OptIn(androidx.wear.protolayout.expression.ProtoLayoutExperimental::class)
-        private fun etaText(eta: ETAQueryResult?, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Spannable {
-            val raw = eta?.getLine(seq)?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else ""
+        private fun etaText(eta: MergedETAQueryResult<FavouriteRouteStop>?, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Spannable {
+            val line = eta?.getLine(seq)
+            val lineRoute = line?.first?.let { it.co.getDisplayRouteNumber(it.route.routeNumber) }
+            val appendRouteNumber = lineRoute == null ||
+                    (1..3).all { eta.getLine(it).first?.route?.routeNumber.let { route -> route == null || route == line.first?.route?.routeNumber } } ||
+                    eta.allKeys().all { it.co == Operator.MTR } ||
+                    eta.mergedCount <= 1
+            val raw = (if (appendRouteNumber) "" else "<small>$lineRoute > </small>")
+                .plus(line?.second?.text?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else "")
             val measure = raw.toSpanned(context, 17F).asAnnotatedString().annotatedString.text
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
@@ -366,7 +571,20 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun buildLayout(favoriteIndex: Int, favouriteStopRoute: FavouriteRouteStop, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+        private fun buildLayout(tileId: Int, favouriteStopRoutes: List<FavouriteRouteStop>, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+            val tileState = tileState(tileId)
+
+            val eta = tileState.getETAQueryResult {
+                val eta = MergedETAQueryResult.merge(
+                    favouriteStopRoutes.parallelMap(executor) { stop ->
+                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context)
+                    }
+                )
+                it.markLastUpdated()
+                eta
+            }
+            val favouriteStopRoute = eta?.firstKey()?: favouriteStopRoutes[0]
+
             val stopId = favouriteStopRoute.stopId
             val co = favouriteStopRoute.co
             val index = favouriteStopRoute.index
@@ -376,13 +594,6 @@ class EtaTileServiceCommon {
             val routeNumber = route.routeNumber
             val stopName = stop.name
             val destName = Registry.getInstanceNoUpdateCheck(context).getStopSpecialDestinations(stopId, co, route, true)
-
-            val tileState = tileState(favoriteIndex)
-            val eta = tileState.getETAQueryResult {
-                val eta = Registry.getInstanceNoUpdateCheck(context).getEta(stopId, co, route, context)
-                it.markLastUpdated()
-                eta
-            }
 
             val color = if (eta == null || eta.isConnectionError) {
                 tileState.setLastUpdateSuccessful(false)
@@ -437,13 +648,13 @@ class EtaTileServiceCommon {
                 )
                 .addContent(
                     LayoutElementBuilders.Row.Builder()
-                        .setWidth(DimensionBuilders.wrap())
-                        .setHeight(DimensionBuilders.wrap())
+                        .setWidth(wrap())
+                        .setHeight(wrap())
                         .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
                         .addContent(
                             LayoutElementBuilders.Column.Builder()
-                                .setWidth(DimensionBuilders.wrap())
-                                .setHeight(DimensionBuilders.wrap())
+                                .setWidth(wrap())
+                                .setHeight(wrap())
                                 .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()
@@ -489,21 +700,21 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun buildSuitableElement(etaIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+        private fun buildSuitableElement(tileId: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             while (Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
                 TimeUnit.MILLISECONDS.sleep(500)
             }
-            val favouriteStopRoute = Shared.favoriteRouteStops[etaIndex]
-            return if (favouriteStopRoute == null) {
-                noFavouriteRouteStop(etaIndex, packageName, context)
+            val favouriteRoutes = Shared.getEtaTileConfiguration(tileId)
+            return if (favouriteRoutes.isEmpty() || favouriteRoutes.none { Shared.favoriteRouteStops[it] != null }) {
+                noFavouriteRouteStop(tileId, packageName, context)
             } else {
-                buildLayout(etaIndex, favouriteStopRoute, packageName, context)
+                buildLayout(tileId, favouriteRoutes.mapNotNull { Shared.favoriteRouteStops[it] }, packageName, context)
             }
         }
 
-        fun buildTileRequest(etaIndex: Int, packageName: String, context: TileService): ListenableFuture<TileBuilders.Tile> {
-            val element = buildSuitableElement(etaIndex, packageName, context)
-            val stateElement = if (tileState(etaIndex).getCurrentTileLayoutState()) {
+        fun buildTileRequest(tileId: Int, packageName: String, context: TileService): ListenableFuture<TileBuilders.Tile> {
+            val element = buildSuitableElement(tileId, packageName, context)
+            val stateElement = if (tileState(tileId).getCurrentTileLayoutState()) {
                 element
             } else {
                 LayoutElementBuilders.Box.Builder()
@@ -525,7 +736,7 @@ class EtaTileServiceCommon {
                             ).build()
                         ).build()
                     ).build()
-            }, ForkJoinPool.commonPool())
+            }, executor)
         }
 
         fun buildTileResourcesRequest(): ListenableFuture<ResourceBuilders.Resources> {
@@ -545,11 +756,11 @@ class EtaTileServiceCommon {
                     )
                 }
                 return@Callable resourceBuilder.build()
-            }, ForkJoinPool.commonPool())
+            }, executor)
         }
 
-        fun handleTileEnterEvent(favoriteIndex: Int, context: TileService) {
-            tileState(favoriteIndex).let {
+        fun handleTileEnterEvent(tileId: Int, context: TileService) {
+            tileState(tileId).let {
                 if (!it.getLastUpdateSuccessful()) {
                     it.markShouldUpdate()
                 }
@@ -558,18 +769,30 @@ class EtaTileServiceCommon {
                         TimeUnit.MILLISECONDS.sleep(500)
                     }
                     if (it.shouldUpdate()) {
-                        Shared.favoriteRouteStops[favoriteIndex]?.let { stop ->
-                            it.cacheETAQueryResult(Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context))
+                        val favouriteRoutes = Shared.getEtaTileConfiguration(tileId)
+                        if (favouriteRoutes.isNotEmpty()) {
+                            it.cacheETAQueryResult(MergedETAQueryResult.merge(
+                                favouriteRoutes.parallelMapNotNull(executor) { favouriteRoute ->
+                                    Shared.favoriteRouteStops[favouriteRoute]?.let { stop ->
+                                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context)
+                                    }
+                                }
+                            ))
+                            it.markLastUpdated()
+                            TileService.getUpdater(context).requestUpdate(context.javaClass)
                         }
-                        it.markLastUpdated()
-                        TileService.getUpdater(context).requestUpdate(context.javaClass)
                     }
                 }, 0, 1000, TimeUnit.MILLISECONDS))
             }
         }
 
-        fun handleTileLeaveEvent(favoriteIndex: Int) {
-            tileState(favoriteIndex).cancelUpdateTask()
+        fun handleTileLeaveEvent(tileId: Int) {
+            tileState(tileId).cancelUpdateTask()
+        }
+
+        fun handleTileRemoveEvent(tileId: Int, context: Context) {
+            handleTileLeaveEvent(tileId)
+            Registry.getInstance(context).clearEtaTileConfiguration(tileId, context)
         }
 
     }

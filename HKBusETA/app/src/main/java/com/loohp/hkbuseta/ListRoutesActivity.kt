@@ -114,7 +114,6 @@ import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asImmutableState
-import com.loohp.hkbuseta.utils.chainedRemoveIf
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
@@ -172,24 +171,26 @@ class ListRoutesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
 
-        val result = JsonUtils.mapToList(JSONArray(intent.extras!!.getString("result")!!)) { RouteSearchResultEntry.deserialize(it as JSONObject) }.chainedRemoveIf {
-            if (it.route == null) {
-                val route = Registry.getInstance(this).findRouteByKey(it.routeKey, null)
-                if (route == null) {
-                    return@chainedRemoveIf true
-                } else {
-                    it.route = route
+        val result = JsonUtils.mapToList(JSONArray(intent.extras!!.getString("result")!!)) { RouteSearchResultEntry.deserialize(it as JSONObject) }.also { list ->
+            list.removeIf {
+                if (it.route == null) {
+                    val route = Registry.getInstance(this).findRouteByKey(it.routeKey, null)
+                    if (route == null) {
+                        return@removeIf true
+                    } else {
+                        it.route = route
+                    }
                 }
-            }
-            if (it.stopInfo != null && it.stopInfo.data == null) {
-                val stop = Registry.getInstance(this).getStopById(it.stopInfo.stopId)
-                if (stop == null) {
-                    return@chainedRemoveIf true
-                } else {
-                    it.stopInfo.data = stop
+                if (it.stopInfo != null && it.stopInfo.data == null) {
+                    val stop = Registry.getInstance(this).getStopById(it.stopInfo.stopId)
+                    if (stop == null) {
+                        return@removeIf true
+                    } else {
+                        it.stopInfo.data = stop
+                    }
                 }
+                return@removeIf false
             }
-            return@chainedRemoveIf false
         }.toImmutableList()
         val showEta = intent.extras!!.getBoolean("showEta", false)
         val recentSort = RecentSortMode.values()[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]

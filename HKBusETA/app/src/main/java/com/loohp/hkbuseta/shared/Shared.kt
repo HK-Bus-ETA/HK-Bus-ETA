@@ -346,6 +346,18 @@ class Shared {
         private val currentMaxFavouriteRouteStop = mutableIntStateOf(0)
         val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentHashMap()
 
+        private val etaTileConfigurations: Map<Int, List<Int>> = ConcurrentHashMap()
+
+        fun updateEtaTileConfigurations(mutation: Consumer<Map<Int, List<Int>>>) {
+            synchronized(etaTileConfigurations) {
+                mutation.accept(etaTileConfigurations)
+            }
+        }
+
+        fun getEtaTileConfiguration(tileId: Int): List<Int> {
+            return if (tileId in (1 or Int.MIN_VALUE)..(8 or Int.MIN_VALUE)) listOf(tileId and Int.MAX_VALUE) else etaTileConfigurations.getOrElse(tileId) { emptyList() }
+        }
+
         fun updateFavoriteRouteStops(mutation: Consumer<Map<Int, FavouriteRouteStop>>) {
             synchronized(favoriteRouteStops) {
                 mutation.accept(favoriteRouteStops)

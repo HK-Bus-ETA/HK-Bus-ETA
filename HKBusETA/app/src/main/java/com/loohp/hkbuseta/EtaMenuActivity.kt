@@ -192,16 +192,6 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
                 FavHeader(instance)
             }
             items(maxFavItems) {
-                if (it == 8) {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-                    Spacer(
-                        modifier = Modifier
-                            .padding(20.dp, 0.dp)
-                            .width(StringUtils.scaledSize(220, instance).dp)
-                            .height(1.dp)
-                            .background(Color(0xFF333333))
-                    )
-                }
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 FavButton(it + 1, stopId, co, index, stop, route, instance)
             }
@@ -618,9 +608,9 @@ fun FavHeader(instance: EtaMenuActivity) {
         color = MaterialTheme.colors.primary,
         fontSize = StringUtils.scaledSize(10F, instance).sp.clamp(max = 10.dp),
         text = if (Shared.language == "en") {
-            "Route stop 1-8 can be used in Tiles"
+            "Route stops can be used in Tiles"
         } else {
-            "最喜愛路線1-8可於資訊方塊中顯示"
+            "最喜愛路線可在資訊方塊中顯示"
         }
     )
 }

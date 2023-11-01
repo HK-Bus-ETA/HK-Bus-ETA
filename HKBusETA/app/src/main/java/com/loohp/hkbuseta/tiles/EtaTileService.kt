@@ -28,16 +28,14 @@ import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.shared.Shared
 
-private const val ETA_TILE_INDEX = 2 or Int.MIN_VALUE
-
-class EtaTileServiceTwo : TileService() {
+class EtaTileService : TileService() {
 
     override fun onCreate() {
         Shared.setDefaultExceptionHandler(this)
     }
 
     override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> {
-        return EtaTileServiceCommon.buildTileRequest(ETA_TILE_INDEX, packageName, this)
+        return EtaTileServiceCommon.buildTileRequest(requestParams.tileId, packageName, this)
     }
 
     override fun onTileResourcesRequest(requestParams: RequestBuilders.ResourcesRequest): ListenableFuture<ResourceBuilders.Resources> {
@@ -45,15 +43,15 @@ class EtaTileServiceTwo : TileService() {
     }
 
     override fun onTileEnterEvent(requestParams: EventBuilders.TileEnterEvent) {
-        EtaTileServiceCommon.handleTileEnterEvent(ETA_TILE_INDEX, this)
+        EtaTileServiceCommon.handleTileEnterEvent(requestParams.tileId, this)
     }
 
     override fun onTileLeaveEvent(requestParams: EventBuilders.TileLeaveEvent) {
-        EtaTileServiceCommon.handleTileLeaveEvent(ETA_TILE_INDEX)
+        EtaTileServiceCommon.handleTileLeaveEvent(requestParams.tileId)
     }
 
     override fun onTileRemoveEvent(requestParams: EventBuilders.TileRemoveEvent) {
-        EtaTileServiceCommon.handleTileLeaveEvent(ETA_TILE_INDEX)
+        EtaTileServiceCommon.handleTileRemoveEvent(requestParams.tileId, this)
     }
 
 }

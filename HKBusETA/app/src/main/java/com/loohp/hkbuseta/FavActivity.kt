@@ -231,16 +231,6 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
                 }
             }
             items(maxFavItems) {
-                if (it == 8) {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-                    Spacer(
-                        modifier = Modifier
-                            .padding(20.dp, 0.dp)
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color(0xFF333333))
-                    )
-                }
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 FavButton(it + 1, etaResults, etaUpdateTimes, instance, schedule)
             }
@@ -273,7 +263,7 @@ fun FavDescription(instance: FavActivity) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = StringUtils.scaledSize(11F, instance).sp.clamp(max = 11.dp),
-        text = if (Shared.language == "en") "Routes 1-8 will display in their corresponding indexed Tile" else "路線1-8將顯示在其相應數字的資訊方塊中"
+        text = if (Shared.language == "en") "Routes can be displayed in Tiles" else "路線可在資訊方塊中顯示"
     )
 }
 
@@ -513,7 +503,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             modifier = Modifier.size(StringUtils.scaledSize(21, instance).dp),
                             imageVector = Icons.Filled.Clear,
                             tint = Color(0xFFFF0000),
-                            contentDescription = if (Shared.language == "en") "Clear Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "清除資訊方塊路線巴士站預計到達時間".plus(favoriteIndex)
+                            contentDescription = if (Shared.language == "en") "Clear Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "清除資訊方塊最喜愛路線預計到達時間".plus(favoriteIndex)
                         )
                     } else {
                         Text(

@@ -567,7 +567,7 @@ fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: Et
             fontSize = textSize,
             color = MaterialTheme.colors.primary.adjustBrightness(if (lines == null || (ambientMode && seq > 1)) 0.7F else 1F),
             maxLines = 1,
-            text = (lines?.getLine(seq)?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else "").toSpanned(instance, textSize.value).asAnnotatedString()
+            text = (lines?.getLine(seq)?.text?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else "").toSpanned(instance, textSize.value).asAnnotatedString()
         )
     }
 }

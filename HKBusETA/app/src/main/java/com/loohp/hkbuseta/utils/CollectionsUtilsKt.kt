@@ -25,8 +25,10 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
+import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.Predicate
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ForkJoinPool
 import java.util.stream.Stream
 
 
@@ -34,9 +36,12 @@ operator fun <K, V> ImmutableMap.Builder<K, V>.set(key: K & Any, value: V & Any)
     return this.put(key, value)
 }
 
-fun <T, C: MutableCollection<T>> C.chainedRemoveIf(predicate: Predicate<T>): C {
-    removeIf(predicate)
-    return this
+fun <T, R> List<T>.parallelMap(executor: ExecutorService = ForkJoinPool.commonPool(), transform: (T) -> R): List<R> {
+    return map { executor.submit(Callable { transform.invoke(it) }) }.map { it.get() }
+}
+
+fun <T, R> List<T>.parallelMapNotNull(executor: ExecutorService = ForkJoinPool.commonPool(), transform: (T) -> R?): List<R> {
+    return map { executor.submit(Callable { transform.invoke(it) }) }.mapNotNull { it.get() }
 }
 
 fun <T> Stream<T>.toImmutableList(): ImmutableList<T> {
