@@ -415,7 +415,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         delay(etaUpdateTimes.value[favoriteIndex]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
                     }
                     schedule.invoke(true, favoriteIndex) {
-                        eta = Registry.getEta(stopId, co, route, instance)
+                        eta = Registry.getInstance(instance).getEta(stopId, co, route, instance)
                         etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
                         etaResults.value[favoriteIndex] = eta!!
                     }
@@ -442,7 +442,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                                     tint = Color(0xFF798996),
                                 )
                             } else if (eta!!.isTyphoonSchedule) {
-                                val desc by remember { derivedStateOf { Registry.getCurrentTyphoonData().get().typhoonWarningTitle } }
+                                val desc by remember { derivedStateOf { Registry.getInstance(instance).currentTyphoonData.get().typhoonWarningTitle } }
                                 Image(
                                     modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                                     painter = painterResource(R.mipmap.cyclone),

@@ -604,7 +604,7 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
             delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, key) {
-            eta = Registry.getEta(route.stopInfo.stopId, route.co, route.route, instance)
+            eta = Registry.getInstance(instance).getEta(route.stopInfo.stopId, route.co, route.route, instance)
             etaUpdateTimes.value[key] = System.currentTimeMillis()
             etaResults.value[key] = eta!!
         }

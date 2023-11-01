@@ -256,7 +256,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
         val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).toImmutableList() }
         val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
         val mtrStopsInterchange = remember { if (co == Operator.MTR || co == Operator.LRT) {
-            stopsList.stream().map { Registry.getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
+            stopsList.stream().map { Registry.getInstance(instance).getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
         } else persistentListOf() }
         val isLrtCircular = remember { route.route.lrtCircular != null }
         val mtrLineCreator = remember { if (co == Operator.MTR || co == Operator.LRT) generateMTRLine(co,
@@ -804,7 +804,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             delay(etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
-            eta = Registry.getEta(stopId, route.co, route.route, instance)
+            eta = Registry.getInstance(instance).getEta(stopId, route.co, route.route, instance)
             etaUpdateTimes.value[index] = System.currentTimeMillis()
             etaResults.value[index] = eta!!
         }
@@ -833,7 +833,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                         tint = Color(0xFF798996),
                     )
                 } else if (eta!!.isTyphoonSchedule) {
-                    val desc by remember { derivedStateOf { Registry.getCurrentTyphoonData().get().typhoonWarningTitle } }
+                    val desc by remember { derivedStateOf { Registry.getInstance(instance).currentTyphoonData.get().typhoonWarningTitle } }
                     Image(
                         modifier = Modifier
                             .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)

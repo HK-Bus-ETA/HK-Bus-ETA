@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val state by remember { Registry.getInstance(this@MainActivity).let {
-                if (System.currentTimeMillis() - it.lastUpdateCheck > 10000) it.checkUpdate(this@MainActivity)
+                if (System.currentTimeMillis() - it.lastUpdateCheck > 10000) it.checkUpdate(this@MainActivity, false)
                 it
             }.state }.collectAsStateWithLifecycle()
 

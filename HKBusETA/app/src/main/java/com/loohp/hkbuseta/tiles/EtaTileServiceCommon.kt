@@ -37,7 +37,6 @@ import androidx.wear.protolayout.TimelineBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.aghajari.compose.text.asAnnotatedString
-import com.google.common.cache.CacheBuilder
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
@@ -52,23 +51,24 @@ import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.TimerUtils
 import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clampSp
+import com.loohp.hkbuseta.utils.getAndNegate
 import com.loohp.hkbuseta.utils.toSpanned
 import java.math.BigInteger
 import java.security.MessageDigest
-import java.time.Duration
 import java.util.Date
-import java.util.Timer
-import java.util.TimerTask
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import java.util.concurrent.ForkJoinPool
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToInt
 
@@ -95,16 +95,69 @@ data class InlineImageResource(val data: ByteArray, val width: Int, val height: 
     }
 }
 
+class TileState {
+
+    private var updateTask: AtomicReference<ScheduledFuture<*>?> = AtomicReference(null)
+    private val lastUpdated: AtomicLong = AtomicLong(0)
+    private val cachedETAQueryResult: AtomicReference<Pair<ETAQueryResult?, Long>> = AtomicReference(null to 0)
+    private val tileLayoutState: AtomicBoolean = AtomicBoolean(false)
+    private val lastUpdateSuccessful: AtomicBoolean = AtomicBoolean(false)
+
+    fun setUpdateTask(future: ScheduledFuture<*>) {
+        updateTask.updateAndGet { it?.cancel(false); future }
+    }
+
+    fun cancelUpdateTask() {
+        updateTask.updateAndGet { it?.cancel(false); null }
+    }
+
+    fun markLastUpdated() {
+        lastUpdated.set(System.currentTimeMillis())
+    }
+
+    fun markShouldUpdate() {
+        lastUpdated.set(0)
+    }
+
+    fun shouldUpdate(): Boolean {
+        return System.currentTimeMillis() - lastUpdated.get() > Shared.ETA_UPDATE_INTERVAL
+    }
+
+    fun cacheETAQueryResult(eta: ETAQueryResult?) {
+        cachedETAQueryResult.set(eta to System.currentTimeMillis())
+    }
+
+    fun getETAQueryResult(orElse: (TileState) -> ETAQueryResult?): ETAQueryResult? {
+        val (cache, time) = cachedETAQueryResult.getAndUpdate { null to 0 }
+        return if (cache == null || System.currentTimeMillis() - time > 10000) orElse.invoke(this) else cache
+    }
+
+    fun getCurrentTileLayoutState(): Boolean {
+        return tileLayoutState.getAndNegate()
+    }
+
+    fun getLastUpdateSuccessful(): Boolean {
+        return lastUpdateSuccessful.get()
+    }
+
+    fun setLastUpdateSuccessful(value: Boolean) {
+        lastUpdateSuccessful.set(value)
+    }
+}
+
 class EtaTileServiceCommon {
 
     companion object {
 
         private val resourceVersion: AtomicReference<String> = AtomicReference(UUID.randomUUID().toString())
         private val inlineImageResources: MutableMap<String, InlineImageResource> = ConcurrentHashMap()
-        private val states: MutableMap<Int, Boolean> = ConcurrentHashMap()
-        private val timerTasks: MutableMap<Int, TimerTask> = ConcurrentHashMap()
-        private val lastUpdate: MutableMap<Int, Long> = ConcurrentHashMap()
-        private val etaResults: MutableMap<Int, ETAQueryResult> = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofSeconds(10)).build<Int, ETAQueryResult>().asMap()
+
+        private val executor = Executors.newScheduledThreadPool(8)
+        private val internalTileStates: MutableMap<Int, TileState> = ConcurrentHashMap()
+
+        private fun tileState(etaIndex: Int): TileState {
+            return internalTileStates.computeIfAbsent(etaIndex) { TileState() }
+        }
 
         private fun addInlineImageResource(resource: InlineImageResource): String {
             val md = MessageDigest.getInstance("MD5")
@@ -119,141 +172,6 @@ class EtaTileServiceCommon {
 
         private fun targetWidth(context: Context, padding: Int): Int {
             return ScreenSizeUtils.getScreenWidth(context) - UnitUtils.dpToPixels(context, (padding * 2).toFloat()).roundToInt()
-        }
-
-        private fun pleaseWait(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
-            return LayoutElementBuilders.Box.Builder()
-                .setWidth(expand())
-                .setHeight(expand())
-                .setModifiers(
-                    ModifiersBuilders.Modifiers.Builder()
-                        .setClickable(
-                            ModifiersBuilders.Clickable.Builder()
-                                .setId("open")
-                                .setOnClick(
-                                    ActionBuilders.LaunchAction.Builder()
-                                        .setAndroidActivity(
-                                            ActionBuilders.AndroidActivity.Builder()
-                                                .setClassName(MainActivity::class.java.name)
-                                                .setPackageName(packageName)
-                                                .build()
-                                        ).build()
-                                ).build()
-                        ).build()
-                )
-                .addContent(
-                    LayoutElementBuilders.Arc.Builder()
-                        .setAnchorAngle(
-                            DimensionBuilders.DegreesProp.Builder(0F).build()
-                        )
-                        .setAnchorType(LayoutElementBuilders.ARC_ANCHOR_START)
-                        .addContent(
-                            ArcLine.Builder()
-                                .setLength(
-                                    DimensionBuilders.DegreesProp.Builder(360F).build()
-                                )
-                                .setThickness(
-                                    DimensionBuilders.DpProp.Builder(7F).build()
-                                )
-                                .setColor(
-                                    ColorProp.Builder(android.graphics.Color.DKGRAY).build()
-                                ).build()
-                        ).build()
-                )
-                .addContent(
-                    LayoutElementBuilders.Row.Builder()
-                        .setWidth(DimensionBuilders.wrap())
-                        .setHeight(DimensionBuilders.wrap())
-                        .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-                        .addContent(
-                            LayoutElementBuilders.Column.Builder()
-                                .setWidth(DimensionBuilders.wrap())
-                                .setHeight(DimensionBuilders.wrap())
-                                .setModifiers(
-                                    ModifiersBuilders.Modifiers.Builder()
-                                        .setPadding(
-                                            ModifiersBuilders.Padding.Builder()
-                                                .setStart(DimensionBuilders.DpProp.Builder(35F).build())
-                                                .setEnd(DimensionBuilders.DpProp.Builder(35F).build())
-                                                .build()
-                                        )
-                                        .build()
-                                )
-                                .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-                                .addContent(
-                                    LayoutElementBuilders.Text.Builder()
-                                        .setMaxLines(Int.MAX_VALUE)
-                                        .setFontStyle(
-                                            FontStyle.Builder()
-                                                .setSize(
-                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(25F, context)).build()
-                                                )
-                                                .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
-                                                .setColor(
-                                                    ColorProp.Builder(Color.Gray.toArgb()).build()
-                                                ).build()
-                                        )
-                                        .setText(favoriteIndex.toString())
-                                        .build()
-                                )
-                                .addContent(
-                                    LayoutElementBuilders.Spacer.Builder()
-                                        .setHeight(
-                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(10F, context)).build()
-                                        ).build()
-                                )
-                                .addContent(
-                                    LayoutElementBuilders.Text.Builder()
-                                        .setMaxLines(Int.MAX_VALUE)
-                                        .setFontStyle(
-                                            FontStyle.Builder()
-                                                .setSize(
-                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(17F, context)).build()
-                                                ).build()
-                                        )
-                                        .setText("應用程式啟動中...")
-                                        .build()
-                                ).addContent(
-                                    LayoutElementBuilders.Text.Builder()
-                                        .setMaxLines(Int.MAX_VALUE)
-                                        .setFontStyle(
-                                            FontStyle.Builder()
-                                                .setSize(
-                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(9F, context)).build()
-                                                ).build()
-                                        )
-                                        .setText("你可允許背景活動以防應用程式被終止")
-                                        .build()
-                                ).addContent(
-                                    LayoutElementBuilders.Spacer.Builder()
-                                        .setHeight(
-                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(5F, context)).build()
-                                        ).build()
-                                ).addContent(
-                                    LayoutElementBuilders.Text.Builder()
-                                        .setMaxLines(Int.MAX_VALUE)
-                                        .setFontStyle(
-                                            FontStyle.Builder()
-                                                .setSize(
-                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(17F, context)).build()
-                                                ).build()
-                                        )
-                                        .setText("Starting App...")
-                                        .build()
-                                ).addContent(
-                                    LayoutElementBuilders.Text.Builder()
-                                        .setMaxLines(Int.MAX_VALUE)
-                                        .setFontStyle(
-                                            FontStyle.Builder()
-                                                .setSize(
-                                                    DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(9F, context)).build()
-                                                ).build()
-                                        )
-                                        .setText("You can allow background activity to prevent the app from being terminated")
-                                        .build()
-                                ).build()
-                        ).build()
-                ).build()
         }
 
         private fun noFavouriteRouteStop(favoriteIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
@@ -457,13 +375,20 @@ class EtaTileServiceCommon {
 
             val routeNumber = route.routeNumber
             val stopName = stop.name
-            val destName = Registry.getInstance(context).getStopSpecialDestinations(stopId, co, route, true)
+            val destName = Registry.getInstanceNoUpdateCheck(context).getStopSpecialDestinations(stopId, co, route, true)
 
-            val eta = etaResults.remove(favoriteIndex)?: Registry.getEta(stopId, co, route, context)
+            val tileState = tileState(favoriteIndex)
+            val eta = tileState.getETAQueryResult {
+                val eta = Registry.getInstanceNoUpdateCheck(context).getEta(stopId, co, route, context)
+                it.markLastUpdated()
+                eta
+            }
 
             val color = if (eta == null || eta.isConnectionError) {
+                tileState.setLastUpdateSuccessful(false)
                 Color.DarkGray
             } else {
+                tileState.setLastUpdateSuccessful(true)
                 eta.nextCo.getColor(routeNumber, Color.LightGray).adjustBrightness(if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) 0.2F else 1F)
             }
 
@@ -565,11 +490,8 @@ class EtaTileServiceCommon {
         }
 
         private fun buildSuitableElement(etaIndex: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
-            if (!Registry.getInstance(context).isPreferencesLoaded) {
-                TimeUnit.SECONDS.sleep(1)
-                if (!Registry.getInstance(context).isPreferencesLoaded) {
-                    return pleaseWait(etaIndex, packageName, context)
-                }
+            while (Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
+                TimeUnit.MILLISECONDS.sleep(500)
             }
             val favouriteStopRoute = Shared.favoriteRouteStops[etaIndex]
             return if (favouriteStopRoute == null) {
@@ -581,7 +503,7 @@ class EtaTileServiceCommon {
 
         fun buildTileRequest(etaIndex: Int, packageName: String, context: TileService): ListenableFuture<TileBuilders.Tile> {
             val element = buildSuitableElement(etaIndex, packageName, context)
-            val stateElement = if (states.compute(etaIndex) { _, v -> if (v == null) false else !v }!!) {
+            val stateElement = if (tileState(etaIndex).getCurrentTileLayoutState()) {
                 element
             } else {
                 LayoutElementBuilders.Box.Builder()
@@ -627,23 +549,27 @@ class EtaTileServiceCommon {
         }
 
         fun handleTileEnterEvent(favoriteIndex: Int, context: TileService) {
-            timerTasks.compute(favoriteIndex) { _, currentValue ->
-                currentValue?.cancel()
-                val timerTask = TimerUtils.newTimerTask {
-                    Shared.favoriteRouteStops[favoriteIndex]?.let {
-                        etaResults[favoriteIndex] = Registry.getEta(it.stopId, it.co, it.route, context)
-                    }
-                    TileService.getUpdater(context).requestUpdate(context.javaClass)
-                    lastUpdate[favoriteIndex] = System.currentTimeMillis()
+            tileState(favoriteIndex).let {
+                if (!it.getLastUpdateSuccessful()) {
+                    it.markShouldUpdate()
                 }
-                val lastUpdated = Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - lastUpdate.getOrDefault(favoriteIndex, 0))
-                Timer().schedule(timerTask, lastUpdated.coerceAtLeast(0), Shared.ETA_UPDATE_INTERVAL)
-                return@compute timerTask
+                it.setUpdateTask(executor.scheduleWithFixedDelay({
+                    while (Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
+                        TimeUnit.MILLISECONDS.sleep(500)
+                    }
+                    if (it.shouldUpdate()) {
+                        Shared.favoriteRouteStops[favoriteIndex]?.let { stop ->
+                            it.cacheETAQueryResult(Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context))
+                        }
+                        it.markLastUpdated()
+                        TileService.getUpdater(context).requestUpdate(context.javaClass)
+                    }
+                }, 0, 1000, TimeUnit.MILLISECONDS))
             }
         }
 
         fun handleTileLeaveEvent(favoriteIndex: Int) {
-            timerTasks.remove(favoriteIndex)?.cancel()
+            tileState(favoriteIndex).cancelUpdateTask()
         }
 
     }

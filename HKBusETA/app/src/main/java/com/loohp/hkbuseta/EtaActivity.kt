@@ -332,7 +332,7 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
 
                 LaunchedEffect (Unit) {
                     schedule.invoke(true) {
-                        val result = Registry.getEta(stopId, co, route, instance)
+                        val result = Registry.getInstance(instance).getEta(stopId, co, route, instance)
                         if (active) {
                             eta = result
                         }

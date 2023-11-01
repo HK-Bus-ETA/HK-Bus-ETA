@@ -100,6 +100,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -119,7 +120,14 @@ public class Registry {
 
     public static synchronized Registry getInstance(Context context) {
         if (INSTANCE == null) {
-            INSTANCE = new Registry(context);
+            INSTANCE = new Registry(context, false);
+        }
+        return INSTANCE;
+    }
+
+    public static synchronized Registry getInstanceNoUpdateCheck(Context context) {
+        if (INSTANCE == null) {
+            INSTANCE = new Registry(context, true);
         }
         return INSTANCE;
     }
@@ -138,23 +146,21 @@ public class Registry {
         try { context.getApplicationContext().deleteFile(CHECKSUM_FILE_NAME); } catch (Throwable ignore) {}
     }
 
-    private static Preferences PREFERENCES = null;
-    private static DataSheet DATA_SHEET = null;
-    private static Set<String> BUS_ROUTE = null;
-    private static Map<String, List<String>> MTR_BUS_STOP_ALIAS = null;
+    private Preferences PREFERENCES = null;
+    private DataSheet DATA_SHEET = null;
+    private Set<String> BUS_ROUTE = null;
+    private Map<String, List<String>> MTR_BUS_STOP_ALIAS = null;
 
-    private static TyphoonInfo typhoonInfo = null;
-    private static long typhoonInfoLastUpdated = Long.MIN_VALUE;
+    private final AtomicReference<Pair<TyphoonInfo, Long>> typhoonInfo = new AtomicReference<>(new Pair<>(null, 0L));
 
     private final MutableStateFlow<State> state = StateUtilsKtKt.asMutableStateFlow(State.LOADING);
     private final MutableStateFlow<Float> updatePercentageState = StateUtilsKtKt.asMutableStateFlow(0F);
-    private final AtomicBoolean preferencesLoaded = new AtomicBoolean(false);
     private final Object preferenceWriteLock = new Object();
-    private final AtomicLong lastUpdateCheck = new AtomicLong(Long.MIN_VALUE);
+    private final AtomicLong lastUpdateCheck = new AtomicLong(0);
 
-    private Registry(Context context) {
+    private Registry(Context context, boolean suppressUpdateCheck) {
         try {
-            ensureData(context);
+            ensureData(context, suppressUpdateCheck);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -166,10 +172,6 @@ public class Registry {
 
     public StateFlow<Float> getUpdatePercentageState() {
         return updatePercentageState;
-    }
-
-    public boolean isPreferencesLoaded() {
-        return preferencesLoaded.get();
     }
 
     public void updateTileService(Context context) {
@@ -304,7 +306,7 @@ public class Registry {
         }
     }
 
-    private void ensureData(Context context) throws IOException {
+    private void ensureData(Context context, boolean suppressUpdateCheck) throws IOException {
         if (state.getValue() == State.READY) {
             return;
         }
@@ -344,18 +346,18 @@ public class Registry {
             }
         }
 
-        preferencesLoaded.set(true);
-
-        checkUpdate(context);
+        checkUpdate(context, suppressUpdateCheck);
     }
 
     public long getLastUpdateCheck() {
         return lastUpdateCheck.get();
     }
 
-    public void checkUpdate(Context context) {
+    public void checkUpdate(Context context, boolean suppressUpdateCheck) {
         state.setValue(State.LOADING);
-        lastUpdateCheck.set(System.currentTimeMillis());
+        if (!suppressUpdateCheck) {
+            lastUpdateCheck.set(System.currentTimeMillis());
+        }
         List<String> files = Arrays.asList(context.getApplicationContext().fileList());
         new Thread(() -> {
             try {
@@ -381,7 +383,7 @@ public class Registry {
                 };
 
                 boolean cached = false;
-                String checksum = connectionType.hasConnection() ? checksumFetcher.get() : null;
+                String checksum = !suppressUpdateCheck && connectionType.hasConnection() ? checksumFetcher.get() : null;
                 if (files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_SHEET_FILE_NAME) && files.contains(BUS_ROUTE_FILE_NAME) && files.contains(MTR_BUS_STOP_ALIAS_FILE_NAME)) {
                     if (checksum == null) {
                         cached = true;
@@ -1114,7 +1116,7 @@ public class Registry {
         return prependTo(route.getDest());
     }
 
-    public static boolean isLrtStopOnOrAfter(String thisStopId, String targetStopNameZh, Route route) {
+    public boolean isLrtStopOnOrAfter(String thisStopId, String targetStopNameZh, Route route) {
         if (route.getLrtCircular() != null && targetStopNameZh.equals(route.getLrtCircular().getZh())) {
             return true;
         }
@@ -1136,7 +1138,7 @@ public class Registry {
         return false;
     }
 
-    public static boolean isMtrStopOnOrAfter(String stopId, String relativeTo, String lineName, String bound) {
+    public boolean isMtrStopOnOrAfter(String stopId, String relativeTo, String lineName, String bound) {
         for (Route data : DATA_SHEET.getRouteList().values()) {
             if (lineName.equals(data.getRouteNumber()) && data.getBound().get(Operator.MTR).endsWith(bound)) {
                 List<String> stopsList = data.getStops().get(Operator.MTR);
@@ -1150,7 +1152,7 @@ public class Registry {
         return false;
     }
 
-    public static boolean isMtrStopEndOfLine(String stopId, String lineName, String bound) {
+    public boolean isMtrStopEndOfLine(String stopId, String lineName, String bound) {
         for (Route data : DATA_SHEET.getRouteList().values()) {
             if (lineName.equals(data.getRouteNumber()) && data.getBound().get(Operator.MTR).endsWith(bound)) {
                 List<String> stopsList = data.getStops().get(Operator.MTR);
@@ -1163,7 +1165,7 @@ public class Registry {
         return true;
     }
 
-    public static MTRInterchangeData getMtrStationInterchange(String stopId, String lineName) {
+    public MTRInterchangeData getMtrStationInterchange(String stopId, String lineName) {
         Set<String> lines = new TreeSet<>(Comparator.comparing(Shared.Companion::getMtrLineSortingIndex));
         Set<String> outOfStationLines = new TreeSet<>(Comparator.comparing(Shared.Companion::getMtrLineSortingIndex));
         if (stopId.equals("KOW") || stopId.equals("AUS")) {
@@ -1243,7 +1245,7 @@ public class Registry {
         }
     }
 
-    public static String getNoScheduledDepartureMessage(String altMessage, boolean isAboveTyphoonSignalEight, String typhoonWarningTitle) {
+    public String getNoScheduledDepartureMessage(String altMessage, boolean isAboveTyphoonSignalEight, String typhoonWarningTitle) {
         if (altMessage == null || altMessage.isEmpty()) {
             altMessage = Shared.Companion.getLanguage().equals("en") ? "No scheduled departures at this moment" : "暫時沒有預定班次";
         }
@@ -1257,10 +1259,11 @@ public class Registry {
         }
     }
 
-    public static Future<TyphoonInfo> getCurrentTyphoonData() {
+    public Future<TyphoonInfo> getCurrentTyphoonData() {
         long now = System.currentTimeMillis();
-        if (typhoonInfo != null && now - typhoonInfoLastUpdated < 300000) {
-            return CompletableFuture.completedFuture(typhoonInfo);
+        Pair<TyphoonInfo, Long> cache = typhoonInfo.get();
+        if (cache.getFirst() != null && now - cache.getSecond() < 300000) {
+            return CompletableFuture.completedFuture(cache.getFirst());
         }
         CompletableFuture<TyphoonInfo> future = new CompletableFuture<>();
         new Thread(() -> {
@@ -1283,15 +1286,14 @@ public class Registry {
                     } else {
                         currentTyphoonSignalId = "tc" + StringUtils.padStart(String.valueOf(signal), 2, '0') + (matcher.group(2) != null ? matcher.group(2) : "").toLowerCase();
                     }
-                    typhoonInfo = new TyphoonInfo(isAboveTyphoonSignalEight, isAboveTyphoonSignalNine, typhoonWarningTitle, currentTyphoonSignalId);
-                    typhoonInfoLastUpdated = System.currentTimeMillis();
-                    future.complete(typhoonInfo);
+                    TyphoonInfo info = new TyphoonInfo(isAboveTyphoonSignalEight, isAboveTyphoonSignalNine, typhoonWarningTitle, currentTyphoonSignalId);
+                    typhoonInfo.set(new Pair<>(info, System.currentTimeMillis()));
+                    future.complete(info);
                     return;
                 }
             }
-            typhoonInfo = TyphoonInfo.NO_TYPHOON;
-            typhoonInfoLastUpdated = System.currentTimeMillis();
-            future.complete(typhoonInfo);
+            typhoonInfo.set(new Pair<>(TyphoonInfo.NO_TYPHOON, System.currentTimeMillis()));
+            future.complete(TyphoonInfo.NO_TYPHOON);
         }).start();
         return future;
     }
@@ -1330,7 +1332,7 @@ public class Registry {
         }
     }
 
-    public static ETAQueryResult getEta(String stopId, Operator co, Route route, Context context) {
+    public ETAQueryResult getEta(String stopId, Operator co, Route route, Context context) {
         CompletableFuture<ETAQueryResult> future = new CompletableFuture<>();
         new Thread(() -> {
             try {
