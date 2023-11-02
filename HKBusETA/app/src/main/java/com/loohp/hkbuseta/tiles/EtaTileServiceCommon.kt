@@ -275,7 +275,7 @@ class EtaTileServiceCommon {
                                         DimensionBuilders.DegreesProp.Builder(360F).build()
                                     )
                                     .setThickness(
-                                        DimensionBuilders.DpProp.Builder(7F).build()
+                                        DimensionBuilders.dp(7F)
                                     )
                                     .setColor(
                                         ColorProp.Builder(android.graphics.Color.DKGRAY).build()
@@ -295,8 +295,8 @@ class EtaTileServiceCommon {
                                         ModifiersBuilders.Modifiers.Builder()
                                             .setPadding(
                                                 ModifiersBuilders.Padding.Builder()
-                                                    .setStart(DimensionBuilders.DpProp.Builder(20F).build())
-                                                    .setEnd(DimensionBuilders.DpProp.Builder(20F).build())
+                                                    .setStart(DimensionBuilders.dp(20F))
+                                                    .setEnd(DimensionBuilders.dp(20F))
                                                     .build()
                                             )
                                             .build()
@@ -308,7 +308,7 @@ class EtaTileServiceCommon {
                                             .setFontStyle(
                                                 FontStyle.Builder()
                                                     .setSize(
-                                                        DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(25F, context)).build()
+                                                        DimensionBuilders.sp(StringUtils.scaledSize(25F, context))
                                                     )
                                                     .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                                                     .setColor(
@@ -362,7 +362,7 @@ class EtaTileServiceCommon {
                                         DimensionBuilders.DegreesProp.Builder(360F).build()
                                     )
                                     .setThickness(
-                                        DimensionBuilders.DpProp.Builder(7F).build()
+                                        DimensionBuilders.dp(7F)
                                     )
                                     .setColor(
                                         ColorProp.Builder(android.graphics.Color.DKGRAY).build()
@@ -382,8 +382,8 @@ class EtaTileServiceCommon {
                                         ModifiersBuilders.Modifiers.Builder()
                                             .setPadding(
                                                 ModifiersBuilders.Padding.Builder()
-                                                    .setStart(DimensionBuilders.DpProp.Builder(20F).build())
-                                                    .setEnd(DimensionBuilders.DpProp.Builder(20F).build())
+                                                    .setStart(DimensionBuilders.dp(20F))
+                                                    .setEnd(DimensionBuilders.dp(20F))
                                                     .build()
                                             )
                                             .build()
@@ -395,7 +395,7 @@ class EtaTileServiceCommon {
                                             .setFontStyle(
                                                 FontStyle.Builder()
                                                     .setSize(
-                                                        DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(15F, context)).build()
+                                                        DimensionBuilders.sp(StringUtils.scaledSize(15F, context))
                                                     ).build()
                                             )
                                             .setText(if (Shared.language == "en") {
@@ -445,7 +445,7 @@ class EtaTileServiceCommon {
                                                     .setFontStyle(
                                                         FontStyle.Builder()
                                                             .setSize(
-                                                                DimensionBuilders.SpProp.Builder().setValue(StringUtils.scaledSize(17F, context)).build()
+                                                                DimensionBuilders.sp(StringUtils.scaledSize(17F, context))
                                                             )
                                                             .setColor(
                                                                 ColorProp.Builder(Color.Yellow.toArgb()).build()
@@ -469,8 +469,8 @@ class EtaTileServiceCommon {
                     ModifiersBuilders.Modifiers.Builder()
                         .setPadding(
                             ModifiersBuilders.Padding.Builder()
-                                .setStart(DimensionBuilders.DpProp.Builder(35F).build())
-                                .setEnd(DimensionBuilders.DpProp.Builder(35F).build())
+                                .setStart(DimensionBuilders.dp(35F))
+                                .setEnd(DimensionBuilders.dp(35F))
                                 .build()
                         )
                         .build()
@@ -481,7 +481,7 @@ class EtaTileServiceCommon {
                     FontStyle.Builder()
                         .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 35), 2, 1F, 17F), dpMax = 17F)).build()
+                            DimensionBuilders.sp(clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 35), 2, 1F, 17F), dpMax = 17F))
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -497,8 +497,8 @@ class EtaTileServiceCommon {
                     ModifiersBuilders.Modifiers.Builder()
                         .setPadding(
                             ModifiersBuilders.Padding.Builder()
-                                .setStart(DimensionBuilders.DpProp.Builder(20F).build())
-                                .setEnd(DimensionBuilders.DpProp.Builder(20F).build())
+                                .setStart(DimensionBuilders.dp(20F))
+                                .setEnd(DimensionBuilders.dp(20F))
                                 .build()
                         )
                         .build()
@@ -508,7 +508,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.findOptimalSp(context, name, targetWidth(context, 35), 1, 1F, 11F), dpMax = 11F)).build()
+                            DimensionBuilders.sp(clampSp(context, StringUtils.findOptimalSp(context, name, targetWidth(context, 35), 1, 1F, 11F), dpMax = 11F))
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -547,8 +547,8 @@ class EtaTileServiceCommon {
                     ModifiersBuilders.Modifiers.Builder()
                         .setPadding(
                             ModifiersBuilders.Padding.Builder()
-                                .setStart(DimensionBuilders.DpProp.Builder(if (seq == 1) 20F else 35F).build())
-                                .setEnd(DimensionBuilders.DpProp.Builder(if (seq == 1) 20F else 35F).build())
+                                .setStart(DimensionBuilders.dp(if (seq == 1) 20F else 35F))
+                                .setEnd(DimensionBuilders.dp(if (seq == 1) 20F else 35F))
                                 .build()
                         )
                         .setClickable(
@@ -559,11 +559,11 @@ class EtaTileServiceCommon {
                                         .setAndroidActivity(
                                             ActionBuilders.AndroidActivity.Builder()
                                                 .setClassName(MainActivity::class.java.name)
-                                                .addKeyToExtraMapping("stopId", ActionBuilders.AndroidStringExtra.Builder().setValue(stopId).build())
-                                                .addKeyToExtraMapping("co", ActionBuilders.AndroidStringExtra.Builder().setValue(co.name).build())
-                                                .addKeyToExtraMapping("index", ActionBuilders.AndroidIntExtra.Builder().setValue(index).build())
-                                                .addKeyToExtraMapping("stop", ActionBuilders.AndroidStringExtra.Builder().setValue(stop.serialize().toString()).build())
-                                                .addKeyToExtraMapping("route", ActionBuilders.AndroidStringExtra.Builder().setValue(route.serialize().toString()).build())
+                                                .addKeyToExtraMapping("stopId", ActionBuilders.stringExtra(stopId))
+                                                .addKeyToExtraMapping("co", ActionBuilders.stringExtra(co.name))
+                                                .addKeyToExtraMapping("index", ActionBuilders.intExtra(index))
+                                                .addKeyToExtraMapping("stop", ActionBuilders.stringExtra(stop.serialize().toString()))
+                                                .addKeyToExtraMapping("route", ActionBuilders.stringExtra(route.serialize().toString()))
                                                 .setPackageName(packageName)
                                                 .build()
                                         ).build()
@@ -576,7 +576,7 @@ class EtaTileServiceCommon {
                 .addContentAnnotatedString(context, text, {
                     it
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(textSize).build()
+                            DimensionBuilders.sp(textSize)
                         )
                         .setColor(
                             ColorProp.Builder(color).build()
@@ -592,7 +592,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.SpProp.Builder().setValue(clampSp(context, StringUtils.scaledSize(9F, context), dpMax = 9F)).build()
+                            DimensionBuilders.sp(clampSp(context, StringUtils.scaledSize(9F, context), dpMax = 9F))
                         ).build()
                 ).build()
         }
@@ -642,11 +642,11 @@ class EtaTileServiceCommon {
                                         .setAndroidActivity(
                                             ActionBuilders.AndroidActivity.Builder()
                                                 .setClassName(MainActivity::class.java.name)
-                                                .addKeyToExtraMapping("stopId", ActionBuilders.AndroidStringExtra.Builder().setValue(stopId).build())
-                                                .addKeyToExtraMapping("co", ActionBuilders.AndroidStringExtra.Builder().setValue(co.name).build())
-                                                .addKeyToExtraMapping("index", ActionBuilders.AndroidIntExtra.Builder().setValue(index).build())
-                                                .addKeyToExtraMapping("stop", ActionBuilders.AndroidStringExtra.Builder().setValue(stop.serialize().toString()).build())
-                                                .addKeyToExtraMapping("route", ActionBuilders.AndroidStringExtra.Builder().setValue(route.serialize().toString()).build())
+                                                .addKeyToExtraMapping("stopId", ActionBuilders.stringExtra(stopId))
+                                                .addKeyToExtraMapping("co", ActionBuilders.stringExtra(co.name))
+                                                .addKeyToExtraMapping("index", ActionBuilders.intExtra(index))
+                                                .addKeyToExtraMapping("stop", ActionBuilders.stringExtra(stop.serialize().toString()))
+                                                .addKeyToExtraMapping("route", ActionBuilders.stringExtra(route.serialize().toString()))
                                                 .setPackageName(packageName)
                                                 .build()
                                         ).build()
@@ -665,7 +665,7 @@ class EtaTileServiceCommon {
                                     DimensionBuilders.DegreesProp.Builder(360F).build()
                                 )
                                 .setThickness(
-                                    DimensionBuilders.DpProp.Builder(7F).build()
+                                    DimensionBuilders.dp(7F)
                                 )
                                 .setColor(
                                     ColorProp.Builder(color.toArgb()).build()
@@ -685,7 +685,7 @@ class EtaTileServiceCommon {
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(16F, context)).build()
+                                            DimensionBuilders.dp(StringUtils.scaledSize(16F, context))
                                         ).build()
                                 ).addContent(
                                     title(index, stopName, routeNumber, co, context)
@@ -696,28 +696,28 @@ class EtaTileServiceCommon {
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(12F, context)).build()
+                                            DimensionBuilders.dp(StringUtils.scaledSize(12F, context))
                                         ).build()
                                 ).addContent(
                                     etaText(eta, 1, co == Operator.MTR || co == Operator.LRT, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(7F, context)).build()
+                                            DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
                                         ).build()
                                 ).addContent(
                                     etaText(eta, 2, true, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(7F, context)).build()
+                                            DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
                                         ).build()
                                 ).addContent(
                                     etaText(eta, 3, true, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(7F, context)).build()
+                                            DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
                                         ).build()
                                 ).addContent(
                                     lastUpdated(context)
