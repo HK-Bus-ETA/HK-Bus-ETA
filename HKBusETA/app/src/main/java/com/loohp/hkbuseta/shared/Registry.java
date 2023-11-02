@@ -393,9 +393,9 @@ public class Registry {
         if (!suppressUpdateCheck) {
             lastUpdateCheck.set(System.currentTimeMillis());
         }
-        List<String> files = Arrays.asList(context.getApplicationContext().fileList());
         new Thread(() -> {
             try {
+                List<String> files = Arrays.asList(context.getApplicationContext().fileList());
                 ConnectionUtils.ConnectionType connectionType = ConnectionUtils.getConnectionType(context);
 
                 Supplier<String> checksumFetcher = () -> {

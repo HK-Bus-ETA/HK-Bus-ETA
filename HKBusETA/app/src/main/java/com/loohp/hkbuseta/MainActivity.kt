@@ -54,7 +54,7 @@ import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.asImmutableState
 import org.json.JSONObject
 import java.util.regex.Pattern
-import kotlin.streams.toList
+import java.util.stream.Collectors
 
 
 @Stable
@@ -84,9 +84,8 @@ class MainActivity : ComponentActivity() {
         val queryStopDirectLaunch = intent.extras?.getBoolean("sd", false)?: false
 
         setContent {
-            val state by remember { Registry.getInstance(this@MainActivity).let {
+            val state by remember { Registry.getInstance(this@MainActivity).also {
                 if (System.currentTimeMillis() - it.lastUpdateCheck > 10000) it.checkUpdate(this@MainActivity, false)
-                it
             }.state }.collectAsStateWithLifecycle()
 
             LaunchedEffect (state) {
@@ -140,12 +139,12 @@ class MainActivity : ComponentActivity() {
                                             }
                                             else -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route.bound[queryCo] == queryBound)
                                         }
-                                    }.toList()
+                                    }.collect(Collectors.toList())
                                     if (queryDest != null) {
                                         val destFiltered = filteredResult.stream().filter {
                                             val dest = it.route.dest
                                             return@filter queryDest == dest.zh || queryDest == dest.en
-                                        }.toList()
+                                        }.collect(Collectors.toList())
                                         if (destFiltered.isNotEmpty()) {
                                             filteredResult = destFiltered
                                         }
