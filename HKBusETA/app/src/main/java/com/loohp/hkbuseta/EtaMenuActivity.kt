@@ -40,9 +40,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,6 +64,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
@@ -85,12 +91,14 @@ import com.loohp.hkbuseta.utils.ActivityUtils
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.NotificationUtils
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
+import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toSpanned
 import org.json.JSONObject
+import java.util.stream.IntStream
 
 
 enum class FavouriteRouteState {
@@ -145,6 +153,16 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
         val lat = stop.location.lat
         val lng = stop.location.lng
 
+        val scrollTo = remember { mutableIntStateOf(0) }
+
+        LaunchedEffect (scrollTo.intValue) {
+            val value = scrollTo.intValue
+            if (value > 0) {
+                scroll.animateScrollToItem(value + 8, -ScreenSizeUtils.getScreenHeight(instance) / 3)
+                scrollTo.intValue = 0
+            }
+        }
+
         LazyColumn (
             modifier = Modifier
                 .fillMaxSize()
@@ -166,8 +184,8 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 MoreInfoHeader(instance)
             }
-            if (stop.kmbBbiId != null) {
-                item {
+            item {
+                if (stop.kmbBbiId != null) {
                     Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                     OpenOpenKmbBbiMapButton(stop.kmbBbiId, instance)
                 }
@@ -190,6 +208,8 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             item {
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                 FavHeader(instance)
+                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                NextFavButton(scrollTo, stopId, co, index, stop, route, instance)
             }
             items(maxFavItems) {
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
@@ -611,6 +631,35 @@ fun FavHeader(instance: EtaMenuActivity) {
             "Route stops can be used in Tiles"
         } else {
             "最喜愛路線可在資訊方塊中顯示"
+        }
+    )
+}
+
+@Composable
+fun NextFavButton(scrollTo: MutableIntState, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
+    Button(
+        onClick = {
+            scrollTo.intValue = IntStream.rangeClosed(1, 30).filter {
+                val favState = getFavState(it, stopId, co, index, stop, route, instance)
+                favState == FavouriteRouteState.NOT_USED || favState == FavouriteRouteState.USED_SELF
+            }.min().orElse(30)
+        },
+        modifier = Modifier
+            .width(StringUtils.scaledSize(50, instance).dp)
+            .height(StringUtils.scaledSize(30, instance).dp),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.secondary,
+            contentColor = MaterialTheme.colors.primary
+        ),
+        content = {
+            Icon(
+                modifier = Modifier
+                    .padding(3.dp, 3.dp)
+                    .size(StringUtils.scaledSize(25F, instance).sp.dp),
+                imageVector = Icons.Filled.KeyboardArrowDown,
+                tint = Color(0xFFFFB700),
+                contentDescription = if (Shared.language == "en") "Down" else "向下"
+            )
         }
     )
 }
