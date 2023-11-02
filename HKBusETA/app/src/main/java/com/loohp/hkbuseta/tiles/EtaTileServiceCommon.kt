@@ -518,7 +518,7 @@ class EtaTileServiceCommon {
         }
 
         @androidx.annotation.OptIn(androidx.wear.protolayout.expression.ProtoLayoutExperimental::class)
-        private fun etaText(eta: MergedETAQueryResult<FavouriteRouteStop>?, seq: Int, singleLine: Boolean, context: Context): LayoutElementBuilders.Spannable {
+        private fun etaText(eta: MergedETAQueryResult<FavouriteRouteStop>?, seq: Int, singleLine: Boolean, mainFavouriteStopRoute: FavouriteRouteStop, packageName: String, context: Context): LayoutElementBuilders.Spannable {
             val line = eta?.getLine(seq)
             val lineRoute = line?.first?.let { it.co.getDisplayRouteNumber(it.route.routeNumber) }
             val appendRouteNumber = lineRoute == null ||
@@ -534,6 +534,14 @@ class EtaTileServiceCommon {
             val textSize = clampSp(context, StringUtils.findOptimalSp(context, measure, targetWidth(context, 20) / 10 * 8, maxLines, 1F, maxTextSize), dpMax = maxTextSize)
             val text = raw.toSpanned(context, textSize).asAnnotatedString()
 
+            val favouriteStopRoute = line?.first?: mainFavouriteStopRoute
+
+            val stopId = favouriteStopRoute.stopId
+            val co = favouriteStopRoute.co
+            val index = favouriteStopRoute.index
+            val stop = favouriteStopRoute.stop
+            val route = favouriteStopRoute.route
+
             return LayoutElementBuilders.Spannable.Builder()
                 .setModifiers(
                     ModifiersBuilders.Modifiers.Builder()
@@ -542,6 +550,24 @@ class EtaTileServiceCommon {
                                 .setStart(DimensionBuilders.DpProp.Builder(if (seq == 1) 20F else 35F).build())
                                 .setEnd(DimensionBuilders.DpProp.Builder(if (seq == 1) 20F else 35F).build())
                                 .build()
+                        )
+                        .setClickable(
+                            ModifiersBuilders.Clickable.Builder()
+                                .setId("open")
+                                .setOnClick(
+                                    ActionBuilders.LaunchAction.Builder()
+                                        .setAndroidActivity(
+                                            ActionBuilders.AndroidActivity.Builder()
+                                                .setClassName(MainActivity::class.java.name)
+                                                .addKeyToExtraMapping("stopId", ActionBuilders.AndroidStringExtra.Builder().setValue(stopId).build())
+                                                .addKeyToExtraMapping("co", ActionBuilders.AndroidStringExtra.Builder().setValue(co.name).build())
+                                                .addKeyToExtraMapping("index", ActionBuilders.AndroidIntExtra.Builder().setValue(index).build())
+                                                .addKeyToExtraMapping("stop", ActionBuilders.AndroidStringExtra.Builder().setValue(stop.serialize().toString()).build())
+                                                .addKeyToExtraMapping("route", ActionBuilders.AndroidStringExtra.Builder().setValue(route.serialize().toString()).build())
+                                                .setPackageName(packageName)
+                                                .build()
+                                        ).build()
+                                ).build()
                         )
                         .build()
                 )
@@ -673,21 +699,21 @@ class EtaTileServiceCommon {
                                             DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(12F, context)).build()
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 1, co == Operator.MTR || co == Operator.LRT, context)
+                                    etaText(eta, 1, co == Operator.MTR || co == Operator.LRT, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
                                             DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(7F, context)).build()
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 2, true, context)
+                                    etaText(eta, 2, true, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
                                             DimensionBuilders.DpProp.Builder(StringUtils.scaledSize(7F, context)).build()
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 3, true, context)
+                                    etaText(eta, 3, true, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
