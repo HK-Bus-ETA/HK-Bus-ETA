@@ -73,6 +73,12 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Consumer
 
 
+enum class TileUseState {
+
+    PRIMARY, SECONDARY, NONE
+
+}
+
 data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
 
     fun isEqualTo(other: Any?): Boolean {
@@ -356,6 +362,18 @@ class Shared {
 
         fun getEtaTileConfiguration(tileId: Int): List<Int> {
             return if (tileId in (1 or Int.MIN_VALUE)..(8 or Int.MIN_VALUE)) listOf(tileId and Int.MAX_VALUE) else etaTileConfigurations.getOrElse(tileId) { emptyList() }
+        }
+
+        fun getRawEtaTileConfigurations(): Map<Int, List<Int>> {
+            return etaTileConfigurations
+        }
+
+        fun getTileUseState(index: Int): TileUseState {
+            return when (etaTileConfigurations.values.minOfOrNull { it.indexOf(index).let { i -> if (i >= 0) i else Int.MAX_VALUE } }?: Int.MAX_VALUE) {
+                0 -> TileUseState.PRIMARY
+                Int.MAX_VALUE -> TileUseState.NONE
+                else -> TileUseState.SECONDARY
+            }
         }
 
         fun updateFavoriteRouteStops(mutation: Consumer<Map<Int, FavouriteRouteStop>>) {

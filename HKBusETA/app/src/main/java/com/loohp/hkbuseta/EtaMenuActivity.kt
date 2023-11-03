@@ -26,9 +26,20 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,6 +64,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
@@ -81,11 +93,14 @@ import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
+import com.loohp.hkbuseta.objects.getColor
+import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.services.AlightReminderService
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.shared.TileUseState
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ActivityUtils
 import com.loohp.hkbuseta.utils.LocationUtils
@@ -93,6 +108,7 @@ import com.loohp.hkbuseta.utils.NotificationUtils
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.sp
@@ -672,19 +688,36 @@ fun getFavState(favoriteIndex: Int, stopId: String, co: Operator, index: Int, st
     return FavouriteRouteState.NOT_USED
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
     var state by remember { mutableStateOf(getFavState(favoriteIndex, stopId, co, index, stop, route, instance)) }
+    var anyTileUses by remember { mutableStateOf(Shared.getTileUseState(favoriteIndex)) }
 
     RestartEffect {
         val newState = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
         if (newState != state) {
             state = newState
         }
+        val newAnyTileUses = Shared.getTileUseState(favoriteIndex)
+        if (newAnyTileUses != anyTileUses) {
+            anyTileUses = newAnyTileUses
+        }
     }
 
     val haptic = LocalHapticFeedback.current
     AdvanceButton(
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .width(StringUtils.scaledSize(220, instance).dp)
+            .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp)
+            .composed {
+                when (anyTileUses) {
+                    TileUseState.PRIMARY -> this.border(2.sp.dp, Color(0x5437FF00), CircleShape)
+                    TileUseState.SECONDARY -> this.border(2.sp.dp, Color(0x54FFB700), CircleShape)
+                    TileUseState.NONE -> this
+                }
+            },
         onClick = {
             if (state == FavouriteRouteState.USED_SELF) {
                 Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
@@ -694,6 +727,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                 Toast.makeText(instance, if (Shared.language == "en") "Set Favourite Route ".plus(favoriteIndex) else "已設置最喜愛路線".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
             }
             state = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
+            anyTileUses = Shared.getTileUseState(favoriteIndex)
         },
         onLongClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -701,10 +735,6 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
             intent.putExtra("scrollToIndex", favoriteIndex)
             instance.startActivity(intent)
         },
-        modifier = Modifier
-            .padding(20.dp, 0.dp)
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = when (state) {
@@ -734,26 +764,100 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                         textAlign = TextAlign.Center,
                         fontSize = StringUtils.scaledSize(17F, instance).sp,
                         color = when (state) {
-                            FavouriteRouteState.NOT_USED -> Color(0xFF444444)
+                            FavouriteRouteState.NOT_USED -> Color(0xFFFFFFFF)
                             FavouriteRouteState.USED_OTHER -> Color(0xFF4E4E00)
                             FavouriteRouteState.USED_SELF -> Color(0xFFFFFF00)
                         },
                         text = favoriteIndex.toString()
                     )
                 }
-                Text(
-                    modifier = Modifier
-                        .padding(0.dp, 0.dp, 5.dp, 0.dp)
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Start,
-                    color = if (state == FavouriteRouteState.USED_SELF) Color(0xFFFFFFFF) else Color(0xFF3F3F3F),
-                    fontSize = StringUtils.scaledSize(14F, instance).sp,
-                    text = when (state) {
-                        FavouriteRouteState.NOT_USED -> if (Shared.language == "en") "No Route Stop Selected" else "未有設置路線巴士站"
-                        FavouriteRouteState.USED_OTHER -> if (Shared.language == "en") "Selected by Another Route Stop" else "已設置為另一路線巴士站"
-                        FavouriteRouteState.USED_SELF -> if (Shared.language == "en") "Selected as This Route Stop" else "已設置為本路線巴士站"
+                when (state) {
+                    FavouriteRouteState.NOT_USED -> {
+                        Text(
+                            modifier = Modifier
+                                .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                                .fillMaxWidth(),
+                            textAlign = TextAlign.Start,
+                            color = Color(0xFFB9B9B9),
+                            fontSize = StringUtils.scaledSize(14F, instance).sp,
+                            text = if (Shared.language == "en") "No Route Stop Selected" else "未有設置路線巴士站"
+                        )
                     }
-                )
+                    FavouriteRouteState.USED_OTHER -> {
+                        val currentRoute = Shared.favoriteRouteStops[favoriteIndex]!!
+                        val kmbCtbJoint = currentRoute.route.isKmbCtbJoint
+                        val coDisplay = currentRoute.co.getDisplayName(currentRoute.route.routeNumber, kmbCtbJoint, Shared.language)
+                        val routeNumberDisplay = currentRoute.co.getDisplayRouteNumber(currentRoute.route.routeNumber)
+                        val stopName = currentRoute.index.toString().plus(". ").plus(currentRoute.stop.name[Shared.language])
+                        val rawColor = currentRoute.co.getColor(currentRoute.route.routeNumber, Color.White)
+                        val color = if (kmbCtbJoint) {
+                            val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
+                            val animatedColor by infiniteTransition.animateColor(
+                                initialValue = rawColor,
+                                targetValue = Color(0xFFFFE15E),
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(5000, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Reverse,
+                                    initialStartOffset = StartOffset(1500)
+                                ),
+                                label = "JointColor"
+                            )
+                            animatedColor
+                        } else {
+                            rawColor
+                        }
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row (
+                                modifier = Modifier
+                                    .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Text(
+                                    textAlign = TextAlign.Start,
+                                    color = Color(0xFFFFFFFF).adjustBrightness(0.3F),
+                                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    text = if (Shared.language == "en") "Selected " else "已設置 "
+                                )
+                                Text(
+                                    modifier = Modifier
+                                        .basicMarquee(Int.MAX_VALUE)
+                                        .fillMaxWidth(),
+                                    textAlign = TextAlign.Start,
+                                    color = color.adjustBrightness(0.3F),
+                                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    text = "$coDisplay $routeNumberDisplay"
+                                )
+                            }
+                            Text(
+                                modifier = Modifier
+                                    .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                                    .basicMarquee(Int.MAX_VALUE)
+                                    .fillMaxWidth(),
+                                textAlign = TextAlign.Start,
+                                fontWeight = FontWeight.Normal,
+                                color = Color(0xFFFFFFFF).adjustBrightness(0.3F),
+                                fontSize = StringUtils.scaledSize(14F, instance).sp,
+                                text = stopName
+                            )
+                        }
+                    }
+                    FavouriteRouteState.USED_SELF -> {
+                        Text(
+                            modifier = Modifier
+                                .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                                .fillMaxWidth(),
+                            textAlign = TextAlign.Start,
+                            color = Color(0xFFFFFFFF),
+                            fontSize = StringUtils.scaledSize(14F, instance).sp,
+                            text = if (Shared.language == "en") "Selected as This Route Stop" else "已設置為本路線巴士站"
+                        )
+                    }
+                }
             }
         }
     )

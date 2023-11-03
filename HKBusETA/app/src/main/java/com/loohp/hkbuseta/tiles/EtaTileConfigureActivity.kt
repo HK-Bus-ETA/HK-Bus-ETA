@@ -123,6 +123,11 @@ class EtaTileConfigureActivity : ComponentActivity() {
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        finish()
+    }
+
 }
 
 @OptIn(ExperimentalFoundationApi::class)

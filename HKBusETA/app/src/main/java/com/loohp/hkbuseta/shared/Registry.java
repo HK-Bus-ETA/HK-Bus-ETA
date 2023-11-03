@@ -243,15 +243,33 @@ public class Registry {
     public void clearFavouriteRouteStop(int favoriteIndex, Context context) {
         try {
             Shared.Companion.updateFavoriteRouteStops(m -> m.remove(favoriteIndex));
-            if (PREFERENCES != null && !PREFERENCES.getFavouriteRouteStops().isEmpty()) {
-                PREFERENCES.getFavouriteRouteStops().remove(favoriteIndex);
-                synchronized (preferenceWriteLock) {
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(PREFERENCES.serialize().toString());
-                        pw.flush();
+            PREFERENCES.getFavouriteRouteStops().remove(favoriteIndex);
+            Map<Integer, List<Integer>> changes = new HashMap<>();
+            List<Integer> deletions = new ArrayList<>();
+            for (Map.Entry<Integer, List<Integer>> entry : Shared.Companion.getRawEtaTileConfigurations().entrySet()) {
+                if (entry.getValue().contains(favoriteIndex)) {
+                    List<Integer> updated = new ArrayList<>(entry.getValue());
+                    updated.remove((Integer) favoriteIndex);
+                    if (updated.isEmpty()) {
+                        deletions.add(entry.getKey());
+                    } else {
+                        changes.put(entry.getKey(), updated);
                     }
                 }
             }
+            PREFERENCES.getEtaTileConfigurations().putAll(changes);
+            deletions.forEach(i -> PREFERENCES.getEtaTileConfigurations().remove(i));
+            Shared.Companion.updateEtaTileConfigurations(m -> {
+                m.putAll(changes);
+                deletions.forEach(m::remove);
+            });
+            synchronized (preferenceWriteLock) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    pw.write(PREFERENCES.serialize().toString());
+                    pw.flush();
+                }
+            }
+            updateTileService(0, context);
             updateTileService(favoriteIndex, context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
@@ -259,16 +277,42 @@ public class Registry {
     }
 
     public void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, Context context) {
+        setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, false, context);
+    }
+
+    private void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, boolean bypassEtaTileCheck, Context context) {
         try {
             FavouriteRouteStop favouriteRouteStop = new FavouriteRouteStop(stopId, co, index, stop, route);
             Shared.Companion.updateFavoriteRouteStops(m -> m.put(favoriteIndex, favouriteRouteStop));
             PREFERENCES.getFavouriteRouteStops().put(favoriteIndex, favouriteRouteStop);
+            if (!bypassEtaTileCheck) {
+                Map<Integer, List<Integer>> changes = new HashMap<>();
+                List<Integer> deletions = new ArrayList<>();
+                for (Map.Entry<Integer, List<Integer>> entry : Shared.Companion.getRawEtaTileConfigurations().entrySet()) {
+                    if (entry.getValue().contains(favoriteIndex)) {
+                        List<Integer> updated = new ArrayList<>(entry.getValue());
+                        updated.remove((Integer) favoriteIndex);
+                        if (updated.isEmpty()) {
+                            deletions.add(entry.getKey());
+                        } else {
+                            changes.put(entry.getKey(), updated);
+                        }
+                    }
+                }
+                PREFERENCES.getEtaTileConfigurations().putAll(changes);
+                deletions.forEach(i -> PREFERENCES.getEtaTileConfigurations().remove(i));
+                Shared.Companion.updateEtaTileConfigurations(m -> {
+                    m.putAll(changes);
+                    deletions.forEach(m::remove);
+                });
+            }
             synchronized (preferenceWriteLock) {
                 try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
                     pw.write(PREFERENCES.serialize().toString());
                     pw.flush();
                 }
             }
+            updateTileService(0, context);
             updateTileService(favoriteIndex, context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
@@ -278,13 +322,11 @@ public class Registry {
     public void clearEtaTileConfiguration(int tileId, Context context) {
         try {
             Shared.Companion.updateEtaTileConfigurations(m -> m.remove(tileId));
-            if (PREFERENCES != null && !PREFERENCES.getFavouriteRouteStops().isEmpty()) {
-                PREFERENCES.getEtaTileConfigurations().remove(tileId);
-                synchronized (preferenceWriteLock) {
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(PREFERENCES.serialize().toString());
-                        pw.flush();
-                    }
+            PREFERENCES.getEtaTileConfigurations().remove(tileId);
+            synchronized (preferenceWriteLock) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    pw.write(PREFERENCES.serialize().toString());
+                    pw.flush();
                 }
             }
         } catch (IOException | JSONException e) {
@@ -547,7 +589,7 @@ public class Registry {
 
                                 String finalStopId = stopId;
                                 int finalIndex = index;
-                                updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, stopData.getRoute(), context));
+                                updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, stopData.getRoute(), true, context));
                             } catch (Throwable e) {
                                 e.printStackTrace();
                             }
@@ -557,8 +599,8 @@ public class Registry {
                         updatedFavouriteRouteTasks.forEach(Runnable::run);
                         updatePercentageState.setValue(1F);
 
-                        state.setValue(State.READY);
                         updateTileService(context);
+                        state.setValue(State.READY);
                     }
                 }
                 updatePercentageState.setValue(1F);

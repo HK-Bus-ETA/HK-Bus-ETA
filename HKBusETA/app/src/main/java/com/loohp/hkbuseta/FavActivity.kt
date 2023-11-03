@@ -45,6 +45,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,6 +76,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
@@ -108,6 +110,7 @@ import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.shared.TileUseState
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.LocationUtils
@@ -301,6 +304,8 @@ fun RouteListViewButton(instance: FavActivity) {
 @Composable
 fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var favouriteStopRoute by remember { mutableStateOf(Shared.favoriteRouteStops[favoriteIndex]) }
+    var anyTileUses by remember { mutableStateOf(Shared.getTileUseState(favoriteIndex)) }
+
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val deleteAnimatable = remember { Animatable(0F) }
@@ -319,19 +324,34 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
         if (newState != favouriteStopRoute) {
             favouriteStopRoute = newState
         }
+        val newAnyTileUses = Shared.getTileUseState(favoriteIndex)
+        if (newAnyTileUses != anyTileUses) {
+            anyTileUses = newAnyTileUses
+        }
     }
 
     AdvanceButton(
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(
+                TweenSpec(durationMillis = 200, easing = FastOutSlowInEasing)
+            )
+            .padding(20.dp, 0.dp)
+            .composed {
+                when (anyTileUses) {
+                    TileUseState.PRIMARY -> this.border(2.sp.dp, Color(0x5437FF00), RoundedCornerShape(15.dp))
+                    TileUseState.SECONDARY -> this.border(2.sp.dp, Color(0x54FFB700), RoundedCornerShape(15.dp))
+                    TileUseState.NONE -> this
+                }
+            },
         onClick = {
             if (deleteState) {
                 if (Registry.getInstance(instance).hasFavouriteRouteStop(favoriteIndex)) {
                     Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
                     Toast.makeText(instance, if (Shared.language == "en") "Cleared Favourite Route ".plus(favoriteIndex) else "已清除最喜愛路線".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
                 }
-                val newState = Shared.favoriteRouteStops[favoriteIndex]
-                if (newState != favouriteStopRoute) {
-                    favouriteStopRoute = newState
-                }
+                favouriteStopRoute = Shared.favoriteRouteStops[favoriteIndex]
+                anyTileUses = Shared.getTileUseState(favoriteIndex)
                 scope.launch { deleteAnimatable.snapTo(0F) }
             } else {
                 val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
@@ -379,12 +399,6 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                 }
             }
         },
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(
-                TweenSpec(durationMillis = 200, easing = FastOutSlowInEasing)
-            )
-            .padding(20.dp, 0.dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = animatedBackgroundColor,
             contentColor = if (deleteState) Color(0xFFFF0000) else if (favouriteStopRoute != null) Color(0xFFFFFF00) else Color(0xFF444444),
