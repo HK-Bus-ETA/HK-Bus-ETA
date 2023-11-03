@@ -788,7 +788,11 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                         val kmbCtbJoint = currentRoute.route.isKmbCtbJoint
                         val coDisplay = currentRoute.co.getDisplayName(currentRoute.route.routeNumber, kmbCtbJoint, Shared.language)
                         val routeNumberDisplay = currentRoute.co.getDisplayRouteNumber(currentRoute.route.routeNumber)
-                        val stopName = currentRoute.index.toString().plus(". ").plus(currentRoute.stop.name[Shared.language])
+                        val stopName = if (Shared.language == "en") {
+                            (if (currentRoute.co == Operator.MTR || currentRoute.co == Operator.LRT) "" else index.toString().plus(". ")).plus(currentRoute.stop.name.en)
+                        } else {
+                            (if (currentRoute.co == Operator.MTR || currentRoute.co == Operator.LRT) "" else index.toString().plus(". ")).plus(currentRoute.stop.name.zh)
+                        }
                         val rawColor = currentRoute.co.getColor(currentRoute.route.routeNumber, Color.White)
                         val color = if (kmbCtbJoint) {
                             val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
