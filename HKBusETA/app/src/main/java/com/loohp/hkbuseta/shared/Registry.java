@@ -174,29 +174,29 @@ public class Registry {
     }
 
     public void updateTileService(Context context) {
-        updateTileService(0, context);
-        updateTileService(1, context);
-        updateTileService(2, context);
-        updateTileService(3, context);
-        updateTileService(4, context);
-        updateTileService(5, context);
-        updateTileService(6, context);
-        updateTileService(7, context);
-        updateTileService(8, context);
+        TileUpdateRequester updater = TileService.getUpdater(context);
+        updater.requestUpdate(EtaTileService.class);
+        updater.requestUpdate(EtaTileServiceOne.class);
+        updater.requestUpdate(EtaTileServiceTwo.class);
+        updater.requestUpdate(EtaTileServiceThree.class);
+        updater.requestUpdate(EtaTileServiceFour.class);
+        updater.requestUpdate(EtaTileServiceFive.class);
+        updater.requestUpdate(EtaTileServiceSix.class);
+        updater.requestUpdate(EtaTileServiceSeven.class);
+        updater.requestUpdate(EtaTileServiceEight.class);
     }
 
     public void updateTileService(int favoriteIndex, Context context) {
-        TileUpdateRequester updater = TileService.getUpdater(context);
         switch (favoriteIndex) {
-            case 0: { updater.requestUpdate(EtaTileService.class); break; }
-            case 1: { updater.requestUpdate(EtaTileServiceOne.class); break; }
-            case 2: { updater.requestUpdate(EtaTileServiceTwo.class); break; }
-            case 3: { updater.requestUpdate(EtaTileServiceThree.class); break; }
-            case 4: { updater.requestUpdate(EtaTileServiceFour.class); break; }
-            case 5: { updater.requestUpdate(EtaTileServiceFive.class); break; }
-            case 6: { updater.requestUpdate(EtaTileServiceSix.class); break; }
-            case 7: { updater.requestUpdate(EtaTileServiceSeven.class); break; }
-            case 8: { updater.requestUpdate(EtaTileServiceEight.class); break; }
+            case 1: { TileService.getUpdater(context).requestUpdate(EtaTileServiceOne.class); break; }
+            case 2: { TileService.getUpdater(context).requestUpdate(EtaTileServiceTwo.class); break; }
+            case 3: { TileService.getUpdater(context).requestUpdate(EtaTileServiceThree.class); break; }
+            case 4: { TileService.getUpdater(context).requestUpdate(EtaTileServiceFour.class); break; }
+            case 5: { TileService.getUpdater(context).requestUpdate(EtaTileServiceFive.class); break; }
+            case 6: { TileService.getUpdater(context).requestUpdate(EtaTileServiceSix.class); break; }
+            case 7: { TileService.getUpdater(context).requestUpdate(EtaTileServiceSeven.class); break; }
+            case 8: { TileService.getUpdater(context).requestUpdate(EtaTileServiceEight.class); break; }
+            default: { TileService.getUpdater(context).requestUpdate(EtaTileService.class); break; }
         }
     }
 
@@ -241,6 +241,10 @@ public class Registry {
     }
 
     public void clearFavouriteRouteStop(int favoriteIndex, Context context) {
+        clearFavouriteRouteStop(favoriteIndex, true, context);
+    }
+
+    private void clearFavouriteRouteStop(int favoriteIndex, boolean save, Context context) {
         try {
             Shared.Companion.updateFavoriteRouteStops(m -> m.remove(favoriteIndex));
             PREFERENCES.getFavouriteRouteStops().remove(favoriteIndex);
@@ -263,24 +267,26 @@ public class Registry {
                 m.putAll(changes);
                 deletions.forEach(m::remove);
             });
-            synchronized (preferenceWriteLock) {
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.serialize().toString());
-                    pw.flush();
+            if (save) {
+                synchronized (preferenceWriteLock) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                        pw.write(PREFERENCES.serialize().toString());
+                        pw.flush();
+                    }
                 }
+                updateTileService(0, context);
+                updateTileService(favoriteIndex, context);
             }
-            updateTileService(0, context);
-            updateTileService(favoriteIndex, context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
     }
 
     public void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, Context context) {
-        setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, false, context);
+        setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, false, true, context);
     }
 
-    private void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, boolean bypassEtaTileCheck, Context context) {
+    private void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, boolean bypassEtaTileCheck, boolean save, Context context) {
         try {
             FavouriteRouteStop favouriteRouteStop = new FavouriteRouteStop(stopId, co, index, stop, route);
             Shared.Companion.updateFavoriteRouteStops(m -> m.put(favoriteIndex, favouriteRouteStop));
@@ -306,14 +312,16 @@ public class Registry {
                     deletions.forEach(m::remove);
                 });
             }
-            synchronized (preferenceWriteLock) {
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.serialize().toString());
-                    pw.flush();
+            if (save) {
+                synchronized (preferenceWriteLock) {
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                        pw.write(PREFERENCES.serialize().toString());
+                        pw.flush();
+                    }
                 }
+                updateTileService(0, context);
+                updateTileService(favoriteIndex, context);
             }
-            updateTileService(0, context);
-            updateTileService(favoriteIndex, context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
@@ -491,8 +499,8 @@ public class Registry {
                                 throw new RuntimeException();
                             }
                         }
-                        state.setValue(State.READY);
                         updateTileService(context);
+                        state.setValue(State.READY);
                     } catch (Throwable e) {
                         e.printStackTrace();
                     }
@@ -562,7 +570,7 @@ public class Registry {
                                 });
 
                                 if (newRoutes.isEmpty()) {
-                                    updatedFavouriteRouteTasks.add(() -> clearFavouriteRouteStop(favouriteRouteIndex, context));
+                                    updatedFavouriteRouteTasks.add(() -> clearFavouriteRouteStop(favouriteRouteIndex, false, context));
                                     continue;
                                 }
                                 RouteSearchResultEntry newRouteData = newRoutes.get(0);
@@ -589,14 +597,22 @@ public class Registry {
 
                                 String finalStopId = stopId;
                                 int finalIndex = index;
-                                updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, stopData.getRoute(), true, context));
+                                updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, stopData.getRoute(), true, false, context));
                             } catch (Throwable e) {
                                 e.printStackTrace();
                             }
                             localUpdatePercentage += percentagePerFav;
                             updatePercentageState.setValue(localUpdatePercentage);
                         }
-                        updatedFavouriteRouteTasks.forEach(Runnable::run);
+                        if (!updatedFavouriteRouteTasks.isEmpty()) {
+                            updatedFavouriteRouteTasks.forEach(Runnable::run);
+                            synchronized (preferenceWriteLock) {
+                                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                                    pw.write(PREFERENCES.serialize().toString());
+                                    pw.flush();
+                                }
+                            }
+                        }
                         updatePercentageState.setValue(1F);
 
                         updateTileService(context);

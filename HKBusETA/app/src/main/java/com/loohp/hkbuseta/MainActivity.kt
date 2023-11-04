@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val state by remember { Registry.getInstance(this@MainActivity).also {
-                if (System.currentTimeMillis() - it.lastUpdateCheck > 10000) it.checkUpdate(this@MainActivity, false)
+                if (System.currentTimeMillis() - it.lastUpdateCheck > 30000) it.checkUpdate(this@MainActivity, false)
             }.state }.collectAsStateWithLifecycle()
 
             LaunchedEffect (state) {
