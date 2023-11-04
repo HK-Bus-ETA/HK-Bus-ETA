@@ -24,23 +24,46 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.gmbRegion
@@ -51,7 +74,8 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.asImmutableState
+import com.loohp.hkbuseta.utils.clamp
+import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.util.regex.Pattern
 import java.util.stream.Collectors
@@ -248,15 +272,179 @@ fun Loading(instance: MainActivity) {
         ) {
             Shared.MainTime()
         }
+        LoadingUpdatingElements(instance)
+    }
+}
+
+@Composable
+fun LoadingUpdatingElements(instance: MainActivity) {
+    val state by remember { Registry.getInstance(instance).state }.collectAsStateWithLifecycle()
+    var wasUpdating by remember { mutableStateOf(state == Registry.State.UPDATING) }
+    val updating by remember { derivedStateOf { wasUpdating || state == Registry.State.UPDATING } }
+
+    LaunchedEffect (updating, state) {
+        if (updating) {
+            wasUpdating = true
+        }
+    }
+
+    if (updating) {
+        UpdatingElements(instance)
+    } else {
+        LoadingElements(instance)
+    }
+}
+
+@Composable
+fun UpdatingElements(instance: MainActivity) {
+    val currentProgress by remember { Registry.getInstanceNoUpdateCheck(instance).updatePercentageState }.collectAsStateWithLifecycle()
+    val progressAnimation by animateFloatAsState(
+        targetValue = currentProgress,
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+        label = "LoadingProgressAnimation"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp, 0.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary,
+            fontSize = StringUtils.scaledSize(17F, instance).sp,
+            text = "更新數據中..."
+        )
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary,
+            fontSize = StringUtils.scaledSize(14F, instance).sp,
+            text = "更新需時 請稍等"
+        )
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary,
+            fontSize = StringUtils.scaledSize(17F, instance).sp,
+            text = "Updating..."
+        )
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary,
+            fontSize = StringUtils.scaledSize(14F, instance).sp,
+            text = "Might take a moment"
+        )
+        Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(25.dp, 0.dp),
+            color = Color(0xFFF9DE09),
+            trackColor = Color(0xFF797979),
+            progress = progressAnimation
+        )
+    }
+}
+
+@Composable
+fun LoadingElements(instance: MainActivity) {
+    val currentState by remember { Registry.getInstanceNoUpdateCheck(instance).state }.collectAsStateWithLifecycle()
+    val checkingUpdate by remember { derivedStateOf { currentState == Registry.State.UPDATE_CHECKING } }
+
+    Box (
+        modifier = Modifier.fillMaxSize()
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(20.dp, 0.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Shared.LoadingLabel(language = "zh", includeImage = true, includeProgress = false, instance = instance.asImmutableState())
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Image(
+                    modifier = Modifier
+                        .size(StringUtils.scaledSize(50, instance).dp)
+                        .align(Alignment.Center),
+                    painter = painterResource(R.mipmap.icon_full_smaller),
+                    contentDescription = instance.resources.getString(R.string.app_name)
+                )
+            }
+            Spacer(modifier = Modifier.size(10.dp))
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colors.primary,
+                fontSize = StringUtils.scaledSize(17F, instance).sp,
+                text = "載入中..."
+            )
             Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
-            Shared.LoadingLabel(language = "en", includeImage = false, includeProgress = true, instance = instance.asImmutableState())
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colors.primary,
+                fontSize = StringUtils.scaledSize(17F, instance).sp,
+                text = "Loading..."
+            )
+        }
+        if (checkingUpdate) {
+            Box (
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(0.dp, 10.dp)
+            ) {
+                SkipChecksumButton(instance)
+            }
         }
     }
+}
+
+@Composable
+fun SkipChecksumButton(instance: MainActivity) {
+    var enableSkip by remember { mutableStateOf(false) }
+
+    val alpha by remember { derivedStateOf { if (enableSkip) 1F else 0F } }
+    val animatedAlpha by animateFloatAsState(
+        targetValue = alpha,
+        animationSpec = TweenSpec(durationMillis = 400, easing = LinearEasing),
+        label = ""
+    )
+
+    LaunchedEffect (Unit) {
+        delay(3000)
+        enableSkip = true
+    }
+
+    Button(
+        onClick = {
+            Registry.getInstanceNoUpdateCheck(instance).cancelCurrentChecksumTask()
+        },
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .width(StringUtils.scaledSize(55, instance).dp)
+            .height(StringUtils.scaledSize(35, instance).dp)
+            .alpha(animatedAlpha),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.secondary,
+            contentColor = Color(0xFFFFFFFF)
+        ),
+        enabled = enableSkip,
+        content = {
+            Text(
+                modifier = Modifier.fillMaxWidth(0.9F),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colors.primary,
+                fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                text = if (Shared.language == "en") "Skip" else "略過"
+            )
+        }
+    )
 }

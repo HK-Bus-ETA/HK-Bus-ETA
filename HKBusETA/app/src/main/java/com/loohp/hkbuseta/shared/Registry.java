@@ -33,15 +33,16 @@ import androidx.wear.tiles.TileUpdateRequester;
 import com.loohp.hkbuseta.R;
 import com.loohp.hkbuseta.branchedlist.BranchedList;
 import com.loohp.hkbuseta.objects.BilingualText;
+import com.loohp.hkbuseta.objects.Coordinates;
 import com.loohp.hkbuseta.objects.DataContainer;
 import com.loohp.hkbuseta.objects.FavouriteRouteStop;
 import com.loohp.hkbuseta.objects.GMBRegion;
 import com.loohp.hkbuseta.objects.Operator;
 import com.loohp.hkbuseta.objects.Preferences;
 import com.loohp.hkbuseta.objects.Route;
+import com.loohp.hkbuseta.objects.RouteExtensionsKt;
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry;
 import com.loohp.hkbuseta.objects.Stop;
-import com.loohp.hkbuseta.objects.Coordinates;
 import com.loohp.hkbuseta.tiles.EtaTileService;
 import com.loohp.hkbuseta.tiles.EtaTileServiceEight;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFive;
@@ -95,13 +96,15 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -151,6 +154,7 @@ public class Registry {
     private final MutableStateFlow<Float> updatePercentageState = StateUtilsKtKt.asMutableStateFlow(0F);
     private final Object preferenceWriteLock = new Object();
     private final AtomicLong lastUpdateCheck = new AtomicLong(0);
+    private final AtomicReference<Future<?>> currentChecksumTask = new AtomicReference<>(null);
 
     private Registry(Context context, boolean suppressUpdateCheck) {
         try {
@@ -385,6 +389,13 @@ public class Registry {
         }
     }
 
+    public void cancelCurrentChecksumTask() {
+        Future<?> task = currentChecksumTask.get();
+        if (task != null) {
+            task.cancel(true);
+        }
+    }
+
     private void ensureData(Context context, boolean suppressUpdateCheck) throws IOException {
         if (state.getValue() == State.READY) {
             return;
@@ -443,27 +454,33 @@ public class Registry {
                 List<String> files = Arrays.asList(context.getApplicationContext().fileList());
                 ConnectionUtils.ConnectionType connectionType = ConnectionUtils.getConnectionType(context);
 
-                Supplier<String> checksumFetcher = () -> {
-                    CompletableFuture<String> future = new CompletableFuture<>();
-                    new Thread(() -> {
-                        try {
-                            long version = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).getLongVersionCode();
-                            future.complete(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5") + "_" + version);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            future.complete(null);
-                        }
-                    }).start();
+                AtomicBoolean updateChecked = new AtomicBoolean(false);
+                Function<Boolean, String> checksumFetcher = forced -> {
+                    FutureTask<String> future = new FutureTask<>(() -> {
+                        long version = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).getLongVersionCode();
+                        return HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5") + "_" + version;
+                    });
+                    currentChecksumTask.set(future);
+                    if (!forced && files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_FILE_NAME)) {
+                        state.setValue(State.UPDATE_CHECKING);
+                    }
                     try {
-                        return future.get(8, TimeUnit.SECONDS);
-                    } catch (Exception e) {
+                        new Thread(future).start();
+                        String result = future.get(10, TimeUnit.SECONDS);
+                        updateChecked.set(true);
+                        return result;
+                    } catch (ExecutionException | TimeoutException | InterruptedException | CancellationException e) {
                         e.printStackTrace();
                         return null;
+                    } finally {
+                        if (state.getValue() == State.UPDATE_CHECKING) {
+                            state.setValue(State.LOADING);
+                        }
                     }
                 };
 
                 boolean cached = false;
-                String checksum = !suppressUpdateCheck && connectionType.hasConnection() ? checksumFetcher.get() : null;
+                String checksum = !suppressUpdateCheck && connectionType.hasConnection() ? checksumFetcher.apply(false) : null;
                 if (files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_FILE_NAME)) {
                     if (checksum == null) {
                         cached = true;
@@ -478,14 +495,18 @@ public class Registry {
                 }
 
                 if (cached) {
-                    try {
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_FILE_NAME), StandardCharsets.UTF_8))) {
-                            DATA = DataContainer.deserialize(new JSONObject(reader.lines().collect(Collectors.joining())));
+                    if (DATA == null) {
+                        try {
+                            try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_FILE_NAME), StandardCharsets.UTF_8))) {
+                                DATA = DataContainer.deserialize(new JSONObject(reader.lines().collect(Collectors.joining())));
+                            }
+                            updateTileService(context);
+                            state.setValue(State.READY);
+                        } catch (Throwable e) {
+                            e.printStackTrace();
                         }
-                        updateTileService(context);
+                    } else {
                         state.setValue(State.READY);
-                    } catch (Throwable e) {
-                        e.printStackTrace();
                     }
                 }
                 if (state.getValue() != State.READY) {
@@ -496,6 +517,10 @@ public class Registry {
                         state.setValue(State.UPDATING);
                         updatePercentageState.setValue(0F);
                         float percentageOffset = Shared.Companion.getFavoriteRouteStops().isEmpty() ? 0.15F : 0F;
+
+                        if (!updateChecked.get()) {
+                            checksum = checksumFetcher.apply(true);
+                        }
 
                         long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.gz.dat"), -1);
                         String textResponse = HTTPRequestUtils.getTextResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, GZIPInputStream::new, p -> updatePercentageState.setValue(p * 0.75F + percentageOffset));
@@ -1949,41 +1974,7 @@ public class Registry {
                     isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
 
                     String lineName = route.getRouteNumber();
-                    String lineColor;
-                    switch (lineName) {
-                        case "AEL":
-                            lineColor = "#00888E";
-                            break;
-                        case "TCL":
-                            lineColor = "#F3982D";
-                            break;
-                        case "TML":
-                            lineColor = "#9C2E00";
-                            break;
-                        case "TKL":
-                            lineColor = "#7E3C93";
-                            break;
-                        case "EAL":
-                            lineColor = "#5EB7E8";
-                            break;
-                        case "SIL":
-                            lineColor = "#CBD300";
-                            break;
-                        case "TWL":
-                            lineColor = "#E60012";
-                            break;
-                        case "ISL":
-                            lineColor = "#0075C2";
-                            break;
-                        case "KTL":
-                            lineColor = "#00A040";
-                            break;
-                        case "DRL":
-                            lineColor = "#EB6EA5";
-                            break;
-                        default:
-                            lineColor = "#FFFFFF";
-                    }
+                    String lineColor = RouteExtensionsKt.getColorHex(co, lineName, 0xFFFFFFFFL);
 
                     String bound = route.getBound().get(Operator.MTR);
                     if (isMtrStopEndOfLine(stopId, lineName, bound)) {
@@ -2275,7 +2266,7 @@ public class Registry {
 
     public enum State {
 
-        LOADING(true), UPDATING(true), READY(false), ERROR(false);
+        LOADING(true), UPDATE_CHECKING(true), UPDATING(true), READY(false), ERROR(false);
 
         private final boolean isProcessing;
 

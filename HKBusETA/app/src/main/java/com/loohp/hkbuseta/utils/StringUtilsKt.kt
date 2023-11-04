@@ -28,6 +28,7 @@ import android.text.Html
 import android.text.Spanned
 import android.text.style.DynamicDrawableSpan
 import android.text.style.ImageSpan
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.AnnotatedString
@@ -50,13 +51,16 @@ import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 
-class ResourceImageGetter(val context: Context, val height: Float) : Html.ImageGetter {
+@Immutable
+class ResourceImageGetter(private val context: Context, private val heightSp: Float) : Html.ImageGetter {
 
     companion object {
 
         private val types = listOf("mipmap", "drawable", "raw")
 
     }
+
+    private val height = UnitUtils.spToPixels(context, heightSp)
 
     @SuppressLint("DiscouragedApi")
     override fun getDrawable(source: String): Drawable? {
@@ -77,11 +81,11 @@ class ResourceImageGetter(val context: Context, val height: Float) : Html.ImageG
 
 }
 
-fun CharSequence.toSpanned(context: Context, imageHeight: Float = -1F): Spanned {
-    return if (imageHeight < 0) {
+fun CharSequence.toSpanned(context: Context, imageHeightSp: Float = 0F): Spanned {
+    return if (imageHeightSp <= 0F) {
         HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT)
     } else {
-        HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT, ResourceImageGetter(context, imageHeight), null)
+        HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT, ResourceImageGetter(context, imageHeightSp), null)
     }
 }
 

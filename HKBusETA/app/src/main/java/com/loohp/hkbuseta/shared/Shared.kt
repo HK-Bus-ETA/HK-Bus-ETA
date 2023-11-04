@@ -24,46 +24,19 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import com.loohp.hkbuseta.FatalErrorActivity
-import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.gmbRegion
 import com.loohp.hkbuseta.objects.operator
-import com.loohp.hkbuseta.utils.ImmutableState
-import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.isEqualTo
 import org.json.JSONObject
 import java.io.PrintWriter
@@ -199,82 +172,6 @@ class Shared {
             TimeText(
                 modifier = Modifier.fillMaxWidth()
             )
-        }
-
-        @Composable
-        fun LoadingLabel(language: String, includeImage: Boolean, includeProgress: Boolean, instance: ImmutableState<Context>) {
-            val state by remember { Registry.getInstance(instance.value).state }.collectAsStateWithLifecycle()
-            var wasUpdating by remember { mutableStateOf(state == Registry.State.UPDATING) }
-            val updating by remember { derivedStateOf { wasUpdating || state == Registry.State.UPDATING } }
-
-            LaunchedEffect (updating, state) {
-                if (updating) {
-                    wasUpdating = true
-                }
-            }
-
-            LoadingLabelText(updating, language, includeImage, includeProgress, instance)
-        }
-
-        @Composable
-        private fun LoadingLabelText(updating: Boolean, language: String, includeImage: Boolean, includeProgress: Boolean, instance: ImmutableState<Context>) {
-            if (updating) {
-                val currentProgress by remember { Registry.getInstance(instance.value).updatePercentageState }.collectAsStateWithLifecycle()
-                val progressAnimation by animateFloatAsState(
-                    targetValue = currentProgress,
-                    animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
-                    label = "LoadingProgressAnimation"
-                )
-
-                Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(17F, instance.value).sp,
-                    text = if (language == "en") "Updating..." else "更新數據中..."
-                )
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance.value).dp))
-                Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(14F, instance.value).sp,
-                    text = if (language == "en") "Might take a moment" else "更新需時 請稍等"
-                )
-                if (includeProgress) {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance.value).dp))
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(25.dp, 0.dp),
-                        color = Color(0xFFF9DE09),
-                        trackColor = Color(0xFF797979),
-                        progress = progressAnimation
-                    )
-                }
-            } else {
-                if (includeImage) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Image(
-                            modifier = Modifier
-                                .size(StringUtils.scaledSize(50, instance.value).dp)
-                                .align(Alignment.Center),
-                            painter = painterResource(R.mipmap.icon_full_smaller),
-                            contentDescription = instance.value.resources.getString(R.string.app_name)
-                        )
-                    }
-                    Spacer(modifier = Modifier.size(10.dp))
-                }
-                Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(17F, instance.value).sp,
-                    text = if (language == "en") "Loading..." else "載入中..."
-                )
-            }
         }
 
         fun getMtrLineSortingIndex(lineName: String): Int {

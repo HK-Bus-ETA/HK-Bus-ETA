@@ -171,7 +171,7 @@ fun WaitingElement(state: MutableState<Boolean>, instance: FavRouteListViewActiv
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
                     fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
-                    text = if (Shared.language == "en") "Skip sort by distance" else "跳過按距離排序"
+                    text = if (Shared.language == "en") "Skip sort by distance" else "略過按距離排序"
                 )
             }
         )

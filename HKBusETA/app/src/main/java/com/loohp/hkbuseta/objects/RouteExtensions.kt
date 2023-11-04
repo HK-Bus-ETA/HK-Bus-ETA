@@ -26,9 +26,14 @@ import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.DistanceUtils
+import com.loohp.hkbuseta.utils.toHexString
 
 
 inline val Operator.name: String get() = name()
+
+fun Operator.getColorHex(routeNumber: String, elseColor: Long): String {
+    return getColor(routeNumber, Color(elseColor)).toHexString()
+}
 
 fun Operator.getColor(routeNumber: String, elseColor: Color): Color {
     return when (this) {
