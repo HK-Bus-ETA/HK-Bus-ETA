@@ -17,8 +17,7 @@ In addition, it also supports **English**.
 - [New Lantao Bus Co. (1973) Ltd](https://www.nlb.com.hk/)
 - [MTR Corporation Limited](https://www.mtr.com.hk/)
 - [HK Bus Crawling@2021](https://github.com/hkbus/hk-bus-crawling)
-- [HK KMB Calculator (Data Crawling Part)](https://github.com/LOOHP/HK-KMB-Calculator)
-
+- [HK Bus Crawling@2021 (HK-Bus-ETA-WearOS's Fork)](https://github.com/LOOHP/hk-bus-crawling)
 
 ## Privacy Policy
 I hereby state, to the best of my knowledge and belief, that I have **not programmed this app to collect any personally identifiable information**.<br>
