@@ -2,6 +2,8 @@ import json
 import re
 import urllib.request
 import concurrent.futures
+import zlib
+import chardet
 
 import requests
 
@@ -26,6 +28,23 @@ RECAPITALIZE_KEYWORDS = [
 def get_web_json(url):
     with urllib.request.urlopen(url) as data:
         return json.load(data)
+
+
+def get_web_text(url, gzip=True):
+    req = urllib.request.Request(url)
+    req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36')
+    if gzip:
+        req.add_header('Accept-Encoding', 'gzip')
+    req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7')
+    req.add_header('Connection', 'keep-alive')
+    response = urllib.request.urlopen(req)
+    text = response.read()
+    encoding = chardet.detect(text)
+    if encoding['encoding'] is None:
+        decompressed_data = zlib.decompress(text, 16 + zlib.MAX_WBITS)
+        return str(decompressed_data)
+    else:
+        return text.decode(encoding['encoding'])
 
 
 def download_and_process_kmb_route():
@@ -61,11 +80,91 @@ def download_and_process_nlb_route():
         BUS_ROUTE.add(route)
 
 
-def download_and_process_mtr_bus_stop_alias():
+def download_and_process_mtr_bus_data():
+    global BUS_ROUTE
+    global DATA_SHEET
     global MTR_BUS_STOP_ALIAS
-    url = "https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stop_alias.json"
-    response = requests.get(url)
-    MTR_BUS_STOP_ALIAS = response.json()
+
+    mtr_bus_route_list = get_web_text("https://opendata.mtr.com.hk/data/mtr_bus_routes.csv")
+    mtr_bus_stop_list = get_web_text("https://opendata.mtr.com.hk/data/mtr_bus_stops.csv")
+
+    routes_result = {}
+    stops_result = {}
+    stops_alias_result = {}
+    stop_entries = [[y[1:len(y) - 1] if y.startswith("\"") else y for y in x.split(",")] for x in mtr_bus_stop_list.splitlines()[1:]]
+    route_entries = [[y[1:len(y) - 1] if y.startswith("\"") else y for y in x.split(",")] for x in mtr_bus_route_list.splitlines()[1:]]
+
+    stops_map = {}
+    stops_by_route_bound = {}
+    for stop_entry in stop_entries:
+        position = stop_entry[4] + " " + stop_entry[5]
+        if position not in stops_map:
+            stops_map[position] = [stop_entry[3], stop_entry]
+            stops_alias_result[stop_entry[3]] = [stop_entry[3]]
+        else:
+            stops_alias_result[stops_map[position][0]].append(stop_entry[3])
+        route_number = stop_entry[0]
+        bound = stop_entry[1]
+        key = route_number + "_" + bound
+        if key in stops_by_route_bound:
+            stops_by_route_bound[key].append(stop_entry)
+        else:
+            stops_by_route_bound[key] = [stop_entry]
+
+    for key, stop_details in stops_map.items():
+        position = [float(stop_details[1][4]), float(stop_details[1][5])]
+        result = {
+            "location": {
+                "lat": position[0],
+                "lng": position[1]
+            },
+            "name": {
+                "en": stop_details[1][7],
+                "zh": stop_details[1][6]
+            }
+        }
+        stops_result[stop_details[1][3]] = result
+
+    for route_entry in route_entries:
+        route_number = route_entry[0]
+        for bound in ["O", "I"]:
+            key = route_number + "_" + bound
+            if key in stops_by_route_bound:
+                stop_list = stops_by_route_bound[key]
+                stop_list.sort(key=lambda x: float(x[2]))
+                stop_ids = []
+                for stop in stop_list:
+                    position = stop[4] + " " + stop[5]
+                    stop_ids.append(stops_map[position][0])
+                result = {
+                    "bound": {"mtr-bus": bound},
+                    "co": ["mtr-bus"],
+                    "dest": {
+                        "en": route_entry[2].split(" to ")[1] if bound == "O" else stop_list[-1][7],
+                        "zh": route_entry[1].split("至")[1] if bound == "O" else stop_list[-1][6]
+                    },
+                    "gtfsId": None,
+                    "nlbId": None,
+                    "orig": {
+                        "en": stop_list[0][7],
+                        "zh": stop_list[0][6]
+                    },
+                    "route": route_number,
+                    "serviceType": 1,
+                    "stops": {"mtr-bus": stop_ids}
+                }
+                key = route_number + "+1+" + stop_list[0][7] + "+" + stop_list[-1][7]
+                routes_result[key] = result
+
+    for key, data in routes_result.items():
+        route = data.get("route", "")
+        DATA_SHEET["routeList"][key] = data
+        BUS_ROUTE.add(route)
+
+    for key, stop_result in stops_result.items():
+        DATA_SHEET["stopList"][key] = stop_result
+
+    MTR_BUS_STOP_ALIAS = stops_alias_result
 
 
 def download_and_process_gmb_route():
@@ -310,22 +409,6 @@ def download_and_process_data_sheet():
                     break
 
 
-def download_and_process_mtr_bus_route_and_stops():
-    url = "https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_routes.json"
-    response = requests.get(url)
-    mtr_bus_route = response.json()
-    for key, data in mtr_bus_route.items():
-        route = data.get("route", "")
-        DATA_SHEET["routeList"][key] = data
-        BUS_ROUTE.add(route)
-
-    url = "https://raw.githubusercontent.com/LOOHP/HK-KMB-Calculator/data/data/mtr_bus_stops.json"
-    response = requests.get(url)
-    mtr_bus_stops = response.json()
-    for key in mtr_bus_stops:
-        DATA_SHEET["stopList"][key] = mtr_bus_stops[key]
-
-
 def capitalize(input_str, lower=True):
     if lower:
         input_str = input_str.lower()
@@ -401,14 +484,12 @@ print("Downloading & Processing CTB Routes")
 download_and_process_ctb_route()
 print("Downloading & Processing NLB Routes")
 download_and_process_nlb_route()
-print("Downloading & Processing MTR-Bus Stop Aliases")
-download_and_process_mtr_bus_stop_alias()
 print("Downloading & Processing GMB Routes")
 download_and_process_gmb_route()
 print("Downloading & Processing Data Sheet")
 download_and_process_data_sheet()
-print("Downloading & Processing MTR-Bus Routes & Stops")
-download_and_process_mtr_bus_route_and_stops()
+print("Downloading & Processing MTR-Bus Data")
+download_and_process_mtr_bus_data()
 print("Capitalizing KMB English Names")
 capitalize_kmb_english_names()
 print("Searching & Injecting GMB Region")
