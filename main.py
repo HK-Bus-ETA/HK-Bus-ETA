@@ -4,7 +4,6 @@ import urllib.request
 import concurrent.futures
 import zlib
 import chardet
-
 import requests
 
 BUS_ROUTE = set()
