@@ -64,11 +64,11 @@ public class HTTPRequestUtils {
         }
     }
 
-    public static JSONObject getJSONResponseWithPercentageCallback(String link, long customContentLength, Consumer<Float> percentageCallback) {
-        return getJSONResponseWithPercentageCallback(link, customContentLength, i -> i, percentageCallback);
+    public static String getTextResponseWithPercentageCallback(String link, long customContentLength, Consumer<Float> percentageCallback) {
+        return getTextResponseWithPercentageCallback(link, customContentLength, i -> i, percentageCallback);
     }
 
-    public static JSONObject getJSONResponseWithPercentageCallback(String link, long customContentLength, IOFunction<InputStream, InputStream> inputStreamTransform, Consumer<Float> percentageCallback) {
+    public static String getTextResponseWithPercentageCallback(String link, long customContentLength, IOFunction<InputStream, InputStream> inputStreamTransform, Consumer<Float> percentageCallback) {
         try {
             URL url = new URL(link);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -92,12 +92,12 @@ public class HTTPRequestUtils {
                         percentageCallback.accept(Math.max(0F, Math.min(readTotal / contentLength, 1F)));
                     }
                     percentageCallback.accept(1F);
-                    return new JSONObject(new String(buffer.toByteArray(), 0, buffer.size(), StandardCharsets.UTF_8));
+                    return new String(buffer.toByteArray(), 0, buffer.size(), StandardCharsets.UTF_8);
                 }
             } else {
                 return null;
             }
-        } catch (IOException | JSONException e) {
+        } catch (IOException e) {
             return null;
         }
     }

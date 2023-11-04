@@ -33,7 +33,7 @@ import androidx.wear.tiles.TileUpdateRequester;
 import com.loohp.hkbuseta.R;
 import com.loohp.hkbuseta.branchedlist.BranchedList;
 import com.loohp.hkbuseta.objects.BilingualText;
-import com.loohp.hkbuseta.objects.DataSheet;
+import com.loohp.hkbuseta.objects.DataContainer;
 import com.loohp.hkbuseta.objects.FavouriteRouteStop;
 import com.loohp.hkbuseta.objects.GMBRegion;
 import com.loohp.hkbuseta.objects.Operator;
@@ -56,7 +56,6 @@ import com.loohp.hkbuseta.utils.ConnectionUtils;
 import com.loohp.hkbuseta.utils.DistanceUtils;
 import com.loohp.hkbuseta.utils.HTTPRequestUtils;
 import com.loohp.hkbuseta.utils.IntUtils;
-import com.loohp.hkbuseta.utils.JsonUtils;
 import com.loohp.hkbuseta.utils.StateUtilsKtKt;
 import com.loohp.hkbuseta.utils.StringUtils;
 
@@ -137,18 +136,14 @@ public class Registry {
 
     private static final String PREFERENCES_FILE_NAME = "preferences.json";
     private static final String CHECKSUM_FILE_NAME = "checksum.json";
-    private static final String DATA_SHEET_FILE_NAME = "data_sheet.json";
-    private static final String BUS_ROUTE_FILE_NAME = "bus_routes.json";
-    private static final String MTR_BUS_STOP_ALIAS_FILE_NAME = "mtr_bus_stop_alias.json";
+    private static final String DATA_FILE_NAME = "data.json";
 
     public static void invalidateCache(Context context) {
         try { context.getApplicationContext().deleteFile(CHECKSUM_FILE_NAME); } catch (Throwable ignore) {}
     }
 
     private Preferences PREFERENCES = null;
-    private DataSheet DATA_SHEET = null;
-    private Set<String> BUS_ROUTE = null;
-    private Map<String, List<String>> MTR_BUS_STOP_ALIAS = null;
+    private DataContainer DATA = null;
 
     private final AtomicReference<Pair<TyphoonInfo, Long>> typhoonInfo = new AtomicReference<>(new Pair<>(null, 0L));
 
@@ -394,7 +389,7 @@ public class Registry {
         if (state.getValue() == State.READY) {
             return;
         }
-        if (PREFERENCES != null && DATA_SHEET != null && BUS_ROUTE != null && MTR_BUS_STOP_ALIAS != null) {
+        if (PREFERENCES != null && DATA != null) {
             return;
         }
 
@@ -469,7 +464,7 @@ public class Registry {
 
                 boolean cached = false;
                 String checksum = !suppressUpdateCheck && connectionType.hasConnection() ? checksumFetcher.get() : null;
-                if (files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_SHEET_FILE_NAME) && files.contains(BUS_ROUTE_FILE_NAME) && files.contains(MTR_BUS_STOP_ALIAS_FILE_NAME)) {
+                if (files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_FILE_NAME)) {
                     if (checksum == null) {
                         cached = true;
                     } else {
@@ -484,20 +479,8 @@ public class Registry {
 
                 if (cached) {
                     try {
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_SHEET_FILE_NAME), StandardCharsets.UTF_8))) {
-                            DATA_SHEET = DataSheet.deserialize(new JSONObject(reader.lines().collect(Collectors.joining("\n"))));
-                        }
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(BUS_ROUTE_FILE_NAME), StandardCharsets.UTF_8))) {
-                            BUS_ROUTE = JsonUtils.toSet(new JSONArray(reader.lines().collect(Collectors.joining("\n"))), String.class);
-                            if (BUS_ROUTE.isEmpty()) {
-                                throw new RuntimeException();
-                            }
-                        }
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(MTR_BUS_STOP_ALIAS_FILE_NAME), StandardCharsets.UTF_8))) {
-                            MTR_BUS_STOP_ALIAS = JsonUtils.toMap(new JSONObject(reader.lines().collect(Collectors.joining("\n"))), v -> JsonUtils.toList((JSONArray) v, String.class));
-                            if (MTR_BUS_STOP_ALIAS.isEmpty()) {
-                                throw new RuntimeException();
-                            }
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_FILE_NAME), StandardCharsets.UTF_8))) {
+                            DATA = DataContainer.deserialize(new JSONObject(reader.lines().collect(Collectors.joining())));
                         }
                         updateTileService(context);
                         state.setValue(State.READY);
@@ -515,25 +498,16 @@ public class Registry {
                         float percentageOffset = Shared.Companion.getFavoriteRouteStops().isEmpty() ? 0.15F : 0F;
 
                         long length = IntUtils.parseOr(HTTPRequestUtils.getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.gz.dat"), -1);
-                        JSONObject data = HTTPRequestUtils.getJSONResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, GZIPInputStream::new, p -> updatePercentageState.setValue(p * 0.75F + percentageOffset));
+                        String textResponse = HTTPRequestUtils.getTextResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, GZIPInputStream::new, p -> updatePercentageState.setValue(p * 0.75F + percentageOffset));
+                        if (textResponse == null) {
+                            throw new RuntimeException("Error downloading bus data");
+                        }
 
-                        MTR_BUS_STOP_ALIAS = JsonUtils.toMap(data.optJSONObject("mtrBusStopAlias"), v -> JsonUtils.toList((JSONArray) v, String.class));
-                        DATA_SHEET = DataSheet.deserialize(data.optJSONObject("dataSheet"));
-                        BUS_ROUTE = JsonUtils.toSet(data.optJSONArray("busRoute"), String.class);
+                        DATA = DataContainer.deserialize(new JSONObject(textResponse));
                         updatePercentageState.setValue(0.75F + percentageOffset);
 
-                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(MTR_BUS_STOP_ALIAS_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                            pw.write(JsonUtils.fromMap(MTR_BUS_STOP_ALIAS, JsonUtils::fromCollection).toString());
-                            pw.flush();
-                        }
-                        updatePercentageState.setValue(0.775F + percentageOffset);
-                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_SHEET_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                            pw.write(DATA_SHEET.serialize().toString());
-                            pw.flush();
-                        }
-                        updatePercentageState.setValue(0.8F + percentageOffset);
-                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(BUS_ROUTE_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                            pw.write(JsonUtils.fromCollection(BUS_ROUTE).toString());
+                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                            pw.write(textResponse);
                             pw.flush();
                         }
                         updatePercentageState.setValue(0.825F + percentageOffset);
@@ -631,18 +605,18 @@ public class Registry {
     }
 
     public String getRouteKey(Route route) {
-        return DATA_SHEET.getRouteList().entrySet().stream().filter(e -> e.getValue().equals(route)).findFirst().map(Map.Entry::getKey).orElse(null);
+        return DATA.getDataSheet().getRouteList().entrySet().stream().filter(e -> e.getValue().equals(route)).findFirst().map(Map.Entry::getKey).orElse(null);
     }
 
     public Route findRouteByKey(String inputKey, String routeNumber) {
-        Route exact = DATA_SHEET.getRouteList().get(inputKey);
+        Route exact = DATA.getDataSheet().getRouteList().get(inputKey);
         if (exact != null) {
             return exact;
         }
         inputKey = inputKey.toLowerCase();
         Route nearestRoute = null;
         int distance = Integer.MAX_VALUE;
-        for (Map.Entry<String, Route> entry : DATA_SHEET.getRouteList().entrySet()) {
+        for (Map.Entry<String, Route> entry : DATA.getDataSheet().getRouteList().entrySet()) {
             String key = entry.getKey();
             Route route = entry.getValue();
             if (routeNumber == null || route.getRouteNumber().equalsIgnoreCase(routeNumber)) {
@@ -657,13 +631,13 @@ public class Registry {
     }
 
     public Stop getStopById(String stopId) {
-        return DATA_SHEET.getStopList().get(stopId);
+        return DATA.getDataSheet().getStopList().get(stopId);
     }
 
     public PossibleNextCharResult getPossibleNextChar(String input) {
         Set<Character> result = new HashSet<>();
         boolean exactMatch = false;
-        for (String routeNumber : BUS_ROUTE) {
+        for (String routeNumber : DATA.getBusRoute()) {
             if (routeNumber.startsWith(input)) {
                 if (routeNumber.length() > input.length()) {
                     result.add(routeNumber.charAt(input.length()));
@@ -712,7 +686,7 @@ public class Registry {
         Predicate<String> routeMatcher = exact ? r -> r.equals(input) : r -> r.startsWith(input);
         Map<String, RouteSearchResultEntry> matchingRoutes = new HashMap<>();
 
-        for (Map.Entry<String, Route> entry : DATA_SHEET.getRouteList().entrySet()) {
+        for (Map.Entry<String, Route> entry : DATA.getDataSheet().getRouteList().entrySet()) {
             String key = entry.getKey();
             Route data = entry.getValue();
             if (data.isCtbIsCircular()) {
@@ -826,7 +800,7 @@ public class Registry {
     public NearbyRoutesResult getNearbyRoutes(double lat, double lng, Set<String> excludedRouteNumbers, boolean isInterchangeSearch) {
         Coordinates origin = new Coordinates(lat, lng);
 
-        Map<String, Stop> stops = DATA_SHEET.getStopList();
+        Map<String, Stop> stops = DATA.getDataSheet().getStopList();
         List<RouteSearchResultEntry.StopInfo> nearbyStops = new ArrayList<>();
 
         Stop closestStop = null;
@@ -872,7 +846,7 @@ public class Registry {
         for (RouteSearchResultEntry.StopInfo nearbyStop : nearbyStops) {
             String stopId = nearbyStop.getStopId();
 
-            for (Map.Entry<String, Route> entry : DATA_SHEET.getRouteList().entrySet()) {
+            for (Map.Entry<String, Route> entry : DATA.getDataSheet().getRouteList().entrySet()) {
                 String key = entry.getKey();
                 Route data = entry.getValue();
 
@@ -949,7 +923,7 @@ public class Registry {
         DayOfWeek weekday = hongKongTime.getDayOfWeek();
         LocalDate date = hongKongTime.toLocalDate();
 
-        boolean isHoliday = weekday.equals(DayOfWeek.SATURDAY) || weekday.equals(DayOfWeek.SUNDAY) || DATA_SHEET.getHolidays().contains(date);
+        boolean isHoliday = weekday.equals(DayOfWeek.SATURDAY) || weekday.equals(DayOfWeek.SUNDAY) || DATA.getDataSheet().getHolidays().contains(date);
 
         routes.sort(Comparator.comparing((RouteSearchResultEntry a) -> {
             Route route = a.getRoute();
@@ -1043,7 +1017,7 @@ public class Registry {
     public List<StopData> getAllStops(String routeNumber, String bound, Operator co, GMBRegion gmbRegion) {
         try {
             List<Pair<BranchedList<String, StopData>, Integer>> lists = new ArrayList<>();
-            for (Route route : DATA_SHEET.getRouteList().values()) {
+            for (Route route : DATA.getDataSheet().getRouteList().values()) {
                 if (routeNumber.equals(route.getRouteNumber()) && route.getCo().contains(co)) {
                     boolean flag;
                     if (co.equals(Operator.NLB)) {
@@ -1059,7 +1033,7 @@ public class Registry {
                         List<String> stops = route.getStops().get(co);
                         int serviceType = IntUtils.parseOr(route.getServiceType(), 1);
                         for (String stopId : stops) {
-                            localStops.add(stopId, new StopData(stopId, serviceType, DATA_SHEET.getStopList().get(stopId), route));
+                            localStops.add(stopId, new StopData(stopId, serviceType, DATA.getDataSheet().getStopList().get(stopId), route));
                         }
                         lists.add(new Pair<>(localStops, serviceType));
                     }
@@ -1137,7 +1111,7 @@ public class Registry {
             List<Pair<BilingualText, Integer>> dests = new ArrayList<>();
             int mainRouteServiceType = Integer.MAX_VALUE;
             List<String> mainRouteStops = Collections.emptyList();
-            for (Route route : DATA_SHEET.getRouteList().values()) {
+            for (Route route : DATA.getDataSheet().getRouteList().values()) {
                 if (routeNumber.equals(route.getRouteNumber()) && route.getCo().contains(co)) {
                     boolean flag;
                     if (co.equals(Operator.NLB)) {
@@ -1223,7 +1197,7 @@ public class Registry {
         }
         for (int i = stopIndex; i < stopIds.size(); i++) {
             String stopId = stopIds.get(i);
-            Stop stop = DATA_SHEET.getStopList().get(stopId);
+            Stop stop = DATA.getDataSheet().getStopList().get(stopId);
             if (stop != null && stop.getName().getZh().equals(targetStopNameZh)) {
                 return true;
             }
@@ -1232,7 +1206,7 @@ public class Registry {
     }
 
     public boolean isMtrStopOnOrAfter(String stopId, String relativeTo, String lineName, String bound) {
-        for (Route data : DATA_SHEET.getRouteList().values()) {
+        for (Route data : DATA.getDataSheet().getRouteList().values()) {
             if (lineName.equals(data.getRouteNumber()) && data.getBound().get(Operator.MTR).endsWith(bound)) {
                 List<String> stopsList = data.getStops().get(Operator.MTR);
                 int index = stopsList.indexOf(stopId);
@@ -1246,7 +1220,7 @@ public class Registry {
     }
 
     public boolean isMtrStopEndOfLine(String stopId, String lineName, String bound) {
-        for (Route data : DATA_SHEET.getRouteList().values()) {
+        for (Route data : DATA.getDataSheet().getRouteList().values()) {
             if (lineName.equals(data.getRouteNumber()) && data.getBound().get(Operator.MTR).endsWith(bound)) {
                 List<String> stopsList = data.getStops().get(Operator.MTR);
                 int index = stopsList.indexOf(stopId);
@@ -1284,20 +1258,20 @@ public class Registry {
                 outOfStationStopName = null;
                 break;
         }
-        String stopName = DATA_SHEET.getStopList().get(stopId).getName().getZh();
-        for (Route data : DATA_SHEET.getRouteList().values()) {
+        String stopName = DATA.getDataSheet().getStopList().get(stopId).getName().getZh();
+        for (Route data : DATA.getDataSheet().getRouteList().values()) {
             Map<Operator, String> bound = data.getBound();
             String routeNumber = data.getRouteNumber();
             if (!routeNumber.equals(lineName)) {
                 if (bound.containsKey(Operator.MTR)) {
-                    List<String> stopsList = data.getStops().get(Operator.MTR).stream().map(id -> DATA_SHEET.getStopList().get(id).getName().getZh()).collect(Collectors.toList());
+                    List<String> stopsList = data.getStops().get(Operator.MTR).stream().map(id -> DATA.getDataSheet().getStopList().get(id).getName().getZh()).collect(Collectors.toList());
                     if (stopsList.contains(stopName)) {
                         lines.add(routeNumber);
                     } else if (outOfStationStopName != null && stopsList.contains(outOfStationStopName)) {
                         outOfStationLines.add(routeNumber);
                     }
                 } else if (bound.containsKey(Operator.LRT) && !hasLightRail) {
-                    if (data.getStops().get(Operator.LRT).stream().anyMatch(id -> DATA_SHEET.getStopList().get(id).getName().getZh().equals(stopName))) {
+                    if (data.getStops().get(Operator.LRT).stream().anyMatch(id -> DATA.getDataSheet().getStopList().get(id).getName().getZh().equals(stopName))) {
                         hasLightRail = true;
                     }
                 }
@@ -1515,7 +1489,7 @@ public class Registry {
                     }
                     {
                         String routeNumber = route.getRouteNumber();
-                        List<Pair<Operator, String>> matchingStops = DATA_SHEET.getStopMap().get(stopId);
+                        List<Pair<Operator, String>> matchingStops = DATA.getDataSheet().getStopMap().get(stopId);
                         List<String> ctbStopIds = new ArrayList<>();
                         if (matchingStops != null) {
                             for (Pair<Operator, String> stopArray : matchingStops) {
@@ -1807,7 +1781,7 @@ public class Registry {
 
                             long mins = (long) Math.floor(eta / 60);
 
-                            if (MTR_BUS_STOP_ALIAS.get(stopId).contains(busStopId)) {
+                            if (DATA.getMtrBusStopAlias().get(stopId).contains(busStopId)) {
                                 String message = "";
                                 if (language.equals("en")) {
                                     if (mins > 0) {
@@ -1851,7 +1825,7 @@ public class Registry {
                     for (int i = 0; i < data.optJSONArray("data").length(); i++) {
                         JSONObject routeData = data.optJSONArray("data").optJSONObject(i);
                         JSONArray buses = routeData.optJSONArray("eta");
-                        Optional<Route> filteredEntry = DATA_SHEET.getRouteList().values().stream()
+                        Optional<Route> filteredEntry = DATA.getDataSheet().getRouteList().values().stream()
                                 .filter(r -> r.getBound().containsKey(Operator.GMB) && r.getGtfsId().equals(routeData.optString("route_id")))
                                 .findFirst();
                         if (filteredEntry.isPresent() && buses != null) {
@@ -2051,7 +2025,7 @@ public class Registry {
                                         int seq = Integer.parseInt(trainData.optString("seq"));
                                         int platform = Integer.parseInt(trainData.optString("plat"));
                                         String specialRoute = trainData.optString("route");
-                                        String dest = DATA_SHEET.getStopList().get(trainData.optString("dest")).getName().get(Shared.Companion.getLanguage());
+                                        String dest = DATA.getDataSheet().getStopList().get(trainData.optString("dest")).getName().get(Shared.Companion.getLanguage());
                                         if (!stopId.equals("AIR")) {
                                             if (dest.equals("博覽館")) {
                                                 dest = "機場及博覽館";
@@ -2060,7 +2034,7 @@ public class Registry {
                                             }
                                         }
                                         if (!specialRoute.isEmpty() && !isMtrStopOnOrAfter(stopId, specialRoute, lineName, bound)) {
-                                            String via = DATA_SHEET.getStopList().get(specialRoute).getName().get(Shared.Companion.getLanguage());
+                                            String via = DATA.getDataSheet().getStopList().get(specialRoute).getName().get(Shared.Companion.getLanguage());
                                             dest += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " via " : " 經") + via + "</small>";
                                         }
                                         String eta = trainData.optString("time");
