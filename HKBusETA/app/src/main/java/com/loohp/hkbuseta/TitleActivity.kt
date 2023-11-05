@@ -27,6 +27,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,9 +46,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
@@ -145,6 +150,13 @@ fun SearchButton(instance: TitleActivity) {
             contentColor = MaterialTheme.colors.primary
         ),
         content = {
+            Image(
+                modifier = Modifier.fillMaxWidth(),
+                painter = painterResource(R.mipmap.bus_background),
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.tint(Color(0xA3000000), BlendMode.Multiply),
+                contentDescription = null
+            )
             Text(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
@@ -178,6 +190,13 @@ fun NearbyButton(instance: TitleActivity) {
             contentColor = MaterialTheme.colors.primary
         ),
         content = {
+            Image(
+                modifier = Modifier.fillMaxWidth(),
+                painter = painterResource(R.mipmap.nearby_background),
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.tint(Color(0xA3000000), BlendMode.Multiply),
+                contentDescription = null
+            )
             Text(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,

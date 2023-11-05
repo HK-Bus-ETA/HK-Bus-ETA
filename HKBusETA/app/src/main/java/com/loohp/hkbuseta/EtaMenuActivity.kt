@@ -34,6 +34,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
@@ -45,12 +46,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.runtime.Composable
@@ -67,9 +71,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -111,6 +119,7 @@ import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toSpanned
 import org.json.JSONObject
@@ -253,11 +262,15 @@ fun MoreInfoHeader(instance: EtaMenuActivity) {
 
 @Composable
 fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
+    var height by remember { mutableIntStateOf(0) }
+
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp),
+            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
+            .onSizeChanged { height = it.height },
+        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = {
             instance.runOnUiThread {
                 val text = if (Shared.language == "en") {
@@ -279,6 +292,15 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
             contentColor = MaterialTheme.colors.primary
         ),
         content = {
+            Image(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .requiredHeight(height.equivalentDp),
+                painter = painterResource(R.mipmap.interchange_background),
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),
+                contentDescription = null
+            )
             Row (
                 modifier = Modifier.padding(5.dp, 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -319,11 +341,14 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
 
 @Composable
 fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, co: Operator, instance: EtaMenuActivity) {
+    var height by remember { mutableIntStateOf(0) }
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp),
+            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
+            .onSizeChanged { height = it.height },
+        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = {
             LocationUtils.checkLocationPermission(instance) { locationGranted ->
                 if (locationGranted) {
@@ -370,6 +395,15 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
             contentColor = MaterialTheme.colors.primary
         ),
         content = {
+            Image(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .requiredHeight(height.equivalentDp),
+                painter = painterResource(R.mipmap.alight_reminder_background),
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),
+                contentDescription = null
+            )
             Row (
                 modifier = Modifier.padding(5.dp, 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -413,11 +447,15 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
 fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance: EtaMenuActivity) {
     val haptic = LocalHapticFeedback.current
     val name = if (Shared.language == "en") stopName.en else stopName.zh
+    var height by remember { mutableIntStateOf(0) }
+
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp),
+            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
+            .onSizeChanged { height = it.height },
+        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = handleOpenMaps(lat, lng, name, instance, false, haptic),
         onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic),
         colors = ButtonDefaults.buttonColors(
@@ -425,6 +463,15 @@ fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance
             contentColor = MaterialTheme.colors.primary
         ),
         content = {
+            Image(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .requiredHeight(height.equivalentDp),
+                painter = painterResource(R.mipmap.open_map_background),
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),
+                contentDescription = null
+            )
             Row (
                 modifier = Modifier.padding(5.dp, 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -494,11 +541,15 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaMenuAct
 @Composable
 fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: EtaMenuActivity) {
     val haptic = LocalHapticFeedback.current
+    var height by remember { mutableIntStateOf(0) }
+
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp),
+            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
+            .onSizeChanged { height = it.height },
+        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = handleOpenKmbBbiMap(kmbBbiId, instance, false, haptic),
         onLongClick = handleOpenKmbBbiMap(kmbBbiId, instance, true, haptic),
         colors = ButtonDefaults.buttonColors(
@@ -506,6 +557,15 @@ fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: EtaMenuActivity) {
             contentColor = MaterialTheme.colors.primary
         ),
         content = {
+            Image(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .requiredHeight(height.equivalentDp),
+                painter = painterResource(R.mipmap.kmb_bbi_background),
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),
+                contentDescription = null
+            )
             Row (
                 modifier = Modifier.padding(5.dp, 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -710,7 +770,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(50, instance).sp.clamp(min = 50.dp).dp)
+            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
             .composed {
                 when (anyTileUses) {
                     TileUseState.PRIMARY -> this.border(2.sp.dp, Color(0x5437FF00), CircleShape)
@@ -718,6 +778,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                     TileUseState.NONE -> this
                 }
             },
+        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = {
             if (state == FavouriteRouteState.USED_SELF) {
                 Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
@@ -811,35 +872,22 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                             rawColor
                         }
                         Column(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                                .fillMaxWidth()
                         ) {
-                            Row (
-                                modifier = Modifier
-                                    .padding(0.dp, 0.dp, 5.dp, 0.dp)
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Start
-                            ) {
-                                Text(
-                                    textAlign = TextAlign.Start,
-                                    color = Color(0xFFFFFFFF).adjustBrightness(0.3F),
-                                    fontSize = StringUtils.scaledSize(14F, instance).sp,
-                                    fontWeight = FontWeight.Bold,
-                                    text = if (Shared.language == "en") "Selected " else "已設置 "
-                                )
-                                Text(
-                                    modifier = Modifier
-                                        .basicMarquee(Int.MAX_VALUE)
-                                        .fillMaxWidth(),
-                                    textAlign = TextAlign.Start,
-                                    color = color.adjustBrightness(0.3F),
-                                    fontSize = StringUtils.scaledSize(14F, instance).sp,
-                                    fontWeight = FontWeight.Bold,
-                                    text = "$coDisplay $routeNumberDisplay"
-                                )
-                            }
                             Text(
                                 modifier = Modifier
-                                    .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                                    .basicMarquee(Int.MAX_VALUE)
+                                    .fillMaxWidth(),
+                                textAlign = TextAlign.Start,
+                                color = color.adjustBrightness(0.3F),
+                                fontSize = StringUtils.scaledSize(14F, instance).sp,
+                                fontWeight = FontWeight.Bold,
+                                text = "$coDisplay $routeNumberDisplay"
+                            )
+                            Text(
+                                modifier = Modifier
                                     .basicMarquee(Int.MAX_VALUE)
                                     .fillMaxWidth(),
                                 textAlign = TextAlign.Start,

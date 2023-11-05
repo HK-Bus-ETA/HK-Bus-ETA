@@ -36,6 +36,8 @@ inline val TextUnit.dp: Dp @Composable get() = with (LocalDensity.current) { thi
 
 inline val Float.equivalentDp: Dp @Composable get() = with (LocalDensity.current) { this@equivalentDp.toDp() }
 
+inline val Int.equivalentDp: Dp @Composable get() = with (LocalDensity.current) { this@equivalentDp.toDp() }
+
 fun Float.sameValueAs(other: Float) : Boolean {
     return (this - other).absoluteValue < 0.00001
 }

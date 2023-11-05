@@ -448,9 +448,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
                             Box (
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .onSizeChanged {
-                                        height = it.height
-                                    },
+                                    .onSizeChanged { height = it.height },
                                 contentAlignment = Alignment.Center
                             ) {
                                 if ((co == Operator.MTR || co == Operator.LRT) && bottomExtensionSection != null) {
@@ -458,7 +456,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
                                         modifier = Modifier
                                             .padding(25.dp, 0.dp)
                                             .requiredWidth((if (stopsList.map { it.serviceType }.distinct().size > 1 || mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }) 50 else 35).sp.dp)
-                                            .requiredHeight(height.toFloat().equivalentDp)
+                                            .requiredHeight(height.equivalentDp)
                                             .align(Alignment.CenterStart)
                                     ) {
                                         bottomExtensionSection.invoke()
@@ -702,9 +700,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boole
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
-            .onSizeChanged {
-                height = it.height
-            }
+            .onSizeChanged { height = it.height }
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
@@ -740,7 +736,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boole
             Box(
                 modifier = Modifier
                     .requiredWidth((if (stopList.map { it.serviceType }.distinct().size > 1 || mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }) 50 else 35).sp.dp)
-                    .requiredHeight(height.toFloat().equivalentDp)
+                    .requiredHeight(height.equivalentDp)
             ) {
                 mtrLineCreator.invoke()
             }
@@ -804,7 +800,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             delay(etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
-            eta = Registry.getInstance(instance).getEta(stopId, route.co, route.route, instance)
+            eta = Registry.getInstance(instance).getEta(stopId, route.co, route.route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
             etaUpdateTimes.value[index] = System.currentTimeMillis()
             etaResults.value[index] = eta!!
         }
@@ -817,7 +813,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
     Column (
         modifier = Modifier
             .fillMaxWidth()
-            .offset(0.dp, -2F.sp.dp),
+            .offset(0.dp, StringUtils.scaledSize(2F, instance).sp.clamp(max = StringUtils.scaledSize(3F, instance).dp).dp - 2F.sp.dp),
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.Center
     ) {
@@ -826,8 +822,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                 if (eta!!.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -836,16 +831,14 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                     val desc by remember { derivedStateOf { Registry.getInstance(instance).currentTyphoonData.get().typhoonWarningTitle } }
                     Image(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = desc
                     )
                 } else {
                     Icon(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),

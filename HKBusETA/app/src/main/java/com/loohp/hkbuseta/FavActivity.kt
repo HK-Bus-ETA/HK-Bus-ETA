@@ -419,7 +419,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         delay(etaUpdateTimes.value[favoriteIndex]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
                     }
                     schedule.invoke(true, favoriteIndex) {
-                        eta = Registry.getInstance(instance).getEta(stopId, co, route, instance)
+                        eta = Registry.getInstance(instance).getEta(stopId, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
                         etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
                         etaResults.value[favoriteIndex] = eta!!
                     }
@@ -535,7 +535,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
                         color = Color(0xFF505050),
-                        fontSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = 16.dp),
+                        fontSize = StringUtils.scaledSize(16F, instance).sp,
                         text = if (Shared.language == "en") "No Route Selected" else "未有設置路線"
                     )
                 } else {
@@ -578,7 +578,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     Column (
                         modifier = Modifier
                             .heightIn(
-                                min = StringUtils.scaledSize(60, instance).sp.clamp(max = 60.dp).dp
+                                min = StringUtils.scaledSize(60, instance).sp.dp
                             ),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -589,7 +589,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             textAlign = TextAlign.Start,
                             color = color,
                             fontWeight = FontWeight.Bold,
-                            fontSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = 16.dp),
+                            fontSize = StringUtils.scaledSize(16F, instance).sp,
                             maxLines = 1,
                             text = mainText
                         )
@@ -600,7 +600,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             textAlign = TextAlign.Start,
                             color = MaterialTheme.colors.primary,
                             fontWeight = FontWeight.Normal,
-                            fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                            fontSize = StringUtils.scaledSize(14F, instance).sp,
                             maxLines = 1,
                             text = routeText
                         )
@@ -612,7 +612,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             textAlign = TextAlign.Start,
                             fontWeight = FontWeight.Normal,
                             color = MaterialTheme.colors.primary,
-                            fontSize = StringUtils.scaledSize(11F, instance).sp.clamp(max = 11.dp),
+                            fontSize = StringUtils.scaledSize(11F, instance).sp,
                             maxLines = 1,
                             text = subText
                         )

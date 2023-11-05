@@ -545,7 +545,7 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
                     fontSize = if (co == Operator.MTR && Shared.language != "en") {
                         StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
                     } else {
-                        StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(19F, instance).dp)
+                        StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp)
                     },
                     color = color,
                     maxLines = 1,
@@ -605,7 +605,7 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
             delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, key) {
-            eta = Registry.getInstance(instance).getEta(route.stopInfo.stopId, route.co, route.route, instance)
+            eta = Registry.getInstance(instance).getEta(route.stopInfo.stopId, route.co, route.route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
             etaUpdateTimes.value[key] = System.currentTimeMillis()
             etaResults.value[key] = eta!!
         }
@@ -627,7 +627,7 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
                     Icon(
                         modifier = Modifier
                             .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, -StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .offset(0.dp, -StringUtils.scaledSize(2.5F, instance).sp.clamp(max = StringUtils.scaledSize(3.5F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -636,7 +636,7 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
                     Image(
                         modifier = Modifier
                             .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, -StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .offset(0.dp, -StringUtils.scaledSize(2.5F, instance).sp.clamp(max = StringUtils.scaledSize(3.5F, instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次"
                     )
@@ -644,7 +644,7 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
                     Icon(
                         modifier = Modifier
                             .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, -StringUtils.scaledSize(3F, instance).sp.clamp(max = StringUtils.scaledSize(4F, instance).dp).dp),
+                            .offset(0.dp, -StringUtils.scaledSize(2.5F, instance).sp.clamp(max = StringUtils.scaledSize(3.5F, instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),
@@ -660,7 +660,9 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
                 val size2 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(8F, instance))).roundToInt()
                 span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
                 AnnotatedText(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(0.dp, StringUtils.scaledSize(1F, instance).sp.clamp(max = StringUtils.scaledSize(2F, instance).dp).dp),
                     textAlign = TextAlign.End,
                     fontSize = 14F.sp.clamp(max = 15.dp),
                     color = Color(0xFFAAC3D5),

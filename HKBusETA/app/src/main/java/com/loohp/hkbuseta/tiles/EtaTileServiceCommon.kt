@@ -169,6 +169,7 @@ class TileState {
     private val cachedETAQueryResult: AtomicReference<Pair<MergedETAQueryResult<FavouriteRouteStop>?, Long>> = AtomicReference(null to 0)
     private val tileLayoutState: AtomicBoolean = AtomicBoolean(false)
     private val lastUpdateSuccessful: AtomicBoolean = AtomicBoolean(false)
+    private val isCurrentlyUpdating: AtomicLong = AtomicLong(0)
 
     fun setUpdateTask(future: ScheduledFuture<*>) {
         updateTask.updateAndGet { it?.cancel(false); future }
@@ -187,7 +188,7 @@ class TileState {
     }
 
     fun shouldUpdate(): Boolean {
-        return System.currentTimeMillis() - lastUpdated.get() > Shared.ETA_UPDATE_INTERVAL
+        return !isCurrentlyUpdating() && (System.currentTimeMillis() - lastUpdated.get() > Shared.ETA_UPDATE_INTERVAL)
     }
 
     fun cacheETAQueryResult(eta: MergedETAQueryResult<FavouriteRouteStop>?) {
@@ -209,6 +210,14 @@ class TileState {
 
     fun setLastUpdateSuccessful(value: Boolean) {
         lastUpdateSuccessful.set(value)
+    }
+
+    fun isCurrentlyUpdating(): Boolean {
+        return System.currentTimeMillis() - isCurrentlyUpdating.get() < Shared.ETA_UPDATE_INTERVAL * 2
+    }
+
+    fun setCurrentlyUpdating(value: Boolean) {
+        return isCurrentlyUpdating.set(if (value) System.currentTimeMillis() else 0)
     }
 }
 
@@ -603,7 +612,7 @@ class EtaTileServiceCommon {
             val eta = tileState.getETAQueryResult {
                 val eta = MergedETAQueryResult.merge(
                     favouriteStopRoutes.parallelMap(executor) { stop ->
-                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context)
+                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context).get(7000, TimeUnit.MILLISECONDS)
                     }
                 )
                 it.markLastUpdated()
@@ -739,29 +748,35 @@ class EtaTileServiceCommon {
         }
 
         fun buildTileRequest(tileId: Int, packageName: String, context: TileService): ListenableFuture<TileBuilders.Tile> {
-            val element = buildSuitableElement(tileId, packageName, context)
-            val stateElement = if (tileState(tileId).getCurrentTileLayoutState()) {
-                element
-            } else {
-                LayoutElementBuilders.Box.Builder()
-                    .setWidth(expand())
-                    .setHeight(expand())
-                    .addContent(element)
-                    .build()
-            }
             return Futures.submit(Callable {
-                TileBuilders.Tile.Builder()
-                    .setResourcesVersion(resourceVersion.get().toString())
-                    .setFreshnessIntervalMillis(0)
-                    .setTileTimeline(
-                        TimelineBuilders.Timeline.Builder().addTimelineEntry(
-                            TimelineBuilders.TimelineEntry.Builder().setLayout(
-                                LayoutElementBuilders.Layout.Builder().setRoot(
-                                    stateElement
+                val tileState = tileState(tileId)
+                tileState.setCurrentlyUpdating(true)
+                try {
+                    val element = buildSuitableElement(tileId, packageName, context)
+                    val stateElement = if (tileState.getCurrentTileLayoutState()) {
+                        element
+                    } else {
+                        LayoutElementBuilders.Box.Builder()
+                            .setWidth(expand())
+                            .setHeight(expand())
+                            .addContent(element)
+                            .build()
+                    }
+                    TileBuilders.Tile.Builder()
+                        .setResourcesVersion(resourceVersion.get().toString())
+                        .setFreshnessIntervalMillis(0)
+                        .setTileTimeline(
+                            TimelineBuilders.Timeline.Builder().addTimelineEntry(
+                                TimelineBuilders.TimelineEntry.Builder().setLayout(
+                                    LayoutElementBuilders.Layout.Builder().setRoot(
+                                        stateElement
+                                    ).build()
                                 ).build()
                             ).build()
                         ).build()
-                    ).build()
+                } finally {
+                    tileState.setCurrentlyUpdating(false)
+                }
             }, executor)
         }
 
@@ -781,7 +796,7 @@ class EtaTileServiceCommon {
                         .build()
                     )
                 }
-                return@Callable resourceBuilder.build()
+                resourceBuilder.build()
             }, executor)
         }
 
@@ -800,7 +815,7 @@ class EtaTileServiceCommon {
                             it.cacheETAQueryResult(MergedETAQueryResult.merge(
                                 favouriteRoutes.parallelMapNotNull(executor) { favouriteRoute ->
                                     Shared.favoriteRouteStops[favouriteRoute]?.let { stop ->
-                                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context)
+                                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
                                     }
                                 }
                             ))
