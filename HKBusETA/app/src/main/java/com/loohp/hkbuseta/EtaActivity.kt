@@ -512,7 +512,7 @@ fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
-        text = if (co == Operator.MTR) name else index.toString().plus(". ").plus(name),
+        text = if (co == Operator.MTR || co == Operator.LRT) name else index.toString().plus(". ").plus(name),
         maxLines = 2,
         fontWeight = FontWeight(900),
         fontSizeRange = FontSizeRange(

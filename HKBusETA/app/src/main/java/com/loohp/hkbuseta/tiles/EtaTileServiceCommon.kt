@@ -461,7 +461,7 @@ class EtaTileServiceCommon {
 
         private fun title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator, context: Context): LayoutElementBuilders.Text {
             val name = stopName[Shared.language]
-            val text = if (co == Operator.MTR) name else index.toString().plus(". ").plus(name)
+            val text = if (co == Operator.MTR || co == Operator.LRT) name else index.toString().plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
                 .setModifiers(
                     ModifiersBuilders.Modifiers.Builder()

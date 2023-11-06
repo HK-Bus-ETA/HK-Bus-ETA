@@ -35,10 +35,10 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -153,14 +153,13 @@ fun Modifier.fullPageVerticalScrollbar(
     drawWithContent {
         drawContent()
 
-        val viewPortLength = size.height
+        val (viewPortWidth, viewPortLength) = size
         val itemsVisible = state.layoutInfo.visibleItemsInfo
         if (totalItemCount != state.layoutInfo.totalItemsCount) {
             actualItemLength.clear()
             totalItemCount = state.layoutInfo.totalItemsCount
         }
         itemsVisible.forEach { actualItemLength[it.index] = it.size }
-        val visibleItemsLength = itemsVisible.sumOf { it.size }.toFloat() - state.firstVisibleItemScrollOffset
         val knownLength = actualItemLength.entries.sumOf { it.value }
         val knownAmount = actualItemLength.values.count()
         val knownAverageItemLength = knownLength / knownAmount
@@ -168,14 +167,14 @@ fun Modifier.fullPageVerticalScrollbar(
         val contentLength = knownLength + (state.layoutInfo.totalItemsCount - knownAmount) * (knownLength / knownAmount)
 
         if (viewPortLength < contentLength) {
-            indicatorLength = (if (itemsVisible.last { it.offset < viewPortLength }.index >= state.layoutInfo.totalItemsCount) 1F - (contentOffset / contentLength) else visibleItemsLength / contentLength).coerceAtLeast(0.05F)
+            indicatorLength = (viewPortLength / contentLength).coerceAtLeast(0.05F)
             val indicatorThicknessPx = indicatorThickness.toPx()
             val halfIndicatorThicknessPx = (indicatorThickness.value / 2F).dp.toPx()
             scrollOffsetViewPort = contentOffset / contentLength
 
             if (configuration.screenLayout and Configuration.SCREENLAYOUT_ROUND_MASK == Configuration.SCREENLAYOUT_ROUND_YES) {
                 val topLeft = Offset(halfIndicatorThicknessPx, halfIndicatorThicknessPx)
-                val size = Size(configuration.screenWidthDp.dp.toPx() - indicatorThicknessPx, configuration.screenHeightDp.dp.toPx() - indicatorThicknessPx)
+                val size = Size(viewPortWidth - indicatorThicknessPx, viewPortLength - indicatorThicknessPx)
                 val style = Stroke(width = indicatorThicknessPx, cap = StrokeCap.Round)
                 val startAngle = (-30F + animatedScrollOffsetViewPort * 60F).coerceIn(-30F, 30F)
                 drawArc(
@@ -220,12 +219,15 @@ fun Modifier.fullPageVerticalScrollbar(
     }
 }
 
+
+@Immutable
 data class FullPageScrollBarConfig(
     val indicatorThickness: Dp = 8.dp,
     val indicatorColor: Color = Color.LightGray,
     val alpha: Float? = null,
     val alphaAnimationSpec: AnimationSpec<Float>? = null
 )
+
 
 fun Modifier.fullPageVerticalLazyScrollbar(
     state: LazyListState,
@@ -331,6 +333,8 @@ fun Modifier.scrollbar(
     }
 }
 
+
+@Immutable
 data class ScrollBarConfig(
     val indicatorThickness: Dp = 8.dp,
     val indicatorColor: Color = Color.LightGray,
@@ -338,6 +342,7 @@ data class ScrollBarConfig(
     val alphaAnimationSpec: AnimationSpec<Float>? = null,
     val padding: PaddingValues = PaddingValues(all = 0.dp)
 )
+
 
 fun Modifier.verticalScrollWithScrollbar(
     state: ScrollState,
@@ -358,7 +363,6 @@ fun Modifier.verticalScrollWithScrollbar(
         padding = scrollbarConfig.padding
     )
     .verticalScroll(state, enabled, flingBehavior, reverseScrolling)
-
 
 
 fun Modifier.horizontalScrollWithScrollbar(
