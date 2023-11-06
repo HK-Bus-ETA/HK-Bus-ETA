@@ -2091,7 +2091,7 @@ public class Registry {
         @Override
         public ETAQueryResult get(long timeout, TimeUnit unit) {
             try {
-                return super.get(timeout, TimeUnit.SECONDS);
+                return super.get(timeout, unit);
             } catch (ExecutionException | InterruptedException | TimeoutException | CancellationException e) {
                 try { cancel(true); } catch (Throwable ignore) {}
                 return getErrorResult();
@@ -2100,6 +2100,7 @@ public class Registry {
 
     }
 
+    @Immutable
     public static class LrtETAData implements Comparable<LrtETAData> {
 
         public static final Comparator<LrtETAData> COMPARATOR = Comparator.comparing(LrtETAData::getEta).thenComparing(LrtETAData::getPlatformNumber);
@@ -2239,6 +2240,7 @@ public class Registry {
         private final boolean isTyphoonSchedule;
         private final Operator nextCo;
         private final Map<Integer, ETALineEntry> lines;
+        private final long nextScheduledBus;
 
         private ETAQueryResult(boolean isConnectionError, boolean isMtrEndOfLine, boolean isTyphoonSchedule, Operator nextCo, Map<Integer, ETALineEntry> lines) {
             this.isConnectionError = isConnectionError;
@@ -2246,6 +2248,9 @@ public class Registry {
             this.isTyphoonSchedule = isTyphoonSchedule;
             this.nextCo = nextCo;
             this.lines = Collections.unmodifiableMap(lines);
+
+            ETALineEntry entry = lines.get(1);
+            this.nextScheduledBus = entry == null ? -1 : entry.getEta();
         }
 
         public boolean isConnectionError() {
@@ -2253,7 +2258,7 @@ public class Registry {
         }
 
         public long getNextScheduledBus() {
-            return lines.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey)).findFirst().map(e -> e.getValue().getEta()).orElse(-1L);
+            return nextScheduledBus;
         }
 
         public boolean isMtrEndOfLine() {
@@ -2281,12 +2286,12 @@ public class Registry {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ETAQueryResult result = (ETAQueryResult) o;
-            return isConnectionError == result.isConnectionError && isMtrEndOfLine == result.isMtrEndOfLine && isTyphoonSchedule == result.isTyphoonSchedule && Objects.equals(nextCo, result.nextCo) && Objects.equals(lines, result.lines);
+            return isConnectionError == result.isConnectionError && isMtrEndOfLine == result.isMtrEndOfLine && isTyphoonSchedule == result.isTyphoonSchedule && nextScheduledBus == result.nextScheduledBus && Objects.equals(nextCo, result.nextCo) && Objects.equals(lines, result.lines);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(isConnectionError, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
+            return Objects.hash(isConnectionError, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines, nextScheduledBus);
         }
     }
 

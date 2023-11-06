@@ -111,23 +111,12 @@ class MergedETAQueryResult<T> private constructor(
     val mergedCount: Int
 ) {
 
-    val nextScheduledBus: Long
-        get() = lines.entries.stream()
-            .sorted(Comparator.comparing { it.key })
-            .findFirst()
-            .map { it.value.second.eta }
-            .orElse(-1)
+    val nextScheduledBus: Long = lines[1]?.second?.eta?: -1
+    val firstKey: T? = lines.minByOrNull { it.key }?.value?.first
+    val allKeys: Set<T> = lines.entries.stream().map { it.value.first }.collect(Collectors.toSet())
 
     fun getLine(index: Int): Pair<T?, ETALineEntry> {
         return lines[index]?: (null to ETALineEntry.EMPTY)
-    }
-
-    fun firstKey(): T? {
-        return lines.minByOrNull { it.key }?.value?.first
-    }
-
-    fun allKeys(): Set<T> {
-        return lines.entries.stream().map { it.value.first }.collect(Collectors.toSet())
     }
 
     companion object {
@@ -532,7 +521,7 @@ class EtaTileServiceCommon {
             val lineRoute = line?.first?.let { it.co.getDisplayRouteNumber(it.route.routeNumber) }
             val appendRouteNumber = lineRoute == null ||
                     (1..3).all { eta.getLine(it).first?.route?.routeNumber.let { route -> route == null || route == line.first?.route?.routeNumber } } ||
-                    eta.allKeys().all { it.co == Operator.MTR } ||
+                    eta.allKeys.all { it.co == Operator.MTR } ||
                     eta.mergedCount <= 1
             val raw = (if (appendRouteNumber) "" else "<small>$lineRoute > </small>")
                 .plus(line?.second?.text?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else "")
@@ -618,7 +607,7 @@ class EtaTileServiceCommon {
                 it.markLastUpdated()
                 eta
             }
-            val favouriteStopRoute = eta?.firstKey()?: favouriteStopRoutes[0]
+            val favouriteStopRoute = eta?.firstKey?: favouriteStopRoutes[0]
 
             val stopId = favouriteStopRoute.stopId
             val co = favouriteStopRoute.co
