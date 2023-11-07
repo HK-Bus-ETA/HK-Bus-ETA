@@ -35,6 +35,8 @@ import androidx.wear.compose.material.TimeText
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.RouteListType
+import com.loohp.hkbuseta.objects.RouteSortMode
 import com.loohp.hkbuseta.objects.gmbRegion
 import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.utils.isEqualTo
@@ -338,6 +340,8 @@ class Shared {
         fun hasFavoriteAndLookupRoute(): Boolean {
             return favoriteRouteStops.isNotEmpty() || lastLookupRoutes.isNotEmpty()
         }
+
+        val routeSortModePreference: Map<RouteListType, RouteSortMode> = ConcurrentHashMap()
 
         private val currentActivityAccessLock = Object()
         private var currentActivity: CurrentActivityData? = null

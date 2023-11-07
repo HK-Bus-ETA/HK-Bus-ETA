@@ -40,23 +40,26 @@ public class Preferences implements JSONSerializable {
         Map<Integer, FavouriteRouteStop> favouriteRouteStops = JsonUtils.toMap(json.optJSONObject("favouriteRouteStops"), Integer::parseInt, v -> FavouriteRouteStop.deserialize((JSONObject) v));
         List<LastLookupRoute> lastLookupRoutes = JsonUtils.mapToList(json.optJSONArray("lastLookupRoutes"), v -> LastLookupRoute.Companion.deserialize((JSONObject) v));
         Map<Integer, List<Integer>> etaTileConfigurations = json.has("etaTileConfigurations") ? JsonUtils.toMap(json.optJSONObject("etaTileConfigurations"), Integer::parseInt, v -> JsonUtils.toList((JSONArray) v, int.class)) : new HashMap<>();
-        return new Preferences(language, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations);
+        Map<RouteListType, RouteSortMode> routeSortModePreference = json.has("routeSortModePreference") ? JsonUtils.toMap(json.optJSONObject("routeSortModePreference"), RouteListType::valueOf, v -> RouteSortMode.valueOf((String) v)) : new HashMap<>();
+        return new Preferences(language, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference);
     }
 
     public static Preferences createDefault() {
-        return new Preferences("zh", new HashMap<>(), new ArrayList<>(), new HashMap<>());
+        return new Preferences("zh", new HashMap<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }
 
     private String language;
     private final Map<Integer, FavouriteRouteStop> favouriteRouteStops;
     private final List<LastLookupRoute> lastLookupRoutes;
     private final Map<Integer, List<Integer>> etaTileConfigurations;
+    private final Map<RouteListType, RouteSortMode> routeSortModePreference;
 
-    public Preferences(String language, Map<Integer, FavouriteRouteStop> favouriteRouteStops, List<LastLookupRoute> lastLookupRoutes, Map<Integer, List<Integer>> etaTileConfigurations) {
+    public Preferences(String language, Map<Integer, FavouriteRouteStop> favouriteRouteStops, List<LastLookupRoute> lastLookupRoutes, Map<Integer, List<Integer>> etaTileConfigurations, Map<RouteListType, RouteSortMode> routeSortModePreference) {
         this.language = language;
         this.favouriteRouteStops = favouriteRouteStops;
         this.lastLookupRoutes = lastLookupRoutes;
         this.etaTileConfigurations = etaTileConfigurations;
+        this.routeSortModePreference = routeSortModePreference;
     }
 
     public String getLanguage() {
@@ -79,6 +82,10 @@ public class Preferences implements JSONSerializable {
         return etaTileConfigurations;
     }
 
+    public Map<RouteListType, RouteSortMode> getRouteSortModePreference() {
+        return routeSortModePreference;
+    }
+
     @Override
     public JSONObject serialize() throws JSONException {
         JSONObject json = new JSONObject();
@@ -86,6 +93,7 @@ public class Preferences implements JSONSerializable {
         json.put("favouriteRouteStops", JsonUtils.fromMap(favouriteRouteStops, FavouriteRouteStop::serialize));
         json.put("lastLookupRoutes", JsonUtils.fromStream(lastLookupRoutes.stream().map(LastLookupRoute::serialize)));
         json.put("etaTileConfigurations", JsonUtils.fromMap(etaTileConfigurations, JsonUtils::fromCollection));
+        json.put("routeSortModePreference", JsonUtils.fromMap(routeSortModePreference, RouteSortMode::name));
         return json;
     }
 

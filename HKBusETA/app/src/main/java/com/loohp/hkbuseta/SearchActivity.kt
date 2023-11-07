@@ -86,6 +86,7 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.PossibleNextCharResult
 import com.loohp.hkbuseta.shared.Shared
@@ -331,6 +332,7 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
             if (input == '<') {
                 intent.putExtra("recentSort", RecentSortMode.FORCED.ordinal)
             }
+            intent.putExtra("listType", RouteListType.RECENT.name())
             instance.startActivity(intent)
         }
     } else {

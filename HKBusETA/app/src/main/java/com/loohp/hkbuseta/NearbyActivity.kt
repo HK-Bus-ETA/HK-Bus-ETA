@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
@@ -218,6 +219,7 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
                 intent.putExtra("showEta", true)
                 intent.putExtra("recentSort", RecentSortMode.CHOICE.ordinal)
                 intent.putExtra("proximitySortOrigin", doubleArrayOf(result.lat, result.lng))
+                intent.putExtra("listType", RouteListType.NEARBY.name())
                 instance.startActivity(intent)
                 instance.finish()
             }

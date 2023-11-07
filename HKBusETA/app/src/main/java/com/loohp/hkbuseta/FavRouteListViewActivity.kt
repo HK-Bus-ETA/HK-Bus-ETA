@@ -57,6 +57,7 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.objects.Coordinates
+import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.objects.getRouteKey
 import com.loohp.hkbuseta.objects.uniqueKey
@@ -230,6 +231,7 @@ fun EvaluatedElement(state: MutableState<Boolean>, location: Coordinates?, insta
         if (location != null) {
             intent.putExtra("proximitySortOrigin", doubleArrayOf(location.lat, location.lng))
         }
+        intent.putExtra("listType", RouteListType.FAVOURITE.name())
         instance.startActivity(intent)
         instance.finish()
     } else {

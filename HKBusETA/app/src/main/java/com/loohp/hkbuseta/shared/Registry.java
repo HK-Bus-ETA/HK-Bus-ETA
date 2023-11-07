@@ -41,7 +41,9 @@ import com.loohp.hkbuseta.objects.Operator;
 import com.loohp.hkbuseta.objects.Preferences;
 import com.loohp.hkbuseta.objects.Route;
 import com.loohp.hkbuseta.objects.RouteExtensionsKt;
+import com.loohp.hkbuseta.objects.RouteListType;
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry;
+import com.loohp.hkbuseta.objects.RouteSortMode;
 import com.loohp.hkbuseta.objects.Stop;
 import com.loohp.hkbuseta.tiles.EtaTileService;
 import com.loohp.hkbuseta.tiles.EtaTileServiceEight;
@@ -390,6 +392,22 @@ public class Registry {
         }
     }
 
+    public void setRouteSortModePreference(Context context, RouteListType listType, RouteSortMode sortMode) {
+        try {
+            Shared.Companion.getRouteSortModePreference().put(listType, sortMode);
+            PREFERENCES.getRouteSortModePreference().clear();
+            PREFERENCES.getRouteSortModePreference().putAll(Shared.Companion.getRouteSortModePreference());
+            synchronized (preferenceWriteLock) {
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                    pw.write(PREFERENCES.serialize().toString());
+                    pw.flush();
+                }
+            }
+        } catch (IOException | JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void cancelCurrentChecksumTask() {
         Future<?> task = currentChecksumTask.get();
         if (task != null) {
@@ -437,6 +455,7 @@ public class Registry {
                 itr.remove();
             }
         }
+        Shared.Companion.getRouteSortModePreference().putAll(PREFERENCES.getRouteSortModePreference());
 
         checkUpdate(context, suppressUpdateCheck);
     }

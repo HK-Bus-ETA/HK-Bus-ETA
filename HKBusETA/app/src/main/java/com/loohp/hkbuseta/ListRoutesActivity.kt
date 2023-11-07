@@ -75,6 +75,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -96,7 +97,9 @@ import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.Coordinates
 import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.objects.RouteSortMode
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.resolvedDest
@@ -134,30 +137,9 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
-enum class RecentSortMode(val enabled: Boolean, val defaultActiveSortMode: ActiveSortMode = ActiveSortMode.NONE) {
+enum class RecentSortMode(val enabled: Boolean, val defaultSortMode: RouteSortMode = RouteSortMode.NORMAL, val forcedMode: Boolean = false) {
 
-    DISABLED(false), CHOICE(true), FORCED(true, ActiveSortMode.RECENT);
-
-}
-
-enum class ActiveSortMode {
-
-    NONE, RECENT, PROXIMITY;
-
-    companion object {
-        private val values = values()
-    }
-
-    fun nextMode(allowRecentSort: Boolean = true, allowProximitySort: Boolean = true): ActiveSortMode {
-        val next = values[(ordinal + 1) % values.size]
-        return if (!allowProximitySort && next == PROXIMITY) {
-            next.nextMode(false)
-        } else if (!allowRecentSort && next == RECENT) {
-            next.nextMode(false)
-        } else {
-            next
-        }
-    }
+    DISABLED(false), CHOICE(true), FORCED(true, RouteSortMode.RECENT, true);
 
 }
 
@@ -192,12 +174,13 @@ class ListRoutesActivity : ComponentActivity() {
                 return@removeIf false
             }
         }.toImmutableList()
+        val listType = intent.extras!!.getString("listType")?.let { RouteListType.valueOf(it) }?: RouteListType.NORMAL
         val showEta = intent.extras!!.getBoolean("showEta", false)
         val recentSort = RecentSortMode.values()[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
         val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")?.toCoordinates()
 
         setContent {
-            MainElement(this, result, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
+            MainElement(this, result, listType, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
                 synchronized(etaUpdatesMap) {
                     if (isAdd) {
                         etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
@@ -243,7 +226,7 @@ class ListRoutesActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchResultEntry>, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val hapticsController = remember { HapticsController() }
@@ -263,12 +246,19 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
         val etaUpdateTimes = remember { ConcurrentHashMap<String, Long>().asImmutableState() }
         val etaResults = remember { ConcurrentHashMap<String, ETAQueryResult>().asImmutableState() }
 
-        var activeSortMode by remember { mutableStateOf(recentSort.defaultActiveSortMode) }
+        var activeSortMode by remember { mutableStateOf(if (recentSort.forcedMode) {
+            recentSort.defaultSortMode
+        } else {
+            Shared.routeSortModePreference[listType]?.let { if (it.isLegalMode(
+                    recentSort == RecentSortMode.CHOICE,
+                    proximitySortOrigin != null
+            )) it else null }?: RouteSortMode.NORMAL
+        }) }
         val sortTask = remember { {
-            val map: ImmutableMap.Builder<ActiveSortMode, List<RouteSearchResultEntry>> = ImmutableMap.builder()
-            map[ActiveSortMode.NONE] = result
+            val map: ImmutableMap.Builder<RouteSortMode, List<RouteSearchResultEntry>> = ImmutableMap.builder()
+            map[RouteSortMode.NORMAL] = result
             if (recentSort.enabled) {
-                map[ActiveSortMode.RECENT] = result.sortedBy {
+                map[RouteSortMode.RECENT] = result.sortedBy {
                     val co = it.co
                     val meta = when (co) {
                         Operator.GMB -> it.route.gmbRegion.name
@@ -280,7 +270,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
             }
             if (proximitySortOrigin != null) {
                 if (recentSort.enabled) {
-                    map[ActiveSortMode.PROXIMITY] = result.sortedWith(compareBy({
+                    map[RouteSortMode.PROXIMITY] = result.sortedWith(compareBy({
                         val location = it.stopInfo.data.location
                         DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
                     }, {
@@ -293,7 +283,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                         Shared.getFavoriteAndLookupRouteIndex(it.route.routeNumber, co, meta)
                     }))
                 } else {
-                    map[ActiveSortMode.PROXIMITY] = result.sortedBy {
+                    map[RouteSortMode.PROXIMITY] = result.sortedBy {
                         val location = it.stopInfo.data.location
                         DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
                     }
@@ -326,7 +316,17 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                 .fullPageVerticalLazyScrollbar(
                     state = scroll
                 )
-                .rotaryScroll(scroll, focusRequester, hapticsController),
+                .rotaryScroll(scroll, focusRequester, hapticsController)
+                .composed {
+                    LaunchedEffect (activeSortMode) {
+                        Shared.routeSortModePreference[listType].let {
+                            if (activeSortMode != it) {
+                                Registry.getInstance(instance).setRouteSortModePreference(instance, listType, activeSortMode)
+                            }
+                        }
+                    }
+                    this
+                },
             horizontalAlignment = Alignment.CenterHorizontally,
             state = scroll
         ) {
@@ -358,8 +358,8 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                     Button(
                         onClick = {
                             activeSortMode = activeSortMode.nextMode(
-                                allowRecentSort = recentSort == RecentSortMode.CHOICE,
-                                allowProximitySort = proximitySortOrigin != null
+                                recentSort == RecentSortMode.CHOICE,
+                                proximitySortOrigin != null
                             )
                         },
                         modifier = Modifier
@@ -377,8 +377,8 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                                 color = MaterialTheme.colors.primary,
                                 fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
                                 text = when (activeSortMode) {
-                                    ActiveSortMode.PROXIMITY -> if (Shared.language == "en") "Sort: Proximity" else "排序: 巴士站距離"
-                                    ActiveSortMode.RECENT -> if (Shared.language == "en") "Sort: Fav/Recent" else "排序: 喜歡/最近瀏覽"
+                                    RouteSortMode.PROXIMITY -> if (Shared.language == "en") "Sort: Proximity" else "排序: 巴士站距離"
+                                    RouteSortMode.RECENT -> if (Shared.language == "en") "Sort: Fav/Recent" else "排序: 喜歡/最近瀏覽"
                                     else -> if (Shared.language == "en") "Sort: Normal" else "排序: 正常"
                                 }
                             )
