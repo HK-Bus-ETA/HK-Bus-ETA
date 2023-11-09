@@ -134,6 +134,7 @@ import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.eitherContains
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toImmutableList
 import com.loohp.hkbuseta.utils.withAlpha
@@ -174,8 +175,9 @@ class ListStopsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
+
         val route = intent.extras!!.getString("route")?.let { RouteSearchResultEntry.deserialize(JSONObject(it)) }?: throw RuntimeException()
         val scrollToStop = intent.extras!!.getString("scrollToStop")
         val showEta = intent.extras!!.getBoolean("showEta", true)

@@ -120,24 +120,32 @@ import kotlinx.coroutines.flow.StateFlow;
 
 public class Registry {
 
-    private static Registry INSTANCE = null;
+    private static AtomicReference<Registry> INSTANCE = new AtomicReference<>(null);
 
-    public static synchronized Registry getInstance(Context context) {
-        if (INSTANCE == null) {
-            INSTANCE = new Registry(context, false);
-        }
-        return INSTANCE;
+    public static Registry getInstance(Context context) {
+        return INSTANCE.updateAndGet(instance -> {
+            if (instance == null) {
+                instance = new Registry(context, false);
+            }
+            return instance;
+        });
     }
 
-    public static synchronized Registry getInstanceNoUpdateCheck(Context context) {
-        if (INSTANCE == null) {
-            INSTANCE = new Registry(context, true);
-        }
-        return INSTANCE;
+    public static Registry getInstanceNoUpdateCheck(Context context) {
+        return INSTANCE.updateAndGet(instance -> {
+            if (instance == null) {
+                instance = new Registry(context, true);
+            }
+            return instance;
+        });
     }
 
-    public static synchronized void clearInstance() {
-        INSTANCE = null;
+    public static boolean hasInstanceCreated() {
+        return INSTANCE.get() != null;
+    }
+
+    public static void clearInstance() {
+        INSTANCE.set(null);
     }
 
     private static final String PREFERENCES_FILE_NAME = "preferences.json";

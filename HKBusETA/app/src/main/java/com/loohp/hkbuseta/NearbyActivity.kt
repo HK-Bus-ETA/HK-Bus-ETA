@@ -55,6 +55,7 @@ import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.utils.ifFalse
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
@@ -67,7 +68,9 @@ class NearbyActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
+
         var location: LocationResult? = null
         var exclude: ImmutableSet<String> = persistentSetOf()
         var interchangeSearch = false

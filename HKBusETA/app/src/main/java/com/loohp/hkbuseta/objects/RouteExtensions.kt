@@ -73,13 +73,13 @@ fun Operator.getDisplayRouteNumber(routeNumber: String): String {
 fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language: String, elseName: String = "???"): String {
     return if (language == "en") when (this) {
         Operator.KMB -> when (Shared.getKMBSubsidiary(routeNumber)) {
-            KMBSubsidiary.SUNB -> "Sun-Bus"
+            KMBSubsidiary.SUNB -> "Sun Bus"
             KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
             else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
         }
         Operator.CTB -> "CTB"
         Operator.NLB -> "NLB"
-        Operator.MTR_BUS -> "MTR-Bus"
+        Operator.MTR_BUS -> "MTR Bus"
         Operator.GMB -> "GMB"
         Operator.LRT -> "LRT"
         Operator.MTR -> "MTR"

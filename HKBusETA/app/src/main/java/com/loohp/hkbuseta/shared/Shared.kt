@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material.TimeText
 import com.loohp.hkbuseta.FatalErrorActivity
+import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteListType
@@ -45,6 +46,7 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
 
@@ -343,27 +345,28 @@ class Shared {
 
         val routeSortModePreference: Map<RouteListType, RouteSortMode> = ConcurrentHashMap()
 
-        private val currentActivityAccessLock = Object()
-        private var currentActivity: CurrentActivityData? = null
+        private var currentActivity: AtomicReference<CurrentActivityData> = AtomicReference(null)
 
         fun getCurrentActivity(): CurrentActivityData? {
-            return currentActivity
+            return currentActivity.get()
         }
 
         fun setSelfAsCurrentActivity(activity: Activity) {
-            synchronized (currentActivityAccessLock) {
-                currentActivity = CurrentActivityData(activity.javaClass, activity.intent.extras)
-            }
+            currentActivity.set(CurrentActivityData(activity.javaClass, activity.intent.extras))
         }
 
         fun removeSelfFromCurrentActivity(activity: Activity) {
-            synchronized (currentActivityAccessLock) {
-                if (currentActivity != null) {
-                    val data = CurrentActivityData(activity.javaClass, activity.intent.extras)
-                    if (currentActivity!!.isEqualTo(data)) {
-                        currentActivity = null
-                    }
-                }
+            val data = CurrentActivityData(activity.javaClass, activity.intent.extras)
+            currentActivity.updateAndGet { if (it != null && it.isEqualTo(data)) null else it }
+        }
+
+        fun ensureRegistryDataAvailable(activity: Activity): Boolean {
+            return if (!Registry.hasInstanceCreated()) {
+                activity.startActivity(Intent(activity, MainActivity::class.java))
+                activity.finish()
+                false
+            } else {
+                true
             }
         }
 

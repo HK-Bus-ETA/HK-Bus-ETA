@@ -71,6 +71,7 @@ import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.ifFalse
 
 
 @Stable
@@ -78,7 +79,9 @@ class TitleActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
+
         setContent {
             HKBusETAApp(this)
         }

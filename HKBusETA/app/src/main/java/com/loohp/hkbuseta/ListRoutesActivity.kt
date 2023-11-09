@@ -121,6 +121,7 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.set
 import com.loohp.hkbuseta.utils.toHexString
 import com.loohp.hkbuseta.utils.toSpanned
@@ -151,6 +152,7 @@ class ListRoutesActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
         val result = JsonUtils.mapToList(JSONArray(intent.extras!!.getString("result")!!)) { RouteSearchResultEntry.deserialize(it as JSONObject) }.also { list ->
@@ -416,7 +418,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
                     }).plus("</span>"))
                 } else if (co == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
                     secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
-                        "Sun-Bus (NR$routeNumber)"
+                        "Sun Bus (NR$routeNumber)"
                     } else {
                         "陽光巴士 (NR$routeNumber)"
                     }).plus("</span>"))

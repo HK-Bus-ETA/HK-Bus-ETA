@@ -229,17 +229,19 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                                 finishAffinity()
-                            } else if (Shared.getCurrentActivity() == null) {
-                                startActivity(Intent(this@MainActivity, TitleActivity::class.java))
-                                finishAffinity()
                             } else {
-                                val currentActivityData = Shared.getCurrentActivity()!!
-                                val intent2 = Intent(this@MainActivity, currentActivityData.cls)
-                                if (currentActivityData.extras != null) {
-                                    intent2.putExtras(currentActivityData.extras)
+                                val currentActivity = Shared.getCurrentActivity()
+                                if (currentActivity == null) {
+                                    startActivity(Intent(this@MainActivity, TitleActivity::class.java))
+                                    finishAffinity()
+                                } else {
+                                    val intent2 = Intent(this@MainActivity, currentActivity.cls)
+                                    if (currentActivity.extras != null) {
+                                        intent2.putExtras(currentActivity.extras)
+                                    }
+                                    startActivity(intent2)
+                                    finishAffinity()
                                 }
-                                startActivity(intent2)
-                                finishAffinity()
                             }
                         }.start()
                     }

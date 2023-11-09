@@ -69,6 +69,7 @@ import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.distinctBy
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.ifFalse
 import kotlinx.coroutines.delay
 import java.util.concurrent.ForkJoinPool
 
@@ -78,6 +79,7 @@ class FavRouteListViewActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
         val usingGps = intent.extras!!.getBoolean("usingGps")

@@ -70,6 +70,7 @@ import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -85,6 +86,8 @@ class DismissibleTextDisplayActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
+        Shared.setDefaultExceptionHandler(this)
 
         val text = intent.extras!!.getString("text")?.let { BilingualText.deserialize(JSONObject(it)) }?: BilingualText.EMPTY
         val dismissText = intent.extras!!.getString("dismissText")?.let { BilingualText.deserialize(JSONObject(it)) }?: defaultDismissText
@@ -92,6 +95,11 @@ class DismissibleTextDisplayActivity : ComponentActivity() {
         setContent {
             TextElement(text, dismissText, this)
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Shared.setSelfAsCurrentActivity(this)
     }
 
 }

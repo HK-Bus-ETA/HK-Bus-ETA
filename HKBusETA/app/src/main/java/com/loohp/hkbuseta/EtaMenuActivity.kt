@@ -120,6 +120,7 @@ import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
+import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toSpanned
 import org.json.JSONObject
@@ -137,6 +138,7 @@ class EtaMenuActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
         val stopId = intent.extras!!.getString("stopId")
