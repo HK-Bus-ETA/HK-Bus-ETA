@@ -28,9 +28,6 @@ import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
 import com.loohp.hkbuseta.MainActivity;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 public class WearDataLayerListenerService extends WearableListenerService {
 
     public static final String EXPORT_PREFERENCE_PATH = "/HKBusETA/ExportPreference";
@@ -40,15 +37,11 @@ public class WearDataLayerListenerService extends WearableListenerService {
         super.onMessageReceived(event);
         String path = event.getPath();
         if (path.equals(EXPORT_PREFERENCE_PATH)) {
-            try {
-                String preference = new JSONObject(new String(event.getData())).toString(4);
-                Intent intent = new Intent(this, MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.putExtra("exportPreference", preference);
-                startActivity(intent);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+            String preference = new String(event.getData());
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.putExtra("exportPreference", preference);
+            startActivity(intent);
         }
     }
 

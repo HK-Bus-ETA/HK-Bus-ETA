@@ -22,10 +22,10 @@
     <string name="app_name">香港巴士到站預報 (Wear OS)</string>
     <string name="description_1">本手機配套應用程式用於直接讓你在WearOS手錶上開啟巴士路線分享連結 (現支援九巴App、城巴App及hkbus.app的分享連結)</string>
     <string name="description_2">你只需在上述支援的應用程式中使用「分享此路線」功能 並在分享表列中揀選本配套應用程式即可</string>
-    <string name="description_3">你也可以在此匯入/匯出你的設定(最喜愛路線等)</string>
-    <string name="export_preferences">匯入設定</string>
-    <string name="import_preferences">匯出設定</string>
-    <string name="export_saved">匯出設定成功</string>
+    <string name="description_3">你也可以在此匯入/匯出你的設定 (包括最喜愛路線)</string>
+    <string name="import_preferences">匯入設定</string>
+    <string name="export_preferences">匯出設定</string>
+    <string name="export_saved">匯出設定完成</string>
     <string name="description_4">所有其他主要功能都已經包含在WearOS手錶應用程式中</string>
     <string name="download_description">如果您尚未在手錶上下載 香港巴士到站預報 歡迎點擊下面按鈕！</string>
     <string name="download">Google Play 下載</string>

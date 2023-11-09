@@ -175,13 +175,13 @@ fun saveExportedPreference(preference: String, instance: MainActivity) {
                 if (uri != null) {
                     try {
                         PrintWriter(OutputStreamWriter(instance.contentResolver.openOutputStream(uri), StandardCharsets.UTF_8)).use { pw ->
-                            pw.write(preference)
+                            pw.write(JSONObject(preference).toString(4))
                             pw.flush()
                         }
                         instance.runOnUiThread {
                             Toast.makeText(instance, R.string.export_saved, Toast.LENGTH_LONG).show()
                         }
-                    } catch (e: IOException) {
+                    } catch (e: Exception) {
                         e.printStackTrace()
                     }
                 }
@@ -214,6 +214,7 @@ fun PhoneElements(instance: MainActivity) {
             color = Color.White,
             fontSize = TextUnit(30F, TextUnitType.Sp),
             fontWeight = FontWeight.Bold,
+            lineHeight = TextUnit(35F, TextUnitType.Sp),
             text = instance.resources.getString(R.string.app_name)
         )
         Text(
@@ -275,7 +276,7 @@ fun PhoneElements(instance: MainActivity) {
                     )
                 }
             )
-            Spacer(modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.size(5.dp))
             Button(
                 onClick = {
                     exportPreference(instance)
@@ -294,7 +295,7 @@ fun PhoneElements(instance: MainActivity) {
                     )
                 }
             )
-            Spacer(modifier = Modifier.size(40.dp))
+            Spacer(modifier = Modifier.size(20.dp))
             Text(
                 modifier = Modifier.padding(30.dp, 0.dp),
                 textAlign = TextAlign.Left,
