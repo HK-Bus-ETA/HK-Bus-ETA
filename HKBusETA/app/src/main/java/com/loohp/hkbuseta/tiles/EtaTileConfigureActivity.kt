@@ -79,6 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
@@ -137,7 +138,7 @@ fun SelectElements(tileId: Int, instance: EtaTileConfigureActivity) {
         val focusRequester = remember { FocusRequester() }
         val state = rememberLazyListState()
 
-        val maxFavItems by remember { Shared.getCurrentMaxFavouriteRouteStopState() }
+        val maxFavItems by Shared.getCurrentMaxFavouriteRouteStopState().collectAsStateWithLifecycle()
 
         val selectStates = remember { mutableStateListOf<Int>().also { it.addAll(Shared.getEtaTileConfiguration(tileId)) } }
 

@@ -27,6 +27,8 @@ import androidx.annotation.NonNull;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
 import com.loohp.hkbuseta.MainActivity;
+import com.loohp.hkbuseta.shared.Registry;
+import com.loohp.hkbuseta.utils.RemoteActivityUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -36,23 +38,48 @@ import java.util.Iterator;
 public class WearDataLayerListenerService extends WearableListenerService {
 
     public static final String START_ACTIVITY_PATH = "/HKBusETA/Launch";
+    public static final String IMPORT_PREFERENCE_PATH = "/HKBusETA/ImportPreference";
+    public static final String EXPORT_PREFERENCE_PATH = "/HKBusETA/ExportPreference";
 
     @Override
     public void onMessageReceived(@NonNull MessageEvent event) {
         super.onMessageReceived(event);
         String path = event.getPath();
-        if (path.equals(START_ACTIVITY_PATH)) {
-            try {
-                JSONObject data = new JSONObject(new String(event.getData()));
-                Intent intent = new Intent(this, MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                for (Iterator<String> itr = data.keys(); itr.hasNext(); ) {
-                    String key = itr.next();
-                    intent.putExtra(key, data.optString(key));
+        switch (path) {
+            case START_ACTIVITY_PATH: {
+                try {
+                    JSONObject data = new JSONObject(new String(event.getData()));
+                    Intent intent = new Intent(this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    for (Iterator<String> itr = data.keys(); itr.hasNext(); ) {
+                        String key = itr.next();
+                        intent.putExtra(key, data.optString(key));
+                    }
+                    startActivity(intent);
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
-                startActivity(intent);
-            } catch (JSONException e) {
-                e.printStackTrace();
+                break;
+            }
+            case IMPORT_PREFERENCE_PATH: {
+                try {
+                    Registry.initInstanceWithImportedPreference(this, new JSONObject(new String(event.getData())));
+                    Intent intent = new Intent(this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                break;
+            }
+            case EXPORT_PREFERENCE_PATH: {
+                try {
+                    JSONObject preferences = Registry.getInstanceNoUpdateCheck(this).exportPreference();
+                    RemoteActivityUtils.Companion.dataToPhone(this, EXPORT_PREFERENCE_PATH, preferences, () -> null, () -> null, () -> null);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                break;
             }
         }
     }

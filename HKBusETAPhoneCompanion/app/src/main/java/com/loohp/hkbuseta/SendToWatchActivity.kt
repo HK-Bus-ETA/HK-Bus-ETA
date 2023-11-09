@@ -23,7 +23,6 @@ package com.loohp.hkbuseta
 import android.content.Intent
 import android.os.Bundle
 import android.util.Base64
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -72,8 +71,7 @@ class SendToWatchActivity : ComponentActivity() {
 fun sendPayload(instance: SendToWatchActivity, payload: JSONObject) {
     RemoteActivityUtils.dataToWatch(instance, START_ACTIVITY_PATH, payload, {
         instance.runOnUiThread {
-            Toast.makeText(instance, R.string.send_no_watch, Toast.LENGTH_LONG)
-                .show()
+            Toast.makeText(instance, R.string.send_no_watch, Toast.LENGTH_LONG).show()
             instance.finish()
         }
     }, {
@@ -83,8 +81,7 @@ fun sendPayload(instance: SendToWatchActivity, payload: JSONObject) {
         }
     }, {
         instance.runOnUiThread {
-            Toast.makeText(instance, R.string.send_success, Toast.LENGTH_LONG)
-                .show()
+            Toast.makeText(instance, R.string.send_success, Toast.LENGTH_LONG).show()
             instance.finish()
         }
     })
@@ -101,7 +98,6 @@ fun DisplayElements(intentState: ImmutableState<Intent>, instance: SendToWatchAc
             var matcher: Matcher
             if (action == "android.intent.action.SEND" && type != null && type == "text/plain") {
                 val url = intent.getStringExtra("android.intent.extra.TEXT")!!.replace("\n", "")
-                Log.d("a", url)
                 if (url.startsWith(KMB_URL_STARTS_WITH) || url.startsWith(KMB_DIRECT_URL_STARTS_WITH)) {
                     val realUrl = if (url.startsWith(KMB_URL_STARTS_WITH)) HTTPRequestUtils.getMovedRedirect(url) else url
                     val urlDecoded = URLDecoder.decode(realUrl, StandardCharsets.UTF_8.name())

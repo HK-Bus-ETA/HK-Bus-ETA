@@ -120,32 +120,48 @@ import kotlinx.coroutines.flow.StateFlow;
 
 public class Registry {
 
-    private static AtomicReference<Registry> INSTANCE = new AtomicReference<>(null);
+    private static volatile Registry INSTANCE = null;
+    private static final Object INSTANCE_LOCK = new Object();
 
     public static Registry getInstance(Context context) {
-        return INSTANCE.updateAndGet(instance -> {
-            if (instance == null) {
-                instance = new Registry(context, false);
+        synchronized (INSTANCE_LOCK) {
+            if (INSTANCE == null) {
+                INSTANCE = new Registry(context, false);
             }
-            return instance;
-        });
+            return INSTANCE;
+        }
     }
 
     public static Registry getInstanceNoUpdateCheck(Context context) {
-        return INSTANCE.updateAndGet(instance -> {
-            if (instance == null) {
-                instance = new Registry(context, true);
+        synchronized (INSTANCE_LOCK) {
+            if (INSTANCE == null) {
+                INSTANCE = new Registry(context, true);
             }
-            return instance;
-        });
+            return INSTANCE;
+        }
     }
 
     public static boolean hasInstanceCreated() {
-        return INSTANCE.get() != null;
+        synchronized (INSTANCE_LOCK) {
+            return INSTANCE != null;
+        }
     }
 
     public static void clearInstance() {
-        INSTANCE.set(null);
+        synchronized (INSTANCE_LOCK) {
+            INSTANCE = null;
+        }
+    }
+
+    public static Registry initInstanceWithImportedPreference(Context context, JSONObject preferencesData) {
+        synchronized (INSTANCE_LOCK) {
+            try {
+                INSTANCE = new Registry(context, true, preferencesData);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return INSTANCE;
+        }
     }
 
     private static final String PREFERENCES_FILE_NAME = "preferences.json";
@@ -172,6 +188,31 @@ public class Registry {
             ensureData(context, suppressUpdateCheck);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private Registry(Context context, boolean suppressUpdateCheck, JSONObject importPreferencesData) throws JSONException {
+        importPreference(context, importPreferencesData);
+        try {
+            ensureData(context, suppressUpdateCheck);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void importPreference(Context context, JSONObject preferencesData) throws JSONException {
+        Preferences preferences = Preferences.deserialize(preferencesData).cleanForImport();
+        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+            pw.write(preferences.serialize().toString());
+            pw.flush();
+        } catch (IOException | JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public JSONObject exportPreference() throws JSONException {
+        synchronized (preferenceWriteLock) {
+            return PREFERENCES.serialize();
         }
     }
 
@@ -452,8 +493,15 @@ public class Registry {
         }
 
         Shared.Companion.setLanguage(PREFERENCES.getLanguage());
-        Shared.Companion.updateFavoriteRouteStops(m -> m.putAll(PREFERENCES.getFavouriteRouteStops()));
-        Shared.Companion.updateEtaTileConfigurations(m -> m.putAll(PREFERENCES.getEtaTileConfigurations()));
+        Shared.Companion.updateFavoriteRouteStops(m -> {
+            m.clear();
+            m.putAll(PREFERENCES.getFavouriteRouteStops());
+        });
+        Shared.Companion.updateEtaTileConfigurations(m -> {
+            m.clear();
+            m.putAll(PREFERENCES.getEtaTileConfigurations());
+        });
+        Shared.Companion.clearLookupRoute();
         List<LastLookupRoute> lastLookupRoutes = PREFERENCES.getLastLookupRoutes();
         for (Iterator<LastLookupRoute> itr = lastLookupRoutes.iterator(); itr.hasNext();) {
             LastLookupRoute lastLookupRoute = itr.next();
@@ -463,6 +511,7 @@ public class Registry {
                 itr.remove();
             }
         }
+        Shared.Companion.getRouteSortModePreference().clear();
         Shared.Companion.getRouteSortModePreference().putAll(PREFERENCES.getRouteSortModePreference());
 
         checkUpdate(context, suppressUpdateCheck);

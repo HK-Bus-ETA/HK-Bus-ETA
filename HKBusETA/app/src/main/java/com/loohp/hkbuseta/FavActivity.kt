@@ -92,6 +92,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
@@ -197,7 +198,7 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
         val scope = rememberCoroutineScope()
         val state = rememberLazyListState()
 
-        val maxFavItems by remember { Shared.getCurrentMaxFavouriteRouteStopState() }
+        val maxFavItems by Shared.getCurrentMaxFavouriteRouteStopState().collectAsStateWithLifecycle()
         val showRouteListViewButton by remember { derivedStateOf { (Shared.favoriteRouteStops.keys.maxOrNull()?: 0) > 2 } }
 
         val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
@@ -233,6 +234,10 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
                 item {
                     Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
                     RouteListViewButton(instance)
+                }
+            } else {
+                item {
+                    Spacer(modifier = Modifier.size(0.dp))
                 }
             }
             items(maxFavItems) {

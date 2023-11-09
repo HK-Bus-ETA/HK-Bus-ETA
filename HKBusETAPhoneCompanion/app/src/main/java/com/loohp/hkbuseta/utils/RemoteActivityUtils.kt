@@ -32,8 +32,8 @@ class RemoteActivityUtils {
 
     companion object {
 
-        fun dataToWatch(instance: Context, path: String, data: JSONObject, noWatch: () -> Unit = {}, failed: () -> Unit = {}, success: () -> Unit = {}) {
-            val dataRaw = data.toString().toByteArray(StandardCharsets.UTF_8)
+        fun dataToWatch(instance: Context, path: String, data: JSONObject?, noWatch: () -> Unit = {}, failed: () -> Unit = {}, success: () -> Unit = {}) {
+            val dataRaw = data?.toString()?.toByteArray(StandardCharsets.UTF_8)?: byteArrayOf()
             Wearable.getNodeClient(instance).connectedNodes.addOnCompleteListener { nodes ->
                 if (nodes.result.isEmpty()) {
                     noWatch.invoke()

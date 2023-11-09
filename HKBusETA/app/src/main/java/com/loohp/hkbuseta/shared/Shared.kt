@@ -28,8 +28,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material.TimeText
 import com.loohp.hkbuseta.FatalErrorActivity
@@ -41,6 +39,8 @@ import com.loohp.hkbuseta.objects.RouteSortMode
 import com.loohp.hkbuseta.objects.gmbRegion
 import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.utils.isEqualTo
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONObject
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -249,8 +249,8 @@ class Shared {
 
         var language = "zh"
 
-        private val suggestedMaxFavouriteRouteStop = mutableIntStateOf(0)
-        private val currentMaxFavouriteRouteStop = mutableIntStateOf(0)
+        private val suggestedMaxFavouriteRouteStop = MutableStateFlow(0)
+        private val currentMaxFavouriteRouteStop = MutableStateFlow(0)
         val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentHashMap()
 
         private val etaTileConfigurations: Map<Int, List<Int>> = ConcurrentHashMap()
@@ -281,16 +281,16 @@ class Shared {
             synchronized(favoriteRouteStops) {
                 mutation.accept(favoriteRouteStops)
                 val max = favoriteRouteStops.maxOfOrNull { it.key }?: 0
-                currentMaxFavouriteRouteStop.intValue = max.coerceAtLeast(8)
-                suggestedMaxFavouriteRouteStop.intValue = (max + 1).coerceIn(8, 30)
+                currentMaxFavouriteRouteStop.value = max.coerceAtLeast(8)
+                suggestedMaxFavouriteRouteStop.value = (max + 1).coerceIn(8, 30)
             }
         }
 
-        fun getSuggestedMaxFavouriteRouteStopState(): State<Int> {
+        fun getSuggestedMaxFavouriteRouteStopState(): StateFlow<Int> {
             return suggestedMaxFavouriteRouteStop
         }
 
-        fun getCurrentMaxFavouriteRouteStopState(): State<Int> {
+        fun getCurrentMaxFavouriteRouteStopState(): StateFlow<Int> {
             return currentMaxFavouriteRouteStop
         }
 

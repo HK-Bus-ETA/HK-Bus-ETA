@@ -20,9 +20,12 @@
 
 package com.loohp.hkbuseta
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -51,10 +54,30 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import com.loohp.hkbuseta.ui.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.ActivityUtils
+import com.loohp.hkbuseta.utils.RemoteActivityUtils
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.io.PrintWriter
+import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.stream.Collectors
+
+
+const val IMPORT_PREFERENCE_PATH = "/HKBusETA/ImportPreference"
+const val EXPORT_PREFERENCE_PATH = "/HKBusETA/ExportPreference"
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        intent?.extras?.getString("exportPreference")?.let { saveExportedPreference(it, this) }
+
         setContent {
             HKBusETATheme {
                 Surface(
@@ -66,6 +89,12 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        intent?.extras?.getString("exportPreference")?.let { saveExportedPreference(it, this) }
+    }
+
 }
 
 fun openLoohpJames(instance: MainActivity) {
@@ -82,6 +111,86 @@ fun openGooglePlay(instance: MainActivity) {
     instance.startActivity(intent)
 }
 
+fun importPreference(instance: MainActivity) {
+    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+    intent.type = "application/json";
+    intent.addCategory(Intent.CATEGORY_OPENABLE)
+    ActivityUtils.startActivity(instance, intent) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            val data = it.data
+            if (data != null) {
+                val uri = data.data
+                if (uri != null) {
+                    try {
+                        BufferedReader(InputStreamReader(instance.contentResolver.openInputStream(uri), StandardCharsets.UTF_8)).use { reader ->
+                            RemoteActivityUtils.dataToWatch(instance, IMPORT_PREFERENCE_PATH, JSONObject(reader.lines().collect(Collectors.joining())), {
+                                instance.runOnUiThread {
+                                    Toast.makeText(instance, R.string.send_no_watch, Toast.LENGTH_LONG).show()
+                                    instance.finish()
+                                }
+                            }, {
+                                instance.runOnUiThread {
+                                    Toast.makeText(instance, R.string.send_failed, Toast.LENGTH_LONG).show()
+                                    instance.finish()
+                                }
+                            }, {
+                                instance.runOnUiThread {
+                                    Toast.makeText(instance, R.string.send_success, Toast.LENGTH_LONG).show()
+                                }
+                            })
+                        }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun exportPreference(instance: MainActivity) {
+    RemoteActivityUtils.dataToWatch(instance, EXPORT_PREFERENCE_PATH, null, {
+        instance.runOnUiThread {
+            Toast.makeText(instance, R.string.send_no_watch, Toast.LENGTH_LONG).show()
+        }
+    }, {
+        instance.runOnUiThread {
+            Toast.makeText(instance, R.string.send_failed, Toast.LENGTH_LONG).show()
+        }
+    })
+}
+
+@SuppressLint("SimpleDateFormat")
+fun saveExportedPreference(preference: String, instance: MainActivity) {
+    val fileName = SimpleDateFormat("'HKBusETA_Preference_'dd'_'MM'_'yyyy'_'HH'_'mm'_'ss'_'zzz'.json'").format(Date())
+    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+    intent.type = "application/json";
+    intent.addCategory(Intent.CATEGORY_OPENABLE)
+    intent.putExtra(Intent.EXTRA_TITLE, fileName)
+    ActivityUtils.startActivity(instance, intent) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            val data = it.data
+            if (data != null) {
+                val uri = data.data
+                if (uri != null) {
+                    try {
+                        PrintWriter(OutputStreamWriter(instance.contentResolver.openOutputStream(uri), StandardCharsets.UTF_8)).use { pw ->
+                            pw.write(preference)
+                            pw.flush()
+                        }
+                        instance.runOnUiThread {
+                            Toast.makeText(instance, R.string.export_saved, Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+        instance.startActivity(Intent(instance, MainActivity::class.java))
+    }
+}
+
 @Composable
 fun PhoneElements(instance: MainActivity) {
     Column(
@@ -91,9 +200,11 @@ fun PhoneElements(instance: MainActivity) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Image(
-            modifier = Modifier.clickable {
-                openGooglePlay(instance)
-            }.size(100.dp),
+            modifier = Modifier
+                .clickable {
+                    openGooglePlay(instance)
+                }
+                .size(100.dp),
             painter = painterResource(R.mipmap.icon),
             contentDescription = instance.resources.getString(R.string.app_name)
         )
@@ -144,6 +255,52 @@ fun PhoneElements(instance: MainActivity) {
                 color = Color.White,
                 fontSize = TextUnit(17F, TextUnitType.Sp),
                 text = instance.resources.getString(R.string.description_3)
+            )
+            Spacer(modifier = Modifier.size(20.dp))
+            Button(
+                onClick = {
+                    importPreference(instance)
+                },
+                modifier = Modifier.padding(30.dp, 0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF636363),
+                    contentColor = Color(0xFFFFFFFF)
+                ),
+                content = {
+                    Text(
+                        textAlign = TextAlign.Left,
+                        color = Color.White,
+                        fontSize = TextUnit(17F, TextUnitType.Sp),
+                        text = instance.resources.getString(R.string.import_preferences)
+                    )
+                }
+            )
+            Spacer(modifier = Modifier.size(20.dp))
+            Button(
+                onClick = {
+                    exportPreference(instance)
+                },
+                modifier = Modifier.padding(30.dp, 0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF636363),
+                    contentColor = Color(0xFFFFFFFF)
+                ),
+                content = {
+                    Text(
+                        textAlign = TextAlign.Left,
+                        color = Color.White,
+                        fontSize = TextUnit(17F, TextUnitType.Sp),
+                        text = instance.resources.getString(R.string.export_preferences)
+                    )
+                }
+            )
+            Spacer(modifier = Modifier.size(40.dp))
+            Text(
+                modifier = Modifier.padding(30.dp, 0.dp),
+                textAlign = TextAlign.Left,
+                color = Color.White,
+                fontSize = TextUnit(17F, TextUnitType.Sp),
+                text = instance.resources.getString(R.string.description_4)
             )
             Spacer(modifier = Modifier.size(40.dp))
             Text(

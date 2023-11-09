@@ -84,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
@@ -174,7 +175,7 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
         val focusRequester = remember { FocusRequester() }
         val scroll = rememberLazyListState()
 
-        val maxFavItems by remember { Shared.getSuggestedMaxFavouriteRouteStopState() }
+        val maxFavItems by Shared.getSuggestedMaxFavouriteRouteStopState().collectAsStateWithLifecycle()
 
         val routeNumber = route.routeNumber
         val lat = stop.location.lat

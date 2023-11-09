@@ -62,6 +62,11 @@ public class Preferences implements JSONSerializable {
         this.routeSortModePreference = routeSortModePreference;
     }
 
+    public Preferences cleanForImport() {
+        etaTileConfigurations.clear();
+        return this;
+    }
+
     public String getLanguage() {
         return language;
     }
