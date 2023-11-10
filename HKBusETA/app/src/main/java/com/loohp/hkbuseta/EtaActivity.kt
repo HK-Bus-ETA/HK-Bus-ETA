@@ -76,6 +76,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.ExperimentalWearMaterialApi
 import androidx.wear.compose.material.Icon
@@ -99,6 +100,7 @@ import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.isTrain
 import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.shared.Registry
@@ -120,6 +122,7 @@ import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.concurrent.Executors
@@ -325,7 +328,8 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
                 val lng = stop.location.lng
 
                 var active by remember { mutableStateOf(true) }
-                var eta: ETAQueryResult? by remember { mutableStateOf(null) }
+                val etaStateFlow = remember { MutableStateFlow(null as ETAQueryResult?) }
+                val eta by etaStateFlow.collectAsStateWithLifecycle()
 
                 PauseEffect {
                     active = false
@@ -338,7 +342,7 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
                     schedule.invoke(true) {
                         val result = Registry.getInstance(instance).getEta(stopId, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
                         if (active) {
-                            eta = result
+                            etaStateFlow.value = result
                         }
                     }
                 }
@@ -516,7 +520,7 @@ fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
-        text = if (co == Operator.MTR || co == Operator.LRT) name else index.toString().plus(". ").plus(name),
+        text = if (co.isTrain) name else index.toString().plus(". ").plus(name),
         maxLines = 2,
         fontWeight = FontWeight(900),
         fontSizeRange = FontSizeRange(

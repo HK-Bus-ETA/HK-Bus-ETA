@@ -2057,18 +2057,21 @@ public class Registry {
                 } else {
                     ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
                     int hour = hongKongTime.getHour();
-                    boolean isOutOfServiceHours = hour >= 0 && hour < 5;
+                    DayOfWeek dayOfWeek = hongKongTime.getDayOfWeek();
 
                     JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=" + lineName + "&sta=" + stopId);
                     if (data.optInt("status") == 0) {
                         lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
                     } else {
                         JSONObject lineStops = data.optJSONObject("data").optJSONObject(lineName + "-" + stopId);
+                        boolean rac = stopId.equals("RAC") && dayOfWeek != DayOfWeek.WEDNESDAY && dayOfWeek != DayOfWeek.SUNDAY;
                         if (lineStops == null) {
-                            if (stopId.equals("RAC")) {
+                            if (rac) {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
-                            } else if (isOutOfServiceHours) {
+                            } else if (hour >= 0 && hour < 3) {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
+                            } else if (hour >= 3 && hour < 6) {
+                                lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
                             } else {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
                             }
@@ -2077,10 +2080,12 @@ public class Registry {
                             String dir = bound.equals("UT") ? "UP" : "DOWN";
                             JSONArray trains = lineStops.optJSONArray(dir);
                             if (trains == null || trains.length() == 0) {
-                                if (stopId.equals("RAC")) {
+                                if (rac) {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
-                                } else if (isOutOfServiceHours) {
+                                } else if (hour >= 0 && hour < 3) {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
+                                } else if (hour >= 3 && hour < 6) {
+                                    lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
                                 } else {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
                                 }
@@ -2110,7 +2115,9 @@ public class Registry {
                                     long mins = (long) Math.ceil((format.parse(eta).getTime() - Instant.now().toEpochMilli()) / 60000.0);
 
                                     String minsMessage;
-                                    if (mins > 1) {
+                                    if (mins > 60) {
+                                        minsMessage = "<b>" + hongKongTime.plusMinutes(mins).format(DateTimeFormatter.ofPattern("HH:mm")) + "</b>";
+                                    } else if (mins > 1) {
                                         minsMessage = "<b>" + mins + "</b><small>" + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘") + "</small>";
                                     } else if (mins == 1) {
                                         minsMessage = "<b>" + (Shared.Companion.getLanguage().equals("en") ? "Arriving" : "即將抵達") + "</b>";

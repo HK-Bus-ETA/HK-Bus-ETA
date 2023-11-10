@@ -84,6 +84,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
@@ -128,10 +129,12 @@ import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -147,6 +150,7 @@ enum class RecentSortMode(val enabled: Boolean, val defaultSortMode: RouteSortMo
 @Stable
 class ListRoutesActivity : ComponentActivity() {
 
+    private val sync: ExecutorService = Executors.newSingleThreadExecutor()
     private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(16)
     private val etaUpdatesMap: MutableMap<String, Pair<ScheduledFuture<*>?, () -> Unit>> = LinkedHashMap()
 
@@ -183,13 +187,11 @@ class ListRoutesActivity : ComponentActivity() {
 
         setContent {
             MainElement(this, result, listType, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
-                runOnUiThread {
-                    synchronized(etaUpdatesMap) {
-                        if (isAdd) {
-                            etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
-                        } else {
-                            etaUpdatesMap.remove(key)?.first?.cancel(true)
-                        }
+                sync.execute {
+                    if (isAdd) {
+                        etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                    } else {
+                        etaUpdatesMap.remove(key)?.first?.cancel(true)
                     }
                 }
             }
@@ -203,7 +205,7 @@ class ListRoutesActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        synchronized(etaUpdatesMap) {
+        sync.execute {
             etaUpdatesMap.replaceAll { _, value ->
                 value.first?.cancel(true)
                 executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
@@ -213,7 +215,7 @@ class ListRoutesActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        synchronized(etaUpdatesMap) {
+        sync.execute {
             etaUpdatesMap.forEach { it.value.first?.cancel(true) }
         }
     }
@@ -222,6 +224,7 @@ class ListRoutesActivity : ComponentActivity() {
         super.onDestroy()
         if (isFinishing) {
             executor.shutdownNow()
+            sync.shutdownNow()
             Shared.removeSelfFromCurrentActivity(this)
         }
     }
@@ -602,16 +605,18 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
 
 @Composable
 fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<String, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, instance: ListRoutesActivity, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
-    var eta: ETAQueryResult? by remember { mutableStateOf(etaResults.value[key]) }
+    val etaStateFlow = remember { MutableStateFlow(etaResults.value[key]) }
 
     LaunchedEffect (Unit) {
-        if (eta != null && !eta!!.isConnectionError) {
+        val eta = etaStateFlow.value
+        if (eta != null && !eta.isConnectionError) {
             delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, key) {
-            eta = Registry.getInstance(instance).getEta(route.stopInfo.stopId, route.co, route.route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            val result = Registry.getInstance(instance).getEta(route.stopInfo.stopId, route.co, route.route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            etaStateFlow.value = result
             etaUpdateTimes.value[key] = System.currentTimeMillis()
-            etaResults.value[key] = eta!!
+            etaResults.value[key] = result
         }
     }
     DisposableEffect (Unit) {
@@ -620,14 +625,17 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
         }
     }
 
+    val etaState by etaStateFlow.collectAsStateWithLifecycle()
+
     Column (
         modifier = Modifier.requiredWidth(etaTextWidth.dp),
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.Center
     ) {
-        if (eta != null && !eta!!.isConnectionError) {
-            if (eta!!.nextScheduledBus < 0 || eta!!.nextScheduledBus > 60) {
-                if (eta!!.isMtrEndOfLine) {
+        val eta = etaState
+        if (eta != null && !eta.isConnectionError) {
+            if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) {
+                if (eta.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
                             .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
@@ -636,7 +644,7 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
                     )
-                } else if (eta!!.isTyphoonSchedule) {
+                } else if (eta.isTyphoonSchedule) {
                     Image(
                         modifier = Modifier
                             .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
@@ -655,7 +663,7 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
                     )
                 }
             } else {
-                val text1 = (if (eta!!.nextScheduledBus == 0L) "-" else eta!!.nextScheduledBus.toString())
+                val text1 = (if (eta.nextScheduledBus == 0L) "-" else eta.nextScheduledBus.toString())
                 val text2 = if (Shared.language == "en") "Min." else "分鐘"
                 val span1 = SpannableString(text1)
                 val size1 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(14F, instance), dpMax = StringUtils.scaledSize(15F, instance))).roundToInt()

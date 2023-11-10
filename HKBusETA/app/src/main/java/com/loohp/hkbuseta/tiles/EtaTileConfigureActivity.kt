@@ -93,6 +93,7 @@ import com.loohp.hkbuseta.objects.distance
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.isTrain
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -430,9 +431,9 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                     val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
                     val routeText = destName[Shared.language]
                     val subText = if (Shared.language == "en") {
-                        (if (co == Operator.MTR || co == Operator.LRT) "" else index.toString().plus(". ")).plus(stopName.en)
+                        (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.en)
                     } else {
-                        (if (co == Operator.MTR || co == Operator.LRT) "" else index.toString().plus(". ")).plus(stopName.zh)
+                        (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.zh)
                     }
                     Spacer(modifier = Modifier.size(5.dp))
                     Column (

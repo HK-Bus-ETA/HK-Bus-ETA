@@ -31,6 +31,8 @@ import com.loohp.hkbuseta.utils.toHexString
 
 inline val Operator.name: String get() = name()
 
+inline val Operator.isTrain: Boolean get() = this == Operator.MTR || this == Operator.LRT
+
 fun Operator.getColorHex(routeNumber: String, elseColor: Long): String {
     return getColor(routeNumber, Color(elseColor)).toHexString()
 }
@@ -58,6 +60,23 @@ fun Operator.getColor(routeNumber: String, elseColor: Color): Color {
         }
         else -> elseColor
     }
+}
+
+fun Operator.getLineColor(routeNumber: String, elseColor: Color): Color {
+    return if (this == Operator.LRT) when (routeNumber) {
+        "505" -> Color(0xFFDA2127)
+        "507" -> Color(0xFF00A652)
+        "610" -> Color(0xFF551C15)
+        "614" -> Color(0xFF00BFF3)
+        "614P" -> Color(0xFFF4858E)
+        "615" -> Color(0xFFFFDD00)
+        "615P" -> Color(0xFF016682)
+        "705" -> Color(0xFF73BF43)
+        "706" -> Color(0xFFB47AB5)
+        "751" -> Color(0xFFF48221)
+        "761P" -> Color(0xFF6F2D91)
+        else -> getColor(routeNumber, elseColor)
+    } else getColor(routeNumber, elseColor)
 }
 
 fun Operator.getDisplayRouteNumber(routeNumber: String): String {

@@ -48,7 +48,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -77,7 +76,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -120,7 +118,6 @@ import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
-import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toSpanned
@@ -265,14 +262,11 @@ fun MoreInfoHeader(instance: EtaMenuActivity) {
 
 @Composable
 fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
-    var height by remember { mutableIntStateOf(0) }
-
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .width(StringUtils.scaledSize(220, instance).dp)
-            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
-            .onSizeChanged { height = it.height },
+            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp),
         shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = {
             instance.runOnUiThread {
@@ -296,9 +290,7 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
         ),
         content = {
             Image(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .requiredHeight(height.equivalentDp),
+                modifier = Modifier.matchParentSize(),
                 painter = painterResource(R.mipmap.interchange_background),
                 contentScale = ContentScale.FillWidth,
                 colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),
@@ -344,13 +336,11 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
 
 @Composable
 fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, co: Operator, instance: EtaMenuActivity) {
-    var height by remember { mutableIntStateOf(0) }
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .width(StringUtils.scaledSize(220, instance).dp)
-            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
-            .onSizeChanged { height = it.height },
+            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp),
         shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = {
             LocationUtils.checkLocationPermission(instance) { locationGranted ->
@@ -399,9 +389,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
         ),
         content = {
             Image(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .requiredHeight(height.equivalentDp),
+                modifier = Modifier.matchParentSize(),
                 painter = painterResource(R.mipmap.alight_reminder_background),
                 contentScale = ContentScale.FillWidth,
                 colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),
@@ -450,14 +438,12 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
 fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance: EtaMenuActivity) {
     val haptic = LocalHapticFeedback.current
     val name = if (Shared.language == "en") stopName.en else stopName.zh
-    var height by remember { mutableIntStateOf(0) }
 
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .width(StringUtils.scaledSize(220, instance).dp)
-            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
-            .onSizeChanged { height = it.height },
+            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp),
         shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = handleOpenMaps(lat, lng, name, instance, false, haptic),
         onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic),
@@ -467,9 +453,7 @@ fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance
         ),
         content = {
             Image(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .requiredHeight(height.equivalentDp),
+                modifier = Modifier.matchParentSize(),
                 painter = painterResource(R.mipmap.open_map_background),
                 contentScale = ContentScale.FillWidth,
                 colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),
@@ -544,14 +528,12 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaMenuAct
 @Composable
 fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: EtaMenuActivity) {
     val haptic = LocalHapticFeedback.current
-    var height by remember { mutableIntStateOf(0) }
 
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .width(StringUtils.scaledSize(220, instance).dp)
-            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
-            .onSizeChanged { height = it.height },
+            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp),
         shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = handleOpenKmbBbiMap(kmbBbiId, instance, false, haptic),
         onLongClick = handleOpenKmbBbiMap(kmbBbiId, instance, true, haptic),
@@ -561,9 +543,7 @@ fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: EtaMenuActivity) {
         ),
         content = {
             Image(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .requiredHeight(height.equivalentDp),
+                modifier = Modifier.matchParentSize(),
                 painter = painterResource(R.mipmap.kmb_bbi_background),
                 contentScale = ContentScale.FillWidth,
                 colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),

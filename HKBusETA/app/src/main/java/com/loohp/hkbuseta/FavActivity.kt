@@ -105,9 +105,11 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.isTrain
 import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
@@ -124,6 +126,7 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.ifFalse
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -420,75 +423,12 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                 val stopId = favStopRoute.stopId
                 val co = favStopRoute.co
                 val route = favStopRoute.route
-
-                var eta: Registry.ETAQueryResult? by remember { mutableStateOf(etaResults.value[favoriteIndex]) }
-
-                LaunchedEffect (Unit) {
-                    if (eta != null && !eta!!.isConnectionError) {
-                        delay(etaUpdateTimes.value[favoriteIndex]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
-                    }
-                    schedule.invoke(true, favoriteIndex) {
-                        eta = Registry.getInstance(instance).getEta(stopId, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
-                        etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
-                        etaResults.value[favoriteIndex] = eta!!
-                    }
-                }
-                DisposableEffect (Unit) {
-                    onDispose {
-                        schedule.invoke(false, favoriteIndex, null)
-                    }
-                }
-
                 Box(
                     modifier = Modifier
                         .padding(10.dp, (if (Shared.language == "en") 7.5 else 8.5).dp)
                         .align(Alignment.BottomStart),
                 ) {
-                    if (eta != null && !eta!!.isConnectionError) {
-                        if (eta!!.nextScheduledBus < 0 || eta!!.nextScheduledBus > 60) {
-                            if (eta!!.isMtrEndOfLine) {
-                                Icon(
-                                    modifier = Modifier
-                                        .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
-                                    painter = painterResource(R.drawable.baseline_line_end_circle_24),
-                                    contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
-                                    tint = Color(0xFF798996),
-                                )
-                            } else if (eta!!.isTyphoonSchedule) {
-                                val desc by remember { derivedStateOf { Registry.getInstance(instance).currentTyphoonData.get().typhoonWarningTitle } }
-                                Image(
-                                    modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
-                                    painter = painterResource(R.mipmap.cyclone),
-                                    contentDescription = desc
-                                )
-                            } else {
-                                Icon(
-                                    modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
-                                    painter = painterResource(R.drawable.baseline_schedule_24),
-                                    contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
-                                    tint = Color(0xFF798996),
-                                )
-                            }
-                        } else {
-                            val text1 = (if (eta!!.nextScheduledBus == 0L) "-" else eta!!.nextScheduledBus.toString())
-                            val text2 = if (Shared.language == "en") " Min." else "分鐘"
-                            val span1 = SpannableString(text1)
-                            val size1 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(14F, instance), dpMax = StringUtils.scaledSize(15F, instance))).roundToInt()
-                            span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-                            val span2 = SpannableString(text2)
-                            val size2 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(8F, instance))).roundToInt()
-                            span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-                            AnnotatedText(
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Start,
-                                fontSize = 14F.sp,
-                                color = Color(0xFFAAC3D5),
-                                lineHeight = 7F.sp,
-                                maxLines = 1,
-                                text = SpannableString(TextUtils.concat(span1, span2)).asAnnotatedString()
-                            )
-                        }
-                    }
+                    ETAElement(favoriteIndex, stopId, co, route, etaResults, etaUpdateTimes, instance, schedule)
                 }
             }
             Row(
@@ -579,9 +519,9 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
                     val routeText = destName[Shared.language]
                     val subText = if (Shared.language == "en") {
-                        (if (co == Operator.MTR || co == Operator.LRT) "" else index.toString().plus(". ")).plus(stopName.en)
+                        (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.en)
                     } else {
-                        (if (co == Operator.MTR || co == Operator.LRT) "" else index.toString().plus(". ")).plus(stopName.zh)
+                        (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.zh)
                     }
                     Spacer(modifier = Modifier.size(5.dp))
                     Column (
@@ -630,4 +570,78 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
             }
         }
     )
+}
+
+@Composable
+fun ETAElement(favoriteIndex: Int, stopId: String, co: Operator, route: Route, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+    val etaStateFlow = remember { MutableStateFlow(etaResults.value[favoriteIndex]) }
+
+    LaunchedEffect (Unit) {
+        val eta = etaStateFlow.value
+        if (eta != null && !eta.isConnectionError) {
+            delay(etaUpdateTimes.value[favoriteIndex]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+        }
+        schedule.invoke(true, favoriteIndex) {
+            val result = Registry.getInstance(instance).getEta(stopId, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            etaStateFlow.value = result
+            etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
+            etaResults.value[favoriteIndex] = result
+        }
+    }
+    DisposableEffect (Unit) {
+        onDispose {
+            schedule.invoke(false, favoriteIndex, null)
+        }
+    }
+
+    val etaState by etaStateFlow.collectAsStateWithLifecycle()
+
+    Box {
+        val eta = etaState
+        if (eta != null && !eta.isConnectionError) {
+            if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) {
+                if (eta.isMtrEndOfLine) {
+                    Icon(
+                        modifier = Modifier
+                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                        painter = painterResource(R.drawable.baseline_line_end_circle_24),
+                        contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
+                        tint = Color(0xFF798996),
+                    )
+                } else if (eta.isTyphoonSchedule) {
+                    val desc by remember { derivedStateOf { Registry.getInstance(instance).currentTyphoonData.get().typhoonWarningTitle } }
+                    Image(
+                        modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                        painter = painterResource(R.mipmap.cyclone),
+                        contentDescription = desc
+                    )
+                } else {
+                    Icon(
+                        modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                        painter = painterResource(R.drawable.baseline_schedule_24),
+                        contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
+                        tint = Color(0xFF798996),
+                    )
+                }
+            } else {
+                val text1 = (if (eta.nextScheduledBus == 0L) "-" else eta.nextScheduledBus.toString())
+                val text2 = if (Shared.language == "en") " Min." else "分鐘"
+                val span1 = SpannableString(text1)
+                val size1 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(14F, instance), dpMax = StringUtils.scaledSize(15F, instance))).roundToInt()
+                span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
+                val span2 = SpannableString(text2)
+                val size2 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(8F, instance))).roundToInt()
+                span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
+                AnnotatedText(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                    fontSize = 14F.sp,
+                    color = Color(0xFFAAC3D5),
+                    lineHeight = 7F.sp,
+                    maxLines = 1,
+                    text = SpannableString(TextUtils.concat(span1, span2)).asAnnotatedString()
+                )
+            }
+        }
+    }
 }

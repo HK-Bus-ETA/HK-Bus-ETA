@@ -47,6 +47,7 @@ import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.isTrain
 import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETALineEntry
@@ -461,7 +462,7 @@ class EtaTileServiceCommon {
 
         private fun title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator, context: Context): LayoutElementBuilders.Text {
             val name = stopName[Shared.language]
-            val text = if (co == Operator.MTR || co == Operator.LRT) name else index.toString().plus(". ").plus(name)
+            val text = if (co.isTrain) name else index.toString().plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
                 .setModifiers(
                     ModifiersBuilders.Modifiers.Builder()
@@ -697,7 +698,7 @@ class EtaTileServiceCommon {
                                             DimensionBuilders.dp(StringUtils.scaledSize(12F, context))
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 1, co == Operator.MTR || co == Operator.LRT, favouriteStopRoute, packageName, context)
+                                    etaText(eta, 1, co.isTrain, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
