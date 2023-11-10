@@ -125,6 +125,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -134,6 +135,7 @@ import java.util.concurrent.TimeUnit
 @Stable
 class EtaActivity : ComponentActivity() {
 
+    private val sync: ExecutorService = Executors.newSingleThreadExecutor()
     private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     private val etaUpdatesMap: MutableHolder<Pair<ScheduledFuture<*>?, () -> Unit>> = MutableHolder()
 
@@ -155,13 +157,11 @@ class EtaActivity : ComponentActivity() {
         setContent {
             AmbientAware {
                 EtaElement(it, stopId, co, index, stop, route, offsetStart, this) { isAdd, task ->
-                    runOnUiThread {
-                        synchronized(etaUpdatesMap) {
-                            if (isAdd) {
-                                etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
-                            } else {
-                                etaUpdatesMap.remove()?.first?.cancel(true)
-                            }
+                    sync.execute {
+                        if (isAdd) {
+                            etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                        } else {
+                            etaUpdatesMap.remove()?.first?.cancel(true)
                         }
                     }
                 }
@@ -176,7 +176,7 @@ class EtaActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        synchronized(etaUpdatesMap) {
+        sync.execute {
             etaUpdatesMap.replace { value ->
                 value.first?.cancel(true)
                 executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
@@ -186,7 +186,7 @@ class EtaActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        synchronized(etaUpdatesMap) {
+        sync.execute {
             etaUpdatesMap.ifPresent { it.first?.cancel(true) }
         }
     }
@@ -195,6 +195,7 @@ class EtaActivity : ComponentActivity() {
         super.onDestroy()
         if (isFinishing) {
             executor.shutdownNow()
+            sync.shutdownNow()
             Shared.removeSelfFromCurrentActivity(this)
         }
     }

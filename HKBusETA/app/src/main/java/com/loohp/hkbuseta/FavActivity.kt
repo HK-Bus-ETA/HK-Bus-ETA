@@ -129,6 +129,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -139,6 +140,7 @@ import kotlin.math.roundToInt
 @Stable
 class FavActivity : ComponentActivity() {
 
+    private val sync: ExecutorService = Executors.newSingleThreadExecutor()
     private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(16)
     private val etaUpdatesMap: MutableMap<Int, Pair<ScheduledFuture<*>?, () -> Unit>> = LinkedHashMap()
 
@@ -151,13 +153,11 @@ class FavActivity : ComponentActivity() {
 
         setContent {
             FavElements(scrollToIndex, this) { isAdd, index, task ->
-                runOnUiThread {
-                    synchronized(etaUpdatesMap) {
-                        if (isAdd) {
-                            etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
-                        } else {
-                            etaUpdatesMap.remove(index)?.first?.cancel(true)
-                        }
+                sync.execute {
+                    if (isAdd) {
+                        etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                    } else {
+                        etaUpdatesMap.remove(index)?.first?.cancel(true)
                     }
                 }
             }
@@ -171,7 +171,7 @@ class FavActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        synchronized(etaUpdatesMap) {
+        sync.execute {
             etaUpdatesMap.replaceAll { _, value ->
                 value.first?.cancel(true)
                 executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
@@ -181,7 +181,7 @@ class FavActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        synchronized(etaUpdatesMap) {
+        sync.execute {
             etaUpdatesMap.forEach { it.value.first?.cancel(true) }
         }
     }
@@ -190,6 +190,7 @@ class FavActivity : ComponentActivity() {
         super.onDestroy()
         if (isFinishing) {
             executor.shutdownNow()
+            sync.shutdownNow()
             Shared.removeSelfFromCurrentActivity(this)
         }
     }
