@@ -152,11 +152,13 @@ class EtaActivity : ComponentActivity() {
         setContent {
             AmbientAware {
                 EtaElement(it, stopId, co, index, stop, route, offsetStart, this) { isAdd, task ->
-                    synchronized(etaUpdatesMap) {
-                        if (isAdd) {
-                            etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
-                        } else {
-                            etaUpdatesMap.remove()?.first?.cancel(true)
+                    runOnUiThread {
+                        synchronized(etaUpdatesMap) {
+                            if (isAdd) {
+                                etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                            } else {
+                                etaUpdatesMap.remove()?.first?.cancel(true)
+                            }
                         }
                     }
                 }
@@ -174,7 +176,7 @@ class EtaActivity : ComponentActivity() {
         synchronized(etaUpdatesMap) {
             etaUpdatesMap.replace { value ->
                 value.first?.cancel(true)
-                executor.scheduleWithFixedDelay(value.second, 0, 30, TimeUnit.SECONDS) to value.second
+                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
             }
         }
     }

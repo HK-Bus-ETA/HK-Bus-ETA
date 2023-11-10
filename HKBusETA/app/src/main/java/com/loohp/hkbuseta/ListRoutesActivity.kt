@@ -147,7 +147,7 @@ enum class RecentSortMode(val enabled: Boolean, val defaultSortMode: RouteSortMo
 @Stable
 class ListRoutesActivity : ComponentActivity() {
 
-    private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 4)
+    private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(16)
     private val etaUpdatesMap: MutableMap<String, Pair<ScheduledFuture<*>?, () -> Unit>> = LinkedHashMap()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -183,11 +183,13 @@ class ListRoutesActivity : ComponentActivity() {
 
         setContent {
             MainElement(this, result, listType, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
-                synchronized(etaUpdatesMap) {
-                    if (isAdd) {
-                        etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
-                    } else {
-                        etaUpdatesMap.remove(key)?.first?.cancel(true)
+                runOnUiThread {
+                    synchronized(etaUpdatesMap) {
+                        if (isAdd) {
+                            etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                        } else {
+                            etaUpdatesMap.remove(key)?.first?.cancel(true)
+                        }
                     }
                 }
             }
@@ -204,7 +206,7 @@ class ListRoutesActivity : ComponentActivity() {
         synchronized(etaUpdatesMap) {
             etaUpdatesMap.replaceAll { _, value ->
                 value.first?.cancel(true)
-                executor.scheduleWithFixedDelay(value.second, 0, 30, TimeUnit.SECONDS) to value.second
+                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
             }
         }
     }

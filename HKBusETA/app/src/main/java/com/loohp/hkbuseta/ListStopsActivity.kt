@@ -170,7 +170,7 @@ data class OriginData(
 @Stable
 class ListStopsActivity : ComponentActivity() {
 
-    private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 4)
+    private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(16)
     private val etaUpdatesMap: MutableMap<Int, Pair<ScheduledFuture<*>?, () -> Unit>> = LinkedHashMap()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -185,11 +185,13 @@ class ListStopsActivity : ComponentActivity() {
 
         setContent {
             MainElement(this, route, showEta, scrollToStop, isAlightReminder) { isAdd, index, task ->
-                synchronized(etaUpdatesMap) {
-                    if (isAdd) {
-                        etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, 30, TimeUnit.SECONDS) to task!! }
-                    } else {
-                        etaUpdatesMap.remove(index)?.first?.cancel(true)
+                runOnUiThread {
+                    synchronized(etaUpdatesMap) {
+                        if (isAdd) {
+                            etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                        } else {
+                            etaUpdatesMap.remove(index)?.first?.cancel(true)
+                        }
                     }
                 }
             }
@@ -206,7 +208,7 @@ class ListStopsActivity : ComponentActivity() {
         synchronized(etaUpdatesMap) {
             etaUpdatesMap.replaceAll { _, value ->
                 value.first?.cancel(true)
-                executor.scheduleWithFixedDelay(value.second, 0, 30, TimeUnit.SECONDS) to value.second
+                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
             }
         }
     }

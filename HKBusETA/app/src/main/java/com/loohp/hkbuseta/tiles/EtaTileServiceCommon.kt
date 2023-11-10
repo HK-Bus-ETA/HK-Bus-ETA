@@ -726,7 +726,7 @@ class EtaTileServiceCommon {
 
         private fun buildSuitableElement(tileId: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
             while (Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
-                TimeUnit.MILLISECONDS.sleep(500)
+                TimeUnit.MILLISECONDS.sleep(10)
             }
             val favouriteRoutes = Shared.getEtaTileConfiguration(tileId)
             return if (favouriteRoutes.isEmpty() || favouriteRoutes.none { Shared.favoriteRouteStops[it] != null }) {
@@ -737,9 +737,9 @@ class EtaTileServiceCommon {
         }
 
         fun buildTileRequest(tileId: Int, packageName: String, context: TileService): ListenableFuture<TileBuilders.Tile> {
+            val tileState = tileState(tileId)
+            tileState.setCurrentlyUpdating(true)
             return Futures.submit(Callable {
-                val tileState = tileState(tileId)
-                tileState.setCurrentlyUpdating(true)
                 try {
                     val element = buildSuitableElement(tileId, packageName, context)
                     val stateElement = if (tileState.getCurrentTileLayoutState()) {
@@ -796,7 +796,7 @@ class EtaTileServiceCommon {
                 }
                 it.setUpdateTask(executor.scheduleWithFixedDelay({
                     while (Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
-                        TimeUnit.MILLISECONDS.sleep(500)
+                        TimeUnit.MILLISECONDS.sleep(10)
                     }
                     if (it.shouldUpdate()) {
                         val favouriteRoutes = Shared.getEtaTileConfiguration(tileId)
