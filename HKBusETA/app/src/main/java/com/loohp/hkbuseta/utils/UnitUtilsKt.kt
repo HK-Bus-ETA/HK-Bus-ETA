@@ -34,6 +34,8 @@ inline val Dp.sp: TextUnit @Composable get() = with (LocalDensity.current) { thi
 
 inline val TextUnit.dp: Dp @Composable get() = with (LocalDensity.current) { this@dp.toDp() }
 
+inline val TextUnit.px: Float @Composable get() = with (LocalDensity.current) { this@px.toPx() }
+
 inline val Float.equivalentDp: Dp @Composable get() = with (LocalDensity.current) { this@equivalentDp.toDp() }
 
 inline val Int.equivalentDp: Dp @Composable get() = with (LocalDensity.current) { this@equivalentDp.toDp() }

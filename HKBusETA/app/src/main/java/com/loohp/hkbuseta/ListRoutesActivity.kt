@@ -63,6 +63,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -81,6 +82,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -123,6 +125,7 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.set
 import com.loohp.hkbuseta.utils.toHexString
 import com.loohp.hkbuseta.utils.toSpanned
@@ -507,7 +510,8 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
         Text(
             modifier = Modifier
                 .padding(0.dp, padding.dp)
-                .requiredWidth(routeTextWidth.dp),
+                .requiredWidth(routeTextWidth.dp)
+                .let { if (secondLine.isEmpty()) it.alignByBaseline() else it },
             textAlign = TextAlign.Start,
             fontSize = if (co == Operator.MTR && Shared.language != "en") {
                 StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(19F, instance).dp)
@@ -519,18 +523,20 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
             text = routeNumber
         )
         if (secondLine.isEmpty()) {
+            val fontSize = if (co == Operator.MTR && Shared.language != "en") {
+                StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
+            } else {
+                StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp)
+            }
             Text(
                 modifier = Modifier
                     .padding(0.dp, padding.dp)
-                    .offset(0.dp, if (co == Operator.MTR && Shared.language != "en") mtrBottomOffset.dp else bottomOffset.dp)
                     .weight(1F)
-                    .basicMarquee(iterations = Int.MAX_VALUE),
+                    .basicMarquee(iterations = Int.MAX_VALUE)
+                    .alignByBaseline(),
                 textAlign = TextAlign.Start,
-                fontSize = if (co == Operator.MTR && Shared.language != "en") {
-                    StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
-                } else {
-                    StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp)
-                },
+                fontSize = fontSize,
+                style = LocalTextStyle.current.let { if (co != Operator.MTR && Shared.language != "en") it.copy(baselineShift = BaselineShift(3F / fontSize.px)) else it },
                 color = color,
                 maxLines = 1,
                 text = dest
