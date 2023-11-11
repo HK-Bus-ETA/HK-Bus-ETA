@@ -21,7 +21,6 @@
 package com.loohp.hkbuseta.utils
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -48,7 +47,6 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
     Canvas(
         modifier = Modifier.fillMaxSize()
     ) {
-        Log.d("a", stop.stop.name.zh)
         val width = size.width
         val height = size.height
 

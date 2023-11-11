@@ -79,9 +79,9 @@ fun Operator.getLineColor(routeNumber: String, elseColor: Color): Color {
     } else getColor(routeNumber, elseColor)
 }
 
-fun Operator.getDisplayRouteNumber(routeNumber: String): String {
+fun Operator.getDisplayRouteNumber(routeNumber: String, shortened: Boolean = false): String {
     return if (this == Operator.MTR) {
-        Shared.getMtrLineName(routeNumber, "???")
+        if (shortened && Shared.language == "en") routeNumber else Shared.getMtrLineName(routeNumber, "???")
     } else if (this == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
         "NR".plus(routeNumber)
     } else {

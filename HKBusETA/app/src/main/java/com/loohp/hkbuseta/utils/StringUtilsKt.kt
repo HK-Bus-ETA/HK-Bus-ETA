@@ -121,10 +121,10 @@ fun FontWeight?.snapToClosestLayoutWeight(): Int {
     return layoutFontValues.minBy { (it - weight).absoluteValue }
 }
 
-fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: Context, contentAnnotatedString: ContentAnnotatedString, defaultFontStyle: (LayoutElementBuilders.FontStyle.Builder) -> Unit = {}, inlineImageHandler: ((ByteArray, Int, Int) -> String)? = null): LayoutElementBuilders.Spannable.Builder {
+fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: Context, contentAnnotatedString: ContentAnnotatedString, defaultFontSp: Float, defaultFontStyle: (LayoutElementBuilders.FontStyle.Builder) -> Unit = {}, inlineImageHandler: ((ByteArray, Int, Int) -> String)? = null): LayoutElementBuilders.Spannable.Builder {
     if (contentAnnotatedString.isEmpty()) {
         val span = LayoutElementBuilders.SpanText.Builder().setText("")
-        val fontStyleBuilder = LayoutElementBuilders.FontStyle.Builder()
+        val fontStyleBuilder = LayoutElementBuilders.FontStyle.Builder().setSize(DimensionBuilders.sp(defaultFontSp))
         defaultFontStyle.invoke(fontStyleBuilder)
         return this.addSpan(span.setFontStyle(fontStyleBuilder.build()).build())
     }
@@ -156,11 +156,11 @@ fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: C
     var jumpTo = 0
     for ((s, d) in mergedData) {
         val str = s.substring((jumpTo - currentLength).coerceAtLeast(0))
-        val fontStyleBuilder = LayoutElementBuilders.FontStyle.Builder()
+        val fontStyleBuilder = LayoutElementBuilders.FontStyle.Builder().setSize(DimensionBuilders.sp(defaultFontSp))
         defaultFontStyle.invoke(fontStyleBuilder)
         d.style.forEach {
             val spanStyle = it.item
-            if (spanStyle.fontSize != TextUnit.Unspecified) fontStyleBuilder.setSize(DimensionBuilders.sp(if (spanStyle.fontSize.isEm) (spanStyle.fontSize.value * 14F) else spanStyle.fontSize.value))
+            if (spanStyle.fontSize != TextUnit.Unspecified) fontStyleBuilder.setSize(DimensionBuilders.sp(if (spanStyle.fontSize.isEm) (spanStyle.fontSize.value * defaultFontSp) else spanStyle.fontSize.value))
             spanStyle.fontStyle?.let { fontStyle -> if (fontStyle == FontStyle.Italic) fontStyleBuilder.setItalic(true) }
             spanStyle.textDecoration?.let { textDecoration -> if (textDecoration.contains(TextDecoration.Underline)) fontStyleBuilder.setUnderline(true) }
             if (spanStyle.color != Color.Unspecified) fontStyleBuilder.setColor(ColorBuilders.ColorProp.Builder(spanStyle.color.toArgb()).build())

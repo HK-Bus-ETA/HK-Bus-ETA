@@ -563,9 +563,7 @@ fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: Et
     Box (
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(
-                min = textSize.dp + 7.dp
-            )
+            .heightIn(min = textSize.dp + 7.dp)
             .padding(20.dp, 0.dp)
     ) {
         AnnotatedText(

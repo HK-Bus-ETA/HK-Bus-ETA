@@ -36,6 +36,8 @@ import androidx.wear.protolayout.LayoutElementBuilders.FontStyle
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
+import androidx.wear.protolayout.expression.AnimationParameterBuilders
+import androidx.wear.protolayout.expression.DynamicBuilders.DynamicColor
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.aghajari.compose.text.asAnnotatedString
@@ -73,6 +75,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.Collectors
@@ -158,6 +161,7 @@ class TileState {
     private val lastUpdated: AtomicLong = AtomicLong(0)
     private val cachedETAQueryResult: AtomicReference<Pair<MergedETAQueryResult<FavouriteRouteStop>?, Long>> = AtomicReference(null to 0)
     private val tileLayoutState: AtomicBoolean = AtomicBoolean(false)
+    private val lastTileArcColor: AtomicInteger = AtomicInteger(Int.MIN_VALUE)
     private val lastUpdateSuccessful: AtomicBoolean = AtomicBoolean(false)
     private val isCurrentlyUpdating: AtomicLong = AtomicLong(0)
 
@@ -209,6 +213,11 @@ class TileState {
     fun setCurrentlyUpdating(value: Boolean) {
         return isCurrentlyUpdating.set(if (value) System.currentTimeMillis() else 0)
     }
+
+    fun getAndSetLastTileArcColor(value: Color): Color? {
+        val lastValue = lastTileArcColor.getAndSet(value.toArgb())
+        return if (lastValue == Int.MIN_VALUE) null else Color(lastValue)
+    }
 }
 
 class EtaTileServiceCommon {
@@ -241,7 +250,9 @@ class EtaTileServiceCommon {
         }
 
         private fun noFavouriteRouteStop(tileId: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
-            tileState(tileId).setLastUpdateSuccessful(true)
+            val tileState = tileState(tileId)
+            tileState.setLastUpdateSuccessful(true)
+            tileState.getAndSetLastTileArcColor(Color.DarkGray)
             return if (tileId in (1 or Int.MIN_VALUE)..(8 or Int.MIN_VALUE)) {
                 LayoutElementBuilders.Box.Builder()
                     .setWidth(expand())
@@ -277,7 +288,7 @@ class EtaTileServiceCommon {
                                         DimensionBuilders.dp(7F)
                                     )
                                     .setColor(
-                                        ColorProp.Builder(android.graphics.Color.DKGRAY).build()
+                                        ColorProp.Builder(Color.DarkGray.toArgb()).build()
                                     ).build()
                             ).build()
                     )
@@ -364,7 +375,7 @@ class EtaTileServiceCommon {
                                         DimensionBuilders.dp(7F)
                                     )
                                     .setColor(
-                                        ColorProp.Builder(android.graphics.Color.DKGRAY).build()
+                                        ColorProp.Builder(Color.DarkGray.toArgb()).build()
                                     ).build()
                             ).build()
                     )
@@ -517,9 +528,9 @@ class EtaTileServiceCommon {
         }
 
         @androidx.annotation.OptIn(androidx.wear.protolayout.expression.ProtoLayoutExperimental::class)
-        private fun etaText(eta: MergedETAQueryResult<FavouriteRouteStop>?, seq: Int, singleLine: Boolean, mainFavouriteStopRoute: FavouriteRouteStop, packageName: String, context: Context): LayoutElementBuilders.Spannable {
+        private fun etaText(eta: MergedETAQueryResult<FavouriteRouteStop>?, seq: Int, mainFavouriteStopRoute: FavouriteRouteStop, packageName: String, context: Context): LayoutElementBuilders.Spannable {
             val line = eta?.getLine(seq)
-            val lineRoute = line?.first?.let { it.co.getDisplayRouteNumber(it.route.routeNumber) }
+            val lineRoute = line?.first?.let { it.co.getDisplayRouteNumber(it.route.routeNumber, true) }
             val appendRouteNumber = lineRoute == null ||
                     (1..3).all { eta.getLine(it).first?.route?.routeNumber.let { route -> route == null || route == line.first?.route?.routeNumber } } ||
                     eta.allKeys.all { it.co == Operator.MTR } ||
@@ -529,8 +540,7 @@ class EtaTileServiceCommon {
             val measure = raw.toSpanned(context, 17F).asAnnotatedString().annotatedString.text
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
-            val maxLines = if (singleLine) 1 else 2
-            val textSize = clampSp(context, StringUtils.findOptimalSp(context, measure, targetWidth(context, 20) / 10 * 8, maxLines, 1F, maxTextSize), dpMax = maxTextSize)
+            val textSize = clampSp(context, StringUtils.findOptimalSp(context, measure, targetWidth(context, 20) / 10 * 8, 1, maxTextSize - 2F, maxTextSize), dpMax = maxTextSize)
             val text = raw.toSpanned(context, textSize).asAnnotatedString()
 
             val favouriteStopRoute = line?.first?: mainFavouriteStopRoute
@@ -571,15 +581,11 @@ class EtaTileServiceCommon {
                         .build()
                 )
                 .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
-                .setMaxLines(maxLines)
-                .addContentAnnotatedString(context, text, {
-                    it
-                        .setSize(
-                            DimensionBuilders.sp(textSize)
-                        )
-                        .setColor(
-                            ColorProp.Builder(color).build()
-                        )
+                .setMaxLines(1)
+                .addContentAnnotatedString(context, text, textSize, {
+                    it.setColor(
+                        ColorProp.Builder(color).build()
+                    )
                 }, { d, w, h -> addInlineImageResource(InlineImageResource(d, w, h)) })
                 .build()
         }
@@ -627,6 +633,20 @@ class EtaTileServiceCommon {
                 tileState.setLastUpdateSuccessful(true)
                 eta.nextCo.getColor(routeNumber, Color.LightGray).adjustBrightness(if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) 0.2F else 1F)
             }
+            val previousColor = tileState.getAndSetLastTileArcColor(color)?: color
+            val colorProp = ColorProp.Builder(color.toArgb())
+            if (previousColor != color) {
+                colorProp.setDynamicValue(
+                    DynamicColor.animate(previousColor.toArgb(), color.toArgb(),
+                        AnimationParameterBuilders.AnimationSpec.Builder()
+                            .setAnimationParameters(
+                                AnimationParameterBuilders.AnimationParameters.Builder()
+                                    .setDurationMillis(1000)
+                                    .build()
+                            ).build()
+                    )
+                )
+            }
 
             return LayoutElementBuilders.Box.Builder()
                 .setWidth(expand())
@@ -667,7 +687,7 @@ class EtaTileServiceCommon {
                                     DimensionBuilders.dp(7F)
                                 )
                                 .setColor(
-                                    ColorProp.Builder(color.toArgb()).build()
+                                    colorProp.build()
                                 ).build()
                         ).build()
                 )
@@ -698,21 +718,21 @@ class EtaTileServiceCommon {
                                             DimensionBuilders.dp(StringUtils.scaledSize(12F, context))
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 1, co.isTrain, favouriteStopRoute, packageName, context)
+                                    etaText(eta, 1, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
                                             DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 2, true, favouriteStopRoute, packageName, context)
+                                    etaText(eta, 2, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
                                             DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 3, true, favouriteStopRoute, packageName, context)
+                                    etaText(eta, 3, favouriteStopRoute, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
