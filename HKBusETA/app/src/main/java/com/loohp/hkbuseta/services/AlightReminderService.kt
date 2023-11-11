@@ -33,6 +33,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
+import androidx.wear.ongoing.OngoingActivity
+import androidx.wear.ongoing.Status
 import com.loohp.hkbuseta.ListStopsActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.objects.Operator
@@ -147,8 +149,13 @@ class AlightReminderService : Service() {
                     else -> (if (Shared.language == "en") "Going to" else "正在前往").plus("\n").plus(currentValue.targetStop.name[Shared.language])
                 }
             })
-        val sameAsLast = lastNotificationText == text
-        lastNotificationText = text
+        val sameAsLast = if (!init) {
+            val sameAsLast = lastNotificationText == text
+            lastNotificationText = text
+            sameAsLast
+        } else {
+            false
+        }
 
         val closestStopIndex = if (currentLocation.isSuccess) {
             val location = currentLocation.location
@@ -166,6 +173,7 @@ class AlightReminderService : Service() {
             .setContentTitle(if (Shared.language == "en") "Alight Reminder" else "落車提示")
             .setContentText(text)
             .setSmallIcon(R.mipmap.icon)
+            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setForegroundServiceBehavior(FOREGROUND_SERVICE_IMMEDIATE), sameAsLast, overshot, isTargetStopClosest)
     }
 
@@ -212,6 +220,8 @@ class AlightReminderService : Service() {
                                 notification
                                     .setOngoing(true)
                                     .setContentIntent(PendingIntent.getActivity(this, ThreadLocalRandom.current().nextInt(0, Int.MAX_VALUE), stopListIntentBuilder.invoke(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                            } else {
+                                notification.setOngoing(false)
                             }
                             notificationManager.notify(1, notification.build())
                         }
@@ -238,10 +248,25 @@ class AlightReminderService : Service() {
         channel.description = "HK_BUS_ETA_ALIGHT"
         notificationManager.createNotificationChannel(channel)
 
-        startForeground(1, buildData(LocationResult.FAILED_RESULT, Double.MAX_VALUE, true).notificationBuilder
+        val notificationBuilder = buildData(LocationResult.FAILED_RESULT, Double.MAX_VALUE, true).notificationBuilder
+            .setOngoing(true)
             .setContentIntent(PendingIntent.getActivity(this, ThreadLocalRandom.current().nextInt(0, Int.MAX_VALUE), stopListIntentBuilder.invoke(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-            .build(), FOREGROUND_SERVICE_TYPE_LOCATION
-        )
+
+        val ongoingActivityStatus = Status.Builder()
+            .addTemplate((if (Shared.language == "en") "Going to" else "正在前往").plus(" ").plus(getCurrentValue()!!.targetStop.name[Shared.language]))
+            .build()
+
+        val ongoingActivity = OngoingActivity.Builder(applicationContext, 1, notificationBuilder)
+            .setStaticIcon(R.mipmap.icon)
+            .setTouchIntent(PendingIntent.getActivity(this, ThreadLocalRandom.current().nextInt(0, Int.MAX_VALUE), stopListIntentBuilder.invoke(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            .setStatus(ongoingActivityStatus)
+            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
+            .setTitle(if (Shared.language == "en") "Alight Reminder" else "落車提示")
+            .build()
+
+        ongoingActivity.apply(applicationContext)
+
+        startForeground(1, notificationBuilder.build(), FOREGROUND_SERVICE_TYPE_LOCATION)
 
         return START_STICKY
     }
