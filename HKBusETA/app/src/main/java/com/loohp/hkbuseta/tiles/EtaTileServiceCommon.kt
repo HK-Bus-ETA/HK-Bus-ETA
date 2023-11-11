@@ -21,6 +21,7 @@
 package com.loohp.hkbuseta.tiles
 
 import android.content.Context
+import android.os.Build
 import android.text.format.DateFormat
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
@@ -115,7 +116,7 @@ class MergedETAQueryResult<T> private constructor(
     val mergedCount: Int
 ) {
 
-    val nextScheduledBus: Long = lines[1]?.second?.eta?: -1
+    val nextScheduledBus: Long = lines[1]?.second?.etaRounded?: -1
     val firstKey: T? = lines.minByOrNull { it.key }?.value?.first
     val allKeys: Set<T> = lines.entries.stream().map { it.value.first }.collect(Collectors.toSet())
 
@@ -138,7 +139,7 @@ class MergedETAQueryResult<T> private constructor(
             val linesSorted: MutableList<Triple<T, ETALineEntry, Operator>> = etaQueryResult.toList().stream()
                 .flatMap { it.second.rawLines.values.stream().map { line -> Triple(it.first, line, it.second.nextCo) } }
                 .sorted(Comparator
-                    .comparing<Triple<T, ETALineEntry, Operator>?, Long?> { it.second.eta.let { v -> if (v < 0) Long.MAX_VALUE else v } }
+                    .comparing<Triple<T, ETALineEntry, Operator>, Double> { it.second.eta.let { v -> if (v < 0) Double.MAX_VALUE else v } }
                     .thenComparing(Comparator.comparing { etaQueryResult.indexOfFirst { i -> i.first == it.first } })
                 )
                 .collect(Collectors.toCollection { ArrayList() })
@@ -246,7 +247,7 @@ class EtaTileServiceCommon {
         }
 
         private fun targetWidth(context: Context, padding: Int): Int {
-            return ScreenSizeUtils.getScreenWidth(context) - UnitUtils.dpToPixels(context, (padding * 2).toFloat()).roundToInt()
+            return ScreenSizeUtils.getScreenWidth(context) - UnitUtils.dpToPixels(context, padding * 2F).roundToInt()
         }
 
         private fun noFavouriteRouteStop(tileId: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
@@ -540,7 +541,12 @@ class EtaTileServiceCommon {
             val measure = raw.toSpanned(context, 17F).asAnnotatedString().annotatedString.text
             val color = Color.White.toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
-            val textSize = clampSp(context, StringUtils.findOptimalSp(context, measure, targetWidth(context, 20) / 10 * 8, 1, maxTextSize - 2F, maxTextSize), dpMax = maxTextSize)
+            val padding = if (seq == 1) 20 else 35
+            val (textSize, maxLines) = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                clampSp(context, StringUtils.findOptimalSp(context, measure, targetWidth(context, padding + 2), 1, 7F, maxTextSize), dpMax = maxTextSize) to if (seq == 1) 2 else 1
+            } else {
+                clampSp(context, StringUtils.findOptimalSp(context, measure, targetWidth(context, padding + 2), 1, maxTextSize - (if (Shared.language == "en") 4F else 2F), maxTextSize), dpMax = maxTextSize) to 1
+            }
             val text = raw.toSpanned(context, textSize).asAnnotatedString()
 
             val favouriteStopRoute = line?.first?: mainFavouriteStopRoute
@@ -556,8 +562,8 @@ class EtaTileServiceCommon {
                     ModifiersBuilders.Modifiers.Builder()
                         .setPadding(
                             ModifiersBuilders.Padding.Builder()
-                                .setStart(DimensionBuilders.dp(if (seq == 1) 20F else 35F))
-                                .setEnd(DimensionBuilders.dp(if (seq == 1) 20F else 35F))
+                                .setStart(DimensionBuilders.dp(padding.toFloat()))
+                                .setEnd(DimensionBuilders.dp(padding.toFloat()))
                                 .build()
                         )
                         .setClickable(
@@ -581,7 +587,7 @@ class EtaTileServiceCommon {
                         .build()
                 )
                 .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
-                .setMaxLines(1)
+                .setMaxLines(maxLines)
                 .addContentAnnotatedString(context, text, textSize, {
                     it.setColor(
                         ColorProp.Builder(color).build()
@@ -843,7 +849,7 @@ class EtaTileServiceCommon {
 
         fun handleTileRemoveEvent(tileId: Int, context: Context) {
             handleTileLeaveEvent(tileId)
-            Registry.getInstance(context).clearEtaTileConfiguration(tileId, context)
+            Registry.getInstanceNoUpdateCheck(context).clearEtaTileConfiguration(tileId, context)
         }
 
     }

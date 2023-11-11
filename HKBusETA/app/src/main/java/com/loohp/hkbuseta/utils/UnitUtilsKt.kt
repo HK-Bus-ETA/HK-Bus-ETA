@@ -42,6 +42,10 @@ fun Float.sameValueAs(other: Float) : Boolean {
     return (this - other).absoluteValue < 0.00001
 }
 
+fun Double.sameValueAs(other: Double) : Boolean {
+    return (this - other).absoluteValue < 0.00001
+}
+
 @Composable
 fun TextUnit.clamp(min: Dp? = null, max: Dp? = null): TextUnit {
     var dp = this.dp

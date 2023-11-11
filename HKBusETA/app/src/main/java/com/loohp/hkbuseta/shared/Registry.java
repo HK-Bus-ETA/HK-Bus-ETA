@@ -27,6 +27,7 @@ import android.content.Context;
 
 import androidx.compose.runtime.Immutable;
 import androidx.core.app.ComponentActivity;
+import androidx.core.util.AtomicFile;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
@@ -67,6 +68,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -200,6 +202,18 @@ public class Registry {
         }
     }
 
+    private void savePreferences(Context context) throws IOException, JSONException {
+        synchronized (preferenceWriteLock) {
+            AtomicFile atomicFile = new AtomicFile(context.getApplicationContext().getFileStreamPath(PREFERENCES_FILE_NAME));
+            try (FileOutputStream fos = atomicFile.startWrite();
+                 PrintWriter pw = new PrintWriter(new OutputStreamWriter(fos, StandardCharsets.UTF_8))) {
+                pw.write(PREFERENCES.serialize().toString());
+                pw.flush();
+                atomicFile.finishWrite(fos);
+            }
+        }
+    }
+
     private void importPreference(Context context, JSONObject preferencesData) throws JSONException {
         Preferences preferences = Preferences.deserialize(preferencesData).cleanForImport();
         try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
@@ -255,12 +269,7 @@ public class Registry {
         Shared.Companion.setLanguage(language);
         try {
             PREFERENCES.setLanguage(language);
-            synchronized (preferenceWriteLock) {
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.serialize().toString());
-                    pw.flush();
-                }
-            }
+            savePreferences(context);
             updateTileService(context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
@@ -319,12 +328,7 @@ public class Registry {
                 deletions.forEach(m::remove);
             });
             if (save) {
-                synchronized (preferenceWriteLock) {
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(PREFERENCES.serialize().toString());
-                        pw.flush();
-                    }
-                }
+                savePreferences(context);
                 updateTileService(0, context);
                 updateTileService(favoriteIndex, context);
             }
@@ -364,12 +368,7 @@ public class Registry {
                 });
             }
             if (save) {
-                synchronized (preferenceWriteLock) {
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                        pw.write(PREFERENCES.serialize().toString());
-                        pw.flush();
-                    }
-                }
+                savePreferences(context);
                 updateTileService(0, context);
                 updateTileService(favoriteIndex, context);
             }
@@ -382,12 +381,7 @@ public class Registry {
         try {
             Shared.Companion.updateEtaTileConfigurations(m -> m.remove(tileId));
             PREFERENCES.getEtaTileConfigurations().remove(tileId);
-            synchronized (preferenceWriteLock) {
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.serialize().toString());
-                    pw.flush();
-                }
-            }
+            savePreferences(context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
@@ -397,12 +391,7 @@ public class Registry {
         try {
             Shared.Companion.updateEtaTileConfigurations(m -> m.put(tileId, favouriteIndexes));
             PREFERENCES.getEtaTileConfigurations().put(tileId, favouriteIndexes);
-            synchronized (preferenceWriteLock) {
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.serialize().toString());
-                    pw.flush();
-                }
-            }
+            savePreferences(context);
             updateTileService(0, context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
@@ -415,12 +404,7 @@ public class Registry {
             List<LastLookupRoute> lastLookupRoutes = Shared.Companion.getLookupRoutes();
             PREFERENCES.getLastLookupRoutes().clear();
             PREFERENCES.getLastLookupRoutes().addAll(lastLookupRoutes);
-            synchronized (preferenceWriteLock) {
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.serialize().toString());
-                    pw.flush();
-                }
-            }
+            savePreferences(context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
@@ -430,12 +414,7 @@ public class Registry {
         try {
             Shared.Companion.clearLookupRoute();
             PREFERENCES.getLastLookupRoutes().clear();
-            synchronized (preferenceWriteLock) {
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.serialize().toString());
-                    pw.flush();
-                }
-            }
+            savePreferences(context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
@@ -446,12 +425,7 @@ public class Registry {
             Shared.Companion.getRouteSortModePreference().put(listType, sortMode);
             PREFERENCES.getRouteSortModePreference().clear();
             PREFERENCES.getRouteSortModePreference().putAll(Shared.Companion.getRouteSortModePreference());
-            synchronized (preferenceWriteLock) {
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.serialize().toString());
-                    pw.flush();
-                }
-            }
+            savePreferences(context);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
@@ -482,13 +456,10 @@ public class Registry {
         }
         if (PREFERENCES == null) {
             PREFERENCES = Preferences.createDefault();
-            synchronized (preferenceWriteLock) {
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                    pw.write(PREFERENCES.serialize().toString());
-                    pw.flush();
-                } catch (JSONException e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+                savePreferences(context);
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -608,14 +579,20 @@ public class Registry {
                         DATA = DataContainer.deserialize(new JSONObject(textResponse));
                         updatePercentageState.setValue(0.75F + percentageOffset);
 
-                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(DATA_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                        AtomicFile atomicDataFile = new AtomicFile(context.getApplicationContext().getFileStreamPath(DATA_FILE_NAME));
+                        try (FileOutputStream fos = atomicDataFile.startWrite();
+                             PrintWriter pw = new PrintWriter(new OutputStreamWriter(fos, StandardCharsets.UTF_8))) {
                             pw.write(textResponse);
                             pw.flush();
+                            atomicDataFile.finishWrite(fos);
                         }
                         updatePercentageState.setValue(0.825F + percentageOffset);
-                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(CHECKSUM_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
+                        AtomicFile atomicChecksumFile = new AtomicFile(context.getApplicationContext().getFileStreamPath(CHECKSUM_FILE_NAME));
+                        try (FileOutputStream fos = atomicChecksumFile.startWrite();
+                             PrintWriter pw = new PrintWriter(new OutputStreamWriter(fos, StandardCharsets.UTF_8))) {
                             pw.write(checksum == null ? "" : checksum);
                             pw.flush();
+                            atomicChecksumFile.finishWrite(fos);
                         }
                         updatePercentageState.setValue(0.85F + percentageOffset);
 
@@ -682,12 +659,7 @@ public class Registry {
                         }
                         if (!updatedFavouriteRouteTasks.isEmpty()) {
                             updatedFavouriteRouteTasks.forEach(Runnable::run);
-                            synchronized (preferenceWriteLock) {
-                                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(context.getApplicationContext().openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8))) {
-                                    pw.write(PREFERENCES.serialize().toString());
-                                    pw.flush();
-                                }
-                            }
+                            savePreferences(context);
                         }
                         updatePercentageState.setValue(1F);
 
@@ -1516,7 +1488,7 @@ public class Registry {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
                 String dest = route.getDest().getZh().replace(" ", "");
                 String orig = route.getOrig().getZh().replace(" ", "");
-                Map<Long, Pair<String, Operator>> etaSorted = new TreeMap<>();
+                Map<Pair<Double, Long>, Pair<String, Operator>> etaSorted = new TreeMap<>(Comparator.comparing(Pair<Double, Long>::getFirst));
                 String kmbSpecialMessage = null;
                 long kmbFirstScheduledBus = Long.MAX_VALUE;
                 {
@@ -1532,21 +1504,22 @@ public class Registry {
                                 String eta = bus.optString("eta");
                                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                 if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
-                                    long mins = Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                                    double mins = (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
+                                    long minsRounded = Math.round(mins);
                                     String message = "";
                                     if (language.equals("en")) {
-                                        if (mins > 0) {
-                                            message = "<b>" + mins + "</b><small> Min.</small>";
-                                        } else if (mins > -60) {
+                                        if (minsRounded > 0) {
+                                            message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                                        } else if (minsRounded > -60) {
                                             message = "<b>-</b><small> Min.</small>";
                                         }
                                         if (!bus.optString("rmk_en").isEmpty()) {
                                             message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
                                         }
                                     } else {
-                                        if (mins > 0) {
-                                            message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                        } else if (mins > -60) {
+                                        if (minsRounded > 0) {
+                                            message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                                        } else if (minsRounded > -60) {
                                             message = "<b>-</b><small> 分鐘</small>";
                                         }
                                         if (!bus.optString("rmk_tc").isEmpty()) {
@@ -1558,9 +1531,9 @@ public class Registry {
                                             .replaceAll("最後班次", "尾班車")
                                             .replaceAll("尾班車已過", "尾班車已過本站");
                                     if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
-                                        kmbFirstScheduledBus = mins;
+                                        kmbFirstScheduledBus = minsRounded;
                                     }
-                                    etaSorted.put(mins, new Pair<>(message, Operator.KMB));
+                                    etaSorted.put(new Pair<>(mins, minsRounded), new Pair<>(message, Operator.KMB));
                                 } else {
                                     String message = "";
                                     if (language.equals("en")) {
@@ -1598,7 +1571,7 @@ public class Registry {
                             }
                         }
                     }
-                    Map<String, Map<Long, Pair<String, Operator>>> ctbEtaEntries = new HashMap<>();
+                    Map<String, Map<Pair<Double, Long>, Pair<String, Operator>>> ctbEtaEntries = new HashMap<>();
                     ctbEtaEntries.put(dest, new HashMap<>());
                     ctbEtaEntries.put(orig, new HashMap<>());
                     for (String ctbStopId : ctbStopIds) {
@@ -1613,21 +1586,22 @@ public class Registry {
                                     String eta = bus.optString("eta");
                                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                     if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
-                                        long mins = Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                                        double mins = (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
+                                        long minsRounded = Math.round(mins);
                                         String message = "";
                                         if (language.equals("en")) {
-                                            if (mins > 0) {
-                                                message = "<b>" + mins + "</b><small> Min.</small>";
-                                            } else if (mins > -60) {
+                                            if (minsRounded > 0) {
+                                                message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                                            } else if (minsRounded > -60) {
                                                 message = "<b>-</b><small> Min.</small>";
                                             }
                                             if (!bus.optString("rmk_en").isEmpty()) {
                                                 message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
                                             }
                                         } else {
-                                            if (mins > 0) {
-                                                message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                            } else if (mins > -60) {
+                                            if (minsRounded > 0) {
+                                                message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                                            } else if (minsRounded > -60) {
                                                 message = "<b>-</b><small> 分鐘</small>";
                                             }
                                             if (!bus.optString("rmk_tc").isEmpty()) {
@@ -1639,7 +1613,7 @@ public class Registry {
                                                 .replaceAll("最後班次", "尾班車")
                                                 .replaceAll("尾班車已過", "尾班車已過本站");
                                         ctbEtaEntries.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
-                                                .getValue().put(mins, new Pair<>(message, Operator.CTB));
+                                                .getValue().put(new Pair<>(mins, minsRounded), new Pair<>(message, Operator.CTB));
                                     }
                                 }
                             }
@@ -1656,11 +1630,14 @@ public class Registry {
                     }
                 } else {
                     int counter = 0;
-                    for (Map.Entry<Long, Pair<String, Operator>> entry : etaSorted.entrySet()) {
-                        long mins = entry.getKey();
+                    for (Map.Entry<Pair<Double, Long>, Pair<String, Operator>> entry : etaSorted.entrySet()) {
+                        Pair<Double, Long> eta = entry.getKey();
+                        double mins = eta.getFirst();
+                        long minsRounded = eta.getSecond();
+
                         String message = "<b></b>" + entry.getValue().getFirst().replace("(尾班車)", "").replace("(Final Bus)", "").trim();
                         Operator entryCo = entry.getValue().getSecond();
-                        if (mins > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
+                        if (minsRounded > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
                             message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)") + "</small>";
                         }
                         if (entryCo.equals(Operator.KMB)) {
@@ -1676,7 +1653,7 @@ public class Registry {
                         if (seq == 1) {
                             nextCo = entryCo;
                         }
-                        lines.put(seq, ETALineEntry.etaEntry(message, mins));
+                        lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
                     }
                 }
             } else if (co.equals(Operator.KMB)) {
@@ -1694,21 +1671,22 @@ public class Registry {
                             int seq = bus.optInt("eta_seq");
                             String eta = bus.optString("eta");
                             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-                            long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                            double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
+                            long minsRounded = Math.round(mins);
                             String message = "";
                             if (language.equals("en")) {
-                                if (mins > 0) {
-                                    message = "<b>" + mins + "</b><small> Min.</small>";
-                                } else if (mins > -60) {
+                                if (minsRounded > 0) {
+                                    message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                                } else if (minsRounded > -60) {
                                     message = "<b>-</b><small> Min.</small>";
                                 }
                                 if (!bus.optString("rmk_en").isEmpty()) {
                                     message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
                                 }
                             } else {
-                                if (mins > 0) {
-                                    message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                } else if (mins > -60) {
+                                if (minsRounded > 0) {
+                                    message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                                } else if (minsRounded > -60) {
                                     message = "<b>-</b><small> 分鐘</small>";
                                 }
                                 if (!bus.optString("rmk_tc").isEmpty()) {
@@ -1729,7 +1707,7 @@ public class Registry {
                             } else {
                                 message = "<b></b>" + message;
                             }
-                            lines.put(seq, ETALineEntry.etaEntry(message, mins));
+                            lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
                         }
                     }
                 }
@@ -1748,21 +1726,22 @@ public class Registry {
                             int seq = bus.optInt("eta_seq");
                             String eta = bus.optString("eta");
                             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-                            long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                            double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
+                            long minsRounded = Math.round(mins);
                             String message = "";
                             if (language.equals("en")) {
-                                if (mins > 0) {
-                                    message = "<b>" + mins + "</b><small> Min.</small>";
-                                } else if (mins > -60) {
+                                if (minsRounded > 0) {
+                                    message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                                } else if (minsRounded > -60) {
                                     message = "<b>-</b><small> Min.</small>";
                                 }
                                 if (!bus.optString("rmk_en").isEmpty()) {
                                     message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
                                 }
                             } else {
-                                if (mins > 0) {
-                                    message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                } else if (mins > -60) {
+                                if (minsRounded > 0) {
+                                    message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                                } else if (minsRounded > -60) {
                                     message = "<b>-</b><small> 分鐘</small>";
                                 }
                                 if (!bus.optString("rmk_tc").isEmpty()) {
@@ -1783,7 +1762,7 @@ public class Registry {
                             } else {
                                 message = "<b></b>" + message;
                             }
-                            lines.put(seq, ETALineEntry.etaEntry(message, mins));
+                            lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
                         }
                     }
                 }
@@ -1800,18 +1779,19 @@ public class Registry {
                         String eta = bus.optString("estimatedArrivalTime") + "+08:00";
                         String variant = bus.optString("routeVariantName").trim();
                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssXXX");
-                        long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                        double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
+                        long minsRounded = Math.round(mins);
                         String message = "";
                         if (language.equals("en")) {
-                            if (mins > 0) {
-                                message = "<b>" + mins + "</b><small> Min.</small>";
-                            } else if (mins > -60) {
+                            if (minsRounded > 0) {
+                                message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                            } else if (minsRounded > -60) {
                                 message = "<b>-</b><small> Min.</small>";
                             }
                         } else {
-                            if (mins > 0) {
-                                message = "<b>" + mins + "</b><small> 分鐘</small>";
-                            } else if (mins > -60) {
+                            if (minsRounded > 0) {
+                                message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                            } else if (minsRounded > -60) {
                                 message = "<b>-</b><small> 分鐘</small>";
                             }
                         }
@@ -1832,7 +1812,7 @@ public class Registry {
                         } else {
                             message = "<b></b>" + message;
                         }
-                        lines.put(seq, ETALineEntry.etaEntry(message, mins));
+                        lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
                     }
                 }
             } else if (co.equals(Operator.MTR_BUS)) {
@@ -1878,20 +1858,21 @@ public class Registry {
                             remark += language.equals("en") ? "Bus Delayed" : "行車緩慢";
                         }
 
-                        long mins = (long) Math.floor(eta / 60);
+                        double mins = eta / 60.0;
+                        long minsRounded = (long) Math.floor(mins);
 
                         if (DATA.getMtrBusStopAlias().get(stopId).contains(busStopId)) {
                             String message = "";
                             if (language.equals("en")) {
-                                if (mins > 0) {
-                                    message = "<b>" + mins + "</b><small> Min.</small>";
-                                } else if (mins > -60) {
+                                if (minsRounded > 0) {
+                                    message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                                } else if (minsRounded > -60) {
                                     message = "<b>-</b><small> Min.</small>";
                                 }
                             } else {
-                                if (mins > 0) {
-                                    message = "<b>" + mins + "</b><small> 分鐘</small>";
-                                } else if (mins > -60) {
+                                if (minsRounded > 0) {
+                                    message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                                } else if (minsRounded > -60) {
                                     message = "<b>-</b><small> 分鐘</small>";
                                 }
                             }
@@ -1912,7 +1893,7 @@ public class Registry {
                             } else {
                                 message = "<b></b>" + message;
                             }
-                            lines.put(seq, ETALineEntry.etaEntry(message, mins));
+                            lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
                         }
                     }
                 }
@@ -1920,7 +1901,7 @@ public class Registry {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                 JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/eta/stop/" + stopId);
-                List<Pair<Long, JSONObject>> busList = new ArrayList<>();
+                List<Pair<Double, JSONObject>> busList = new ArrayList<>();
                 for (int i = 0; i < data.optJSONArray("data").length(); i++) {
                     JSONObject routeData = data.optJSONArray("data").optJSONObject(i);
                     JSONArray buses = routeData.optJSONArray("eta");
@@ -1933,34 +1914,35 @@ public class Registry {
                             JSONObject bus = buses.optJSONObject(u);
                             String eta = bus.optString("timestamp");
                             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-                            long mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : Math.round((formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0);
+                            double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
                             if (routeNumber.equals(route.getRouteNumber())) {
                                 busList.add(new Pair<>(mins, bus));
                             }
                         }
                     }
                 }
-                busList.sort(Comparator.comparing(p -> p.getFirst()));
+                busList.sort(Comparator.comparing(Pair<Double, JSONObject>::getFirst));
                 for (int i = 0; i < busList.size(); i++) {
-                    Pair<Long, JSONObject> entry = busList.get(i);
+                    Pair<Double, JSONObject> entry = busList.get(i);
                     JSONObject bus = entry.getSecond();
                     int seq = i + 1;
                     String remark = language.equals("en") ? bus.optString("remarks_en") : bus.optString("remarks_tc");
                     if (remark == null || remark.equalsIgnoreCase("null")) {
                         remark = "";
                     }
-                    long mins = entry.getFirst();
+                    double mins = entry.getFirst();
+                    long minsRounded = Math.round(mins);
                     String message = "";
                     if (language.equals("en")) {
-                        if (mins > 0) {
-                            message = "<b>" + mins + "</b><small> Min.</small>";
-                        } else if (mins > -60) {
+                        if (minsRounded > 0) {
+                            message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                        } else if (minsRounded > -60) {
                             message = "<b>-</b><small> Min.</small>";
                         }
                     } else {
-                        if (mins > 0) {
-                            message = "<b>" + mins + "</b><small> 分鐘</small>";
-                        } else if (mins > -60) {
+                        if (minsRounded > 0) {
+                            message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                        } else if (minsRounded > -60) {
                             message = "<b>-</b><small> 分鐘</small>";
                         }
                     }
@@ -1981,7 +1963,7 @@ public class Registry {
                     } else {
                         message = "<b></b>" + message;
                     }
-                    lines.put(seq, ETALineEntry.etaEntry(message, mins));
+                    lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
                 }
             } else if (co.equals(Operator.LRT)) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
@@ -2040,7 +2022,7 @@ public class Registry {
                                 cartsMessage.append("<img src=\"lrv_empty\">");
                             }
                             String message = "<b></b><span style=\"color: #D3A809\">" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + "</span> " + cartsMessage + " " + minsMessage;
-                            lines.put(seq, ETALineEntry.etaEntry(message, lrt.getEta()));
+                            lines.put(seq, ETALineEntry.etaEntry(message, lrt.getEta(), lrt.getEta()));
                         }
                     }
                 }
@@ -2112,14 +2094,15 @@ public class Registry {
                                     @SuppressLint("SimpleDateFormat")
                                     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                                     format.setTimeZone(TimeZone.getTimeZone(hongKongTime.getZone()));
-                                    long mins = (long) Math.ceil((format.parse(eta).getTime() - Instant.now().toEpochMilli()) / 60000.0);
+                                    double mins = (format.parse(eta).getTime() - Instant.now().toEpochMilli()) / 60000.0;
+                                    long minsRounded = (long) Math.ceil(mins);
 
                                     String minsMessage;
-                                    if (mins > 60) {
-                                        minsMessage = "<b>" + hongKongTime.plusMinutes(mins).format(DateTimeFormatter.ofPattern("HH:mm")) + "</b>";
-                                    } else if (mins > 1) {
-                                        minsMessage = "<b>" + mins + "</b><small>" + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘") + "</small>";
-                                    } else if (mins == 1) {
+                                    if (minsRounded > 60) {
+                                        minsMessage = "<b>" + hongKongTime.plusMinutes(minsRounded).format(DateTimeFormatter.ofPattern("HH:mm")) + "</b>";
+                                    } else if (minsRounded > 1) {
+                                        minsMessage = "<b>" + minsRounded + "</b><small>" + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘") + "</small>";
+                                    } else if (minsRounded == 1) {
                                         minsMessage = "<b>" + (Shared.Companion.getLanguage().equals("en") ? "Arriving" : "即將抵達") + "</b>";
                                     } else {
                                         minsMessage = "<b>" + (Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開") + "</b>";
@@ -2131,7 +2114,7 @@ public class Registry {
                                             message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Delayed)" : " (服務延誤)") + "</small>";
                                         }
                                     }
-                                    lines.put(seq, ETALineEntry.etaEntry(message, mins));
+                                    lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
                                 }
                             }
                         }
@@ -2237,30 +2220,43 @@ public class Registry {
     @Immutable
     public static class ETALineEntry {
 
-        public static final ETALineEntry EMPTY = new ETALineEntry("-", -1);
+        public static final ETALineEntry EMPTY = new ETALineEntry("-", -1, -1);
 
         public static ETALineEntry textEntry(String text) {
-            return new ETALineEntry(text, -1);
+            return new ETALineEntry(text, -1, -1);
         }
 
-        public static ETALineEntry etaEntry(String text, long eta) {
-            return new ETALineEntry(text, eta > -60 ? Math.max(0, eta) : -1);
+        public static ETALineEntry etaEntry(String text, double eta, long etaRounded) {
+            if (etaRounded > -60) {
+                etaRounded = Math.max(0, etaRounded);
+                eta = Math.max(0, eta);
+            } else {
+                etaRounded = -1;
+                eta = -1;
+            }
+            return new ETALineEntry(text, eta, etaRounded);
         }
 
         private final String text;
-        private final long eta;
+        private final double eta;
+        private final long etaRounded;
 
-        private ETALineEntry(String text, long eta) {
+        private ETALineEntry(String text, double eta, long etaRounded) {
             this.text = text;
             this.eta = eta;
+            this.etaRounded = etaRounded;
         }
 
         public String getText() {
             return text;
         }
 
-        public long getEta() {
+        public double getEta() {
             return eta;
+        }
+
+        public long getEtaRounded() {
+            return etaRounded;
         }
 
         @Override
@@ -2333,7 +2329,7 @@ public class Registry {
             this.lines = Collections.unmodifiableMap(lines);
 
             ETALineEntry entry = lines.get(1);
-            this.nextScheduledBus = entry == null ? -1 : entry.getEta();
+            this.nextScheduledBus = entry == null ? -1 : entry.getEtaRounded();
         }
 
         public boolean isConnectionError() {

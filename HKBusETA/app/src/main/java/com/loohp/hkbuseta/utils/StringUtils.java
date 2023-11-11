@@ -107,7 +107,7 @@ public class StringUtils {
     public static float findOptimalSp(Context context, String text, int targetWidth, int maxLines, float minSp, float maxSp) {
         TextPaint paint = new TextPaint();
         paint.density = context.getResources().getDisplayMetrics().density;
-        for (float sp = maxSp; sp >= minSp; sp--) {
+        for (float sp = maxSp; sp >= minSp; sp -= 0.5F) {
             paint.setTextSize(UnitUtils.spToPixels(context, sp));
             paint.setTypeface(Typeface.DEFAULT);
 
