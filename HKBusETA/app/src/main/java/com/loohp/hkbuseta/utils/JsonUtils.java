@@ -76,10 +76,6 @@ public class JsonUtils {
         return indexOf(array, obj) >= 0;
     }
 
-    public static boolean containsKey(JSONObject object, Object obj) {
-        return StreamSupport.stream(((Iterable<String>) object::keys).spliterator(), false).anyMatch(e -> Objects.equals(e, obj));
-    }
-
     /** @noinspection unchecked*/
     public static <T> List<T> toList(JSONArray array, Class<T> type) {
         List<T> list = new ArrayList<>(array.length());

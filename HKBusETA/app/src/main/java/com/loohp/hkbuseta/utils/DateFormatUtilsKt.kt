@@ -1,5 +1,5 @@
 /*
- * This file is part of HKBusETA.
+ * This file is part of HKWeather.
  *
  * Copyright (C) 2023. LoohpJames <jamesloohp@gmail.com>
  * Copyright (C) 2023. Contributors
@@ -20,14 +20,11 @@
 
 package com.loohp.hkbuseta.utils
 
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
+import java.text.DateFormat
+import java.util.TimeZone
 
 
-inline fun <T> Future<T>.getOr(timeout: Long, unit: TimeUnit, orElse: () -> T?): T? {
-    return try {
-        get(timeout, unit)
-    } catch (e: Exception) {
-        orElse.invoke()
-    }
+fun DateFormat.timeZone(timeZone: TimeZone): DateFormat {
+    this.timeZone = timeZone
+    return this
 }

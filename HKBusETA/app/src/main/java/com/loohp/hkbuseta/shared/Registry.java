@@ -2004,11 +2004,12 @@ public class Registry {
                     isMtrEndOfLine = true;
                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "End of Line" : "終點站"));
                 } else {
+                    ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
+                    int hour = hongKongTime.getHour();
+
                     List<LrtETAData> results = new ArrayList<>();
                     JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=" + stopId.substring(2));
-                    if (data.optInt("status") == 0) {
-                        lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
-                    } else {
+                    if (data.optInt("status") != 0) {
                         JSONArray platformList = data.optJSONArray("platform_list");
                         for (int i = 0; i < platformList.length(); i++) {
                             JSONObject platform = platformList.optJSONObject(i);
@@ -2030,6 +2031,17 @@ public class Registry {
                                 }
                             }
                         }
+                    }
+                    if (results.isEmpty()) {
+                        if (hour < 3) {
+                            lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
+                        } else if (hour < 6) {
+                            lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
+                        } else {
+                            lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
+                        }
+                    } else {
+                        String lineColor = RouteExtensionsKt.getColorHex(co, route.getRouteNumber(), 0xFFFFFFFFL);
                         results.sort(Comparator.naturalOrder());
                         for (int i = 0; i < results.size(); i++) {
                             LrtETAData lrt = results.get(i);
@@ -2043,9 +2055,7 @@ public class Registry {
                             } else {
                                 minsMessage = minsMessage.replaceAll("^([0-9]+)", "<b>$1</b>").replace(" min", "<small> Min.</small>").replace(" 分鐘", "<small> 分鐘</small>");
                             }
-                            StringBuilder cartsMessage = new StringBuilder(Math.max(3, lrt.getTrainLength() * 2));
-                            int lrv = R.mipmap.lrv;
-                            int lrvEmpty = R.mipmap.lrv_empty;
+                            StringBuilder cartsMessage = new StringBuilder(lrt.getTrainLength() * 21);
                             for (int u = 0; u < lrt.getTrainLength(); u++) {
                                 cartsMessage.append("<img src=\"lrv\">");
                             }
@@ -2053,7 +2063,7 @@ public class Registry {
                                 cartsMessage.append("<img src=\"lrv_empty\">");
                             }
                             long mins = lrt.getEta();
-                            String message = "<b></b><span style=\"color: #D3A809\">" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + "</span> " + cartsMessage + " " + minsMessage;
+                            String message = "<b></b><span style=\"color: " + lineColor + "\">" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + "</span> " + cartsMessage + " " + minsMessage;
                             lines.put(seq, ETALineEntry.etaEntry(message, toShortText(mins, 1), mins, mins));
                         }
                     }
@@ -2085,12 +2095,12 @@ public class Registry {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
                                 } else if (hour >= 15 || hour < 3) {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
-                                } else if (hour >= 3 && hour < 15) {
+                                } else {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
                                 }
                             } else if (hour < 3 || (stopId.equals("LMC") && hour >= 10)) {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
-                            } else if (hour >= 3 && hour < 6) {
+                            } else if (hour < 6) {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
                             } else {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
@@ -2105,12 +2115,12 @@ public class Registry {
                                         lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
                                     } else if (hour >= 15 || hour < 3) {
                                         lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
-                                    } else if (hour >= 3 && hour < 15) {
+                                    } else {
                                         lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
                                     }
                                 } else if (hour < 3 || (stopId.equals("LMC") && hour >= 10)) {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
-                                } else if (hour >= 3 && hour < 6) {
+                                } else if (hour < 6) {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
                                 } else {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));

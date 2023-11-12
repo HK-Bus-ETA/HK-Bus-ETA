@@ -36,11 +36,11 @@ operator fun <K, V> ImmutableMap.Builder<K, V>.set(key: K & Any, value: V & Any)
     return this.put(key, value)
 }
 
-fun <T, R> List<T>.parallelMap(executor: ExecutorService = ForkJoinPool.commonPool(), transform: (T) -> R): List<R> {
+inline fun <T, R> List<T>.parallelMap(executor: ExecutorService = ForkJoinPool.commonPool(), crossinline transform: (T) -> R): List<R> {
     return map { executor.submit(Callable { transform.invoke(it) }) }.map { it.get() }
 }
 
-fun <T, R> List<T>.parallelMapNotNull(executor: ExecutorService = ForkJoinPool.commonPool(), transform: (T) -> R?): List<R> {
+inline fun <T, R> List<T>.parallelMapNotNull(executor: ExecutorService = ForkJoinPool.commonPool(), crossinline transform: (T) -> R?): List<R> {
     return map { executor.submit(Callable { transform.invoke(it) }) }.mapNotNull { it.get() }
 }
 
@@ -56,7 +56,7 @@ fun <T> Stream<T>.toImmutableSet(): ImmutableSet<T> {
     return builder.build()
 }
 
-fun <T> Stream<T>.distinctBy(keyExtractor: (T) -> Any): Stream<T> {
-    val seen: MutableMap<Any, Boolean> = ConcurrentHashMap()
-    return this.filter { t -> seen.putIfAbsent(keyExtractor.invoke(t), true) == null }
+inline fun <T> Stream<T>.distinctBy(crossinline keyExtractor: (T) -> Any): Stream<T> {
+    val seen: MutableSet<Any> = ConcurrentHashMap.newKeySet()
+    return this.filter { seen.add(keyExtractor.invoke(it)) }
 }

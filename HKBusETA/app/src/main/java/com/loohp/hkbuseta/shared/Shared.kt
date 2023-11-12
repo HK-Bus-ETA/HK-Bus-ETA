@@ -30,6 +30,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material.TimeText
+import androidx.wear.compose.material.TimeTextDefaults
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
@@ -38,6 +39,7 @@ import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.RouteSortMode
 import com.loohp.hkbuseta.objects.gmbRegion
 import com.loohp.hkbuseta.objects.operator
+import com.loohp.hkbuseta.utils.HongKongTimeSource
 import com.loohp.hkbuseta.utils.isEqualTo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -174,7 +176,8 @@ class Shared {
         @Composable
         fun MainTime() {
             TimeText(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                timeSource = HongKongTimeSource(TimeTextDefaults.timeFormat())
             )
         }
 
@@ -195,42 +198,34 @@ class Shared {
         }
 
         fun getMtrLineName(lineName: String): String {
-            return getMtrLineName(lineName) { lineName }
+            return getMtrLineName(lineName, lineName)
         }
 
         fun getMtrLineName(lineName: String, orElse: String): String {
-            return getMtrLineName(lineName) { orElse }
-        }
-
-        fun getMtrLineName(lineName: String, orElse: () -> String): String {
-            return if (language == "en") {
-                when (lineName) {
-                    "AEL" -> "Airport Express"
-                    "TCL" -> "Tung Chung Line"
-                    "TML" -> "Tuen Ma Line"
-                    "TKL" -> "Tseung Kwan O Line"
-                    "EAL" -> "East Rail Line"
-                    "SIL" -> "South Island Line"
-                    "TWL" -> "Tsuen Wan Line"
-                    "ISL" -> "Island Line"
-                    "KTL" -> "Kwun Tong Line"
-                    "DRL" -> "Disneyland Resort Line"
-                    else -> orElse.invoke()
-                }
-            } else {
-                when (lineName) {
-                    "AEL" -> "機場快綫"
-                    "TCL" -> "東涌綫"
-                    "TML" -> "屯馬綫"
-                    "TKL" -> "將軍澳綫"
-                    "EAL" -> "東鐵綫"
-                    "SIL" -> "南港島綫"
-                    "TWL" -> "荃灣綫"
-                    "ISL" -> "港島綫"
-                    "KTL" -> "觀塘綫"
-                    "DRL" -> "迪士尼綫"
-                    else -> orElse.invoke()
-                }
+            return if (language == "en") when (lineName) {
+                "AEL" -> "Airport Express"
+                "TCL" -> "Tung Chung Line"
+                "TML" -> "Tuen Ma Line"
+                "TKL" -> "Tseung Kwan O Line"
+                "EAL" -> "East Rail Line"
+                "SIL" -> "South Island Line"
+                "TWL" -> "Tsuen Wan Line"
+                "ISL" -> "Island Line"
+                "KTL" -> "Kwun Tong Line"
+                "DRL" -> "Disneyland Resort Line"
+                else -> orElse
+            } else when (lineName) {
+                "AEL" -> "機場快綫"
+                "TCL" -> "東涌綫"
+                "TML" -> "屯馬綫"
+                "TKL" -> "將軍澳綫"
+                "EAL" -> "東鐵綫"
+                "SIL" -> "南港島綫"
+                "TWL" -> "荃灣綫"
+                "ISL" -> "港島綫"
+                "KTL" -> "觀塘綫"
+                "DRL" -> "迪士尼綫"
+                else -> orElse
             }
         }
 

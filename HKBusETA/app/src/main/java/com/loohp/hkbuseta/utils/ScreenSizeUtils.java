@@ -27,34 +27,53 @@ import android.util.DisplayMetrics;
 
 public class ScreenSizeUtils {
 
-    public static int getMinScreenSize(Context context) {
-        if (context instanceof Activity) {
-            Rect bound = ((Activity) context).getWindowManager().getCurrentWindowMetrics().getBounds();
-            return Math.min(Math.abs(bound.width()), Math.abs(bound.height()));
-        } else {
-            DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
-            return Math.min(Math.abs(displayMetrics.widthPixels), Math.abs(displayMetrics.heightPixels));
+    private static boolean init;
+    private static int width;
+    private static int height;
+    private static int min;
+    private static float scale;
+
+    private static void init(Context context) {
+        if (init) {
+            return;
         }
+        synchronized (ScreenSizeUtils.class) {
+            if (init) {
+                return;
+            }
+            if (context instanceof Activity) {
+                Rect bound = ((Activity) context).getWindowManager().getCurrentWindowMetrics().getBounds();
+                width = Math.abs(bound.width());
+                height = Math.abs(bound.height());
+            } else {
+                DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+                width = Math.abs(displayMetrics.widthPixels);
+                height = Math.abs(displayMetrics.heightPixels);
+            }
+            min = Math.min(width, height);
+            scale = min / 454F;
+            init = true;
+        }
+    }
+
+    public static int getMinScreenSize(Context context) {
+        init(context);
+        return min;
+    }
+
+    public static float getScreenScale(Context context) {
+        init(context);
+        return scale;
     }
 
     public static int getScreenWidth(Context context) {
-        if (context instanceof Activity) {
-            Rect bound = ((Activity) context).getWindowManager().getCurrentWindowMetrics().getBounds();
-            return Math.abs(bound.width());
-        } else {
-            DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
-            return Math.abs(displayMetrics.widthPixels);
-        }
+        init(context);
+        return width;
     }
 
     public static int getScreenHeight(Context context) {
-        if (context instanceof Activity) {
-            Rect bound = ((Activity) context).getWindowManager().getCurrentWindowMetrics().getBounds();
-            return Math.abs(bound.height());
-        } else {
-            DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
-            return Math.abs(displayMetrics.heightPixels);
-        }
+        init(context);
+        return height;
     }
 
 }

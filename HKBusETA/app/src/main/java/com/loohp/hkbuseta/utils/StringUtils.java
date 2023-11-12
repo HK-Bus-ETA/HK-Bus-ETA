@@ -94,14 +94,12 @@ public class StringUtils {
         return sb.toString();
     }
 
-    public static int scaledSize(int size, Context context) {
-        return Math.round(scaledSize((float) size, context));
+    public static float scaledSize(int size, Context context) {
+        return size * ScreenSizeUtils.getScreenScale(context);
     }
 
     public static float scaledSize(float size, Context context) {
-        int dimension = ScreenSizeUtils.getMinScreenSize(context);
-        float scale = dimension / 454F;
-        return size * scale;
+        return size * ScreenSizeUtils.getScreenScale(context);
     }
 
     public static float findOptimalSp(Context context, String text, int targetWidth, int maxLines, float minSp, float maxSp) {

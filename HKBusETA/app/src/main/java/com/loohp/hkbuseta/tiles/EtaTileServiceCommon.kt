@@ -65,10 +65,13 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.getAndNegate
 import com.loohp.hkbuseta.utils.parallelMap
 import com.loohp.hkbuseta.utils.parallelMapNotNull
+import com.loohp.hkbuseta.utils.timeZone
 import com.loohp.hkbuseta.utils.toSpanned
 import java.math.BigInteger
 import java.security.MessageDigest
+import java.time.ZoneId
 import java.util.Date
+import java.util.TimeZone
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
@@ -606,7 +609,8 @@ class EtaTileServiceCommon {
         private fun lastUpdated(context: Context): LayoutElementBuilders.Text {
             return LayoutElementBuilders.Text.Builder()
                 .setMaxLines(1)
-                .setText((if (Shared.language == "en") "Updated: " else "更新時間: ").plus(DateFormat.getTimeFormat(context).format(Date())))
+                .setText((if (Shared.language == "en") "Updated: " else "更新時間: ")
+                    .plus(DateFormat.getTimeFormat(context).timeZone(TimeZone.getTimeZone(ZoneId.of("Asia/Hong_Kong"))).format(Date())))
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(

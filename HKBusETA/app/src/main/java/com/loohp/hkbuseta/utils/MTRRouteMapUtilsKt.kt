@@ -37,28 +37,29 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.shared.Registry.MTRInterchangeData
 import com.loohp.hkbuseta.shared.Registry.StopData
 
 
 @Composable
 fun MTRLineSection(sectionData: MTRStopSectionData) {
-    val (mainLine, spurLine, _, stop, co, color, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, _, context) = sectionData
+    val (mainLine, spurLine, _, _, co, color, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, _, context) = sectionData
     Canvas(
         modifier = Modifier.fillMaxSize()
     ) {
         val width = size.width
         val height = size.height
 
-        val leftShift = if (hasOutOfStation) StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 22F).sp.toPx(), context) else 0
+        val leftShift = if (hasOutOfStation) StringUtils.scaledSize((22F / density).sp.toPx(), context) else 0
         val horizontalCenter = width / 2F - leftShift.toFloat()
         val horizontalPartition = width / 10F
         val horizontalCenterPrimary = if (stopByBranchId.size == 1) horizontalCenter else horizontalPartition * 3F
         val horizontalCenterSecondary = horizontalPartition * 7F
         val verticalCenter = height / 2F
-        val lineWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 11F).sp.toPx(), context)
-        val lineOffset = StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 8F).sp.toPx(), context)
-        val dashEffect = floatArrayOf(StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 14F).sp.toPx(), context), StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 7F).sp.toPx(), context))
+        val lineWidth = StringUtils.scaledSize((11F / density).sp.toPx(), context)
+        val lineOffset = StringUtils.scaledSize((8F / density).sp.toPx(), context)
+        val dashEffect = floatArrayOf(StringUtils.scaledSize((14F / density).sp.toPx(), context), StringUtils.scaledSize((7F / density).sp.toPx(), context))
 
         var useSpurStopCircle = false
         if (mainLine != null) {
@@ -229,8 +230,8 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                 )
             }
         }
-        val interchangeLineWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 14F).sp.toPx(), context) * 2F
-        val interchangeLineHeight = StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 6F).sp.toPx(), context) * 2F
+        val interchangeLineWidth = StringUtils.scaledSize((14F / density).sp.toPx(), context) * 2F
+        val interchangeLineHeight = StringUtils.scaledSize((6F / density).sp.toPx(), context) * 2F
         val interchangeLineSpacing = interchangeLineHeight * 1.5F
         if (interchangeData.isHasLightRail && co != Operator.LRT) {
             drawRoundRect(
@@ -243,20 +244,7 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
             var leftCorner = Offset(horizontalCenterPrimary - interchangeLineWidth, verticalCenter - ((interchangeData.lines.size - 1) * interchangeLineSpacing / 2F) - interchangeLineHeight / 2F)
             for (interchange in interchangeData.lines) {
                 drawRoundRect(
-                    color = when (interchange) {
-                        "AEL" -> Color(0xFF00888E)
-                        "TCL" -> Color(0xFFF3982D)
-                        "TML" -> Color(0xFF9C2E00)
-                        "TKL" -> Color(0xFF7E3C93)
-                        "EAL" -> Color(0xFF5EB7E8)
-                        "SIL" -> Color(0xFFCBD300)
-                        "TWL" -> Color(0xFFE60012)
-                        "ISL" -> Color(0xFF0075C2)
-                        "KTL" -> Color(0xFF00A040)
-                        "DRL" -> Color(0xFFEB6EA5)
-                        "HighSpeed" -> Color(0xFFBCB0A4)
-                        else -> Color.White
-                    },
+                    color = if (interchange == "HighSpeed") Color(0xFFBCB0A4) else Operator.MTR.getColor(interchange, Color.White),
                     topLeft = leftCorner,
                     size = Size(interchangeLineWidth, interchangeLineHeight),
                     cornerRadius = CornerRadius(interchangeLineHeight / 2F)
@@ -265,11 +253,11 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
             }
         }
 
-        val circleWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 20F).sp.toPx(), context)
+        val circleWidth = StringUtils.scaledSize((20F / density).sp.toPx(), context)
 
         if (interchangeData.outOfStationLines.isNotEmpty()) {
             val otherStationHorizontalCenter = horizontalCenterPrimary + circleWidth * 2F
-            val connectionLineWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 5F).sp.toPx(), context)
+            val connectionLineWidth = StringUtils.scaledSize((5F / density).sp.toPx(), context)
             if (interchangeData.isOutOfStationPaid) {
                 drawLine(
                     color = Color(0xFF003180),
@@ -283,26 +271,13 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                     start = Offset(horizontalCenterPrimary, verticalCenter),
                     end = Offset(otherStationHorizontalCenter, verticalCenter),
                     strokeWidth = connectionLineWidth,
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 4F).sp.toPx(), context), StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 2F).sp.toPx(), context)), 0F)
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(StringUtils.scaledSize((4F / density).sp.toPx(), context), StringUtils.scaledSize((2F / density).sp.toPx(), context)), 0F)
                 )
             }
             var leftCorner = Offset(otherStationHorizontalCenter, verticalCenter - ((interchangeData.outOfStationLines.size - 1) * interchangeLineSpacing / 2F) - interchangeLineHeight / 2F)
             for (interchange in interchangeData.outOfStationLines) {
                 drawRoundRect(
-                    color = when (interchange) {
-                        "AEL" -> Color(0xFF00888E)
-                        "TCL" -> Color(0xFFF3982D)
-                        "TML" -> Color(0xFF9C2E00)
-                        "TKL" -> Color(0xFF7E3C93)
-                        "EAL" -> Color(0xFF5EB7E8)
-                        "SIL" -> Color(0xFFCBD300)
-                        "TWL" -> Color(0xFFE60012)
-                        "ISL" -> Color(0xFF0075C2)
-                        "KTL" -> Color(0xFF00A040)
-                        "DRL" -> Color(0xFFEB6EA5)
-                        "HighSpeed" -> Color(0xFFBCB0A4)
-                        else -> Color.White
-                    },
+                    color = if (interchange == "HighSpeed") Color(0xFFBCB0A4) else Operator.MTR.getColor(interchange, Color.White),
                     topLeft = leftCorner,
                     size = Size(interchangeLineWidth, interchangeLineHeight),
                     cornerRadius = CornerRadius(interchangeLineHeight / 2F)
@@ -357,13 +332,13 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
         val width = size.width
         val height = size.height
 
-        val leftShift = if (hasOutOfStation) StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 22F).sp.toPx(), context) else 0
+        val leftShift = if (hasOutOfStation) StringUtils.scaledSize((22F / density).sp.toPx(), context) else 0
         val horizontalCenter = width / 2F - leftShift.toFloat()
         val horizontalPartition = width / 10F
         val horizontalCenterPrimary = if (stopByBranchId.size == 1) horizontalCenter else horizontalPartition * 3F
         val horizontalCenterSecondary = horizontalPartition * 7F
-        val lineWidth = StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 11F).sp.toPx(), context)
-        val dashEffect = floatArrayOf(StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 14F).sp.toPx(), context), StringUtils.scaledSize(UnitUtils.pixelsToDp(context, 7F).sp.toPx(), context))
+        val lineWidth = StringUtils.scaledSize((11F / density).sp.toPx(), context)
+        val dashEffect = floatArrayOf(StringUtils.scaledSize((14F / density).sp.toPx(), context), StringUtils.scaledSize((7F / density).sp.toPx(), context))
 
         if (mainLine != null) {
             drawLine(
