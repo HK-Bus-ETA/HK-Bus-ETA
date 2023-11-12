@@ -177,7 +177,7 @@ public class Registry {
     private Preferences PREFERENCES = null;
     private DataContainer DATA = null;
 
-    private final AtomicReference<Pair<TyphoonInfo, Long>> typhoonInfo = new AtomicReference<>(new Pair<>(null, 0L));
+    private final MutableStateFlow<TyphoonInfo> typhoonInfo = StateUtilsKtKt.asMutableStateFlow(TyphoonInfo.NULL);
 
     private final MutableStateFlow<State> state = StateUtilsKtKt.asMutableStateFlow(State.LOADING);
     private final MutableStateFlow<Float> updatePercentageState = StateUtilsKtKt.asMutableStateFlow(0F);
@@ -1400,11 +1400,14 @@ public class Registry {
         }
     }
 
+    public StateFlow<TyphoonInfo> getCachedTyphoonDataState() {
+        return typhoonInfo;
+    }
+
     public Future<TyphoonInfo> getCurrentTyphoonData() {
-        long now = System.currentTimeMillis();
-        Pair<TyphoonInfo, Long> cache = typhoonInfo.get();
-        if (cache.getFirst() != null && now - cache.getSecond() < 300000) {
-            return CompletableFuture.completedFuture(cache.getFirst());
+        TyphoonInfo cache = typhoonInfo.getValue();
+        if (cache != null && System.currentTimeMillis() - cache.getLastUpdated() < 300000) {
+            return CompletableFuture.completedFuture(cache);
         }
         CompletableFuture<TyphoonInfo> future = new CompletableFuture<>();
         new Thread(() -> {
@@ -1427,14 +1430,15 @@ public class Registry {
                     } else {
                         currentTyphoonSignalId = "tc" + StringUtils.padStart(String.valueOf(signal), 2, '0') + (matcher.group(2) != null ? matcher.group(2) : "").toLowerCase();
                     }
-                    TyphoonInfo info = new TyphoonInfo(isAboveTyphoonSignalEight, isAboveTyphoonSignalNine, typhoonWarningTitle, currentTyphoonSignalId);
-                    typhoonInfo.set(new Pair<>(info, System.currentTimeMillis()));
+                    TyphoonInfo info = TyphoonInfo.info(isAboveTyphoonSignalEight, isAboveTyphoonSignalNine, typhoonWarningTitle, currentTyphoonSignalId);
+                    typhoonInfo.setValue(info);
                     future.complete(info);
                     return;
                 }
             }
-            typhoonInfo.set(new Pair<>(TyphoonInfo.NO_TYPHOON, System.currentTimeMillis()));
-            future.complete(TyphoonInfo.NO_TYPHOON);
+            TyphoonInfo info = TyphoonInfo.none();
+            typhoonInfo.setValue(info);
+            future.complete(info);
         }).start();
         return future;
     }
@@ -1442,18 +1446,28 @@ public class Registry {
     @Immutable
     public static class TyphoonInfo {
 
-        public static final TyphoonInfo NO_TYPHOON = new TyphoonInfo(false, false, "", "");
+        public static final TyphoonInfo NULL = new TyphoonInfo(false, false, "", "", 0);
+
+        public static TyphoonInfo none() {
+            return new TyphoonInfo(false, false, "", "", System.currentTimeMillis());
+        }
+
+        public static TyphoonInfo info(boolean isAboveTyphoonSignalEight, boolean isAboveTyphoonSignalNine, String typhoonWarningTitle, String currentTyphoonSignalId) {
+            return new TyphoonInfo(isAboveTyphoonSignalEight, isAboveTyphoonSignalNine, typhoonWarningTitle, currentTyphoonSignalId, System.currentTimeMillis());
+        }
 
         private final boolean isAboveTyphoonSignalEight;
         private final boolean isAboveTyphoonSignalNine;
         private final String typhoonWarningTitle;
         private final String currentTyphoonSignalId;
+        private final long lastUpdated;
 
-        public TyphoonInfo(boolean isAboveTyphoonSignalEight, boolean isAboveTyphoonSignalNine, String typhoonWarningTitle, String currentTyphoonSignalId) {
+        private TyphoonInfo(boolean isAboveTyphoonSignalEight, boolean isAboveTyphoonSignalNine, String typhoonWarningTitle, String currentTyphoonSignalId, long lastUpdated) {
             this.isAboveTyphoonSignalEight = isAboveTyphoonSignalEight;
             this.isAboveTyphoonSignalNine = isAboveTyphoonSignalNine;
             this.typhoonWarningTitle = typhoonWarningTitle;
             this.currentTyphoonSignalId = currentTyphoonSignalId;
+            this.lastUpdated = lastUpdated;
         }
 
         public boolean isAboveTyphoonSignalEight() {
@@ -1470,6 +1484,23 @@ public class Registry {
 
         public String getCurrentTyphoonSignalId() {
             return currentTyphoonSignalId;
+        }
+
+        public long getLastUpdated() {
+            return lastUpdated;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TyphoonInfo info = (TyphoonInfo) o;
+            return isAboveTyphoonSignalEight == info.isAboveTyphoonSignalEight && isAboveTyphoonSignalNine == info.isAboveTyphoonSignalNine && lastUpdated == info.lastUpdated && Objects.equals(typhoonWarningTitle, info.typhoonWarningTitle) && Objects.equals(currentTyphoonSignalId, info.currentTyphoonSignalId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(isAboveTyphoonSignalEight, isAboveTyphoonSignalNine, typhoonWarningTitle, currentTyphoonSignalId, lastUpdated);
         }
     }
 
@@ -1653,7 +1684,7 @@ public class Registry {
                         if (seq == 1) {
                             nextCo = entryCo;
                         }
-                        lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
+                        lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                     }
                 }
             } else if (co.equals(Operator.KMB)) {
@@ -1707,7 +1738,7 @@ public class Registry {
                             } else {
                                 message = "<b></b>" + message;
                             }
-                            lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
+                            lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                         }
                     }
                 }
@@ -1762,7 +1793,7 @@ public class Registry {
                             } else {
                                 message = "<b></b>" + message;
                             }
-                            lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
+                            lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                         }
                     }
                 }
@@ -1812,7 +1843,7 @@ public class Registry {
                         } else {
                             message = "<b></b>" + message;
                         }
-                        lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
+                        lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                     }
                 }
             } else if (co.equals(Operator.MTR_BUS)) {
@@ -1893,7 +1924,7 @@ public class Registry {
                             } else {
                                 message = "<b></b>" + message;
                             }
-                            lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
+                            lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                         }
                     }
                 }
@@ -1963,7 +1994,7 @@ public class Registry {
                     } else {
                         message = "<b></b>" + message;
                     }
-                    lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
+                    lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                 }
             } else if (co.equals(Operator.LRT)) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
@@ -2021,8 +2052,9 @@ public class Registry {
                             if (lrt.getTrainLength() == 1) {
                                 cartsMessage.append("<img src=\"lrv_empty\">");
                             }
+                            long mins = lrt.getEta();
                             String message = "<b></b><span style=\"color: #D3A809\">" + StringUtils.getCircledNumber(lrt.getPlatformNumber()) + "</span> " + cartsMessage + " " + minsMessage;
-                            lines.put(seq, ETALineEntry.etaEntry(message, lrt.getEta(), lrt.getEta()));
+                            lines.put(seq, ETALineEntry.etaEntry(message, toShortText(mins, 1), mins, mins));
                         }
                     }
                 }
@@ -2046,11 +2078,17 @@ public class Registry {
                         lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Server unable to provide data" : "系統未能提供資訊"));
                     } else {
                         JSONObject lineStops = data.optJSONObject("data").optJSONObject(lineName + "-" + stopId);
-                        boolean rac = stopId.equals("RAC") && dayOfWeek != DayOfWeek.WEDNESDAY && dayOfWeek != DayOfWeek.SUNDAY;
+                        boolean raceDay = dayOfWeek == DayOfWeek.WEDNESDAY || dayOfWeek == DayOfWeek.SUNDAY;
                         if (lineStops == null) {
-                            if (rac) {
-                                lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
-                            } else if (hour >= 0 && hour < 3) {
+                            if (stopId.equals("RAC")) {
+                                if (!raceDay) {
+                                    lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
+                                } else if (hour >= 15 || hour < 3) {
+                                    lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
+                                } else if (hour >= 3 && hour < 15) {
+                                    lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
+                                }
+                            } else if (hour < 3 || (stopId.equals("LMC") && hour >= 10)) {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
                             } else if (hour >= 3 && hour < 6) {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
@@ -2062,9 +2100,15 @@ public class Registry {
                             String dir = bound.equals("UT") ? "UP" : "DOWN";
                             JSONArray trains = lineStops.optJSONArray(dir);
                             if (trains == null || trains.length() == 0) {
-                                if (rac) {
-                                    lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
-                                } else if (hour >= 0 && hour < 3) {
+                                if (stopId.equals("RAC")) {
+                                    if (!raceDay) {
+                                        lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service on race days only" : "僅在賽馬日提供服務"));
+                                    } else if (hour >= 15 || hour < 3) {
+                                        lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
+                                    } else if (hour >= 3 && hour < 15) {
+                                        lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
+                                    }
+                                } else if (hour < 3 || (stopId.equals("LMC") && hour >= 10)) {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
                                 } else if (hour >= 3 && hour < 6) {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
@@ -2098,7 +2142,7 @@ public class Registry {
                                     long minsRounded = (long) Math.ceil(mins);
 
                                     String minsMessage;
-                                    if (minsRounded > 60) {
+                                    if (minsRounded > 59) {
                                         minsMessage = "<b>" + hongKongTime.plusMinutes(minsRounded).format(DateTimeFormatter.ofPattern("HH:mm")) + "</b>";
                                     } else if (minsRounded > 1) {
                                         minsMessage = "<b>" + minsRounded + "</b><small>" + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘") + "</small>";
@@ -2114,7 +2158,7 @@ public class Registry {
                                             message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Delayed)" : " (服務延誤)") + "</small>";
                                         }
                                     }
-                                    lines.put(seq, ETALineEntry.etaEntry(message, mins, minsRounded));
+                                    lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 1), mins, minsRounded));
                                 }
                             }
                         }
@@ -2125,6 +2169,10 @@ public class Registry {
         });
         new Thread(pending).start();
         return pending;
+    }
+
+    private ETAShortText toShortText(long minsRounded, long arrivingThreshold) {
+        return new ETAShortText(minsRounded <= arrivingThreshold ? "-" : String.valueOf(minsRounded), Shared.Companion.getLanguage().equals("en") ? "Min." : "分鐘");
     }
 
     @Immutable
@@ -2220,13 +2268,13 @@ public class Registry {
     @Immutable
     public static class ETALineEntry {
 
-        public static final ETALineEntry EMPTY = new ETALineEntry("-", -1, -1);
+        public static final ETALineEntry EMPTY = new ETALineEntry("-", ETAShortText.EMPTY, -1, -1);
 
         public static ETALineEntry textEntry(String text) {
-            return new ETALineEntry(text, -1, -1);
+            return new ETALineEntry(text, ETAShortText.EMPTY, -1, -1);
         }
 
-        public static ETALineEntry etaEntry(String text, double eta, long etaRounded) {
+        public static ETALineEntry etaEntry(String text, ETAShortText shortText, double eta, long etaRounded) {
             if (etaRounded > -60) {
                 etaRounded = Math.max(0, etaRounded);
                 eta = Math.max(0, eta);
@@ -2234,21 +2282,27 @@ public class Registry {
                 etaRounded = -1;
                 eta = -1;
             }
-            return new ETALineEntry(text, eta, etaRounded);
+            return new ETALineEntry(text, shortText, eta, etaRounded);
         }
 
         private final String text;
+        private final ETAShortText shortText;
         private final double eta;
         private final long etaRounded;
 
-        private ETALineEntry(String text, double eta, long etaRounded) {
+        private ETALineEntry(String text, ETAShortText shortText, double eta, long etaRounded) {
             this.text = text;
+            this.shortText = shortText;
             this.eta = eta;
             this.etaRounded = etaRounded;
         }
 
         public String getText() {
             return text;
+        }
+
+        public ETAShortText getShortText() {
+            return shortText;
         }
 
         public double getEta() {
@@ -2264,12 +2318,47 @@ public class Registry {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ETALineEntry that = (ETALineEntry) o;
-            return eta == that.eta && Objects.equals(text, that.text);
+            return Double.compare(that.eta, eta) == 0 && etaRounded == that.etaRounded && Objects.equals(text, that.text) && Objects.equals(shortText, that.shortText);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(text, eta);
+            return Objects.hash(text, shortText, eta, etaRounded);
+        }
+    }
+
+    @Immutable
+    public static class ETAShortText {
+
+        public static final ETAShortText EMPTY = new ETAShortText("", "");
+
+        private final String first;
+        private final String second;
+
+        public ETAShortText(String first, String second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        public String getFirst() {
+            return first;
+        }
+
+        public String getSecond() {
+            return second;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ETAShortText that = (ETAShortText) o;
+            return Objects.equals(first, that.first) && Objects.equals(second, that.second);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(first, second);
         }
     }
 

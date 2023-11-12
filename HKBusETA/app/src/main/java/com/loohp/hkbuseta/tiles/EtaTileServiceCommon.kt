@@ -80,6 +80,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.Collectors
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.set
 import kotlin.math.roundToInt
 
 
@@ -122,6 +125,10 @@ class MergedETAQueryResult<T> private constructor(
 
     fun getLine(index: Int): Pair<T?, ETALineEntry> {
         return lines[index]?: (null to ETALineEntry.EMPTY)
+    }
+
+    operator fun get(index: Int): Pair<T?, ETALineEntry> {
+        return getLine(index)
     }
 
     companion object {
@@ -533,7 +540,7 @@ class EtaTileServiceCommon {
             val line = eta?.getLine(seq)
             val lineRoute = line?.first?.let { it.co.getDisplayRouteNumber(it.route.routeNumber, true) }
             val appendRouteNumber = lineRoute == null ||
-                    (1..3).all { eta.getLine(it).first?.route?.routeNumber.let { route -> route == null || route == line.first?.route?.routeNumber } } ||
+                    (1..3).all { eta[it].first?.route?.routeNumber.let { route -> route == null || route == line.first?.route?.routeNumber } } ||
                     eta.allKeys.all { it.co == Operator.MTR } ||
                     eta.mergedCount <= 1
             val raw = (if (appendRouteNumber) "" else "<small>$lineRoute > </small>")
@@ -637,7 +644,7 @@ class EtaTileServiceCommon {
                 Color.DarkGray
             } else {
                 tileState.setLastUpdateSuccessful(true)
-                eta.nextCo.getColor(routeNumber, Color.LightGray).adjustBrightness(if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) 0.2F else 1F)
+                eta.nextCo.getColor(routeNumber, Color.LightGray).adjustBrightness(if (eta.nextScheduledBus !in 0..59) 0.2F else 1F)
             }
             val previousColor = tileState.getAndSetLastTileArcColor(color)?: color
             val colorProp = ColorProp.Builder(color.toArgb())

@@ -24,6 +24,9 @@ import android.content.Context
 import androidx.compose.ui.graphics.Color
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
+import com.loohp.hkbuseta.shared.Registry.ETALineEntry
+import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
+import com.loohp.hkbuseta.shared.Registry.ETAShortText
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.DistanceUtils
 import com.loohp.hkbuseta.utils.toHexString
@@ -140,7 +143,7 @@ fun String.asStop(context: Context): Stop? {
 }
 
 fun Coordinates.distance(other: Coordinates): Double {
-    return DistanceUtils.findDistance(lat, lng, other.lat, other.lng);
+    return DistanceUtils.findDistance(lat, lng, other.lat, other.lng)
 }
 
 inline val RouteSearchResultEntry.uniqueKey: String get() {
@@ -150,3 +153,17 @@ inline val RouteSearchResultEntry.uniqueKey: String get() {
 inline val CharSequence.operator: Operator get() = Operator.valueOf(toString())
 
 inline val CharSequence.gmbRegion: GMBRegion? get() = GMBRegion.valueOfOrNull(toString().uppercase())
+
+operator fun ETAQueryResult.get(index: Int): ETALineEntry {
+    return this.getLine(index)
+}
+
+inline val ETAQueryResult.firstLine: ETALineEntry get() = this[1]
+
+operator fun ETAShortText.component1(): String {
+    return this.first
+}
+
+operator fun ETAShortText.component2(): String {
+    return this.second
+}

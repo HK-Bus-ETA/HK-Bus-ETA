@@ -101,6 +101,9 @@ import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.objects.Stop
+import com.loohp.hkbuseta.objects.component1
+import com.loohp.hkbuseta.objects.component2
+import com.loohp.hkbuseta.objects.firstLine
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
@@ -840,7 +843,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
     ) {
         val eta = etaState
         if (eta != null && !eta.isConnectionError) {
-            if (eta.nextScheduledBus < 0 || eta.nextScheduledBus > 60) {
+            if (eta.nextScheduledBus !in 0..59) {
                 if (eta.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
@@ -850,12 +853,12 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                         tint = Color(0xFF798996),
                     )
                 } else if (eta.isTyphoonSchedule) {
-                    val desc by remember { derivedStateOf { Registry.getInstance(instance).currentTyphoonData.get().typhoonWarningTitle } }
+                    val typhoonInfo by remember { Registry.getInstance(instance).cachedTyphoonDataState }.collectAsStateWithLifecycle()
                     Image(
                         modifier = Modifier
                             .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
-                        contentDescription = desc
+                        contentDescription = typhoonInfo.typhoonWarningTitle
                     )
                 } else {
                     Icon(
@@ -867,8 +870,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                     )
                 }
             } else {
-                val text1 = (if (eta.nextScheduledBus == 0L) "-" else eta.nextScheduledBus.toString())
-                val text2 = if (Shared.language == "en") "Min." else "分鐘"
+                val (text1, text2) = eta.firstLine.shortText
                 val span1 = SpannableString(text1)
                 val size1 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(14F, instance), dpMax = StringUtils.scaledSize(15F, instance))).roundToInt()
                 span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
