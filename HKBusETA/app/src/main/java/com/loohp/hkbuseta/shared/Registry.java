@@ -31,7 +31,6 @@ import androidx.core.util.AtomicFile;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
-import com.loohp.hkbuseta.R;
 import com.loohp.hkbuseta.branchedlist.BranchedList;
 import com.loohp.hkbuseta.objects.BilingualText;
 import com.loohp.hkbuseta.objects.Coordinates;
@@ -1504,7 +1503,7 @@ public class Registry {
         }
     }
 
-    public PendingETAQueryResult getEta(String stopId, Operator co, Route route, Context context) {
+    public PendingETAQueryResult getEta(String stopId, int stopIndex, Operator co, Route route, Context context) {
         PendingETAQueryResult pending = new PendingETAQueryResult(context, co, () -> {
             TyphoonInfo typhoonInfo = getCurrentTyphoonData().get();
 
@@ -1526,12 +1525,26 @@ public class Registry {
                     JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/" + stopId);
                     JSONArray buses = data.optJSONArray("data");
 
+                    Set<Integer> stopSequences = new HashSet<>();
                     for (int u = 0; u < buses.length(); u++) {
                         JSONObject bus = buses.optJSONObject(u);
                         if (Operator.KMB.equals(Operator.valueOf(bus.optString("co")))) {
                             String routeNumber = bus.optString("route");
                             String bound = bus.optString("dir");
                             if (routeNumber.equals(route.getRouteNumber()) && bound.equals(route.getBound().get(Operator.KMB))) {
+                                stopSequences.add(bus.optInt("seq"));
+                            }
+                        }
+                    }
+                    int matchingSeq = stopSequences.stream().min(Comparator.comparing(i -> Math.abs(i - stopIndex))).orElse(-1);
+                    Set<Integer> usedRealSeq = new HashSet<>();
+                    for (int u = 0; u < buses.length(); u++) {
+                        JSONObject bus = buses.optJSONObject(u);
+                        if (Operator.KMB.equals(Operator.valueOf(bus.optString("co")))) {
+                            String routeNumber = bus.optString("route");
+                            String bound = bus.optString("dir");
+                            int stopSeq = bus.optInt("seq");
+                            if (routeNumber.equals(route.getRouteNumber()) && bound.equals(route.getBound().get(Operator.KMB)) && stopSeq == matchingSeq && usedRealSeq.add(bus.optInt("eta_seq"))) {
                                 String eta = bus.optString("eta");
                                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                 if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
@@ -1609,11 +1622,31 @@ public class Registry {
                         JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + ctbStopId + "/" + routeNumber);
                         JSONArray buses = data.optJSONArray("data");
 
+                        Map<String, Set<Integer>> stopSequences = new HashMap<>();
+                        stopSequences.put(dest, new HashSet<>());
+                        stopSequences.put(orig, new HashSet<>());
+                        for (int u = 0; u < buses.length(); u++) {
+                            JSONObject bus = buses.optJSONObject(u);
+                            if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
+                                if (routeNumber.equals(bus.optString("route"))) {
+                                    String busDest = bus.optString("dest_tc").replace(" ", "");
+                                    stopSequences.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
+                                            .getValue().add(bus.optInt("seq"));
+                                }
+                            }
+                        }
+                        Map<String, Integer> matchingSeq = stopSequences.entrySet().stream()
+                                .map(e -> new Pair<>(e.getKey(), e.getValue().stream().min(Comparator.comparing(i -> Math.abs(i - stopIndex))).orElse(-1)))
+                                .collect(Collectors.toMap(Pair<String, Integer>::getFirst, Pair<String, Integer>::getSecond));
+                        Set<Integer> usedRealSeq = new HashSet<>();
                         for (int u = 0; u < buses.length(); u++) {
                             JSONObject bus = buses.optJSONObject(u);
                             if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
                                 String busDest = bus.optString("dest_tc").replace(" ", "");
-                                if (routeNumber.equals(bus.optString("route"))) {
+                                int stopSeq = bus.optInt("seq");
+                                int thisMatchingSeq = matchingSeq.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest)))
+                                        .orElseThrow(RuntimeException::new).getValue();
+                                if (routeNumber.equals(bus.optString("route")) && stopSeq == thisMatchingSeq && usedRealSeq.add(bus.optInt("eta_seq"))) {
                                     String eta = bus.optString("eta");
                                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                     if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
@@ -1693,52 +1726,69 @@ public class Registry {
                 JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/" + stopId);
                 JSONArray buses = data.optJSONArray("data");
 
+                Set<Integer> stopSequences = new HashSet<>();
                 for (int u = 0; u < buses.length(); u++) {
                     JSONObject bus = buses.optJSONObject(u);
                     if (Operator.KMB.equals(Operator.valueOf(bus.optString("co")))) {
                         String routeNumber = bus.optString("route");
                         String bound = bus.optString("dir");
                         if (routeNumber.equals(route.getRouteNumber()) && bound.equals(route.getBound().get(Operator.KMB))) {
-                            int seq = bus.optInt("eta_seq");
-                            String eta = bus.optString("eta");
-                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-                            double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
-                            long minsRounded = Math.round(mins);
-                            String message = "";
-                            if (language.equals("en")) {
-                                if (minsRounded > 0) {
-                                    message = "<b>" + minsRounded + "</b><small> Min.</small>";
-                                } else if (minsRounded > -60) {
-                                    message = "<b>-</b><small> Min.</small>";
-                                }
-                                if (!bus.optString("rmk_en").isEmpty()) {
-                                    message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
-                                }
-                            } else {
-                                if (minsRounded > 0) {
-                                    message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
-                                } else if (minsRounded > -60) {
-                                    message = "<b>-</b><small> 分鐘</small>";
-                                }
-                                if (!bus.optString("rmk_tc").isEmpty()) {
-                                    message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
-                                }
-                            }
-                            message = message
-                                    .replaceAll("原定", "預定")
-                                    .replaceAll("最後班次", "尾班車")
-                                    .replaceAll("尾班車已過", "尾班車已過本站");
-
-                            if (message.isEmpty() || (typhoonInfo.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
-                                if (seq == 1) {
-                                    message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
+                            stopSequences.add(bus.optInt("seq"));
+                        }
+                    }
+                }
+                int matchingSeq = stopSequences.stream().min(Comparator.comparing(i -> Math.abs(i - stopIndex))).orElse(-1);
+                int counter = 0;
+                Set<Integer> usedRealSeq = new HashSet<>();
+                for (int u = 0; u < buses.length(); u++) {
+                    JSONObject bus = buses.optJSONObject(u);
+                    if (Operator.KMB.equals(Operator.valueOf(bus.optString("co")))) {
+                        String routeNumber = bus.optString("route");
+                        String bound = bus.optString("dir");
+                        int stopSeq = bus.optInt("seq");
+                        if (routeNumber.equals(route.getRouteNumber()) && bound.equals(route.getBound().get(Operator.KMB)) && stopSeq == matchingSeq) {
+                            int seq = ++counter;
+                            if (usedRealSeq.add(bus.optInt("eta_seq"))) {
+                                String eta = bus.optString("eta");
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+                                double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
+                                long minsRounded = Math.round(mins);
+                                String message = "";
+                                if (language.equals("en")) {
+                                    if (minsRounded > 0) {
+                                        message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                                    } else if (minsRounded > -60) {
+                                        message = "<b>-</b><small> Min.</small>";
+                                    }
+                                    if (!bus.optString("rmk_en").isEmpty()) {
+                                        message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
+                                    }
                                 } else {
-                                    message = "<b></b>-";
+                                    if (minsRounded > 0) {
+                                        message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                                    } else if (minsRounded > -60) {
+                                        message = "<b>-</b><small> 分鐘</small>";
+                                    }
+                                    if (!bus.optString("rmk_tc").isEmpty()) {
+                                        message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
+                                    }
                                 }
-                            } else {
-                                message = "<b></b>" + message;
+                                message = message
+                                        .replaceAll("原定", "預定")
+                                        .replaceAll("最後班次", "尾班車")
+                                        .replaceAll("尾班車已過", "尾班車已過本站");
+
+                                if (message.isEmpty() || (typhoonInfo.isAboveTyphoonSignalEight() && (message.equals("ETA service suspended") || message.equals("暫停預報")))) {
+                                    if (seq == 1) {
+                                        message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
+                                    } else {
+                                        message = "<b></b>-";
+                                    }
+                                } else {
+                                    message = "<b></b>" + message;
+                                }
+                                lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                             }
-                            lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                         }
                     }
                 }
@@ -1749,51 +1799,67 @@ public class Registry {
                 JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + stopId + "/" + routeNumber);
                 JSONArray buses = data.optJSONArray("data");
 
+                Set<Integer> stopSequences = new HashSet<>();
                 for (int u = 0; u < buses.length(); u++) {
                     JSONObject bus = buses.optJSONObject(u);
                     if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
                         String bound = bus.optString("dir");
                         if (routeNumber.equals(bus.optString("route")) && bound.equals(route.getBound().get(Operator.CTB))) {
-                            int seq = bus.optInt("eta_seq");
-                            String eta = bus.optString("eta");
-                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-                            double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
-                            long minsRounded = Math.round(mins);
-                            String message = "";
-                            if (language.equals("en")) {
-                                if (minsRounded > 0) {
-                                    message = "<b>" + minsRounded + "</b><small> Min.</small>";
-                                } else if (minsRounded > -60) {
-                                    message = "<b>-</b><small> Min.</small>";
-                                }
-                                if (!bus.optString("rmk_en").isEmpty()) {
-                                    message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
-                                }
-                            } else {
-                                if (minsRounded > 0) {
-                                    message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
-                                } else if (minsRounded > -60) {
-                                    message = "<b>-</b><small> 分鐘</small>";
-                                }
-                                if (!bus.optString("rmk_tc").isEmpty()) {
-                                    message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
-                                }
-                            }
-                            message = message
-                                    .replaceAll("原定", "預定")
-                                    .replaceAll("最後班次", "尾班車")
-                                    .replaceAll("尾班車已過", "尾班車已過本站");
-
-                            if (message.isEmpty()) {
-                                if (seq == 1) {
-                                    message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
+                            stopSequences.add(bus.optInt("seq"));
+                        }
+                    }
+                }
+                int matchingSeq = stopSequences.stream().min(Comparator.comparing(i -> Math.abs(i - stopIndex))).orElse(-1);
+                int counter = 0;
+                Set<Integer> usedRealSeq = new HashSet<>();
+                for (int u = 0; u < buses.length(); u++) {
+                    JSONObject bus = buses.optJSONObject(u);
+                    if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
+                        String bound = bus.optString("dir");
+                        int stopSeq = bus.optInt("seq");
+                        if (routeNumber.equals(bus.optString("route")) && bound.equals(route.getBound().get(Operator.CTB)) && stopSeq == matchingSeq) {
+                            int seq = ++counter;
+                            if (usedRealSeq.add(bus.optInt("eta_seq"))) {
+                                String eta = bus.optString("eta");
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+                                double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
+                                long minsRounded = Math.round(mins);
+                                String message = "";
+                                if (language.equals("en")) {
+                                    if (minsRounded > 0) {
+                                        message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                                    } else if (minsRounded > -60) {
+                                        message = "<b>-</b><small> Min.</small>";
+                                    }
+                                    if (!bus.optString("rmk_en").isEmpty()) {
+                                        message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
+                                    }
                                 } else {
-                                    message = "<b></b>-";
+                                    if (minsRounded > 0) {
+                                        message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                                    } else if (minsRounded > -60) {
+                                        message = "<b>-</b><small> 分鐘</small>";
+                                    }
+                                    if (!bus.optString("rmk_tc").isEmpty()) {
+                                        message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
+                                    }
                                 }
-                            } else {
-                                message = "<b></b>" + message;
+                                message = message
+                                        .replaceAll("原定", "預定")
+                                        .replaceAll("最後班次", "尾班車")
+                                        .replaceAll("尾班車已過", "尾班車已過本站");
+
+                                if (message.isEmpty()) {
+                                    if (seq == 1) {
+                                        message = getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle());
+                                    } else {
+                                        message = "<b></b>-";
+                                    }
+                                } else {
+                                    message = "<b></b>" + message;
+                                }
+                                lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                             }
-                            lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                         }
                     }
                 }
@@ -1932,7 +1998,8 @@ public class Registry {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                 JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/eta/stop/" + stopId);
-                List<Pair<Double, JSONObject>> busList = new ArrayList<>();
+                Set<Integer> stopSequences = new HashSet<>();
+                List<Triple<Integer, Double, JSONObject>> busList = new ArrayList<>();
                 for (int i = 0; i < data.optJSONArray("data").length(); i++) {
                     JSONObject routeData = data.optJSONArray("data").optJSONObject(i);
                     JSONArray buses = routeData.optJSONArray("eta");
@@ -1941,27 +2008,33 @@ public class Registry {
                             .findFirst();
                     if (filteredEntry.isPresent() && buses != null) {
                         String routeNumber = filteredEntry.get().getRouteNumber();
+                        int stopSeq = routeData.optInt("stop_seq");
                         for (int u = 0; u < buses.length(); u++) {
                             JSONObject bus = buses.optJSONObject(u);
-                            String eta = bus.optString("timestamp");
-                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-                            double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
                             if (routeNumber.equals(route.getRouteNumber())) {
-                                busList.add(new Pair<>(mins, bus));
+                                String eta = bus.optString("timestamp");
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                                double mins = eta.isEmpty() || eta.equalsIgnoreCase("null") ? -999 : (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
+                                stopSequences.add(stopSeq);
+                                busList.add(new Triple<>(stopSeq, mins, bus));
                             }
                         }
                     }
                 }
-                busList.sort(Comparator.comparing(Pair<Double, JSONObject>::getFirst));
+                if (stopSequences.size() > 1) {
+                    int matchingSeq = stopSequences.stream().min(Comparator.comparing(i -> Math.abs(i - stopIndex))).orElse(-1);
+                    busList.removeIf(t -> t.getFirst() != matchingSeq);
+                }
+                busList.sort(Comparator.comparing(Triple<Integer, Double, JSONObject>::getSecond));
                 for (int i = 0; i < busList.size(); i++) {
-                    Pair<Double, JSONObject> entry = busList.get(i);
-                    JSONObject bus = entry.getSecond();
+                    Triple<Integer, Double, JSONObject> entry = busList.get(i);
+                    JSONObject bus = entry.getThird();
                     int seq = i + 1;
                     String remark = language.equals("en") ? bus.optString("remarks_en") : bus.optString("remarks_tc");
                     if (remark == null || remark.equalsIgnoreCase("null")) {
                         remark = "";
                     }
-                    double mins = entry.getFirst();
+                    double mins = entry.getSecond();
                     long minsRounded = Math.round(mins);
                     String message = "";
                     if (language.equals("en")) {

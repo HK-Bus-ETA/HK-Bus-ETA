@@ -72,7 +72,7 @@ private class TimeBroadcastReceiver(val onTimeChanged: () -> Unit) : BroadcastRe
     private var registered = false
 
     override fun onReceive(context: Context, intent: Intent) {
-        onTimeChanged()
+        onTimeChanged.invoke()
     }
 
     fun register(context: Context) {

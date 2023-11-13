@@ -625,7 +625,7 @@ class EtaTileServiceCommon {
             val eta = tileState.getETAQueryResult {
                 val eta = MergedETAQueryResult.merge(
                     favouriteStopRoutes.parallelMap(executor) { stop ->
-                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context).get(7000, TimeUnit.MILLISECONDS)
+                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.index, stop.co, stop.route, context).get(7000, TimeUnit.MILLISECONDS)
                     }
                 )
                 it.markLastUpdated()
@@ -842,7 +842,7 @@ class EtaTileServiceCommon {
                             it.cacheETAQueryResult(MergedETAQueryResult.merge(
                                 favouriteRoutes.parallelMapNotNull(executor) { favouriteRoute ->
                                     Shared.favoriteRouteStops[favouriteRoute]?.let { stop ->
-                                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.co, stop.route, context).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+                                        stop to Registry.getInstanceNoUpdateCheck(context).getEta(stop.stopId, stop.index, stop.co, stop.route, context).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
                                     }
                                 }
                             ))

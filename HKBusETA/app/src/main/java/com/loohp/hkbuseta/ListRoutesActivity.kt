@@ -100,8 +100,10 @@ import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.Coordinates
 import com.loohp.hkbuseta.objects.Operator
+import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.objects.RouteSearchResultEntry.StopInfo
 import com.loohp.hkbuseta.objects.RouteSortMode
 import com.loohp.hkbuseta.objects.component1
 import com.loohp.hkbuseta.objects.component2
@@ -155,6 +157,33 @@ enum class RecentSortMode(val enabled: Boolean, val defaultSortMode: RouteSortMo
 }
 
 @Stable
+class StopIndexedRouteSearchResultEntry(
+    routeKey: String?,
+    route: Route?,
+    co: Operator?,
+    stopInfo: StopInfo?,
+    var stopInfoIndex: Int,
+    origin: Coordinates?,
+    isInterchangeSearch: Boolean
+) : RouteSearchResultEntry(routeKey, route, co, stopInfo, origin, isInterchangeSearch) {
+
+    companion object {
+
+        fun deserialize(json: JSONObject): StopIndexedRouteSearchResultEntry {
+            val routeKey = json.optString("routeKey");
+            val route = if (json.has("route")) Route.deserialize(json.optJSONObject("route")) else null
+            val co = Operator.valueOf(json.optString("co"));
+            val stop = if (json.has("stop")) StopInfo.deserialize(json.optJSONObject("stop")) else null
+            val origin = if (json.has("origin")) Coordinates.deserialize(json.optJSONObject("origin")) else null
+            val isInterchangeSearch = json.optBoolean("isInterchangeSearch")
+            return StopIndexedRouteSearchResultEntry(routeKey, route, co, stop, 0, origin, isInterchangeSearch)
+        }
+
+    }
+
+}
+
+@Stable
 class ListRoutesActivity : ComponentActivity() {
 
     private val sync: ExecutorService = Executors.newSingleThreadExecutor()
@@ -166,7 +195,7 @@ class ListRoutesActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
-        val result = JsonUtils.mapToList(JSONArray(intent.extras!!.getString("result")!!)) { RouteSearchResultEntry.deserialize(it as JSONObject) }.also { list ->
+        val result = JsonUtils.mapToList(JSONArray(intent.extras!!.getString("result")!!)) { StopIndexedRouteSearchResultEntry.deserialize(it as JSONObject) }.also { list ->
             list.removeIf {
                 if (it.route == null) {
                     val route = Registry.getInstance(this).findRouteByKey(it.routeKey, null)
@@ -185,6 +214,13 @@ class ListRoutesActivity : ComponentActivity() {
                     }
                 }
                 return@removeIf false
+            }
+        }.onEach {
+            val route: Route? = it.route
+            val co: Operator? = it.co
+            val stopInfo: StopInfo? = it.stopInfo
+            if (route != null && co != null && stopInfo != null) {
+                it.stopInfoIndex = Registry.getInstance(this).getAllStops(route.routeNumber, route.bound[co], co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
             }
         }.toImmutableList()
         val listType = intent.extras!!.getString("listType")?.let { RouteListType.valueOf(it) }?: RouteListType.NORMAL
@@ -240,7 +276,7 @@ class ListRoutesActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun MainElement(instance: ListRoutesActivity, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = remember { FocusRequester() }
         val hapticsController = remember { HapticsController() }
@@ -269,7 +305,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
             )) it else null }?: RouteSortMode.NORMAL
         }) }
         val sortTask = remember { {
-            val map: ImmutableMap.Builder<RouteSortMode, List<RouteSearchResultEntry>> = ImmutableMap.builder()
+            val map: ImmutableMap.Builder<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> = ImmutableMap.builder()
             map[RouteSortMode.NORMAL] = result
             if (recentSort.enabled) {
                 map[RouteSortMode.RECENT] = result.sortedBy {
@@ -486,7 +522,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<RouteSearchR
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: Operator, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: ImmutableList<String>, showEta: Boolean, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<String, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, instance: ListRoutesActivity, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: Operator, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: ImmutableList<String>, showEta: Boolean, route: StopIndexedRouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<String, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, instance: ListRoutesActivity, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
@@ -614,7 +650,7 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
 }
 
 @Composable
-fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<String, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, instance: ListRoutesActivity, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<String, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, instance: ListRoutesActivity, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     val etaStateFlow = remember { MutableStateFlow(etaResults.value[key]) }
 
     LaunchedEffect (Unit) {
@@ -623,7 +659,7 @@ fun ETAElement(key: String, route: RouteSearchResultEntry, etaTextWidth: Float, 
             delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, key) {
-            val result = Registry.getInstance(instance).getEta(route.stopInfo.stopId, route.co, route.route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            val result = Registry.getInstance(instance).getEta(route.stopInfo.stopId, route.stopInfoIndex, route.co, route.route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
             etaStateFlow.value = result
             etaUpdateTimes.value[key] = System.currentTimeMillis()
             etaResults.value[key] = result

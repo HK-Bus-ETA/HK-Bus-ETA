@@ -424,15 +424,12 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
         content = {
             val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
             if (favStopRoute != null) {
-                val stopId = favStopRoute.stopId
-                val co = favStopRoute.co
-                val route = favStopRoute.route
                 Box(
                     modifier = Modifier
                         .padding(10.dp, (if (Shared.language == "en") 7.5 else 8.5).dp)
                         .align(Alignment.BottomStart),
                 ) {
-                    ETAElement(favoriteIndex, stopId, co, route, etaResults, etaUpdateTimes, instance, schedule)
+                    ETAElement(favoriteIndex, favStopRoute.stopId, favStopRoute.index, favStopRoute.co, favStopRoute.route, etaResults, etaUpdateTimes, instance, schedule)
                 }
             }
             Row(
@@ -577,7 +574,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
 }
 
 @Composable
-fun ETAElement(favoriteIndex: Int, stopId: String, co: Operator, route: Route, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator, route: Route, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     val etaStateFlow = remember { MutableStateFlow(etaResults.value[favoriteIndex]) }
 
     LaunchedEffect (Unit) {
@@ -586,7 +583,7 @@ fun ETAElement(favoriteIndex: Int, stopId: String, co: Operator, route: Route, e
             delay(etaUpdateTimes.value[favoriteIndex]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, favoriteIndex) {
-            val result = Registry.getInstance(instance).getEta(stopId, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
             etaStateFlow.value = result
             etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
             etaResults.value[favoriteIndex] = result
