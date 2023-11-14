@@ -184,15 +184,15 @@ def download_and_process_data_sheet():
     response = requests.get(url)
     DATA_SHEET = response.json()
 
-    DATA_SHEET["stopList"]["AC1FD9BDD09D1DD6"]["remark"] = {"remark": {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}}
-    DATA_SHEET["stopList"]["20001477"] = {"remark": {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}}
-    DATA_SHEET["stopList"]["152"]["remark"] = {"remark": {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}}
-    DATA_SHEET["stopList"]["20015453"]["remark"] = {"remark": {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}}
-    DATA_SHEET["stopList"]["003208"]["remark"] = {"remark": {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}}
-    DATA_SHEET["stopList"]["81567ACCCF40DD4B"]["remark"] = {"remark": {"en": "(LMC SL Immigration Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲支線出入境管制站 - 僅限過境旅客)"}}
-    DATA_SHEET["stopList"]["20015420"]["remark"] = {"remark": {"en": "(LMC SL Immigration Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲支線出入境管制站 - 僅限過境旅客)"}}
-    DATA_SHEET["stopList"]["20011698"]["remark"] = {"remark": {"en": "(LMC Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲管制站 - 僅限過境旅客)"}}
-    DATA_SHEET["stopList"]["20015598"]["remark"] = {"remark": {"en": "(LMC Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲管制站 - 僅限過境旅客)"}}
+    DATA_SHEET["stopList"]["AC1FD9BDD09D1DD6"]["remark"] = {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}
+    DATA_SHEET["stopList"]["20001477"] = {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}
+    DATA_SHEET["stopList"]["152"]["remark"] = {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["20015453"]["remark"] = {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["003208"]["remark"] = {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["81567ACCCF40DD4B"]["remark"] = {"en": "(LMC SL Immigration Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲支線出入境管制站 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["20015420"]["remark"] = {"en": "(LMC SL Immigration Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲支線出入境管制站 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["20011698"]["remark"] = {"en": "(LMC Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲管制站 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["20015598"]["remark"] = {"en": "(LMC Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲管制站 - 僅限過境旅客)"}
     DATA_SHEET["stopList"]["RAC"] = {
         "location": {"lat": 22.4003487, "lng": 114.2030287},
         "name": {"en": "Racecourse", "zh": "馬場"},
