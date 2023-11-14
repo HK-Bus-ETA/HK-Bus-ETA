@@ -32,6 +32,8 @@ import com.loohp.hkbuseta.utils.DistanceUtils
 import com.loohp.hkbuseta.utils.toHexString
 
 
+private val bilingualToPrefix = BilingualText("往", "To ")
+
 inline val Operator.name: String get() = name()
 
 inline val Operator.isTrain: Boolean get() = this == Operator.MTR || this == Operator.LRT
@@ -127,7 +129,7 @@ fun Route.resolvedDest(prependTo: Boolean): BilingualText {
 }
 
 fun BilingualText.prependTo(): BilingualText {
-    return BilingualText("往$zh", "To $en")
+    return bilingualToPrefix + this
 }
 
 operator fun BilingualText.plus(other: BilingualText): BilingualText {
@@ -159,11 +161,7 @@ fun Coordinates.distance(other: Coordinates): Double {
 }
 
 inline val Stop.remarkedName: BilingualText get() {
-    return if (this.remark == null) {
-        this.name
-    } else {
-        this.name + "<small> " + this.remark + "</small>"
-    }
+    return if (this.remark == null) this.name else (this.name + "<small> " + this.remark + "</small>")
 }
 
 inline val RouteSearchResultEntry.uniqueKey: String get() {

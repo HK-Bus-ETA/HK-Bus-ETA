@@ -248,7 +248,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
         val kmbCtbJoint = remember { route.route.isKmbCtbJoint }
         val routeNumber = remember { route.route.routeNumber }
         val co = remember { route.co }
-        val bound = remember { if (co.equals(Operator.NLB)) route.route.nlbId else route.route.bound[co] }
+        val bound = remember { if (co == Operator.NLB) route.route.nlbId else route.route.bound[co] }
         val gmbRegion = remember { route.route.gmbRegion }
         val interchangeSearch = remember { route.isInterchangeSearch }
         val origName = remember { route.route.orig }

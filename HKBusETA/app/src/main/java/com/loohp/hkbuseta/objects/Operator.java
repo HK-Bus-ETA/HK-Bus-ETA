@@ -23,15 +23,12 @@ package com.loohp.hkbuseta.objects;
 import androidx.compose.runtime.Immutable;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 @Immutable
-public class Operator implements Comparable<Operator> {
-
-    private static final Pattern IMPOSSIBLE_STOPID_PATTERN = Pattern.compile("[^\\S\\s]");
+public final class Operator implements Comparable<Operator> {
 
     private static final Map<String, Operator> VALUES = new ConcurrentHashMap<>();
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
@@ -45,11 +42,11 @@ public class Operator implements Comparable<Operator> {
     public static final Operator MTR = createBuiltIn("mtr", "^[A-Z]{3}$");
 
     private static Operator createBuiltIn(String name, String stopIdPattern) {
-        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, Pattern.compile(stopIdPattern), true, COUNTER.getAndIncrement()));
+        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, COUNTER.getAndIncrement(), Pattern.compile(stopIdPattern), true));
     }
 
     public static Operator valueOf(String name) {
-        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, null, false, COUNTER.getAndIncrement()));
+        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, COUNTER.getAndIncrement(), null, false));
     }
 
     public static Operator[] values() {
@@ -57,19 +54,23 @@ public class Operator implements Comparable<Operator> {
     }
 
     private final String name;
+    private final int ordinal;
     private final Pattern stopIdPattern;
     private final boolean builtIn;
-    private final int ordinal;
 
-    private Operator(String name, Pattern stopIdPattern, boolean builtIn, int ordinal) {
+    private Operator(String name, int ordinal, Pattern stopIdPattern, boolean builtIn) {
         this.name = name;
+        this.ordinal = ordinal;
         this.stopIdPattern = stopIdPattern;
         this.builtIn = builtIn;
-        this.ordinal = ordinal;
     }
 
     public String name() {
         return name;
+    }
+
+    public int ordinal() {
+        return ordinal;
     }
 
     public boolean matchStopIdPattern(String stopId) {
@@ -80,10 +81,6 @@ public class Operator implements Comparable<Operator> {
         return builtIn;
     }
 
-    public int ordinal() {
-        return ordinal;
-    }
-
     @Override
     public String toString() {
         return name;
@@ -91,20 +88,17 @@ public class Operator implements Comparable<Operator> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Operator operator = (Operator) o;
-        return ordinal == operator.ordinal;
+        return this == o;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ordinal);
+        return super.hashCode();
     }
 
     @Override
     public int compareTo(Operator other) {
-        return Integer.compare(this.ordinal, other.ordinal);
+        return this.ordinal - other.ordinal;
     }
 
 }

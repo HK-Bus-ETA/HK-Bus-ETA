@@ -24,7 +24,6 @@ import static com.loohp.hkbuseta.objects.RouteExtensionsKt.prependTo;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.util.Log;
 
 import androidx.compose.runtime.Immutable;
 import androidx.core.app.ComponentActivity;
@@ -294,7 +293,7 @@ public class Registry {
         if (!stopId.equals(favouriteRouteStop.getStopId())) {
             return false;
         }
-        if (!co.equals(favouriteRouteStop.getCo())) {
+        if (co != favouriteRouteStop.getCo()) {
             return false;
         }
         if (index != favouriteRouteStop.getIndex()) {
@@ -618,11 +617,11 @@ public class Registry {
                                     if (!r.getBound().containsKey(co)) {
                                         return false;
                                     }
-                                    if (co.equals(Operator.GMB)) {
+                                    if (co == Operator.GMB) {
                                         if (!Objects.equals(r.getGmbRegion(), oldRoute.getGmbRegion())) {
                                             return false;
                                         }
-                                    } else if (co.equals(Operator.NLB)) {
+                                    } else if (co == Operator.NLB) {
                                         return r.getNlbId().equals(oldRoute.getNlbId());
                                     }
                                     return r.getBound().get(co).equals(oldRoute.getBound().get(co));
@@ -636,7 +635,7 @@ public class Registry {
                                 Route newRoute = newRouteData.getRoute();
                                 List<StopData> stopList = getAllStops(
                                         newRoute.getRouteNumber(),
-                                        co.equals(Operator.NLB) ? newRoute.getNlbId() : newRoute.getBound().get(co),
+                                        co == Operator.NLB ? newRoute.getNlbId() : newRoute.getBound().get(co),
                                         co,
                                         newRoute.getGmbRegion()
                                 );
@@ -795,7 +794,7 @@ public class Registry {
                 if (!coPredicate.test(data, co)) {
                     continue;
                 }
-                String key0 = data.getRouteNumber() + "," + co.name() + "," + (co.equals(Operator.NLB) ? data.getNlbId() : data.getBound().get(co)) + (co.equals(Operator.GMB) ? ("," + data.getGmbRegion()) : "");
+                String key0 = data.getRouteNumber() + "," + co.name() + "," + (co == Operator.NLB ? data.getNlbId() : data.getBound().get(co)) + (co == Operator.GMB ? ("," + data.getGmbRegion()) : "");
 
                 if (matchingRoutes.containsKey(key0)) {
                     try {
@@ -933,7 +932,7 @@ public class Registry {
                     return coStops.contains(stopId);
                 }).findFirst().orElse(null);
                 if (co != null) {
-                    String key0 = data.getRouteNumber() + "," + co.name() + "," + (co.equals(Operator.NLB) ? data.getNlbId() : data.getBound().get(co)) + (co.equals(Operator.GMB) ? ("," + data.getGmbRegion()) : "");
+                    String key0 = data.getRouteNumber() + "," + co.name() + "," + (co == Operator.NLB ? data.getNlbId() : data.getBound().get(co)) + (co == Operator.GMB ? ("," + data.getGmbRegion()) : "");
 
                     if (nearbyRoutes.containsKey(key0)) {
                         RouteSearchResultEntry existingNearbyRoute = nearbyRoutes.get(key0);
@@ -1074,11 +1073,11 @@ public class Registry {
             for (Route route : DATA.getDataSheet().getRouteList().values()) {
                 if (routeNumber.equals(route.getRouteNumber()) && route.getCo().contains(co)) {
                     boolean flag;
-                    if (co.equals(Operator.NLB)) {
+                    if (co == Operator.NLB) {
                         flag = bound.equals(route.getNlbId());
                     } else {
                         flag = bound.equals(route.getBound().get(co));
-                        if (co.equals(Operator.GMB)) {
+                        if (co == Operator.GMB) {
                             flag &= Objects.equals(gmbRegion, route.getGmbRegion());
                         }
                     }
@@ -1168,11 +1167,11 @@ public class Registry {
             for (Route route : DATA.getDataSheet().getRouteList().values()) {
                 if (routeNumber.equals(route.getRouteNumber()) && route.getCo().contains(co)) {
                     boolean flag;
-                    if (co.equals(Operator.NLB)) {
+                    if (co == Operator.NLB) {
                         flag = bound.equals(route.getNlbId());
                     } else {
                         flag = bound.equals(route.getBound().get(co));
-                        if (co.equals(Operator.GMB)) {
+                        if (co == Operator.GMB) {
                             flag &= Objects.equals(gmbRegion, route.getGmbRegion());
                         }
                     }
@@ -1509,7 +1508,7 @@ public class Registry {
                     Set<Integer> stopSequences = new HashSet<>();
                     for (int u = 0; u < buses.length(); u++) {
                         JSONObject bus = buses.optJSONObject(u);
-                        if (Operator.KMB.equals(Operator.valueOf(bus.optString("co")))) {
+                        if (Operator.KMB == Operator.valueOf(bus.optString("co"))) {
                             String routeNumber = bus.optString("route");
                             String bound = bus.optString("dir");
                             if (routeNumber.equals(route.getRouteNumber()) && bound.equals(route.getBound().get(Operator.KMB))) {
@@ -1521,7 +1520,7 @@ public class Registry {
                     Set<Integer> usedRealSeq = new HashSet<>();
                     for (int u = 0; u < buses.length(); u++) {
                         JSONObject bus = buses.optJSONObject(u);
-                        if (Operator.KMB.equals(Operator.valueOf(bus.optString("co")))) {
+                        if (Operator.KMB == Operator.valueOf(bus.optString("co"))) {
                             String routeNumber = bus.optString("route");
                             String bound = bus.optString("dir");
                             int stopSeq = bus.optInt("seq");
@@ -1591,49 +1590,41 @@ public class Registry {
                     List<String> ctbStopIds = new ArrayList<>();
                     if (matchingStops != null) {
                         for (Pair<Operator, String> stopArray : matchingStops) {
-                            if (Operator.CTB.equals(stopArray.getFirst())) {
+                            if (Operator.CTB == stopArray.getFirst()) {
                                 ctbStopIds.add(stopArray.getSecond());
                             }
                         }
                     }
+                    Set<String> destKeys = Set.of(dest, orig);
                     Map<String, Set<JointOperatedEntry>> ctbEtaEntries = new ConcurrentHashMap<>();
-                    ctbEtaEntries.put(dest, ConcurrentHashMap.newKeySet());
-                    ctbEtaEntries.put(orig, ConcurrentHashMap.newKeySet());
                     List<Future<?>> ctbFutures = new ArrayList<>(ctbStopIds.size());
                     for (String ctbStopId : ctbStopIds) {
                         ctbFutures.add(ETA_QUERY_EXECUTOR.submit(() -> {
                             JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + ctbStopId + "/" + routeNumber);
-                            Log.d("a", "https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + ctbStopId + "/" + routeNumber);
                             JSONArray buses = data.optJSONArray("data");
-
                             Map<String, Set<Integer>> stopSequences = new HashMap<>();
-                            stopSequences.put(dest, new HashSet<>());
-                            stopSequences.put(orig, new HashSet<>());
+                            String[] busDests = new String[buses.length()];
                             for (int u = 0; u < buses.length(); u++) {
                                 JSONObject bus = buses.optJSONObject(u);
-                                if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
-                                    if (routeNumber.equals(bus.optString("route"))) {
-                                        String busDest = bus.optString("dest_tc").replace(" ", "");
-                                        stopSequences.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
-                                                .getValue().add(bus.optInt("seq"));
-                                    }
+                                if (Operator.CTB == Operator.valueOf(bus.optString("co")) && routeNumber.equals(bus.optString("route"))) {
+                                    String rawBusDest = bus.optString("dest_tc").replace(" ", "");
+                                    String busDest = destKeys.stream()
+                                            .min(Comparator.comparing(d -> StringUtils.editDistance(d, rawBusDest)))
+                                            .orElseThrow(RuntimeException::new);
+                                    busDests[u] = busDest;
+                                    stopSequences.computeIfAbsent(busDest, k -> new HashSet<>()).add(bus.optInt("seq"));
                                 }
                             }
                             Map<String, Integer> matchingSeq = stopSequences.entrySet().stream()
                                     .map(e -> new Pair<>(e.getKey(), e.getValue().stream().min(Comparator.comparing(i -> Math.abs(i - stopIndex))).orElse(-1)))
                                     .collect(Collectors.toMap(Pair<String, Integer>::getFirst, Pair<String, Integer>::getSecond));
                             Map<String, Set<Integer>> usedRealSeq = new HashMap<>();
-                            usedRealSeq.put(dest, new HashSet<>());
-                            usedRealSeq.put(orig, new HashSet<>());
                             for (int u = 0; u < buses.length(); u++) {
                                 JSONObject bus = buses.optJSONObject(u);
-                                if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
-                                    String busDest = bus.optString("dest_tc").replace(" ", "");
+                                if (Operator.CTB == Operator.valueOf(bus.optString("co")) && routeNumber.equals(bus.optString("route"))) {
+                                    String busDest = busDests[u];
                                     int stopSeq = bus.optInt("seq");
-                                    int thisMatchingSeq = matchingSeq.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest)))
-                                            .orElseThrow(RuntimeException::new).getValue();
-                                    if (routeNumber.equals(bus.optString("route")) && stopSeq == thisMatchingSeq && usedRealSeq.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest)))
-                                            .orElseThrow(RuntimeException::new).getValue().add(bus.optInt("eta_seq"))) {
+                                    if (stopSeq == matchingSeq.getOrDefault(busDest, 0) && usedRealSeq.computeIfAbsent(busDest, k -> new HashSet<>()).add(bus.optInt("eta_seq"))) {
                                         String eta = bus.optString("eta");
                                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
                                         if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
@@ -1663,8 +1654,7 @@ public class Registry {
                                                     .replaceAll("原定", "預定")
                                                     .replaceAll("最後班次", "尾班車")
                                                     .replaceAll("尾班車已過", "尾班車已過本站");
-                                            ctbEtaEntries.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
-                                                    .getValue().add(new JointOperatedEntry(mins, minsRounded, message, Operator.CTB));
+                                            ctbEtaEntries.computeIfAbsent(busDest, k -> ConcurrentHashMap.newKeySet()).add(new JointOperatedEntry(mins, minsRounded, message, Operator.CTB));
                                         }
                                     }
                                 }
@@ -1674,7 +1664,6 @@ public class Registry {
                     for (Future<?> future : ctbFutures) {
                         future.get();
                     }
-                    ctbEtaEntries.get(dest).forEach(e -> Log.d("a", e.getLine()));
                     jointOperated.addAll(ctbEtaEntries.get(dest));
                 }
                 kmbFuture.get();
@@ -1697,7 +1686,7 @@ public class Registry {
                         if (minsRounded > kmbFirstScheduledBus.get() && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
                             message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)") + "</small>";
                         }
-                        if (entryCo.equals(Operator.KMB)) {
+                        if (entryCo == Operator.KMB) {
                             if (Shared.Companion.getKMBSubsidiary(route.getRouteNumber()) == KMBSubsidiary.LWB) {
                                 message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " - LWB" : " - 龍運") + "</small>";
                             } else {
@@ -1713,7 +1702,7 @@ public class Registry {
                         lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                     }
                 }
-            } else if (co.equals(Operator.KMB)) {
+            } else if (co == Operator.KMB) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                 JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/" + stopId);
@@ -1722,7 +1711,7 @@ public class Registry {
                 Set<Integer> stopSequences = new HashSet<>();
                 for (int u = 0; u < buses.length(); u++) {
                     JSONObject bus = buses.optJSONObject(u);
-                    if (Operator.KMB.equals(Operator.valueOf(bus.optString("co")))) {
+                    if (Operator.KMB == Operator.valueOf(bus.optString("co"))) {
                         String routeNumber = bus.optString("route");
                         String bound = bus.optString("dir");
                         if (routeNumber.equals(route.getRouteNumber()) && bound.equals(route.getBound().get(Operator.KMB))) {
@@ -1735,7 +1724,7 @@ public class Registry {
                 Set<Integer> usedRealSeq = new HashSet<>();
                 for (int u = 0; u < buses.length(); u++) {
                     JSONObject bus = buses.optJSONObject(u);
-                    if (Operator.KMB.equals(Operator.valueOf(bus.optString("co")))) {
+                    if (Operator.KMB == Operator.valueOf(bus.optString("co"))) {
                         String routeNumber = bus.optString("route");
                         String bound = bus.optString("dir");
                         int stopSeq = bus.optInt("seq");
@@ -1785,7 +1774,7 @@ public class Registry {
                         }
                     }
                 }
-            } else if (co.equals(Operator.CTB)) {
+            } else if (co == Operator.CTB) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                 String routeNumber = route.getRouteNumber();
@@ -1795,7 +1784,7 @@ public class Registry {
                 Set<Integer> stopSequences = new HashSet<>();
                 for (int u = 0; u < buses.length(); u++) {
                     JSONObject bus = buses.optJSONObject(u);
-                    if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
+                    if (Operator.CTB == Operator.valueOf(bus.optString("co"))) {
                         String bound = bus.optString("dir");
                         if (routeNumber.equals(bus.optString("route")) && bound.equals(route.getBound().get(Operator.CTB))) {
                             stopSequences.add(bus.optInt("seq"));
@@ -1807,7 +1796,7 @@ public class Registry {
                 Set<Integer> usedRealSeq = new HashSet<>();
                 for (int u = 0; u < buses.length(); u++) {
                     JSONObject bus = buses.optJSONObject(u);
-                    if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
+                    if (Operator.CTB == Operator.valueOf(bus.optString("co"))) {
                         String bound = bus.optString("dir");
                         int stopSeq = bus.optInt("seq");
                         if (routeNumber.equals(bus.optString("route")) && bound.equals(route.getBound().get(Operator.CTB)) && stopSeq == matchingSeq) {
@@ -1856,7 +1845,7 @@ public class Registry {
                         }
                     }
                 }
-            } else if (co.equals(Operator.NLB)) {
+            } else if (co == Operator.NLB) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                 JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=" + route.getNlbId() + "&stopId=" + stopId + "&language=" + Shared.Companion.getLanguage());
@@ -1905,7 +1894,7 @@ public class Registry {
                         lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                     }
                 }
-            } else if (co.equals(Operator.MTR_BUS)) {
+            } else if (co == Operator.MTR_BUS) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                 String routeNumber = route.getRouteNumber();
@@ -1987,7 +1976,7 @@ public class Registry {
                         }
                     }
                 }
-            } else if (co.equals(Operator.GMB)) {
+            } else if (co == Operator.GMB) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                 JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etagmb.gov.hk/eta/stop/" + stopId);
@@ -2062,7 +2051,7 @@ public class Registry {
                     }
                     lines.put(seq, ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded));
                 }
-            } else if (co.equals(Operator.LRT)) {
+            } else if (co == Operator.LRT) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
 
                 List<String> stopsList = route.getStops().get(Operator.LRT);
@@ -2134,7 +2123,7 @@ public class Registry {
                         }
                     }
                 }
-            } else if (co.equals(Operator.MTR)) {
+            } else if (co == Operator.MTR) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine();
 
                 String lineName = route.getRouteNumber();
