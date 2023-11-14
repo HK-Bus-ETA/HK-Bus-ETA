@@ -156,7 +156,7 @@ class Shared {
                             stacktrace = stacktrace.substring(0, 459000).plus("...")
                         }
                         val intent = Intent(context, FatalErrorActivity::class.java)
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                         intent.putExtra("exception", stacktrace)
                         context.startActivity(intent)
                     }
@@ -356,9 +356,11 @@ class Shared {
         }
 
         fun ensureRegistryDataAvailable(activity: Activity): Boolean {
-            return if (!Registry.hasInstanceCreated()) {
-                activity.startActivity(Intent(activity, MainActivity::class.java))
-                activity.finish()
+            return if (!Registry.hasInstanceCreated() || Registry.getInstanceNoUpdateCheck(activity).state.value.isProcessing) {
+                val intent = Intent(activity, MainActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                activity.startActivity(intent)
+                activity.finishAffinity()
                 false
             } else {
                 true
