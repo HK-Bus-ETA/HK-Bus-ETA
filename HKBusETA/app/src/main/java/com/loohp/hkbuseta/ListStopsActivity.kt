@@ -90,6 +90,7 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.aghajari.compose.text.AnnotatedText
+import com.aghajari.compose.text.ContentAnnotatedString
 import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -110,6 +111,7 @@ import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.getLineColor
 import com.loohp.hkbuseta.objects.isTrain
 import com.loohp.hkbuseta.objects.name
+import com.loohp.hkbuseta.objects.remarkedName
 import com.loohp.hkbuseta.objects.resolvedDest
 import com.loohp.hkbuseta.services.AlightReminderService
 import com.loohp.hkbuseta.shared.Registry
@@ -136,6 +138,7 @@ import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.toImmutableList
+import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -399,6 +402,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
                     val brightness = if (entry.serviceType == lowestServiceType) 1F else 0.65F
                     val rawColor = (if (isClosest) coColor else Color.White).adjustBrightness(brightness)
                     val stopStr = stop.name[Shared.language]
+                    val stopRemarkedName = remember { stop.remarkedName[Shared.language].toSpanned(instance).asAnnotatedString() }
                     val mtrLineSectionData = mtrLineSectionsData?.get(index)
 
                     Column (
@@ -419,14 +423,9 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
                                     instance.runOnUiThread {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         instance.runOnUiThread {
-                                            val prefix =
-                                                if (co.isTrain) "" else stopNumber
-                                                    .toString()
-                                                    .plus(". ")
+                                            val prefix = if (co.isTrain) "" else stopNumber.toString().plus(". ")
                                             val text = if (isClosest && !isAlightReminder) {
-                                                prefix
-                                                    .plus(stopStr)
-                                                    .plus("\n")
+                                                prefix.plus(stopStr).plus("\n")
                                                     .plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
                                                     .plus(((distances[stopNumber] ?: Double.NaN) * 1000).roundToInt().formatDecimalSeparator())
                                                     .plus(if (Shared.language == "en") "m" else "米")
@@ -439,7 +438,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
                                 }
                             )
                     ) {
-                        StopRowElement(stopNumber, stopId, co, showEta, isAlightReminder, isClosest, isTargetStop, isTargetIntermediateStop, kmbCtbJoint, mtrStopsInterchange, rawColor, brightness, padding, stopStr, stopsList, mtrLineSectionData, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                        StopRowElement(stopNumber, stopId, co, showEta, isAlightReminder, isClosest, isTargetStop, isTargetIntermediateStop, kmbCtbJoint, mtrStopsInterchange, rawColor, brightness, padding, stopRemarkedName, stopsList, mtrLineSectionData, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
                         if (isAlightReminder && isTargetStop) {
                             Box (
                                 modifier = Modifier.fillMaxWidth(),
@@ -689,7 +688,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coCol
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boolean, isAlightReminder: Boolean, isClosest: Boolean, isTargetStop: Boolean, isTargetIntermediateStop: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: String, stopList: ImmutableList<StopData>, mtrLineSectionData: MTRStopSectionData?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boolean, isAlightReminder: Boolean, isClosest: Boolean, isTargetStop: Boolean, isTargetIntermediateStop: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: ContentAnnotatedString, stopList: ImmutableList<StopData>, mtrLineSectionData: MTRStopSectionData?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     val color = if (isAlightReminder) {
         if (isTargetStop) {
             Color(0xFFFF9800)
@@ -747,7 +746,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boole
             )
         }
         if (isAlightReminder && ((isTargetStop && !isClosest) || isClosest || isTargetIntermediateStop)) {
-            Text(
+            AnnotatedText(
                 modifier = Modifier
                     .padding(0.dp, padding.dp)
                     .weight(1F)
@@ -785,7 +784,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boole
                 }
             }
         } else {
-            Text(
+            AnnotatedText(
                 modifier = Modifier
                     .padding(0.dp, padding.dp)
                     .weight(1F)

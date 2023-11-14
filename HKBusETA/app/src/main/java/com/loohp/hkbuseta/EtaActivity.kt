@@ -510,7 +510,7 @@ fun handleOpenMaps(lat: Double, lng: Double, label: String, instance: EtaActivit
 @Composable
 fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: EtaActivity) {
     val haptic = LocalHapticFeedback.current
-    val name = if (Shared.language == "en") stopName.en else stopName.zh
+    val name = stopName[Shared.language]
     AutoResizeText (
         modifier = Modifier
             .fillMaxWidth()
@@ -523,7 +523,7 @@ fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
         text = if (co.isTrain) name else index.toString().plus(". ").plus(name),
         maxLines = 2,
-        fontWeight = FontWeight(900),
+        fontWeight = FontWeight.Bold,
         fontSizeRange = FontSizeRange(
             min = StringUtils.scaledSize(1F, instance).dp.sp,
             max = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)

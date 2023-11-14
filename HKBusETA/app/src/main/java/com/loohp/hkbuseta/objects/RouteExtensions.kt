@@ -130,6 +130,14 @@ fun BilingualText.prependTo(): BilingualText {
     return BilingualText("往$zh", "To $en")
 }
 
+operator fun BilingualText.plus(other: BilingualText): BilingualText {
+    return BilingualText(this.zh + other.zh, this.en + other.en)
+}
+
+operator fun BilingualText.plus(other: String): BilingualText {
+    return BilingualText(this.zh + other, this.en + other)
+}
+
 fun DoubleArray.toCoordinates(): Coordinates {
     return Coordinates.fromArray(this)
 }
@@ -142,8 +150,20 @@ fun String.asStop(context: Context): Stop? {
     return Registry.getInstance(context).getStopById(this)
 }
 
+fun String.identifyStopCo(): Operator? {
+    return Operator.values().firstOrNull { it.matchStopIdPattern(this) }
+}
+
 fun Coordinates.distance(other: Coordinates): Double {
     return DistanceUtils.findDistance(lat, lng, other.lat, other.lng)
+}
+
+inline val Stop.remarkedName: BilingualText get() {
+    return if (this.remark == null) {
+        this.name
+    } else {
+        this.name + "<small> " + this.remark + "</small>"
+    }
 }
 
 inline val RouteSearchResultEntry.uniqueKey: String get() {

@@ -25,42 +25,63 @@ import androidx.compose.runtime.Immutable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 @Immutable
-public class Operator {
+public class Operator implements Comparable<Operator> {
+
+    private static final Pattern IMPOSSIBLE_STOPID_PATTERN = Pattern.compile("[^\\S\\s]");
 
     private static final Map<String, Operator> VALUES = new ConcurrentHashMap<>();
+    private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
-    public static final Operator KMB = createBuiltIn("kmb");
-    public static final Operator CTB = createBuiltIn("ctb");
-    public static final Operator NLB = createBuiltIn("nlb");
-    public static final Operator MTR_BUS = createBuiltIn("mtr-bus");
-    public static final Operator GMB = createBuiltIn("gmb");
-    public static final Operator LRT = createBuiltIn("lightRail");
-    public static final Operator MTR = createBuiltIn("mtr");
+    public static final Operator KMB = createBuiltIn("kmb", "^[0-9A-Z]{16}$");
+    public static final Operator CTB = createBuiltIn("ctb", "^[0-9]{6}$");
+    public static final Operator NLB = createBuiltIn("nlb", "^[0-9]{1,4}$");
+    public static final Operator MTR_BUS = createBuiltIn("mtr-bus", "^[A-Z]?[0-9]{1,3}[A-Z]?-[A-Z][0-9]{3}$");
+    public static final Operator GMB = createBuiltIn("gmb", "^[0-9]{8}$");
+    public static final Operator LRT = createBuiltIn("lightRail", "^LR[0-9]+$");
+    public static final Operator MTR = createBuiltIn("mtr", "^[A-Z]{3}$");
 
-    private static Operator createBuiltIn(String name) {
-        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, true));
+    private static Operator createBuiltIn(String name, String stopIdPattern) {
+        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, Pattern.compile(stopIdPattern), true, COUNTER.getAndIncrement()));
     }
 
     public static Operator valueOf(String name) {
-        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, false));
+        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new Operator(k, null, false, COUNTER.getAndIncrement()));
+    }
+
+    public static Operator[] values() {
+        return VALUES.values().stream().sorted().toArray(Operator[]::new);
     }
 
     private final String name;
+    private final Pattern stopIdPattern;
     private final boolean builtIn;
+    private final int ordinal;
 
-    private Operator(String name, boolean builtIn) {
+    private Operator(String name, Pattern stopIdPattern, boolean builtIn, int ordinal) {
         this.name = name;
+        this.stopIdPattern = stopIdPattern;
         this.builtIn = builtIn;
+        this.ordinal = ordinal;
     }
 
     public String name() {
         return name;
     }
 
+    public boolean matchStopIdPattern(String stopId) {
+        return stopIdPattern != null && stopIdPattern.matcher(stopId).matches();
+    }
+
     public boolean isBuiltIn() {
         return builtIn;
+    }
+
+    public int ordinal() {
+        return ordinal;
     }
 
     @Override
@@ -73,12 +94,17 @@ public class Operator {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Operator operator = (Operator) o;
-        return Objects.equals(name, operator.name);
+        return ordinal == operator.ordinal;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name);
+        return Objects.hash(ordinal);
+    }
+
+    @Override
+    public int compareTo(Operator other) {
+        return Integer.compare(this.ordinal, other.ordinal);
     }
 
 }

@@ -24,6 +24,7 @@ import static com.loohp.hkbuseta.objects.RouteExtensionsKt.prependTo;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.util.Log;
 
 import androidx.compose.runtime.Immutable;
 import androidx.core.app.ComponentActivity;
@@ -55,6 +56,7 @@ import com.loohp.hkbuseta.tiles.EtaTileServiceSix;
 import com.loohp.hkbuseta.tiles.EtaTileServiceThree;
 import com.loohp.hkbuseta.tiles.EtaTileServiceTwo;
 import com.loohp.hkbuseta.utils.CollectionsUtils;
+import com.loohp.hkbuseta.utils.CollectionsUtilsKtKt;
 import com.loohp.hkbuseta.utils.ConnectionUtils;
 import com.loohp.hkbuseta.utils.DistanceUtils;
 import com.loohp.hkbuseta.utils.HTTPRequestUtils;
@@ -89,18 +91,22 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -123,6 +129,7 @@ public class Registry {
 
     private static volatile Registry INSTANCE = null;
     private static final Object INSTANCE_LOCK = new Object();
+    private static final ExecutorService ETA_QUERY_EXECUTOR = new ThreadPoolExecutor(64, Integer.MAX_VALUE, 60, TimeUnit.SECONDS, new SynchronousQueue<>());
 
     public static Registry getInstance(Context context) {
         synchronized (INSTANCE_LOCK) {
@@ -821,38 +828,39 @@ public class Registry {
             return null;
         }
 
-        List<RouteSearchResultEntry> routes = new ArrayList<>(matchingRoutes.values());
-        routes.sort((a, b) -> {
-            Map<Operator, String> boundA = a.getRoute().getBound();
-            Map<Operator, String> boundB = b.getRoute().getBound();
-            Operator coAStr = boundA.containsKey(Operator.KMB) ? Operator.KMB : (boundA.containsKey(Operator.CTB) ? Operator.CTB : (boundA.containsKey(Operator.NLB) ? Operator.NLB : (boundA.containsKey(Operator.MTR_BUS) ? Operator.MTR_BUS : (boundA.containsKey(Operator.GMB) ? Operator.GMB : (boundA.containsKey(Operator.LRT) ? Operator.LRT : Operator.MTR)))));
-            Operator coBStr = boundB.containsKey(Operator.KMB) ? Operator.KMB : (boundB.containsKey(Operator.CTB) ? Operator.CTB : (boundB.containsKey(Operator.NLB) ? Operator.NLB : (boundB.containsKey(Operator.MTR_BUS) ? Operator.MTR_BUS : (boundB.containsKey(Operator.GMB) ? Operator.GMB : (boundB.containsKey(Operator.LRT) ? Operator.LRT : Operator.MTR)))));
-            int coA = coAStr.equals(Operator.KMB) ? 0 : (coAStr.equals(Operator.CTB) ? 1 : (coAStr.equals(Operator.NLB) ? 2 : (coAStr.equals(Operator.MTR_BUS) ? 3 : (coAStr.equals(Operator.GMB) ? 4 : (coAStr.equals(Operator.LRT) ? 5 : 6)))));
-            int coB = coBStr.equals(Operator.KMB) ? 0 : (coBStr.equals(Operator.CTB) ? 1 : (coBStr.equals(Operator.NLB) ? 2 : (coBStr.equals(Operator.MTR_BUS) ? 3 : (coBStr.equals(Operator.GMB) ? 4 : (coBStr.equals(Operator.LRT) ? 5 : 6)))));
-            if (coA != coB) {
-                return coA - coB;
-            }
-
+        return matchingRoutes.values().stream().sorted((a, b) -> {
             Route routeA = a.getRoute();
             Route routeB = b.getRoute();
+
+            Map<Operator, String> boundA = routeA.getBound();
+            Map<Operator, String> boundB = routeB.getBound();
+
+            Operator coA = boundA.keySet().stream().max(Comparator.naturalOrder()).orElseThrow(NoSuchElementException::new);
+            Operator coB = boundB.keySet().stream().max(Comparator.naturalOrder()).orElseThrow(NoSuchElementException::new);
+            int coDiff = coA.compareTo(coB);
+            if (coDiff != 0) {
+                return coDiff;
+            }
 
             String routeNumberA = routeA.getRouteNumber();
             String routeNumberB = routeB.getRouteNumber();
 
-            if (!routeNumberA.equals(routeNumberB)) {
-                return routeNumberA.compareTo(routeNumberB);
-            }
-            if (coA == 5 || coA == 6) {
+            if (RouteExtensionsKt.isTrain(coA) && RouteExtensionsKt.isTrain(coB)) {
                 int lineDiff = Integer.compare(Shared.Companion.getMtrLineSortingIndex(routeNumberA), Shared.Companion.getMtrLineSortingIndex(routeNumberB));
                 if (lineDiff != 0) {
                     return lineDiff;
                 }
-                return -boundA.get(coAStr).compareTo(boundB.get(coBStr));
+                return -boundA.get(coA).compareTo(boundB.get(coB));
+            } else {
+                int routeNumberDiff = routeNumberA.compareTo(routeNumberB);
+                if (routeNumberDiff != 0) {
+                    return routeNumberDiff;
+                }
             }
-            if (coA == 2) {
+            if (coA == Operator.NLB) {
                 return IntUtils.parseOrZero(routeA.getNlbId()) - IntUtils.parseOrZero(routeB.getNlbId());
             }
-            if (coA == 4) {
+            if (coA == Operator.GMB) {
                 int gtfsDiff = IntUtils.parseOrZero(routeA.getGtfsId()) - IntUtils.parseOrZero(routeB.getGtfsId());
                 if (gtfsDiff != 0) {
                     return gtfsDiff;
@@ -860,14 +868,13 @@ public class Registry {
             }
             int typeDiff = IntUtils.parseOrZero(routeA.getServiceType()) - IntUtils.parseOrZero(routeB.getServiceType());
             if (typeDiff == 0) {
-                if (coA == 1) {
+                if (coA == Operator.CTB) {
                     return 0;
                 }
-                return -boundA.get(coAStr).compareTo(boundB.get(coBStr));
+                return -boundA.get(coA).compareTo(boundB.get(coB));
             }
             return typeDiff;
-        });
-        return routes;
+        }).collect(Collectors.toList());
     }
 
     public NearbyRoutesResult getNearbyRoutes(double lat, double lng, Set<String> excludedRouteNumbers, boolean isInterchangeSearch) {
@@ -891,25 +898,10 @@ public class Registry {
             }
 
             if (distance <= 0.3) {
-                Operator co;
-                if (stopId.matches("^[0-9A-Z]{16}$")) {
-                    co = Operator.KMB;
-                } else if (stopId.matches("^[0-9]{6}$")) {
-                    co = Operator.CTB;
-                } else if (stopId.matches("^[0-9]{1,4}$")) {
-                    co = Operator.NLB;
-                } else if (stopId.matches("^[A-Z]?[0-9]{1,3}[A-Z]?-[A-Z][0-9]{3}$")) {
-                    co = Operator.MTR_BUS;
-                } else if (stopId.matches("^[0-9]{8}$")) {
-                    co = Operator.GMB;
-                } else if (stopId.matches("^LR[0-9]+$")) {
-                    co = Operator.LRT;
-                } else if (stopId.matches("^[A-Z]{3}$")) {
-                    co = Operator.MTR;
-                } else {
+                Operator co = RouteExtensionsKt.identifyStopCo(stopId);
+                if (co == null) {
                     continue;
                 }
-
                 nearbyStops.add(new RouteSearchResultEntry.StopInfo(stopId, entry, distance, co));
             }
         }
@@ -930,16 +922,17 @@ public class Registry {
                     continue;
                 }
 
-                boolean isKmb = data.getBound().containsKey(Operator.KMB) && data.getStops().get(Operator.KMB).contains(stopId);
-                boolean isCtb = data.getBound().containsKey(Operator.CTB) && data.getStops().get(Operator.CTB).contains(stopId);
-                boolean isNlb = data.getBound().containsKey(Operator.NLB) && data.getStops().get(Operator.NLB).contains(stopId);
-                boolean isMtrBus = data.getBound().containsKey(Operator.MTR_BUS) && data.getStops().get(Operator.MTR_BUS).contains(stopId);
-                boolean isGmb = data.getBound().containsKey(Operator.GMB) && data.getStops().get(Operator.GMB).contains(stopId);
-                boolean isLrt = data.getBound().containsKey(Operator.LRT) && data.getStops().get(Operator.LRT).contains(stopId);
-                boolean isMtr = data.getBound().containsKey(Operator.MTR) && data.getStops().get(Operator.MTR).contains(stopId);
-
-                if (isKmb || isCtb || isNlb || isMtrBus || isGmb || isLrt || isMtr) {
-                    Operator co = isKmb ? Operator.KMB : (isCtb ? Operator.CTB : (isNlb ? Operator.NLB : (isMtrBus ? Operator.MTR_BUS : (isGmb ? Operator.GMB : (isLrt ? Operator.LRT : Operator.MTR)))));
+                Operator co = Arrays.stream(Operator.values()).filter(c -> {
+                    if (!data.getBound().containsKey(c)) {
+                        return false;
+                    }
+                    List<String> coStops = data.getStops().get(c);
+                    if (coStops == null) {
+                        return false;
+                    }
+                    return coStops.contains(stopId);
+                }).findFirst().orElse(null);
+                if (co != null) {
                     String key0 = data.getRouteNumber() + "," + co.name() + "," + (co.equals(Operator.NLB) ? data.getNlbId() : data.getBound().get(co)) + (co.equals(Operator.GMB) ? ("," + data.getGmbRegion()) : "");
 
                     if (nearbyRoutes.containsKey(key0)) {
@@ -989,7 +982,6 @@ public class Registry {
             return new NearbyRoutesResult(Collections.emptyList(), closestStop, closestDistance, lat, lng);
         }
 
-        List<RouteSearchResultEntry> routes = new ArrayList<>(nearbyRoutes.values());
         ZonedDateTime hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"));
         int hour = hongKongTime.getHour();
         boolean isNight = hour >= 1 && hour < 5;
@@ -998,7 +990,7 @@ public class Registry {
 
         boolean isHoliday = weekday.equals(DayOfWeek.SATURDAY) || weekday.equals(DayOfWeek.SUNDAY) || DATA.getDataSheet().getHolidays().contains(date);
 
-        routes.sort(Comparator.comparing((RouteSearchResultEntry a) -> {
+        return new NearbyRoutesResult(CollectionsUtilsKtKt.distinctBy(nearbyRoutes.values().stream().sorted(Comparator.comparing((RouteSearchResultEntry a) -> {
             Route route = a.getRoute();
             String routeNumber = route.getRouteNumber();
             Map<Operator, String> bound = route.getBound();
@@ -1027,8 +1019,7 @@ public class Registry {
         }).thenComparing(a -> {
             return IntUtils.parseOrZero(a.getRoute().getServiceType());
         }).thenComparing(a -> {
-            Operator co = a.getCo();
-            return co.equals(Operator.KMB) ? 0 : (co.equals(Operator.CTB) ? 1 : (co.equals(Operator.NLB) ? 2 : (co.equals(Operator.MTR_BUS) ? 3 : (co.equals(Operator.GMB) ? 4 : (co.equals(Operator.LRT) ? 5 : 6)))));
+            return a.getCo();
         }).thenComparing(Comparator.comparing((RouteSearchResultEntry a) -> {
             Route route = a.getRoute();
             Map<Operator, String> bound = route.getBound();
@@ -1036,17 +1027,7 @@ public class Registry {
                 return Shared.Companion.getMtrLineSortingIndex(route.getRouteNumber());
             }
             return 10;
-        }).reversed()));
-
-        Set<String> addedKeys = new HashSet<>();
-        List<RouteSearchResultEntry> distinctRoutes = new ArrayList<>();
-        for (RouteSearchResultEntry value : routes) {
-            if (addedKeys.add(value.getRouteKey())) {
-                distinctRoutes.add(value);
-            }
-        }
-
-        return new NearbyRoutesResult(distinctRoutes, closestStop, closestDistance, lat, lng);
+        }).reversed())), RouteSearchResultEntry::getRouteKey).collect(Collectors.toList()), closestStop, closestDistance, lat, lng);
     }
 
     @Immutable
@@ -1518,10 +1499,10 @@ public class Registry {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
                 String dest = route.getDest().getZh().replace(" ", "");
                 String orig = route.getOrig().getZh().replace(" ", "");
-                Map<Pair<Double, Long>, Pair<String, Operator>> etaSorted = new TreeMap<>(Comparator.comparing(Pair<Double, Long>::getFirst));
-                String kmbSpecialMessage = null;
-                long kmbFirstScheduledBus = Long.MAX_VALUE;
-                {
+                Set<JointOperatedEntry> jointOperated = ConcurrentHashMap.newKeySet();
+                AtomicReference<String> kmbSpecialMessage = new AtomicReference<>(null);
+                AtomicLong kmbFirstScheduledBus = new AtomicLong(Long.MAX_VALUE);
+                Future<?> kmbFuture = ETA_QUERY_EXECUTOR.submit(() -> {
                     JSONObject data = HTTPRequestUtils.getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/" + stopId);
                     JSONArray buses = data.optJSONArray("data");
 
@@ -1574,10 +1555,10 @@ public class Registry {
                                             .replaceAll("原定", "預定")
                                             .replaceAll("最後班次", "尾班車")
                                             .replaceAll("尾班車已過", "尾班車已過本站");
-                                    if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
-                                        kmbFirstScheduledBus = minsRounded;
+                                    if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus.get()) {
+                                        kmbFirstScheduledBus.set(minsRounded);
                                     }
-                                    etaSorted.put(new Pair<>(mins, minsRounded), new Pair<>(message, Operator.KMB));
+                                    jointOperated.add(new JointOperatedEntry(mins, minsRounded, message, Operator.KMB));
                                 } else {
                                     String message = "";
                                     if (language.equals("en")) {
@@ -1598,12 +1579,12 @@ public class Registry {
                                     } else {
                                         message = "<b></b>" + message;
                                     }
-                                    kmbSpecialMessage = message;
+                                    kmbSpecialMessage.set(message);
                                 }
                             }
                         }
                     }
-                }
+                });
                 {
                     String routeNumber = route.getRouteNumber();
                     List<Pair<Operator, String>> matchingStops = DATA.getDataSheet().getStopMap().get(stopId);
@@ -1615,93 +1596,105 @@ public class Registry {
                             }
                         }
                     }
-                    Map<String, Map<Pair<Double, Long>, Pair<String, Operator>>> ctbEtaEntries = new HashMap<>();
-                    ctbEtaEntries.put(dest, new HashMap<>());
-                    ctbEtaEntries.put(orig, new HashMap<>());
+                    Map<String, Set<JointOperatedEntry>> ctbEtaEntries = new ConcurrentHashMap<>();
+                    ctbEtaEntries.put(dest, ConcurrentHashMap.newKeySet());
+                    ctbEtaEntries.put(orig, ConcurrentHashMap.newKeySet());
+                    List<Future<?>> ctbFutures = new ArrayList<>(ctbStopIds.size());
                     for (String ctbStopId : ctbStopIds) {
-                        JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + ctbStopId + "/" + routeNumber);
-                        JSONArray buses = data.optJSONArray("data");
+                        ctbFutures.add(ETA_QUERY_EXECUTOR.submit(() -> {
+                            JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + ctbStopId + "/" + routeNumber);
+                            Log.d("a", "https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + ctbStopId + "/" + routeNumber);
+                            JSONArray buses = data.optJSONArray("data");
 
-                        Map<String, Set<Integer>> stopSequences = new HashMap<>();
-                        stopSequences.put(dest, new HashSet<>());
-                        stopSequences.put(orig, new HashSet<>());
-                        for (int u = 0; u < buses.length(); u++) {
-                            JSONObject bus = buses.optJSONObject(u);
-                            if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
-                                if (routeNumber.equals(bus.optString("route"))) {
-                                    String busDest = bus.optString("dest_tc").replace(" ", "");
-                                    stopSequences.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
-                                            .getValue().add(bus.optInt("seq"));
-                                }
-                            }
-                        }
-                        Map<String, Integer> matchingSeq = stopSequences.entrySet().stream()
-                                .map(e -> new Pair<>(e.getKey(), e.getValue().stream().min(Comparator.comparing(i -> Math.abs(i - stopIndex))).orElse(-1)))
-                                .collect(Collectors.toMap(Pair<String, Integer>::getFirst, Pair<String, Integer>::getSecond));
-                        Set<Integer> usedRealSeq = new HashSet<>();
-                        for (int u = 0; u < buses.length(); u++) {
-                            JSONObject bus = buses.optJSONObject(u);
-                            if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
-                                String busDest = bus.optString("dest_tc").replace(" ", "");
-                                int stopSeq = bus.optInt("seq");
-                                int thisMatchingSeq = matchingSeq.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest)))
-                                        .orElseThrow(RuntimeException::new).getValue();
-                                if (routeNumber.equals(bus.optString("route")) && stopSeq == thisMatchingSeq && usedRealSeq.add(bus.optInt("eta_seq"))) {
-                                    String eta = bus.optString("eta");
-                                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
-                                    if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
-                                        double mins = (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
-                                        long minsRounded = Math.round(mins);
-                                        String message = "";
-                                        if (language.equals("en")) {
-                                            if (minsRounded > 0) {
-                                                message = "<b>" + minsRounded + "</b><small> Min.</small>";
-                                            } else if (minsRounded > -60) {
-                                                message = "<b>-</b><small> Min.</small>";
-                                            }
-                                            if (!bus.optString("rmk_en").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
-                                            }
-                                        } else {
-                                            if (minsRounded > 0) {
-                                                message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
-                                            } else if (minsRounded > -60) {
-                                                message = "<b>-</b><small> 分鐘</small>";
-                                            }
-                                            if (!bus.optString("rmk_tc").isEmpty()) {
-                                                message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
-                                            }
-                                        }
-                                        message = message
-                                                .replaceAll("原定", "預定")
-                                                .replaceAll("最後班次", "尾班車")
-                                                .replaceAll("尾班車已過", "尾班車已過本站");
-                                        ctbEtaEntries.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
-                                                .getValue().put(new Pair<>(mins, minsRounded), new Pair<>(message, Operator.CTB));
+                            Map<String, Set<Integer>> stopSequences = new HashMap<>();
+                            stopSequences.put(dest, new HashSet<>());
+                            stopSequences.put(orig, new HashSet<>());
+                            for (int u = 0; u < buses.length(); u++) {
+                                JSONObject bus = buses.optJSONObject(u);
+                                if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
+                                    if (routeNumber.equals(bus.optString("route"))) {
+                                        String busDest = bus.optString("dest_tc").replace(" ", "");
+                                        stopSequences.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
+                                                .getValue().add(bus.optInt("seq"));
                                     }
                                 }
                             }
-                        }
+                            Map<String, Integer> matchingSeq = stopSequences.entrySet().stream()
+                                    .map(e -> new Pair<>(e.getKey(), e.getValue().stream().min(Comparator.comparing(i -> Math.abs(i - stopIndex))).orElse(-1)))
+                                    .collect(Collectors.toMap(Pair<String, Integer>::getFirst, Pair<String, Integer>::getSecond));
+                            Map<String, Set<Integer>> usedRealSeq = new HashMap<>();
+                            usedRealSeq.put(dest, new HashSet<>());
+                            usedRealSeq.put(orig, new HashSet<>());
+                            for (int u = 0; u < buses.length(); u++) {
+                                JSONObject bus = buses.optJSONObject(u);
+                                if (Operator.CTB.equals(Operator.valueOf(bus.optString("co")))) {
+                                    String busDest = bus.optString("dest_tc").replace(" ", "");
+                                    int stopSeq = bus.optInt("seq");
+                                    int thisMatchingSeq = matchingSeq.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest)))
+                                            .orElseThrow(RuntimeException::new).getValue();
+                                    if (routeNumber.equals(bus.optString("route")) && stopSeq == thisMatchingSeq && usedRealSeq.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest)))
+                                            .orElseThrow(RuntimeException::new).getValue().add(bus.optInt("eta_seq"))) {
+                                        String eta = bus.optString("eta");
+                                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+                                        if (!eta.isEmpty() && !eta.equalsIgnoreCase("null")) {
+                                            double mins = (formatter.parse(eta, ZonedDateTime::from).toEpochSecond() - Instant.now().getEpochSecond()) / 60.0;
+                                            long minsRounded = Math.round(mins);
+                                            String message = "";
+                                            if (language.equals("en")) {
+                                                if (minsRounded > 0) {
+                                                    message = "<b>" + minsRounded + "</b><small> Min.</small>";
+                                                } else if (minsRounded > -60) {
+                                                    message = "<b>-</b><small> Min.</small>";
+                                                }
+                                                if (!bus.optString("rmk_en").isEmpty()) {
+                                                    message += (message.isEmpty() ? bus.optString("rmk_en") : "<small> (" + bus.optString("rmk_en") + ")</small>");
+                                                }
+                                            } else {
+                                                if (minsRounded > 0) {
+                                                    message = "<b>" + minsRounded + "</b><small> 分鐘</small>";
+                                                } else if (minsRounded > -60) {
+                                                    message = "<b>-</b><small> 分鐘</small>";
+                                                }
+                                                if (!bus.optString("rmk_tc").isEmpty()) {
+                                                    message += (message.isEmpty() ? bus.optString("rmk_tc") : "<small> (" + bus.optString("rmk_tc") + ")</small>");
+                                                }
+                                            }
+                                            message = message
+                                                    .replaceAll("原定", "預定")
+                                                    .replaceAll("最後班次", "尾班車")
+                                                    .replaceAll("尾班車已過", "尾班車已過本站");
+                                            ctbEtaEntries.entrySet().stream().min(Comparator.comparing(e -> StringUtils.editDistance(e.getKey(), busDest))).orElseThrow(RuntimeException::new)
+                                                    .getValue().add(new JointOperatedEntry(mins, minsRounded, message, Operator.CTB));
+                                        }
+                                    }
+                                }
+                            }
+                        }));
                     }
-                    etaSorted.putAll(ctbEtaEntries.get(dest));
+                    for (Future<?> future : ctbFutures) {
+                        future.get();
+                    }
+                    ctbEtaEntries.get(dest).forEach(e -> Log.d("a", e.getLine()));
+                    jointOperated.addAll(ctbEtaEntries.get(dest));
                 }
+                kmbFuture.get();
 
-                if (etaSorted.isEmpty()) {
-                    if (kmbSpecialMessage == null || kmbSpecialMessage.isEmpty()) {
+                if (jointOperated.isEmpty()) {
+                    if (kmbSpecialMessage.get() == null || kmbSpecialMessage.get().isEmpty()) {
                         lines.put(1, ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight(), typhoonInfo.getTyphoonWarningTitle())));
                     } else {
-                        lines.put(1, ETALineEntry.textEntry(kmbSpecialMessage));
+                        lines.put(1, ETALineEntry.textEntry(kmbSpecialMessage.get()));
                     }
                 } else {
                     int counter = 0;
-                    for (Map.Entry<Pair<Double, Long>, Pair<String, Operator>> entry : etaSorted.entrySet()) {
-                        Pair<Double, Long> eta = entry.getKey();
-                        double mins = eta.getFirst();
-                        long minsRounded = eta.getSecond();
+                    for (Iterator<JointOperatedEntry> itr = jointOperated.stream().sorted().iterator(); itr.hasNext(); ) {
+                        JointOperatedEntry entry = itr.next();
+                        double mins = entry.getMins();
+                        long minsRounded = entry.getMinsRounded();
 
-                        String message = "<b></b>" + entry.getValue().getFirst().replace("(尾班車)", "").replace("(Final Bus)", "").trim();
-                        Operator entryCo = entry.getValue().getSecond();
-                        if (minsRounded > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
+                        String message = "<b></b>" + entry.getLine().replace("(尾班車)", "").replace("(Final Bus)", "").trim();
+                        Operator entryCo = entry.getCo();
+                        if (minsRounded > kmbFirstScheduledBus.get() && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
                             message += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " (Scheduled Bus)" : " (預定班次)") + "</small>";
                         }
                         if (entryCo.equals(Operator.KMB)) {
@@ -2250,12 +2243,50 @@ public class Registry {
             }
             return ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, nextCo, lines);
         });
-        new Thread(pending).start();
+        ETA_QUERY_EXECUTOR.submit(pending);
         return pending;
     }
 
     private ETAShortText toShortText(long minsRounded, long arrivingThreshold) {
         return new ETAShortText(minsRounded <= arrivingThreshold ? "-" : String.valueOf(minsRounded), Shared.Companion.getLanguage().equals("en") ? "Min." : "分鐘");
+    }
+
+    @Immutable
+    public static class JointOperatedEntry implements Comparable<JointOperatedEntry> {
+
+        private final double mins;
+        private final long minsRounded;
+        private final String line;
+        private final Operator co;
+
+        public JointOperatedEntry(double mins, long minsRounded, String line, Operator co) {
+            this.mins = mins;
+            this.minsRounded = minsRounded;
+            this.line = line;
+            this.co = co;
+        }
+
+        public double getMins() {
+            return mins;
+        }
+
+        public long getMinsRounded() {
+            return minsRounded;
+        }
+
+        public String getLine() {
+            return line;
+        }
+
+        public Operator getCo() {
+            return co;
+        }
+
+        @Override
+        public int compareTo(JointOperatedEntry o) {
+            return Double.compare(mins, o.mins);
+        }
+
     }
 
     @Immutable

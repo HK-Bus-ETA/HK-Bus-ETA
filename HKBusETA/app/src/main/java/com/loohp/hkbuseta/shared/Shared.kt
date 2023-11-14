@@ -183,16 +183,16 @@ class Shared {
 
         fun getMtrLineSortingIndex(lineName: String): Int {
             return when (lineName) {
-                "AEL" -> 8
-                "TCL" -> 7
-                "TML" -> 6
-                "TKL" -> 3
-                "EAL" -> 5
-                "SIL" -> 4
-                "TWL" -> 1
-                "ISL" -> 2
-                "KTL" -> 0
-                "DRL" -> 9
+                "AEL" -> 0
+                "TCL" -> 1
+                "TML" -> 4
+                "TKL" -> 9
+                "EAL" -> 3
+                "SIL" -> 5
+                "TWL" -> 8
+                "ISL" -> 6
+                "KTL" -> 7
+                "DRL" -> 2
                 else -> 10
             }
         }

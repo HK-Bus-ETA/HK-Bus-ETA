@@ -244,7 +244,7 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
             var leftCorner = Offset(horizontalCenterPrimary - interchangeLineWidth, verticalCenter - ((interchangeData.lines.size - 1) * interchangeLineSpacing / 2F) - interchangeLineHeight / 2F)
             for (interchange in interchangeData.lines) {
                 drawRoundRect(
-                    color = if (interchange == "HighSpeed") Color(0xFFBCB0A4) else Operator.MTR.getColor(interchange, Color.White),
+                    color = if (interchange == "HighSpeed") Color(0xFF9C948B) else Operator.MTR.getColor(interchange, Color.White),
                     topLeft = leftCorner,
                     size = Size(interchangeLineWidth, interchangeLineHeight),
                     cornerRadius = CornerRadius(interchangeLineHeight / 2F)
@@ -277,7 +277,7 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
             var leftCorner = Offset(otherStationHorizontalCenter, verticalCenter - ((interchangeData.outOfStationLines.size - 1) * interchangeLineSpacing / 2F) - interchangeLineHeight / 2F)
             for (interchange in interchangeData.outOfStationLines) {
                 drawRoundRect(
-                    color = if (interchange == "HighSpeed") Color(0xFFBCB0A4) else Operator.MTR.getColor(interchange, Color.White),
+                    color = if (interchange == "HighSpeed") Color(0xFF9C948B) else Operator.MTR.getColor(interchange, Color.White),
                     topLeft = leftCorner,
                     size = Size(interchangeLineWidth, interchangeLineHeight),
                     cornerRadius = CornerRadius(interchangeLineHeight / 2F)

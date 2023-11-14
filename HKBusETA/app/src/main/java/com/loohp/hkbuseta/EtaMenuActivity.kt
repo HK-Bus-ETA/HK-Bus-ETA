@@ -202,7 +202,7 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(20, instance).dp))
             }
             item {
-                Title(index, stop.name, routeNumber, co, instance)
+                Title(index, stop.name, stop.remark, routeNumber, co, instance)
                 SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), routeNumber, co, instance)
             }
             item {
@@ -437,7 +437,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
 @Composable
 fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance: EtaMenuActivity) {
     val haptic = LocalHapticFeedback.current
-    val name = if (Shared.language == "en") stopName.en else stopName.zh
+    val name = stopName[Shared.language]
 
     AdvanceButton (
         modifier = Modifier
@@ -619,8 +619,8 @@ fun handleOpenKmbBbiMap(kmbBbiId: String, instance: EtaMenuActivity, longClick: 
 }
 
 @Composable
-fun Title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator, instance: EtaMenuActivity) {
-    val name = if (Shared.language == "en") stopName.en else stopName.zh
+fun Title(index: Int, stopName: BilingualText, stopRemark: BilingualText?, routeNumber: String, co: Operator, instance: EtaMenuActivity) {
+    val name = stopName[Shared.language]
     AutoResizeText (
         modifier = Modifier
             .fillMaxWidth()
@@ -629,12 +629,27 @@ fun Title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator
         color = MaterialTheme.colors.primary,
         text = if (co == Operator.MTR) name else index.toString().plus(". ").plus(name),
         maxLines = 2,
-        fontWeight = FontWeight(900),
+        fontWeight = FontWeight.Bold,
         fontSizeRange = FontSizeRange(
             min = StringUtils.scaledSize(1F, instance).dp.sp,
             max = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
         )
     )
+    if (stopRemark != null) {
+        AutoResizeText (
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(35.dp, 0.dp),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary,
+            text = stopRemark[Shared.language],
+            maxLines = 1,
+            fontSizeRange = FontSizeRange(
+                min = StringUtils.scaledSize(1F, instance).dp.sp,
+                max = StringUtils.scaledSize(12F, instance).sp.clamp(max = StringUtils.scaledSize(12F, instance).dp)
+            )
+        )
+    }
 }
 
 @Composable
