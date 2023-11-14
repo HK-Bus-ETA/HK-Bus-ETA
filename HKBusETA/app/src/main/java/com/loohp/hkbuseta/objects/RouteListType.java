@@ -23,13 +23,14 @@ package com.loohp.hkbuseta.objects;
 import androidx.compose.runtime.Immutable;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Immutable
-public class RouteListType {
+public final class RouteListType implements Comparable<RouteListType> {
 
     private static final Map<String, RouteListType> VALUES = new ConcurrentHashMap<>();
+    private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     public static final RouteListType NORMAL = createBuiltIn("normal");
     public static final RouteListType NEARBY = createBuiltIn("nearby");
@@ -37,23 +38,33 @@ public class RouteListType {
     public static final RouteListType RECENT = createBuiltIn("recent");
 
     private static RouteListType createBuiltIn(String name) {
-        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new RouteListType(k, true));
+        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new RouteListType(k, COUNTER.getAndIncrement(), true));
     }
 
     public static RouteListType valueOf(String name) {
-        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new RouteListType(k, false));
+        return VALUES.computeIfAbsent(name.toLowerCase(), k -> new RouteListType(k, COUNTER.getAndIncrement(), false));
+    }
+
+    public static RouteListType[] values() {
+        return VALUES.values().stream().sorted().toArray(RouteListType[]::new);
     }
 
     private final String name;
+    private final int ordinal;
     private final boolean builtIn;
 
-    private RouteListType(String name, boolean builtIn) {
+    private RouteListType(String name, int ordinal, boolean builtIn) {
         this.name = name;
+        this.ordinal = ordinal;
         this.builtIn = builtIn;
     }
 
     public String name() {
         return name;
+    }
+
+    public int ordinal() {
+        return ordinal;
     }
 
     public boolean isBuiltIn() {
@@ -67,15 +78,17 @@ public class RouteListType {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        RouteListType routeListType = (RouteListType) o;
-        return Objects.equals(name, routeListType.name);
+        return this == o;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name);
+        return super.hashCode();
+    }
+
+    @Override
+    public int compareTo(RouteListType other) {
+        return this.ordinal - other.ordinal;
     }
 
 }

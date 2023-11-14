@@ -2204,7 +2204,7 @@ public class Registry {
                                     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                                     format.setTimeZone(TimeZone.getTimeZone(hongKongTime.getZone()));
                                     double mins = (format.parse(eta).getTime() - Instant.now().toEpochMilli()) / 60000.0;
-                                    long minsRounded = (long) Math.ceil(mins);
+                                    long minsRounded = Math.round(mins);
 
                                     String minsMessage;
                                     if (minsRounded > 59) {
