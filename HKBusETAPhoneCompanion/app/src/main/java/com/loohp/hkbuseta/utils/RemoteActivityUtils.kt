@@ -34,33 +34,43 @@ class RemoteActivityUtils {
 
         fun dataToWatch(instance: Context, path: String, data: JSONObject?, noWatch: () -> Unit = {}, failed: () -> Unit = {}, success: () -> Unit = {}) {
             val dataRaw = data?.toString()?.toByteArray(StandardCharsets.UTF_8)?: byteArrayOf()
-            Wearable.getNodeClient(instance).connectedNodes.addOnCompleteListener { nodes ->
-                if (nodes.result.isEmpty()) {
-                    noWatch.invoke()
-                } else {
-                    val futures = nodes.result.map { node ->
-                        val future: CompletableFuture<Task<Int>> = CompletableFuture()
-                        Wearable.getMessageClient(instance).sendMessage(node.id, path, dataRaw).addOnCompleteListener {
-                            future.complete(it)
-                        }
-                        return@map future
-                    }
-                    ForkJoinPool.commonPool().execute {
-                        var isSuccess = false
-                        for (future in futures) {
-                            try {
-                                future.get()
-                                isSuccess = true
-                                break
-                            } catch (_: Exception) {}
-                        }
-                        if (isSuccess) {
-                            success.invoke()
+            try {
+                Wearable.getNodeClient(instance).connectedNodes.addOnCompleteListener { nodes ->
+                    try {
+                        if (nodes.result.isEmpty()) {
+                            noWatch.invoke()
                         } else {
-                            failed.invoke()
+                            val futures = nodes.result.map { node ->
+                                val future: CompletableFuture<Task<Int>> = CompletableFuture()
+                                Wearable.getMessageClient(instance).sendMessage(node.id, path, dataRaw).addOnCompleteListener {
+                                    future.complete(it)
+                                }
+                                return@map future
+                            }
+                            ForkJoinPool.commonPool().execute {
+                                var isSuccess = false
+                                for (future in futures) {
+                                    try {
+                                        future.get()
+                                        isSuccess = true
+                                        break
+                                    } catch (_: Exception) {}
+                                }
+                                if (isSuccess) {
+                                    success.invoke()
+                                } else {
+                                    failed.invoke()
+                                }
+                            }
                         }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        failed.invoke()
                     }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                failed.invoke()
             }
         }
 
