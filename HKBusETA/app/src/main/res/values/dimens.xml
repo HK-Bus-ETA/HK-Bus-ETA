@@ -20,5 +20,5 @@
   -->
 
 <resources>
-    <dimen name="splash_screen_icon_size">50dp</dimen>
+    <dimen name="splash_screen_icon_size">48dp</dimen>
 </resources>

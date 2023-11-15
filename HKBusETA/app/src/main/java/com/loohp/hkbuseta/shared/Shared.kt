@@ -147,8 +147,7 @@ class Shared {
                     invalidateCache(context)
                     if (context is Activity) {
                         val sw = StringWriter()
-                        val pw = PrintWriter(sw)
-                        pw.use {
+                        PrintWriter(sw).use {
                             throwable.printStackTrace(it)
                         }
                         var stacktrace = sw.toString()
