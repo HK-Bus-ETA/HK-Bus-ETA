@@ -79,6 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
@@ -88,7 +89,6 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
-import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.distance
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
@@ -114,6 +114,7 @@ enum class SelectMode(val selected: Boolean) {
 class EtaTileConfigureActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
 
@@ -149,8 +150,7 @@ fun SelectElements(tileId: Int, instance: EtaTileConfigureActivity) {
                 .fullPageVerticalLazyScrollbar(
                     state = state
                 )
-                .rotaryScroll(state, focusRequester)
-                .background(Color(0xFF000000)),
+                .rotaryScroll(state, focusRequester),
             horizontalAlignment = Alignment.CenterHorizontally,
             state = state
         ) {
@@ -299,7 +299,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
     } } }
     val animatedBackgroundColor by animateColorAsState(
         targetValue = backgroundColor,
-        animationSpec = TweenSpec(durationMillis = 500, easing = LinearEasing),
+        animationSpec = TweenSpec(durationMillis = 250, easing = LinearEasing),
         label = ""
     )
 

@@ -31,7 +31,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 33
-        versionCode = 337
+        versionCode = 339
         versionName = "1.7.1"
         vectorDrawables {
             useSupportLibrary = true
@@ -82,7 +82,7 @@ kotlin {
 
 dependencies {
     implementation("com.google.guava:guava:32.1.3-android")
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.core:core-splashscreen:1.1.0-alpha02")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.wear:wear-ongoing:1.1.0-alpha01")
     implementation("com.google.android.gms:play-services-wearable:18.1.0")

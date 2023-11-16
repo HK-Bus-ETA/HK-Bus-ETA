@@ -331,7 +331,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
     val backgroundColor by remember { derivedStateOf { if (deleteState) Color(0xFF633A3A) else Color(0xFF1A1A1A) } }
     val animatedBackgroundColor by animateColorAsState(
         targetValue = backgroundColor,
-        animationSpec = TweenSpec(durationMillis = 500, easing = LinearEasing),
+        animationSpec = TweenSpec(durationMillis = 250, easing = LinearEasing),
         label = ""
     )
 
