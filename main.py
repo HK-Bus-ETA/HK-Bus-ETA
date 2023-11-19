@@ -321,7 +321,7 @@ def download_and_process_data_sheet():
             if route_number in kmb_ops and "kmb" not in bounds:
                 keys_to_remove.append(key)
             elif route_number in ctb_circular and len(bounds.get("ctb")) < 2:
-                keys_to_remove.append(key)
+                data["ctbIsCircular"] = True
     for key in keys_to_remove:
         del DATA_SHEET["routeList"][key]
 
