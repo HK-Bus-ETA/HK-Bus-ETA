@@ -1778,15 +1778,16 @@ public class Registry {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight();
 
                 String routeNumber = route.getRouteNumber();
+                String routeBound = route.getBound().get(Operator.CTB);
                 JSONObject data = HTTPRequestUtils.getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/" + stopId + "/" + routeNumber);
-                JSONArray buses = data.optJSONArray("data");
 
+                JSONArray buses = data.optJSONArray("data");
                 Set<Integer> stopSequences = new HashSet<>();
                 for (int u = 0; u < buses.length(); u++) {
                     JSONObject bus = buses.optJSONObject(u);
                     if (Operator.CTB == Operator.valueOf(bus.optString("co"))) {
                         String bound = bus.optString("dir");
-                        if (routeNumber.equals(bus.optString("route")) && bound.equals(route.getBound().get(Operator.CTB))) {
+                        if (routeNumber.equals(bus.optString("route")) && (routeBound.length() > 1 || bound.equals(routeBound))) {
                             stopSequences.add(bus.optInt("seq"));
                         }
                     }
@@ -1799,7 +1800,7 @@ public class Registry {
                     if (Operator.CTB == Operator.valueOf(bus.optString("co"))) {
                         String bound = bus.optString("dir");
                         int stopSeq = bus.optInt("seq");
-                        if (routeNumber.equals(bus.optString("route")) && bound.equals(route.getBound().get(Operator.CTB)) && stopSeq == matchingSeq) {
+                        if (routeNumber.equals(bus.optString("route")) && (routeBound.length() > 1 || bound.equals(routeBound)) && stopSeq == matchingSeq) {
                             int seq = ++counter;
                             if (usedRealSeq.add(bus.optInt("eta_seq"))) {
                                 String eta = bus.optString("eta");

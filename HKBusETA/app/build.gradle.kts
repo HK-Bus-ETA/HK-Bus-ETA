@@ -31,7 +31,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 33
-        versionCode = 340
+        versionCode = 342
         versionName = "1.7.1"
         vectorDrawables {
             useSupportLibrary = true
@@ -108,9 +108,9 @@ dependencies {
     implementation("androidx.wear:wear-ongoing:1.0.0")
     implementation("androidx.wear:wear-phone-interactions:1.0.1")
     implementation("androidx.wear:wear-remote-interactions:1.0.0")
-    implementation("androidx.wear.protolayout:protolayout-expression:1.1.0-alpha01")
-    implementation("androidx.wear.protolayout:protolayout:1.1.0-alpha01")
-    implementation("androidx.wear.protolayout:protolayout-material:1.1.0-alpha01")
+    implementation("androidx.wear.protolayout:protolayout-expression:1.1.0-alpha02")
+    implementation("androidx.wear.protolayout:protolayout:1.1.0-alpha02")
+    implementation("androidx.wear.protolayout:protolayout-material:1.1.0-alpha02")
     implementation("io.github.aghajari:AnnotatedText:1.0.0")
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("me.saket.telephoto:zoomable:0.5.0")

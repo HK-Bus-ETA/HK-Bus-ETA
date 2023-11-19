@@ -278,30 +278,22 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
                     state = swipe,
                     anchors = mapOf(
                         0F to false,
-                        -ScreenSizeUtils
-                            .getScreenHeight(instance)
-                            .toFloat() to true
+                        -ScreenSizeUtils.getScreenHeight(instance).toFloat() to true
                     ),
                     orientation = Orientation.Vertical
                 )
                 .onRotaryScrollEvent {
                     if (it.horizontalScrollPixels > 0) {
                         if (index < stopList.size) {
-                            currentOffset = -ScreenSizeUtils
-                                .getScreenWidth(instance)
-                                .toFloat()
-                            animatedOffsetTask =
-                                { launchOtherStop(index + 1, co, stopList, true, 1, instance) }
+                            currentOffset = -ScreenSizeUtils.getScreenWidth(instance).toFloat()
+                            animatedOffsetTask = { launchOtherStop(index + 1, co, stopList, true, 1, instance) }
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
                     } else {
                         if (index > 1) {
-                            currentOffset = ScreenSizeUtils
-                                .getScreenWidth(instance)
-                                .toFloat()
-                            animatedOffsetTask =
-                                { launchOtherStop(index - 1, co, stopList, true, -1, instance) }
+                            currentOffset = ScreenSizeUtils.getScreenWidth(instance).toFloat()
+                            animatedOffsetTask = { launchOtherStop(index - 1, co, stopList, true, -1, instance) }
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
@@ -564,7 +556,7 @@ fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: Et
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = textSize.dp + 7.dp)
-            .padding(20.dp, 0.dp)
+            .padding((if (seq == 1) 5 else 20).dp, 0.dp)
     ) {
         AnnotatedText(
             modifier = Modifier
