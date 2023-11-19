@@ -2199,6 +2199,7 @@ public class Registry {
                                         String via = DATA.getDataSheet().getStopList().get(specialRoute).getName().get(Shared.Companion.getLanguage());
                                         dest += "<small>" + (Shared.Companion.getLanguage().equals("en") ? " via " : " 經") + via + "</small>";
                                     }
+                                    String timeType = trainData.optString("timeType");
                                     String eta = trainData.optString("time");
 
                                     @SuppressLint("SimpleDateFormat")
@@ -2212,7 +2213,7 @@ public class Registry {
                                         minsMessage = "<b>" + hongKongTime.plusMinutes(minsRounded).format(DateTimeFormatter.ofPattern("HH:mm")) + "</b>";
                                     } else if (minsRounded > 1) {
                                         minsMessage = "<b>" + minsRounded + "</b><small>" + (Shared.Companion.getLanguage().equals("en") ? " Min." : " 分鐘") + "</small>";
-                                    } else if (minsRounded == 1) {
+                                    } else if (minsRounded == 1 && !timeType.equals("D")) {
                                         minsMessage = "<b>" + (Shared.Companion.getLanguage().equals("en") ? "Arriving" : "即將抵達") + "</b>";
                                     } else {
                                         minsMessage = "<b>" + (Shared.Companion.getLanguage().equals("en") ? "Departing" : "正在離開") + "</b>";
