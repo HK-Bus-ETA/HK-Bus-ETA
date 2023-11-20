@@ -23,9 +23,6 @@ package com.loohp.hkbuseta.utils
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.alpha
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
 
 
 fun Color.adjustBrightness(percentage: Float): Color {
@@ -34,11 +31,11 @@ fun Color.adjustBrightness(percentage: Float): Color {
     }
     val argb = toArgb()
     val hsv = FloatArray(3)
-    android.graphics.Color.RGBToHSV(argb.red, argb.green, argb.blue, hsv)
+    android.graphics.Color.colorToHSV(argb, hsv)
     if (percentage > 1F) {
-        hsv[1] = (hsv[1] * (1F - (percentage - 1F))).coerceAtLeast(0F).coerceAtMost(1F)
+        hsv[1] = (hsv[1] * (1F - (percentage - 1F))).coerceIn(0F, 1F)
     } else {
-        hsv[2] = (hsv[2] * percentage).coerceAtLeast(0F).coerceAtMost(1F)
+        hsv[2] = (hsv[2] * percentage).coerceIn(0F, 1F)
     }
     return Color(android.graphics.Color.HSVToColor(argb.alpha, hsv))
 }
