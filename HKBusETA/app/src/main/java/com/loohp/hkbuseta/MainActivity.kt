@@ -21,7 +21,6 @@
 package com.loohp.hkbuseta
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -87,9 +86,7 @@ import kotlin.math.absoluteValue
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            installSplashScreen()
-        }
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
 
@@ -101,6 +98,11 @@ class MainActivity : ComponentActivity() {
         val index = intent.extras?.getInt("index")
         val stop = intent.extras?.getString("stop")
         val route = intent.extras?.getString("route")
+
+        val listStopRoute = intent.extras?.getString("stopRoute")
+        val listStopScrollToStop = intent.extras?.getString("scrollToStop")
+        val listStopShowEta = intent.extras?.getBoolean("showEta")
+        val listStopIsAlightReminder = intent.extras?.getBoolean("isAlightReminder")
 
         val queryKey = intent.extras?.getString("k")
         var queryRouteNumber = intent.extras?.getString("r")
@@ -143,6 +145,14 @@ class MainActivity : ComponentActivity() {
                                 intent.putExtra("index", index)
                                 intent.putExtra("stop", stop)
                                 intent.putExtra("route", route)
+                                startActivity(intent)
+                                finish()
+                            } else if (listStopRoute != null && listStopScrollToStop != null && listStopShowEta != null && listStopIsAlightReminder != null) {
+                                val intent = Intent(this@MainActivity, ListStopsActivity::class.java)
+                                intent.putExtra("route", listStopRoute)
+                                intent.putExtra("scrollToStop", listStopScrollToStop)
+                                intent.putExtra("showEta", listStopShowEta)
+                                intent.putExtra("isAlightReminder", listStopIsAlightReminder)
                                 startActivity(intent)
                                 finish()
                             } else if (queryRouteNumber != null || queryKey != null) {

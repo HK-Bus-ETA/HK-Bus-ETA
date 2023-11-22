@@ -35,7 +35,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
 import androidx.wear.ongoing.OngoingActivity
 import androidx.wear.ongoing.Status
-import com.loohp.hkbuseta.ListStopsActivity
+import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
@@ -190,8 +190,8 @@ class AlightReminderService : Service() {
         }
         val stopListIntentBuilder = getCurrentValue()!!.let { currentValue ->
             Registry.getInstance(this).findRoutes(currentValue.route.routeNumber, true) { it -> it == currentValue.route }.first().let { {
-                val stopListIntent = Intent(this, ListStopsActivity::class.java)
-                stopListIntent.putExtra("route", it.serialize().toString())
+                val stopListIntent = Intent(this, MainActivity::class.java)
+                stopListIntent.putExtra("stopRoute", it.serialize().toString())
                 stopListIntent.putExtra("scrollToStop", currentValue.route.stops[currentValue.operator]!!.minBy { it.asStop(this)!!.location.distance(currentValue.targetStop.location) })
                 stopListIntent.putExtra("showEta", false)
                 stopListIntent.putExtra("isAlightReminder", true)
