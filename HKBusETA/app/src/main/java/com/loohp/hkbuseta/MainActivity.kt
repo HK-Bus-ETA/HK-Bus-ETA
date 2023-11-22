@@ -21,6 +21,7 @@
 package com.loohp.hkbuseta
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -79,13 +80,16 @@ import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.util.regex.Pattern
 import java.util.stream.Collectors
+import kotlin.math.absoluteValue
 
 
 @Stable
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            installSplashScreen()
+        }
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
 
@@ -105,6 +109,7 @@ class MainActivity : ComponentActivity() {
         val queryDest = intent.extras?.getString("d")
         var queryGMBRegion = intent.extras?.getString("g")?.gmbRegion
         val queryStop = intent.extras?.getString("s")
+        val queryStopIndex = intent.extras?.getInt("si")?: 0
         val queryStopDirectLaunch = intent.extras?.getBoolean("sd", false)?: false
 
         setContent {
@@ -206,19 +211,15 @@ class MainActivity : ComponentActivity() {
 
                                             if (queryStopDirectLaunch) {
                                                 val stops = Registry.getInstance(this@MainActivity).getAllStops(queryRouteNumber, queryBound, queryCo, queryGMBRegion)
-                                                var i = 1
-                                                for (stopData in stops) {
-                                                    if (stopData.stopId == queryStop) {
-                                                        val intent3 = Intent(this@MainActivity, EtaActivity::class.java)
-                                                        intent3.putExtra("stopId", stopId)
-                                                        intent3.putExtra("co", it.co.name)
-                                                        intent3.putExtra("index", i)
-                                                        intent3.putExtra("stop", stopData.stop.serialize().toString())
-                                                        intent3.putExtra("route", it.route.serialize().toString())
-                                                        startActivity(intent3)
-                                                        break
-                                                    }
-                                                    i++
+                                                stops.withIndex().filter { it.value.stopId == queryStop }.minByOrNull { (queryStopIndex - it.index).absoluteValue }?.let { r ->
+                                                    val (i, stopData) = r
+                                                    val intent3 = Intent(this@MainActivity, EtaActivity::class.java)
+                                                    intent3.putExtra("stopId", stopId)
+                                                    intent3.putExtra("co", it.co.name)
+                                                    intent3.putExtra("index", i + 1)
+                                                    intent3.putExtra("stop", stopData.stop.serialize().toString())
+                                                    intent3.putExtra("route", it.route.serialize().toString())
+                                                    startActivity(intent3)
                                                 }
                                             }
                                         } else if (filteredResult.size == 1) {

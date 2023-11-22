@@ -20,6 +20,7 @@
 
 package com.loohp.hkbuseta.tiles
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -114,7 +115,9 @@ enum class SelectMode(val selected: Boolean) {
 class EtaTileConfigureActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            installSplashScreen()
+        }
         super.onCreate(savedInstanceState)
         Shared.setDefaultExceptionHandler(this)
 
