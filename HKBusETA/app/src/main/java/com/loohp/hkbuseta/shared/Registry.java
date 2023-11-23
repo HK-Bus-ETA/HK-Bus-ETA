@@ -1664,7 +1664,10 @@ public class Registry {
                     for (Future<?> future : ctbFutures) {
                         future.get();
                     }
-                    jointOperated.addAll(ctbEtaEntries.get(dest));
+                    Set<JointOperatedEntry> entries = ctbEtaEntries.get(dest);
+                    if (entries != null) {
+                        jointOperated.addAll(entries);
+                    }
                 }
                 kmbFuture.get();
 
@@ -2302,6 +2305,7 @@ public class Registry {
             try {
                 return super.get();
             } catch (ExecutionException | InterruptedException | CancellationException e) {
+                e.printStackTrace();
                 try { cancel(true); } catch (Throwable ignore) {}
                 return getErrorResult();
             }
@@ -2312,6 +2316,7 @@ public class Registry {
             try {
                 return super.get(timeout, unit);
             } catch (ExecutionException | InterruptedException | TimeoutException | CancellationException e) {
+                e.printStackTrace();
                 try { cancel(true); } catch (Throwable ignore) {}
                 return getErrorResult();
             }
