@@ -24,6 +24,7 @@ import static com.loohp.hkbuseta.objects.RouteExtensionsKt.prependTo;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Bundle;
 
 import androidx.compose.runtime.Immutable;
 import androidx.core.app.ComponentActivity;
@@ -31,6 +32,7 @@ import androidx.core.util.AtomicFile;
 import androidx.wear.tiles.TileService;
 import androidx.wear.tiles.TileUpdateRequester;
 
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.loohp.hkbuseta.branchedlist.BranchedList;
 import com.loohp.hkbuseta.objects.BilingualText;
 import com.loohp.hkbuseta.objects.Coordinates;
@@ -1484,6 +1486,10 @@ public class Registry {
     }
 
     public PendingETAQueryResult getEta(String stopId, int stopIndex, Operator co, Route route, Context context) {
+        Bundle bundle = new Bundle();
+        bundle.putString("route", stopId + "," + stopIndex + "," + route.getRouteNumber() + "," + co.name() + "," + route.getBound().get(co));
+        bundle.putString("stop", route.getRouteNumber() + "," + co.name() + "," + route.getBound().get(co));
+        FirebaseAnalytics.getInstance(context).logEvent("eta_query", bundle);
         PendingETAQueryResult pending = new PendingETAQueryResult(context, co, () -> {
             TyphoonInfo typhoonInfo = getCurrentTyphoonData().get();
 

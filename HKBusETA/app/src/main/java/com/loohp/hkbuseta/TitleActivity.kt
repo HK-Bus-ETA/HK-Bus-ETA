@@ -63,6 +63,8 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
@@ -143,6 +145,9 @@ fun HKBusETAApp(instance: TitleActivity) {
 fun SearchButton(instance: TitleActivity) {
     Button(
         onClick = {
+            Firebase.analytics.logEvent("title_action", Bundle().apply {
+                putString("value", "search")
+            })
             instance.startActivity(Intent(instance, SearchActivity::class.java))
         },
         modifier = Modifier
@@ -175,6 +180,9 @@ fun SearchButton(instance: TitleActivity) {
 fun NearbyButton(instance: TitleActivity) {
     Button(
         onClick = {
+            Firebase.analytics.logEvent("title_action", Bundle().apply {
+                putString("value", "nearby")
+            })
             LocationUtils.checkLocationPermission(instance) {
                 instance.runOnUiThread {
                     if (it) {
@@ -215,7 +223,11 @@ fun NearbyButton(instance: TitleActivity) {
 fun LanguageButton(instance: TitleActivity) {
     Button(
         onClick = {
-            Registry.getInstance(instance).setLanguage(if (Shared.language == "en") "zh" else "en", instance)
+            val newLanguage = if (Shared.language == "en") "zh" else "en"
+            Registry.getInstance(instance).setLanguage(newLanguage, instance)
+            Firebase.analytics.logEvent("title_action", Bundle().apply {
+                putString("value", "language_$newLanguage")
+            })
             instance.startActivity(Intent(instance, MainActivity::class.java))
             instance.finish()
         },

@@ -31,7 +31,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 33
-        versionCode = 355
+        versionCode = 358
         versionName = "1.7.1"
         vectorDrawables {
             useSupportLibrary = true
@@ -115,8 +115,12 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("me.saket.telephoto:zoomable:0.5.0")
     implementation("com.google.android.horologist:horologist-compose-layout:0.5.10")
+    implementation(platform("com.google.firebase:firebase-bom:32.6.0"))
+    implementation("com.google.firebase:firebase-analytics")
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.10.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
+apply(plugin = "com.google.gms.google-services")

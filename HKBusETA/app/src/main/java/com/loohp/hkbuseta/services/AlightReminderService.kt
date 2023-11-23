@@ -26,6 +26,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+import android.os.Bundle
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.PowerManager.WakeLock
@@ -35,6 +36,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
 import androidx.wear.ongoing.OngoingActivity
 import androidx.wear.ongoing.Status
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.objects.Operator
@@ -44,6 +47,7 @@ import com.loohp.hkbuseta.objects.asStop
 import com.loohp.hkbuseta.objects.distance
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
@@ -187,6 +191,9 @@ class AlightReminderService : Service() {
         if (newStop != null && newRoute != null && newOperator != null && newIndex != null) {
             val allStops = Registry.getInstance(this).getAllStops(newRoute.routeNumber, newRoute.bound[newOperator], newOperator, newRoute.gmbRegion)
             updateCurrentValue(AlightReminderData(true, newStop, newIndex, newRoute, newOperator, allStops))
+            Firebase.analytics.logEvent("alight_reminder", Bundle().apply {
+                putString("value", "${newRoute.routeNumber},${newOperator.name},${newRoute.bound[newOperator]},${newRoute.stops[newOperator]?.get(newIndex)?: "???"}")
+            })
         }
         val stopListIntentBuilder = getCurrentValue()!!.let { currentValue ->
             Registry.getInstance(this).findRoutes(currentValue.route.routeNumber, true) { it -> it == currentValue.route }.first().let { {

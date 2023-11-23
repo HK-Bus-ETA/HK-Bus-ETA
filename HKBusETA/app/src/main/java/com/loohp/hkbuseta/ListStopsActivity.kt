@@ -266,7 +266,7 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
             stopsList.stream().map { Registry.getInstance(instance).getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
         } else persistentListOf() }
         val mtrLineSectionsData = remember { if (co.isTrain) createMTRLineSectionData(
-            co = co, 
+            co = co,
             color = co.getLineColor(routeNumber, Color.White),
             stopList = stopsList,
             mtrStopsInterchange = mtrStopsInterchange,

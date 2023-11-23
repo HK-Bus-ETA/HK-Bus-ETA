@@ -21,11 +21,13 @@
 package com.loohp.hkbuseta.listeners;
 
 import android.content.Intent;
+import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.loohp.hkbuseta.MainActivity;
 import com.loohp.hkbuseta.shared.Registry;
 import com.loohp.hkbuseta.utils.RemoteActivityUtils;
@@ -48,13 +50,17 @@ public class WearDataLayerListenerService extends WearableListenerService {
         switch (path) {
             case START_ACTIVITY_PATH: {
                 try {
-                    JSONObject data = new JSONObject(new String(event.getData()));
+                    String str = new String(event.getData());
+                    JSONObject data = new JSONObject(str);
                     Intent intent = new Intent(this, MainActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     for (Iterator<String> itr = data.keys(); itr.hasNext(); ) {
                         String key = itr.next();
                         intent.putExtra(key, data.optString(key));
                     }
+                    Bundle bundle = new Bundle();
+                    bundle.putString("value", "1");
+                    FirebaseAnalytics.getInstance(this).logEvent("remote_launch", bundle);
                     startActivity(intent);
                 } catch (JSONException e) {
                     e.printStackTrace();

@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Bundle;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
@@ -37,6 +38,7 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.loohp.hkbuseta.objects.Coordinates;
 
 import java.util.Objects;
@@ -66,6 +68,9 @@ public class LocationUtils {
             ComponentActivity activity = (ComponentActivity) context;
             AtomicReference<ActivityResultLauncher<String>> ref = new AtomicReference<>();
             ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result -> {
+                Bundle bundle = new Bundle();
+                bundle.putBoolean("value", result);
+                FirebaseAnalytics.getInstance(context).logEvent("location_request_result", bundle);
                 callback.accept(result);
                 ref.get().unregister();
             });
