@@ -255,11 +255,17 @@ fun FavButton(instance: TitleActivity) {
     val haptic = LocalHapticFeedback.current
     AdvanceButton(
         onClick = {
+            Firebase.analytics.logEvent("title_action", Bundle().apply {
+                putString("value", "favourite")
+            })
             instance.startActivity(Intent(instance, FavActivity::class.java))
         },
         onLongClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             if (Shared.favoriteRouteStops.isNotEmpty()) {
+                Firebase.analytics.logEvent("title_action", Bundle().apply {
+                    putString("value", "favourite_list_view")
+                })
                 LocationUtils.checkLocationPermission(instance) {
                     val intent = Intent(instance, FavRouteListViewActivity::class.java)
                     intent.putExtra("usingGps", it)
