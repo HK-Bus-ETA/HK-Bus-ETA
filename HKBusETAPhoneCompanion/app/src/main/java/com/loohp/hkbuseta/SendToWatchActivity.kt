@@ -49,7 +49,7 @@ const val START_ACTIVITY_PATH = "/HKBusETA/Launch"
 const val KMB_URL_STARTS_WITH = "https://app1933.page.link"
 const val KMB_DIRECT_URL_STARTS_WITH = "https://m4.kmb.hk/kmb-ws/share.php?parameter="
 val CTB_URL_PATTERN: Pattern = Pattern.compile("(?:城巴|Citybus) ?App: ?([0-9A-Za-z]+) ?(?:往|To) ?(.*)?http")
-val HKBUSAPP_URL_PATTERN: Pattern = Pattern.compile("https://hkbus\\.app/.+/route/([^/]*)(?:/([^/]*)%2C([^/]*))?")
+val HKBUSAPP_URL_PATTERN: Pattern = Pattern.compile("https://hkbus\\.app/.+/route/([^/]*)(?:/([^/]*)(?:%2C|,)([^/]*))?")
 
 
 class SendToWatchActivity : ComponentActivity() {
