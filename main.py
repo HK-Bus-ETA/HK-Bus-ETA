@@ -11,6 +11,7 @@ MTR_BUS_STOP_ALIAS = {}
 DATA_SHEET = {}
 
 DATA_SHEET_FILE_NAME = "data.json"
+DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
 CHECKSUM_FILE_NAME = "checksum.md5"
 
 RECAPITALIZE_KEYWORDS = [
@@ -509,3 +510,6 @@ output = {
 
 with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
+
+with open(DATA_SHEET_FORMATTED_FILE_NAME, "w", encoding="utf-8") as f:
+    json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'), indent=4)
