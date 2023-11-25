@@ -1515,8 +1515,9 @@ public class Registry {
 
     public PendingETAQueryResult getEta(String stopId, int stopIndex, Operator co, Route route, Context context) {
         Bundle bundle = new Bundle();
-        bundle.putString("route", stopId + "," + stopIndex + "," + route.getRouteNumber() + "," + co.name() + "," + route.getBound().get(co));
-        bundle.putString("stop", route.getRouteNumber() + "," + co.name() + "," + route.getBound().get(co));
+        bundle.putString("by_stop", stopId + "," + stopIndex + "," + route.getRouteNumber() + "," + co.name() + "," + route.getBound().get(co));
+        bundle.putString("by_bound", route.getRouteNumber() + "," + co.name() + "," + route.getBound().get(co));
+        bundle.putString("by_route", route.getRouteNumber() + "," + co.name());
         FirebaseAnalytics.getInstance(context).logEvent("eta_query", bundle);
         PendingETAQueryResult pending = new PendingETAQueryResult(context, co, () -> {
             TyphoonInfo typhoonInfo = getCurrentTyphoonData().get();
