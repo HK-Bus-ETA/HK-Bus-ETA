@@ -1,16 +1,19 @@
-# HK-Bus-ETA-WearOS
-WearOS app for checking Hong Kong Bus Estimated Time of Arrival on WearOS smartwatches with Tiles support.
+# HK Bus ETA (WearOS) 香港巴士到站預報
+WearOS app for checking Hong Kong Bus Estimated Time of Arrival on WearOS smartwatches with Tiles support.<br>
+WearOS 手錶平台上的香港巴士到站預報應用程式，更支援使用資訊方塊
 
-For more info, check out the app listing on Google Play with the link below.
+For more info, check out the app listing on Google Play with the link below.<br>
+欲了解更多資訊，請查閱以下Google Play應用程式連結
 
-## Language
+## Language 語言
 This WearOS (Android) app is in the native language of Hong Kong: **Traditional Chinese**.<br>
-In addition, it also supports **English**.
+In addition, it also supports **English**.<br>
+此 WearOS 手錶應用程式支援 **繁體中文** 及 **英文**
 
-## Live Demonstration & Screenshots
+## Live Demonstration & Screenshots 下載及截圖
 <a href='https://play.google.com/store/apps/details?id=com.loohp.hkbuseta&utm_source=GitHub-Repo&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width="200"/></a>
 
-## Data Sources
+## Data Sources 數據來源
 - [DATA.GOV.HK](https://data.gov.hk)
 - [The Kowloon Motor Bus Co. (1933) Ltd](https://www.kmb.hk)
 - [Citybus Limited](https://www.citybus.com.hk)
@@ -19,7 +22,7 @@ In addition, it also supports **English**.
 - [HK Bus Crawling@2021](https://github.com/hkbus/hk-bus-crawling)
 - [HK Bus Crawling@2021 (Fork)](https://github.com/LOOHP/hk-bus-crawling)
 
-## Privacy Policy
+## Privacy Policy 隱私政策
 I hereby state, to the best of my knowledge and belief, that I have **not programmed this app to collect any personally identifiable information**.<br>
 **Anonymous analytics data may be collected** for the purpose of improving the app, for example, identifying which function is particularly popular.<br>
 The only data stored locally on your device are bus route caches, which can be **simply erased by clearing the app's data or uninstalling the app**.<br>
