@@ -10,24 +10,24 @@ This WearOS (Android) app is in the native language of Hong Kong: **Traditional 
 In addition, it also supports **English**.<br>
 此 WearOS 手錶應用程式支援 **繁體中文** 及 **英文**
 
-## Live Demonstration & Screenshots 下載及截圖
+## Live Demonstration & Screenshots 下載連結及截圖
 <a href='https://play.google.com/store/apps/details?id=com.loohp.hkbuseta&utm_source=GitHub-Repo&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width="200"/></a>
 
 ## Data Sources 數據來源
-- [DATA.GOV.HK](https://data.gov.hk)
-- [The Kowloon Motor Bus Co. (1933) Ltd](https://www.kmb.hk)
-- [Citybus Limited](https://www.citybus.com.hk)
-- [New Lantao Bus Co. (1973) Ltd](https://www.nlb.com.hk/)
-- [MTR Corporation Limited](https://www.mtr.com.hk/)
+- [DATA.GOV.HK 資料一線通](https://data.gov.hk)
+- [The Kowloon Motor Bus Co. (1933) Ltd 九龍巴士（一九三三）有限公司](https://www.kmb.hk)
+- [Citybus Limited 城巴有限公司](https://www.citybus.com.hk)
+- [New Lantao Bus Co. (1973) Ltd 新大嶼山巴士(一九七三)有限公司](https://www.nlb.com.hk/)
+- [MTR Corporation Limited 香港鐵路有限公司](https://www.mtr.com.hk/)
 - [HK Bus Crawling@2021](https://github.com/hkbus/hk-bus-crawling)
 - [HK Bus Crawling@2021 (Fork)](https://github.com/LOOHP/hk-bus-crawling)
 
-## Privacy Policy 隱私政策
+## Privacy Policy 隱私政策 (只供英文版本)
 I hereby state, to the best of my knowledge and belief, that I have **not programmed this app to collect any personally identifiable information**.<br>
 **Anonymous analytics data may be collected** for the purpose of improving the app, for example, identifying which function is particularly popular.<br>
 The only data stored locally on your device are bus route caches, which can be **simply erased by clearing the app's data or uninstalling the app**.<br>
 **GPS information** used (such as to find nearby bus routes and stops) is **only used at the moment and is not stored or collected**.<br>
 HTTPS Requests are made to the above data sources to retrieve bus routes, stops and ETA information. **No personally identifiable information** (apart from information essentially needed to perform a request, such as the IP address) is sent in such requests.
 
-## Flaticon Attribution
+## Flaticon Attribution 圖標致謝 (只供英文版本)
 <a href="https://www.flaticon.com/free-icons/hurricane" title="hurricane icons">Hurricane icons created by Mehwish - Flaticon</a>
