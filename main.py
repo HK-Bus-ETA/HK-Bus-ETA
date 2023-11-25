@@ -228,7 +228,7 @@ def download_and_process_data_sheet():
     del DATA_SHEET["routeList"]["706+1+Tin Wing+Tin Shui Wai"]
 
     kmb_ops = set()
-    ctb_circular = set()
+    ctb_circular = {}
     mtr_orig = {}
     mtr_dest = {}
     mtr_stops_lists = {}
@@ -267,11 +267,17 @@ def download_and_process_data_sheet():
             if "ctb" in data["co"]:
                 data["kmbCtbJoint"] = True
                 kmb_ops.add(data["route"])
-        elif "ctb" in bounds and len(bounds.get("ctb")) > 1:
-            ctb_circular.add(data["route"])
-            dest = data["dest"]
-            dest["zh"] += " (循環線)"
-            dest["en"] += " (Circular)"
+        elif "ctb" in bounds:
+            route_number = data["route"]
+            service_type = int(data["serviceType"])
+            if len(bounds.get("ctb")) > 1:
+                if route_number in ctb_circular:
+                    if ctb_circular[route_number] >= 0 and ctb_circular[route_number] > service_type:
+                        ctb_circular[route_number] = service_type
+                else:
+                    ctb_circular[route_number] = service_type
+            elif route_number in ctb_circular and ctb_circular[route_number] > service_type:
+                ctb_circular[route_number] = -1
 
     mtr_joined_orig = {}
     for key, values in mtr_orig.items():
@@ -320,8 +326,15 @@ def download_and_process_data_sheet():
         elif "ctb" in bounds:
             if route_number in kmb_ops and "kmb" not in bounds:
                 keys_to_remove.append(key)
-            elif route_number in ctb_circular and len(bounds.get("ctb")) < 2:
-                data["ctbIsCircular"] = True
+            elif route_number in ctb_circular:
+                if ctb_circular[route_number] < 0:
+                    if len(bounds["ctb"]) >= 2:
+                        bounds["ctb"] = bounds["ctb"][0:1]
+                elif len(bounds["ctb"]) < 2:
+                    data["ctbIsCircular"] = True
+                else:
+                    data["dest"]["zh"] += " (循環線)"
+                    data["dest"]["en"] += " (Circular)"
     for key in keys_to_remove:
         del DATA_SHEET["routeList"][key]
 
