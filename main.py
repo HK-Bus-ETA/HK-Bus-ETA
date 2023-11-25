@@ -261,8 +261,7 @@ def download_and_process_data_sheet():
             else:
                 mtr_orig.setdefault(line_name + "_" + bound, []).insert(0, data.get("orig"))
                 mtr_dest.setdefault(line_name + "_" + bound, []).insert(0, data.get("dest"))
-            mtr_stops_lists.setdefault(line_name + "_" + bound, []).append(
-                [DATA_SHEET["stopList"][s]["name"]["zh"] for s in stops])
+            mtr_stops_lists.setdefault(line_name + "_" + bound, []).append([DATA_SHEET["stopList"][s]["name"]["zh"] for s in stops])
         elif "kmb" in bounds:
             if "ctb" in data["co"]:
                 data["kmbCtbJoint"] = True
@@ -270,14 +269,17 @@ def download_and_process_data_sheet():
         elif "ctb" in bounds:
             route_number = data["route"]
             service_type = int(data["serviceType"])
-            if len(bounds.get("ctb")) > 1:
+            if len(bounds["ctb"]) > 1:
                 if route_number in ctb_circular:
-                    if ctb_circular[route_number] >= 0 and ctb_circular[route_number] > service_type:
+                    if abs(ctb_circular[route_number]) > service_type:
                         ctb_circular[route_number] = service_type
                 else:
                     ctb_circular[route_number] = service_type
-            elif route_number in ctb_circular and ctb_circular[route_number] > service_type:
-                ctb_circular[route_number] = -1
+            elif route_number in ctb_circular:
+                if abs(ctb_circular[route_number]) > service_type:
+                    ctb_circular[route_number] = -service_type
+            else:
+                ctb_circular[route_number] = -service_type
 
     mtr_joined_orig = {}
     for key, values in mtr_orig.items():
