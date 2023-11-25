@@ -38,6 +38,7 @@ jobs:
         with:
             file-path: |
               data.json
+              data_formatted.json
               checksum.md5
               size.dat
               data.json.gz
