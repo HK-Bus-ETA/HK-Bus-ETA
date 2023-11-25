@@ -28,7 +28,6 @@ import com.loohp.hkbuseta.shared.Registry.ETALineEntry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Registry.ETAShortText
 import com.loohp.hkbuseta.shared.Shared
-import com.loohp.hkbuseta.utils.DistanceUtils
 import com.loohp.hkbuseta.utils.toHexString
 
 
@@ -154,10 +153,6 @@ fun String.asStop(context: Context): Stop? {
 
 fun String.identifyStopCo(): Operator? {
     return Operator.values().firstOrNull { it.matchStopIdPattern(this) }
-}
-
-fun Coordinates.distance(other: Coordinates): Double {
-    return DistanceUtils.findDistance(lat, lng, other.lat, other.lng)
 }
 
 inline val Stop.remarkedName: BilingualText get() {

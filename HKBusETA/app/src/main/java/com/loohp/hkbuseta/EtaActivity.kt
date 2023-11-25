@@ -119,12 +119,14 @@ import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.sp
+import com.loohp.hkbuseta.utils.toByteArray
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.io.ByteArrayInputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -147,8 +149,10 @@ class EtaActivity : ComponentActivity() {
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")?.operator
         val index = intent.extras!!.getInt("index")
-        val stop = intent.extras!!.getString("stop")?.let { Stop.deserialize(JSONObject(it)) }
-        val route = intent.extras!!.getString("route")?.let { Route.deserialize(JSONObject(it)) }
+        val stop = intent.extras!!.getByteArray("stop")?.let { Stop.deserialize(ByteArrayInputStream(it)) }?:
+            intent.extras!!.getString("stopStr")?.let { Stop.deserialize(JSONObject(it)) }
+        val route = intent.extras!!.getByteArray("route")?.let { Route.deserialize(ByteArrayInputStream(it)) }?:
+            intent.extras!!.getString("routeStr")?.let { Route.deserialize(JSONObject(it)) }
         if (stopId == null || co == null || stop == null || route == null) {
             throw RuntimeException()
         }
@@ -371,8 +375,8 @@ fun launchOtherStop(newIndex: Int, co: Operator, stopList: List<Registry.StopDat
     intent.putExtra("stopId", newStopData.stopId)
     intent.putExtra("co", co.name)
     intent.putExtra("index", newIndex)
-    intent.putExtra("stop", newStopData.stop.serialize().toString())
-    intent.putExtra("route", newStopData.route.serialize().toString())
+    intent.putExtra("stop", newStopData.stop.toByteArray())
+    intent.putExtra("route", newStopData.route.toByteArray())
     intent.putExtra("offset", offset)
     if (!animation) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
@@ -420,8 +424,8 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
                 intent.putExtra("stopId", stopId)
                 intent.putExtra("co", co.name)
                 intent.putExtra("index", index)
-                intent.putExtra("stop", stop.serialize().toString())
-                intent.putExtra("route", route.serialize().toString())
+                intent.putExtra("stop", stop.toByteArray())
+                intent.putExtra("route", route.toByteArray())
                 instance.startActivity(intent)
             },
             modifier = Modifier

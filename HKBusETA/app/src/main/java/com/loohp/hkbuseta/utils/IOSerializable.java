@@ -20,27 +20,11 @@
 
 package com.loohp.hkbuseta.utils;
 
-import java.util.Collection;
-import java.util.IntSummaryStatistics;
-import java.util.Objects;
-import java.util.function.Predicate;
+import java.io.IOException;
+import java.io.OutputStream;
 
-public class CollectionsUtils {
+public interface IOSerializable {
 
-    public static <T> int indexOf(Collection<T> collection, Predicate<T> matcher) {
-        int i = 0;
-        for (T t : collection) {
-            if (matcher.test(t)) {
-                return i;
-            }
-            i++;
-        }
-        return -1;
-    }
-
-    public static <T> float commonElementPercentage(Collection<T> collection, Collection<T> other) {
-        IntSummaryStatistics stats = collection.stream().mapToInt(e -> other.contains(e) ? 1 : 0).summaryStatistics();
-        return stats.getSum() / (float) stats.getCount();
-    }
+     void serialize(OutputStream outputStream) throws IOException;
 
 }

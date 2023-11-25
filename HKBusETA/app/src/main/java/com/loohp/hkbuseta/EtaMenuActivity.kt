@@ -120,8 +120,9 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.sp
+import com.loohp.hkbuseta.utils.toByteArray
 import com.loohp.hkbuseta.utils.toSpanned
-import org.json.JSONObject
+import java.io.ByteArrayInputStream
 import java.util.stream.IntStream
 
 
@@ -142,8 +143,8 @@ class EtaMenuActivity : ComponentActivity() {
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")?.operator
         val index = intent.extras!!.getInt("index")
-        val stop = intent.extras!!.getString("stop")?.let { Stop.deserialize(JSONObject(it)) }
-        val route = intent.extras!!.getString("route")?.let { Route.deserialize(JSONObject(it)) }
+        val stop = intent.extras!!.getByteArray("stop")?.let { Stop.deserialize(ByteArrayInputStream(it)) }
+        val route = intent.extras!!.getByteArray("route")?.let { Route.deserialize(ByteArrayInputStream(it)) }
         if (stopId == null || co == null || stop == null || route == null) {
             throw RuntimeException()
         }
@@ -355,7 +356,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                                 intent.putExtra("co", co.name())
 
                                 val stopListIntent = Intent(instance, ListStopsActivity::class.java)
-                                stopListIntent.putExtra("route", it.serialize().toString())
+                                stopListIntent.putExtra("route", it.toByteArray())
                                 stopListIntent.putExtra("scrollToStop", stopId)
                                 stopListIntent.putExtra("showEta", false)
                                 stopListIntent.putExtra("isAlightReminder", true)
@@ -365,7 +366,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                                     "你可能需要「<b>允許背景活動</b>」讓此功能在螢幕關閉時繼續正常運作<br><br>此功能目前在<b>測試階段</b>, 運作可能不穩定",
                                     "You might need to \"<b>Allow Background Activity</b>\" for this feature to continue working while the screen is off.<br><br>This feature is currently in <b>beta</b>, which might be unstable."
                                 )
-                                noticeIntent.putExtra("text", notice.serialize().toString())
+                                noticeIntent.putExtra("text", notice.toByteArray())
                                 ActivityUtils.startActivity(instance, noticeIntent) { result ->
                                     if (result.resultCode == 1) {
                                         AlightReminderService.terminate()

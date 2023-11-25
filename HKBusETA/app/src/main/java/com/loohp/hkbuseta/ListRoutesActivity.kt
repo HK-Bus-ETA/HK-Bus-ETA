@@ -132,6 +132,7 @@ import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.set
+import com.loohp.hkbuseta.utils.toByteArray
 import com.loohp.hkbuseta.utils.toHexString
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
@@ -485,7 +486,7 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<StopIndexedR
                                 }
                                 Registry.getInstance(instance).addLastLookupRoute(route.route.routeNumber, co, meta, instance)
                                 val intent = Intent(instance, ListStopsActivity::class.java)
-                                intent.putExtra("route", route.serialize().toString())
+                                intent.putExtra("route", route.toByteArray())
                                 instance.startActivity(intent)
                             },
                             onLongClick = {

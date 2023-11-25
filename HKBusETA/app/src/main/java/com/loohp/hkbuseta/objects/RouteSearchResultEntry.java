@@ -22,15 +22,24 @@ package com.loohp.hkbuseta.objects;
 
 import androidx.compose.runtime.Stable;
 
+import com.loohp.hkbuseta.utils.DataIOUtilsKtKt;
+import com.loohp.hkbuseta.utils.IOSerializable;
 import com.loohp.hkbuseta.utils.JSONSerializable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 
+import kotlin.text.Charsets;
+
 @Stable
-public class RouteSearchResultEntry implements JSONSerializable {
+public class RouteSearchResultEntry implements JSONSerializable, IOSerializable {
 
     public static RouteSearchResultEntry deserialize(JSONObject json) throws JSONException {
         String routeKey = json.optString("routeKey");
@@ -39,6 +48,17 @@ public class RouteSearchResultEntry implements JSONSerializable {
         StopInfo stop = json.has("stop") ? StopInfo.deserialize(json.optJSONObject("stop")) : null;
         Coordinates origin = json.has("origin") ? Coordinates.deserialize(json.optJSONObject("origin")) : null;
         boolean isInterchangeSearch = json.optBoolean("isInterchangeSearch");
+        return new RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch);
+    }
+
+    public static RouteSearchResultEntry deserialize(InputStream inputStream) throws IOException {
+        DataInputStream in = new DataInputStream(inputStream);
+        String routeKey = DataIOUtilsKtKt.readString(in, Charsets.UTF_8);
+        Route route = DataIOUtilsKtKt.readNullable(in, Route::deserialize);
+        Operator co = Operator.valueOf(DataIOUtilsKtKt.readString(in, Charsets.UTF_8));
+        StopInfo stop = DataIOUtilsKtKt.readNullable(in, StopInfo::deserialize);
+        Coordinates origin = DataIOUtilsKtKt.readNullable(in, Coordinates::deserialize);
+        boolean isInterchangeSearch = in.readBoolean();
         return new RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch);
     }
 
@@ -142,6 +162,17 @@ public class RouteSearchResultEntry implements JSONSerializable {
     }
 
     @Override
+    public void serialize(OutputStream outputStream) throws IOException {
+        DataOutputStream out = new DataOutputStream(outputStream);
+        DataIOUtilsKtKt.writeString(out, routeKey, Charsets.UTF_8);
+        DataIOUtilsKtKt.writeNullable(out, route, (o, v) -> v.serialize(o));
+        DataIOUtilsKtKt.writeString(out, co.name(), Charsets.UTF_8);
+        DataIOUtilsKtKt.writeNullable(out, stopInfo, (o, v) -> v.serialize(o));
+        DataIOUtilsKtKt.writeNullable(out, origin, (o, v) -> v.serialize(o));
+        out.writeBoolean(isInterchangeSearch);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -155,13 +186,22 @@ public class RouteSearchResultEntry implements JSONSerializable {
     }
 
     @Stable
-    public static class StopInfo implements JSONSerializable {
+    public static class StopInfo implements JSONSerializable, IOSerializable {
 
         public static StopInfo deserialize(JSONObject json) throws JSONException {
             String stopId = json.optString("stopId");
             Stop data = json.has("data") ? Stop.deserialize(json.optJSONObject("data")) : null;
             double distance = json.optDouble("distance");
             Operator co = Operator.valueOf(json.optString("co"));
+            return new StopInfo(stopId, data, distance, co);
+        }
+
+        public static StopInfo deserialize(InputStream inputStream) throws IOException {
+            DataInputStream in = new DataInputStream(inputStream);
+            String stopId = DataIOUtilsKtKt.readString(in, Charsets.UTF_8);
+            Stop data = DataIOUtilsKtKt.readNullable(in, Stop::deserialize);
+            double distance = in.readDouble();
+            Operator co = Operator.valueOf(DataIOUtilsKtKt.readString(in, Charsets.UTF_8));
             return new StopInfo(stopId, data, distance, co);
         }
 
@@ -211,6 +251,15 @@ public class RouteSearchResultEntry implements JSONSerializable {
             json.put("distance", distance);
             json.put("co", co.name());
             return json;
+        }
+
+        @Override
+        public void serialize(OutputStream outputStream) throws IOException {
+            DataOutputStream out = new DataOutputStream(outputStream);
+            DataIOUtilsKtKt.writeString(out, stopId, Charsets.UTF_8);
+            DataIOUtilsKtKt.writeNullable(out, data, (o, v) -> v.serialize(o));
+            out.writeDouble(distance);
+            DataIOUtilsKtKt.writeString(out, co.name(), Charsets.UTF_8);
         }
 
         @Override

@@ -137,6 +137,7 @@ import com.loohp.hkbuseta.utils.eitherContains
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.sp
+import com.loohp.hkbuseta.utils.toByteArray
 import com.loohp.hkbuseta.utils.toImmutableList
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
@@ -145,7 +146,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONObject
+import java.io.ByteArrayInputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -182,7 +183,7 @@ class ListStopsActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
-        val route = intent.extras!!.getString("route")?.let { RouteSearchResultEntry.deserialize(JSONObject(it)) }?: throw RuntimeException()
+        val route = intent.extras!!.getByteArray("route")?.let { RouteSearchResultEntry.deserialize(ByteArrayInputStream(it)) }!!
         val scrollToStop = intent.extras!!.getString("scrollToStop")
         val showEta = intent.extras!!.getBoolean("showEta", true)
         val isAlightReminder = intent.extras!!.getBoolean("isAlightReminder", false)
@@ -415,8 +416,8 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
                                     intent.putExtra("stopId", stopId)
                                     intent.putExtra("co", co.name)
                                     intent.putExtra("index", stopNumber)
-                                    intent.putExtra("stop", stop.serialize().toString())
-                                    intent.putExtra("route", entry.route.serialize().toString())
+                                    intent.putExtra("stop", stop.toByteArray())
+                                    intent.putExtra("route", entry.route.toByteArray())
                                     instance.startActivity(intent)
                                 },
                                 onLongClick = {

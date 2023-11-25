@@ -22,21 +22,37 @@ package com.loohp.hkbuseta.objects;
 
 import androidx.compose.runtime.Immutable;
 
+import com.loohp.hkbuseta.utils.IOSerializable;
+import com.loohp.hkbuseta.utils.DataIOUtilsKtKt;
 import com.loohp.hkbuseta.utils.JSONSerializable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 
+import kotlin.text.Charsets;
+
 @Immutable
-public class BilingualText implements JSONSerializable {
+public class BilingualText implements JSONSerializable, IOSerializable {
 
     public static final BilingualText EMPTY = new BilingualText("", "");
 
     public static BilingualText deserialize(JSONObject json) {
         String zh = json.optString("zh");
         String en = json.optString("en");
+        return new BilingualText(zh, en);
+    }
+
+    public static BilingualText deserialize(InputStream inputStream) {
+        DataInputStream in = new DataInputStream(inputStream);
+        String zh = DataIOUtilsKtKt.readString(in, Charsets.UTF_8);
+        String en = DataIOUtilsKtKt.readString(in, Charsets.UTF_8);
         return new BilingualText(zh, en);
     }
 
@@ -61,11 +77,23 @@ public class BilingualText implements JSONSerializable {
     }
 
     @Override
+    public String toString() {
+        return zh + " " + en;
+    }
+
+    @Override
     public JSONObject serialize() throws JSONException {
         JSONObject json = new JSONObject();
         json.put("zh", zh);
         json.put("en", en);
         return json;
+    }
+
+    @Override
+    public void serialize(OutputStream outputStream) throws IOException {
+        DataOutputStream out = new DataOutputStream(outputStream);
+        DataIOUtilsKtKt.writeString(out, zh, Charsets.UTF_8);
+        DataIOUtilsKtKt.writeString(out, en, Charsets.UTF_8);
     }
 
     @Override
@@ -80,4 +108,5 @@ public class BilingualText implements JSONSerializable {
     public int hashCode() {
         return Objects.hash(zh, en);
     }
+
 }

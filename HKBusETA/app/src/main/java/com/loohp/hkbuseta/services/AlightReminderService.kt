@@ -44,7 +44,6 @@ import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.objects.asStop
-import com.loohp.hkbuseta.objects.distance
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.name
@@ -55,6 +54,7 @@ import com.loohp.hkbuseta.utils.DistanceUtils
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.getOr
+import com.loohp.hkbuseta.utils.toByteArray
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONObject
@@ -198,7 +198,7 @@ class AlightReminderService : Service() {
         val stopListIntentBuilder = getCurrentValue()!!.let { currentValue ->
             Registry.getInstance(this).findRoutes(currentValue.route.routeNumber, true) { it -> it == currentValue.route }.first().let { {
                 val stopListIntent = Intent(this, MainActivity::class.java)
-                stopListIntent.putExtra("stopRoute", it.serialize().toString())
+                stopListIntent.putExtra("stopRoute", it.toByteArray())
                 stopListIntent.putExtra("scrollToStop", currentValue.route.stops[currentValue.operator]!!.minBy { it.asStop(this)!!.location.distance(currentValue.targetStop.location) })
                 stopListIntent.putExtra("showEta", false)
                 stopListIntent.putExtra("isAlightReminder", true)

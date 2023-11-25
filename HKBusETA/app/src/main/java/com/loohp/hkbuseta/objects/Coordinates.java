@@ -22,19 +22,33 @@ package com.loohp.hkbuseta.objects;
 
 import androidx.compose.runtime.Immutable;
 
+import com.loohp.hkbuseta.utils.DistanceUtils;
+import com.loohp.hkbuseta.utils.IOSerializable;
 import com.loohp.hkbuseta.utils.JSONSerializable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 
 @Immutable
-public class Coordinates implements JSONSerializable {
+public class Coordinates implements JSONSerializable, IOSerializable {
 
     public static Coordinates deserialize(JSONObject json) {
         double lat = json.optDouble("lat");
         double lng = json.optDouble("lng");
+        return new Coordinates(lat, lng);
+    }
+
+    public static Coordinates deserialize(InputStream inputStream) throws IOException {
+        DataInputStream in = new DataInputStream(inputStream);
+        double lat = in.readDouble();
+        double lng = in.readDouble();
         return new Coordinates(lat, lng);
     }
 
@@ -58,6 +72,10 @@ public class Coordinates implements JSONSerializable {
         return lng;
     }
 
+    public double distance(Coordinates other) {
+        return DistanceUtils.findDistance(lat, lng, other.lat, other.lng);
+    }
+
     public double[] toArray() {
         return new double[] {lat, lng};
     }
@@ -68,6 +86,13 @@ public class Coordinates implements JSONSerializable {
         json.put("lat", lat);
         json.put("lng", lng);
         return json;
+    }
+
+    @Override
+    public void serialize(OutputStream outputStream) throws IOException {
+        DataOutputStream out = new DataOutputStream(outputStream);
+        out.writeDouble(lat);
+        out.writeDouble(lng);
     }
 
     @Override
@@ -82,4 +107,5 @@ public class Coordinates implements JSONSerializable {
     public int hashCode() {
         return Objects.hash(lat, lng);
     }
+
 }

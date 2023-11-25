@@ -76,7 +76,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.json.JSONObject
+import java.io.ByteArrayInputStream
 
 
 private val defaultDismissText = BilingualText("確認", "OK")
@@ -89,8 +89,8 @@ class DismissibleTextDisplayActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
-        val text = intent.extras!!.getString("text")?.let { BilingualText.deserialize(JSONObject(it)) }?: BilingualText.EMPTY
-        val dismissText = intent.extras!!.getString("dismissText")?.let { BilingualText.deserialize(JSONObject(it)) }?: defaultDismissText
+        val text = intent.extras!!.getByteArray("text")?.let { BilingualText.deserialize(ByteArrayInputStream(it)) }?: BilingualText.EMPTY
+        val dismissText = intent.extras!!.getByteArray("dismissText")?.let { BilingualText.deserialize(ByteArrayInputStream(it)) }?: defaultDismissText
 
         setContent {
             TextElement(text, dismissText, this)

@@ -22,6 +22,8 @@ package com.loohp.hkbuseta.objects;
 
 import androidx.compose.runtime.Immutable;
 
+import com.loohp.hkbuseta.utils.DataIOUtilsKtKt;
+import com.loohp.hkbuseta.utils.IOSerializable;
 import com.loohp.hkbuseta.utils.JSONSerializable;
 import com.loohp.hkbuseta.utils.JsonUtils;
 
@@ -29,12 +31,22 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import kotlin.Pair;
+import kotlin.text.Charsets;
+
 @Immutable
-public class Route implements JSONSerializable {
+public class Route implements JSONSerializable, IOSerializable {
 
     public static Route deserialize(JSONObject json) throws JSONException {
         String route = json.optString("route");
@@ -50,6 +62,24 @@ public class Route implements JSONSerializable {
         BilingualText dest = BilingualText.deserialize(json.optJSONObject("dest"));
         BilingualText orig = BilingualText.deserialize(json.optJSONObject("orig"));
         Map<Operator, List<String>> stops = JsonUtils.toMap(json.optJSONObject("stops"), Operator::valueOf, v -> JsonUtils.toList((JSONArray) v, String.class));
+        return new Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, lrtCircular, dest, orig, stops);
+    }
+
+    public static Route deserialize(InputStream inputStream) throws IOException {
+        DataInputStream in = new DataInputStream(inputStream);
+        String route = DataIOUtilsKtKt.readString(in, Charsets.UTF_8);
+        Map<Operator, String> bound = DataIOUtilsKtKt.readMap(in, new LinkedHashMap<>(), i -> new Pair<>(Operator.valueOf(DataIOUtilsKtKt.readString(i, Charsets.UTF_8)), DataIOUtilsKtKt.readString(i, Charsets.UTF_8)));
+        List<Operator> co = DataIOUtilsKtKt.readCollection(in, new ArrayList<>(), i -> Operator.valueOf(DataIOUtilsKtKt.readString(i, Charsets.UTF_8)));
+        String serviceType = DataIOUtilsKtKt.readString(in, Charsets.UTF_8);
+        String nlbId = DataIOUtilsKtKt.readString(in, Charsets.UTF_8);
+        String gtfsId = DataIOUtilsKtKt.readString(in, Charsets.UTF_8);
+        boolean ctbIsCircular = in.readBoolean();
+        boolean kmbCtbJoint = in.readBoolean();
+        GMBRegion gmbRegion = DataIOUtilsKtKt.readNullable(in, i -> GMBRegion.valueOfOrNull(DataIOUtilsKtKt.readString(i, Charsets.UTF_8)));
+        BilingualText lrtCircular = DataIOUtilsKtKt.readNullable(in, BilingualText::deserialize);
+        BilingualText dest = BilingualText.deserialize(in);
+        BilingualText orig = BilingualText.deserialize(in);
+        Map<Operator, List<String>> stops = DataIOUtilsKtKt.readMap(in, new LinkedHashMap<>(), i -> new Pair<>(Operator.valueOf(DataIOUtilsKtKt.readString(i, Charsets.UTF_8)), DataIOUtilsKtKt.readCollection(i, new ArrayList<>(), i1 -> DataIOUtilsKtKt.readString(i1, Charsets.UTF_8))));
         return new Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, lrtCircular, dest, orig, stops);
     }
 
@@ -156,6 +186,32 @@ public class Route implements JSONSerializable {
         json.put("orig", orig.serialize());
         json.put("stops", JsonUtils.fromMap(stops, JsonUtils::fromCollection));
         return json;
+    }
+
+    @Override
+    public void serialize(OutputStream outputStream) throws IOException {
+        DataOutputStream out = new DataOutputStream(outputStream);
+        DataIOUtilsKtKt.writeString(out, route, Charsets.UTF_8);
+        DataIOUtilsKtKt.writeMap(out, bound, (o, k, v) -> {
+            DataIOUtilsKtKt.writeString(o, k.name(), Charsets.UTF_8);
+            DataIOUtilsKtKt.writeString(o, v, Charsets.UTF_8);
+        });
+        DataIOUtilsKtKt.writeCollection(out, co, (o, t) -> {
+            DataIOUtilsKtKt.writeString(o, t.name(), Charsets.UTF_8);
+        });
+        DataIOUtilsKtKt.writeString(out, serviceType, Charsets.UTF_8);
+        DataIOUtilsKtKt.writeString(out, nlbId, Charsets.UTF_8);
+        DataIOUtilsKtKt.writeString(out, gtfsId, Charsets.UTF_8);
+        out.writeBoolean(ctbIsCircular);
+        out.writeBoolean(kmbCtbJoint);
+        DataIOUtilsKtKt.writeNullable(out, gmbRegion, (o, v) -> DataIOUtilsKtKt.writeString(o, v.name(), Charsets.UTF_8));
+        DataIOUtilsKtKt.writeNullable(out, lrtCircular, (o, v) -> v.serialize(o));
+        dest.serialize(out);
+        orig.serialize(out);
+        DataIOUtilsKtKt.writeMap(out, stops, (o, k, v) -> {
+            DataIOUtilsKtKt.writeString(o, k.name(), Charsets.UTF_8);
+            DataIOUtilsKtKt.writeCollection(o, v, (o1, t1) -> DataIOUtilsKtKt.writeString(o1, t1, Charsets.UTF_8));
+        });
     }
 
     @Override

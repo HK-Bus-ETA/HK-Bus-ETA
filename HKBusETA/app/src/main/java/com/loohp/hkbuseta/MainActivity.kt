@@ -75,8 +75,10 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.clamp
+import com.loohp.hkbuseta.utils.toByteArray
 import kotlinx.coroutines.delay
 import org.json.JSONObject
+import java.io.ByteArrayInputStream
 import java.util.regex.Pattern
 import java.util.stream.Collectors
 import kotlin.math.absoluteValue
@@ -96,10 +98,10 @@ class MainActivity : ComponentActivity() {
         val stopId = intent.extras?.getString("stopId")
         val co = intent.extras?.getString("co")?.operator
         val index = intent.extras?.getInt("index")
-        val stop = intent.extras?.getString("stop")
-        val route = intent.extras?.getString("route")
+        val stop = intent.extras?.get("stop")
+        val route = intent.extras?.get("route")
 
-        val listStopRoute = intent.extras?.getString("stopRoute")
+        val listStopRoute = intent.extras?.getByteArray("stopRoute")
         val listStopScrollToStop = intent.extras?.getString("scrollToStop")
         val listStopShowEta = intent.extras?.getBoolean("showEta")
         val listStopIsAlightReminder = intent.extras?.getBoolean("isAlightReminder")
@@ -123,8 +125,8 @@ class MainActivity : ComponentActivity() {
                 when (state) {
                     Registry.State.READY -> {
                         Thread {
-                            if (stopId != null && co != null && stop != null && route != null) {
-                                val routeParsed = Route.deserialize(JSONObject(route))
+                            if (stopId != null && co != null && (stop is String || stop is ByteArray) && (route is String || route is ByteArray)) {
+                                val routeParsed = if (route is String) Route.deserialize(JSONObject(route)) else Route.deserialize(ByteArrayInputStream(route as ByteArray))
                                 Registry.getInstance(this@MainActivity).findRoutes(routeParsed.routeNumber, true) { it ->
                                     val bound = it.bound
                                     if (!bound.containsKey(co) || bound[co] != routeParsed.bound[co]) {
@@ -134,7 +136,7 @@ class MainActivity : ComponentActivity() {
                                     return@findRoutes stops.contains(stopId)
                                 }.firstOrNull()?.let {
                                     val intent = Intent(this@MainActivity, ListStopsActivity::class.java)
-                                    intent.putExtra("route", it.serialize().toString())
+                                    intent.putExtra("route", it.toByteArray())
                                     intent.putExtra("scrollToStop", stopId)
                                     startActivity(intent)
                                 }
@@ -143,8 +145,16 @@ class MainActivity : ComponentActivity() {
                                 intent.putExtra("stopId", stopId)
                                 intent.putExtra("co", co.name)
                                 intent.putExtra("index", index)
-                                intent.putExtra("stop", stop)
-                                intent.putExtra("route", route)
+                                if (stop is String) {
+                                    intent.putExtra("stopStr", stop)
+                                } else {
+                                    intent.putExtra("stop", stop as ByteArray)
+                                }
+                                if (route is String) {
+                                    intent.putExtra("routeStr", route)
+                                } else {
+                                    intent.putExtra("route", route as ByteArray)
+                                }
                                 startActivity(intent)
                                 finish()
                             } else if (listStopRoute != null && listStopScrollToStop != null && listStopShowEta != null && listStopIsAlightReminder != null) {
@@ -215,7 +225,7 @@ class MainActivity : ComponentActivity() {
 
                                         if (queryStop != null) {
                                             val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)
-                                            intent2.putExtra("route", it.serialize().toString())
+                                            intent2.putExtra("route", it.toByteArray())
                                             intent2.putExtra("scrollToStop", queryStop)
                                             startActivity(intent2)
 
@@ -227,14 +237,14 @@ class MainActivity : ComponentActivity() {
                                                     intent3.putExtra("stopId", stopId)
                                                     intent3.putExtra("co", it.co.name)
                                                     intent3.putExtra("index", i + 1)
-                                                    intent3.putExtra("stop", stopData.stop.serialize().toString())
-                                                    intent3.putExtra("route", it.route.serialize().toString())
+                                                    intent3.putExtra("stop", stopData.stop.toByteArray())
+                                                    intent3.putExtra("route", it.route.toByteArray())
                                                     startActivity(intent3)
                                                 }
                                             }
                                         } else if (filteredResult.size == 1) {
                                             val intent2 = Intent(this@MainActivity, ListStopsActivity::class.java)
-                                            intent2.putExtra("route", it.serialize().toString())
+                                            intent2.putExtra("route", it.toByteArray())
                                             startActivity(intent2)
                                         }
                                     }

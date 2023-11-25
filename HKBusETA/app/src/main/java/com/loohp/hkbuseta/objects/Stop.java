@@ -22,21 +22,39 @@ package com.loohp.hkbuseta.objects;
 
 import androidx.compose.runtime.Immutable;
 
+import com.loohp.hkbuseta.utils.DataIOUtilsKtKt;
+import com.loohp.hkbuseta.utils.IOSerializable;
 import com.loohp.hkbuseta.utils.JSONSerializable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 
+import kotlin.text.Charsets;
+
 @Immutable
-public class Stop implements JSONSerializable {
+public class Stop implements JSONSerializable, IOSerializable {
 
     public static Stop deserialize(JSONObject json) {
         Coordinates location = Coordinates.deserialize(json.optJSONObject("location"));
         BilingualText name = BilingualText.deserialize(json.optJSONObject("name"));
         BilingualText remark = json.has("remark") ? BilingualText.deserialize(json.optJSONObject("remark")) : null;
         String kmbBbiId = json.has("kmbBbiId") ? json.optString("kmbBbiId") : null;
+        return new Stop(location, name, remark, kmbBbiId);
+    }
+
+    public static Stop deserialize(InputStream inputStream) throws IOException {
+        DataInputStream in = new DataInputStream(inputStream);
+        Coordinates location = Coordinates.deserialize(in);
+        BilingualText name = BilingualText.deserialize(in);
+        BilingualText remark = DataIOUtilsKtKt.readNullable(in, BilingualText::deserialize);
+        String kmbBbiId = DataIOUtilsKtKt.readNullable(in, i -> DataIOUtilsKtKt.readString(i, Charsets.UTF_8));
         return new Stop(location, name, remark, kmbBbiId);
     }
 
@@ -80,6 +98,15 @@ public class Stop implements JSONSerializable {
             json.put("kmbBbiId", kmbBbiId);
         }
         return json;
+    }
+
+    @Override
+    public void serialize(OutputStream outputStream) throws IOException {
+        DataOutputStream out = new DataOutputStream(outputStream);
+        location.serialize(out);
+        name.serialize(out);
+        DataIOUtilsKtKt.writeNullable(out, remark, (o, v) -> v.serialize(o));
+        DataIOUtilsKtKt.writeNullable(out, kmbBbiId, (o, v) -> DataIOUtilsKtKt.writeString(o, v, Charsets.UTF_8));
     }
 
     @Override
