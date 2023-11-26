@@ -40,12 +40,17 @@ class RemoteActivityUtils {
                         if (nodes.result.isEmpty()) {
                             noWatch.invoke()
                         } else {
-                            val futures = nodes.result.map { node ->
-                                val future: CompletableFuture<Task<Int>> = CompletableFuture()
-                                Wearable.getMessageClient(instance).sendMessage(node.id, path, dataRaw).addOnCompleteListener {
-                                    future.complete(it)
+                            val futures = nodes.result.mapNotNull { node ->
+                                return@mapNotNull try {
+                                    val future: CompletableFuture<Task<Int>> = CompletableFuture()
+                                    Wearable.getMessageClient(instance).sendMessage(node.id, path, dataRaw).addOnCompleteListener {
+                                        future.complete(it)
+                                    }
+                                    future
+                                } catch (e: Throwable) {
+                                    e.printStackTrace()
+                                    null
                                 }
-                                return@map future
                             }
                             ForkJoinPool.commonPool().execute {
                                 var isSuccess = false
