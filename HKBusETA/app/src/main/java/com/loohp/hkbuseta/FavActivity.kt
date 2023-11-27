@@ -114,12 +114,14 @@ import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.isTrain
 import com.loohp.hkbuseta.objects.name
+import com.loohp.hkbuseta.objects.resolveStop
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.shared.TileUseState
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.LocationUtils
+import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.UnitUtils
@@ -129,6 +131,7 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.toByteArray
+import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -159,7 +162,7 @@ class FavActivity : ComponentActivity() {
             FavElements(scrollToIndex, this) { isAdd, index, task ->
                 sync.execute {
                     if (isAdd) {
-                        etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                        etaUpdatesMap.compute(index) { _, v -> v?.apply { executor.execute(task) }?: (executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!!) }
                     } else {
                         etaUpdatesMap.remove(index)?.first?.cancel(true)
                     }
@@ -214,11 +217,29 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
         val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
         val etaResults = remember { ConcurrentHashMap<Int, Registry.ETAQueryResult>().asImmutableState() }
 
+        val originState: MutableStateFlow<LocationResult?> = remember { MutableStateFlow(null) }
+        val origin by originState.collectAsStateWithLifecycle()
+
         LaunchedEffect (Unit) {
             if (scrollToIndex > 0) {
                 scope.launch {
                     state.scrollToItem(scrollToIndex.coerceIn(1, maxFavItems.coerceAtLeast(1)) + 2, (-ScreenSizeUtils.getScreenHeight(instance) / 2) + UnitUtils.spToPixels(instance, StringUtils.scaledSize(35F, instance)).roundToInt())
                 }
+            }
+            if (Shared.favoriteRouteStops.values.any { it.favouriteStopMode.isRequiresLocation }) {
+                LocationUtils.checkLocationPermission(instance) {
+                    if (it) {
+                        schedule.invoke(true, -1) {
+                            originState.value = LocationUtils.getGPSLocation(instance).get()
+                        }
+                    }
+                }
+            }
+        }
+
+        DisposableEffect (Unit) {
+            onDispose {
+                schedule.invoke(false, -1, null)
             }
         }
 
@@ -252,7 +273,7 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
             }
             items(maxFavItems) {
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
-                FavButton(it + 1, etaResults, etaUpdateTimes, instance, schedule)
+                FavButton(it + 1, etaResults, etaUpdateTimes, origin, instance, schedule)
             }
             item {
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(45, instance).dp))
@@ -319,7 +340,7 @@ fun RouteListViewButton(instance: FavActivity) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, origin: LocationResult?, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var favouriteStopRoute by remember { mutableStateOf(Shared.favoriteRouteStops[favoriteIndex]) }
     var anyTileUses by remember { mutableStateOf(Shared.getTileUseState(favoriteIndex)) }
 
@@ -373,11 +394,8 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
             } else {
                 val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
                 if (favStopRoute != null) {
-                    val stopId = favStopRoute.stopId
+                    val (index, stopId, stop, route) = favStopRoute.resolveStop(instance) { origin?.location }
                     val co = favStopRoute.co
-                    val index = favStopRoute.index
-                    val stop = favStopRoute.stop
-                    val route = favStopRoute.route
 
                     Registry.getInstance(instance).findRoutes(route.routeNumber, true) { it ->
                         val bound = it.bound
@@ -430,7 +448,8 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         .padding(10.dp, (if (Shared.language == "en") 7.5 else 8.5).dp)
                         .align(Alignment.BottomStart),
                 ) {
-                    ETAElement(favoriteIndex, favStopRoute.stopId, favStopRoute.index, favStopRoute.co, favStopRoute.route, etaResults, etaUpdateTimes, instance, schedule)
+                    val (index, stopId, _, route) = favStopRoute.resolveStop(instance) { origin?.location }
+                    ETAElement(favoriteIndex, stopId, index, favStopRoute.co, route, etaResults, etaUpdateTimes, instance, schedule)
                 }
             }
             Row(
@@ -490,14 +509,14 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         text = if (Shared.language == "en") "No Route Selected" else "未有設置路線"
                     )
                 } else {
-                    val index = currentFavouriteStopRoute.index
-                    val stop = currentFavouriteStopRoute.stop
+                    val (index, _, stop) = currentFavouriteStopRoute.resolveStop(instance) { origin?.location }
                     val stopName = stop.name
                     val route = currentFavouriteStopRoute.route
                     val kmbCtbJoint = route.isKmbCtbJoint
                     val co = currentFavouriteStopRoute.co
                     val routeNumber = route.routeNumber
                     val stopId = currentFavouriteStopRoute.stopId
+                    val gpsStop = currentFavouriteStopRoute.favouriteStopMode.isRequiresLocation
                     val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true)
                     val rawColor = co.getColor(routeNumber, Color.White)
                     val color = if (kmbCtbJoint) {
@@ -524,7 +543,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.en)
                     } else {
                         (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.zh)
-                    }
+                    }.plus(if (gpsStop) (if (Shared.language == "en") "<small> - Closest</small>" else "<small> - 最近</small>") else "")
                     Spacer(modifier = Modifier.size(5.dp))
                     Column (
                         modifier = Modifier
@@ -555,7 +574,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             maxLines = 1,
                             text = routeText
                         )
-                        Text(
+                        AnnotatedText(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .basicMarquee(Int.MAX_VALUE)
@@ -565,7 +584,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             color = MaterialTheme.colors.primary,
                             fontSize = StringUtils.scaledSize(11F, instance).sp,
                             maxLines = 1,
-                            text = subText
+                            text = subText.toSpanned(instance).asAnnotatedString()
                         )
                     }
                 }
@@ -588,6 +607,16 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
             etaStateFlow.value = result
             etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
             etaResults.value[favoriteIndex] = result
+        }
+    }
+    LaunchedEffect (stopId) {
+        if (Shared.favoriteRouteStops[favoriteIndex]?.favouriteStopMode?.isRequiresLocation == true) {
+            schedule.invoke(true, favoriteIndex) {
+                val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+                etaStateFlow.value = result
+                etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
+                etaResults.value[favoriteIndex] = result
+            }
         }
     }
     DisposableEffect (Unit) {

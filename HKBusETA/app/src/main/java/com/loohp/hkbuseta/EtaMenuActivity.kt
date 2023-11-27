@@ -97,6 +97,7 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.FavouriteStopMode
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
@@ -690,9 +691,9 @@ fun FavHeader(instance: EtaMenuActivity) {
         color = MaterialTheme.colors.primary,
         fontSize = StringUtils.scaledSize(10F, instance).sp.clamp(max = 10.dp),
         text = if (Shared.language == "en") {
-            "Click below to set/clear this route stop from the corresponding indexed favourite route"
+            "Section to set/clear this route stop from the corresponding indexed favourite route"
         } else {
-            "點擊可設置/清除對應的最喜愛路線"
+            "以下可設置/清除對應的最喜愛路線"
         }
     )
     Text(
@@ -706,6 +707,20 @@ fun FavHeader(instance: EtaMenuActivity) {
             "Route stops can be used in Tiles"
         } else {
             "最喜愛路線可在資訊方塊中顯示"
+        }
+    )
+    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+    Text(
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .fillMaxWidth(),
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colors.primary,
+        fontSize = StringUtils.scaledSize(10F, instance).sp.clamp(max = 10.dp),
+        text = if (Shared.language == "en") {
+            "Tap to set this stop\nLong press to set the whole route"
+        } else {
+            "點擊設置此站 長按設置整條路線"
         }
     )
 }
@@ -764,6 +779,51 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
         }
     }
 
+    val handleClick0: (FavouriteStopMode) -> Unit = {
+        if (state == FavouriteRouteState.USED_SELF) {
+            Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
+            Toast.makeText(instance, if (Shared.language == "en") "Cleared Favourite Route ".plus(favoriteIndex) else "已清除最喜愛路線".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
+        } else {
+            Registry.getInstance(instance).setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, it, instance)
+            Toast.makeText(instance, if (Shared.language == "en") "Set Favourite Route ".plus(favoriteIndex) else "已設置最喜愛路線".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
+        }
+        state = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
+        anyTileUses = Shared.getTileUseState(favoriteIndex)
+    }
+
+    val handleClick: (FavouriteStopMode) -> Unit = {
+        if (it.isRequiresLocation && state != FavouriteRouteState.USED_SELF && !LocationUtils.checkBackgroundLocationPermission(instance, false)) {
+            val noticeIntent = Intent(instance, DismissibleTextDisplayActivity::class.java)
+            val notice = BilingualText(
+                "<b>設置路線任何站為最喜愛路線</b>需要在<b>背景存取定位位置的權限</b><br>" +
+                        "以搜尋你<b>目前所在的地點最近的巴士站</b><br>" +
+                        "<br>" +
+                        "包括在程式未被打開時(用於資訊方塊中)<br>" +
+                        "程式不會儲存或發送位置數據<br>" +
+                        "<br>" +
+                        "如出現權限請求 請分別選擇「<b>僅限使用應用程式時</b>」和「<b>一律允許</b>」",
+                "<b>Setting any stop on route as favourite route</b> requires the <b>background location permission</b>.<br>" +
+                        "It is used to <b>search for the closest stop to you</b>, even when the app is closed or not in use (when you look up ETA using Tiles), no location data are stored or sent.<br>" +
+                        "<br>" +
+                        "If prompted, please choose \"<b>While using this app</b>\" and then \"<b>All the time</b>\"."
+            )
+            noticeIntent.putExtra("text", notice.toByteArray())
+            ActivityUtils.startActivity(instance, noticeIntent) { confirm ->
+                if (confirm.resultCode == 1) {
+                    LocationUtils.checkBackgroundLocationPermission(instance) { result ->
+                        if (result) {
+                            handleClick0.invoke(it)
+                        } else {
+                            Toast.makeText(instance, if (Shared.language == "en") "Background Location Access Permission Denied" else "背景位置存取權限被拒絕", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+        } else {
+            handleClick0.invoke(it)
+        }
+    }
+
     val haptic = LocalHapticFeedback.current
     AdvanceButton(
         modifier = Modifier
@@ -779,21 +839,11 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
             },
         shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
         onClick = {
-            if (state == FavouriteRouteState.USED_SELF) {
-                Registry.getInstance(instance).clearFavouriteRouteStop(favoriteIndex, instance)
-                Toast.makeText(instance, if (Shared.language == "en") "Cleared Favourite Route ".plus(favoriteIndex) else "已清除最喜愛路線".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
-            } else {
-                Registry.getInstance(instance).setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, instance)
-                Toast.makeText(instance, if (Shared.language == "en") "Set Favourite Route ".plus(favoriteIndex) else "已設置最喜愛路線".plus(favoriteIndex), Toast.LENGTH_SHORT).show()
-            }
-            state = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
-            anyTileUses = Shared.getTileUseState(favoriteIndex)
+            handleClick.invoke(FavouriteStopMode.FIXED)
         },
         onLongClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            val intent = Intent(instance, FavActivity::class.java)
-            intent.putExtra("scrollToIndex", favoriteIndex)
-            instance.startActivity(intent)
+            handleClick.invoke(FavouriteStopMode.CLOSEST)
         },
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
@@ -848,10 +898,14 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                         val kmbCtbJoint = currentRoute.route.isKmbCtbJoint
                         val coDisplay = currentRoute.co.getDisplayName(currentRoute.route.routeNumber, kmbCtbJoint, Shared.language)
                         val routeNumberDisplay = currentRoute.co.getDisplayRouteNumber(currentRoute.route.routeNumber)
-                        val stopName = if (Shared.language == "en") {
-                            (if (currentRoute.co == Operator.MTR || currentRoute.co == Operator.LRT) "" else index.toString().plus(". ")).plus(currentRoute.stop.name.en)
+                        val stopName = if (currentRoute.favouriteStopMode == FavouriteStopMode.FIXED) {
+                            if (Shared.language == "en") {
+                                (if (currentRoute.co == Operator.MTR || currentRoute.co == Operator.LRT) "" else index.toString().plus(". ")).plus(currentRoute.stop.name.en)
+                            } else {
+                                (if (currentRoute.co == Operator.MTR || currentRoute.co == Operator.LRT) "" else index.toString().plus(". ")).plus(currentRoute.stop.name.zh)
+                            }
                         } else {
-                            (if (currentRoute.co == Operator.MTR || currentRoute.co == Operator.LRT) "" else index.toString().plus(". ")).plus(currentRoute.stop.name.zh)
+                            if (Shared.language == "en") "Any" else "任何站"
                         }
                         val rawColor = currentRoute.co.getColor(currentRoute.route.routeNumber, Color.White)
                         val color = if (kmbCtbJoint) {
@@ -905,7 +959,11 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                             textAlign = TextAlign.Start,
                             color = Color(0xFFFFFFFF),
                             fontSize = StringUtils.scaledSize(14F, instance).sp,
-                            text = if (Shared.language == "en") "Selected as This Route Stop" else "已設置為本路線巴士站"
+                            text = if (Shared.favoriteRouteStops[favoriteIndex]?.favouriteStopMode == FavouriteStopMode.CLOSEST) {
+                                if (Shared.language == "en") "Selected as Any Stop on This Route" else "已設置為本路線任何巴士站"
+                            } else {
+                                if (Shared.language == "en") "Selected as This Route Stop" else "已設置為本路線巴士站"
+                            }
                         )
                     }
                 }

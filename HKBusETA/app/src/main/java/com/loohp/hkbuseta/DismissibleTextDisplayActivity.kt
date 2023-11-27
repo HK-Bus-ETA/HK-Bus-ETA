@@ -67,6 +67,7 @@ import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.compose.fullPageVerticalScrollWithScrollbar
 import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.withEn
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.StringUtils
@@ -79,7 +80,7 @@ import kotlinx.coroutines.sync.withLock
 import java.io.ByteArrayInputStream
 
 
-private val defaultDismissText = BilingualText("確認", "OK")
+private val defaultDismissText = "確認" withEn "OK"
 
 @Stable
 class DismissibleTextDisplayActivity : ComponentActivity() {

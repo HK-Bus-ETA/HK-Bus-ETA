@@ -89,10 +89,12 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.objects.FavouriteStopMode
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.isTrain
+import com.loohp.hkbuseta.objects.withEn
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -287,7 +289,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
     } }
     val enabled by remember { derivedStateOf {
         (selectStates.isNotEmpty() && selectStates[0] == favoriteIndex) || (favouriteStopRoute != null && (selectStates.isEmpty() || Shared.favoriteRouteStops[selectStates[0]]?.let {
-            it.stop.location.distance(favouriteStopRoute.stop.location) <= 0.3 && !(it.route.routeNumber == favouriteStopRoute.route.routeNumber && it.co == favouriteStopRoute.co)
+            (it.favouriteStopMode.let { mode -> mode.isRequiresLocation && mode == favouriteStopRoute.favouriteStopMode } || it.stop.location.distance(favouriteStopRoute.stop.location) <= 0.3) && !(it.route.routeNumber == favouriteStopRoute.route.routeNumber && it.co == favouriteStopRoute.co)
         } == true))
     } }
 
@@ -400,8 +402,15 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                     )
                 } else {
                     val index = currentFavouriteStopRoute.index
-                    val stop = currentFavouriteStopRoute.stop
-                    val stopName = stop.name
+                    val stopName = if (currentFavouriteStopRoute.favouriteStopMode == FavouriteStopMode.FIXED) {
+                        currentFavouriteStopRoute.stop.name
+                    } else {
+                        if (selectStates.isNotEmpty() && (selectStates.size > 1 || selectState != SelectMode.PRIMARY) && Shared.favoriteRouteStops[selectStates[0]]?.favouriteStopMode?.isRequiresLocation == true) {
+                            "共同最近的任何站" withEn "Any Common Closes"
+                        } else {
+                            "最近的任何站" withEn "Any Closes"
+                        }
+                    }
                     val route = currentFavouriteStopRoute.route
                     val kmbCtbJoint = route.isKmbCtbJoint
                     val co = currentFavouriteStopRoute.co
@@ -430,9 +439,9 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                     val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
                     val routeText = destName[Shared.language]
                     val subText = if (Shared.language == "en") {
-                        (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.en)
+                        (if (co.isTrain || currentFavouriteStopRoute.favouriteStopMode == FavouriteStopMode.CLOSEST) "" else index.toString().plus(". ")).plus(stopName.en)
                     } else {
-                        (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.zh)
+                        (if (co.isTrain || currentFavouriteStopRoute.favouriteStopMode == FavouriteStopMode.CLOSEST) "" else index.toString().plus(". ")).plus(stopName.zh)
                     }
                     Spacer(modifier = Modifier.size(5.dp))
                     Column (

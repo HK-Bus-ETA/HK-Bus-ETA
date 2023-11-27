@@ -31,7 +31,7 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.toHexString
 
 
-private val bilingualToPrefix = BilingualText("往", "To ")
+private val bilingualToPrefix = "往" withEn "To "
 
 inline val Operator.name: String get() = name()
 
@@ -127,8 +127,24 @@ fun Route.resolvedDest(prependTo: Boolean): BilingualText {
     return lrtCircular?: dest.let { if (prependTo) it.prependTo() else it }
 }
 
+infix fun String.withEn(en: String): BilingualText {
+    return BilingualText(this, en)
+}
+
+infix fun String.withZh(zh: String): BilingualText {
+    return BilingualText(zh, this)
+}
+
 fun BilingualText.prependTo(): BilingualText {
     return bilingualToPrefix + this
+}
+
+operator fun BilingualText.component1(): String {
+    return this.zh
+}
+
+operator fun BilingualText.component2(): String {
+    return this.en
 }
 
 operator fun BilingualText.plus(other: BilingualText): BilingualText {
@@ -179,4 +195,36 @@ operator fun ETAShortText.component1(): String {
 
 operator fun ETAShortText.component2(): String {
     return this.second
+}
+
+data class FavouriteResolvedStop(val index: Int, val stopId: String, val stop: Stop, val route: Route)
+
+inline fun FavouriteRouteStop.resolveStop(context: Context, originGetter: () -> Coordinates?): FavouriteResolvedStop {
+    if (favouriteStopMode == FavouriteStopMode.FIXED) {
+        return FavouriteResolvedStop(index, stopId, stop, route)
+    }
+    val origin = originGetter.invoke()?: return FavouriteResolvedStop(index, stopId, stop, route)
+    return Registry.getInstance(context).getAllStops(route.routeNumber, route.bound[co], co, route.gmbRegion)
+        .withIndex()
+        .minBy { it.value.stop.location.distance(origin) }
+        .let { FavouriteResolvedStop(it.index + 1, it.value.stopId, it.value.stop, it.value.route) }
+}
+
+inline fun List<FavouriteRouteStop>.resolveStops(context: Context, originGetter: () -> Coordinates?): List<Pair<FavouriteRouteStop, FavouriteResolvedStop?>> {
+    if (isEmpty()) {
+        return emptyList()
+    }
+    if (any { it.favouriteStopMode == FavouriteStopMode.FIXED }) {
+        return map { it to FavouriteResolvedStop(it.index, it.stopId, it.stop, it.route) }
+    }
+    val origin = originGetter.invoke()?: this[0].stop.location
+    val eachAllStop = map { Registry.getInstanceNoUpdateCheck(context).getAllStops(it.route.routeNumber, it.route.bound[it.co], it.co, it.route.gmbRegion) }
+    val closestStop = eachAllStop.flatten().minBy { it.stop.location.distance(origin) }
+    return eachAllStop.withIndex().map { indexed ->
+        val (index, allStops) = indexed
+        allStops.withIndex()
+            .map { it.value.stop.location.distance(closestStop.stop.location) to it }
+            .minBy { it.first }
+            .let { this[index] to (if (it.first <= 0.15) FavouriteResolvedStop(it.second.index + 1, it.second.value.stopId, it.second.value.stop, it.second.value.route) else null) }
+    }
 }

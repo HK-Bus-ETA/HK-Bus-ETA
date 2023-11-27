@@ -38,6 +38,7 @@ import com.loohp.hkbuseta.objects.BilingualText;
 import com.loohp.hkbuseta.objects.Coordinates;
 import com.loohp.hkbuseta.objects.DataContainer;
 import com.loohp.hkbuseta.objects.FavouriteRouteStop;
+import com.loohp.hkbuseta.objects.FavouriteStopMode;
 import com.loohp.hkbuseta.objects.GMBRegion;
 import com.loohp.hkbuseta.objects.Operator;
 import com.loohp.hkbuseta.objects.Preferences;
@@ -48,6 +49,7 @@ import com.loohp.hkbuseta.objects.RouteSearchResultEntry;
 import com.loohp.hkbuseta.objects.RouteSortMode;
 import com.loohp.hkbuseta.objects.Stop;
 import com.loohp.hkbuseta.tiles.EtaTileService;
+import com.loohp.hkbuseta.tiles.EtaTileServiceCommon;
 import com.loohp.hkbuseta.tiles.EtaTileServiceEight;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFive;
 import com.loohp.hkbuseta.tiles.EtaTileServiceFour;
@@ -246,31 +248,20 @@ public class Registry {
         return updatePercentageState;
     }
 
-    public void updateTileService(Context context) {
-        TileUpdateRequester updater = TileService.getUpdater(context);
-        updater.requestUpdate(EtaTileService.class);
-        updater.requestUpdate(EtaTileServiceOne.class);
-        updater.requestUpdate(EtaTileServiceTwo.class);
-        updater.requestUpdate(EtaTileServiceThree.class);
-        updater.requestUpdate(EtaTileServiceFour.class);
-        updater.requestUpdate(EtaTileServiceFive.class);
-        updater.requestUpdate(EtaTileServiceSix.class);
-        updater.requestUpdate(EtaTileServiceSeven.class);
-        updater.requestUpdate(EtaTileServiceEight.class);
+    public void updateTileService() {
+        EtaTileServiceCommon.Companion.requestTileUpdate(0);
+        EtaTileServiceCommon.Companion.requestTileUpdate(1);
+        EtaTileServiceCommon.Companion.requestTileUpdate(2);
+        EtaTileServiceCommon.Companion.requestTileUpdate(3);
+        EtaTileServiceCommon.Companion.requestTileUpdate(4);
+        EtaTileServiceCommon.Companion.requestTileUpdate(5);
+        EtaTileServiceCommon.Companion.requestTileUpdate(6);
+        EtaTileServiceCommon.Companion.requestTileUpdate(7);
+        EtaTileServiceCommon.Companion.requestTileUpdate(8);
     }
 
-    public void updateTileService(int favoriteIndex, Context context) {
-        switch (favoriteIndex) {
-            case 1: { TileService.getUpdater(context).requestUpdate(EtaTileServiceOne.class); break; }
-            case 2: { TileService.getUpdater(context).requestUpdate(EtaTileServiceTwo.class); break; }
-            case 3: { TileService.getUpdater(context).requestUpdate(EtaTileServiceThree.class); break; }
-            case 4: { TileService.getUpdater(context).requestUpdate(EtaTileServiceFour.class); break; }
-            case 5: { TileService.getUpdater(context).requestUpdate(EtaTileServiceFive.class); break; }
-            case 6: { TileService.getUpdater(context).requestUpdate(EtaTileServiceSix.class); break; }
-            case 7: { TileService.getUpdater(context).requestUpdate(EtaTileServiceSeven.class); break; }
-            case 8: { TileService.getUpdater(context).requestUpdate(EtaTileServiceEight.class); break; }
-            default: { TileService.getUpdater(context).requestUpdate(EtaTileService.class); break; }
-        }
+    public void updateTileService(int favoriteIndex) {
+        EtaTileServiceCommon.Companion.requestTileUpdate(favoriteIndex);
     }
 
     public void setLanguage(String language, Context context) {
@@ -278,7 +269,7 @@ public class Registry {
         try {
             PREFERENCES.setLanguage(language);
             savePreferences(context);
-            updateTileService(context);
+            updateTileService();
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
@@ -293,19 +284,25 @@ public class Registry {
         if (favouriteRouteStop == null) {
             return false;
         }
-        if (!stopId.equals(favouriteRouteStop.getStopId())) {
-            return false;
-        }
         if (co != favouriteRouteStop.getCo()) {
             return false;
         }
-        if (index != favouriteRouteStop.getIndex()) {
+        if (!route.getRouteNumber().equals(favouriteRouteStop.getRoute().getRouteNumber())) {
             return false;
         }
-        if (!stop.getName().getZh().equals(favouriteRouteStop.getStop().getName().getZh())) {
+        if (!Objects.equals(route.getBound().get(co), favouriteRouteStop.getRoute().getBound().get(co))) {
             return false;
         }
-        return route.getRouteNumber().equals(favouriteRouteStop.getRoute().getRouteNumber());
+        if (favouriteRouteStop.getFavouriteStopMode() == FavouriteStopMode.FIXED) {
+            if (index != favouriteRouteStop.getIndex()) {
+                return false;
+            }
+            if (!stopId.equals(favouriteRouteStop.getStopId())) {
+                return false;
+            }
+            return stop.getName().getZh().equals(favouriteRouteStop.getStop().getName().getZh());
+        }
+        return true;
     }
 
     public void clearFavouriteRouteStop(int favoriteIndex, Context context) {
@@ -337,21 +334,21 @@ public class Registry {
             });
             if (save) {
                 savePreferences(context);
-                updateTileService(0, context);
-                updateTileService(favoriteIndex, context);
+                updateTileService(0);
+                updateTileService(favoriteIndex);
             }
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, Context context) {
-        setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, false, true, context);
+    public void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, FavouriteStopMode favouriteStopMode, Context context) {
+        setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, favouriteStopMode, false, true, context);
     }
 
-    private void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, boolean bypassEtaTileCheck, boolean save, Context context) {
+    private void setFavouriteRouteStop(int favoriteIndex, String stopId, Operator co, int index, Stop stop, Route route, FavouriteStopMode favouriteStopMode, boolean bypassEtaTileCheck, boolean save, Context context) {
         try {
-            FavouriteRouteStop favouriteRouteStop = new FavouriteRouteStop(stopId, co, index, stop, route);
+            FavouriteRouteStop favouriteRouteStop = new FavouriteRouteStop(stopId, co, index, stop, route, favouriteStopMode);
             Shared.Companion.updateFavoriteRouteStops(m -> m.put(favoriteIndex, favouriteRouteStop));
             PREFERENCES.getFavouriteRouteStops().put(favoriteIndex, favouriteRouteStop);
             if (!bypassEtaTileCheck) {
@@ -377,8 +374,8 @@ public class Registry {
             }
             if (save) {
                 savePreferences(context);
-                updateTileService(0, context);
-                updateTileService(favoriteIndex, context);
+                updateTileService(0);
+                updateTileService(favoriteIndex);
             }
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
@@ -400,7 +397,7 @@ public class Registry {
             Shared.Companion.updateEtaTileConfigurations(m -> m.put(tileId, favouriteIndexes));
             PREFERENCES.getEtaTileConfigurations().put(tileId, favouriteIndexes);
             savePreferences(context);
-            updateTileService(0, context);
+            updateTileService(0);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
@@ -556,7 +553,7 @@ public class Registry {
                             try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getApplicationContext().openFileInput(DATA_FILE_NAME), StandardCharsets.UTF_8))) {
                                 DATA = DataContainer.deserialize(new JSONObject(reader.lines().collect(Collectors.joining())));
                             }
-                            updateTileService(context);
+                            updateTileService();
                             state.setValue(State.READY);
                         } catch (Throwable e) {
                             e.printStackTrace();
@@ -658,7 +655,7 @@ public class Registry {
 
                                 String finalStopId = stopId;
                                 int finalIndex = index;
-                                updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, stopData.getRoute(), true, false, context));
+                                updatedFavouriteRouteTasks.add(() -> setFavouriteRouteStop(favouriteRouteIndex, finalStopId, co, finalIndex, stop, stopData.getRoute(), favouriteRoute.getFavouriteStopMode(), true, false, context));
                             } catch (Throwable e) {
                                 e.printStackTrace();
                             }
@@ -671,7 +668,7 @@ public class Registry {
                         }
                         updatePercentageState.setValue(1F);
 
-                        updateTileService(context);
+                        updateTileService();
                         state.setValue(State.READY);
                     }
                 }

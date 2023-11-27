@@ -46,6 +46,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -76,6 +77,124 @@ public class LocationUtils {
             });
             ref.set(launcher);
             launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+        } else {
+            callback.accept(false);
+        }
+        return false;
+    }
+
+    public static boolean checkBackgroundLocationPermission(Context context, boolean askIfNotGranted) {
+        return checkBackgroundLocationPermission(context, askIfNotGranted, r -> {});
+    }
+
+    public static boolean checkBackgroundLocationPermission(Context context, Consumer<Boolean> callback) {
+        return checkBackgroundLocationPermission(context, true, callback);
+    }
+
+    private static boolean checkBackgroundLocationPermission(Context context, boolean askIfNotGranted, Consumer<Boolean> callback) {
+        if ((ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) &&
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            callback.accept(true);
+            return true;
+        }
+        if (askIfNotGranted && context instanceof ComponentActivity) {
+            ComponentActivity activity = (ComponentActivity) context;
+            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                AtomicReference<ActivityResultLauncher<String>> ref0 = new AtomicReference<>();
+                ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
+                    Bundle bundle0 = new Bundle();
+                    bundle0.putBoolean("value", result0);
+                    FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0);
+                    callback.accept(result0);
+                    ref0.get().unregister();
+                });
+                ref0.set(launcher0);
+                launcher0.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+            } else {
+                AtomicReference<ActivityResultLauncher<String>> ref = new AtomicReference<>();
+                ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result -> {
+                    Bundle bundle = new Bundle();
+                    bundle.putBoolean("value", result);
+                    FirebaseAnalytics.getInstance(activity).logEvent("location_request_result", bundle);
+                    if (result) {
+                        AtomicReference<ActivityResultLauncher<String>> ref0 = new AtomicReference<>();
+                        ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
+                            Bundle bundle0 = new Bundle();
+                            bundle0.putBoolean("value", result0);
+                            FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0);
+                            callback.accept(result0);
+                            ref0.get().unregister();
+                        });
+                        ref0.set(launcher0);
+                        new Thread(() -> {
+                            try {
+                                TimeUnit.MILLISECONDS.sleep(1500);} catch (InterruptedException ignore) {}
+                            launcher0.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+                        }).start();
+                        ref.get().unregister();
+                    } else {
+                        callback.accept(false);
+                    }
+                });
+                ref.set(launcher);
+                launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+        } else {
+            callback.accept(false);
+        }
+        return false;
+    }
+
+    private static boolean checkLocationPermission(ComponentActivity activity, boolean askIfNotGranted, Consumer<Boolean> callback) {
+        if ((ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) &&
+                ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            callback.accept(true);
+            return true;
+        }
+        if (askIfNotGranted) {
+            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                AtomicReference<ActivityResultLauncher<String>> ref0 = new AtomicReference<>();
+                ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
+                    Bundle bundle0 = new Bundle();
+                    bundle0.putBoolean("value", result0);
+                    FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0);
+                    callback.accept(result0);
+                    ref0.get().unregister();
+                });
+                ref0.set(launcher0);
+                launcher0.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+            } else {
+                AtomicReference<ActivityResultLauncher<String>> ref = new AtomicReference<>();
+                ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result -> {
+                    Bundle bundle = new Bundle();
+                    bundle.putBoolean("value", result);
+                    FirebaseAnalytics.getInstance(activity).logEvent("location_request_result", bundle);
+                    if (result) {
+                        AtomicReference<ActivityResultLauncher<String>> ref0 = new AtomicReference<>();
+                        ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
+                            Bundle bundle0 = new Bundle();
+                            bundle0.putBoolean("value", result0);
+                            FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0);
+                            callback.accept(result0);
+                            ref0.get().unregister();
+                        });
+                        ref0.set(launcher0);
+                        new Thread(() -> {
+                            try {TimeUnit.MILLISECONDS.sleep(1500);} catch (InterruptedException ignore) {}
+                            launcher0.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+                        }).start();
+                        ref.get().unregister();
+                    } else {
+                        callback.accept(false);
+                    }
+                });
+                ref.set(launcher);
+                launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            }
         }
         return false;
     }

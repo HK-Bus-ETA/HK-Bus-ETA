@@ -38,7 +38,8 @@ public class FavouriteRouteStop implements JSONSerializable {
         int index = json.optInt("index");
         Stop stop = Stop.deserialize(json.optJSONObject("stop"));
         Route route = Route.deserialize(json.optJSONObject("route"));
-        return new FavouriteRouteStop(stopId, co, index, stop, route);
+        FavouriteStopMode favouriteStopMode = FavouriteStopMode.valueOfOrDefault(json.optString("favouriteStopMode"));
+        return new FavouriteRouteStop(stopId, co, index, stop, route, favouriteStopMode);
     }
 
     private final String stopId;
@@ -46,13 +47,15 @@ public class FavouriteRouteStop implements JSONSerializable {
     private final int index;
     private final Stop stop;
     private final Route route;
+    private final FavouriteStopMode favouriteStopMode;
 
-    public FavouriteRouteStop(String stopId, Operator co, int index, Stop stop, Route route) {
+    public FavouriteRouteStop(String stopId, Operator co, int index, Stop stop, Route route, FavouriteStopMode favouriteStopMode) {
         this.stopId = stopId;
         this.co = co;
         this.index = index;
         this.stop = stop;
         this.route = route;
+        this.favouriteStopMode = favouriteStopMode;
     }
 
     public String getStopId() {
@@ -75,6 +78,10 @@ public class FavouriteRouteStop implements JSONSerializable {
         return route;
     }
 
+    public FavouriteStopMode getFavouriteStopMode() {
+        return favouriteStopMode;
+    }
+
     @Override
     public JSONObject serialize() throws JSONException {
         JSONObject json = new JSONObject();
@@ -83,6 +90,7 @@ public class FavouriteRouteStop implements JSONSerializable {
         json.put("index", index);
         json.put("stop", stop.serialize());
         json.put("route", route.serialize());
+        json.put("favouriteStopMode", favouriteStopMode.name());
         return json;
     }
 
@@ -91,11 +99,11 @@ public class FavouriteRouteStop implements JSONSerializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FavouriteRouteStop that = (FavouriteRouteStop) o;
-        return index == that.index && Objects.equals(stopId, that.stopId) && Objects.equals(co, that.co) && Objects.equals(stop, that.stop) && Objects.equals(route, that.route);
+        return index == that.index && Objects.equals(stopId, that.stopId) && Objects.equals(co, that.co) && Objects.equals(stop, that.stop) && Objects.equals(route, that.route) && favouriteStopMode == that.favouriteStopMode;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(stopId, co, index, stop, route);
+        return Objects.hash(stopId, co, index, stop, route, favouriteStopMode);
     }
 }

@@ -60,6 +60,7 @@ import com.loohp.hkbuseta.objects.Coordinates
 import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.objects.getRouteKey
+import com.loohp.hkbuseta.objects.resolveStop
 import com.loohp.hkbuseta.objects.uniqueKey
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -183,12 +184,15 @@ fun WaitingElement(state: MutableState<Boolean>, instance: FavRouteListViewActiv
 
 @Composable
 fun MainElement(usingGps: Boolean, instance: FavRouteListViewActivity) {
-    val state = remember { mutableStateOf(!usingGps) }
+    val hasFavRequireLocation = remember { Shared.favoriteRouteStops.values.any { it.favouriteStopMode.isRequiresLocation } }
+    val needLocation = remember { usingGps || hasFavRequireLocation }
+
+    val state = remember { mutableStateOf(!needLocation) }
     var location: Coordinates? by remember { mutableStateOf(null) }
 
     LaunchedEffect (Unit) {
         ForkJoinPool.commonPool().execute {
-            if (usingGps) {
+            if (needLocation) {
                 val locationResult = LocationUtils.getGPSLocation(instance).get()
                 if (locationResult.isSuccess) {
                     location = locationResult.location
@@ -198,31 +202,19 @@ fun MainElement(usingGps: Boolean, instance: FavRouteListViewActivity) {
         }
     }
 
-    EvaluatedElement(state, location, instance)
+    EvaluatedElement(state, if (hasFavRequireLocation) location else null, if (usingGps) location else null, instance)
 }
 
 @Composable
-fun EvaluatedElement(state: MutableState<Boolean>, location: Coordinates?, instance: FavRouteListViewActivity) {
+fun EvaluatedElement(state: MutableState<Boolean>, origin: Coordinates?, location: Coordinates?, instance: FavRouteListViewActivity) {
     if (state.value) {
         val intent = Intent(instance, ListRoutesActivity::class.java)
         intent.putExtra("result", JsonUtils.fromStream(Shared.favoriteRouteStops.entries.stream()
             .sorted(Comparator.comparing { e -> e.key })
             .map { entry ->
                 val fav = entry.value
-                val route = fav.route
-                val routeEntry = RouteSearchResultEntry(
-                    route.getRouteKey(instance),
-                    route,
-                    fav.co,
-                    RouteSearchResultEntry.StopInfo(
-                        fav.stopId,
-                        fav.stop,
-                        0.0,
-                        fav.co
-                    ),
-                    null,
-                    false
-                )
+                val (_, stopId, stop, route) = fav.resolveStop(instance) { origin }
+                val routeEntry = RouteSearchResultEntry(route.getRouteKey(instance), route, fav.co, RouteSearchResultEntry.StopInfo(stopId, stop, 0.0, fav.co), null, false)
                 routeEntry.strip()
                 routeEntry
             }
