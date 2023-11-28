@@ -136,12 +136,14 @@ class MainActivity : ComponentActivity() {
                                     return@findRoutes stops.contains(stopId)
                                 }.firstOrNull()?.let {
                                     val intent = Intent(this@MainActivity, ListStopsActivity::class.java)
+                                    intent.putExtra("shouldRelaunch", false)
                                     intent.putExtra("route", it.toByteArray())
                                     intent.putExtra("scrollToStop", stopId)
                                     startActivity(intent)
                                 }
 
                                 val intent = Intent(this@MainActivity, EtaActivity::class.java)
+                                intent.putExtra("shouldRelaunch", false)
                                 intent.putExtra("stopId", stopId)
                                 intent.putExtra("co", co.name)
                                 intent.putExtra("index", index)
@@ -252,7 +254,7 @@ class MainActivity : ComponentActivity() {
                                 finishAffinity()
                             } else {
                                 val currentActivity = Shared.getCurrentActivity()
-                                if (currentActivity == null) {
+                                if (currentActivity == null || !currentActivity.shouldRelaunch) {
                                     startActivity(Intent(this@MainActivity, TitleActivity::class.java))
                                     finishAffinity()
                                 } else {

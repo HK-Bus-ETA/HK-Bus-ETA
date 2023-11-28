@@ -58,11 +58,11 @@ enum class TileUseState {
 
 }
 
-data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?) {
+data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?, val shouldRelaunch: Boolean = extras?.getBoolean("shouldRelaunch", true)?: true) {
 
     fun isEqualTo(other: Any?): Boolean {
         return if (other is CurrentActivityData) {
-            this.cls == other.cls && ((this.extras == null && other.extras == null) || (this.extras != null && this.extras.isEqualTo(other.extras)))
+            this.cls == other.cls && this.shouldRelaunch == other.shouldRelaunch && ((this.extras == null && other.extras == null) || (this.extras != null && this.extras.isEqualTo(other.extras)))
         } else {
             false
         }
