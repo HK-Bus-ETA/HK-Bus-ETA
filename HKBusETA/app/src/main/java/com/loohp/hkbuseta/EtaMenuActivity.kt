@@ -825,6 +825,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
         }
     }
 
+    val shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp)
     val haptic = LocalHapticFeedback.current
     AdvanceButton(
         modifier = Modifier
@@ -833,12 +834,12 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
             .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
             .composed {
                 when (anyTileUses) {
-                    TileUseState.PRIMARY -> this.border(2.sp.dp, Color(0x5437FF00), CircleShape)
-                    TileUseState.SECONDARY -> this.border(2.sp.dp, Color(0x54FFB700), CircleShape)
+                    TileUseState.PRIMARY -> this.border(2.sp.dp, Color(0x5437FF00), shape)
+                    TileUseState.SECONDARY -> this.border(2.sp.dp, Color(0x54FFB700), shape)
                     TileUseState.NONE -> this
                 }
             },
-        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
+        shape = shape,
         onClick = {
             handleClick.invoke(FavouriteStopMode.FIXED)
         },

@@ -368,6 +368,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
         }
     }
 
+    val shape = RoundedCornerShape(15.dp)
     AdvanceButton(
         modifier = Modifier
             .fillMaxWidth()
@@ -377,8 +378,8 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
             .padding(20.dp, 0.dp)
             .composed {
                 when (anyTileUses) {
-                    TileUseState.PRIMARY -> this.border(2.sp.dp, Color(0x5437FF00), RoundedCornerShape(15.dp))
-                    TileUseState.SECONDARY -> this.border(2.sp.dp, Color(0x54FFB700), RoundedCornerShape(15.dp))
+                    TileUseState.PRIMARY -> this.border(2.sp.dp, Color(0x5437FF00), shape)
+                    TileUseState.SECONDARY -> this.border(2.sp.dp, Color(0x54FFB700), shape)
                     TileUseState.NONE -> this
                 }
             },
@@ -438,7 +439,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
             backgroundColor = animatedBackgroundColor,
             contentColor = if (deleteState) Color(0xFFFF0000) else if (favouriteStopRoute != null) Color(0xFFFFFF00) else Color(0xFF444444),
         ),
-        shape = RoundedCornerShape(15.dp),
+        shape = shape,
         enabled = favouriteStopRoute != null,
         content = {
             val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]
