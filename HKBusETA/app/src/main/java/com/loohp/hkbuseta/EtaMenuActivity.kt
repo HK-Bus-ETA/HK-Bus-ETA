@@ -717,10 +717,11 @@ fun FavHeader(instance: EtaMenuActivity) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = StringUtils.scaledSize(10F, instance).sp.clamp(max = 10.dp),
+        fontWeight = FontWeight.Bold,
         text = if (Shared.language == "en") {
-            "Tap to set this stop\nLong press to set the whole route"
+            "Tap to set this stop\nLong press to set to display any closes stop of the route"
         } else {
-            "點擊設置此站 長按設置整條路線"
+            "點擊設置此站 長按設置顯示路線最近的任何站"
         }
     )
 }
@@ -952,15 +953,16 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                         }
                     }
                     FavouriteRouteState.USED_SELF -> {
+                        val isClosestStopMode = Shared.favoriteRouteStops[favoriteIndex]?.favouriteStopMode == FavouriteStopMode.CLOSEST
                         Text(
                             modifier = Modifier
                                 .padding(0.dp, 0.dp, 5.dp, 0.dp)
                                 .fillMaxWidth(),
                             textAlign = TextAlign.Start,
-                            color = Color(0xFFFFFFFF),
+                            color = if (isClosestStopMode) Color(0xFFFFE496) else Color(0xFFFFFFFF),
                             fontSize = StringUtils.scaledSize(14F, instance).sp,
-                            text = if (Shared.favoriteRouteStops[favoriteIndex]?.favouriteStopMode == FavouriteStopMode.CLOSEST) {
-                                if (Shared.language == "en") "Selected as Any Stop on This Route" else "已設置為本路線任何巴士站"
+                            text = if (isClosestStopMode) {
+                                if (Shared.language == "en") "Selected as Any Closes Stop on This Route" else "已設置為本路線最近的任何巴士站"
                             } else {
                                 if (Shared.language == "en") "Selected as This Route Stop" else "已設置為本路線巴士站"
                             }

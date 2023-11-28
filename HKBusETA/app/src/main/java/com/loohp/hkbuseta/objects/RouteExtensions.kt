@@ -199,6 +199,10 @@ operator fun ETAShortText.component2(): String {
 
 data class FavouriteResolvedStop(val index: Int, val stopId: String, val stop: Stop, val route: Route)
 
+fun FavouriteRouteStop.asResolvedStop(): FavouriteResolvedStop {
+    return FavouriteResolvedStop(index, stopId, stop, route)
+}
+
 inline fun FavouriteRouteStop.resolveStop(context: Context, originGetter: () -> Coordinates?): FavouriteResolvedStop {
     if (favouriteStopMode == FavouriteStopMode.FIXED) {
         return FavouriteResolvedStop(index, stopId, stop, route)

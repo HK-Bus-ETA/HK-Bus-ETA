@@ -561,7 +561,7 @@ class EtaTileServiceCommon {
         }
 
         @androidx.annotation.OptIn(androidx.wear.protolayout.expression.ProtoLayoutExperimental::class)
-        private fun etaText(eta: MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?, seq: Int, mainFavouriteStopRoute: FavouriteRouteStop, packageName: String, context: Context): LayoutElementBuilders.Spannable {
+        private fun etaText(eta: MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?, seq: Int, mainResolvedStop: Pair<FavouriteResolvedStop, FavouriteRouteStop>, packageName: String, context: Context): LayoutElementBuilders.Spannable {
             val line = eta?.getLine(seq)
             val lineRoute = line?.first?.let { it.second.co.getDisplayRouteNumber(it.second.route.routeNumber, true) }
             val appendRouteNumber = lineRoute == null ||
@@ -581,13 +581,10 @@ class EtaTileServiceCommon {
             }
             val text = raw.toSpanned(context, textSize).asAnnotatedString()
 
-            val favouriteStopRoute = line?.first?.second?: mainFavouriteStopRoute
+            val (resolvedStop, favouriteStopRoute) = line?.first?: mainResolvedStop
 
-            val stopId = favouriteStopRoute.stopId
+            val (index, stopId, stop, route) = resolvedStop
             val co = favouriteStopRoute.co
-            val index = favouriteStopRoute.index
-            val stop = favouriteStopRoute.stop
-            val route = favouriteStopRoute.route
 
             return LayoutElementBuilders.Spannable.Builder()
                 .setModifiers(
@@ -657,10 +654,11 @@ class EtaTileServiceCommon {
                 it.markLastUpdated()
                 eta
             }
-            val (favouriteResolvedStop, favouriteStopRoute) = eta?.firstKey?: run {
+            val mainResolvedStop = eta?.firstKey?: run {
                 val favStop = favouriteStopRoutes[0]
-                favStop.resolveStop(context) { LocationUtils.getGPSLocation(context).getOr(1, TimeUnit.SECONDS) { null }?.location } to favStop
+                favStop.resolveStop(context) { LocationUtils.getGPSLocation(context).getOr(2, TimeUnit.SECONDS) { null }?.location } to favStop
             }
+            val (favouriteResolvedStop, favouriteStopRoute) = mainResolvedStop
 
             val (index, stopId, stop, route) = favouriteResolvedStop
             val co = favouriteStopRoute.co
@@ -766,21 +764,21 @@ class EtaTileServiceCommon {
                                             DimensionBuilders.dp(StringUtils.scaledSize(12F, context))
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 1, favouriteStopRoute, packageName, context)
+                                    etaText(eta, 1, mainResolvedStop, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
                                             DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 2, favouriteStopRoute, packageName, context)
+                                    etaText(eta, 2, mainResolvedStop, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
                                             DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
                                         ).build()
                                 ).addContent(
-                                    etaText(eta, 3, favouriteStopRoute, packageName, context)
+                                    etaText(eta, 3, mainResolvedStop, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(

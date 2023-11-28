@@ -148,7 +148,7 @@ import kotlin.math.roundToInt
 class FavActivity : ComponentActivity() {
 
     private val sync: ExecutorService = Executors.newSingleThreadExecutor()
-    private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(16)
+    private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(8)
     private val etaUpdatesMap: MutableMap<Int, Pair<ScheduledFuture<*>?, () -> Unit>> = LinkedHashMap()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -543,7 +543,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.en)
                     } else {
                         (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.zh)
-                    }.plus(if (gpsStop) (if (Shared.language == "en") "<small> - Closest</small>" else "<small> - 最近</small>") else "")
+                    }.plus(if (gpsStop) (if (Shared.language == "en") "<small><span style=\"color: #FFE496;\"> - Closest</span></small>" else "<small><span style=\"color: #FFE496;\"> - 最近</span></small>") else "")
                     Spacer(modifier = Modifier.size(5.dp))
                     Column (
                         modifier = Modifier
