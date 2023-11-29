@@ -21,6 +21,7 @@
 package com.loohp.hkbuseta.utils
 
 import android.content.Context
+import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -30,10 +31,16 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.DrawStyle
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.objects.Operator
@@ -43,7 +50,7 @@ import com.loohp.hkbuseta.shared.Registry.StopData
 
 
 @Composable
-fun MTRLineSection(sectionData: MTRStopSectionData) {
+fun MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Boolean) {
     val (mainLine, spurLine, _, _, co, color, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, _, context) = sectionData
     Canvas(
         modifier = Modifier.fillMaxSize()
@@ -58,6 +65,7 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
         val horizontalCenterSecondary = horizontalPartition * 7F
         val verticalCenter = height / 2F
         val lineWidth = StringUtils.scaledSize((11F / density).sp.toPx(), context)
+        val outlineWidth = lineWidth * 0.6F
         val lineOffset = StringUtils.scaledSize((8F / density).sp.toPx(), context)
         val dashEffect = floatArrayOf(StringUtils.scaledSize((14F / density).sp.toPx(), context), StringUtils.scaledSize((7F / density).sp.toPx(), context))
 
@@ -68,7 +76,9 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                     color = color,
                     start = Offset(horizontalCenterPrimary, verticalCenter),
                     end = Offset(horizontalCenterPrimary, height),
-                    strokeWidth = lineWidth
+                    strokeWidth = lineWidth,
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
                 if (isLrtCircular) {
                     drawLine(
@@ -80,7 +90,9 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                         ),
                         start = Offset(horizontalCenterPrimary, -verticalCenter),
                         end = Offset(horizontalCenterPrimary, verticalCenter),
-                        strokeWidth = lineWidth
+                        strokeWidth = lineWidth,
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 }
             } else if (mainLine.isLastStation) {
@@ -88,7 +100,9 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                     color = color,
                     start = Offset(horizontalCenterPrimary, 0F),
                     end = Offset(horizontalCenterPrimary, verticalCenter),
-                    strokeWidth = lineWidth
+                    strokeWidth = lineWidth,
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
                 if (isLrtCircular) {
                     drawLine(
@@ -100,7 +114,9 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                         ),
                         start = Offset(horizontalCenterPrimary, verticalCenter),
                         end = Offset(horizontalCenterPrimary, height + verticalCenter),
-                        strokeWidth = lineWidth
+                        strokeWidth = lineWidth,
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 }
             } else {
@@ -108,53 +124,61 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                     color = color,
                     start = Offset(horizontalCenterPrimary, 0F),
                     end = Offset(horizontalCenterPrimary, height),
-                    strokeWidth = lineWidth
+                    strokeWidth = lineWidth,
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
             }
             if (mainLine.hasOtherParallelBranches) {
-                val path = Path()
-                path.moveTo(horizontalCenterPrimary, lineOffset)
-                path.lineTo(horizontalCenter, lineOffset)
-                path.arcTo(Rect(horizontalCenterPrimary, lineOffset, horizontalCenterSecondary, (horizontalCenterSecondary - horizontalCenter) * 2F + lineOffset), -90F, 90F, true)
-                path.lineTo(horizontalCenterSecondary, height)
                 drawPath(
                     color = color,
-                    path = path,
+                    path = Path().apply {
+                        moveTo(horizontalCenterPrimary, lineOffset)
+                        lineTo(horizontalCenter, lineOffset)
+                        arcTo(Rect(horizontalCenterPrimary, lineOffset, horizontalCenterSecondary, (horizontalCenterSecondary - horizontalCenter) * 2F + lineOffset), -90F, 90F, true)
+                        lineTo(horizontalCenterSecondary, height)
+                    },
                     style = Stroke(
                         width = lineWidth,
                         pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
-                    )
+                    ),
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
             }
             when (mainLine.sideSpurLineType) {
                 SideSpurLineType.COMBINE -> {
                     useSpurStopCircle = true
-                    val path = Path()
-                    path.moveTo(horizontalCenterPrimary, verticalCenter)
-                    path.lineTo(horizontalCenter, verticalCenter)
-                    path.arcTo(Rect(horizontalCenterPrimary, verticalCenter - (horizontalCenterSecondary - horizontalCenter) * 2F, horizontalCenterSecondary, verticalCenter), 90F, -90F, true)
-                    path.lineTo(horizontalCenterSecondary, 0F)
                     drawPath(
                         color = color,
-                        path = path,
+                        path = Path().apply {
+                            moveTo(horizontalCenterPrimary, verticalCenter)
+                            lineTo(horizontalCenter, verticalCenter)
+                            arcTo(Rect(horizontalCenterPrimary, verticalCenter - (horizontalCenterSecondary - horizontalCenter) * 2F, horizontalCenterSecondary, verticalCenter), 90F, -90F, true)
+                            lineTo(horizontalCenterSecondary, 0F)
+                        },
                         style = Stroke(
                             width = lineWidth
-                        )
+                        ),
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 }
                 SideSpurLineType.DIVERGE -> {
                     useSpurStopCircle = true
-                    val path = Path()
-                    path.moveTo(horizontalCenterPrimary, verticalCenter)
-                    path.lineTo(horizontalCenter, verticalCenter)
-                    path.arcTo(Rect(horizontalCenterPrimary, verticalCenter, horizontalCenterSecondary, verticalCenter + (horizontalCenterSecondary - horizontalCenter) * 2F), -90F, 90F, true)
-                    path.lineTo(horizontalCenterSecondary, height)
                     drawPath(
                         color = color,
-                        path = path,
+                        path = Path().apply {
+                            moveTo(horizontalCenterPrimary, verticalCenter)
+                            lineTo(horizontalCenter, verticalCenter)
+                            arcTo(Rect(horizontalCenterPrimary, verticalCenter, horizontalCenterSecondary, verticalCenter + (horizontalCenterSecondary - horizontalCenter) * 2F), -90F, 90F, true)
+                            lineTo(horizontalCenterSecondary, height)
+                        },
                         style = Stroke(
                             width = lineWidth
-                        )
+                        ),
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 }
                 else -> {}
@@ -165,38 +189,44 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                     color = color,
                     start = Offset(horizontalCenterPrimary, 0F),
                     end = Offset(horizontalCenterPrimary, height),
-                    strokeWidth = lineWidth
+                    strokeWidth = lineWidth,
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
             }
             val dashLineResult = spurLine.dashLineResult
             if (dashLineResult.value) {
                 if (dashLineResult.isStartOfSpur) {
-                    val path = Path()
-                    path.moveTo(horizontalCenterPrimary, lineOffset)
-                    path.lineTo(horizontalCenter, lineOffset)
-                    path.arcTo(Rect(horizontalCenterPrimary, lineOffset, horizontalCenterSecondary, (horizontalCenterSecondary - horizontalCenter) * 2F + lineOffset), -90F, 90F, true)
-                    path.lineTo(horizontalCenterSecondary, height)
                     drawPath(
                         color = color,
-                        path = path,
+                        path = Path().apply {
+                            moveTo(horizontalCenterPrimary, lineOffset)
+                            lineTo(horizontalCenter, lineOffset)
+                            arcTo(Rect(horizontalCenterPrimary, lineOffset, horizontalCenterSecondary, (horizontalCenterSecondary - horizontalCenter) * 2F + lineOffset), -90F, 90F, true)
+                            lineTo(horizontalCenterSecondary, height)
+                        },
                         style = Stroke(
                             width = lineWidth,
                             pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
-                        )
+                        ),
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 } else if (dashLineResult.isEndOfSpur) {
-                    val path = Path()
-                    path.moveTo(horizontalCenterPrimary, height - lineOffset)
-                    path.lineTo(horizontalCenter, height - lineOffset)
-                    path.arcTo(Rect(horizontalCenterPrimary, height - (horizontalCenterSecondary - horizontalCenter) * 2F - lineOffset, horizontalCenterSecondary, height - lineOffset), 90F, -90F, true)
-                    path.lineTo(horizontalCenterSecondary, 0F)
                     drawPath(
                         color = color,
-                        path = path,
+                        path = Path().apply {
+                            moveTo(horizontalCenterPrimary, height - lineOffset)
+                            lineTo(horizontalCenter, height - lineOffset)
+                            arcTo(Rect(horizontalCenterPrimary, height - (horizontalCenterSecondary - horizontalCenter) * 2F - lineOffset, horizontalCenterSecondary, height - lineOffset), 90F, -90F, true)
+                            lineTo(horizontalCenterSecondary, 0F)
+                        },
                         style = Stroke(
                             width = lineWidth,
                             pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
-                        )
+                        ),
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 } else {
                     drawLine(
@@ -204,7 +234,9 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                         start = Offset(horizontalCenterSecondary, 0F),
                         end = Offset(horizontalCenterSecondary, height),
                         strokeWidth = lineWidth,
-                        pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                        pathEffect = PathEffect.dashPathEffect(dashEffect, 0F),
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 }
             } else if (spurLine.isFirstStation) {
@@ -212,21 +244,27 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                     color = color,
                     start = Offset(horizontalCenterSecondary, verticalCenter),
                     end = Offset(horizontalCenterSecondary, height),
-                    strokeWidth = lineWidth
+                    strokeWidth = lineWidth,
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
             } else if (spurLine.isLastStation) {
                 drawLine(
                     color = color,
                     start = Offset(horizontalCenterSecondary, 0F),
                     end = Offset(horizontalCenterSecondary, verticalCenter),
-                    strokeWidth = lineWidth
+                    strokeWidth = lineWidth,
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
             } else {
                 drawLine(
                     color = color,
                     start = Offset(horizontalCenterSecondary, 0F),
                     end = Offset(horizontalCenterSecondary, height),
-                    strokeWidth = lineWidth
+                    strokeWidth = lineWidth,
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
             }
         }
@@ -238,7 +276,9 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                 color = Color(0xFFD3A809),
                 topLeft = Offset(horizontalCenterPrimary - interchangeLineWidth, verticalCenter - interchangeLineHeight / 2F),
                 size = Size(interchangeLineWidth, interchangeLineHeight),
-                cornerRadius = CornerRadius(interchangeLineHeight / 2F)
+                cornerRadius = CornerRadius(interchangeLineHeight / 2F),
+                outlineMode = ambientMode,
+                outlineWidth = outlineWidth * 0.75F
             )
         } else if (interchangeData.lines.isNotEmpty()) {
             var leftCorner = Offset(horizontalCenterPrimary - interchangeLineWidth, verticalCenter - ((interchangeData.lines.size - 1) * interchangeLineSpacing / 2F) - interchangeLineHeight / 2F)
@@ -247,7 +287,9 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                     color = if (interchange == "HighSpeed") Color(0xFF9C948B) else Operator.MTR.getColor(interchange, Color.White),
                     topLeft = leftCorner,
                     size = Size(interchangeLineWidth, interchangeLineHeight),
-                    cornerRadius = CornerRadius(interchangeLineHeight / 2F)
+                    cornerRadius = CornerRadius(interchangeLineHeight / 2F),
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth * 0.75F
                 )
                 leftCorner += Offset(0F, interchangeLineSpacing)
             }
@@ -260,14 +302,14 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
             val connectionLineWidth = StringUtils.scaledSize((5F / density).sp.toPx(), context)
             if (interchangeData.isOutOfStationPaid) {
                 drawLine(
-                    color = Color(0xFF003180),
+                    color = Color(0xFF003180).adjustBrightness(if (ambientMode) 1.25F else 1F),
                     start = Offset(horizontalCenterPrimary, verticalCenter),
                     end = Offset(otherStationHorizontalCenter, verticalCenter),
                     strokeWidth = connectionLineWidth
                 )
             } else {
                 drawLine(
-                    color = Color(0xFF003180),
+                    color = Color(0xFF003180).adjustBrightness(if (ambientMode) 1.25F else 1F),
                     start = Offset(horizontalCenterPrimary, verticalCenter),
                     end = Offset(otherStationHorizontalCenter, verticalCenter),
                     strokeWidth = connectionLineWidth,
@@ -280,7 +322,9 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
                     color = if (interchange == "HighSpeed") Color(0xFF9C948B) else Operator.MTR.getColor(interchange, Color.White),
                     topLeft = leftCorner,
                     size = Size(interchangeLineWidth, interchangeLineHeight),
-                    cornerRadius = CornerRadius(interchangeLineHeight / 2F)
+                    cornerRadius = CornerRadius(interchangeLineHeight / 2F),
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth * 0.75F
                 )
                 leftCorner += Offset(0F, interchangeLineSpacing)
             }
@@ -288,13 +332,13 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
             val circleCenter = Offset(otherStationHorizontalCenter, verticalCenter)
             val heightExpand = ((interchangeData.outOfStationLines.size - 1) * interchangeLineSpacing).coerceAtLeast(0F)
             drawRoundRect(
-                color = Color(0xFF003180),
+                color = Color(0xFF003180).adjustBrightness(if (ambientMode) 1.25F else 1F),
                 topLeft = circleCenter - Offset(circleWidth / 1.4F, circleWidth / 1.4F + heightExpand / 2F),
                 size = Size((circleWidth / 1.4F * 2F), circleWidth / 1.4F * 2F + heightExpand),
                 cornerRadius = CornerRadius(circleWidth / 1.4F)
             )
             drawRoundRect(
-                color = Color(0xFFFFFFFF),
+                color = if (ambientMode) Color(0xFF000000) else Color(0xFFFFFFFF),
                 topLeft = circleCenter - Offset(circleWidth / 2F, circleWidth / 2F + heightExpand / 2F),
                 size = Size(circleWidth, circleWidth + heightExpand),
                 cornerRadius = CornerRadius(circleWidth / 2F)
@@ -305,13 +349,13 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
         val widthExpand = if (useSpurStopCircle) lineWidth else 0F
         val heightExpand = ((interchangeData.lines.size - 1) * interchangeLineSpacing).coerceAtLeast(0F)
         drawRoundRect(
-            color = Color(0xFF003180),
+            color = Color(0xFF003180).adjustBrightness(if (ambientMode) 1.25F else 1F),
             topLeft = circleCenter - Offset(circleWidth / 1.4F, circleWidth / 1.4F + heightExpand / 2F),
             size = Size((circleWidth / 1.4F * 2F) + widthExpand, circleWidth / 1.4F * 2F + heightExpand),
             cornerRadius = CornerRadius(circleWidth / 1.4F)
         )
         drawRoundRect(
-            color = Color(0xFFFFFFFF),
+            color = if (ambientMode) Color(0xFF000000) else Color(0xFFFFFFFF),
             topLeft = circleCenter - Offset(circleWidth / 2F, circleWidth / 2F + heightExpand / 2F),
             size = Size(circleWidth + widthExpand, circleWidth + heightExpand),
             cornerRadius = CornerRadius(circleWidth / 2F)
@@ -320,7 +364,7 @@ fun MTRLineSection(sectionData: MTRStopSectionData) {
 }
 
 @Composable
-fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
+fun MTRLineSectionExtension(sectionData: MTRStopSectionData, ambientMode: Boolean) {
     val (mainLine, spurLine, _, _, _, color, _, _, hasOutOfStation, stopByBranchId, requireExtension, context) = sectionData
     Canvas(
         modifier = Modifier.fillMaxSize()
@@ -338,6 +382,7 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
         val horizontalCenterPrimary = if (stopByBranchId.size == 1) horizontalCenter else horizontalPartition * 3F
         val horizontalCenterSecondary = horizontalPartition * 7F
         val lineWidth = StringUtils.scaledSize((11F / density).sp.toPx(), context)
+        val outlineWidth = lineWidth * 0.6F
         val dashEffect = floatArrayOf(StringUtils.scaledSize((14F / density).sp.toPx(), context), StringUtils.scaledSize((7F / density).sp.toPx(), context))
 
         if (mainLine != null) {
@@ -345,7 +390,9 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
                 color = color,
                 start = Offset(horizontalCenterPrimary, 0F),
                 end = Offset(horizontalCenterPrimary, height),
-                strokeWidth = lineWidth
+                strokeWidth = lineWidth,
+                outlineMode = ambientMode,
+                outlineWidth = outlineWidth
             )
             if (mainLine.hasOtherParallelBranches) {
                 drawLine(
@@ -353,7 +400,9 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
                     start = Offset(horizontalCenterSecondary, 0F),
                     end = Offset(horizontalCenterSecondary, height),
                     strokeWidth = lineWidth,
-                    pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                    pathEffect = PathEffect.dashPathEffect(dashEffect, 0F),
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
             }
             when (mainLine.sideSpurLineType) {
@@ -362,7 +411,9 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
                         color = color,
                         start = Offset(horizontalCenterSecondary, 0F),
                         end = Offset(horizontalCenterSecondary, height),
-                        strokeWidth = lineWidth
+                        strokeWidth = lineWidth,
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 }
                 else -> {}
@@ -382,7 +433,9 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
                         start = Offset(horizontalCenterSecondary, 0F),
                         end = Offset(horizontalCenterSecondary, height),
                         strokeWidth = lineWidth,
-                        pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                        pathEffect = PathEffect.dashPathEffect(dashEffect, 0F),
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 } else if (!dashLineResult.isEndOfSpur) {
                     drawLine(
@@ -390,7 +443,9 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
                         start = Offset(horizontalCenterSecondary, 0F),
                         end = Offset(horizontalCenterSecondary, height),
                         strokeWidth = lineWidth,
-                        pathEffect = PathEffect.dashPathEffect(dashEffect, 0F)
+                        pathEffect = PathEffect.dashPathEffect(dashEffect, 0F),
+                        outlineMode = ambientMode,
+                        outlineWidth = outlineWidth
                     )
                 }
             } else if (spurLine.isFirstStation) {
@@ -398,14 +453,18 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
                     color = color,
                     start = Offset(horizontalCenterSecondary, 0F),
                     end = Offset(horizontalCenterSecondary, height),
-                    strokeWidth = lineWidth
+                    strokeWidth = lineWidth,
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
             } else if (!spurLine.isLastStation) {
                 drawLine(
                     color = color,
                     start = Offset(horizontalCenterSecondary, 0F),
                     end = Offset(horizontalCenterSecondary, height),
-                    strokeWidth = lineWidth
+                    strokeWidth = lineWidth,
+                    outlineMode = ambientMode,
+                    outlineWidth = outlineWidth
                 )
             }
         }
@@ -582,4 +641,87 @@ private fun isDashLineSpur(stopList: List<StopData>, stop: StopData): DashLineSp
         }
     }
     return DashLineSpurResult.FALSE
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun DrawScope.drawLine(
+    brush: Brush,
+    start: Offset,
+    end: Offset,
+    strokeWidth: Float = Stroke.HairlineWidth,
+    cap: StrokeCap = Stroke.DefaultCap,
+    pathEffect: PathEffect? = null,
+    @FloatRange(from = 0.0, to = 1.0) alpha: Float = 1.0f,
+    colorFilter: ColorFilter? = null,
+    blendMode: BlendMode = DrawScope.DefaultBlendMode,
+    outlineMode: Boolean,
+    outlineWidth: Float
+) {
+    drawLine(brush, start, end, strokeWidth, cap, pathEffect, alpha, colorFilter, blendMode)
+    if (outlineMode) {
+        drawLine(Color(0xFF000000), start, end, strokeWidth - outlineWidth, cap, pathEffect, alpha, colorFilter, blendMode)
+    }
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun DrawScope.drawLine(
+    color: Color,
+    start: Offset,
+    end: Offset,
+    strokeWidth: Float = Stroke.HairlineWidth,
+    cap: StrokeCap = Stroke.DefaultCap,
+    pathEffect: PathEffect? = null,
+    @FloatRange(from = 0.0, to = 1.0) alpha: Float = 1.0f,
+    colorFilter: ColorFilter? = null,
+    blendMode: BlendMode = DrawScope.DefaultBlendMode,
+    outlineMode: Boolean,
+    outlineWidth: Float
+) {
+    drawLine(color, start, end, strokeWidth, cap, pathEffect, alpha, colorFilter, blendMode)
+    if (outlineMode) {
+        drawLine(Color(0xFF000000), start, end, strokeWidth - outlineWidth, cap, pathEffect, alpha, colorFilter, blendMode)
+    }
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun DrawScope.drawPath(
+    path: Path,
+    color: Color,
+    @FloatRange(from = 0.0, to = 1.0) alpha: Float = 1.0f,
+    style: DrawStyle = Fill,
+    colorFilter: ColorFilter? = null,
+    blendMode: BlendMode = DrawScope.DefaultBlendMode,
+    outlineMode: Boolean,
+    outlineWidth: Float
+) {
+    drawPath(path, color, alpha, style, colorFilter, blendMode)
+    if (outlineMode && style is Stroke) {
+        val stroke = Stroke(
+            width = style.width - outlineWidth,
+            miter = style.miter,
+            cap = style.cap,
+            join = style.join,
+            pathEffect = style.pathEffect
+        )
+        drawPath(path, Color(0xFF000000), alpha, stroke, colorFilter, blendMode)
+    }
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun DrawScope.drawRoundRect(
+    color: Color,
+    topLeft: Offset = Offset.Zero,
+    size: Size = Size(this.size.width - topLeft.x, this.size.height - topLeft.y),
+    cornerRadius: CornerRadius = CornerRadius.Zero,
+    style: DrawStyle = Fill,
+    @FloatRange(from = 0.0, to = 1.0) alpha: Float = 1.0f,
+    colorFilter: ColorFilter? = null,
+    blendMode: BlendMode = DrawScope.DefaultBlendMode,
+    outlineMode: Boolean,
+    outlineWidth: Float
+) {
+    drawRoundRect(color, topLeft, size, cornerRadius, style, alpha, colorFilter, blendMode)
+    if (outlineMode) {
+        drawRoundRect(Color(0xFF000000), topLeft + Offset(outlineWidth / 2, outlineWidth / 2), Size(size.width - outlineWidth, size.height - outlineWidth), cornerRadius, style, alpha, colorFilter, blendMode)
+    }
 }

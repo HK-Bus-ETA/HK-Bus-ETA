@@ -65,6 +65,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
@@ -98,6 +100,7 @@ class FatalErrorActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: String?) {
     HKBusETATheme {
@@ -150,7 +153,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                 )
             }
             if (exception != null) {
-                val focusRequester = remember { FocusRequester() }
+                val focusRequester = rememberActiveFocusRequester()
                 val scroll = rememberScrollState()
                 val scope = rememberCoroutineScope()
                 val haptic = LocalHapticFeedback.current
@@ -170,10 +173,6 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
                     scrollMoved = true
-                }
-
-                LaunchedEffect (Unit) {
-                    focusRequester.requestFocus()
                 }
 
                 Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))

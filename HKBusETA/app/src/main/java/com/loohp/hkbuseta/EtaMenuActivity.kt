@@ -83,6 +83,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
@@ -168,10 +170,11 @@ class EtaMenuActivity : ComponentActivity() {
 
 }
 
+@OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
     HKBusETATheme {
-        val focusRequester = remember { FocusRequester() }
+        val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
 
         val maxFavItems by Shared.getSuggestedMaxFavouriteRouteStopState().collectAsStateWithLifecycle()

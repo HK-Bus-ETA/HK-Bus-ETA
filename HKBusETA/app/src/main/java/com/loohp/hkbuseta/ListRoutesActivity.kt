@@ -77,7 +77,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -87,16 +87,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
+import com.google.android.horologist.compose.ambient.AmbientAware
+import com.google.android.horologist.compose.ambient.AmbientStateUpdate
 import com.google.common.collect.ImmutableMap
+import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
+import com.loohp.hkbuseta.compose.ambientMode
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
+import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.Coordinates
 import com.loohp.hkbuseta.objects.Operator
@@ -228,14 +235,19 @@ class ListRoutesActivity : ComponentActivity() {
         val showEta = intent.extras!!.getBoolean("showEta", false)
         val recentSort = RecentSortMode.values()[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
         val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")?.toCoordinates()
+        val allowAmbient = intent.extras!!.getBoolean("allowAmbient", false)
 
         setContent {
-            MainElement(this, result, listType, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
-                sync.execute {
-                    if (isAdd) {
-                        etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
-                    } else {
-                        etaUpdatesMap.remove(key)?.first?.cancel(true)
+            AmbientAware (
+                isAlwaysOnScreen = allowAmbient
+            ) {
+                MainElement(it, this, result, listType, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
+                    sync.execute {
+                        if (isAdd) {
+                            etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                        } else {
+                            etaUpdatesMap.remove(key)?.first?.cancel(true)
+                        }
                     }
                 }
             }
@@ -275,14 +287,15 @@ class ListRoutesActivity : ComponentActivity() {
 
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable
-fun MainElement(instance: ListRoutesActivity, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActivity, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
-        val focusRequester = remember { FocusRequester() }
+        val focusRequester = rememberActiveFocusRequester()
         val hapticsController = remember { HapticsController() }
         val scroll = rememberLazyListState()
         val scope = rememberCoroutineScope()
+        val ambientMode = rememberIsInAmbientMode(ambientStateUpdate)
         val haptic = LocalHapticFeedback.current
 
         val padding by remember { derivedStateOf { StringUtils.scaledSize(7.5F, instance) } }
@@ -361,161 +374,195 @@ fun MainElement(instance: ListRoutesActivity, result: ImmutableList<StopIndexedR
             }
         }
 
-        LazyColumn (
+        Box (
             modifier = Modifier
+                .ambientMode(ambientStateUpdate)
                 .fillMaxSize()
-                .fullPageVerticalLazyScrollbar(
-                    state = scroll
-                )
-                .rotaryScroll(scroll, focusRequester, hapticsController)
-                .composed {
-                    LaunchedEffect (activeSortMode) {
-                        Shared.routeSortModePreference[listType].let {
-                            if (activeSortMode != it) {
-                                Registry.getInstance(instance).setRouteSortModePreference(instance, listType, activeSortMode)
+        ) {
+            LazyColumn (
+                modifier = Modifier
+                    .fillMaxSize()
+                    .fullPageVerticalLazyScrollbar(
+                        state = scroll,
+                        scrollbarConfigFullPage = FullPageScrollBarConfig(
+                            alpha = if (ambientMode) 0F else null
+                        )
+                    )
+                    .rotaryScroll(scroll, focusRequester, hapticsController, ambientStateUpdate = ambientStateUpdate)
+                    .composed {
+                        LaunchedEffect (activeSortMode) {
+                            Shared.routeSortModePreference[listType].let {
+                                if (activeSortMode != it) {
+                                    Registry.getInstance(instance).setRouteSortModePreference(instance, listType, activeSortMode)
+                                }
                             }
                         }
-                    }
-                    this
-                },
-            horizontalAlignment = Alignment.CenterHorizontally,
-            state = scroll
-        ) {
-            item {
-                if (recentSort == RecentSortMode.FORCED) {
-                    Button(
-                        onClick = {
-                            Registry.getInstance(instance).clearLastLookupRoutes(instance)
-                            instance.finish()
-                        },
-                        modifier = Modifier
-                            .padding(20.dp, 15.dp, 20.dp, 0.dp)
-                            .width(StringUtils.scaledSize(35, instance).dp)
-                            .height(StringUtils.scaledSize(35, instance).dp),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = MaterialTheme.colors.secondary,
-                            contentColor = Color(0xFFFF0000)
-                        ),
-                        content = {
-                            Icon(
-                                modifier = Modifier.size(StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp).dp),
-                                imageVector = Icons.Outlined.Delete,
-                                contentDescription = if (Shared.language == "en") "Clear" else "清除",
-                                tint = Color(0xFFFF0000),
-                            )
-                        }
-                    )
-                } else if (recentSort == RecentSortMode.CHOICE || proximitySortOrigin != null) {
-                    Button(
-                        onClick = {
-                            activeSortMode = activeSortMode.nextMode(
-                                recentSort == RecentSortMode.CHOICE,
-                                proximitySortOrigin != null
-                            )
-                        },
-                        modifier = Modifier
-                            .padding(20.dp, 15.dp, 20.dp, 0.dp)
-                            .fillMaxWidth(0.8F)
-                            .height(StringUtils.scaledSize(35, instance).dp),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = MaterialTheme.colors.secondary,
-                            contentColor = Color(0xFFFFFFFF)
-                        ),
-                        content = {
-                            Text(
-                                modifier = Modifier.fillMaxWidth(0.9F),
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colors.primary,
-                                fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
-                                text = when (activeSortMode) {
-                                    RouteSortMode.PROXIMITY -> if (Shared.language == "en") "Sort: Proximity" else "排序: 巴士站距離"
-                                    RouteSortMode.RECENT -> if (Shared.language == "en") "Sort: Fav/Recent" else "排序: 喜歡/最近瀏覽"
-                                    else -> if (Shared.language == "en") "Sort: Normal" else "排序: 正常"
-                                }
-                            )
-                        }
-                    )
-                } else {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
-                }
-            }
-            items(
-                items = sortedResults,
-                key = { route -> route.uniqueKey }
-            ) { route ->
-                val co = route.co
-                val kmbCtbJoint = route.route.isKmbCtbJoint
-                val routeNumber = if (co == Operator.MTR && Shared.language != "en") {
-                    Shared.getMtrLineName(route.route.routeNumber)
-                } else {
-                    route.route.routeNumber
-                }
-                val routeTextWidth = if (Shared.language != "en" && co == Operator.MTR) mtrTextWidth else defaultTextWidth
-                val rawColor = co.getColor(route.route.routeNumber, Color.White)
-                val dest = route.route.resolvedDest(true)[Shared.language]
-
-                val secondLine: MutableList<String> = ArrayList()
-                if (route.stopInfo != null) {
-                    val stop = route.stopInfo.data
-                    secondLine.add(if (Shared.language == "en") stop.name.en else stop.name.zh)
-                }
-                if (co == Operator.NLB) {
-                    secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
-                        "From ".plus(route.route.orig.en)
-                    } else {
-                        "從".plus(route.route.orig.zh).plus("開出")
-                    }).plus("</span>"))
-                } else if (co == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
-                    secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
-                        "Sun Bus (NR$routeNumber)"
-                    } else {
-                        "陽光巴士 (NR$routeNumber)"
-                    }).plus("</span>"))
-                }
-
-                Box (
-                    modifier = Modifier
-                        .fillParentMaxWidth()
-                        .animateItemPlacement()
-                        .combinedClickable(
+                        this
+                    },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                state = scroll
+            ) {
+                item {
+                    if (ambientMode) {
+                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
+                    } else if (recentSort == RecentSortMode.FORCED) {
+                        Button(
                             onClick = {
-                                val meta = when (co) {
-                                    Operator.GMB -> route.route.gmbRegion.name
-                                    Operator.NLB -> route.route.nlbId
-                                    else -> ""
-                                }
-                                Registry.getInstance(instance).addLastLookupRoute(route.route.routeNumber, co, meta, instance)
-                                val intent = Intent(instance, ListStopsActivity::class.java)
-                                intent.putExtra("route", route.toByteArray())
-                                instance.startActivity(intent)
+                                Registry.getInstance(instance).clearLastLookupRoutes(instance)
+                                instance.finish()
                             },
-                            onLongClick = {
-                                instance.runOnUiThread {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(route.co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)).plus(")")
-                                    if (proximitySortOrigin != null && route.stopInfo != null) {
-                                        val location = route.stopInfo.data.location
-                                        val distance = DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
-                                        text = text.plus(" - ").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
-                                    }
-                                    Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
-                                }
+                            modifier = Modifier
+                                .padding(20.dp, 15.dp, 20.dp, 0.dp)
+                                .width(StringUtils.scaledSize(35, instance).dp)
+                                .height(StringUtils.scaledSize(35, instance).dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = MaterialTheme.colors.secondary,
+                                contentColor = Color(0xFFFF0000)
+                            ),
+                            content = {
+                                Icon(
+                                    modifier = Modifier.size(StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp).dp),
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = if (Shared.language == "en") "Clear" else "清除",
+                                    tint = Color(0xFFFF0000),
+                                )
                             }
                         )
-                ) {
-                    RouteRow(route.uniqueKey, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, secondLine.toImmutableList(), showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                    } else if (recentSort == RecentSortMode.CHOICE || proximitySortOrigin != null) {
+                        Button(
+                            onClick = {
+                                activeSortMode = activeSortMode.nextMode(
+                                    recentSort == RecentSortMode.CHOICE,
+                                    proximitySortOrigin != null
+                                )
+                            },
+                            modifier = Modifier
+                                .padding(20.dp, 15.dp, 20.dp, 0.dp)
+                                .fillMaxWidth(0.8F)
+                                .height(StringUtils.scaledSize(35, instance).dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = MaterialTheme.colors.secondary,
+                                contentColor = Color(0xFFFFFFFF)
+                            ),
+                            content = {
+                                Text(
+                                    modifier = Modifier.fillMaxWidth(0.9F),
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colors.primary,
+                                    fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                                    text = when (activeSortMode) {
+                                        RouteSortMode.PROXIMITY -> if (Shared.language == "en") "Sort: Proximity" else "排序: 巴士站距離"
+                                        RouteSortMode.RECENT -> if (Shared.language == "en") "Sort: Fav/Recent" else "排序: 喜歡/最近瀏覽"
+                                        else -> if (Shared.language == "en") "Sort: Normal" else "排序: 正常"
+                                    }
+                                )
+                            }
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
+                    }
                 }
+                items(
+                    items = sortedResults,
+                    key = { route -> route.uniqueKey }
+                ) { route ->
+                    val co = route.co
+                    val kmbCtbJoint = route.route.isKmbCtbJoint
+                    val routeNumber = if (co == Operator.MTR && Shared.language != "en") {
+                        Shared.getMtrLineName(route.route.routeNumber)
+                    } else {
+                        route.route.routeNumber
+                    }
+                    val routeTextWidth = if (Shared.language != "en" && co == Operator.MTR) mtrTextWidth else defaultTextWidth
+                    val rawColor = co.getColor(route.route.routeNumber, Color.White)
+                    val dest = route.route.resolvedDest(true)[Shared.language]
+
+                    val secondLine: MutableList<String> = ArrayList()
+                    if (route.stopInfo != null) {
+                        val stop = route.stopInfo.data
+                        secondLine.add(if (Shared.language == "en") stop.name.en else stop.name.zh)
+                    }
+                    if (co == Operator.NLB) {
+                        secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
+                            "From ".plus(route.route.orig.en)
+                        } else {
+                            "從".plus(route.route.orig.zh).plus("開出")
+                        }).plus("</span>"))
+                    } else if (co == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+                        secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
+                            "Sun Bus (NR$routeNumber)"
+                        } else {
+                            "陽光巴士 (NR$routeNumber)"
+                        }).plus("</span>"))
+                    }
+
+                    Box (
+                        modifier = Modifier
+                            .fillParentMaxWidth()
+                            .animateItemPlacement()
+                            .combinedClickable(
+                                onClick = {
+                                    val meta = when (co) {
+                                        Operator.GMB -> route.route.gmbRegion.name
+                                        Operator.NLB -> route.route.nlbId
+                                        else -> ""
+                                    }
+                                    Registry.getInstance(instance).addLastLookupRoute(route.route.routeNumber, co, meta, instance)
+                                    val intent = Intent(instance, ListStopsActivity::class.java)
+                                    intent.putExtra("route", route.toByteArray())
+                                    instance.startActivity(intent)
+                                },
+                                onLongClick = {
+                                    instance.runOnUiThread {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(route.co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)).plus(")")
+                                        if (proximitySortOrigin != null && route.stopInfo != null) {
+                                            val location = route.stopInfo.data.location
+                                            val distance = DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
+                                            text = text.plus(" - ").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
+                                        }
+                                        Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            )
+                    ) {
+                        RouteRow(route.uniqueKey, kmbCtbJoint, rawColor, padding, routeTextWidth, co, routeNumber, bottomOffset, mtrBottomOffset, dest, secondLine.toImmutableList(), showEta, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                    }
+                    Spacer(
+                        modifier = Modifier
+                            .padding(25.dp, 0.dp)
+                            .animateItemPlacement()
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFF333333).adjustBrightness(if (ambientMode) 0.5F else 1F))
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
+                }
+            }
+            if (ambientMode) {
                 Spacer(
                     modifier = Modifier
-                        .padding(25.dp, 0.dp)
-                        .animateItemPlacement()
+                        .align(Alignment.TopCenter)
                         .fillMaxWidth()
-                        .height(1.dp)
-                        .background(Color(0xFF333333))
+                        .height(StringUtils.scaledSize(35, instance).dp)
+                        .background(
+                            Brush.verticalGradient(
+                                0F to Color(0xFF000000),
+                                1F to Color(0x00000000),
+                                startY = UnitUtils.spToPixels(instance, StringUtils.scaledSize(23, instance))
+                            )
+                        )
                 )
-            }
-            item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Transparent),
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    Shared.MainTime()
+                }
             }
         }
     }

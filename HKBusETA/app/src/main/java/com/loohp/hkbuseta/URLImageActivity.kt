@@ -49,6 +49,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -74,16 +76,12 @@ class URLImageActivity : ComponentActivity() {
 
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable
 fun ImageElement(url: String, instance: URLImageActivity) {
     HKBusETATheme {
-        val focusRequester = remember { FocusRequester() }
+        val focusRequester = rememberActiveFocusRequester()
         var zoom by remember { mutableStateOf(false) }
-
-        LaunchedEffect (Unit) {
-            focusRequester.requestFocus()
-        }
 
         Box(
             modifier = Modifier

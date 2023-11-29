@@ -77,6 +77,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.ExperimentalWearMaterialApi
 import androidx.wear.compose.material.Icon
@@ -206,7 +208,7 @@ class EtaActivity : ComponentActivity() {
 
 }
 
-@OptIn(ExperimentalWearMaterialApi::class)
+@OptIn(ExperimentalWearMaterialApi::class, ExperimentalWearFoundationApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: EtaActivity, schedule: (Boolean, (() -> Unit)?) -> Unit) {
@@ -252,7 +254,7 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
         route.gmbRegion
     ).toImmutableList() }
 
-    val focusRequester = remember { FocusRequester() }
+    val focusRequester = rememberActiveFocusRequester()
     var currentOffset by remember { mutableFloatStateOf(offsetStart * ScreenSizeUtils.getScreenHeight(instance).toFloat()) }
     var animatedOffsetTask: (Float) -> Unit by remember { mutableStateOf({}) }
     val animatedOffset by animateFloatAsState(
@@ -263,7 +265,6 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
     )
 
     LaunchedEffect (Unit) {
-        focusRequester.requestFocus()
         currentOffset = 0F
     }
 

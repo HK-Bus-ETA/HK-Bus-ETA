@@ -76,7 +76,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -86,17 +86,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.ContentAnnotatedString
 import com.aghajari.compose.text.asAnnotatedString
+import com.google.android.horologist.compose.ambient.AmbientAware
+import com.google.android.horologist.compose.ambient.AmbientStateUpdate
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.RestartEffect
+import com.loohp.hkbuseta.compose.ambientMode
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
+import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.Operator
@@ -189,12 +196,14 @@ class ListStopsActivity : ComponentActivity() {
         val isAlightReminder = intent.extras!!.getBoolean("isAlightReminder", false)
 
         setContent {
-            MainElement(this, route, showEta, scrollToStop, isAlightReminder) { isAdd, index, task ->
-                sync.execute {
-                    if (isAdd) {
-                        etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
-                    } else {
-                        etaUpdatesMap.remove(index)?.first?.cancel(true)
+            AmbientAware {
+                MainElement(it, this, route, showEta, scrollToStop, isAlightReminder) { isAdd, index, task ->
+                    sync.execute {
+                        if (isAdd) {
+                            etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                        } else {
+                            etaUpdatesMap.remove(index)?.first?.cancel(true)
+                        }
                     }
                 }
             }
@@ -235,13 +244,14 @@ class ListStopsActivity : ComponentActivity() {
 }
 
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable
-fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, showEta: Boolean, scrollToStop: String?, isAlightReminder: Boolean, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActivity, route: RouteSearchResultEntry, showEta: Boolean, scrollToStop: String?, isAlightReminder: Boolean, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
-        val focusRequester = remember { FocusRequester() }
+        val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
         val scope = rememberCoroutineScope()
+        val ambientMode = rememberIsInAmbientMode(ambientStateUpdate)
         val haptic = LocalHapticFeedback.current
 
         val padding by remember { derivedStateOf { StringUtils.scaledSize(7.5F, instance) } }
@@ -292,8 +302,6 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
         var closestIndex by remember { mutableIntStateOf(0) }
 
         LaunchedEffect (Unit) {
-            focusRequester.requestFocus()
-
             val scrollTask: (OriginData?, String?) -> Unit = { origin, stopId ->
                 if (stopId != null) {
                     stopsList.withIndex().find { it.value.stopId == stopId }?.let {
@@ -349,136 +357,168 @@ fun MainElement(instance: ListStopsActivity, route: RouteSearchResultEntry, show
             }
         }
 
-        LazyColumn (
+        Box (
             modifier = Modifier
+                .ambientMode(ambientStateUpdate)
                 .fillMaxSize()
-                .fullPageVerticalLazyScrollbar(
-                    state = scroll
-                )
-                .rotaryScroll(scroll, focusRequester)
-                .composed {
-                    RestartEffect {
-                        if (isAlightReminder && (alightReminderData == null || !alightReminderData!!.active || route.route != alightReminderData!!.route)) {
-                            instance.finish()
-                        }
-                    }
-
-                    LaunchedEffect (rawAlightReminderData) {
-                        delay(1000)
-                        if (alightReminderData != null) {
-                            targetStop = alightReminderData?.targetStop
-                            if (route.route == alightReminderData!!.route) {
-                                if (!alightReminderData!!.active) {
-                                    isTargetActive = false
-                                }
-                                if (alightReminderData!!.currentLocation.isSuccess) {
-                                    val location = alightReminderData!!.currentLocation.location
-                                    closestIndex = (stopsList.withIndex().minBy {
-                                        DistanceUtils.findDistance(it.value.stop.location.lat, it.value.stop.location.lng, location.lat, location.lng)
-                                    }.index + 1).coerceAtMost(targetStopIndex)
-                                }
-                            } else if (alightReminderData!!.active) {
-                                isTargetActive = false
+        ) {
+            LazyColumn (
+                modifier = Modifier
+                    .fillMaxSize()
+                    .fullPageVerticalLazyScrollbar(
+                        state = scroll,
+                        scrollbarConfigFullPage = FullPageScrollBarConfig(
+                            alpha = if (ambientMode) 0F else null
+                        )
+                    )
+                    .rotaryScroll(scroll, focusRequester, ambientStateUpdate = ambientStateUpdate)
+                    .composed {
+                        RestartEffect {
+                            if (isAlightReminder && (alightReminderData == null || !alightReminderData!!.active || route.route != alightReminderData!!.route)) {
                                 instance.finish()
                             }
                         }
-                    }
 
-                    this
-                },
-            horizontalAlignment = Alignment.CenterHorizontally,
-            state = scroll
-        ) {
-            item {
-                HeaderElement(routeNumber, kmbCtbJoint, co, coColor, resolvedDestName, specialOrigs, specialDests, instance)
-            }
-            for ((index, entry) in stopsList.withIndex()) {
-                item {
-                    val stopNumber = index + 1
-                    val isClosest = closestIndex == stopNumber
-                    val isTargetStop = targetStopIndex == stopNumber
-                    val isTargetIntermediateStop = closestIndex > 0 && stopNumber in (closestIndex + 1) until targetStopIndex
-                    val stopId = entry.stopId
-                    val stop = entry.stop
-                    val brightness = if (entry.serviceType == lowestServiceType) 1F else 0.65F
-                    val rawColor = (if (isClosest) coColor else Color.White).adjustBrightness(brightness)
-                    val stopStr = stop.name[Shared.language]
-                    val stopRemarkedName = remember { stop.remarkedName[Shared.language].toSpanned(instance).asAnnotatedString() }
-                    val mtrLineSectionData = mtrLineSectionsData?.get(index)
-
-                    Column (
-                        modifier = Modifier
-                            .fillParentMaxWidth()
-                            .height(IntrinsicSize.Min)
-                            .combinedClickable(
-                                onClick = {
-                                    val intent = Intent(instance, EtaActivity::class.java)
-                                    intent.putExtra("stopId", stopId)
-                                    intent.putExtra("co", co.name)
-                                    intent.putExtra("index", stopNumber)
-                                    intent.putExtra("stop", stop.toByteArray())
-                                    intent.putExtra("route", entry.route.toByteArray())
-                                    instance.startActivity(intent)
-                                },
-                                onLongClick = {
-                                    instance.runOnUiThread {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        instance.runOnUiThread {
-                                            val prefix = if (co.isTrain) "" else stopNumber.toString().plus(". ")
-                                            val text = if (isClosest && !isAlightReminder) {
-                                                prefix.plus(stopStr).plus("\n")
-                                                    .plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
-                                                    .plus(((distances[stopNumber] ?: Double.NaN) * 1000).roundToInt().formatDecimalSeparator())
-                                                    .plus(if (Shared.language == "en") "m" else "米")
-                                            } else {
-                                                prefix.plus(stopStr)
-                                            }
-                                            Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
-                                        }
+                        LaunchedEffect (rawAlightReminderData) {
+                            delay(1000)
+                            if (alightReminderData != null) {
+                                targetStop = alightReminderData?.targetStop
+                                if (route.route == alightReminderData!!.route) {
+                                    if (!alightReminderData!!.active) {
+                                        isTargetActive = false
                                     }
-                                }
-                            )
-                    ) {
-                        StopRowElement(stopNumber, stopId, co, showEta, isAlightReminder, isClosest, isTargetStop, isTargetIntermediateStop, kmbCtbJoint, mtrStopsInterchange, rawColor, brightness, padding, stopRemarkedName, stopsList, mtrLineSectionData, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
-                        if (isAlightReminder && isTargetStop) {
-                            Box (
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (co.isTrain && mtrLineSectionData?.requireExtension == true) {
-                                    Box(
-                                        modifier = Modifier
-                                            .padding(25.dp, 0.dp)
-                                            .requiredWidth((if (stopsList.map { it.serviceType }.distinct().size > 1 || mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }) 50 else 35).sp.dp)
-                                            .fillMaxHeight()
-                                            .align(Alignment.CenterStart)
-                                    ) {
-                                        MTRLineSectionExtension(mtrLineSectionData)
+                                    if (alightReminderData!!.currentLocation.isSuccess) {
+                                        val location = alightReminderData!!.currentLocation.location
+                                        closestIndex = (stopsList.withIndex().minBy {
+                                            DistanceUtils.findDistance(it.value.stop.location.lat, it.value.stop.location.lng, location.lat, location.lng)
+                                        }.index + 1).coerceAtMost(targetStopIndex)
                                     }
-                                }
-                                Column {
-                                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
-                                    if (isTargetActive) {
-                                        TerminateAlightReminderButton(instance)
-                                    } else {
-                                        AlightReminderCompleted(instance)
-                                    }
-                                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                                } else if (alightReminderData!!.active) {
+                                    isTargetActive = false
+                                    instance.finish()
                                 }
                             }
                         }
+
+                        this
+                    },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                state = scroll
+            ) {
+                item {
+                    HeaderElement(ambientMode, routeNumber, kmbCtbJoint, co, coColor, resolvedDestName, specialOrigs, specialDests, instance)
+                }
+                for ((index, entry) in stopsList.withIndex()) {
+                    item {
+                        val stopNumber = index + 1
+                        val isClosest = closestIndex == stopNumber
+                        val isTargetStop = targetStopIndex == stopNumber
+                        val isTargetIntermediateStop = closestIndex > 0 && stopNumber in (closestIndex + 1) until targetStopIndex
+                        val stopId = entry.stopId
+                        val stop = entry.stop
+                        val brightness = if (entry.serviceType == lowestServiceType) 1F else 0.65F
+                        val rawColor = (if (isClosest) coColor else Color.White).adjustBrightness(brightness)
+                        val stopStr = stop.name[Shared.language]
+                        val stopRemarkedName = remember { stop.remarkedName[Shared.language].toSpanned(instance).asAnnotatedString() }
+                        val mtrLineSectionData = mtrLineSectionsData?.get(index)
+
+                        Column (
+                            modifier = Modifier
+                                .fillParentMaxWidth()
+                                .height(IntrinsicSize.Min)
+                                .combinedClickable(
+                                    onClick = {
+                                        val intent = Intent(instance, EtaActivity::class.java)
+                                        intent.putExtra("stopId", stopId)
+                                        intent.putExtra("co", co.name)
+                                        intent.putExtra("index", stopNumber)
+                                        intent.putExtra("stop", stop.toByteArray())
+                                        intent.putExtra("route", entry.route.toByteArray())
+                                        instance.startActivity(intent)
+                                    },
+                                    onLongClick = {
+                                        instance.runOnUiThread {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            instance.runOnUiThread {
+                                                val prefix = if (co.isTrain) "" else stopNumber.toString().plus(". ")
+                                                val text = if (isClosest && !isAlightReminder) {
+                                                    prefix.plus(stopStr).plus("\n")
+                                                        .plus(if (interchangeSearch) (if (Shared.language == "en") "Interchange " else "轉乘") else (if (Shared.language == "en") "Nearby " else "附近"))
+                                                        .plus(((distances[stopNumber] ?: Double.NaN) * 1000).roundToInt().formatDecimalSeparator())
+                                                        .plus(if (Shared.language == "en") "m" else "米")
+                                                } else {
+                                                    prefix.plus(stopStr)
+                                                }
+                                                Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    }
+                                )
+                        ) {
+                            StopRowElement(ambientMode, stopNumber, stopId, co, showEta, isAlightReminder, isClosest, isTargetStop, isTargetIntermediateStop, kmbCtbJoint, mtrStopsInterchange, rawColor, brightness, padding, stopRemarkedName, stopsList, mtrLineSectionData, route, etaTextWidth, etaResults, etaUpdateTimes, instance, schedule)
+                            if (isAlightReminder && isTargetStop) {
+                                Box (
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (co.isTrain && mtrLineSectionData?.requireExtension == true) {
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(25.dp, 0.dp)
+                                                .requiredWidth((if (stopsList.map { it.serviceType }.distinct().size > 1 || mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }) 50 else 35).sp.dp)
+                                                .fillMaxHeight()
+                                                .align(Alignment.CenterStart)
+                                        ) {
+                                            MTRLineSectionExtension(mtrLineSectionData, ambientMode)
+                                        }
+                                    }
+                                    Column {
+                                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                                        if (isTargetActive) {
+                                            TerminateAlightReminderButton(instance)
+                                        } else {
+                                            AlightReminderCompleted(instance)
+                                        }
+                                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(
+                            modifier = Modifier
+                                .padding(25.dp, 0.dp)
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(Color(0xFF333333).adjustBrightness(if (ambientMode) 0.5F else 1F))
+                        )
                     }
-                    Spacer(
-                        modifier = Modifier
-                            .padding(25.dp, 0.dp)
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color(0xFF333333))
-                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
                 }
             }
-            item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
+            if (ambientMode) {
+                Spacer(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .height(StringUtils.scaledSize(35, instance).dp)
+                        .background(
+                            Brush.verticalGradient(
+                                0F to Color(0xFF000000),
+                                1F to Color(0x00000000),
+                                startY = UnitUtils.spToPixels(instance, StringUtils.scaledSize(23, instance))
+                            )
+                        )
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Transparent),
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    Shared.MainTime()
+                }
             }
         }
     }
@@ -592,7 +632,7 @@ fun TerminateAlightReminderButton(instance: ListStopsActivity) {
 }
 
 @Composable
-fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coColor: Color, destName: BilingualText, specialOrigs: ImmutableList<BilingualText>, specialDests: ImmutableList<BilingualText>, instance: ListStopsActivity) {
+fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coColor: Color, destName: BilingualText, specialOrigs: ImmutableList<BilingualText>, specialDests: ImmutableList<BilingualText>, instance: ListStopsActivity) {
     Column(
         modifier = Modifier
             .defaultMinSize(minHeight = StringUtils.scaledSize(35, instance).dp)
@@ -629,7 +669,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coCol
                 max = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(20F, instance).dp)
             ),
             lineHeight = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(20F, instance).dp),
-            color = color,
+            color = color.adjustBrightness(if (ambientMode) 0.7F else 1F),
             maxLines = 1,
             text = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language).plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
         )
@@ -642,7 +682,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coCol
                 min = StringUtils.scaledSize(1F, instance).dp.sp,
                 max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(14F, instance).dp)
             ),
-            color = Color(0xFFFFFFFF),
+            color = Color(0xFFFFFFFF).adjustBrightness(if (ambientMode) 0.7F else 1F),
             maxLines = 2,
             text = destName[Shared.language]
         )
@@ -656,7 +696,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coCol
                     min = StringUtils.scaledSize(1F, instance).dp.sp,
                     max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(14F, instance).dp)
                 ),
-                color = Color(0xFFFFFFFF).adjustBrightness(0.65F),
+                color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),
                 maxLines = 2,
                 text = if (Shared.language == "en") {
                     "Special From ".plus(specialOrigs.joinToString("/") { it.en })
@@ -675,7 +715,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coCol
                     min = StringUtils.scaledSize(1F, instance).dp.sp,
                     max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(14F, instance).dp)
                 ),
-                color = Color(0xFFFFFFFF).adjustBrightness(0.65F),
+                color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),
                 maxLines = 2,
                 text = if (Shared.language == "en") {
                     "Special To ".plus(specialDests.joinToString("/") { it.en })
@@ -689,7 +729,7 @@ fun HeaderElement(routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coCol
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boolean, isAlightReminder: Boolean, isClosest: Boolean, isTargetStop: Boolean, isTargetIntermediateStop: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: ContentAnnotatedString, stopList: ImmutableList<StopData>, mtrLineSectionData: MTRStopSectionData?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Operator, showEta: Boolean, isAlightReminder: Boolean, isClosest: Boolean, isTargetStop: Boolean, isTargetIntermediateStop: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: ContentAnnotatedString, stopList: ImmutableList<StopData>, mtrLineSectionData: MTRStopSectionData?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: ListStopsActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     val color = if (isAlightReminder) {
         if (isTargetStop) {
             Color(0xFFFF9800)
@@ -731,7 +771,7 @@ fun StopRowElement(stopNumber: Int, stopId: String, co: Operator, showEta: Boole
                     .requiredWidth(width.dp)
                     .fillMaxHeight()
             ) {
-                MTRLineSection(mtrLineSectionData)
+                MTRLineSection(mtrLineSectionData, ambientMode)
             }
         } else {
             Text(

@@ -79,7 +79,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -93,6 +92,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
@@ -204,10 +205,11 @@ class FavActivity : ComponentActivity() {
 
 }
 
+@OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
-        val focusRequester = remember { FocusRequester() }
+        val focusRequester = rememberActiveFocusRequester()
         val scope = rememberCoroutineScope()
         val state = rememberLazyListState()
 

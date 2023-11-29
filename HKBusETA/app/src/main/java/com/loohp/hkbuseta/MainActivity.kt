@@ -22,6 +22,7 @@ package com.loohp.hkbuseta
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -94,6 +95,7 @@ class MainActivity : ComponentActivity() {
 
         setShowWhenLocked(true)
         setTurnScreenOn(true)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val stopId = intent.extras?.getString("stopId")
         val co = intent.extras?.getString("co")?.operator

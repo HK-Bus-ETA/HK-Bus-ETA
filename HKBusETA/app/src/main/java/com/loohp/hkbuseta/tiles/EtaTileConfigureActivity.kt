@@ -81,6 +81,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
@@ -134,11 +136,11 @@ class EtaTileConfigureActivity : ComponentActivity() {
 
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable
 fun SelectElements(tileId: Int, instance: EtaTileConfigureActivity) {
     HKBusETATheme {
-        val focusRequester = remember { FocusRequester() }
+        val focusRequester = rememberActiveFocusRequester()
         val state = rememberLazyListState()
 
         val maxFavItems by Shared.getCurrentMaxFavouriteRouteStopState().collectAsStateWithLifecycle()
@@ -168,7 +170,7 @@ fun SelectElements(tileId: Int, instance: EtaTileConfigureActivity) {
                     modifier = Modifier.background(Brush.verticalGradient(
                         0F to Color(0xFF000000),
                         1F to Color(0x00000000),
-                        startY = UnitUtils.dpToPixels(instance, StringUtils.scaledSize(45, instance).toFloat())
+                        startY = UnitUtils.dpToPixels(instance, StringUtils.scaledSize(45, instance))
                     ))
                 ) {
                     Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))

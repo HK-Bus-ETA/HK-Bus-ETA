@@ -226,6 +226,7 @@ fun EvaluatedElement(state: MutableState<Boolean>, origin: Coordinates?, locatio
             intent.putExtra("proximitySortOrigin", doubleArrayOf(location.lat, location.lng))
         }
         intent.putExtra("listType", RouteListType.FAVOURITE.name())
+        intent.putExtra("allowAmbient", true)
         instance.startActivity(intent)
         instance.finish()
     } else {

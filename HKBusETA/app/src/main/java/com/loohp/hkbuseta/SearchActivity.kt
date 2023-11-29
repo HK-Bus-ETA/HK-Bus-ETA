@@ -78,6 +78,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
@@ -164,6 +166,7 @@ fun SearchPage(instance: SearchActivity) {
     }
 }
 
+@OptIn(ExperimentalWearFoundationApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun MainElement(instance: SearchActivity) {
@@ -222,7 +225,7 @@ fun MainElement(instance: SearchActivity) {
                     .width(StringUtils.scaledSize(35, instance).dp)
                     .height(StringUtils.scaledSize(135, instance).dp)
             ) {
-                val focusRequester = remember { FocusRequester() }
+                val focusRequester = rememberActiveFocusRequester()
                 val scroll = rememberScrollState()
                 val scope = rememberCoroutineScope()
                 val haptic = LocalHapticFeedback.current
@@ -262,9 +265,6 @@ fun MainElement(instance: SearchActivity) {
                     if (scrollMoved <= 1) {
                         scrollMoved++
                     }
-                }
-                LaunchedEffect (Unit) {
-                    focusRequester.requestFocus()
                 }
 
                 Column (

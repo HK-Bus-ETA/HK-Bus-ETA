@@ -59,6 +59,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
@@ -105,10 +107,11 @@ class DismissibleTextDisplayActivity : ComponentActivity() {
 
 }
 
+@OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun TextElement(text: BilingualText, dismissText: BilingualText, instance: DismissibleTextDisplayActivity) {
     HKBusETATheme {
-        val focusRequester = remember { FocusRequester() }
+        val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberScrollState()
         val scope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
@@ -139,9 +142,6 @@ fun TextElement(text: BilingualText, dismissText: BilingualText, instance: Dismi
             if (!scrollMoved) {
                 scrollMoved = true
             }
-        }
-        LaunchedEffect (Unit) {
-            focusRequester.requestFocus()
         }
 
         Column (

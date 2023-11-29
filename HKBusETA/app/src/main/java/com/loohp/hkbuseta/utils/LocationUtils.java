@@ -250,7 +250,7 @@ public class LocationUtils {
             return new LocationResult(location == null ? null : new Coordinates(location.getLatitude(), location.getLongitude()));
         }
         
-        public static LocationResult fromStopLocationNullable(Coordinates location) {
+        public static LocationResult fromCoordinatesNullable(Coordinates location) {
             return new LocationResult(location);
         }
 
