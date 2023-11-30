@@ -155,27 +155,31 @@ class MergedETAQueryResult<T> private constructor(
         fun <T> merge(etaQueryResult: List<Pair<T, ETAQueryResult>>): MergedETAQueryResult<T> {
             if (etaQueryResult.size == 1) {
                 val (key, value) = etaQueryResult[0]
-                val lines: MutableMap<Int, Pair<T, ETALineEntry>> = HashMap()
-                value.rawLines.entries.forEach { lines[it.key] = key to it.value }
+                val lines = value.rawLines.mapValues { key to it.value }
                 return MergedETAQueryResult(value.isConnectionError, value.isMtrEndOfLine, value.isTyphoonSchedule, value.nextCo, lines, 1)
             }
             val isConnectionError = etaQueryResult.all { it.second.isConnectionError }
             val isMtrEndOfLine = etaQueryResult.all { it.second.isMtrEndOfLine }
             val isTyphoonSchedule = etaQueryResult.any { it.second.isTyphoonSchedule }
-            val linesSorted: MutableList<Triple<T, ETALineEntry, Operator>> = etaQueryResult.toList().stream()
+            if (isConnectionError) {
+                val (key, value) = etaQueryResult[0]
+                val lines = value.rawLines.mapValues { key to it.value }
+                return MergedETAQueryResult(true, isMtrEndOfLine, isTyphoonSchedule, value.nextCo, lines, etaQueryResult.size)
+            }
+            val linesSorted: MutableList<Triple<T, ETALineEntry, Operator>> = etaQueryResult.stream()
                 .flatMap { it.second.rawLines.values.stream().map { line -> Triple(it.first, line, it.second.nextCo) } }
                 .sorted(Comparator
                     .comparing<Triple<T, ETALineEntry, Operator>, Double> { it.second.eta.let { v -> if (v < 0) Double.MAX_VALUE else v } }
                     .thenComparing(Comparator.comparing { etaQueryResult.indexOfFirst { i -> i.first == it.first } })
                 )
                 .collect(Collectors.toCollection { ArrayList() })
-            val nextCo = if (linesSorted.isEmpty()) etaQueryResult[0].second.nextCo else linesSorted[0].third
-            val lines: MutableMap<Int, Pair<T, ETALineEntry>> = HashMap()
             if (linesSorted.any { it.second.eta >= 0 }) {
                 linesSorted.removeIf { it.second.eta < 0 }
             }
+            val nextCo = if (linesSorted.isEmpty()) etaQueryResult[0].second.nextCo else linesSorted[0].third
+            val lines: MutableMap<Int, Pair<T, ETALineEntry>> = HashMap()
             linesSorted.withIndex().forEach { lines[it.index + 1] = it.value.first to it.value.second }
-            return MergedETAQueryResult(isConnectionError, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines, etaQueryResult.size)
+            return MergedETAQueryResult(false, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines, etaQueryResult.size)
         }
 
     }
@@ -219,7 +223,7 @@ class TileState {
 
     fun getETAQueryResult(orElse: (TileState) -> MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?): MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>? {
         val (cache, time) = cachedETAQueryResult.getAndUpdate { null to 0 }
-        return if (cache == null) orElse.invoke(this) else cache
+        return if (cache == null || System.currentTimeMillis() - time > 10000) orElse.invoke(this) else cache
     }
 
     fun getCurrentTileLayoutState(): Boolean {
