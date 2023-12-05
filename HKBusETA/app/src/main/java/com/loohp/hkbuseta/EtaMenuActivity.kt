@@ -69,7 +69,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -112,18 +111,17 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.shared.TileUseState
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.ActivityUtils
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.NotificationUtils
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
-import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
-import com.loohp.hkbuseta.utils.toByteArray
+import com.loohp.hkbuseta.utils.startActivity
 import com.loohp.hkbuseta.utils.toSpanned
 import java.io.ByteArrayInputStream
 import java.util.stream.IntStream
@@ -204,49 +202,49 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             state = scroll
         ) {
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(20, instance).dp))
+                Spacer(modifier = Modifier.size(20.scaledSize(instance).dp))
             }
             item {
                 Title(index, stop.name, stop.remark, routeNumber, co, instance)
                 SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), routeNumber, co, instance)
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 MoreInfoHeader(instance)
             }
             item {
                 if (stop.kmbBbiId != null) {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                     OpenOpenKmbBbiMapButton(stop.kmbBbiId, instance)
                 }
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 SearchNearbyButton(stop, route, instance)
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 AlightReminderButton(stopId, index, stop, route, co, instance)
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 OpenOnMapsButton(stop.name, lat, lng, instance)
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 FavHeader(instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 NextFavButton(scrollTo, stopId, co, index, stop, route, instance)
             }
             items(maxFavItems) {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 FavButton(it + 1, stopId, co, index, stop, route, instance)
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
+                Spacer(modifier = Modifier.size(40.scaledSize(instance).dp))
             }
         }
     }
@@ -260,7 +258,7 @@ fun MoreInfoHeader(instance: EtaMenuActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+        fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
         text = if (Shared.language == "en") "More Info & Actions" else "更多資訊及功能"
     )
 }
@@ -270,9 +268,9 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp),
-        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
+            .width(220.scaledSize(instance).dp)
+            .heightIn(min = 50.scaledSize(instance).sp.dp),
+        shape = RoundedCornerShape(25.scaledSize(instance).dp),
         onClick = {
             instance.runOnUiThread {
                 val text = if (Shared.language == "en") {
@@ -309,8 +307,8 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
                 Box (
                     modifier = Modifier
                         .padding(5.dp, 5.dp)
-                        .width(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
-                        .height(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
+                        .width(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
+                        .height(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
                         .clip(CircleShape)
                         .background(Color(0xFF3D3D3D))
                         .align(Alignment.Top),
@@ -319,7 +317,7 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
                     Icon(
                         modifier = Modifier
                             .padding(3.dp, 3.dp)
-                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                            .size(17F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_sync_alt_24),
                         tint = Color(0xFFFFE15E),
                         contentDescription = if (Shared.language == "en") "Find Nearby Interchanges" else "尋找附近轉乘路線"
@@ -331,7 +329,7 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: EtaMenuActivity) {
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    fontSize = 14F.scaledSize(instance).sp,
                     text = if (Shared.language == "en") "Find Nearby Interchanges" else "尋找附近轉乘路線"
                 )
             }
@@ -344,9 +342,9 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp),
-        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
+            .width(220.scaledSize(instance).dp)
+            .heightIn(min = 50.scaledSize(instance).sp.dp),
+        shape = RoundedCornerShape(25.scaledSize(instance).dp),
         onClick = {
             LocationUtils.checkLocationPermission(instance) { locationGranted ->
                 if (locationGranted) {
@@ -357,7 +355,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                                 intent.putExtra("stop", stop.serialize().toString())
                                 intent.putExtra("route", route.serialize().toString())
                                 intent.putExtra("index", index)
-                                intent.putExtra("co", co.name())
+                                intent.putExtra("co", co.name)
 
                                 val stopListIntent = Intent(instance, ListStopsActivity::class.java)
                                 stopListIntent.putExtra("route", it.toByteArray())
@@ -371,7 +369,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                                     "You might need to \"<b>Allow Background Activity</b>\" for this feature to continue working while the screen is off.<br><br>This feature is currently in <b>beta</b>, which might be unstable."
                                 )
                                 noticeIntent.putExtra("text", notice.toByteArray())
-                                ActivityUtils.startActivity(instance, noticeIntent) { result ->
+                                instance.startActivity(noticeIntent) { result ->
                                     if (result.resultCode == 1) {
                                         AlightReminderService.terminate()
                                         instance.startForegroundService(intent)
@@ -408,8 +406,8 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                 Box (
                     modifier = Modifier
                         .padding(5.dp, 5.dp)
-                        .width(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
-                        .height(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
+                        .width(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
+                        .height(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
                         .clip(CircleShape)
                         .background(Color(0xFF3D3D3D))
                         .align(Alignment.Top),
@@ -418,7 +416,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                     Icon(
                         modifier = Modifier
                             .padding(3.dp, 3.dp)
-                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                            .size(17F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_notifications_active_24),
                         tint = Color(0xFFFF9800),
                         contentDescription = if (Shared.language == "en") "Enable Alight Reminder" else "開啟落車提示"
@@ -430,7 +428,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    fontSize = 14F.scaledSize(instance).sp,
                     maxLines = 2,
                     text = (if (Shared.language == "en") "<b>Enable Alight Reminder</b> <small>Beta</small>" else "<b>開啟落車提示</b><br><small>測試版</small>").toSpanned(instance).asAnnotatedString()
                 )
@@ -447,9 +445,9 @@ fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp),
-        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
+            .width(220.scaledSize(instance).dp)
+            .heightIn(min = 50.scaledSize(instance).sp.dp),
+        shape = RoundedCornerShape(25.scaledSize(instance).dp),
         onClick = handleOpenMaps(lat, lng, name, instance, false, haptic),
         onLongClick = handleOpenMaps(lat, lng, name, instance, true, haptic),
         colors = ButtonDefaults.buttonColors(
@@ -472,8 +470,8 @@ fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance
                 Box (
                     modifier = Modifier
                         .padding(5.dp, 5.dp)
-                        .width(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
-                        .height(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
+                        .width(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
+                        .height(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
                         .clip(CircleShape)
                         .background(Color(0xFF3D3D3D))
                         .align(Alignment.Top),
@@ -482,7 +480,7 @@ fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance
                     Icon(
                         modifier = Modifier
                             .padding(3.dp, 3.dp)
-                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                            .size(17F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_map_24),
                         tint = Color(0xFF4CFF00),
                         contentDescription = if (Shared.language == "en") "Open Stop Location on Maps" else "在地圖上顯示巴士站位置"
@@ -494,7 +492,7 @@ fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    fontSize = 14F.scaledSize(instance).sp,
                     text = if (Shared.language == "en") "Open Stop Location on Maps" else "在地圖上顯示巴士站位置"
                 )
             }
@@ -537,9 +535,9 @@ fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: EtaMenuActivity) {
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp),
-        shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp),
+            .width(220.scaledSize(instance).dp)
+            .heightIn(min = 50.scaledSize(instance).sp.dp),
+        shape = RoundedCornerShape(25.scaledSize(instance).dp),
         onClick = handleOpenKmbBbiMap(kmbBbiId, instance, false, haptic),
         onLongClick = handleOpenKmbBbiMap(kmbBbiId, instance, true, haptic),
         colors = ButtonDefaults.buttonColors(
@@ -562,8 +560,8 @@ fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: EtaMenuActivity) {
                 Box (
                     modifier = Modifier
                         .padding(5.dp, 5.dp)
-                        .width(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
-                        .height(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
+                        .width(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
+                        .height(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
                         .clip(CircleShape)
                         .background(Color(0xFF3D3D3D))
                         .align(Alignment.Top),
@@ -572,7 +570,7 @@ fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: EtaMenuActivity) {
                     Icon(
                         modifier = Modifier
                             .padding(3.dp, 3.dp)
-                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                            .size(17F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_transfer_within_a_station_24),
                         tint = Color(0xFFFF0000),
                         contentDescription = if (Shared.language == "en") "Open KMB BBI Layout Map" else "顯示九巴轉車站位置圖"
@@ -584,7 +582,7 @@ fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: EtaMenuActivity) {
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    fontSize = 14F.scaledSize(instance).sp,
                     text = if (Shared.language == "en") "Open KMB BBI Layout Map" else "顯示九巴轉車站位置圖"
                 )
             }
@@ -636,8 +634,8 @@ fun Title(index: Int, stopName: BilingualText, stopRemark: BilingualText?, route
         maxLines = 2,
         fontWeight = FontWeight.Bold,
         fontSizeRange = FontSizeRange(
-            min = StringUtils.scaledSize(1F, instance).dp.sp,
-            max = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
+            min = 1F.scaledSize(instance).dp.sp,
+            max = 17F.scaledSize(instance).sp.clamp(max = 17F.scaledSize(instance).dp)
         )
     )
     if (stopRemark != null) {
@@ -650,8 +648,8 @@ fun Title(index: Int, stopName: BilingualText, stopRemark: BilingualText?, route
             text = stopRemark[Shared.language],
             maxLines = 1,
             fontSizeRange = FontSizeRange(
-                min = StringUtils.scaledSize(1F, instance).dp.sp,
-                max = StringUtils.scaledSize(12F, instance).sp.clamp(max = StringUtils.scaledSize(12F, instance).dp)
+                min = 1F.scaledSize(instance).dp.sp,
+                max = 12F.scaledSize(instance).sp.clamp(max = 12F.scaledSize(instance).dp)
             )
         )
     }
@@ -669,8 +667,8 @@ fun SubTitle(destName: BilingualText, routeNumber: String, co: Operator, instanc
         text = name,
         maxLines = 1,
         fontSizeRange = FontSizeRange(
-            min = StringUtils.scaledSize(1F, instance).dp.sp,
-            max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(11F, instance).dp)
+            min = 1F.scaledSize(instance).dp.sp,
+            max = 11F.scaledSize(instance).sp.clamp(max = 11F.scaledSize(instance).dp)
         )
     )
 }
@@ -683,7 +681,7 @@ fun FavHeader(instance: EtaMenuActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+        fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
         text = if (Shared.language == "en") "Set Favourite Routes" else "設置最喜愛路線"
     )
     Text(
@@ -692,7 +690,7 @@ fun FavHeader(instance: EtaMenuActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(10F, instance).sp.clamp(max = 10.dp),
+        fontSize = 10F.scaledSize(instance).sp.clamp(max = 10.dp),
         text = if (Shared.language == "en") {
             "Section to set/clear this route stop from the corresponding indexed favourite route"
         } else {
@@ -705,21 +703,21 @@ fun FavHeader(instance: EtaMenuActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(10F, instance).sp.clamp(max = 10.dp),
+        fontSize = 10F.scaledSize(instance).sp.clamp(max = 10.dp),
         text = if (Shared.language == "en") {
             "Route stops can be used in Tiles"
         } else {
             "最喜愛路線可在資訊方塊中顯示"
         }
     )
-    Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+    Spacer(modifier = Modifier.size(5.scaledSize(instance).dp))
     Text(
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(10F, instance).sp.clamp(max = 10.dp),
+        fontSize = 10F.scaledSize(instance).sp.clamp(max = 10.dp),
         fontWeight = FontWeight.Bold,
         text = if (Shared.language == "en") {
             "Tap to set this stop\nLong press to set to display any closes stop of the route"
@@ -739,8 +737,8 @@ fun NextFavButton(scrollTo: MutableIntState, stopId: String, co: Operator, index
             }.min().orElse(30)
         },
         modifier = Modifier
-            .width(StringUtils.scaledSize(50, instance).dp)
-            .height(StringUtils.scaledSize(30, instance).dp),
+            .width(50.scaledSize(instance).dp)
+            .height(30.scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
@@ -749,7 +747,7 @@ fun NextFavButton(scrollTo: MutableIntState, stopId: String, co: Operator, index
             Icon(
                 modifier = Modifier
                     .padding(3.dp, 3.dp)
-                    .size(StringUtils.scaledSize(25F, instance).sp.dp),
+                    .size(25F.scaledSize(instance).sp.dp),
                 imageVector = Icons.Filled.KeyboardArrowDown,
                 tint = Color(0xFFFFB700),
                 contentDescription = if (Shared.language == "en") "Down" else "向下"
@@ -812,7 +810,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                         "If prompted, please choose \"<b>While using this app</b>\" and then \"<b>All the time</b>\"."
             )
             noticeIntent.putExtra("text", notice.toByteArray())
-            ActivityUtils.startActivity(instance, noticeIntent) { confirm ->
+            instance.startActivity(noticeIntent) { confirm ->
                 if (confirm.resultCode == 1) {
                     LocationUtils.checkBackgroundLocationPermission(instance) { result ->
                         if (result) {
@@ -828,13 +826,13 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
         }
     }
 
-    val shape = RoundedCornerShape(StringUtils.scaledSize(25, instance).dp)
+    val shape = RoundedCornerShape(25.scaledSize(instance).dp)
     val haptic = LocalHapticFeedback.current
     AdvanceButton(
         modifier = Modifier
             .padding(20.dp, 0.dp)
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .heightIn(min = StringUtils.scaledSize(50, instance).sp.dp)
+            .width(220.scaledSize(instance).dp)
+            .heightIn(min = 50.scaledSize(instance).sp.dp)
             .composed {
                 when (anyTileUses) {
                     TileUseState.PRIMARY -> this.border(2.sp.dp, Color(0x5437FF00), shape)
@@ -867,8 +865,8 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                 Box (
                     modifier = Modifier
                         .padding(5.dp, 5.dp)
-                        .width(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
-                        .height(StringUtils.scaledSize(30, instance).sp.clamp(max = 30.dp).dp)
+                        .width(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
+                        .height(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
                         .clip(CircleShape)
                         .background(if (state == FavouriteRouteState.USED_SELF) Color(0xFF3D3D3D) else Color(0xFF131313))
                         .align(Alignment.Top),
@@ -877,7 +875,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
-                        fontSize = StringUtils.scaledSize(17F, instance).sp,
+                        fontSize = 17F.scaledSize(instance).sp,
                         color = when (state) {
                             FavouriteRouteState.NOT_USED -> Color(0xFFFFFFFF)
                             FavouriteRouteState.USED_OTHER -> Color(0xFF4E4E00)
@@ -894,7 +892,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                                 .fillMaxWidth(),
                             textAlign = TextAlign.Start,
                             color = Color(0xFFB9B9B9),
-                            fontSize = StringUtils.scaledSize(14F, instance).sp,
+                            fontSize = 14F.scaledSize(instance).sp,
                             text = if (Shared.language == "en") "No Route Stop Selected" else "未有設置路線巴士站"
                         )
                     }
@@ -940,7 +938,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                                     .fillMaxWidth(),
                                 textAlign = TextAlign.Start,
                                 color = color.adjustBrightness(0.3F),
-                                fontSize = StringUtils.scaledSize(14F, instance).sp,
+                                fontSize = 14F.scaledSize(instance).sp,
                                 fontWeight = FontWeight.Bold,
                                 text = "$coDisplay $routeNumberDisplay"
                             )
@@ -951,7 +949,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                                 textAlign = TextAlign.Start,
                                 fontWeight = FontWeight.Normal,
                                 color = Color(0xFFFFFFFF).adjustBrightness(0.3F),
-                                fontSize = StringUtils.scaledSize(14F, instance).sp,
+                                fontSize = 14F.scaledSize(instance).sp,
                                 text = stopName
                             )
                         }
@@ -964,7 +962,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                                 .fillMaxWidth(),
                             textAlign = TextAlign.Start,
                             color = if (isClosestStopMode) Color(0xFFFFE496) else Color(0xFFFFFFFF),
-                            fontSize = StringUtils.scaledSize(14F, instance).sp,
+                            fontSize = 14F.scaledSize(instance).sp,
                             text = if (isClosestStopMode) {
                                 if (Shared.language == "en") "Selected as Any Closes Stop on This Route" else "已設置為本路線最近的任何巴士站"
                             } else {

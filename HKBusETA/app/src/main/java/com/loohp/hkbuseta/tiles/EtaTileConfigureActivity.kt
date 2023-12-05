@@ -66,7 +66,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -100,11 +99,11 @@ import com.loohp.hkbuseta.objects.withEn
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.dpToPixels
+import com.loohp.hkbuseta.utils.scaledSize
 
 
 enum class SelectMode(val selected: Boolean) {
@@ -158,11 +157,11 @@ fun SelectElements(tileId: Int, instance: EtaTileConfigureActivity) {
             state = state
         ) {
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(20, instance).dp))
+                Spacer(modifier = Modifier.size(20.scaledSize(instance).dp))
             }
             item {
                 SelectTitle(instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                Spacer(modifier = Modifier.size(5.scaledSize(instance).dp))
                 SelectDescription(instance)
             }
             stickyHeader {
@@ -170,28 +169,28 @@ fun SelectElements(tileId: Int, instance: EtaTileConfigureActivity) {
                     modifier = Modifier.background(Brush.verticalGradient(
                         0F to Color(0xFF000000),
                         1F to Color(0x00000000),
-                        startY = UnitUtils.dpToPixels(instance, StringUtils.scaledSize(45, instance))
+                        startY = 45.scaledSize(instance).dpToPixels(instance)
                     ))
                 ) {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                     ConfirmButton(tileId, selectStates, instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 }
             }
             items(maxFavItems) {
                 if (Shared.favoriteRouteStops[it + 1] != null) {
                     SelectButton(it + 1, selectStates, instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 }
             }
             if (Shared.favoriteRouteStops.isEmpty()) {
                 item {
                     NoFavText(instance)
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 }
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
+                Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
             }
         }
     }
@@ -208,7 +207,7 @@ fun ConfirmButton(tileId: Int, selectStates: SnapshotStateList<Int>, instance: E
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .fillMaxWidth(0.8F)
-            .height(StringUtils.scaledSize(35, instance).dp),
+            .height(35.scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = if (enabled) Color(0xFF62FF00) else Color(0xFF444444)
@@ -219,7 +218,7 @@ fun ConfirmButton(tileId: Int, selectStates: SnapshotStateList<Int>, instance: E
                 modifier = Modifier.fillMaxWidth(0.9F),
                 textAlign = TextAlign.Center,
                 color = if (enabled) Color(0xFF62FF00) else Color(0xFF444444),
-                fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
                 text = if (Shared.language == "en") "Confirm Selection" else "確認選擇"
             )
         }
@@ -234,7 +233,7 @@ fun SelectTitle(instance: EtaTileConfigureActivity) {
             .padding(20.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp),
+        fontSize = 17F.scaledSize(instance).sp.clamp(max = 17.dp),
         text = if (Shared.language == "en") "Select Routes" else "請選擇路線"
     )
 }
@@ -247,7 +246,7 @@ fun SelectDescription(instance: EtaTileConfigureActivity) {
             .padding(30.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(11F, instance).sp.clamp(max = 11.dp),
+        fontSize = 11F.scaledSize(instance).sp.clamp(max = 11.dp),
         text = if (Shared.language == "en") "Selected Favourite Routes will display in the Tile" else "所選最喜愛路線將顯示在資訊方塊中"
     )
     Text(
@@ -256,7 +255,7 @@ fun SelectDescription(instance: EtaTileConfigureActivity) {
             .padding(30.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(11F, instance).sp.clamp(max = 11.dp),
+        fontSize = 11F.scaledSize(instance).sp.clamp(max = 11.dp),
         text = if (Shared.language == "en") "Multiple routes may be selected if their respective stop is close by" else "可選多條巴士站相近的路線"
     )
 }
@@ -269,7 +268,7 @@ fun NoFavText(instance: EtaTileConfigureActivity) {
             .padding(20.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp),
+        fontSize = 17F.scaledSize(instance).sp.clamp(max = 17.dp),
         text = if (Shared.language == "en") "No favourite routes" else "沒有最喜愛路線"
     )
 }
@@ -344,8 +343,8 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                 Box (
                     modifier = Modifier
                         .padding(5.dp, 5.dp)
-                        .width(StringUtils.scaledSize(35, instance).sp.clamp(max = 35.dp).dp)
-                        .height(StringUtils.scaledSize(35, instance).sp.clamp(max = 35.dp).dp)
+                        .width(35.scaledSize(instance).sp.clamp(max = 35.dp).dp)
+                        .height(35.scaledSize(instance).sp.clamp(max = 35.dp).dp)
                         .clip(CircleShape)
                         .background(if (enabled) Color(0xFF3D3D3D) else Color(0xFF131313))
                         .drawWithContent {
@@ -376,7 +375,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                     when (selectState) {
                         SelectMode.PRIMARY, SelectMode.SECONDARY -> {
                             Icon(
-                                modifier = Modifier.size(StringUtils.scaledSize(21, instance).dp),
+                                modifier = Modifier.size(21.scaledSize(instance).dp),
                                 imageVector = Icons.Filled.Check,
                                 tint = (if (selectState == SelectMode.PRIMARY) Color(0xFF4CFF00) else Color(0xFFFF8400)).adjustBrightness(if (enabled) 1.0F else 0.5F),
                                 contentDescription = if (Shared.language == "en") "Selected" else ""
@@ -386,7 +385,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                             Text(
                                 modifier = Modifier.fillMaxWidth(),
                                 textAlign = TextAlign.Center,
-                                fontSize = StringUtils.scaledSize(17F, instance).sp,
+                                fontSize = 17F.scaledSize(instance).sp,
                                 color = (if (favouriteStopRoute != null) Color(0xFFFFFF00) else Color(0xFF444444)).adjustBrightness(if (enabled) 1.0F else 0.5F),
                                 text = favoriteIndex.toString()
                             )
@@ -399,7 +398,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
                         color = Color(0xFF505050),
-                        fontSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = 16.dp),
+                        fontSize = 16F.scaledSize(instance).sp.clamp(max = 16.dp),
                         text = if (Shared.language == "en") "No Route Selected" else "未有設置路線"
                     )
                 } else {
@@ -449,7 +448,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                     Column (
                         modifier = Modifier
                             .heightIn(
-                                min = StringUtils.scaledSize(60, instance).sp.clamp(max = 60.dp).dp
+                                min = 60.scaledSize(instance).sp.clamp(max = 60.dp).dp
                             ),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -460,7 +459,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                             textAlign = TextAlign.Start,
                             color = color.adjustBrightness(if (enabled) 1.0F else 0.5F),
                             fontWeight = FontWeight.Bold,
-                            fontSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = 16.dp),
+                            fontSize = 16F.scaledSize(instance).sp.clamp(max = 16.dp),
                             maxLines = 1,
                             text = mainText
                         )
@@ -471,7 +470,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                             textAlign = TextAlign.Start,
                             color = MaterialTheme.colors.primary.adjustBrightness(if (enabled) 1.0F else 0.5F),
                             fontWeight = FontWeight.Normal,
-                            fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                            fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
                             maxLines = 1,
                             text = routeText
                         )
@@ -483,7 +482,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                             textAlign = TextAlign.Start,
                             fontWeight = FontWeight.Normal,
                             color = MaterialTheme.colors.primary.adjustBrightness(if (enabled) 1.0F else 0.5F),
-                            fontSize = StringUtils.scaledSize(11F, instance).sp.clamp(max = 11.dp),
+                            fontSize = 11F.scaledSize(instance).sp.clamp(max = 11.dp),
                             maxLines = 1,
                             text = subText
                         )

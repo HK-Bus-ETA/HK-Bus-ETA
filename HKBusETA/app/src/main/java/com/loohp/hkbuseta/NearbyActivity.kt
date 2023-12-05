@@ -50,12 +50,12 @@ import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
-import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.utils.scaledSize
+import com.loohp.hkbuseta.utils.toJSONArray
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
@@ -134,7 +134,7 @@ fun WaitingText(usingGps: Boolean, instance: NearbyActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(17F, instance).sp,
+        fontSize = 17F.scaledSize(instance).sp,
         text = if (usingGps) {
             if (Shared.language == "en") "Locating..." else "正在讀取你的位置..."
         } else {
@@ -150,16 +150,16 @@ fun FailedText(instance: NearbyActivity) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(17F, instance).sp,
+        fontSize = 17F.scaledSize(instance).sp,
         text = if (Shared.language == "en") "Unable to read your location" else "無法讀取你的位置"
     )
-    Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+    Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
     Text(
         modifier = Modifier
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(14F, instance).sp,
+        fontSize = 14F.scaledSize(instance).sp,
         text = if (Shared.language == "en") "Please check whether your GPS is enabled" else "請檢查你的定位服務是否已開啟"
     )
 }
@@ -171,16 +171,16 @@ fun NoNearbyText(closestStop: Stop, distance: Double, instance: NearbyActivity) 
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(17F, instance).sp,
+        fontSize = 17F.scaledSize(instance).sp,
         text = if (Shared.language == "en") "There are no nearby bus stops" else "附近沒有巴士站"
     )
-    Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+    Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
     Text(
         modifier = Modifier
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(12.5F, instance).sp,
+        fontSize = 12.5F.scaledSize(instance).sp,
         text = if (Shared.language == "en")
             "Nearest Stop: ".plus(closestStop.name.en).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("m)")
         else
@@ -218,11 +218,11 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
                 NoNearbyText(result.closestStop, result.closestDistance, instance)
             } else {
                 val intent = Intent(instance, ListRoutesActivity::class.java)
-                intent.putExtra("result", JsonUtils.fromStream(list.stream().map { it.strip(); it.serialize() }).toString())
+                intent.putExtra("result", list.stream().map { it.strip(); it.serialize() }.toJSONArray().toString())
                 intent.putExtra("showEta", true)
                 intent.putExtra("recentSort", RecentSortMode.CHOICE.ordinal)
                 intent.putExtra("proximitySortOrigin", doubleArrayOf(result.lat, result.lng))
-                intent.putExtra("listType", RouteListType.NEARBY.name())
+                intent.putExtra("listType", RouteListType.NEARBY.name)
                 instance.startActivity(intent)
                 instance.finish()
             }

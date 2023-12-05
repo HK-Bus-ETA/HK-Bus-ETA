@@ -65,7 +65,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
@@ -103,25 +102,23 @@ import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.isTrain
-import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.ActivityUtils
 import com.loohp.hkbuseta.utils.MutableHolder
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
-import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.sameValueAs
+import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
-import com.loohp.hkbuseta.utils.toByteArray
+import com.loohp.hkbuseta.utils.startActivity
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -234,7 +231,7 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
         intent.putExtra("lat", stop.location.lat)
         intent.putExtra("lng", stop.location.lng)
         intent.putExtra("exclude", arrayListOf(route.routeNumber))
-        ActivityUtils.startActivity(instance, intent) { _ ->
+        instance.startActivity(intent) {
             scope.launch {
                 swipe.snapTo(false)
             }
@@ -249,7 +246,7 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
 
     val stopList = remember { Registry.getInstance(instance).getAllStops(
         route.routeNumber,
-        if (co == Operator.NLB) route.nlbId else route.bound[co],
+        if (co == Operator.NLB) route.nlbId else route.bound[co]!!,
         co,
         route.gmbRegion
     ).toImmutableList() }
@@ -350,18 +347,18 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
                     }
                 }
 
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+                Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
                 Title(ambientMode, index, stop.name, lat, lng, routeNumber, co, instance)
                 SubTitle(ambientMode, Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), lat, lng, routeNumber, co, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(9, instance).dp))
+                Spacer(modifier = Modifier.size(9.scaledSize(instance).dp))
                 EtaText(ambientMode, eta, 1, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
+                Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
                 EtaText(ambientMode, eta, 2, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
+                Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
                 EtaText(ambientMode, eta, 3, instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(3, instance).dp))
+                Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
                 if (ambientMode) {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(24, instance).dp))
+                    Spacer(modifier = Modifier.size(24.scaledSize(instance).dp))
                 } else {
                     ActionBar(stopId, co, index, stop, route, stopList, instance)
                 }
@@ -402,8 +399,8 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
                 launchOtherStop(1, co, stopList, true, -1, instance)
             },
             modifier = Modifier
-                .width(StringUtils.scaledSize(24, instance).dp)
-                .height(StringUtils.scaledSize(24, instance).dp),
+                .width(24.scaledSize(instance).dp)
+                .height(24.scaledSize(instance).dp),
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = MaterialTheme.colors.secondary,
                 contentColor = if (index > 1) Color(0xFFFFFFFF) else Color(0xFF494949)
@@ -411,14 +408,14 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
             enabled = index > 1,
             content = {
                 Icon(
-                    modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
+                    modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 16F.scaledSize(instance).dp).dp),
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = if (Shared.language == "en") "Previous Stop" else "上一站",
                     tint = if (index > 1) Color(0xFFFFFFFF) else Color(0xFF494949),
                 )
             }
         )
-        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
         AdvanceButton(
             onClick = {
                 val intent = Intent(instance, EtaMenuActivity::class.java)
@@ -430,8 +427,8 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
                 instance.startActivity(intent)
             },
             modifier = Modifier
-                .width(StringUtils.scaledSize(55, instance).dp)
-                .height(StringUtils.scaledSize(24, instance).dp),
+                .width(55.scaledSize(instance).dp)
+                .height(24.scaledSize(instance).dp),
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = MaterialTheme.colors.secondary,
                 contentColor = MaterialTheme.colors.primary
@@ -441,12 +438,12 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(12F, instance).sp.clamp(max = 12.dp),
+                    fontSize = 12F.scaledSize(instance).sp.clamp(max = 12.dp),
                     text = if (Shared.language == "en") "More" else "更多"
                 )
             }
         )
-        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
         AdvanceButton(
             onClick = {
                 launchOtherStop(index + 1, co, stopList, true, 1, instance)
@@ -456,8 +453,8 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
                 launchOtherStop(stopList.size, co, stopList, true, 1, instance)
             },
             modifier = Modifier
-                .width(StringUtils.scaledSize(24, instance).dp)
-                .height(StringUtils.scaledSize(24, instance).dp),
+                .width(24.scaledSize(instance).dp)
+                .height(24.scaledSize(instance).dp),
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = MaterialTheme.colors.secondary,
                 contentColor = if (index < stopList.size) Color(0xFFFFFFFF) else Color(0xFF494949)
@@ -465,7 +462,7 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
             enabled = index < stopList.size,
             content = {
                 Icon(
-                    modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp).dp),
+                    modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 16F.scaledSize(instance).dp).dp),
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = if (Shared.language == "en") "Next Stop" else "下一站",
                     tint = if (index < stopList.size) Color(0xFFFFFFFF) else Color(0xFF494949),
@@ -522,8 +519,8 @@ fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double
         maxLines = 2,
         fontWeight = FontWeight.Bold,
         fontSizeRange = FontSizeRange(
-            min = StringUtils.scaledSize(1F, instance).dp.sp,
-            max = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
+            min = 1F.scaledSize(instance).dp.sp,
+            max = 17F.scaledSize(instance).sp.clamp(max = 17F.scaledSize(instance).dp)
         )
     )
 }
@@ -546,8 +543,8 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
         text = name,
         maxLines = 1,
         fontSizeRange = FontSizeRange(
-            min = StringUtils.scaledSize(1F, instance).dp.sp,
-            max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(11F, instance).dp)
+            min = 1F.scaledSize(instance).dp.sp,
+            max = 11F.scaledSize(instance).sp.clamp(max = 11F.scaledSize(instance).dp)
         )
     )
 }
@@ -556,7 +553,7 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: EtaActivity) {
-    val textSize = StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(16F, instance).dp)
+    val textSize = 16F.scaledSize(instance).sp.clamp(max = 16F.scaledSize(instance).dp)
     Box (
         modifier = Modifier
             .fillMaxWidth()

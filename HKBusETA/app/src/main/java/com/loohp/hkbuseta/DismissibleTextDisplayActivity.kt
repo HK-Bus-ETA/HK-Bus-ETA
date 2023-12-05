@@ -50,7 +50,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
@@ -72,8 +71,8 @@ import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.withEn
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -171,24 +170,24 @@ fun TextElement(text: BilingualText, dismissText: BilingualText, instance: Dismi
                 .focusable(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(50, instance).dp))
+            Spacer(modifier = Modifier.size(50.scaledSize(instance).dp))
             AnnotatedText(
                 modifier = Modifier.fillMaxWidth(0.8F),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
                 fontWeight = FontWeight.Normal,
-                fontSize = StringUtils.scaledSize(15F, instance).sp,
+                fontSize = 15F.scaledSize(instance).sp,
                 text = text[Shared.language].toSpanned(instance).asAnnotatedString()
             )
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(20, instance).dp))
+            Spacer(modifier = Modifier.size(20.scaledSize(instance).dp))
             Button(
                 onClick = {
                     instance.setResult(1)
                     instance.finish()
                 },
                 modifier = Modifier
-                    .width(StringUtils.scaledSize(90, instance).dp)
-                    .height(StringUtils.scaledSize(35, instance).dp),
+                    .width(90.scaledSize(instance).dp)
+                    .height(35.scaledSize(instance).dp),
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = MaterialTheme.colors.secondary,
                     contentColor = MaterialTheme.colors.primary
@@ -198,12 +197,12 @@ fun TextElement(text: BilingualText, dismissText: BilingualText, instance: Dismi
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colors.primary,
-                        fontSize = StringUtils.scaledSize(17F, instance).sp,
+                        fontSize = 17F.scaledSize(instance).sp,
                         text = dismissText[Shared.language]
                     )
                 }
             )
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(50, instance).dp))
+            Spacer(modifier = Modifier.size(50.scaledSize(instance).dp))
         }
     }
 }

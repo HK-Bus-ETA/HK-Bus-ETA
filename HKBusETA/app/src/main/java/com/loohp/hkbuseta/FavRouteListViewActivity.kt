@@ -59,18 +59,19 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.objects.Coordinates
 import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.objects.StopInfo
 import com.loohp.hkbuseta.objects.getRouteKey
 import com.loohp.hkbuseta.objects.resolveStop
 import com.loohp.hkbuseta.objects.uniqueKey
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.JsonUtils
 import com.loohp.hkbuseta.utils.LocationUtils
-import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.distinctBy
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.utils.scaledSize
+import com.loohp.hkbuseta.utils.toJSONArray
 import kotlinx.coroutines.delay
 import java.util.concurrent.ForkJoinPool
 
@@ -151,7 +152,7 @@ fun WaitingElement(state: MutableState<Boolean>, instance: FavRouteListViewActiv
                 .fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
-            fontSize = StringUtils.scaledSize(17F, instance).sp,
+            fontSize = 17F.scaledSize(instance).sp,
             text = if (Shared.language == "en") "Locating..." else "正在讀取你的位置..."
         )
         Button(
@@ -160,9 +161,9 @@ fun WaitingElement(state: MutableState<Boolean>, instance: FavRouteListViewActiv
             },
             modifier = Modifier
                 .padding(20.dp, 0.dp)
-                .offset(0.dp, StringUtils.scaledSize(27F, instance).sp.dp + 10.dp)
+                .offset(0.dp, 27F.scaledSize(instance).sp.dp + 10.dp)
                 .fillMaxWidth()
-                .height(StringUtils.scaledSize(35, instance).dp)
+                .height(35.scaledSize(instance).dp)
                 .alpha(animatedAlpha),
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = MaterialTheme.colors.secondary,
@@ -174,7 +175,7 @@ fun WaitingElement(state: MutableState<Boolean>, instance: FavRouteListViewActiv
                     modifier = Modifier.fillMaxWidth(0.9F),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
                     text = if (Shared.language == "en") "Skip sort by distance" else "略過按距離排序"
                 )
             }
@@ -209,23 +210,24 @@ fun MainElement(usingGps: Boolean, instance: FavRouteListViewActivity) {
 fun EvaluatedElement(state: MutableState<Boolean>, origin: Coordinates?, location: Coordinates?, instance: FavRouteListViewActivity) {
     if (state.value) {
         val intent = Intent(instance, ListRoutesActivity::class.java)
-        intent.putExtra("result", JsonUtils.fromStream(Shared.favoriteRouteStops.entries.stream()
+        intent.putExtra("result", Shared.favoriteRouteStops.entries.stream()
             .sorted(Comparator.comparing { e -> e.key })
             .map { entry ->
                 val fav = entry.value
                 val (_, stopId, stop, route) = fav.resolveStop(instance) { origin }
-                val routeEntry = RouteSearchResultEntry(route.getRouteKey(instance), route, fav.co, RouteSearchResultEntry.StopInfo(stopId, stop, 0.0, fav.co), null, false)
+                val routeEntry = RouteSearchResultEntry(route.getRouteKey(instance)!!, route, fav.co, StopInfo(stopId, stop, 0.0, fav.co), null, false)
                 routeEntry.strip()
                 routeEntry
             }
             .distinctBy { routeEntry -> routeEntry.uniqueKey }
             .map { routeEntry -> routeEntry.serialize() }
-        ).toString())
+            .toJSONArray().toString()
+        )
         intent.putExtra("showEta", true)
         if (location != null) {
             intent.putExtra("proximitySortOrigin", doubleArrayOf(location.lat, location.lng))
         }
-        intent.putExtra("listType", RouteListType.FAVOURITE.name())
+        intent.putExtra("listType", RouteListType.FAVOURITE.name)
         intent.putExtra("allowAmbient", true)
         instance.startActivity(intent)
         instance.finish()

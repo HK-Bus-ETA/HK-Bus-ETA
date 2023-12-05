@@ -68,7 +68,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -94,10 +93,10 @@ import com.loohp.hkbuseta.shared.Registry.PossibleNextCharResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
-import com.loohp.hkbuseta.utils.JsonUtils
-import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.utils.scaledSize
+import com.loohp.hkbuseta.utils.toJSONArray
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Job
@@ -179,13 +178,13 @@ fun MainElement(instance: SearchActivity) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+        Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
         Box(
             modifier = Modifier
-                .width(StringUtils.scaledSize(140, instance).dp)
-                .height(StringUtils.scaledSize(35, instance).dp)
+                .width(140.scaledSize(instance).dp)
+                .height(35.scaledSize(instance).dp)
                 .border(
-                    StringUtils.scaledSize(2, instance).dp,
+                    2.scaledSize(instance).dp,
                     MaterialTheme.colors.secondaryVariant,
                     RoundedCornerShape(10)
                 )
@@ -219,11 +218,11 @@ fun MainElement(instance: SearchActivity) {
                 KeyboardButton(instance, '3', state)
                 KeyboardButton(instance, '/', null, state, Color.Green, persistentListOf(Icons.Outlined.Done.asImmutableState()))
             }
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+            Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
             Box (
                 modifier = Modifier
-                    .width(StringUtils.scaledSize(35, instance).dp)
-                    .height(StringUtils.scaledSize(135, instance).dp)
+                    .width(35.scaledSize(instance).dp)
+                    .height(135.scaledSize(instance).dp)
             ) {
                 val focusRequester = rememberActiveFocusRequester()
                 val scroll = rememberScrollState()
@@ -321,7 +320,7 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
             '!' -> Registry.getInstance(instance).findRoutes("", false) { r -> r.bound.containsKey(Operator.MTR) }
             '<' -> Registry.getInstance(instance).findRoutes("", false) { r, c ->
                 val meta = when (c) {
-                    Operator.GMB -> r.gmbRegion.name
+                    Operator.GMB -> r.gmbRegion!!.name
                     Operator.NLB -> r.nlbId
                     else -> ""
                 }
@@ -329,13 +328,13 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
             }
             else -> Registry.getInstance(instance).findRoutes(originalText, true)
         }
-        if (result != null && result.isNotEmpty()) {
+        if (result.isNotEmpty()) {
             val intent = Intent(instance, ListRoutesActivity::class.java)
-            intent.putExtra("result", JsonUtils.fromCollection(result.map { it.strip(); it.serialize() }).toString())
+            intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJSONArray().toString())
             if (input == '<') {
                 intent.putExtra("recentSort", RecentSortMode.FORCED.ordinal)
             }
-            intent.putExtra("listType", RouteListType.RECENT.name())
+            intent.putExtra("listType", RouteListType.RECENT.name)
             instance.startActivity(intent)
         }
     } else {
@@ -365,7 +364,7 @@ fun KeyboardButton(instance: SearchActivity, content: Char, state: MutableState<
 fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, state: MutableState<RouteKeyboardState>, color: Color, icons: ImmutableList<ImmutableState<Any>>) {
     val icon = if (icons.isEmpty()) null else icons[0].value
     val enabled = when (content) {
-        '/' -> state.value.nextCharResult.hasExactMatch()
+        '/' -> state.value.nextCharResult.hasExactMatch
         '<' -> true
         '!' -> true
         else -> state.value.nextCharResult.characters.contains(content)
@@ -390,8 +389,8 @@ fun KeyboardButton(instance: SearchActivity, content: Char, longContent: Char?, 
             }
         },
         modifier = Modifier
-            .width(StringUtils.scaledSize(35, instance).dp)
-            .height(StringUtils.scaledSize(if (content.isLetter() || content == '!') 30 else 35, instance).dp),
+            .width(35.scaledSize(instance).dp)
+            .height((if (content.isLetter() || content == '!') 30 else 35).scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = Color.Transparent,
             contentColor = actualColor

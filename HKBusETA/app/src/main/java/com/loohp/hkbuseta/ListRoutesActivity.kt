@@ -110,11 +110,8 @@ import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
-import com.loohp.hkbuseta.objects.RouteSearchResultEntry.StopInfo
 import com.loohp.hkbuseta.objects.RouteSortMode
-import com.loohp.hkbuseta.objects.component1
-import com.loohp.hkbuseta.objects.component2
-import com.loohp.hkbuseta.objects.firstLine
+import com.loohp.hkbuseta.objects.StopInfo
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.resolvedDest
@@ -125,21 +122,21 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.DistanceUtils
 import com.loohp.hkbuseta.utils.ImmutableState
-import com.loohp.hkbuseta.utils.JsonUtils
-import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.findTextLengthDp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.utils.mapToList
 import com.loohp.hkbuseta.utils.px
+import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.set
-import com.loohp.hkbuseta.utils.toByteArray
+import com.loohp.hkbuseta.utils.spToDp
+import com.loohp.hkbuseta.utils.spToPixels
 import com.loohp.hkbuseta.utils.toHexString
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
@@ -166,9 +163,9 @@ enum class RecentSortMode(val enabled: Boolean, val defaultSortMode: RouteSortMo
 
 @Stable
 class StopIndexedRouteSearchResultEntry(
-    routeKey: String?,
+    routeKey: String,
     route: Route?,
-    co: Operator?,
+    co: Operator,
     stopInfo: StopInfo?,
     var stopInfoIndex: Int,
     origin: Coordinates?,
@@ -179,10 +176,10 @@ class StopIndexedRouteSearchResultEntry(
 
         fun deserialize(json: JSONObject): StopIndexedRouteSearchResultEntry {
             val routeKey = json.optString("routeKey");
-            val route = if (json.has("route")) Route.deserialize(json.optJSONObject("route")) else null
+            val route = if (json.has("route")) Route.deserialize(json.optJSONObject("route")!!) else null
             val co = Operator.valueOf(json.optString("co"));
-            val stop = if (json.has("stop")) StopInfo.deserialize(json.optJSONObject("stop")) else null
-            val origin = if (json.has("origin")) Coordinates.deserialize(json.optJSONObject("origin")) else null
+            val stop = if (json.has("stop")) StopInfo.deserialize(json.optJSONObject("stop")!!) else null
+            val origin = if (json.has("origin")) Coordinates.deserialize(json.optJSONObject("origin")!!) else null
             val isInterchangeSearch = json.optBoolean("isInterchangeSearch")
             return StopIndexedRouteSearchResultEntry(routeKey, route, co, stop, 0, origin, isInterchangeSearch)
         }
@@ -203,7 +200,7 @@ class ListRoutesActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
-        val result = JsonUtils.mapToList(JSONArray(intent.extras!!.getString("result")!!)) { StopIndexedRouteSearchResultEntry.deserialize(it as JSONObject) }.also { list ->
+        val result = JSONArray(intent.extras!!.getString("result")!!).mapToList { StopIndexedRouteSearchResultEntry.deserialize(it as JSONObject) }.also { list ->
             list.removeIf {
                 if (it.route == null) {
                     val route = Registry.getInstance(this).findRouteByKey(it.routeKey, null)
@@ -213,27 +210,27 @@ class ListRoutesActivity : ComponentActivity() {
                         it.route = route
                     }
                 }
-                if (it.stopInfo != null && it.stopInfo.data == null) {
-                    val stop = Registry.getInstance(this).getStopById(it.stopInfo.stopId)
+                if (it.stopInfo != null && it.stopInfo!!.data == null) {
+                    val stop = Registry.getInstance(this).getStopById(it.stopInfo!!.stopId)
                     if (stop == null) {
                         return@removeIf true
                     } else {
-                        it.stopInfo.data = stop
+                        it.stopInfo!!.data = stop
                     }
                 }
                 return@removeIf false
             }
         }.onEach {
             val route: Route? = it.route
-            val co: Operator? = it.co
+            val co: Operator = it.co
             val stopInfo: StopInfo? = it.stopInfo
-            if (route != null && co != null && stopInfo != null) {
-                it.stopInfoIndex = Registry.getInstance(this).getAllStops(route.routeNumber, route.bound[co], co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
+            if (route != null && stopInfo != null) {
+                it.stopInfoIndex = Registry.getInstance(this).getAllStops(route.routeNumber, route.bound[co]!!, co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
             }
         }.toImmutableList()
         val listType = intent.extras!!.getString("listType")?.let { RouteListType.valueOf(it) }?: RouteListType.NORMAL
         val showEta = intent.extras!!.getBoolean("showEta", false)
-        val recentSort = RecentSortMode.values()[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
+        val recentSort = RecentSortMode.entries[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
         val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")?.toCoordinates()
         val allowAmbient = intent.extras!!.getBoolean("allowAmbient", false)
 
@@ -298,14 +295,14 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
         val ambientMode = rememberIsInAmbientMode(ambientStateUpdate)
         val haptic = LocalHapticFeedback.current
 
-        val padding by remember { derivedStateOf { StringUtils.scaledSize(7.5F, instance) } }
-        val etaTextWidth by remember { derivedStateOf { if (showEta) StringUtils.findTextLengthDp(instance, "99", clampSp(instance, StringUtils.scaledSize(16F, instance), dpMax = 19F)) + 1F else 0F } }
+        val padding by remember { derivedStateOf { 7.5F.scaledSize(instance) } }
+        val etaTextWidth by remember { derivedStateOf { if (showEta) "99".findTextLengthDp(instance, 16F.scaledSize(instance).clampSp(instance, dpMax = 19F)) + 1F else 0F } }
 
-        val defaultTextWidth by remember { derivedStateOf { StringUtils.findTextLengthDp(instance, "N373", clampSp(instance, StringUtils.scaledSize(20F, instance), dpMax = StringUtils.scaledSize(23F, instance))) + 1F } }
-        val mtrTextWidth by remember { derivedStateOf { StringUtils.findTextLengthDp(instance, "機場快綫", clampSp(instance, StringUtils.scaledSize(16F, instance), dpMax = StringUtils.scaledSize(19F, instance))) + 1F } }
+        val defaultTextWidth by remember { derivedStateOf { "N373".findTextLengthDp(instance, 20F.scaledSize(instance).clampSp(instance, dpMax = 23F.scaledSize(instance))) + 1F } }
+        val mtrTextWidth by remember { derivedStateOf { "機場快綫".findTextLengthDp(instance, 16F.scaledSize(instance).clampSp(instance, dpMax = 19F.scaledSize(instance))) + 1F } }
 
-        val bottomOffset by remember { derivedStateOf { -UnitUtils.spToDp(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(7F, instance))) / 2.7F } }
-        val mtrBottomOffset by remember { derivedStateOf { -UnitUtils.spToDp(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(7F, instance))) / 10.7F } }
+        val bottomOffset by remember { derivedStateOf { -7F.scaledSize(instance).clampSp(instance, dpMax = 7F.scaledSize(instance)).spToDp(instance) / 2.7F } }
+        val mtrBottomOffset by remember { derivedStateOf { -7F.scaledSize(instance).clampSp(instance, dpMax = 7F.scaledSize(instance)).spToDp(instance) / 10.7F } }
 
         val etaUpdateTimes = remember { ConcurrentHashMap<String, Long>().asImmutableState() }
         val etaResults = remember { ConcurrentHashMap<String, ETAQueryResult>().asImmutableState() }
@@ -325,31 +322,31 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                 map[RouteSortMode.RECENT] = result.sortedBy {
                     val co = it.co
                     val meta = when (co) {
-                        Operator.GMB -> it.route.gmbRegion.name
-                        Operator.NLB -> it.route.nlbId
+                        Operator.GMB -> it.route!!.gmbRegion!!.name
+                        Operator.NLB -> it.route!!.nlbId
                         else -> ""
                     }
-                    Shared.getFavoriteAndLookupRouteIndex(it.route.routeNumber, co, meta)
+                    Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
                 }
             }
             if (proximitySortOrigin != null) {
                 if (recentSort.enabled) {
                     map[RouteSortMode.PROXIMITY] = result.sortedWith(compareBy({
-                        val location = it.stopInfo.data.location
-                        DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
+                        val location = it.stopInfo!!.data!!.location
+                        proximitySortOrigin.distance(location)
                     }, {
                         val co = it.co
                         val meta = when (co) {
-                            Operator.GMB -> it.route.gmbRegion.name
-                            Operator.NLB -> it.route.nlbId
+                            Operator.GMB -> it.route!!.gmbRegion!!.name
+                            Operator.NLB -> it.route!!.nlbId
                             else -> ""
                         }
-                        Shared.getFavoriteAndLookupRouteIndex(it.route.routeNumber, co, meta)
+                        Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
                     }))
                 } else {
                     map[RouteSortMode.PROXIMITY] = result.sortedBy {
-                        val location = it.stopInfo.data.location
-                        DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
+                        val location = it.stopInfo!!.data!!.location
+                        proximitySortOrigin.distance(location)
                     }
                 }
             }
@@ -404,7 +401,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
             ) {
                 item {
                     if (ambientMode) {
-                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
+                        Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
                     } else if (recentSort == RecentSortMode.FORCED) {
                         Button(
                             onClick = {
@@ -413,15 +410,15 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                             },
                             modifier = Modifier
                                 .padding(20.dp, 15.dp, 20.dp, 0.dp)
-                                .width(StringUtils.scaledSize(35, instance).dp)
-                                .height(StringUtils.scaledSize(35, instance).dp),
+                                .width(35.scaledSize(instance).dp)
+                                .height(35.scaledSize(instance).dp),
                             colors = ButtonDefaults.buttonColors(
                                 backgroundColor = MaterialTheme.colors.secondary,
                                 contentColor = Color(0xFFFF0000)
                             ),
                             content = {
                                 Icon(
-                                    modifier = Modifier.size(StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp).dp),
+                                    modifier = Modifier.size(17F.scaledSize(instance).sp.clamp(max = 17.dp).dp),
                                     imageVector = Icons.Outlined.Delete,
                                     contentDescription = if (Shared.language == "en") "Clear" else "清除",
                                     tint = Color(0xFFFF0000),
@@ -439,7 +436,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                             modifier = Modifier
                                 .padding(20.dp, 15.dp, 20.dp, 0.dp)
                                 .fillMaxWidth(0.8F)
-                                .height(StringUtils.scaledSize(35, instance).dp),
+                                .height(35.scaledSize(instance).dp),
                             colors = ButtonDefaults.buttonColors(
                                 backgroundColor = MaterialTheme.colors.secondary,
                                 contentColor = Color(0xFFFFFFFF)
@@ -449,7 +446,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                                     modifier = Modifier.fillMaxWidth(0.9F),
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colors.primary,
-                                    fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
                                     text = when (activeSortMode) {
                                         RouteSortMode.PROXIMITY -> if (Shared.language == "en") "Sort: Proximity" else "排序: 巴士站距離"
                                         RouteSortMode.RECENT -> if (Shared.language == "en") "Sort: Fav/Recent" else "排序: 喜歡/最近瀏覽"
@@ -459,7 +456,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                             }
                         )
                     } else {
-                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(35, instance).dp))
+                        Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
                     }
                 }
                 items(
@@ -467,26 +464,26 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                     key = { route -> route.uniqueKey }
                 ) { route ->
                     val co = route.co
-                    val kmbCtbJoint = route.route.isKmbCtbJoint
+                    val kmbCtbJoint = route.route!!.isKmbCtbJoint
                     val routeNumber = if (co == Operator.MTR && Shared.language != "en") {
-                        Shared.getMtrLineName(route.route.routeNumber)
+                        Shared.getMtrLineName(route.route!!.routeNumber)
                     } else {
-                        route.route.routeNumber
+                        route.route!!.routeNumber
                     }
                     val routeTextWidth = if (Shared.language != "en" && co == Operator.MTR) mtrTextWidth else defaultTextWidth
-                    val rawColor = co.getColor(route.route.routeNumber, Color.White)
-                    val dest = route.route.resolvedDest(true)[Shared.language]
+                    val rawColor = co.getColor(route.route!!.routeNumber, Color.White)
+                    val dest = route.route!!.resolvedDest(true)[Shared.language]
 
                     val secondLine: MutableList<String> = ArrayList()
                     if (route.stopInfo != null) {
-                        val stop = route.stopInfo.data
-                        secondLine.add(if (Shared.language == "en") stop.name.en else stop.name.zh)
+                        val stop = route.stopInfo!!.data
+                        secondLine.add(if (Shared.language == "en") stop!!.name.en else stop!!.name.zh)
                     }
                     if (co == Operator.NLB) {
                         secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
-                            "From ".plus(route.route.orig.en)
+                            "From ".plus(route.route!!.orig.en)
                         } else {
-                            "從".plus(route.route.orig.zh).plus("開出")
+                            "從".plus(route.route!!.orig.zh).plus("開出")
                         }).plus("</span>"))
                     } else if (co == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
                         secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
@@ -503,11 +500,11 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                             .combinedClickable(
                                 onClick = {
                                     val meta = when (co) {
-                                        Operator.GMB -> route.route.gmbRegion.name
-                                        Operator.NLB -> route.route.nlbId
+                                        Operator.GMB -> route.route!!.gmbRegion!!.name
+                                        Operator.NLB -> route.route!!.nlbId
                                         else -> ""
                                     }
-                                    Registry.getInstance(instance).addLastLookupRoute(route.route.routeNumber, co, meta, instance)
+                                    Registry.getInstance(instance).addLastLookupRoute(route.route!!.routeNumber, co, meta, instance)
                                     val intent = Intent(instance, ListStopsActivity::class.java)
                                     intent.putExtra("route", route.toByteArray())
                                     instance.startActivity(intent)
@@ -517,8 +514,8 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(route.co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)).plus(")")
                                         if (proximitySortOrigin != null && route.stopInfo != null) {
-                                            val location = route.stopInfo.data.location
-                                            val distance = DistanceUtils.findDistance(proximitySortOrigin.lat, proximitySortOrigin.lng, location.lat, location.lng)
+                                            val location = route.stopInfo!!.data!!.location
+                                            val distance =proximitySortOrigin.distance(location)
                                             text = text.plus(" - ").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
                                         }
                                         Toast.makeText(instance, text, Toast.LENGTH_LONG).show()
@@ -538,7 +535,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                     )
                 }
                 item {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
+                    Spacer(modifier = Modifier.size(40.scaledSize(instance).dp))
                 }
             }
             if (ambientMode) {
@@ -546,12 +543,12 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
-                        .height(StringUtils.scaledSize(35, instance).dp)
+                        .height(35.scaledSize(instance).dp)
                         .background(
                             Brush.verticalGradient(
                                 0F to Color(0xFF000000),
                                 1F to Color(0x00000000),
-                                startY = UnitUtils.spToPixels(instance, StringUtils.scaledSize(23, instance))
+                                startY = 23.scaledSize(instance).spToPixels(instance)
                             )
                         )
                 )
@@ -602,9 +599,9 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
                 .let { if (secondLine.isEmpty()) it.alignByBaseline() else it },
             textAlign = TextAlign.Start,
             fontSize = if (co == Operator.MTR && Shared.language != "en") {
-                StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(19F, instance).dp)
+                16F.scaledSize(instance).sp.clamp(max = 19F.scaledSize(instance).dp)
             } else {
-                StringUtils.scaledSize(20F, instance).sp.clamp(max = StringUtils.scaledSize(23F, instance).dp)
+                20F.scaledSize(instance).sp.clamp(max = 23F.scaledSize(instance).dp)
             },
             color = color,
             maxLines = 1,
@@ -612,9 +609,9 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
         )
         if (secondLine.isEmpty()) {
             val fontSize = if (co == Operator.MTR && Shared.language != "en") {
-                StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
+                14F.scaledSize(instance).sp.clamp(max = 17F.scaledSize(instance).dp)
             } else {
-                StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp)
+                15F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp)
             }
             Text(
                 modifier = Modifier
@@ -630,11 +627,11 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
                 text = dest
             )
         } else {
-            val extraHeightPadding = (padding - UnitUtils.spToDp(instance, if (co == Operator.MTR && Shared.language != "en") {
-                clampSp(instance, StringUtils.scaledSize(4.5F, instance), dpMax = 6F)
+            val extraHeightPadding = (padding - if (co == Operator.MTR && Shared.language != "en") {
+                4.5F.scaledSize(instance).clampSp(instance, dpMax = 6F)
             } else {
-                clampSp(instance, StringUtils.scaledSize(5F, instance), dpMax = 6.5F)
-            })).coerceAtLeast(0F)
+                5F.scaledSize(instance).clampSp(instance, dpMax = 6.5F)
+            }.spToDp(instance)).coerceAtLeast(0F)
             Column (
                 modifier = Modifier
                     .padding(0.dp, extraHeightPadding.dp)
@@ -644,9 +641,9 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
                     modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE),
                     textAlign = TextAlign.Start,
                     fontSize = if (co == Operator.MTR && Shared.language != "en") {
-                        StringUtils.scaledSize(14F, instance).sp.clamp(max = StringUtils.scaledSize(17F, instance).dp)
+                        14F.scaledSize(instance).sp.clamp(max = 17F.scaledSize(instance).dp)
                     } else {
-                        StringUtils.scaledSize(15F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp)
+                        15F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp)
                     },
                     color = color,
                     maxLines = 1,
@@ -673,9 +670,9 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
                             .basicMarquee(iterations = Int.MAX_VALUE),
                         textAlign = TextAlign.Start,
                         fontSize = if (co == Operator.MTR && Shared.language != "en") {
-                            StringUtils.scaledSize(9F, instance).sp.clamp(max = StringUtils.scaledSize(12F, instance).dp)
+                            9F.scaledSize(instance).sp.clamp(max = 12F.scaledSize(instance).dp)
                         } else {
-                            StringUtils.scaledSize(10F, instance).sp.clamp(max = StringUtils.scaledSize(13F, instance).dp)
+                            10F.scaledSize(instance).sp.clamp(max = 13F.scaledSize(instance).dp)
                         },
                         color = Color(0xFFFFFFFF).adjustBrightness(0.75F),
                         maxLines = 1,
@@ -707,7 +704,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
             delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, key) {
-            val result = Registry.getInstance(instance).getEta(route.stopInfo.stopId, route.stopInfoIndex, route.co, route.route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            val result = Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
             etaStateFlow.value = result
             etaUpdateTimes.value[key] = System.currentTimeMillis()
             etaResults.value[key] = result
@@ -732,8 +729,8 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
                 if (eta.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, -StringUtils.scaledSize(2.5F, instance).sp.clamp(max = StringUtils.scaledSize(3.5F, instance).dp).dp),
+                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp)
+                            .offset(0.dp, -2.5F.scaledSize(instance).sp.clamp(max = 3.5F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -742,16 +739,16 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
                     val typhoonInfo by remember { Registry.getInstance(instance).cachedTyphoonDataState }.collectAsStateWithLifecycle()
                     Image(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, -StringUtils.scaledSize(2.5F, instance).sp.clamp(max = StringUtils.scaledSize(3.5F, instance).dp).dp),
+                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp)
+                            .offset(0.dp, -2.5F.scaledSize(instance).sp.clamp(max = 3.5F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = typhoonInfo.typhoonWarningTitle
                     )
                 } else {
                     Icon(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp)
-                            .offset(0.dp, -StringUtils.scaledSize(2.5F, instance).sp.clamp(max = StringUtils.scaledSize(3.5F, instance).dp).dp),
+                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp)
+                            .offset(0.dp, -2.5F.scaledSize(instance).sp.clamp(max = 3.5F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),
@@ -760,15 +757,15 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
             } else {
                 val (text1, text2) = eta.firstLine.shortText
                 val span1 = SpannableString(text1)
-                val size1 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(14F, instance), dpMax = StringUtils.scaledSize(15F, instance))).roundToInt()
+                val size1 = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).spToPixels(instance).roundToInt()
                 span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
                 val span2 = SpannableString(text2)
-                val size2 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(8F, instance))).roundToInt()
+                val size2 = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).spToPixels(instance).roundToInt()
                 span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
                 AnnotatedText(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .offset(0.dp, StringUtils.scaledSize(1F, instance).sp.clamp(max = StringUtils.scaledSize(2F, instance).dp).dp),
+                        .offset(0.dp, 1F.scaledSize(instance).sp.clamp(max = 2F.scaledSize(instance).dp).dp),
                     textAlign = TextAlign.End,
                     fontSize = 14F.sp.clamp(max = 15.dp),
                     color = Color(0xFFAAC3D5),

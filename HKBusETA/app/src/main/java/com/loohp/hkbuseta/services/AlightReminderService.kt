@@ -46,15 +46,12 @@ import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.objects.asStop
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
-import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
-import com.loohp.hkbuseta.utils.DistanceUtils
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.getOr
-import com.loohp.hkbuseta.utils.toByteArray
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONObject
@@ -165,7 +162,7 @@ class AlightReminderService : Service() {
             val location = currentLocation.location
             currentValue.allStops.withIndex().minBy {
                 val stop = it.value.stop
-                DistanceUtils.findDistance(stop.location.lat, stop.location.lng, location.lat, location.lng)
+                stop.location.distance(location)
             }.index + 1
         } else {
             -1
@@ -189,7 +186,7 @@ class AlightReminderService : Service() {
         val newOperator = intent?.extras?.getString("co")?.let { Operator.valueOf(it) }
         val newIndex = intent?.extras?.getInt("index")
         if (newStop != null && newRoute != null && newOperator != null && newIndex != null) {
-            val allStops = Registry.getInstance(this).getAllStops(newRoute.routeNumber, newRoute.bound[newOperator], newOperator, newRoute.gmbRegion)
+            val allStops = Registry.getInstance(this).getAllStops(newRoute.routeNumber, newRoute.bound[newOperator]!!, newOperator, newRoute.gmbRegion)
             updateCurrentValue(AlightReminderData(true, newStop, newIndex, newRoute, newOperator, allStops))
             Firebase.analytics.logEvent("alight_reminder", Bundle().apply {
                 putString("value", "${newRoute.routeNumber},${newOperator.name},${newRoute.bound[newOperator]},${newRoute.stops[newOperator]?.get(newIndex)?: "???"}")
@@ -218,7 +215,7 @@ class AlightReminderService : Service() {
                 if (currentValue?.active == true) {
                     val currentLocation = LocationUtils.getGPSLocation(this).getOr(10, TimeUnit.SECONDS) { currentValue.currentLocation }!!
                     if (currentLocation.isSuccess) {
-                        val distance = DistanceUtils.findDistance(currentValue.targetStop.location.lat, currentValue.targetStop.location.lng, currentLocation.location.lat, currentLocation.location.lng)
+                        val distance = currentValue.targetStop.location.distance(currentLocation.location)
                         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
                         val (notification, same, overshot, isTargetStopClosest) = buildData(currentLocation, distance, false)
                         val arrived = (distance <= 0.3 && isTargetStopClosest) || overshot

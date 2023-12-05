@@ -56,7 +56,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -76,7 +75,7 @@ import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.StringUtils
+import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -118,7 +117,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     .padding(20.dp, 0.dp),
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
-                fontSize = StringUtils.scaledSize(if (zh == null) 14F else 16F, instance).dp.sp,
+                fontSize = (if (zh == null) 14F else 16F).scaledSize(instance).dp.sp,
                 color = MaterialTheme.colors.primary,
                 text = zh ?: "發生錯誤"
             )
@@ -128,7 +127,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     .padding(20.dp, 0.dp),
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
-                fontSize = StringUtils.scaledSize(if (en == null) 14F else 16F, instance).dp.sp,
+                fontSize = (if (en == null) 14F else 16F).scaledSize(instance).dp.sp,
                 color = MaterialTheme.colors.primary,
                 text = en ?: "Fatal Error Occurred"
             )
@@ -138,7 +137,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                         .fillMaxWidth()
                         .padding(20.dp, 0.dp),
                     textAlign = TextAlign.Center,
-                    fontSize = StringUtils.scaledSize(10F, instance).dp.sp,
+                    fontSize = 10F.scaledSize(instance).dp.sp,
                     color = MaterialTheme.colors.primary,
                     text = "巴士路線資料可能不完整\n點選重新載入刷新"
                 )
@@ -147,7 +146,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                         .fillMaxWidth()
                         .padding(20.dp, 0.dp),
                     textAlign = TextAlign.Center,
-                    fontSize = StringUtils.scaledSize(10F, instance).dp.sp,
+                    fontSize = 10F.scaledSize(instance).dp.sp,
                     color = MaterialTheme.colors.primary,
                     text = "Bus route data might be corrupted\nClick reload to refresh"
                 )
@@ -175,7 +174,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     scrollMoved = true
                 }
 
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+                Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
                 Text(
                     modifier = Modifier
                         .fillMaxWidth(0.95F)
@@ -207,7 +206,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     text = exception
                 )
             }
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+            Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth(),
@@ -215,8 +214,8 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
             ) {
                 Button(
                     modifier = Modifier
-                        .width(StringUtils.scaledSize(50, instance).dp)
-                        .height(StringUtils.scaledSize(50, instance).dp),
+                        .width(50.scaledSize(instance).dp)
+                        .height(50.scaledSize(instance).dp),
                     onClick = {
                         Shared.invalidateCache(instance)
                         val intent = Intent(instance, MainActivity::class.java)
@@ -230,18 +229,18 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     ),
                     content = {
                         Icon(
-                            modifier = Modifier.size(StringUtils.scaledSize(35F, instance).dp),
+                            modifier = Modifier.size(35F.scaledSize(instance).dp),
                             imageVector = Icons.Filled.Refresh,
                             contentDescription = if (Shared.language == "en") "Relaunch App" else "重新載入",
                             tint = Color.Yellow,
                         )
                     }
                 )
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(25, instance).dp))
+                Spacer(modifier = Modifier.size(25.scaledSize(instance).dp))
                 Button(
                     modifier = Modifier
-                        .width(StringUtils.scaledSize(50, instance).dp)
-                        .height(StringUtils.scaledSize(50, instance).dp),
+                        .width(50.scaledSize(instance).dp)
+                        .height(50.scaledSize(instance).dp),
                     onClick = {
                         Shared.invalidateCache(instance)
                         instance.finishAffinity()
@@ -252,7 +251,7 @@ fun Message(instance: FatalErrorActivity, zh: String?, en: String?, exception: S
                     ),
                     content = {
                         Icon(
-                            modifier = Modifier.size(StringUtils.scaledSize(35F, instance).dp),
+                            modifier = Modifier.size(35F.scaledSize(instance).dp),
                             imageVector = Icons.Filled.Close,
                             contentDescription = if (Shared.language == "en") "Exit App" else "退出應用程式",
                             tint = Color.Red,

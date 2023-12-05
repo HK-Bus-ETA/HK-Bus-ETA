@@ -107,14 +107,10 @@ import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
-import com.loohp.hkbuseta.objects.component1
-import com.loohp.hkbuseta.objects.component2
-import com.loohp.hkbuseta.objects.firstLine
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.isTrain
-import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.objects.resolveStop
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
@@ -124,14 +120,13 @@ import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
-import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.ifFalse
-import com.loohp.hkbuseta.utils.toByteArray
+import com.loohp.hkbuseta.utils.scaledSize
+import com.loohp.hkbuseta.utils.spToPixels
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -225,7 +220,7 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
         LaunchedEffect (Unit) {
             if (scrollToIndex > 0) {
                 scope.launch {
-                    state.scrollToItem(scrollToIndex.coerceIn(1, maxFavItems.coerceAtLeast(1)) + 2, (-ScreenSizeUtils.getScreenHeight(instance) / 2) + UnitUtils.spToPixels(instance, StringUtils.scaledSize(35F, instance)).roundToInt())
+                    state.scrollToItem(scrollToIndex.coerceIn(1, maxFavItems.coerceAtLeast(1)) + 2, (-ScreenSizeUtils.getScreenHeight(instance) / 2) + 35F.scaledSize(instance).spToPixels(instance).roundToInt())
                 }
             }
             if (Shared.favoriteRouteStops.values.any { it.favouriteStopMode.isRequiresLocation }) {
@@ -256,16 +251,16 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
             state = state
         ) {
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(20, instance).dp))
+                Spacer(modifier = Modifier.size(20.scaledSize(instance).dp))
             }
             item {
                 FavTitle(instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                Spacer(modifier = Modifier.size(5.scaledSize(instance).dp))
                 FavDescription(instance)
             }
             if (showRouteListViewButton) {
                 item {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                    Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                     RouteListViewButton(instance)
                 }
             } else {
@@ -274,11 +269,11 @@ fun FavElements(scrollToIndex: Int, instance: FavActivity, schedule: (Boolean, I
                 }
             }
             items(maxFavItems) {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 FavButton(it + 1, etaResults, etaUpdateTimes, origin, instance, schedule)
             }
             item {
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(45, instance).dp))
+                Spacer(modifier = Modifier.size(45.scaledSize(instance).dp))
             }
         }
     }
@@ -292,7 +287,7 @@ fun FavTitle(instance: FavActivity) {
             .padding(20.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(17F, instance).sp.clamp(max = 17.dp),
+        fontSize = 17F.scaledSize(instance).sp.clamp(max = 17.dp),
         text = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"
     )
 }
@@ -305,7 +300,7 @@ fun FavDescription(instance: FavActivity) {
             .padding(30.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = StringUtils.scaledSize(11F, instance).sp.clamp(max = 11.dp),
+        fontSize = 11F.scaledSize(instance).sp.clamp(max = 11.dp),
         text = if (Shared.language == "en") "Routes can be displayed in Tiles" else "路線可在資訊方塊中顯示"
     )
 }
@@ -323,7 +318,7 @@ fun RouteListViewButton(instance: FavActivity) {
         modifier = Modifier
             .padding(20.dp, 0.dp)
             .fillMaxWidth(0.8F)
-            .height(StringUtils.scaledSize(35, instance).dp),
+            .height(35.scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = Color(0xFFFFFFFF)
@@ -333,7 +328,7 @@ fun RouteListViewButton(instance: FavActivity) {
                 modifier = Modifier.fillMaxWidth(0.9F),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
                 text = if (Shared.language == "en") "Route List View" else "路線一覽列表"
             )
         }
@@ -401,7 +396,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     val co = favStopRoute.co
 
                     Registry.getInstance(instance).findRoutes(route.routeNumber, true) { it ->
-                        val bound = it.bound
+                    val bound = it.bound
                         if (!bound.containsKey(co) || bound[co] != route.bound[co]) {
                             return@findRoutes false
                         }
@@ -463,8 +458,8 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                 Box (
                     modifier = Modifier
                         .padding(5.dp, 5.dp)
-                        .width(StringUtils.scaledSize(35, instance).sp.clamp(max = 35.dp).dp)
-                        .height(StringUtils.scaledSize(35, instance).sp.clamp(max = 35.dp).dp)
+                        .width(35.scaledSize(instance).sp.clamp(max = 35.dp).dp)
+                        .height(35.scaledSize(instance).sp.clamp(max = 35.dp).dp)
                         .clip(CircleShape)
                         .background(if (favouriteStopRoute != null) Color(0xFF3D3D3D) else Color(0xFF131313))
                         .drawWithContent {
@@ -487,7 +482,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                 ) {
                     if (deleteState) {
                         Icon(
-                            modifier = Modifier.size(StringUtils.scaledSize(21, instance).dp),
+                            modifier = Modifier.size(21.scaledSize(instance).dp),
                             imageVector = Icons.Filled.Clear,
                             tint = Color(0xFFFF0000),
                             contentDescription = if (Shared.language == "en") "Clear Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "清除資訊方塊最喜愛路線預計到達時間".plus(favoriteIndex)
@@ -496,7 +491,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         Text(
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
-                            fontSize = StringUtils.scaledSize(17F, instance).sp,
+                            fontSize = 17F.scaledSize(instance).sp,
                             color = if (favouriteStopRoute != null) Color(0xFFFFFF00) else Color(0xFF444444),
                             text = favoriteIndex.toString()
                         )
@@ -508,7 +503,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
                         color = Color(0xFF505050),
-                        fontSize = StringUtils.scaledSize(16F, instance).sp,
+                        fontSize = 16F.scaledSize(instance).sp,
                         text = if (Shared.language == "en") "No Route Selected" else "未有設置路線"
                     )
                 } else {
@@ -551,7 +546,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     Column (
                         modifier = Modifier
                             .heightIn(
-                                min = StringUtils.scaledSize(60, instance).sp.dp
+                                min = 60.scaledSize(instance).sp.dp
                             ),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -562,7 +557,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             textAlign = TextAlign.Start,
                             color = color,
                             fontWeight = FontWeight.Bold,
-                            fontSize = StringUtils.scaledSize(16F, instance).sp,
+                            fontSize = 16F.scaledSize(instance).sp,
                             maxLines = 1,
                             text = mainText
                         )
@@ -573,7 +568,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             textAlign = TextAlign.Start,
                             color = MaterialTheme.colors.primary,
                             fontWeight = FontWeight.Normal,
-                            fontSize = StringUtils.scaledSize(14F, instance).sp,
+                            fontSize = 14F.scaledSize(instance).sp,
                             maxLines = 1,
                             text = routeText
                         )
@@ -585,7 +580,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             textAlign = TextAlign.Start,
                             fontWeight = FontWeight.Normal,
                             color = MaterialTheme.colors.primary,
-                            fontSize = StringUtils.scaledSize(11F, instance).sp,
+                            fontSize = 11F.scaledSize(instance).sp,
                             maxLines = 1,
                             text = subText.toSpanned(instance).asAnnotatedString()
                         )
@@ -637,7 +632,7 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
                 if (eta.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -645,13 +640,13 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
                 } else if (eta.isTyphoonSchedule) {
                     val typhoonInfo by remember { Registry.getInstance(instance).cachedTyphoonDataState }.collectAsStateWithLifecycle()
                     Image(
-                        modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                        modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = typhoonInfo.typhoonWarningTitle
                     )
                 } else {
                     Icon(
-                        modifier = Modifier.size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                        modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),
@@ -660,10 +655,10 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
             } else {
                 val (text1, text2) = eta.firstLine.shortText
                 val span1 = SpannableString(text1)
-                val size1 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(14F, instance), dpMax = StringUtils.scaledSize(15F, instance))).roundToInt()
+                val size1 = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).spToPixels(instance).roundToInt()
                 span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
                 val span2 = SpannableString(text2)
-                val size2 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(8F, instance))).roundToInt()
+                val size2 = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).spToPixels(instance).roundToInt()
                 span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
                 AnnotatedText(
                     modifier = Modifier.fillMaxWidth(),

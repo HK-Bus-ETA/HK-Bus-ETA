@@ -49,7 +49,6 @@ import java.io.StringWriter
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.Consumer
 
 
 enum class TileUseState {
@@ -249,9 +248,9 @@ class Shared {
 
         private val etaTileConfigurations: Map<Int, List<Int>> = ConcurrentHashMap()
 
-        fun updateEtaTileConfigurations(mutation: Consumer<Map<Int, List<Int>>>) {
+        fun updateEtaTileConfigurations(mutation: (MutableMap<Int, List<Int>>) -> Unit) {
             synchronized(etaTileConfigurations) {
-                mutation.accept(etaTileConfigurations)
+                mutation.invoke(etaTileConfigurations as MutableMap<Int, List<Int>>)
             }
         }
 
@@ -271,9 +270,9 @@ class Shared {
             }
         }
 
-        fun updateFavoriteRouteStops(mutation: Consumer<Map<Int, FavouriteRouteStop>>) {
+        fun updateFavoriteRouteStops(mutation: (MutableMap<Int, FavouriteRouteStop>) -> Unit) {
             synchronized(favoriteRouteStops) {
-                mutation.accept(favoriteRouteStops)
+                mutation.invoke(favoriteRouteStops as MutableMap<Int, FavouriteRouteStop>)
                 val max = favoriteRouteStops.maxOfOrNull { it.key }?: 0
                 currentMaxFavouriteRouteStop.value = max.coerceAtLeast(8)
                 suggestedMaxFavouriteRouteStop.value = (max + 1).coerceIn(8, 30)

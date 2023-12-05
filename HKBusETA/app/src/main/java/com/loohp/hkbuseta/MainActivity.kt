@@ -68,15 +68,13 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.gmbRegion
-import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.JsonUtils
-import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.clamp
-import com.loohp.hkbuseta.utils.toByteArray
+import com.loohp.hkbuseta.utils.scaledSize
+import com.loohp.hkbuseta.utils.toJSONArray
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
@@ -173,7 +171,7 @@ class MainActivity : ComponentActivity() {
                                 if (queryKey != null) {
                                     val routeNumber = Pattern.compile("^([0-9a-zA-Z]+)").matcher(queryKey).let { if (it.find()) it.group(1) else null }
                                     val nearestRoute = Registry.getInstance(this@MainActivity).findRouteByKey(queryKey, routeNumber)
-                                    queryRouteNumber = nearestRoute.routeNumber
+                                    queryRouteNumber = nearestRoute!!.routeNumber
                                     queryCo = if (nearestRoute.isKmbCtbJoint) Operator.KMB else nearestRoute.co[0]
                                     queryBound = if (queryCo == Operator.NLB) nearestRoute.nlbId else nearestRoute.bound[queryCo]
                                     queryGMBRegion = nearestRoute.gmbRegion
@@ -181,21 +179,21 @@ class MainActivity : ComponentActivity() {
 
                                 startActivity(Intent(this@MainActivity, TitleActivity::class.java))
 
-                                val result = Registry.getInstance(this@MainActivity).findRoutes(queryRouteNumber, true)
-                                if (result != null && result.isNotEmpty()) {
+                                val result = Registry.getInstance(this@MainActivity).findRoutes(queryRouteNumber?: "", true)
+                                if (result.isNotEmpty()) {
                                     var filteredResult = result.stream().filter {
                                         return@filter when (queryCo) {
-                                            Operator.NLB -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route.nlbId == queryBound)
+                                            Operator.NLB -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route!!.nlbId == queryBound)
                                             Operator.GMB -> {
-                                                val r = it.route
+                                                val r = it.route!!
                                                 (queryCo == null || it.co == queryCo) && (queryBound == null || r.bound[queryCo] == queryBound) && r.gmbRegion == queryGMBRegion
                                             }
-                                            else -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route.bound[queryCo] == queryBound)
+                                            else -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route!!.bound[queryCo] == queryBound)
                                         }
                                     }.collect(Collectors.toList())
                                     if (queryDest != null) {
                                         val destFiltered = filteredResult.stream().filter {
-                                            val dest = it.route.dest
+                                            val dest = it.route!!.dest
                                             return@filter queryDest == dest.zh || queryDest == dest.en
                                         }.collect(Collectors.toList())
                                         if (destFiltered.isNotEmpty()) {
@@ -204,25 +202,25 @@ class MainActivity : ComponentActivity() {
                                     }
                                     if (filteredResult.isEmpty()) {
                                         val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                        intent.putExtra("result", JsonUtils.fromStream(result.stream().map {
+                                        intent.putExtra("result", result.stream().map {
                                             val clone = it.deepClone()
                                             clone.strip()
                                             clone.serialize()
-                                        }).toString())
+                                        }.toJSONArray().toString())
                                         startActivity(intent)
                                     } else {
                                         val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                        intent.putExtra("result", JsonUtils.fromStream(filteredResult.stream().map {
+                                        intent.putExtra("result", filteredResult.stream().map {
                                             val clone = it.deepClone()
                                             clone.strip()
                                             clone.serialize()
-                                        }).toString())
+                                        }.toJSONArray().toString())
                                         startActivity(intent)
 
                                         val it = filteredResult[0]
                                         val meta = when (it.co) {
-                                            Operator.GMB -> it.route.gmbRegion.name
-                                            Operator.NLB -> it.route.nlbId
+                                            Operator.GMB -> it.route!!.gmbRegion!!.name
+                                            Operator.NLB -> it.route!!.nlbId
                                             else -> ""
                                         }
                                         Registry.getInstance(this@MainActivity).addLastLookupRoute(queryRouteNumber, it.co, meta, this@MainActivity)
@@ -234,7 +232,7 @@ class MainActivity : ComponentActivity() {
                                             startActivity(intent2)
 
                                             if (queryStopDirectLaunch) {
-                                                val stops = Registry.getInstance(this@MainActivity).getAllStops(queryRouteNumber, queryBound, queryCo, queryGMBRegion)
+                                                val stops = Registry.getInstance(this@MainActivity).getAllStops(queryRouteNumber!!, queryBound!!, queryCo!!, queryGMBRegion)
                                                 stops.withIndex().filter { it.value.stopId == queryStop }.minByOrNull { (queryStopIndex - it.index).absoluteValue }?.let { r ->
                                                     val (i, stopData) = r
                                                     val intent3 = Intent(this@MainActivity, EtaActivity::class.java)
@@ -242,7 +240,7 @@ class MainActivity : ComponentActivity() {
                                                     intent3.putExtra("co", it.co.name)
                                                     intent3.putExtra("index", i + 1)
                                                     intent3.putExtra("stop", stopData.stop.toByteArray())
-                                                    intent3.putExtra("route", it.route.toByteArray())
+                                                    intent3.putExtra("route", it.route!!.toByteArray())
                                                     startActivity(intent3)
                                                 }
                                             }
@@ -341,34 +339,34 @@ fun UpdatingElements(instance: MainActivity) {
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
-            fontSize = StringUtils.scaledSize(17F, instance).sp,
+            fontSize = 17F.scaledSize(instance).sp,
             text = "更新數據中..."
         )
-        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
         Text(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
-            fontSize = StringUtils.scaledSize(14F, instance).sp,
+            fontSize = 14F.scaledSize(instance).sp,
             text = "更新需時 請稍等"
         )
-        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
         Text(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
-            fontSize = StringUtils.scaledSize(17F, instance).sp,
+            fontSize = 17F.scaledSize(instance).sp,
             text = "Updating..."
         )
-        Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+        Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
         Text(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
-            fontSize = StringUtils.scaledSize(14F, instance).sp,
+            fontSize = 14F.scaledSize(instance).sp,
             text = "Might take a moment"
         )
-        Spacer(modifier = Modifier.size(StringUtils.scaledSize(10, instance).dp))
+        Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
         LinearProgressIndicator(
             modifier = Modifier
                 .fillMaxWidth()
@@ -399,7 +397,7 @@ fun LoadingElements(instance: MainActivity) {
             ) {
                 Image(
                     modifier = Modifier
-                        .size(StringUtils.scaledSize(50, instance).dp)
+                        .size(50.scaledSize(instance).dp)
                         .align(Alignment.Center),
                     painter = painterResource(R.mipmap.icon_full_smaller),
                     contentDescription = instance.resources.getString(R.string.app_name)
@@ -410,15 +408,15 @@ fun LoadingElements(instance: MainActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = StringUtils.scaledSize(17F, instance).sp,
+                fontSize = 17F.scaledSize(instance).sp,
                 text = "載入中..."
             )
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(2, instance).dp))
+            Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
             Text(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = StringUtils.scaledSize(17F, instance).sp,
+                fontSize = 17F.scaledSize(instance).sp,
                 text = "Loading..."
             )
         }
@@ -456,8 +454,8 @@ fun SkipChecksumButton(instance: MainActivity) {
         },
         modifier = Modifier
             .padding(20.dp, 0.dp)
-            .width(StringUtils.scaledSize(55, instance).dp)
-            .height(StringUtils.scaledSize(35, instance).dp)
+            .width(55.scaledSize(instance).dp)
+            .height(35.scaledSize(instance).dp)
             .alpha(animatedAlpha),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
@@ -469,7 +467,7 @@ fun SkipChecksumButton(instance: MainActivity) {
                 modifier = Modifier.fillMaxWidth(0.9F),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = StringUtils.scaledSize(14F, instance).sp.clamp(max = 14.dp),
+                fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
                 text = if (Shared.language == "en") "Skip" else "略過"
             )
         }

@@ -71,9 +71,9 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
-import com.loohp.hkbuseta.utils.StringUtils
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.utils.scaledSize
 
 
 @Stable
@@ -122,20 +122,20 @@ fun HKBusETAApp(instance: TitleActivity) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(25, instance).dp))
+            Spacer(modifier = Modifier.size(25.scaledSize(instance).dp))
             SearchButton(instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+            Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
             NearbyButton(instance)
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+            Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
             Row (
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 LanguageButton(instance)
-                Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+                Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
                 FavButton(instance)
             }
-            Spacer(modifier = Modifier.size(StringUtils.scaledSize(7, instance).dp))
+            Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
             CreditVersionText(instance)
         }
     }
@@ -151,8 +151,8 @@ fun SearchButton(instance: TitleActivity) {
             instance.startActivity(Intent(instance, SearchActivity::class.java))
         },
         modifier = Modifier
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(45, instance).dp),
+            .width(220.scaledSize(instance).dp)
+            .height(45.scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
@@ -169,7 +169,7 @@ fun SearchButton(instance: TitleActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = StringUtils.scaledSize(17F, instance).sp,
+                fontSize = 17F.scaledSize(instance).sp,
                 text = if (Shared.language == "en") "Input Route" else "輸入巴士路線"
             )
         }
@@ -194,8 +194,8 @@ fun NearbyButton(instance: TitleActivity) {
             }
         },
         modifier = Modifier
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(45, instance).dp),
+            .width(220.scaledSize(instance).dp)
+            .height(45.scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
@@ -212,7 +212,7 @@ fun NearbyButton(instance: TitleActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = StringUtils.scaledSize(17F, instance).sp,
+                fontSize = 17F.scaledSize(instance).sp,
                 text = if (Shared.language == "en") "Search Nearby" else "附近巴士路線"
             )
         }
@@ -232,8 +232,8 @@ fun LanguageButton(instance: TitleActivity) {
             instance.finish()
         },
         modifier = Modifier
-            .width(StringUtils.scaledSize(90, instance).dp)
-            .height(StringUtils.scaledSize(35, instance).dp),
+            .width(90.scaledSize(instance).dp)
+            .height(35.scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
@@ -243,7 +243,7 @@ fun LanguageButton(instance: TitleActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
-                fontSize = StringUtils.scaledSize(17F, instance).sp,
+                fontSize = 17F.scaledSize(instance).sp,
                 text = if (Shared.language == "en") "中文" else "English"
             )
         }
@@ -274,15 +274,15 @@ fun FavButton(instance: TitleActivity) {
             }
         },
         modifier = Modifier
-            .width(StringUtils.scaledSize(35, instance).dp)
-            .height(StringUtils.scaledSize(35, instance).dp),
+            .width(35.scaledSize(instance).dp)
+            .height(35.scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = Color(0xFFFFFF00)
         ),
         content = {
             Icon(
-                modifier = Modifier.size(StringUtils.scaledSize(21, instance).sp.dp),
+                modifier = Modifier.size(21.scaledSize(instance).sp.dp),
                 imageVector = Icons.Filled.Star,
                 tint = Color(0xFFFFFF00),
                 contentDescription = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"
@@ -334,7 +334,7 @@ fun CreditVersionText(instance: TitleActivity) {
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(StringUtils.scaledSize(1.5F, instance), TextUnitType.Em),
+        fontSize = TextUnit(1.5F.scaledSize(instance), TextUnitType.Em),
         text = instance.resources.getString(R.string.app_name).plus(" v").plus(packageInfo.versionName).plus(" (").plus(packageInfo.longVersionCode).plus(")\n@LoohpJames")
     )
 }

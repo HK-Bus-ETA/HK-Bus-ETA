@@ -53,7 +53,6 @@ import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.isTrain
-import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.objects.resolveStop
 import com.loohp.hkbuseta.objects.resolveStops
 import com.loohp.hkbuseta.shared.Registry
@@ -62,14 +61,15 @@ import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
-import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clampSp
+import com.loohp.hkbuseta.utils.dpToPixels
+import com.loohp.hkbuseta.utils.findOptimalSp
 import com.loohp.hkbuseta.utils.getAndNegate
 import com.loohp.hkbuseta.utils.getOr
 import com.loohp.hkbuseta.utils.parallelMapNotNull
+import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.timeZone
 import com.loohp.hkbuseta.utils.toSpanned
 import java.math.BigInteger
@@ -104,9 +104,7 @@ data class InlineImageResource(val data: ByteArray, val width: Int, val height: 
 
         if (!data.contentEquals(other.data)) return false
         if (width != other.width) return false
-        if (height != other.height) return false
-
-        return true
+        return height == other.height
     }
 
     override fun hashCode(): Int {
@@ -282,7 +280,7 @@ class EtaTileServiceCommon {
         }
 
         private fun targetWidth(context: Context, padding: Int): Int {
-            return ScreenSizeUtils.getScreenWidth(context) - UnitUtils.dpToPixels(context, padding * 2F).roundToInt()
+            return ScreenSizeUtils.getScreenWidth(context) - (padding * 2F).dpToPixels(context).roundToInt()
         }
 
         private fun noFavouriteRouteStop(tileId: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
@@ -354,7 +352,7 @@ class EtaTileServiceCommon {
                                             .setFontStyle(
                                                 FontStyle.Builder()
                                                     .setSize(
-                                                        DimensionBuilders.sp(StringUtils.scaledSize(25F, context))
+                                                        DimensionBuilders.sp(25F.scaledSize(context))
                                                     )
                                                     .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                                                     .setColor(
@@ -441,7 +439,7 @@ class EtaTileServiceCommon {
                                             .setFontStyle(
                                                 FontStyle.Builder()
                                                     .setSize(
-                                                        DimensionBuilders.sp(StringUtils.scaledSize(15F, context))
+                                                        DimensionBuilders.sp(15F.scaledSize(context))
                                                     ).build()
                                             )
                                             .setText(if (Shared.language == "en") {
@@ -459,7 +457,7 @@ class EtaTileServiceCommon {
                                                 ModifiersBuilders.Modifiers.Builder()
                                                     .setBackground(
                                                         ModifiersBuilders.Background.Builder()
-                                                            .setCorner(ModifiersBuilders.Corner.Builder().setRadius(DimensionBuilders.dp(StringUtils.scaledSize(17.5F, context))).build())
+                                                            .setCorner(ModifiersBuilders.Corner.Builder().setRadius(DimensionBuilders.dp(17.5F.scaledSize(context))).build())
                                                             .setColor(ColorProp.Builder(Color(0xFF1A1A1A).toArgb()).build())
                                                             .build()
                                                     )
@@ -478,8 +476,8 @@ class EtaTileServiceCommon {
                                                     )
                                                     .build()
                                             )
-                                            .setWidth(DimensionBuilders.dp(StringUtils.scaledSize(135F, context)))
-                                            .setHeight(DimensionBuilders.dp(StringUtils.scaledSize(35F, context)))
+                                            .setWidth(DimensionBuilders.dp(135F.scaledSize(context)))
+                                            .setHeight(DimensionBuilders.dp(35F.scaledSize(context)))
                                             .addContent(
                                                 LayoutElementBuilders.Text.Builder()
                                                     .setMaxLines(1)
@@ -491,7 +489,7 @@ class EtaTileServiceCommon {
                                                     .setFontStyle(
                                                         FontStyle.Builder()
                                                             .setSize(
-                                                                DimensionBuilders.sp(StringUtils.scaledSize(17F, context))
+                                                                DimensionBuilders.sp(17F.scaledSize(context))
                                                             )
                                                             .setColor(
                                                                 ColorProp.Builder(Color.Yellow.toArgb()).build()
@@ -527,7 +525,7 @@ class EtaTileServiceCommon {
                     FontStyle.Builder()
                         .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                         .setSize(
-                            DimensionBuilders.sp(clampSp(context, StringUtils.findOptimalSp(context, text, targetWidth(context, 35), 2, 1F, 17F), dpMax = 17F))
+                            DimensionBuilders.sp(text.findOptimalSp(context, targetWidth(context, 35), 2, 1F, 17F).clampSp(context, dpMax = 17F))
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -555,7 +553,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.sp(clampSp(context, StringUtils.findOptimalSp(context, name, targetWidth(context, 35), 1, 1F, 11F), dpMax = 11F))
+                            DimensionBuilders.sp(name.findOptimalSp(context, targetWidth(context, 35), 1, 1F, 11F).clampSp(context, dpMax = 11F))
                         )
                         .setColor(
                             ColorProp.Builder(Color.White.toArgb()).build()
@@ -579,9 +577,9 @@ class EtaTileServiceCommon {
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
             val padding = if (seq == 1) 20 else 35
             val (textSize, maxLines) = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                clampSp(context, StringUtils.findOptimalSp(context, measure, targetWidth(context, padding + 2), 1, 7F, maxTextSize), dpMax = maxTextSize) to if (seq == 1) 2 else 1
+                measure.findOptimalSp(context, targetWidth(context, padding + 2), 1, 7F, maxTextSize).clampSp(context, dpMax = maxTextSize) to if (seq == 1) 2 else 1
             } else {
-                clampSp(context, StringUtils.findOptimalSp(context, measure, targetWidth(context, padding + 2), 1, maxTextSize - (if (Shared.language == "en") 4F else 2F), maxTextSize), dpMax = maxTextSize) to 1
+                measure.findOptimalSp(context, targetWidth(context, padding + 2), 1, maxTextSize - (if (Shared.language == "en") 4F else 2F), maxTextSize).clampSp(context, dpMax = maxTextSize) to 1
             }
             val text = raw.toSpanned(context, textSize).asAnnotatedString()
 
@@ -637,7 +635,7 @@ class EtaTileServiceCommon {
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
-                            DimensionBuilders.sp(clampSp(context, StringUtils.scaledSize(9F, context), dpMax = 9F))
+                            DimensionBuilders.sp(9F.scaledSize(context).clampSp(context, dpMax = 9F))
                         ).build()
                 ).build()
         }
@@ -754,7 +752,7 @@ class EtaTileServiceCommon {
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.dp(StringUtils.scaledSize(16F, context))
+                                            DimensionBuilders.dp(16F.scaledSize(context))
                                         ).build()
                                 ).addContent(
                                     title(index, stopName, routeNumber, co, context)
@@ -765,28 +763,28 @@ class EtaTileServiceCommon {
                                 .addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.dp(StringUtils.scaledSize(12F, context))
+                                            DimensionBuilders.dp(12F.scaledSize(context))
                                         ).build()
                                 ).addContent(
                                     etaText(eta, 1, mainResolvedStop, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
+                                            DimensionBuilders.dp(7F.scaledSize(context))
                                         ).build()
                                 ).addContent(
                                     etaText(eta, 2, mainResolvedStop, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
+                                            DimensionBuilders.dp(7F.scaledSize(context))
                                         ).build()
                                 ).addContent(
                                     etaText(eta, 3, mainResolvedStop, packageName, context)
                                 ).addContent(
                                     LayoutElementBuilders.Spacer.Builder()
                                         .setHeight(
-                                            DimensionBuilders.dp(StringUtils.scaledSize(7F, context))
+                                            DimensionBuilders.dp(7F.scaledSize(context))
                                         ).build()
                                 ).addContent(
                                     lastUpdated(context)

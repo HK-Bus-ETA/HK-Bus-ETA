@@ -24,16 +24,11 @@ import android.content.Context
 import androidx.compose.ui.graphics.Color
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
-import com.loohp.hkbuseta.shared.Registry.ETALineEntry
-import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
-import com.loohp.hkbuseta.shared.Registry.ETAShortText
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.toHexString
 
 
 private val bilingualToPrefix = "往" withEn "To "
-
-inline val Operator.name: String get() = name()
 
 inline val Operator.isTrain: Boolean get() = this == Operator.MTR || this == Operator.LRT
 
@@ -139,22 +134,6 @@ fun BilingualText.prependTo(): BilingualText {
     return bilingualToPrefix + this
 }
 
-operator fun BilingualText.component1(): String {
-    return this.zh
-}
-
-operator fun BilingualText.component2(): String {
-    return this.en
-}
-
-operator fun BilingualText.plus(other: BilingualText): BilingualText {
-    return BilingualText(this.zh + other.zh, this.en + other.en)
-}
-
-operator fun BilingualText.plus(other: String): BilingualText {
-    return BilingualText(this.zh + other, this.en + other)
-}
-
 fun DoubleArray.toCoordinates(): Coordinates {
     return Coordinates.fromArray(this)
 }
@@ -172,30 +151,16 @@ fun String.identifyStopCo(): Operator? {
 }
 
 inline val Stop.remarkedName: BilingualText get() {
-    return if (this.remark == null) this.name else (this.name + "<small> " + this.remark + "</small>")
+    return remark?.let { name + "<small> " + it + "</small>" }?: name
 }
 
 inline val RouteSearchResultEntry.uniqueKey: String get() {
-    return if (stopInfo == null) routeKey else routeKey.plus(":").plus(stopInfo.stopId)
+    return stopInfo?.let { routeKey.plus(":").plus(it.stopId) }?: routeKey
 }
 
 inline val CharSequence.operator: Operator get() = Operator.valueOf(toString())
 
 inline val CharSequence.gmbRegion: GMBRegion? get() = GMBRegion.valueOfOrNull(toString().uppercase())
-
-operator fun ETAQueryResult.get(index: Int): ETALineEntry {
-    return this.getLine(index)
-}
-
-inline val ETAQueryResult.firstLine: ETALineEntry get() = this[1]
-
-operator fun ETAShortText.component1(): String {
-    return this.first
-}
-
-operator fun ETAShortText.component2(): String {
-    return this.second
-}
 
 data class FavouriteResolvedStop(val index: Int, val stopId: String, val stop: Stop, val route: Route)
 
@@ -208,7 +173,7 @@ inline fun FavouriteRouteStop.resolveStop(context: Context, originGetter: () -> 
         return FavouriteResolvedStop(index, stopId, stop, route)
     }
     val origin = originGetter.invoke()?: return FavouriteResolvedStop(index, stopId, stop, route)
-    return Registry.getInstance(context).getAllStops(route.routeNumber, route.bound[co], co, route.gmbRegion)
+    return Registry.getInstance(context).getAllStops(route.routeNumber, route.bound[co]!!, co, route.gmbRegion)
         .withIndex()
         .minBy { it.value.stop.location.distance(origin) }
         .let { FavouriteResolvedStop(it.index + 1, it.value.stopId, it.value.stop, it.value.route) }
@@ -222,7 +187,7 @@ inline fun List<FavouriteRouteStop>.resolveStops(context: Context, originGetter:
         return map { it to FavouriteResolvedStop(it.index, it.stopId, it.stop, it.route) }
     }
     val origin = originGetter.invoke()?: this[0].stop.location
-    val eachAllStop = map { Registry.getInstanceNoUpdateCheck(context).getAllStops(it.route.routeNumber, it.route.bound[it.co], it.co, it.route.gmbRegion) }
+    val eachAllStop = map { Registry.getInstanceNoUpdateCheck(context).getAllStops(it.route.routeNumber, it.route.bound[it.co]!!, it.co, it.route.gmbRegion) }
     val closestStop = eachAllStop.flatten().minBy { it.stop.location.distance(origin) }
     return eachAllStop.withIndex().map { indexed ->
         val (index, allStops) = indexed

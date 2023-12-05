@@ -106,18 +106,15 @@ import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.Coordinates
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.objects.Stop
-import com.loohp.hkbuseta.objects.component1
-import com.loohp.hkbuseta.objects.component2
-import com.loohp.hkbuseta.objects.firstLine
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.getLineColor
 import com.loohp.hkbuseta.objects.isTrain
-import com.loohp.hkbuseta.objects.name
 import com.loohp.hkbuseta.objects.remarkedName
 import com.loohp.hkbuseta.objects.resolvedDest
 import com.loohp.hkbuseta.services.AlightReminderService
@@ -125,15 +122,12 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.DistanceUtils
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.MTRLineSection
 import com.loohp.hkbuseta.utils.MTRLineSectionExtension
 import com.loohp.hkbuseta.utils.MTRStopSectionData
 import com.loohp.hkbuseta.utils.ScreenSizeUtils
-import com.loohp.hkbuseta.utils.StringUtils
-import com.loohp.hkbuseta.utils.UnitUtils
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
@@ -141,10 +135,12 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.eitherContains
+import com.loohp.hkbuseta.utils.findTextLengthDp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
-import com.loohp.hkbuseta.utils.toByteArray
+import com.loohp.hkbuseta.utils.spToPixels
 import com.loohp.hkbuseta.utils.toImmutableList
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
@@ -163,20 +159,20 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 
-data class StopEntry(
+class StopEntry(
     val stopIndex: Int,
     val stopName: String,
     val stopData: StopData,
-    val lat: Double,
-    val lng: Double,
+    lat: Double,
+    lng: Double,
     var distance: Double = Double.MAX_VALUE
-)
+) : Coordinates(lat, lng)
 
-data class OriginData(
-    val lat: Double,
-    val lng: Double,
+class OriginData(
+    lat: Double,
+    lng: Double,
     val onlyInRange: Boolean = false
-)
+) : Coordinates(lat, lng)
 
 @Stable
 class ListStopsActivity : ComponentActivity() {
@@ -254,17 +250,17 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
         val ambientMode = rememberIsInAmbientMode(ambientStateUpdate)
         val haptic = LocalHapticFeedback.current
 
-        val padding by remember { derivedStateOf { StringUtils.scaledSize(7.5F, instance) } }
+        val padding by remember { derivedStateOf { 7.5F.scaledSize(instance) } }
 
-        val kmbCtbJoint = remember { route.route.isKmbCtbJoint }
-        val routeNumber = remember { route.route.routeNumber }
+        val kmbCtbJoint = remember { route.route!!.isKmbCtbJoint }
+        val routeNumber = remember { route.route!!.routeNumber }
         val co = remember { route.co }
-        val bound = remember { if (co == Operator.NLB) route.route.nlbId else route.route.bound[co] }
-        val gmbRegion = remember { route.route.gmbRegion }
+        val bound = remember { if (co == Operator.NLB) route.route!!.nlbId else route.route!!.bound[co]!! }
+        val gmbRegion = remember { route.route!!.gmbRegion }
         val interchangeSearch = remember { route.isInterchangeSearch }
-        val origName = remember { route.route.orig }
-        val destName = remember { route.route.dest }
-        val resolvedDestName = remember { route.route.resolvedDest(true) }
+        val origName = remember { route.route!!.orig }
+        val destName = remember { route.route!!.dest }
+        val resolvedDestName = remember { route.route!!.resolvedDest(true) }
         val specialOrigsDests = remember { Registry.getInstance(instance).getAllOriginsAndDestinations(routeNumber, bound, co, gmbRegion) }
         val specialOrigs = remember { specialOrigsDests.first.stream().filter { !it.zh.eitherContains(origName.zh) }.toImmutableList() }
         val specialDests = remember { specialOrigsDests.second.stream().filter { !it.zh.eitherContains(destName.zh) }.toImmutableList() }
@@ -281,13 +277,13 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
             color = co.getLineColor(routeNumber, Color.White),
             stopList = stopsList,
             mtrStopsInterchange = mtrStopsInterchange,
-            isLrtCircular = route.route.lrtCircular != null,
+            isLrtCircular = route.route!!.lrtCircular != null,
             context = instance
         ) else null }
 
         val distances: MutableMap<Int, Double> = remember { ConcurrentHashMap() }
 
-        val etaTextWidth by remember { derivedStateOf { StringUtils.findTextLengthDp(instance, "99", StringUtils.scaledSize(16F, instance)) + 1F } }
+        val etaTextWidth by remember { derivedStateOf { "99".findTextLengthDp(instance, 16F.scaledSize(instance)) + 1F } }
 
         val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
         val etaResults = remember { ConcurrentHashMap<Int, Registry.ETAQueryResult>().asImmutableState() }
@@ -306,7 +302,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
                 if (stopId != null) {
                     stopsList.withIndex().find { it.value.stopId == stopId }?.let {
                         scope.launch {
-                            scroll.animateScrollToItem(it.index + 2, (-ScreenSizeUtils.getScreenHeight(instance) / 2) - UnitUtils.spToPixels(instance, StringUtils.scaledSize(15F, instance)).roundToInt())
+                            scroll.animateScrollToItem(it.index + 2, (-ScreenSizeUtils.getScreenHeight(instance) / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
                         }
                     }
                 } else if (origin != null) {
@@ -317,7 +313,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
                         val stopStr = stop.name[Shared.language]
                         StopEntry(index + 1, stopStr, entry, location.lat, location.lng)
                     }.onEach {
-                        it.distance = DistanceUtils.findDistance(origin.lat, origin.lng, it.lat, it.lng)
+                        it.distance = origin.distance(it)
                         distances[it.stopIndex] = it.distance
                     }.minBy {
                         it.distance
@@ -325,7 +321,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
                         if (!origin.onlyInRange || it.distance <= 0.3) {
                             closestIndex = it.stopIndex
                             scope.launch {
-                                scroll.animateScrollToItem(it.stopIndex + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) - UnitUtils.spToPixels(instance, StringUtils.scaledSize(15F, instance)).roundToInt())
+                                scroll.animateScrollToItem(it.stopIndex + 1, (-ScreenSizeUtils.getScreenHeight(instance) / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
                             }
                         }
                     }
@@ -335,7 +331,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
             if (scrollToStop != null) {
                 scrollTask.invoke(null, scrollToStop)
             } else if (route.origin != null) {
-                val origin = route.origin
+                val origin = route.origin!!
                 scrollTask.invoke(OriginData(origin.lat, origin.lng), null)
             } else {
                 LocationUtils.checkLocationPermission(instance) {
@@ -390,7 +386,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
                                     if (alightReminderData!!.currentLocation.isSuccess) {
                                         val location = alightReminderData!!.currentLocation.location
                                         closestIndex = (stopsList.withIndex().minBy {
-                                            DistanceUtils.findDistance(it.value.stop.location.lat, it.value.stop.location.lng, location.lat, location.lng)
+                                            it.value.stop.location.distance(location)
                                         }.index + 1).coerceAtMost(targetStopIndex)
                                     }
                                 } else if (alightReminderData!!.active) {
@@ -473,13 +469,13 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
                                         }
                                     }
                                     Column {
-                                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                                        Spacer(modifier = Modifier.size(5.scaledSize(instance).dp))
                                         if (isTargetActive) {
                                             TerminateAlightReminderButton(instance)
                                         } else {
                                             AlightReminderCompleted(instance)
                                         }
-                                        Spacer(modifier = Modifier.size(StringUtils.scaledSize(5, instance).dp))
+                                        Spacer(modifier = Modifier.size(5.scaledSize(instance).dp))
                                     }
                                 }
                             }
@@ -494,7 +490,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
                     }
                 }
                 item {
-                    Spacer(modifier = Modifier.size(StringUtils.scaledSize(40, instance).dp))
+                    Spacer(modifier = Modifier.size(40.scaledSize(instance).dp))
                 }
             }
             if (ambientMode) {
@@ -502,12 +498,12 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
-                        .height(StringUtils.scaledSize(35, instance).dp)
+                        .height(35.scaledSize(instance).dp)
                         .background(
                             Brush.verticalGradient(
                                 0F to Color(0xFF000000),
                                 1F to Color(0x00000000),
-                                startY = UnitUtils.spToPixels(instance, StringUtils.scaledSize(23, instance))
+                                startY = 23.scaledSize(instance).spToPixels(instance)
                             )
                         )
                 )
@@ -529,8 +525,8 @@ fun AlightReminderCompleted(instance: ListStopsActivity) {
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(40, instance).sp.clamp(min = 40.dp).dp),
+            .width(220.scaledSize(instance).dp)
+            .height(40.scaledSize(instance).sp.clamp(min = 40.dp).dp),
         onClick = {
             instance.finish()
         },
@@ -547,8 +543,8 @@ fun AlightReminderCompleted(instance: ListStopsActivity) {
                 Box (
                     modifier = Modifier
                         .padding(5.dp, 5.dp)
-                        .width(StringUtils.scaledSize(20, instance).sp.clamp(max = 20.dp).dp)
-                        .height(StringUtils.scaledSize(20, instance).sp.clamp(max = 20.dp).dp)
+                        .width(20.scaledSize(instance).sp.clamp(max = 20.dp).dp)
+                        .height(20.scaledSize(instance).sp.clamp(max = 20.dp).dp)
                         .clip(CircleShape)
                         .background(Color(0xFF3D3D3D))
                         .align(Alignment.Top),
@@ -557,7 +553,7 @@ fun AlightReminderCompleted(instance: ListStopsActivity) {
                     Icon(
                         modifier = Modifier
                             .padding(3.dp, 3.dp)
-                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                            .size(17F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_location_on_24),
                         tint = Color(0xFFFF9800),
                         contentDescription = if (Shared.language == "en") "Arrived" else "已到達"
@@ -569,7 +565,7 @@ fun AlightReminderCompleted(instance: ListStopsActivity) {
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    fontSize = 14F.scaledSize(instance).sp,
                     text = if (Shared.language == "en") "Arrived" else "已到達"
                 )
             }
@@ -582,8 +578,8 @@ fun TerminateAlightReminderButton(instance: ListStopsActivity) {
     AdvanceButton (
         modifier = Modifier
             .padding(20.dp, 0.dp)
-            .width(StringUtils.scaledSize(220, instance).dp)
-            .height(StringUtils.scaledSize(40, instance).sp.clamp(min = 40.dp).dp),
+            .width(220.scaledSize(instance).dp)
+            .height(40.scaledSize(instance).sp.clamp(min = 40.dp).dp),
         onClick = {
             instance.finish()
             AlightReminderService.terminate()
@@ -601,8 +597,8 @@ fun TerminateAlightReminderButton(instance: ListStopsActivity) {
                 Box (
                     modifier = Modifier
                         .padding(5.dp, 5.dp)
-                        .width(StringUtils.scaledSize(20, instance).sp.clamp(max = 20.dp).dp)
-                        .height(StringUtils.scaledSize(20, instance).sp.clamp(max = 20.dp).dp)
+                        .width(20.scaledSize(instance).sp.clamp(max = 20.dp).dp)
+                        .height(20.scaledSize(instance).sp.clamp(max = 20.dp).dp)
                         .clip(CircleShape)
                         .background(Color(0xFF3D3D3D))
                         .align(Alignment.Top),
@@ -611,7 +607,7 @@ fun TerminateAlightReminderButton(instance: ListStopsActivity) {
                     Icon(
                         modifier = Modifier
                             .padding(3.dp, 3.dp)
-                            .size(StringUtils.scaledSize(17F, instance).sp.dp),
+                            .size(17F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_notifications_off_24),
                         tint = Color(0xFFFF0000),
                         contentDescription = if (Shared.language == "en") "Disable Reminder" else "關閉落車提示"
@@ -623,7 +619,7 @@ fun TerminateAlightReminderButton(instance: ListStopsActivity) {
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colors.primary,
-                    fontSize = StringUtils.scaledSize(14F, instance).sp,
+                    fontSize = 14F.scaledSize(instance).sp,
                     text = if (Shared.language == "en") "Disable Reminder" else "關閉落車提示"
                 )
             }
@@ -635,7 +631,7 @@ fun TerminateAlightReminderButton(instance: ListStopsActivity) {
 fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolean, co: Operator, coColor: Color, destName: BilingualText, specialOrigs: ImmutableList<BilingualText>, specialDests: ImmutableList<BilingualText>, instance: ListStopsActivity) {
     Column(
         modifier = Modifier
-            .defaultMinSize(minHeight = StringUtils.scaledSize(35, instance).dp)
+            .defaultMinSize(minHeight = 35.scaledSize(instance).dp)
             .padding(20.dp, 20.dp, 20.dp, 5.dp)
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -665,10 +661,10 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
             fontSizeRange = FontSizeRange(
-                min = StringUtils.scaledSize(1F, instance).dp.sp,
-                max = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(20F, instance).dp)
+                min = 1F.scaledSize(instance).dp.sp,
+                max = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp)
             ),
-            lineHeight = StringUtils.scaledSize(17F, instance).sp.clamp(max = StringUtils.scaledSize(20F, instance).dp),
+            lineHeight = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp),
             color = color.adjustBrightness(if (ambientMode) 0.7F else 1F),
             maxLines = 1,
             text = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language).plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
@@ -679,8 +675,8 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
                 .padding(10.dp, 0.dp),
             textAlign = TextAlign.Center,
             fontSizeRange = FontSizeRange(
-                min = StringUtils.scaledSize(1F, instance).dp.sp,
-                max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(14F, instance).dp)
+                min = 1F.scaledSize(instance).dp.sp,
+                max = 11F.scaledSize(instance).sp.clamp(max = 14F.scaledSize(instance).dp)
             ),
             color = Color(0xFFFFFFFF).adjustBrightness(if (ambientMode) 0.7F else 1F),
             maxLines = 2,
@@ -693,8 +689,8 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
                     .fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 fontSizeRange = FontSizeRange(
-                    min = StringUtils.scaledSize(1F, instance).dp.sp,
-                    max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(14F, instance).dp)
+                    min = 1F.scaledSize(instance).dp.sp,
+                    max = 11F.scaledSize(instance).sp.clamp(max = 14F.scaledSize(instance).dp)
                 ),
                 color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),
                 maxLines = 2,
@@ -712,8 +708,8 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
                     .fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 fontSizeRange = FontSizeRange(
-                    min = StringUtils.scaledSize(1F, instance).dp.sp,
-                    max = StringUtils.scaledSize(11F, instance).sp.clamp(max = StringUtils.scaledSize(14F, instance).dp)
+                    min = 1F.scaledSize(instance).dp.sp,
+                    max = 11F.scaledSize(instance).sp.clamp(max = 14F.scaledSize(instance).dp)
                 ),
                 color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),
                 maxLines = 2,
@@ -779,7 +775,7 @@ fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Op
                     .padding(0.dp, padding.dp)
                     .requiredWidth(30.dp),
                 textAlign = TextAlign.Start,
-                fontSize = StringUtils.scaledSize(15F, instance).sp,
+                fontSize = 15F.scaledSize(instance).sp,
                 fontWeight = if (isClosest || isTargetStop) FontWeight.Bold else FontWeight.Normal,
                 color = color,
                 maxLines = 1,
@@ -793,7 +789,7 @@ fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Op
                     .weight(1F)
                     .basicMarquee(iterations = Int.MAX_VALUE),
                 textAlign = TextAlign.Start,
-                fontSize = StringUtils.scaledSize(15F, instance).sp,
+                fontSize = 15F.scaledSize(instance).sp,
                 fontWeight = if (isClosest || isTargetStop) FontWeight.Bold else FontWeight.Normal,
                 color = color,
                 maxLines = 1,
@@ -831,7 +827,7 @@ fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Op
                     .weight(1F)
                     .basicMarquee(iterations = Int.MAX_VALUE),
                 textAlign = TextAlign.Start,
-                fontSize = StringUtils.scaledSize(15F, instance).sp,
+                fontSize = 15F.scaledSize(instance).sp,
                 fontWeight = if (isClosest || isTargetStop) FontWeight.Bold else FontWeight.Normal,
                 color = color,
                 maxLines = 1,
@@ -860,7 +856,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             delay(etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
-            val result = Registry.getInstance(instance).getEta(stopId, index, route.co, route.route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            val result = Registry.getInstance(instance).getEta(stopId, index, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
             etaStateFlow.value = result
             etaUpdateTimes.value[index] = System.currentTimeMillis()
             etaResults.value[index] = result
@@ -878,7 +874,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight()
-            .offset(0.dp, StringUtils.scaledSize(2F, instance).sp.clamp(max = StringUtils.scaledSize(3F, instance).dp).dp - 2F.sp.dp),
+            .offset(0.dp, 2F.scaledSize(instance).sp.clamp(max = 3F.scaledSize(instance).dp).dp - 2F.sp.dp),
         contentAlignment = Alignment.CenterEnd
     ) {
         val eta = etaState
@@ -887,7 +883,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                 if (eta.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -896,14 +892,14 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                     val typhoonInfo by remember { Registry.getInstance(instance).cachedTyphoonDataState }.collectAsStateWithLifecycle()
                     Image(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = typhoonInfo.typhoonWarningTitle
                     )
                 } else {
                     Icon(
                         modifier = Modifier
-                            .size(StringUtils.scaledSize(16F, instance).sp.clamp(max = StringUtils.scaledSize(18F, instance).dp).dp),
+                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),
@@ -912,10 +908,10 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             } else {
                 val (text1, text2) = eta.firstLine.shortText
                 val span1 = SpannableString(text1)
-                val size1 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(14F, instance), dpMax = StringUtils.scaledSize(15F, instance))).roundToInt()
+                val size1 = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).spToPixels(instance).roundToInt()
                 span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
                 val span2 = SpannableString(text2)
-                val size2 = UnitUtils.spToPixels(instance, clampSp(instance, StringUtils.scaledSize(7F, instance), dpMax = StringUtils.scaledSize(8F, instance))).roundToInt()
+                val size2 = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).spToPixels(instance).roundToInt()
                 span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
                 AnnotatedText(
                     modifier = Modifier.fillMaxWidth(),
