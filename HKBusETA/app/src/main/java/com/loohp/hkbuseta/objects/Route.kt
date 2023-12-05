@@ -102,7 +102,7 @@ class Route(
         val json = JSONObject()
         json.put("route", routeNumber)
         json.put("bound", bound.toJSONObject { it })
-        json.put("co", co.stream().map { o -> o.name }.toJSONArray())
+        json.put("co", co.asSequence().map { o -> o.name }.toJSONArray())
         json.put("serviceType", serviceType)
         json.put("nlbId", nlbId)
         json.put("gtfsId", gtfsId)

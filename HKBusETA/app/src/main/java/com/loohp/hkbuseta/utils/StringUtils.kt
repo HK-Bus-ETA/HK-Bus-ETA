@@ -53,7 +53,6 @@ import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
 import com.aghajari.compose.text.ContentAnnotatedString
 import com.aghajari.compose.text.InlineContent
-import java.util.Arrays
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -71,9 +70,9 @@ class ResourceImageGetter(private val context: Context, private val heightSp: Fl
 
     @SuppressLint("DiscouragedApi")
     override fun getDrawable(source: String): Drawable? {
-        return types.stream()
+        return types.asSequence()
             .map { context.resources.getIdentifier(source, it, context.packageName) }.filter { it != 0 }
-            .findFirst().orElse(null)?.let outer@ {
+            .firstOrNull()?.let outer@ {
                 val drawable = ResourcesCompat.getDrawable(context.resources, it, null)
                 drawable?.let {
                     if (drawable.intrinsicHeight >= 0) {
@@ -242,7 +241,7 @@ private fun costOfSubstitution(a: Char, b: Char): Int {
 }
 
 private fun min(vararg numbers: Int): Int {
-    return Arrays.stream(numbers).min().orElse(Int.MAX_VALUE)
+    return numbers.minOrNull()?: Int.MAX_VALUE
 }
 
 fun Int.getCircledNumber(): String {

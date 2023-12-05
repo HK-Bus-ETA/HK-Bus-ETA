@@ -57,10 +57,10 @@ class DataSheet(
 
     override fun serialize(): JSONObject {
         val json = JSONObject()
-        json.put("holidays", holidays.stream().map { DATE_FORMATTER.format(it) }.toJSONArray())
+        json.put("holidays", holidays.asSequence().map { DATE_FORMATTER.format(it) }.toJSONArray())
         json.put("routeList", routeList.toJSONObject { it.serialize() })
         json.put("stopList", stopList.toJSONObject { it.serialize() })
-        json.put("stopMap", stopMap.toJSONObject { v -> v.stream().map { (first, second) -> jsonArrayOf(first.name, second) }.toJSONArray() })
+        json.put("stopMap", stopMap.toJSONObject { v -> v.asSequence().map { (first, second) -> jsonArrayOf(first.name, second) }.toJSONArray() })
         return json
     }
 

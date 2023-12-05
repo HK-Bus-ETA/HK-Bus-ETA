@@ -42,7 +42,7 @@ fun <T> Collection<T>.indexOf(matcher: (T) -> Boolean): Int {
 }
 
 fun <T> Collection<T>.commonElementPercentage(other: Collection<T>): Float {
-    return stream().mapToInt { if (other.contains(it)) 1 else 0 }.summaryStatistics().let { it.sum / it.count.toFloat() }
+    return asSequence().map { if (other.contains(it)) 1 else 0 }.sum() / other.size.toFloat()
 }
 
 operator fun <K, V> ImmutableMap.Builder<K, V>.set(key: K & Any, value: V & Any): ImmutableMap.Builder<K, V> {

@@ -210,10 +210,9 @@ fun MainElement(usingGps: Boolean, instance: FavRouteListViewActivity) {
 fun EvaluatedElement(state: MutableState<Boolean>, origin: Coordinates?, location: Coordinates?, instance: FavRouteListViewActivity) {
     if (state.value) {
         val intent = Intent(instance, ListRoutesActivity::class.java)
-        intent.putExtra("result", Shared.favoriteRouteStops.entries.stream()
-            .sorted(Comparator.comparing { e -> e.key })
-            .map { entry ->
-                val fav = entry.value
+        intent.putExtra("result", Shared.favoriteRouteStops.entries.asSequence()
+            .sortedBy { it.key }
+            .map { (_, fav) ->
                 val (_, stopId, stop, route) = fav.resolveStop(instance) { origin }
                 val routeEntry = RouteSearchResultEntry(route.getRouteKey(instance)!!, route, fav.co, StopInfo(stopId, stop, 0.0, fav.co), null, false)
                 routeEntry.strip()

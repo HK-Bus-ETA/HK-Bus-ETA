@@ -87,7 +87,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
-import java.util.stream.Collectors
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
@@ -127,7 +126,7 @@ class MergedETAQueryResult<T> private constructor(
 
     val nextScheduledBus: Long = lines[1]?.second?.etaRounded?: -1
     val firstKey: T? = lines.minByOrNull { it.key }?.value?.first
-    val allKeys: Set<T> = lines.entries.stream().map { it.value.first }.collect(Collectors.toSet())
+    val allKeys: Set<T> = lines.entries.asSequence().map { it.value.first }.toSet()
 
     fun getLine(index: Int): Pair<T?, ETALineEntry> {
         return lines[index]?: (null to ETALineEntry.EMPTY)
@@ -164,13 +163,13 @@ class MergedETAQueryResult<T> private constructor(
                 val lines = value.rawLines.mapValues { key to it.value }
                 return MergedETAQueryResult(true, isMtrEndOfLine, isTyphoonSchedule, value.nextCo, lines, etaQueryResult.size)
             }
-            val linesSorted: MutableList<Triple<T, ETALineEntry, Operator>> = etaQueryResult.stream()
-                .flatMap { it.second.rawLines.values.stream().map { line -> Triple(it.first, line, it.second.nextCo) } }
-                .sorted(Comparator
+            val linesSorted: MutableList<Triple<T, ETALineEntry, Operator>> = etaQueryResult.asSequence()
+                .flatMap { it.second.rawLines.values.asSequence().map { line -> Triple(it.first, line, it.second.nextCo) } }
+                .sortedWith(Comparator
                     .comparing<Triple<T, ETALineEntry, Operator>, Double> { it.second.eta.let { v -> if (v < 0) Double.MAX_VALUE else v } }
                     .thenComparing(Comparator.comparing { etaQueryResult.indexOfFirst { i -> i.first == it.first } })
                 )
-                .collect(Collectors.toCollection { ArrayList() })
+                .toMutableList()
             if (linesSorted.any { it.second.eta >= 0 }) {
                 linesSorted.removeIf { it.second.eta < 0 }
             }

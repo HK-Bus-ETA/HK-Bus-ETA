@@ -22,7 +22,6 @@ package com.loohp.hkbuseta.utils
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import java.util.stream.Stream
 
 
 fun jsonArrayOf(vararg items: Any?): JSONArray {
@@ -110,7 +109,7 @@ fun <T> Collection<T>.toJSONArray(): JSONArray {
     return array
 }
 
-fun <T> Stream<T>.toJSONArray(): JSONArray {
+fun <T> Sequence<T>.toJSONArray(): JSONArray {
     val array = JSONArray()
     forEach { array.put(it) }
     return array

@@ -46,9 +46,7 @@ fun getTextResponse(link: String?): String? {
         connection.addRequestProperty("Pragma", "no-cache")
         if (connection.responseCode == HttpsURLConnection.HTTP_OK) {
             BufferedReader(InputStreamReader(connection.inputStream)).use { reader ->
-                return reader.lines().collect(
-                    Collectors.joining()
-                )
+                return reader.lines().collect(Collectors.joining())
             }
         } else {
             return null

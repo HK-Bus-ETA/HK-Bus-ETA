@@ -124,7 +124,6 @@ import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.startActivity
 import com.loohp.hkbuseta.utils.toSpanned
 import java.io.ByteArrayInputStream
-import java.util.stream.IntStream
 
 
 enum class FavouriteRouteState {
@@ -731,10 +730,10 @@ fun FavHeader(instance: EtaMenuActivity) {
 fun NextFavButton(scrollTo: MutableIntState, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: EtaMenuActivity) {
     Button(
         onClick = {
-            scrollTo.intValue = IntStream.rangeClosed(1, 30).filter {
+            scrollTo.intValue = (1..30).minByOrNull {
                 val favState = getFavState(it, stopId, co, index, stop, route, instance)
                 favState == FavouriteRouteState.NOT_USED || favState == FavouriteRouteState.USED_SELF
-            }.min().orElse(30)
+            }?: 30
         },
         modifier = Modifier
             .width(50.scaledSize(instance).dp)

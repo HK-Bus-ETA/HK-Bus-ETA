@@ -63,7 +63,7 @@ class Preferences(
         val json = JSONObject()
         json.put("language", language)
         json.put("favouriteRouteStops", favouriteRouteStops.toJSONObject { it.serialize() })
-        json.put("lastLookupRoutes", lastLookupRoutes.stream().map { it.serialize() }.toJSONArray())
+        json.put("lastLookupRoutes", lastLookupRoutes.asSequence().map { it.serialize() }.toJSONArray())
         json.put("etaTileConfigurations", etaTileConfigurations.toJSONObject { it.toJSONArray() })
         json.put("routeSortModePreference", routeSortModePreference.toJSONObject { it.name })
         return json

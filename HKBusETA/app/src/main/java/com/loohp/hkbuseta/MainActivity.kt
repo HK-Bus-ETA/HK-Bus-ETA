@@ -79,7 +79,6 @@ import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.util.regex.Pattern
-import java.util.stream.Collectors
 import kotlin.math.absoluteValue
 
 
@@ -181,7 +180,7 @@ class MainActivity : ComponentActivity() {
 
                                 val result = Registry.getInstance(this@MainActivity).findRoutes(queryRouteNumber?: "", true)
                                 if (result.isNotEmpty()) {
-                                    var filteredResult = result.stream().filter {
+                                    var filteredResult = result.asSequence().filter {
                                         return@filter when (queryCo) {
                                             Operator.NLB -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route!!.nlbId == queryBound)
                                             Operator.GMB -> {
@@ -190,19 +189,19 @@ class MainActivity : ComponentActivity() {
                                             }
                                             else -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route!!.bound[queryCo] == queryBound)
                                         }
-                                    }.collect(Collectors.toList())
+                                    }.toList()
                                     if (queryDest != null) {
-                                        val destFiltered = filteredResult.stream().filter {
+                                        val destFiltered = filteredResult.asSequence().filter {
                                             val dest = it.route!!.dest
                                             return@filter queryDest == dest.zh || queryDest == dest.en
-                                        }.collect(Collectors.toList())
+                                        }.toList()
                                         if (destFiltered.isNotEmpty()) {
                                             filteredResult = destFiltered
                                         }
                                     }
                                     if (filteredResult.isEmpty()) {
                                         val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                        intent.putExtra("result", result.stream().map {
+                                        intent.putExtra("result", result.asSequence().map {
                                             val clone = it.deepClone()
                                             clone.strip()
                                             clone.serialize()
@@ -210,7 +209,7 @@ class MainActivity : ComponentActivity() {
                                         startActivity(intent)
                                     } else {
                                         val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
-                                        intent.putExtra("result", filteredResult.stream().map {
+                                        intent.putExtra("result", filteredResult.asSequence().map {
                                             val clone = it.deepClone()
                                             clone.strip()
                                             clone.serialize()

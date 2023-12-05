@@ -218,7 +218,7 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
                 NoNearbyText(result.closestStop, result.closestDistance, instance)
             } else {
                 val intent = Intent(instance, ListRoutesActivity::class.java)
-                intent.putExtra("result", list.stream().map { it.strip(); it.serialize() }.toJSONArray().toString())
+                intent.putExtra("result", list.asSequence().map { it.strip(); it.serialize() }.toJSONArray().toString())
                 intent.putExtra("showEta", true)
                 intent.putExtra("recentSort", RecentSortMode.CHOICE.ordinal)
                 intent.putExtra("proximitySortOrigin", doubleArrayOf(result.lat, result.lng))

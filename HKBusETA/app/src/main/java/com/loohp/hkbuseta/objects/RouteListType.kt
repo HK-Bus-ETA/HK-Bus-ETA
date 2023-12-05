@@ -55,7 +55,7 @@ class RouteListType private constructor(
         }
 
         fun values(): Array<RouteListType> {
-            return VALUES.values.stream().sorted().toArray { arrayOfNulls(it) }
+            return VALUES.values.toTypedArray().apply { sort() }
         }
     }
 

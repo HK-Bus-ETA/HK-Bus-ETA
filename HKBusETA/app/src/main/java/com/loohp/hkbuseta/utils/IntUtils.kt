@@ -19,9 +19,6 @@
  */
 package com.loohp.hkbuseta.utils
 
-import java.util.Arrays
-import java.util.stream.Collectors
-
 
 object IntUtils {
 
@@ -35,10 +32,6 @@ object IntUtils {
         } catch (e: NumberFormatException) {
             otherwise
         }
-    }
-
-    fun toList(array: IntArray): List<Int> {
-        return Arrays.stream(array).boxed().collect(Collectors.toList())
     }
 
 }
@@ -55,10 +48,6 @@ object LongUtils {
         } catch (e: NumberFormatException) {
             otherwise
         }
-    }
-
-    fun toList(array: LongArray): List<Long> {
-        return Arrays.stream(array).boxed().collect(Collectors.toList())
     }
 
 }

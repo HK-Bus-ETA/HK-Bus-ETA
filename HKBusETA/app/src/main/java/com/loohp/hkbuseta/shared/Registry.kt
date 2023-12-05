@@ -52,7 +52,6 @@ import com.loohp.hkbuseta.utils.IntUtils
 import com.loohp.hkbuseta.utils.LongUtils
 import com.loohp.hkbuseta.utils.asMutableStateFlow
 import com.loohp.hkbuseta.utils.commonElementPercentage
-import com.loohp.hkbuseta.utils.distinctBy
 import com.loohp.hkbuseta.utils.editDistance
 import com.loohp.hkbuseta.utils.getCircledNumber
 import com.loohp.hkbuseta.utils.getConnectionType
@@ -78,10 +77,8 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAccessor
-import java.util.Arrays
 import java.util.Collections
 import java.util.Locale
-import java.util.Optional
 import java.util.TimeZone
 import java.util.TreeSet
 import java.util.concurrent.Callable
@@ -597,11 +594,9 @@ class Registry {
     }
 
     fun getRouteKey(route: Route?): String? {
-        return DATA!!.dataSheet.routeList.entries.stream()
+        return DATA!!.dataSheet.routeList.entries.asSequence()
             .filter{ (_, value) -> value == route }
-            .findFirst()
-            .map { (key, _) -> key }
-            .orElse(null)
+            .firstOrNull()?.let { (key, _) -> key }
     }
 
     fun findRouteByKey(lookupKey: String, routeNumber: String?): Route? {
@@ -718,7 +713,7 @@ class Registry {
         }
         return if (matchingRoutes.isEmpty()) {
             emptyList()
-        } else matchingRoutes.values.stream().sorted { a, b ->
+        } else matchingRoutes.values.asSequence().sortedWith { a, b ->
                 val routeA: Route = a.route!!
                 val routeB: Route = b.route!!
                 val boundA = routeA.bound
@@ -727,42 +722,42 @@ class Registry {
                 val coB = boundB.keys.max()
                 val coDiff = coA.compareTo(coB)
                 if (coDiff != 0) {
-                    return@sorted coDiff
+                    return@sortedWith coDiff
                 }
                 val routeNumberA = routeA.routeNumber
                 val routeNumberB = routeB.routeNumber
                 if (coA.isTrain && coB.isTrain) {
                     val lineDiff = Shared.getMtrLineSortingIndex(routeNumberA).compareTo(Shared.getMtrLineSortingIndex(routeNumberB))
                     if (lineDiff != 0) {
-                        return@sorted lineDiff
+                        return@sortedWith lineDiff
                     }
-                    return@sorted -boundA[coA]!!.compareTo(boundB[coB]!!)
+                    return@sortedWith -boundA[coA]!!.compareTo(boundB[coB]!!)
                 } else {
                     val routeNumberDiff = routeNumberA.compareTo(routeNumberB)
                     if (routeNumberDiff != 0) {
-                        return@sorted routeNumberDiff
+                        return@sortedWith routeNumberDiff
                     }
                 }
                 if (coA === Operator.NLB) {
-                    return@sorted IntUtils.parseOrZero(routeA.nlbId) - IntUtils.parseOrZero(routeB.nlbId)
+                    return@sortedWith IntUtils.parseOrZero(routeA.nlbId) - IntUtils.parseOrZero(routeB.nlbId)
                 }
                 if (coA === Operator.GMB) {
                     val gtfsDiff: Int =
                         IntUtils.parseOrZero(routeA.gtfsId) - IntUtils.parseOrZero(routeB.gtfsId)
                     if (gtfsDiff != 0) {
-                        return@sorted gtfsDiff
+                        return@sortedWith gtfsDiff
                     }
                 }
                 val typeDiff: Int =
                     IntUtils.parseOrZero(routeA.serviceType) - IntUtils.parseOrZero(routeB.serviceType)
                 if (typeDiff == 0) {
                     if (coA === Operator.CTB) {
-                        return@sorted 0
+                        return@sortedWith 0
                     }
-                    return@sorted -boundA[coA]!!.compareTo(boundB[coB]!!)
+                    return@sortedWith -boundA[coA]!!.compareTo(boundB[coB]!!)
                 }
                 typeDiff
-            }.collect(Collectors.toList())
+            }.toList()
     }
 
     fun getNearbyRoutes(lat: Double, lng: Double, excludedRouteNumbers: Set<String?>, isInterchangeSearch: Boolean): NearbyRoutesResult {
@@ -793,13 +788,13 @@ class Registry {
                 if (data.isCtbIsCircular) {
                     continue
                 }
-                val co = Arrays.stream(Operator.values()).filter {
+                val co = Operator.values().firstOrNull {
                     if (!data.bound.containsKey(it)) {
-                        return@filter false
+                        return@firstOrNull false
                     }
-                    val coStops: List<String> = data.stops[it]?: return@filter false
+                    val coStops: List<String> = data.stops[it]?: return@firstOrNull false
                     coStops.contains(stopId)
-                }.findFirst().orElse(null)
+                }
                 if (co != null) {
                     val key0 = (data.routeNumber + "," + co.name) + "," + (if (co === Operator.NLB) data.nlbId else data.bound[co]) + if (co === Operator.GMB) "," + data.gmbRegion else ""
                     if (nearbyRoutes.containsKey(key0)) {
@@ -855,11 +850,8 @@ class Registry {
         val isNight = hour in 1..4
         val weekday = hongKongTime.dayOfWeek
         val date = hongKongTime.toLocalDate()
-        val isHoliday =
-            weekday == DayOfWeek.SATURDAY || weekday == DayOfWeek.SUNDAY || DATA!!.dataSheet.holidays.contains(
-                date
-            )
-        return NearbyRoutesResult(nearbyRoutes.values.stream().sorted(Comparator.comparing<RouteSearchResultEntry, Int> { a ->
+        val isHoliday = weekday == DayOfWeek.SATURDAY || weekday == DayOfWeek.SUNDAY || DATA!!.dataSheet.holidays.contains(date)
+        return NearbyRoutesResult(nearbyRoutes.values.asSequence().sortedWith(Comparator.comparing<RouteSearchResultEntry, Int> { a ->
             val route: Route = a.route!!
             val routeNumber = route.routeNumber
             val bound = route.bound
@@ -894,7 +886,7 @@ class Registry {
             10
         }.reversed()))
         .distinctBy { it.routeKey }
-        .collect(Collectors.toList()), closestStop!!, closestDistance, lat, lng)
+        .toList(), closestStop!!, closestDistance, lat, lng)
     }
 
     @Immutable
@@ -939,9 +931,9 @@ class Registry {
             for ((first) in lists) {
                 result.merge(first)
             }
-            result.valuesWithBranchIds().stream()
+            result.valuesWithBranchIds().asSequence()
                 .map { (f, s) -> f.withBranchIndex(s) }
-                .collect(Collectors.toList())
+                .toList()
         } catch (e: Throwable) {
             throw RuntimeException("Error occurred while getting stops for " + routeNumber + ", " + bound + ", " + co + ", " + gmbRegion + ": " + e.message, e)
         }
@@ -982,16 +974,12 @@ class Registry {
                             mainRouteStops = stops
                         }
                         val orig: BilingualText = route.orig
-                        val oldOrig: Triple<BilingualText, Int, String>? = origs.stream()
-                            .filter { it!!.first.zh == orig.zh }
-                            .findFirst().orElse(null)
+                        val oldOrig: Triple<BilingualText, Int, String>? = origs.firstOrNull { it.first.zh == orig.zh }
                         if (oldOrig == null || oldOrig.second > serviceType) {
                             origs.add(Triple(orig, serviceType, stops[0]))
                         }
                         val dest: BilingualText = route.dest
-                        val oldDest: Pair<BilingualText, Int>? = dests.stream()
-                            .filter { it!!.first.zh == dest.zh }
-                            .findFirst().orElse(null)
+                        val oldDest: Pair<BilingualText, Int>? = dests.firstOrNull { it.first.zh == dest.zh }
                         if (oldDest == null || oldDest.second > serviceType) {
                             dests.add(dest to serviceType)
                         }
@@ -999,8 +987,8 @@ class Registry {
                 }
             }
             val finalMainRouteStops = mainRouteStops
-            origs.stream().filter { !finalMainRouteStops!!.contains(it.third) }.sorted(Comparator.comparing { it.second }).map { it.first }.collect(Collectors.toList()) to
-                dests.stream().sorted(Comparator.comparing { it.second }).map { it.first }.collect(Collectors.toList())
+            origs.asSequence().filter { !finalMainRouteStops!!.contains(it.third) }.sortedBy { it.second }.map { it.first }.toList() to
+                dests.asSequence().sortedBy { it.second }.map { it.first }.toList()
         } catch (e: Throwable) {
             throw RuntimeException("Error occurred while getting origins and destinations for " + routeNumber + ", " + bound + ", " + co + ", " + gmbRegion + ": " + e.message, e)
         }
@@ -1130,9 +1118,9 @@ class Registry {
             val routeNumber = data.routeNumber
             if (routeNumber != lineName) {
                 if (bound.containsKey(Operator.MTR)) {
-                    val stopsList = data.stops[Operator.MTR]!!
-                        .stream().map { id: String? -> DATA!!.dataSheet.stopList[id]!!.name.zh }
-                        .collect(Collectors.toList())
+                    val stopsList = data.stops[Operator.MTR]!!.asSequence()
+                        .map { id: String? -> DATA!!.dataSheet.stopList[id]!!.name.zh }
+                        .toList()
                     if (stopsList.contains(stopName)) {
                         lines.add(routeNumber)
                     } else if (outOfStationStopName != null && stopsList.contains(outOfStationStopName)) {
@@ -1285,8 +1273,7 @@ class Registry {
                             }
                         }
                     }
-                    val matchingSeq = stopSequences.stream()
-                        .min(Comparator.comparing { (it - stopIndex).absoluteValue }).orElse(-1)
+                    val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
                     val usedRealSeq: MutableSet<Int> = HashSet()
                     for (u in 0 until buses.length()) {
                         val bus = buses.optJSONObject(u)
@@ -1394,7 +1381,7 @@ class Registry {
                         }
                     }
                     val (first, second) = getAllDestinationsByDirection(routeNumber, Operator.KMB, null, null, route, stopId)
-                    val destKeys = second.stream().map { it.zh.replace(" ", "") }.collect(Collectors.toSet())
+                    val destKeys = second.asSequence().map { it.zh.replace(" ", "") }.toSet()
                     val ctbEtaEntries: MutableMap<String?, MutableSet<JointOperatedEntry>> = ConcurrentHashMap()
                     val stopQueryData: MutableList<JSONObject?> = ArrayList()
                     val ctbFutures: MutableList<Future<*>> = ArrayList(ctbStopIds.size)
@@ -1414,18 +1401,16 @@ class Registry {
                             val bus = buses.optJSONObject(u)
                             if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
                                 val rawBusDest = bus.optString("dest_tc").replace(" ", "")
-                                val busDest = destKeys.stream()
-                                    .min(Comparator.comparing { it.editDistance(rawBusDest) })
-                                    .orElseThrow { RuntimeException() }
+                                val busDest = destKeys.asSequence().minBy { it.editDistance(rawBusDest) }
                                 busDests[u] = busDest
                                 stopSequences.computeIfAbsent(busDest) { HashSet() }.add(bus.optInt("seq"))
                             }
                         }
                         queryBusDests[i] = busDests
                     }
-                    val matchingSeq = stopSequences.entries.stream()
+                    val matchingSeq = stopSequences.entries.asSequence()
                         .map { (key, value) -> key to (value.minByOrNull { (it - stopIndex).absoluteValue }?: -1) }
-                        .collect(Collectors.toMap({ it.first }, { it.second }))
+                        .toMap()
                     for (i in stopQueryData.indices) {
                         val data = stopQueryData[i]!!
                         val buses = data.optJSONArray("data")!!
@@ -1471,7 +1456,7 @@ class Registry {
                             }
                         }
                     }
-                    first.stream().map{ ctbEtaEntries[it.zh.replace(" ", "")] }.forEach {
+                    first.asSequence().map { ctbEtaEntries[it.zh.replace(" ", "")] }.forEach {
                         if (it != null) {
                             jointOperated.addAll(it)
                         }
@@ -1486,7 +1471,7 @@ class Registry {
                     }
                 } else {
                     var counter = 0
-                    val itr = jointOperated.stream().sorted().iterator()
+                    val itr = jointOperated.asSequence().sorted().iterator()
                     while (itr.hasNext()) {
                         val entry = itr.next()
                         val mins = entry.mins
@@ -1527,8 +1512,7 @@ class Registry {
                         }
                     }
                 }
-                val matchingSeq = stopSequences.stream()
-                    .min(Comparator.comparing { i: Int -> (i - stopIndex).absoluteValue }).orElse(-1)
+                val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
                 var counter = 0
                 val usedRealSeq: MutableSet<Int> = HashSet()
                 for (u in 0 until buses.length()) {
@@ -1779,11 +1763,9 @@ class Registry {
                 for (i in 0 until data!!.optJSONArray("data")!!.length()) {
                     val routeData = data.optJSONArray("data")!!.optJSONObject(i)
                     val buses = routeData.optJSONArray("eta")
-                    val filteredEntry: Optional<Route> = DATA!!.dataSheet.routeList.values.stream()
-                        .filter { it.bound.containsKey(Operator.GMB) && it.gtfsId == routeData.optString("route_id") }
-                        .findFirst()
-                    if (filteredEntry.isPresent && buses != null) {
-                        val routeNumber = filteredEntry.get().routeNumber
+                    val filteredEntry = DATA!!.dataSheet.routeList.values.firstOrNull { it.bound.containsKey(Operator.GMB) && it.gtfsId == routeData.optString("route_id") }
+                    if (filteredEntry != null && buses != null) {
+                        val routeNumber = filteredEntry.routeNumber
                         val stopSeq = routeData.optInt("stop_seq")
                         for (u in 0 until buses.length()) {
                             val bus = buses.optJSONObject(u)

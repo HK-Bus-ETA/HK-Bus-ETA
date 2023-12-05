@@ -262,15 +262,15 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
         val destName = remember { route.route!!.dest }
         val resolvedDestName = remember { route.route!!.resolvedDest(true) }
         val specialOrigsDests = remember { Registry.getInstance(instance).getAllOriginsAndDestinations(routeNumber, bound, co, gmbRegion) }
-        val specialOrigs = remember { specialOrigsDests.first.stream().filter { !it.zh.eitherContains(origName.zh) }.toImmutableList() }
-        val specialDests = remember { specialOrigsDests.second.stream().filter { !it.zh.eitherContains(destName.zh) }.toImmutableList() }
+        val specialOrigs = remember { specialOrigsDests.first.asSequence().filter { !it.zh.eitherContains(origName.zh) }.toImmutableList() }
+        val specialDests = remember { specialOrigsDests.second.asSequence().filter { !it.zh.eitherContains(destName.zh) }.toImmutableList() }
 
         val coColor = remember { co.getColor(routeNumber, Color.White) }
 
         val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).toImmutableList() }
         val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
         val mtrStopsInterchange = remember { if (co.isTrain) {
-            stopsList.stream().map { Registry.getInstance(instance).getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
+            stopsList.asSequence().map { Registry.getInstance(instance).getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
         } else persistentListOf() }
         val mtrLineSectionsData = remember { if (co.isTrain) createMTRLineSectionData(
             co = co,

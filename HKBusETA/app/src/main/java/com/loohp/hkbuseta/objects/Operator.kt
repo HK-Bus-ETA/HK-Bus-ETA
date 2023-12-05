@@ -58,7 +58,7 @@ class Operator private constructor(
         }
 
         fun values(): Array<Operator> {
-            return VALUES.values.stream().sorted().toArray { arrayOfNulls(it) }
+            return VALUES.values.toTypedArray().apply { sort() }
         }
     }
 
