@@ -74,9 +74,10 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toJSONArray
+import com.loohp.hkbuseta.utils.toJsonArray
 import kotlinx.coroutines.delay
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import java.io.ByteArrayInputStream
 import java.util.regex.Pattern
 import kotlin.math.absoluteValue
@@ -125,7 +126,7 @@ class MainActivity : ComponentActivity() {
                     Registry.State.READY -> {
                         Thread {
                             if (stopId != null && co != null && (stop is String || stop is ByteArray) && (route is String || route is ByteArray)) {
-                                val routeParsed = if (route is String) Route.deserialize(JSONObject(route)) else Route.deserialize(ByteArrayInputStream(route as ByteArray))
+                                val routeParsed = if (route is String) Route.deserialize(Json.decodeFromString<JsonObject>(route)) else Route.deserialize(ByteArrayInputStream(route as ByteArray))
                                 Registry.getInstance(this@MainActivity).findRoutes(routeParsed.routeNumber, true) { it ->
                                     val bound = it.bound
                                     if (!bound.containsKey(co) || bound[co] != routeParsed.bound[co]) {
@@ -205,7 +206,7 @@ class MainActivity : ComponentActivity() {
                                             val clone = it.deepClone()
                                             clone.strip()
                                             clone.serialize()
-                                        }.toJSONArray().toString())
+                                        }.toJsonArray().toString())
                                         startActivity(intent)
                                     } else {
                                         val intent = Intent(this@MainActivity, ListRoutesActivity::class.java)
@@ -213,7 +214,7 @@ class MainActivity : ComponentActivity() {
                                             val clone = it.deepClone()
                                             clone.strip()
                                             clone.serialize()
-                                        }.toJSONArray().toString())
+                                        }.toJsonArray().toString())
                                         startActivity(intent)
 
                                         val it = filteredResult[0]

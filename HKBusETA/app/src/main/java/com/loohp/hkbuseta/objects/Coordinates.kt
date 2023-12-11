@@ -23,7 +23,10 @@ import androidx.compose.runtime.Immutable
 import com.loohp.hkbuseta.utils.IOSerializable
 import com.loohp.hkbuseta.utils.JSONSerializable
 import com.loohp.hkbuseta.utils.findDistance
-import org.json.JSONObject
+import com.loohp.hkbuseta.utils.optDouble
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.InputStream
@@ -34,7 +37,7 @@ open class Coordinates(val lat: Double, val lng: Double) : JSONSerializable, IOS
 
     companion object {
 
-        fun deserialize(json: JSONObject): Coordinates {
+        fun deserialize(json: JsonObject): Coordinates {
             val lat = json.optDouble("lat")
             val lng = json.optDouble("lng")
             return Coordinates(lat, lng)
@@ -69,11 +72,11 @@ open class Coordinates(val lat: Double, val lng: Double) : JSONSerializable, IOS
         return lng
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("lat", lat)
-        json.put("lng", lng)
-        return json
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("lat", lat)
+            put("lng", lng)
+        }
     }
 
     override fun serialize(outputStream: OutputStream) {

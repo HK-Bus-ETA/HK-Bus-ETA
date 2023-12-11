@@ -124,7 +124,8 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import java.io.ByteArrayInputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -149,9 +150,9 @@ class EtaActivity : ComponentActivity() {
         val co = intent.extras!!.getString("co")?.operator
         val index = intent.extras!!.getInt("index")
         val stop = intent.extras!!.getByteArray("stop")?.let { Stop.deserialize(ByteArrayInputStream(it)) }?:
-            intent.extras!!.getString("stopStr")?.let { Stop.deserialize(JSONObject(it)) }
+            intent.extras!!.getString("stopStr")?.let { Stop.deserialize(Json.decodeFromString<JsonObject>(it)) }
         val route = intent.extras!!.getByteArray("route")?.let { Route.deserialize(ByteArrayInputStream(it)) }?:
-            intent.extras!!.getString("routeStr")?.let { Route.deserialize(JSONObject(it)) }
+            intent.extras!!.getString("routeStr")?.let { Route.deserialize(Json.decodeFromString<JsonObject>(it)) }
         if (stopId == null || co == null || stop == null || route == null) {
             throw RuntimeException()
         }

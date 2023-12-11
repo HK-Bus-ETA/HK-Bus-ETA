@@ -22,11 +22,15 @@ package com.loohp.hkbuseta.objects
 import androidx.compose.runtime.Immutable
 import com.loohp.hkbuseta.utils.IOSerializable
 import com.loohp.hkbuseta.utils.JSONSerializable
+import com.loohp.hkbuseta.utils.optJsonObject
+import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.readNullable
 import com.loohp.hkbuseta.utils.readString
 import com.loohp.hkbuseta.utils.writeNullable
 import com.loohp.hkbuseta.utils.writeString
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.InputStream
@@ -43,11 +47,11 @@ class Stop(
 
     companion object {
 
-        fun deserialize(json: JSONObject): Stop {
-            val location = Coordinates.deserialize(json.optJSONObject("location")!!)
-            val name = BilingualText.deserialize(json.optJSONObject("name")!!)
-            val remark = if (json.has("remark")) BilingualText.deserialize(json.optJSONObject("remark")!!) else null
-            val kmbBbiId = if (json.has("kmbBbiId")) json.optString("kmbBbiId") else null
+        fun deserialize(json: JsonObject): Stop {
+            val location = Coordinates.deserialize(json.optJsonObject("location")!!)
+            val name = BilingualText.deserialize(json.optJsonObject("name")!!)
+            val remark = if (json.contains("remark")) BilingualText.deserialize(json.optJsonObject("remark")!!) else null
+            val kmbBbiId = if (json.contains("kmbBbiId")) json.optString("kmbBbiId") else null
             return Stop(location, name, remark, kmbBbiId)
         }
 
@@ -62,17 +66,17 @@ class Stop(
 
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("location", location.serialize())
-        json.put("name", name.serialize())
-        if (remark != null) {
-            json.put("remark", remark.serialize())
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("location", location.serialize())
+            put("name", name.serialize())
+            if (remark != null) {
+                put("remark", remark.serialize())
+            }
+            if (kmbBbiId != null) {
+                put("kmbBbiId", kmbBbiId)
+            }
         }
-        if (kmbBbiId != null) {
-            json.put("kmbBbiId", kmbBbiId)
-        }
-        return json
     }
 
     override fun serialize(outputStream: OutputStream) {

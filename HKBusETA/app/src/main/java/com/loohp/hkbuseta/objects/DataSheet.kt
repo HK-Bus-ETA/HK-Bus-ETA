@@ -21,13 +21,20 @@ package com.loohp.hkbuseta.objects
 
 import androidx.compose.runtime.Immutable
 import com.loohp.hkbuseta.utils.JSONSerializable
-import com.loohp.hkbuseta.utils.jsonArrayOf
-import com.loohp.hkbuseta.utils.mapToList
-import com.loohp.hkbuseta.utils.toJSONArray
-import com.loohp.hkbuseta.utils.toJSONObject
-import com.loohp.hkbuseta.utils.toMap
-import org.json.JSONArray
-import org.json.JSONObject
+import com.loohp.hkbuseta.utils.mapToMutableList
+import com.loohp.hkbuseta.utils.mapToMutableMap
+import com.loohp.hkbuseta.utils.optJsonArray
+import com.loohp.hkbuseta.utils.optJsonObject
+import com.loohp.hkbuseta.utils.optString
+import com.loohp.hkbuseta.utils.toJsonArray
+import com.loohp.hkbuseta.utils.toJsonObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -43,25 +50,25 @@ class DataSheet(
 
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd")
 
-        fun deserialize(json: JSONObject): DataSheet {
-            val holidays = json.optJSONArray("holidays")!!.mapToList() { LocalDate.parse(it as String, DATE_FORMATTER) }
-            val routeList = json.optJSONObject("routeList")!!.toMap { Route.deserialize(it as JSONObject) }
-            val stopList = json.optJSONObject("stopList")!!.toMap { Stop.deserialize(it as JSONObject) }
-            val stopMap = json.optJSONObject("stopMap")!!.toMap { v -> (v as JSONArray).mapToList { vv ->
-                val array = vv as JSONArray
+        fun deserialize(json: JsonObject): DataSheet {
+            val holidays = json.optJsonArray("holidays")!!.map { LocalDate.parse(it.jsonPrimitive.content, DATE_FORMATTER) }
+            val routeList = json.optJsonObject("routeList")!!.mapToMutableMap { Route.deserialize(it.jsonObject) }
+            val stopList = json.optJsonObject("stopList")!!.mapToMutableMap { Stop.deserialize(it.jsonObject) }
+            val stopMap = json.optJsonObject("stopMap")!!.mapToMutableMap { v -> v.jsonArray.mapToMutableList { vv ->
+                val array = vv.jsonArray
                 Operator.valueOf(array.optString(0)) to array.optString(1)
             } }
             return DataSheet(holidays, routeList, stopList, stopMap)
         }
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("holidays", holidays.asSequence().map { DATE_FORMATTER.format(it) }.toJSONArray())
-        json.put("routeList", routeList.toJSONObject { it.serialize() })
-        json.put("stopList", stopList.toJSONObject { it.serialize() })
-        json.put("stopMap", stopMap.toJSONObject { v -> v.asSequence().map { (first, second) -> jsonArrayOf(first.name, second) }.toJSONArray() })
-        return json
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("holidays", holidays.asSequence().map { DATE_FORMATTER.format(it) }.toJsonArray())
+            put("routeList", routeList.toJsonObject { it.serialize() })
+            put("stopList", stopList.toJsonObject { it.serialize() })
+            put("stopMap", stopMap.toJsonObject { v -> v.asSequence().map { (first, second) -> buildJsonArray { add(first.name); add(second) } }.toJsonArray() })
+        }
     }
 
     override fun equals(other: Any?): Boolean {

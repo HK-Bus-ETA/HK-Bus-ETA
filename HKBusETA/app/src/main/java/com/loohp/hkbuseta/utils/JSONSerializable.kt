@@ -19,10 +19,10 @@
  */
 package com.loohp.hkbuseta.utils
 
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
 
 interface JSONSerializable {
 
-    fun serialize(): JSONObject
+    fun serialize(): JsonObject
 
 }

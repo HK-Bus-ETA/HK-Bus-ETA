@@ -21,7 +21,12 @@ package com.loohp.hkbuseta.objects
 
 import androidx.compose.runtime.Immutable
 import com.loohp.hkbuseta.utils.JSONSerializable
-import org.json.JSONObject
+import com.loohp.hkbuseta.utils.optInt
+import com.loohp.hkbuseta.utils.optJsonObject
+import com.loohp.hkbuseta.utils.optString
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 @Immutable
 class FavouriteRouteStop(
@@ -35,28 +40,27 @@ class FavouriteRouteStop(
 
     companion object {
 
-        fun deserialize(json: JSONObject): FavouriteRouteStop {
+        fun deserialize(json: JsonObject): FavouriteRouteStop {
             val stopId = json.optString("stopId")
             val co = Operator.valueOf(json.optString("co"))
             val index = json.optInt("index")
-            val stop = Stop.deserialize(json.optJSONObject("stop")!!)
-            val route = Route.deserialize(json.optJSONObject("route")!!)
-            val favouriteStopMode =
-                FavouriteStopMode.valueOfOrDefault(json.optString("favouriteStopMode"))
+            val stop = Stop.deserialize(json.optJsonObject("stop")!!)
+            val route = Route.deserialize(json.optJsonObject("route")!!)
+            val favouriteStopMode = FavouriteStopMode.valueOfOrDefault(json.optString("favouriteStopMode"))
             return FavouriteRouteStop(stopId, co, index, stop, route, favouriteStopMode)
         }
 
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("stopId", stopId)
-        json.put("co", co.name)
-        json.put("index", index)
-        json.put("stop", stop.serialize())
-        json.put("route", route.serialize())
-        json.put("favouriteStopMode", favouriteStopMode.name)
-        return json
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("stopId", stopId)
+            put("co", co.name)
+            put("index", index)
+            put("stop", stop.serialize())
+            put("route", route.serialize())
+            put("favouriteStopMode", favouriteStopMode.name)
+        }
     }
 
     override fun equals(other: Any?): Boolean {

@@ -19,106 +19,116 @@
  */
 package com.loohp.hkbuseta.utils
 
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.put
 
 
-fun jsonArrayOf(vararg items: Any?): JSONArray {
-    val array = JSONArray()
-    for (item in items) {
-        array.put(item)
-    }
-    return array
+fun JsonObject.optJsonObject(key: String, default: JsonObject? = null): JsonObject? {
+    return this[key]?.let { if (it is JsonObject) it else default }?: default
 }
 
-fun JSONObject.clone(): JSONObject {
-    return try {
-        JSONObject(toString())
-    } catch (e: JSONException) {
-        throw RuntimeException(e)
-    }
+fun JsonObject.optJsonArray(key: String, default: JsonArray? = null): JsonArray? {
+    return this[key]?.let { if (it is JsonArray) it else default }?: default
 }
 
-fun JSONArray.clone(): JSONArray {
-    return try {
-        JSONArray(toString())
-    } catch (e: JSONException) {
-        throw RuntimeException(e)
-    }
+fun JsonObject.optString(key: String, default: String = ""): String {
+    return this[key]?.let { if (it is JsonPrimitive) it.content else default }?: default
 }
 
-fun JSONArray.indexOf(obj: Any?): Int {
-    for (i in 0 until length()) {
-        if (opt(i) == obj) {
-            return i
+fun JsonObject.optBoolean(key: String, default: Boolean = false): Boolean {
+    return this[key]?.let { if (it is JsonPrimitive) it.booleanOrNull?: default else default }?: default
+}
+
+fun JsonObject.optInt(key: String, default: Int = 0): Int {
+    return this[key]?.let { if (it is JsonPrimitive) it.intOrNull?: default else default }?: default
+}
+
+fun JsonObject.optDouble(key: String, default: Double = Double.NaN): Double {
+    return this[key]?.let { if (it is JsonPrimitive) it.doubleOrNull?: default else default }?: default
+}
+
+fun JsonArray.optJsonObject(index: Int, default: JsonObject? = null): JsonObject? {
+    return this.getOrNull(index)?.let { if (it is JsonObject) it else default }?: default
+}
+
+fun JsonArray.optJsonArray(index: Int, default: JsonArray? = null): JsonArray? {
+    return this.getOrNull(index)?.let { if (it is JsonArray) it else default }?: default
+}
+
+fun JsonArray.optString(index: Int, default: String = ""): String {
+    return this.getOrNull(index)?.let { if (it is JsonPrimitive) it.content else default }?: default
+}
+
+fun JsonArray.optBoolean(index: Int, default: Boolean = false): Boolean {
+    return this.getOrNull(index)?.let { if (it is JsonPrimitive) it.booleanOrNull?: default else default }?: default
+}
+
+fun JsonArray.optInt(index: Int, default: Int = 0): Int {
+    return this.getOrNull(index)?.let { if (it is JsonPrimitive) it.intOrNull?: default else default }?: default
+}
+
+fun JsonArray.optDouble(index: Int, default: Double = Double.NaN): Double {
+    return this.getOrNull(index)?.let { if (it is JsonPrimitive) it.doubleOrNull?: default else default }?: default
+}
+
+fun <T> JsonArray.mapToMutableList(deserializer: (JsonElement) -> T): MutableList<T> {
+    return ArrayList<T>(size).apply { this@mapToMutableList.forEach { this.add(deserializer.invoke(it)) } }
+}
+
+fun <T> JsonArray.mapToMutableSet(deserializer: (JsonElement) -> T): MutableSet<T> {
+    return LinkedHashSet<T>().apply { this@mapToMutableSet.forEach { this.add(deserializer.invoke(it)) } }
+}
+
+inline fun <K, V> JsonObject.mapToMutableMap(keyDeserializer: (String) -> K, valueDeserializer: (JsonElement) -> V): MutableMap<K, V> {
+    return LinkedHashMap<K, V>().apply { this@mapToMutableMap.forEach { (key, value) -> this[keyDeserializer.invoke(key)] = valueDeserializer.invoke(value) } }
+}
+
+inline fun <V> JsonObject.mapToMutableMap(valueDeserializer: (JsonElement) -> V): MutableMap<String, V> {
+    return mapToMutableMap({ it }, valueDeserializer)
+}
+
+fun <T> Collection<T>.toJsonArray(): JsonArray {
+    return buildJsonArray { this@toJsonArray.forEach {
+        when (it) {
+            is JsonElement -> add(it)
+            is Number -> add(it)
+            is String -> add(it)
+            is Boolean -> add(it)
+            else -> throw IllegalArgumentException()
         }
-    }
-    return -1
+    } }
 }
 
-inline fun <T> JSONArray.mapToList(mapping: (Any?) -> T): MutableList<T> {
-    val list: MutableList<T> = ArrayList(length())
-    for (i in 0 until length()) {
-        list.add(mapping.invoke(opt(i)))
-    }
-    return list
+fun <T> Sequence<T>.toJsonArray(): JsonArray {
+    return buildJsonArray { this@toJsonArray.forEach {
+        when (it) {
+            is JsonElement -> add(it)
+            is Number -> add(it)
+            is String -> add(it)
+            is Boolean -> add(it)
+            else -> throw IllegalArgumentException()
+        }
+    } }
 }
 
-fun JSONArray.contains(obj: Any?): Boolean {
-    return indexOf(obj) >= 0
-}
-
-@Suppress("UNCHECKED_CAST")
-fun <T> JSONArray.toList(type: Class<T>): MutableList<T> {
-    val list: MutableList<T> = ArrayList(length())
-    for (i in 0 until length()) {
-        list.add(opt(i) as T)
-    }
-    return list
-}
-
-@Suppress("UNCHECKED_CAST")
-fun <T> JSONArray.toSet(type: Class<T>): MutableSet<T> {
-    val set: MutableSet<T> = LinkedHashSet()
-    for (i in 0 until length()) {
-        set.add(opt(i) as T)
-    }
-    return set
-}
-
-inline fun <K, V> JSONObject.toMap(keyDeserializer: (String) -> K, valueDeserializer: (Any?) -> V): MutableMap<K, V> {
-    val map: MutableMap<K, V> = LinkedHashMap()
-    val itr = keys()
-    while (itr.hasNext()) {
-        val key = itr.next()
-        map[keyDeserializer.invoke(key)] = valueDeserializer.invoke(opt(key))
-    }
-    return map
-}
-
-inline fun <V> JSONObject.toMap(valueDeserializer: (Any?) -> V): MutableMap<String, V> {
-    return toMap({ it }, valueDeserializer)
-}
-
-fun <T> Collection<T>.toJSONArray(): JSONArray {
-    val array = JSONArray()
-    for (t in this) {
-        array.put(t)
-    }
-    return array
-}
-
-fun <T> Sequence<T>.toJSONArray(): JSONArray {
-    val array = JSONArray()
-    forEach { array.put(it) }
-    return array
-}
-
-inline fun <V> Map<*, V>.toJSONObject(valueSerializer: (V) -> Any?): JSONObject {
-    val json = JSONObject()
-    for ((key, value) in this) {
-        json.put(key.toString(), valueSerializer.invoke(value))
-    }
-    return json
+inline fun <V> Map<*, V>.toJsonObject(valueSerializer: (V) -> Any?): JsonObject {
+    return buildJsonObject { this@toJsonObject.forEach { (rawKey, rawValue) ->
+        val key = rawKey.toString()
+        when (val value = valueSerializer.invoke(rawValue)) {
+            is JsonElement -> put(key, value)
+            is Number -> put(key, value)
+            is String -> put(key, value)
+            is Boolean -> put(key, value)
+            else -> throw IllegalArgumentException()
+        }
+    } }
 }

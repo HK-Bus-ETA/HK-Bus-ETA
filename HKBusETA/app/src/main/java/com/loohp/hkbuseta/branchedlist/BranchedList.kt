@@ -21,14 +21,13 @@
 package com.loohp.hkbuseta.branchedlist
 
 import com.google.common.collect.Lists
-import java.util.LinkedList
 import java.util.Random
 
 class BranchedList<K, V> (
     private val conflictResolve: (V, V) -> V = { a, _ -> a },
     collection: Collection<BranchedListEntry<K, V>> = emptyList(),
     private val branchId: Int = BRANCH_ID_GENERATOR.nextInt()
-) : LinkedList<BranchedListEntry<K, V>>(collection) {
+) : ArrayList<BranchedListEntry<K, V>>(collection) {
 
     companion object {
 
@@ -104,8 +103,8 @@ class BranchedList<K, V> (
         return Lists.transform(this) { it.value }
     }
 
-    fun valuesWithBranchIds(): List<Pair<V, Set<Int>>> {
-        return Lists.transform(this) { it.value to it.branchIds }
+    fun asSequenceWithBranchIds(): Sequence<Pair<V, Set<Int>>> {
+        return asSequence().map { it.value to it.branchIds }
     }
 
 }

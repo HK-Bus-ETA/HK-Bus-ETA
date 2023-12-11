@@ -19,8 +19,9 @@
  */
 package com.loohp.hkbuseta.utils
 
-import org.json.JSONException
-import org.json.JSONObject
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -94,11 +95,11 @@ fun getTextResponseWithPercentageCallback(link: String, customContentLength: Lon
     }
 }
 
-fun getJSONResponse(link: String): JSONObject? {
+fun getJSONResponse(link: String): JsonObject? {
     return getJSONResponse(link) { it }
 }
 
-fun getJSONResponse(link: String, inputStreamTransform: (InputStream) -> InputStream): JSONObject? {
+fun getJSONResponse(link: String, inputStreamTransform: (InputStream) -> InputStream): JsonObject? {
     try {
         val url = URL(link)
         val connection = url.openConnection() as HttpsURLConnection
@@ -112,19 +113,19 @@ fun getJSONResponse(link: String, inputStreamTransform: (InputStream) -> InputSt
         if (connection.responseCode == HttpsURLConnection.HTTP_OK) {
             BufferedReader(InputStreamReader(inputStreamTransform.invoke(connection.inputStream))).use { reader ->
                 val reply = reader.lines().collect(Collectors.joining())
-                return JSONObject(reply)
+                return Json.decodeFromString<JsonObject>(reply)
             }
         } else {
             return null
         }
     } catch (e: IOException) {
         return null
-    } catch (e: JSONException) {
+    } catch (e: SerializationException) {
         return null
     }
 }
 
-fun postJSONResponse(link: String, body: JSONObject): JSONObject? {
+fun postJSONResponse(link: String, body: JsonObject): JsonObject? {
     try {
         val url = URL(link)
         val connection = url.openConnection() as HttpsURLConnection
@@ -145,14 +146,14 @@ fun postJSONResponse(link: String, body: JSONObject): JSONObject? {
         if (connection.responseCode == HttpsURLConnection.HTTP_OK) {
             BufferedReader(InputStreamReader(connection.inputStream)).use { reader ->
                 val reply = reader.lines().collect(Collectors.joining())
-                return JSONObject(reply)
+                return Json.decodeFromString<JsonObject>(reply)
             }
         } else {
             return null
         }
     } catch (e: IOException) {
         return null
-    } catch (e: JSONException) {
+    } catch (e: SerializationException) {
         return null
     }
 }

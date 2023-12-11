@@ -22,9 +22,12 @@ package com.loohp.hkbuseta.objects
 import androidx.compose.runtime.Immutable
 import com.loohp.hkbuseta.utils.IOSerializable
 import com.loohp.hkbuseta.utils.JSONSerializable
+import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.readString
 import com.loohp.hkbuseta.utils.writeString
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.InputStream
@@ -38,7 +41,7 @@ class BilingualText(val zh: String, val en: String) : JSONSerializable, IOSerial
 
         val EMPTY = BilingualText("", "")
 
-        fun deserialize(json: JSONObject): BilingualText {
+        fun deserialize(json: JsonObject): BilingualText {
             val zh = json.optString("zh")
             val en = json.optString("en")
             return BilingualText(zh, en)
@@ -77,11 +80,11 @@ class BilingualText(val zh: String, val en: String) : JSONSerializable, IOSerial
         return "$zh $en"
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("zh", zh)
-        json.put("en", en)
-        return json
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("zh", zh)
+            put("en", en)
+        }
     }
 
     override fun serialize(outputStream: OutputStream) {

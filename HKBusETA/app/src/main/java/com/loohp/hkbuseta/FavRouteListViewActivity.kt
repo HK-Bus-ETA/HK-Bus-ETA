@@ -67,11 +67,10 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.clamp
-import com.loohp.hkbuseta.utils.distinctBy
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toJSONArray
+import com.loohp.hkbuseta.utils.toJsonArray
 import kotlinx.coroutines.delay
 import java.util.concurrent.ForkJoinPool
 
@@ -220,7 +219,7 @@ fun EvaluatedElement(state: MutableState<Boolean>, origin: Coordinates?, locatio
             }
             .distinctBy { routeEntry -> routeEntry.uniqueKey }
             .map { routeEntry -> routeEntry.serialize() }
-            .toJSONArray().toString()
+            .toJsonArray().toString()
         )
         intent.putExtra("showEta", true)
         if (location != null) {

@@ -31,9 +31,9 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.ActivityCompat;
 
+import com.benasher44.uuid.UuidKt;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -59,7 +59,7 @@ public class NotificationUtils {
         if (askIfNotGranted && context instanceof ComponentActivity) {
             ComponentActivity activity = (ComponentActivity) context;
             AtomicReference<ActivityResultLauncher<String>> ref = new AtomicReference<>();
-            ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result -> {
+            ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UuidKt.uuid4().toString(), new ActivityResultContracts.RequestPermission(), result -> {
                 Bundle bundle = new Bundle();
                 bundle.putBoolean("value", result);
                 FirebaseAnalytics.getInstance(context).logEvent("notification_request_result", bundle);

@@ -54,7 +54,8 @@ import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.getOr
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
@@ -181,8 +182,8 @@ class AlightReminderService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         activeInstance.updateAndGet { it?.stopSelf(); this }
 
-        val newStop = intent?.extras?.getString("stop")?.let { Stop.deserialize(JSONObject(it)) }
-        val newRoute = intent?.extras?.getString("route")?.let { Route.deserialize(JSONObject(it)) }
+        val newStop = intent?.extras?.getString("stop")?.let { Stop.deserialize(Json.decodeFromString<JsonObject>(it)) }
+        val newRoute = intent?.extras?.getString("route")?.let { Route.deserialize(Json.decodeFromString<JsonObject>(it)) }
         val newOperator = intent?.extras?.getString("co")?.let { Operator.valueOf(it) }
         val newIndex = intent?.extras?.getInt("index")
         if (newStop != null && newRoute != null && newOperator != null && newIndex != null) {

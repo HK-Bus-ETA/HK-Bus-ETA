@@ -97,7 +97,6 @@ import com.aghajari.compose.text.AnnotatedText
 import com.aghajari.compose.text.asAnnotatedString
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.google.android.horologist.compose.ambient.AmbientStateUpdate
-import com.google.common.collect.ImmutableMap
 import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
@@ -131,21 +130,26 @@ import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.findTextLengthDp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
-import com.loohp.hkbuseta.utils.mapToList
+import com.loohp.hkbuseta.utils.mapToMutableList
+import com.loohp.hkbuseta.utils.optBoolean
+import com.loohp.hkbuseta.utils.optJsonObject
+import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.set
 import com.loohp.hkbuseta.utils.spToDp
 import com.loohp.hkbuseta.utils.spToPixels
 import com.loohp.hkbuseta.utils.toHexString
 import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -174,12 +178,12 @@ class StopIndexedRouteSearchResultEntry(
 
     companion object {
 
-        fun deserialize(json: JSONObject): StopIndexedRouteSearchResultEntry {
+        fun deserialize(json: JsonObject): StopIndexedRouteSearchResultEntry {
             val routeKey = json.optString("routeKey");
-            val route = if (json.has("route")) Route.deserialize(json.optJSONObject("route")!!) else null
+            val route = if (json.contains("route")) Route.deserialize(json.optJsonObject("route")!!) else null
             val co = Operator.valueOf(json.optString("co"));
-            val stop = if (json.has("stop")) StopInfo.deserialize(json.optJSONObject("stop")!!) else null
-            val origin = if (json.has("origin")) Coordinates.deserialize(json.optJSONObject("origin")!!) else null
+            val stop = if (json.contains("stop")) StopInfo.deserialize(json.optJsonObject("stop")!!) else null
+            val origin = if (json.contains("origin")) Coordinates.deserialize(json.optJsonObject("origin")!!) else null
             val isInterchangeSearch = json.optBoolean("isInterchangeSearch")
             return StopIndexedRouteSearchResultEntry(routeKey, route, co, stop, 0, origin, isInterchangeSearch)
         }
@@ -200,7 +204,7 @@ class ListRoutesActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
-        val result = JSONArray(intent.extras!!.getString("result")!!).mapToList { StopIndexedRouteSearchResultEntry.deserialize(it as JSONObject) }.also { list ->
+        val result = Json.decodeFromString<JsonArray>(intent.extras!!.getString("result")!!).mapToMutableList { StopIndexedRouteSearchResultEntry.deserialize(it.jsonObject) }.also { list ->
             list.removeIf {
                 if (it.route == null) {
                     val route = Registry.getInstance(this).findRouteByKey(it.routeKey, null)
@@ -316,25 +320,10 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
             )) it else null }?: RouteSortMode.NORMAL
         }) }
         val sortTask = remember { {
-            val map: ImmutableMap.Builder<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> = ImmutableMap.builder()
-            map[RouteSortMode.NORMAL] = result
-            if (recentSort.enabled) {
-                map[RouteSortMode.RECENT] = result.sortedBy {
-                    val co = it.co
-                    val meta = when (co) {
-                        Operator.GMB -> it.route!!.gmbRegion!!.name
-                        Operator.NLB -> it.route!!.nlbId
-                        else -> ""
-                    }
-                    Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
-                }
-            }
-            if (proximitySortOrigin != null) {
+            buildMap {
+                this[RouteSortMode.NORMAL] = result
                 if (recentSort.enabled) {
-                    map[RouteSortMode.PROXIMITY] = result.sortedWith(compareBy({
-                        val location = it.stopInfo!!.data!!.location
-                        proximitySortOrigin.distance(location)
-                    }, {
+                    this[RouteSortMode.RECENT] = result.sortedBy {
                         val co = it.co
                         val meta = when (co) {
                             Operator.GMB -> it.route!!.gmbRegion!!.name
@@ -342,15 +331,30 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListRoutesActi
                             else -> ""
                         }
                         Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
-                    }))
-                } else {
-                    map[RouteSortMode.PROXIMITY] = result.sortedBy {
-                        val location = it.stopInfo!!.data!!.location
-                        proximitySortOrigin.distance(location)
                     }
                 }
-            }
-            map.build()
+                if (proximitySortOrigin != null) {
+                    if (recentSort.enabled) {
+                        this[RouteSortMode.PROXIMITY] = result.sortedWith(compareBy({
+                            val location = it.stopInfo!!.data!!.location
+                            proximitySortOrigin.distance(location)
+                        }, {
+                            val co = it.co
+                            val meta = when (co) {
+                                Operator.GMB -> it.route!!.gmbRegion!!.name
+                                Operator.NLB -> it.route!!.nlbId
+                                else -> ""
+                            }
+                            Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
+                        }))
+                    } else {
+                        this[RouteSortMode.PROXIMITY] = result.sortedBy {
+                            val location = it.stopInfo!!.data!!.location
+                            proximitySortOrigin.distance(location)
+                        }
+                    }
+                }
+            }.toImmutableMap()
         } }
         @SuppressLint("MutableCollectionMutableState")
         var sortedByMode by remember { mutableStateOf(sortTask.invoke()) }

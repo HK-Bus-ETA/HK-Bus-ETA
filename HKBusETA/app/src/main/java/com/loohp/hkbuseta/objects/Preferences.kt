@@ -21,13 +21,20 @@ package com.loohp.hkbuseta.objects
 
 import com.loohp.hkbuseta.shared.LastLookupRoute
 import com.loohp.hkbuseta.utils.JSONSerializable
-import com.loohp.hkbuseta.utils.mapToList
-import com.loohp.hkbuseta.utils.toJSONArray
-import com.loohp.hkbuseta.utils.toJSONObject
-import com.loohp.hkbuseta.utils.toList
-import com.loohp.hkbuseta.utils.toMap
-import org.json.JSONArray
-import org.json.JSONObject
+import com.loohp.hkbuseta.utils.mapToMutableList
+import com.loohp.hkbuseta.utils.mapToMutableMap
+import com.loohp.hkbuseta.utils.optJsonArray
+import com.loohp.hkbuseta.utils.optJsonObject
+import com.loohp.hkbuseta.utils.optString
+import com.loohp.hkbuseta.utils.toJsonArray
+import com.loohp.hkbuseta.utils.toJsonObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 class Preferences(
     var language: String,
@@ -39,12 +46,12 @@ class Preferences(
 
     companion object {
 
-        fun deserialize(json: JSONObject): Preferences {
+        fun deserialize(json: JsonObject): Preferences {
             val language = json.optString("language")
-            val favouriteRouteStops = json.optJSONObject("favouriteRouteStops")!!.toMap({ it.toInt() }) { FavouriteRouteStop.deserialize(it as JSONObject) }
-            val lastLookupRoutes = json.optJSONArray("lastLookupRoutes")!!.mapToList { LastLookupRoute.deserialize(it as JSONObject) }
-            val etaTileConfigurations = if (json.has("etaTileConfigurations")) json.optJSONObject("etaTileConfigurations")!!.toMap<Int, List<Int>>({ it.toInt() }) { (it as JSONArray).toList(Int::class.javaPrimitiveType!!) } else HashMap()
-            val routeSortModePreference = if (json.has("routeSortModePreference")) json.optJSONObject("routeSortModePreference")!!.toMap({ RouteListType.valueOf(it) }, { RouteSortMode.valueOf(it as String) }) else HashMap()
+            val favouriteRouteStops = json.optJsonObject("favouriteRouteStops")!!.mapToMutableMap({ it.toInt() }) { FavouriteRouteStop.deserialize(it.jsonObject) }
+            val lastLookupRoutes = json.optJsonArray("lastLookupRoutes")!!.mapToMutableList { LastLookupRoute.deserialize(it.jsonObject) }
+            val etaTileConfigurations = if (json.contains("etaTileConfigurations")) json.optJsonObject("etaTileConfigurations")!!.mapToMutableMap<Int, List<Int>>({ it.toInt() }) { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.int } } else HashMap()
+            val routeSortModePreference = if (json.contains("routeSortModePreference")) json.optJsonObject("routeSortModePreference")!!.mapToMutableMap({ RouteListType.valueOf(it) }, { RouteSortMode.valueOf(it.jsonPrimitive.content) }) else HashMap()
             return Preferences(language, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
         }
 
@@ -59,14 +66,14 @@ class Preferences(
         return this
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("language", language)
-        json.put("favouriteRouteStops", favouriteRouteStops.toJSONObject { it.serialize() })
-        json.put("lastLookupRoutes", lastLookupRoutes.asSequence().map { it.serialize() }.toJSONArray())
-        json.put("etaTileConfigurations", etaTileConfigurations.toJSONObject { it.toJSONArray() })
-        json.put("routeSortModePreference", routeSortModePreference.toJSONObject { it.name })
-        return json
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("language", language)
+            put("favouriteRouteStops", favouriteRouteStops.toJsonObject { it.serialize() })
+            put("lastLookupRoutes", lastLookupRoutes.asSequence().map { it.serialize() }.toJsonArray())
+            put("etaTileConfigurations", etaTileConfigurations.toJsonObject { it.toJsonArray() })
+            put("routeSortModePreference", routeSortModePreference.toJsonObject { it.name })
+        }
     }
 
 }

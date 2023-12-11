@@ -22,21 +22,27 @@ package com.loohp.hkbuseta.objects
 import androidx.compose.runtime.Immutable
 import com.loohp.hkbuseta.utils.IOSerializable
 import com.loohp.hkbuseta.utils.JSONSerializable
-import com.loohp.hkbuseta.utils.mapToList
+import com.loohp.hkbuseta.utils.optBoolean
+import com.loohp.hkbuseta.utils.optJsonArray
+import com.loohp.hkbuseta.utils.optJsonObject
+import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.readCollection
 import com.loohp.hkbuseta.utils.readMap
 import com.loohp.hkbuseta.utils.readNullable
 import com.loohp.hkbuseta.utils.readString
-import com.loohp.hkbuseta.utils.toJSONArray
-import com.loohp.hkbuseta.utils.toJSONObject
-import com.loohp.hkbuseta.utils.toList
-import com.loohp.hkbuseta.utils.toMap
+import com.loohp.hkbuseta.utils.toJsonArray
+import com.loohp.hkbuseta.utils.toJsonObject
+import com.loohp.hkbuseta.utils.mapToMutableList
+import com.loohp.hkbuseta.utils.mapToMutableMap
 import com.loohp.hkbuseta.utils.writeCollection
 import com.loohp.hkbuseta.utils.writeMap
 import com.loohp.hkbuseta.utils.writeNullable
 import com.loohp.hkbuseta.utils.writeString
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.InputStream
@@ -62,20 +68,20 @@ class Route(
 
     companion object {
 
-        fun deserialize(json: JSONObject): Route {
+        fun deserialize(json: JsonObject): Route {
             val route = json.optString("route")
-            val bound = json.optJSONObject("bound")!!.toMap({ Operator.valueOf(it) }, { it as String })
-            val co = json.optJSONArray("co")!!.mapToList { Operator.valueOf(it as String) }
+            val bound = json.optJsonObject("bound")!!.mapToMutableMap({ Operator.valueOf(it) }, { it.jsonPrimitive.content })
+            val co = json.optJsonArray("co")!!.map { Operator.valueOf(it.jsonPrimitive.content) }
             val serviceType = json.optString("serviceType")
             val nlbId = json.optString("nlbId")
             val gtfsId = json.optString("gtfsId")
             val ctbIsCircular = json.optBoolean("ctbIsCircular")
             val kmbCtbJoint = json.optBoolean("kmbCtbJoint")
-            val gmbRegion = if (json.has("gmbRegion")) GMBRegion.valueOfOrNull(json.optString("gmbRegion")) else null
-            val lrtCircular = if (json.has("lrtCircular")) BilingualText.deserialize(json.optJSONObject("lrtCircular")!!) else null
-            val dest = BilingualText.deserialize(json.optJSONObject("dest")!!)
-            val orig = BilingualText.deserialize(json.optJSONObject("orig")!!)
-            val stops = json.optJSONObject("stops")!!.toMap({ Operator.valueOf(it) }, { (it as JSONArray).toList(String::class.java) })
+            val gmbRegion = if (json.contains("gmbRegion")) GMBRegion.valueOfOrNull(json.optString("gmbRegion")) else null
+            val lrtCircular = if (json.contains("lrtCircular")) BilingualText.deserialize(json.optJsonObject("lrtCircular")!!) else null
+            val dest = BilingualText.deserialize(json.optJsonObject("dest")!!)
+            val orig = BilingualText.deserialize(json.optJsonObject("orig")!!)
+            val stops = json.optJsonObject("stops")!!.mapToMutableMap({ Operator.valueOf(it) }, { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.content } })
             return Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, lrtCircular, dest, orig, stops)
         }
 
@@ -98,26 +104,26 @@ class Route(
         }
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("route", routeNumber)
-        json.put("bound", bound.toJSONObject { it })
-        json.put("co", co.asSequence().map { o -> o.name }.toJSONArray())
-        json.put("serviceType", serviceType)
-        json.put("nlbId", nlbId)
-        json.put("gtfsId", gtfsId)
-        json.put("ctbIsCircular", isCtbIsCircular)
-        json.put("kmbCtbJoint", isKmbCtbJoint)
-        if (gmbRegion != null) {
-            json.put("gmbRegion", gmbRegion.name)
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("route", routeNumber)
+            put("bound", bound.toJsonObject { it })
+            put("co", co.asSequence().map { o -> o.name }.toJsonArray())
+            put("serviceType", serviceType)
+            put("nlbId", nlbId)
+            put("gtfsId", gtfsId)
+            put("ctbIsCircular", isCtbIsCircular)
+            put("kmbCtbJoint", isKmbCtbJoint)
+            if (gmbRegion != null) {
+                put("gmbRegion", gmbRegion.name)
+            }
+            if (lrtCircular != null) {
+                put("lrtCircular", lrtCircular.serialize())
+            }
+            put("dest", dest.serialize())
+            put("orig", orig.serialize())
+            put("stops", stops.toJsonObject { it.toJsonArray() })
         }
-        if (lrtCircular != null) {
-            json.put("lrtCircular", lrtCircular.serialize())
-        }
-        json.put("dest", dest.serialize())
-        json.put("orig", orig.serialize())
-        json.put("stops", stops.toJSONObject { it.toJSONArray() })
-        return json
     }
 
     override fun serialize(outputStream: OutputStream) {

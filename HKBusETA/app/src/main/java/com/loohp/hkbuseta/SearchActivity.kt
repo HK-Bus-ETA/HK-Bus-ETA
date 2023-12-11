@@ -96,7 +96,7 @@ import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toJSONArray
+import com.loohp.hkbuseta.utils.toJsonArray
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Job
@@ -330,7 +330,7 @@ fun handleInput(instance: SearchActivity, state: MutableState<RouteKeyboardState
         }
         if (result.isNotEmpty()) {
             val intent = Intent(instance, ListRoutesActivity::class.java)
-            intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJSONArray().toString())
+            intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJsonArray().toString())
             if (input == '<') {
                 intent.putExtra("recentSort", RecentSortMode.FORCED.ordinal)
             }

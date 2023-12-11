@@ -21,13 +21,15 @@ package com.loohp.hkbuseta.objects
 
 import androidx.compose.runtime.Immutable
 import com.loohp.hkbuseta.utils.JSONSerializable
-import com.loohp.hkbuseta.utils.toJSONArray
-import com.loohp.hkbuseta.utils.toJSONObject
-import com.loohp.hkbuseta.utils.toList
-import com.loohp.hkbuseta.utils.toMap
-import com.loohp.hkbuseta.utils.toSet
-import org.json.JSONArray
-import org.json.JSONObject
+import com.loohp.hkbuseta.utils.mapToSet
+import com.loohp.hkbuseta.utils.optJsonArray
+import com.loohp.hkbuseta.utils.optJsonObject
+import com.loohp.hkbuseta.utils.toJsonArray
+import com.loohp.hkbuseta.utils.toJsonObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 
 @Immutable
 class DataContainer(
@@ -38,21 +40,21 @@ class DataContainer(
 
     companion object {
 
-        fun deserialize(json: JSONObject): DataContainer {
-            val dataSheet = DataSheet.deserialize(json.optJSONObject("dataSheet")!!)
-            val busRoute = json.optJSONArray("busRoute")!!.toSet(String::class.java)
-            val mtrBusStopAlias = json.optJSONObject("mtrBusStopAlias")!!.toMap { (it as JSONArray).toList(String::class.java) }
+        fun deserialize(json: JsonObject): DataContainer {
+            val dataSheet = DataSheet.deserialize(json.optJsonObject("dataSheet")!!)
+            val busRoute = json.optJsonArray("busRoute")!!.mapToSet { it.jsonPrimitive.content }
+            val mtrBusStopAlias = json.optJsonObject("mtrBusStopAlias")!!.mapValues { it.value.jsonArray.map { e -> e.jsonPrimitive.content } }
             return DataContainer(dataSheet, busRoute, mtrBusStopAlias)
         }
 
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("dataSheet", dataSheet.serialize())
-        json.put("busRoute", busRoute.toJSONArray())
-        json.put("mtrBusStopAlias", mtrBusStopAlias.toJSONObject { it.toJSONArray() })
-        return json
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("dataSheet", dataSheet.serialize())
+            put("busRoute", busRoute.toJsonArray())
+            put("mtrBusStopAlias", mtrBusStopAlias.toJsonObject { it.toJsonArray() })
+        }
     }
 
     override fun equals(other: Any?): Boolean {

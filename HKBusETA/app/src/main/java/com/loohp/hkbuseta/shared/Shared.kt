@@ -40,13 +40,16 @@ import com.loohp.hkbuseta.objects.RouteSortMode
 import com.loohp.hkbuseta.objects.gmbRegion
 import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.utils.HongKongTimeSource
+import com.loohp.hkbuseta.utils.JSONSerializable
 import com.loohp.hkbuseta.utils.isEqualTo
+import com.loohp.hkbuseta.utils.optString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.PrintWriter
 import java.io.StringWriter
-import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
@@ -70,11 +73,11 @@ data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?, va
 }
 
 @Immutable
-data class LastLookupRoute(val routeNumber: String, val co: Operator, val meta: String) {
+data class LastLookupRoute(val routeNumber: String, val co: Operator, val meta: String) : JSONSerializable {
 
     companion object {
 
-        fun deserialize(json: JSONObject): LastLookupRoute {
+        fun deserialize(json: JsonObject): LastLookupRoute {
             val routeNumber = json.optString("r")
             val co = json.optString("c").operator
             val meta = if (co == Operator.GMB || co == Operator.NLB) json.optString("m") else ""
@@ -96,12 +99,12 @@ data class LastLookupRoute(val routeNumber: String, val co: Operator, val meta: 
         return true
     }
 
-    fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("r", routeNumber)
-        json.put("c", co)
-        if (co == Operator.GMB || co == Operator.NLB) json.put("m", meta)
-        return json
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("r", routeNumber)
+            put("c", co.name)
+            if (co == Operator.GMB || co == Operator.NLB) put("m", meta)
+        }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -288,7 +291,7 @@ class Shared {
         }
 
         private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
-        private val lastLookupRoutes: LinkedList<LastLookupRoute> = LinkedList()
+        private val lastLookupRoutes: ArrayDeque<LastLookupRoute> = ArrayDeque(LAST_LOOKUP_ROUTES_MEM_SIZE)
 
         fun addLookupRoute(routeNumber: String, co: Operator, meta: String) {
             addLookupRoute(LastLookupRoute(routeNumber, co, meta))

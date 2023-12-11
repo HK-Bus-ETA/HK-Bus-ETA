@@ -55,7 +55,7 @@ import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toJSONArray
+import com.loohp.hkbuseta.utils.toJsonArray
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
@@ -218,7 +218,7 @@ fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, using
                 NoNearbyText(result.closestStop, result.closestDistance, instance)
             } else {
                 val intent = Intent(instance, ListRoutesActivity::class.java)
-                intent.putExtra("result", list.asSequence().map { it.strip(); it.serialize() }.toJSONArray().toString())
+                intent.putExtra("result", list.asSequence().map { it.strip(); it.serialize() }.toJsonArray().toString())
                 intent.putExtra("showEta", true)
                 intent.putExtra("recentSort", RecentSortMode.CHOICE.ordinal)
                 intent.putExtra("proximitySortOrigin", doubleArrayOf(result.lat, result.lng))

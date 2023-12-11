@@ -51,7 +51,8 @@
         <activity
             android:name="com.loohp.hkbuseta.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.App.Starting">
+            android:theme="@style/Theme.App.Starting"
+            android:taskAffinity="com.loohp.hkbuseta">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -61,72 +62,84 @@
         <activity
             android:name="com.loohp.hkbuseta.TitleActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.FavActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.FavRouteListViewActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.SearchActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.NearbyActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.ListRoutesActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.ListStopsActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.EtaActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.EtaMenuActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.URLImageActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.DismissibleTextDisplayActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <activity
             android:name="com.loohp.hkbuseta.FatalErrorActivity"
-            android:theme="@android:style/Theme.DeviceDefault">
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
         <service
@@ -161,8 +174,9 @@
             android:exported="true"
             android:launchMode="singleInstancePerTask"
             android:name="com.loohp.hkbuseta.tiles.EtaTileConfigureActivity"
-            android:taskAffinity="SingleNoteTile.Config"
-            android:theme="@style/Theme.App.Starting">
+            android:taskAffinity="com.loohp.hkbuseta.etatile.config"
+            android:theme="@style/Theme.App.Starting"
+            android:noHistory="true">
 
             <intent-filter>
                 <action android:name="ConfigEtaTile"/>

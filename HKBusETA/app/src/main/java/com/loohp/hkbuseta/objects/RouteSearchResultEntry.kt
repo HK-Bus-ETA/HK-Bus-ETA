@@ -22,11 +22,17 @@ package com.loohp.hkbuseta.objects
 import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.utils.IOSerializable
 import com.loohp.hkbuseta.utils.JSONSerializable
+import com.loohp.hkbuseta.utils.optBoolean
+import com.loohp.hkbuseta.utils.optDouble
+import com.loohp.hkbuseta.utils.optJsonObject
+import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.readNullable
 import com.loohp.hkbuseta.utils.readString
 import com.loohp.hkbuseta.utils.writeNullable
 import com.loohp.hkbuseta.utils.writeString
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.ByteArrayInputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -39,12 +45,12 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable {
 
     companion object {
 
-        fun deserialize(json: JSONObject): RouteSearchResultEntry {
+        fun deserialize(json: JsonObject): RouteSearchResultEntry {
             val routeKey = json.optString("routeKey")
-            val route = if (json.has("route")) Route.deserialize(json.optJSONObject("route")!!) else null
+            val route = if (json.contains("route")) Route.deserialize(json.optJsonObject("route")!!) else null
             val co = Operator.valueOf(json.optString("co"))
-            val stop = if (json.has("stop")) StopInfo.deserialize(json.optJSONObject("stop")!!) else null
-            val origin = if (json.has("origin")) Coordinates.deserialize(json.optJSONObject("origin")!!) else null
+            val stop = if (json.contains("stop")) StopInfo.deserialize(json.optJsonObject("stop")!!) else null
+            val origin = if (json.contains("origin")) Coordinates.deserialize(json.optJsonObject("origin")!!) else null
             val isInterchangeSearch = json.optBoolean("isInterchangeSearch")
             return RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch)
         }
@@ -93,21 +99,21 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable {
         stopInfo?.strip()
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("routeKey", routeKey)
-        if (route != null) {
-            json.put("route", route!!.serialize())
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("routeKey", routeKey)
+            if (route != null) {
+                put("route", route!!.serialize())
+            }
+            put("co", co.name)
+            if (stopInfo != null) {
+                put("stop", stopInfo!!.serialize())
+            }
+            if (origin != null) {
+                put("origin", origin!!.serialize())
+            }
+            put("interchangeSearch", isInterchangeSearch)
         }
-        json.put("co", co.name)
-        if (stopInfo != null) {
-            json.put("stop", stopInfo!!.serialize())
-        }
-        if (origin != null) {
-            json.put("origin", origin!!.serialize())
-        }
-        json.put("interchangeSearch", isInterchangeSearch)
-        return json
     }
 
     override fun serialize(outputStream: OutputStream) {
@@ -152,9 +158,9 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
 
     companion object {
 
-        fun deserialize(json: JSONObject): StopInfo {
+        fun deserialize(json: JsonObject): StopInfo {
             val stopId = json.optString("stopId")
-            val data = if (json.has("data")) Stop.deserialize(json.optJSONObject("data")!!) else null
+            val data = if (json.contains("data")) Stop.deserialize(json.optJsonObject("data")!!) else null
             val distance = json.optDouble("distance")
             val co = Operator.valueOf(json.optString("co"))
             return StopInfo(stopId, data, distance, co)
@@ -174,15 +180,15 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
         data = null
     }
 
-    override fun serialize(): JSONObject {
-        val json = JSONObject()
-        json.put("stopId", stopId)
-        if (data != null) {
-            json.put("data", data!!.serialize())
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("stopId", stopId)
+            if (data != null) {
+                put("data", data!!.serialize())
+            }
+            put("distance", distance)
+            put("co", co.name)
         }
-        json.put("distance", distance)
-        json.put("co", co.name)
-        return json
     }
 
     override fun serialize(outputStream: OutputStream) {

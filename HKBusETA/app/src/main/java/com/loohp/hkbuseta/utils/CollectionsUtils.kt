@@ -20,7 +20,6 @@
 
 package com.loohp.hkbuseta.utils
 
-import com.google.common.collect.ImmutableMap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
@@ -31,6 +30,10 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.ForkJoinPool
 import java.util.stream.Stream
 
+
+inline fun <T, C> Collection<T>.mapToSet(mapping: (T) -> C): Set<C> {
+    return buildSet { this@mapToSet.forEach { this.add(mapping.invoke(it)) } }
+}
 
 fun <T> Collection<T>.indexOf(matcher: (T) -> Boolean): Int {
     for ((i, t) in withIndex()) {
@@ -43,10 +46,6 @@ fun <T> Collection<T>.indexOf(matcher: (T) -> Boolean): Int {
 
 fun <T> Collection<T>.commonElementPercentage(other: Collection<T>): Float {
     return asSequence().map { if (other.contains(it)) 1 else 0 }.sum() / other.size.toFloat()
-}
-
-operator fun <K, V> ImmutableMap.Builder<K, V>.set(key: K & Any, value: V & Any): ImmutableMap.Builder<K, V> {
-    return this.put(key, value)
 }
 
 inline fun <T, R> List<T>.parallelMap(executor: ExecutorService = ForkJoinPool.commonPool(), crossinline transform: (T) -> R): List<R> {

@@ -33,6 +33,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.compose.runtime.Immutable;
 import androidx.core.app.ActivityCompat;
 
+import com.benasher44.uuid.UuidKt;
 import com.google.android.gms.location.CurrentLocationRequest;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -42,7 +43,6 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import com.loohp.hkbuseta.objects.Coordinates;
 
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
@@ -68,7 +68,7 @@ public class LocationUtils {
         if (askIfNotGranted && context instanceof ComponentActivity) {
             ComponentActivity activity = (ComponentActivity) context;
             AtomicReference<ActivityResultLauncher<String>> ref = new AtomicReference<>();
-            ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result -> {
+            ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UuidKt.uuid4().toString(), new ActivityResultContracts.RequestPermission(), result -> {
                 Bundle bundle = new Bundle();
                 bundle.putBoolean("value", result);
                 FirebaseAnalytics.getInstance(context).logEvent("location_request_result", bundle);
@@ -103,7 +103,7 @@ public class LocationUtils {
             if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                     ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 AtomicReference<ActivityResultLauncher<String>> ref0 = new AtomicReference<>();
-                ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
+                ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UuidKt.uuid4().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
                     Bundle bundle0 = new Bundle();
                     bundle0.putBoolean("value", result0);
                     FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0);
@@ -114,13 +114,13 @@ public class LocationUtils {
                 launcher0.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
             } else {
                 AtomicReference<ActivityResultLauncher<String>> ref = new AtomicReference<>();
-                ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result -> {
+                ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UuidKt.uuid4().toString(), new ActivityResultContracts.RequestPermission(), result -> {
                     Bundle bundle = new Bundle();
                     bundle.putBoolean("value", result);
                     FirebaseAnalytics.getInstance(activity).logEvent("location_request_result", bundle);
                     if (result) {
                         AtomicReference<ActivityResultLauncher<String>> ref0 = new AtomicReference<>();
-                        ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
+                        ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UuidKt.uuid4().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
                             Bundle bundle0 = new Bundle();
                             bundle0.putBoolean("value", result0);
                             FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0);
@@ -158,7 +158,7 @@ public class LocationUtils {
             if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                     ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 AtomicReference<ActivityResultLauncher<String>> ref0 = new AtomicReference<>();
-                ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
+                ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UuidKt.uuid4().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
                     Bundle bundle0 = new Bundle();
                     bundle0.putBoolean("value", result0);
                     FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0);
@@ -169,13 +169,13 @@ public class LocationUtils {
                 launcher0.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
             } else {
                 AtomicReference<ActivityResultLauncher<String>> ref = new AtomicReference<>();
-                ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result -> {
+                ActivityResultLauncher<String> launcher = activity.getActivityResultRegistry().register(UuidKt.uuid4().toString(), new ActivityResultContracts.RequestPermission(), result -> {
                     Bundle bundle = new Bundle();
                     bundle.putBoolean("value", result);
                     FirebaseAnalytics.getInstance(activity).logEvent("location_request_result", bundle);
                     if (result) {
                         AtomicReference<ActivityResultLauncher<String>> ref0 = new AtomicReference<>();
-                        ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UUID.randomUUID().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
+                        ActivityResultLauncher<String> launcher0 = activity.getActivityResultRegistry().register(UuidKt.uuid4().toString(), new ActivityResultContracts.RequestPermission(), result0 -> {
                             Bundle bundle0 = new Bundle();
                             bundle0.putBoolean("value", result0);
                             FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0);

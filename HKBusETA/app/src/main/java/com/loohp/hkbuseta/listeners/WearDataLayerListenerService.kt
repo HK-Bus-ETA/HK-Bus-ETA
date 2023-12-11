@@ -28,8 +28,10 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.utils.RemoteActivityUtils.Companion.dataToPhone
-import org.json.JSONException
-import org.json.JSONObject
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class WearDataLayerListenerService : WearableListenerService() {
 
@@ -45,28 +47,28 @@ class WearDataLayerListenerService : WearableListenerService() {
         when (event.path) {
             START_ACTIVITY_PATH -> {
                 try {
-                    val data = JSONObject(String(event.data))
+                    val data = Json.decodeFromString<JsonObject>(String(event.data))
                     val intent = Intent(this, MainActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    for (key in data.keys()) {
-                        intent.putExtra(key, data.optString(key))
+                    for ((key, value) in data) {
+                        intent.putExtra(key, value.jsonPrimitive.content)
                     }
                     val bundle = Bundle().apply {
                         putString("value", "1")
                     }
                     FirebaseAnalytics.getInstance(this).logEvent("remote_launch", bundle)
                     startActivity(intent)
-                } catch (e: JSONException) {
+                } catch (e: SerializationException) {
                     e.printStackTrace()
                 }
             }
             IMPORT_PREFERENCE_PATH -> {
                 try {
-                    Registry.initInstanceWithImportedPreference(this, JSONObject(String(event.data)))
+                    Registry.initInstanceWithImportedPreference(this, Json.decodeFromString(String(event.data)))
                     val intent = Intent(this, MainActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     startActivity(intent)
-                } catch (e: JSONException) {
+                } catch (e: SerializationException) {
                     e.printStackTrace()
                 }
             }
@@ -74,7 +76,7 @@ class WearDataLayerListenerService : WearableListenerService() {
                 try {
                     val preferences = Registry.getInstanceNoUpdateCheck(this).exportPreference()
                     dataToPhone(this, EXPORT_PREFERENCE_PATH, preferences)
-                } catch (e: JSONException) {
+                } catch (e: SerializationException) {
                     e.printStackTrace()
                 }
             }
