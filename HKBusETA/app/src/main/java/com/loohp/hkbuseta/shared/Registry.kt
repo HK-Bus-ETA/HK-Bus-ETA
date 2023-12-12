@@ -1907,7 +1907,7 @@ class Registry {
                                 } else {
                                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
                                 }
-                            } else if (hour < 3 || stopId == "LMC" && hour >= 10) {
+                            } else if (hour < 3 || stopId == "LMC" && hour >= 10 || stopId == "SHS" && hour >= 11) {
                                 lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Last train has departed" else "尾班車已開出")
                             } else if (hour < 6) {
                                 lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
@@ -1927,7 +1927,7 @@ class Registry {
                                     } else {
                                         lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
                                     }
-                                } else if (hour < 3 || stopId == "LMC" && hour >= 10) {
+                                } else if (hour < 3 || stopId == "LMC" && hour >= 10 || stopId == "SHS" && hour >= 11) {
                                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Last train has departed" else "尾班車已開出")
                                 } else if (hour < 6) {
                                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
