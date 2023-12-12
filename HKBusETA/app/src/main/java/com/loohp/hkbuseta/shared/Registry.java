@@ -2211,7 +2211,7 @@ public class Registry {
                                 } else {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
                                 }
-                            } else if (hour < 3 || (stopId.equals("LMC") && hour >= 10)) {
+                            } else if (hour < 3 || (stopId.equals("LMC") && hour >= 10) || (stopId == "SHS" && hour >= 11)) {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
                             } else if (hour < 6) {
                                 lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
@@ -2231,7 +2231,7 @@ public class Registry {
                                     } else {
                                         lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
                                     }
-                                } else if (hour < 3 || (stopId.equals("LMC") && hour >= 10)) {
+                                } else if (hour < 3 || (stopId.equals("LMC") && hour >= 10) || (stopId == "SHS" && hour >= 11)) {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Last train has departed" : "尾班車已開出"));
                                 } else if (hour < 6) {
                                     lines.put(1, ETALineEntry.textEntry(Shared.Companion.getLanguage().equals("en") ? "Service has not yet started" : "今日服務尚未開始"));
