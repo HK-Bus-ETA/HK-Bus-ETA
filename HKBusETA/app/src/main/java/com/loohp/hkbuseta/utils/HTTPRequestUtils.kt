@@ -19,203 +19,147 @@
  */
 package com.loohp.hkbuseta.utils
 
-import kotlinx.serialization.SerializationException
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.onDownload
+import io.ktor.client.plugins.timeout
+import io.ktor.client.request.get
+import io.ktor.client.request.headers
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import java.io.BufferedReader
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URL
-import java.nio.charset.StandardCharsets
-import java.util.stream.Collectors
-import javax.net.ssl.HttpsURLConnection
 
 
-fun getTextResponse(link: String?): String? {
-    try {
-        val url = URL(link)
-        val connection = url.openConnection() as HttpsURLConnection
-        connection.connectTimeout = 20000
-        connection.readTimeout = 20000
-        connection.useCaches = false
-        connection.defaultUseCaches = false
-        connection.addRequestProperty("User-Agent", "Mozilla/5.0")
-        connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-        connection.addRequestProperty("Pragma", "no-cache")
-        if (connection.responseCode == HttpsURLConnection.HTTP_OK) {
-            BufferedReader(InputStreamReader(connection.inputStream)).use { reader ->
-                return reader.lines().collect(Collectors.joining())
+private val httpClient = HttpClient(CIO) {
+    install(HttpTimeout)
+}
+
+fun getTextResponse(link: String): String? {
+    return runBlocking {
+        try {
+            httpClient.get(link) {
+                headers {
+                    append(HttpHeaders.UserAgent, "Mozilla/5.0")
+                    append(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
+                    append(HttpHeaders.Pragma, "no-cache")
+                }
+                timeout {
+                    connectTimeoutMillis = 20000
+                    socketTimeoutMillis = 20000
+                }
+            }.let {
+                if (it.status == HttpStatusCode.OK) {
+                    it.bodyAsText(Charsets.UTF_8)
+                } else {
+                    null
+                }
             }
-        } else {
-            return null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-    } catch (e: IOException) {
-        return null
     }
 }
 
 fun getTextResponseWithPercentageCallback(link: String, customContentLength: Long, percentageCallback: (Float) -> Unit): String? {
-    return getTextResponseWithPercentageCallback(link, customContentLength, { it }, percentageCallback)
+    return getTextResponseWithPercentageCallback(link, customContentLength, false, percentageCallback)
 }
 
-fun getTextResponseWithPercentageCallback(link: String, customContentLength: Long, inputStreamTransform: (InputStream) -> InputStream, percentageCallback: (Float) -> Unit): String? {
-    try {
-        val url = URL(link)
-        val connection = url.openConnection() as HttpsURLConnection
-        connection.connectTimeout = 20000
-        connection.readTimeout = 20000
-        connection.useCaches = false
-        connection.defaultUseCaches = false
-        connection.addRequestProperty("User-Agent", "Mozilla/5.0")
-        connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-        connection.addRequestProperty("Pragma", "no-cache")
-        if (connection.responseCode == HttpsURLConnection.HTTP_OK) {
-            val contentLength = (if (customContentLength >= 0) customContentLength else connection.contentLengthLong).toFloat()
-            inputStreamTransform.invoke(connection.inputStream).use { inputStream ->
-                val buffer = ByteArrayOutputStream()
-                var readTotal = 0
-                var nRead: Int
-                val data = ByteArray(16384)
-                while (inputStream.read(data, 0, data.size).also { nRead = it } != -1) {
-                    readTotal += nRead
-                    buffer.write(data, 0, nRead)
-                    percentageCallback.invoke(0f.coerceAtLeast((readTotal / contentLength).coerceAtMost(1f)))
+fun getTextResponseWithPercentageCallback(link: String, customContentLength: Long, gzip: Boolean, percentageCallback: (Float) -> Unit): String? {
+    return runBlocking {
+        try {
+            httpClient.get(link) {
+                headers {
+                    append(HttpHeaders.UserAgent, "Mozilla/5.0")
+                    append(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
+                    append(HttpHeaders.Pragma, "no-cache")
                 }
-                percentageCallback.invoke(1f)
-                return String(buffer.toByteArray(), 0, buffer.size(), StandardCharsets.UTF_8)
+                timeout {
+                    connectTimeoutMillis = 20000
+                    socketTimeoutMillis = 20000
+                }
+                onDownload { bytesSentTotal, rawContentLength ->
+                    val contentLength = customContentLength.takeIf { l -> l >= 0 }?: rawContentLength
+                    percentageCallback.invoke(0f.coerceAtLeast((bytesSentTotal.toFloat() / contentLength).coerceAtMost(1f)))
+                }
+            }.let {
+                if (it.status == HttpStatusCode.OK) {
+                    if (gzip) it.gzipBodyAsText(Charsets.UTF_8) else it.bodyAsText(Charsets.UTF_8)
+                } else {
+                    null
+                }
             }
-        } else {
-            return null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-    } catch (e: IOException) {
-        return null
     }
 }
 
 fun getJSONResponse(link: String): JsonObject? {
-    return getJSONResponse(link) { it }
+    return getJSONResponse(link, false)
 }
 
-fun getJSONResponse(link: String, inputStreamTransform: (InputStream) -> InputStream): JsonObject? {
-    try {
-        val url = URL(link)
-        val connection = url.openConnection() as HttpsURLConnection
-        connection.connectTimeout = 20000
-        connection.readTimeout = 20000
-        connection.useCaches = false
-        connection.defaultUseCaches = false
-        connection.addRequestProperty("User-Agent", "Mozilla/5.0")
-        connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-        connection.addRequestProperty("Pragma", "no-cache")
-        if (connection.responseCode == HttpsURLConnection.HTTP_OK) {
-            BufferedReader(InputStreamReader(inputStreamTransform.invoke(connection.inputStream))).use { reader ->
-                val reply = reader.lines().collect(Collectors.joining())
-                return Json.decodeFromString<JsonObject>(reply)
+fun getJSONResponse(link: String, gzip: Boolean): JsonObject? {
+    return runBlocking {
+        try {
+            httpClient.get(link) {
+                headers {
+                    append(HttpHeaders.UserAgent, "Mozilla/5.0")
+                    append(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
+                    append(HttpHeaders.Pragma, "no-cache")
+                }
+                timeout {
+                    connectTimeoutMillis = 20000
+                    socketTimeoutMillis = 20000
+                }
+            }.let {
+                if (it.status == HttpStatusCode.OK) {
+                    Json.decodeFromString<JsonObject>(if (gzip) it.gzipBodyAsText(Charsets.UTF_8) else it.bodyAsText(Charsets.UTF_8))
+                } else {
+                    null
+                }
             }
-        } else {
-            return null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-    } catch (e: IOException) {
-        return null
-    } catch (e: SerializationException) {
-        return null
     }
 }
 
 fun postJSONResponse(link: String, body: JsonObject): JsonObject? {
-    try {
-        val url = URL(link)
-        val connection = url.openConnection() as HttpsURLConnection
-        connection.connectTimeout = 20000
-        connection.readTimeout = 20000
-        connection.requestMethod = "POST"
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.doOutput = true
-        connection.useCaches = false
-        connection.defaultUseCaches = false
-        connection.addRequestProperty("User-Agent", "Mozilla/5.0")
-        connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-        connection.addRequestProperty("Pragma", "no-cache")
-        connection.outputStream.use { os ->
-            val input = body.toString().toByteArray(StandardCharsets.UTF_8)
-            os.write(input, 0, input.size)
-        }
-        if (connection.responseCode == HttpsURLConnection.HTTP_OK) {
-            BufferedReader(InputStreamReader(connection.inputStream)).use { reader ->
-                val reply = reader.lines().collect(Collectors.joining())
-                return Json.decodeFromString<JsonObject>(reply)
+    return runBlocking {
+        try {
+            httpClient.post(link) {
+                headers {
+                    append(HttpHeaders.UserAgent, "Mozilla/5.0")
+                    append(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
+                    append(HttpHeaders.Pragma, "no-cache")
+                }
+                contentType(ContentType.Application.Json)
+                setBody(body)
+                timeout {
+                    connectTimeoutMillis = 20000
+                    socketTimeoutMillis = 20000
+                }
+            }.let {
+                if (it.status == HttpStatusCode.OK) {
+                    Json.decodeFromString<JsonObject>(it.bodyAsText(Charsets.UTF_8))
+                } else {
+                    null
+                }
             }
-        } else {
-            return null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-    } catch (e: IOException) {
-        return null
-    } catch (e: SerializationException) {
-        return null
-    }
-}
-
-fun getInputStream(link: String): InputStream {
-    val connection = URL(link).openConnection()
-    connection.connectTimeout = 20000
-    connection.readTimeout = 20000
-    connection.useCaches = false
-    connection.defaultUseCaches = false
-    connection.addRequestProperty("User-Agent", "Mozilla/5.0")
-    connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-    connection.addRequestProperty("Pragma", "no-cache")
-    return connection.getInputStream()
-}
-
-fun download(link: String): ByteArray {
-    getInputStream(link).use { `is` ->
-        val baos = ByteArrayOutputStream()
-        val byteChunk = ByteArray(4096)
-        var n: Int
-        while (`is`.read(byteChunk).also { n = it } > 0) {
-            baos.write(byteChunk, 0, n)
-        }
-        return baos.toByteArray()
-    }
-}
-
-fun getContentSize(link: String): Long {
-    return try {
-        val connection = URL(link).openConnection()
-        connection.connectTimeout = 20000
-        connection.readTimeout = 20000
-        connection.useCaches = false
-        connection.defaultUseCaches = false
-        connection.addRequestProperty("User-Agent", "Mozilla/5.0")
-        connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-        connection.addRequestProperty("Pragma", "no-cache")
-        if (connection is HttpURLConnection) {
-            connection.requestMethod = "HEAD"
-        }
-        connection.contentLengthLong
-    } catch (e: IOException) {
-        -1
-    }
-}
-
-fun getContentType(link: String): String {
-    return try {
-        val connection = URL(link).openConnection()
-        connection.connectTimeout = 20000
-        connection.readTimeout = 20000
-        connection.useCaches = false
-        connection.defaultUseCaches = false
-        connection.addRequestProperty("User-Agent", "Mozilla/5.0")
-        connection.addRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-        connection.addRequestProperty("Pragma", "no-cache")
-        if (connection is HttpURLConnection) {
-            connection.requestMethod = "HEAD"
-        }
-        connection.contentType
-    } catch (e: IOException) {
-        ""
     }
 }

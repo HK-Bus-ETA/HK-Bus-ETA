@@ -82,6 +82,9 @@ kotlin {
 
 dependencies {
     implementation("com.benasher44:uuid:0.8.2")
+    implementation("io.ktor:ktor-client-core:2.3.7")
+    implementation("io.ktor:ktor-client-cio:2.3.7")
+    implementation("io.ktor:ktor-client-encoding:2.3.7")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
     implementation("androidx.core:core-splashscreen:1.1.0-alpha02")
     implementation("androidx.core:core-ktx:1.12.0")

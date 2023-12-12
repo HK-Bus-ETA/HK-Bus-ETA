@@ -131,6 +131,7 @@ import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -396,7 +397,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     val co = favStopRoute.co
 
                     Registry.getInstance(instance).findRoutes(route.routeNumber, true) { it ->
-                    val bound = it.bound
+                        val bound = it.bound
                         if (!bound.containsKey(co) || bound[co] != route.bound[co]) {
                             return@findRoutes false
                         }

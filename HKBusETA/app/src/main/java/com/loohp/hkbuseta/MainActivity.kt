@@ -79,7 +79,6 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import java.io.ByteArrayInputStream
-import java.util.regex.Pattern
 import kotlin.math.absoluteValue
 
 
@@ -169,7 +168,7 @@ class MainActivity : ComponentActivity() {
                                 finish()
                             } else if (queryRouteNumber != null || queryKey != null) {
                                 if (queryKey != null) {
-                                    val routeNumber = Pattern.compile("^([0-9a-zA-Z]+)").matcher(queryKey).let { if (it.find()) it.group(1) else null }
+                                    val routeNumber = Regex("^([0-9a-zA-Z]+)").find(queryKey)?.groupValues?.getOrNull(1)
                                     val nearestRoute = Registry.getInstance(this@MainActivity).findRouteByKey(queryKey, routeNumber)
                                     queryRouteNumber = nearestRoute!!.routeNumber
                                     queryCo = if (nearestRoute.isKmbCtbJoint) Operator.KMB else nearestRoute.co[0]

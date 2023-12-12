@@ -72,6 +72,7 @@ import com.loohp.hkbuseta.utils.parallelMapNotNull
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.timeZone
 import com.loohp.hkbuseta.utils.toSpanned
+import kotlinx.coroutines.runBlocking
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.time.ZoneId

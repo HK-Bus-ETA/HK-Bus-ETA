@@ -66,8 +66,16 @@ import com.loohp.hkbuseta.utils.optJsonArray
 import com.loohp.hkbuseta.utils.optJsonObject
 import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.postJSONResponse
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -89,24 +97,14 @@ import java.util.Collections
 import java.util.Locale
 import java.util.TimeZone
 import java.util.TreeSet
-import java.util.concurrent.Callable
-import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
-import java.util.concurrent.FutureTask
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
-import java.util.regex.Pattern
 import java.util.stream.Collectors
-import java.util.zip.GZIPInputStream
 import kotlin.math.absoluteValue
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -121,7 +119,6 @@ class Registry {
 
         private var INSTANCE: Registry? = null
         private val INSTANCE_LOCK = Any()
-        private val ETA_QUERY_EXECUTOR: ExecutorService = ThreadPoolExecutor(64, Int.MAX_VALUE, 60, TimeUnit.SECONDS, SynchronousQueue())
 
         fun getInstance(context: Context): Registry {
             synchronized(INSTANCE_LOCK) {
@@ -173,7 +170,7 @@ class Registry {
     private val updatePercentageStateFlow: MutableStateFlow<Float> = 0f.asMutableStateFlow()
     private val preferenceWriteLock = Any()
     private val lastUpdateCheckHolder = AtomicLong(0)
-    private val currentChecksumTask = AtomicReference<Future<*>?>(null)
+    private val currentChecksumTask = AtomicReference<Job?>(null)
     private val objectCache: MutableMap<String, Any> = ConcurrentHashMap()
 
     private constructor(context: Context, suppressUpdateCheck: Boolean) {
@@ -375,7 +372,7 @@ class Registry {
 
     fun cancelCurrentChecksumTask() {
         val task = currentChecksumTask.get()
-        task?.cancel(true)
+        task?.cancel()
     }
 
     private fun ensureData(context: Context, suppressUpdateCheck: Boolean) {
@@ -430,35 +427,25 @@ class Registry {
         if (!suppressUpdateCheck) {
             lastUpdateCheckHolder.set(System.currentTimeMillis())
         }
-        Thread {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 val files = listOf(*context.applicationContext.fileList())
                 val connectionType = context.getConnectionType()
                 val updateChecked = AtomicBoolean(false)
-                val checksumFetcher: (Boolean) -> String? = { forced ->
-                    val future = FutureTask {
+                val checksumFetcher: suspend (Boolean) -> String? = { forced ->
+                    val future = async { withTimeout(10000) {
                         val version = context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode
                         getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5") + "_" + version
-                    }
+                    } }
                     currentChecksumTask.set(future)
                     if (!forced && files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_FILE_NAME)) {
                         stateFlow.value = State.UPDATE_CHECKING
                     }
                     try {
-                        Thread(future).start()
-                        val result = future[10, TimeUnit.SECONDS]
+                        val result = future.await()
                         updateChecked.set(true)
                         result
-                    } catch (e: ExecutionException) {
-                        e.printStackTrace()
-                        null
-                    } catch (e: TimeoutException) {
-                        e.printStackTrace()
-                        null
-                    } catch (e: InterruptedException) {
-                        e.printStackTrace()
-                        null
-                    } catch (e: CancellationException) {
+                    } catch (e: Exception) {
                         e.printStackTrace()
                         null
                     } finally {
@@ -512,7 +499,7 @@ class Registry {
                             checksum = checksumFetcher.invoke(true)
                         }
                         val length: Long = LongUtils.parseOr(getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.gz.dat"), -1)
-                        val textResponse: String = getTextResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, { GZIPInputStream(it) }, { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset })?: throw RuntimeException("Error downloading bus data")
+                        val textResponse: String = getTextResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, true) { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
                         DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(textResponse))
                         updatePercentageStateFlow.value = 0.75f + percentageOffset
                         val atomicDataFile = AtomicFile(context.applicationContext.getFileStreamPath(DATA_FILE_NAME))
@@ -598,7 +585,7 @@ class Registry {
             if (stateFlow.value != State.READY) {
                 stateFlow.value = State.ERROR
             }
-        }.start()
+        }
     }
 
     fun getRouteKey(route: Route?): String? {
@@ -865,7 +852,7 @@ class Registry {
             val bound = route.bound
             val pa = routeNumber[0].toString()
             val sa = routeNumber[routeNumber.length - 1].toString()
-            var na: Int = IntUtils.parseOrZero(routeNumber.replace("[^0-9]".toRegex(), ""))
+            var na: Int = IntUtils.parseOrZero(routeNumber.replace(Regex("[^0-9]"), ""))
             if (bound.containsKey(Operator.GMB)) {
                 na += 1000
             } else if (bound.containsKey(Operator.MTR)) {
@@ -1170,12 +1157,12 @@ class Registry {
             return CompletableFuture.completedFuture(cache)
         }
         val future = CompletableFuture<TyphoonInfo>()
-        Thread {
+        CoroutineScope(Dispatchers.IO).launch {
             val data: JsonObject? = getJSONResponse("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=" + if (Shared.language == "en") "en" else "tc")
             if (data != null && data.contains("WTCSGNL")) {
-                val matcher = Pattern.compile("TC([0-9]+)(.*)").matcher(data.optJsonObject("WTCSGNL")!!.optString("code"))
-                if (matcher.find() && matcher.group(1) != null) {
-                    val signal = matcher.group(1)!!.toInt()
+                val matchingGroups = Regex("TC([0-9]+)(.*)").find(data.optJsonObject("WTCSGNL")!!.optString("code"))?.groupValues
+                if (matchingGroups?.getOrNull(1) != null) {
+                    val signal = matchingGroups[1].toInt()
                     val isAboveTyphoonSignalEight = signal >= 8
                     val isAboveTyphoonSignalNine = signal >= 9
                     val typhoonWarningTitle: String = if (Shared.language == "en") {
@@ -1184,14 +1171,14 @@ class Registry {
                         data.optJsonObject("WTCSGNL")!!.optString("type") + " 現正生效"
                     }
                     val currentTyphoonSignalId = if (signal < 8) {
-                        "tc$signal" + (if (matcher.group(2) != null) matcher.group(2) else "").lowercase()
+                        "tc$signal${(matchingGroups.getOrNull(2)?: "").lowercase()}"
                     } else {
-                        "tc" + signal.toString().padStart(2, '0') + (if (matcher.group(2) != null) matcher.group(2) else "").lowercase()
+                        "tc" + signal.toString().padStart(2, '0') + (matchingGroups.getOrNull(2)?: "").lowercase()
                     }
                     val info = TyphoonInfo.info(isAboveTyphoonSignalEight, isAboveTyphoonSignalNine, typhoonWarningTitle, currentTyphoonSignalId)
                     typhoonInfo.value = info
                     future.complete(info)
-                    return@Thread
+                    return@launch
                 }
             }
             val info = TyphoonInfo.none()
@@ -1254,7 +1241,7 @@ class Registry {
             putString("by_bound", route.routeNumber + "," + co.name + "," + route.bound[co])
             putString("by_route", route.routeNumber + "," + co.name)
         })
-        val pending = PendingETAQueryResult(context, co) {
+        val pending = PendingETAQueryResult(context, co, CoroutineScope(Dispatchers.IO).async {
             val typhoonInfo = currentTyphoonData.get()
             val lines: MutableMap<Int, ETALineEntry> = HashMap()
             var isMtrEndOfLine = false
@@ -1267,7 +1254,7 @@ class Registry {
                 val jointOperated: MutableSet<JointOperatedEntry> = ConcurrentHashMap.newKeySet()
                 val kmbSpecialMessage = AtomicReference<String?>(null)
                 val kmbFirstScheduledBus = AtomicLong(Long.MAX_VALUE)
-                val kmbFuture = ETA_QUERY_EXECUTOR.submit {
+                val kmbFuture = launch {
                     val data: JsonObject? = getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
                     val buses = data!!.optJsonArray("data")!!
                     val stopSequences: MutableSet<Int> = HashSet()
@@ -1380,12 +1367,12 @@ class Registry {
                     val destKeys = second.asSequence().map { it.zh.replace(" ", "") }.toSet()
                     val ctbEtaEntries: MutableMap<String?, MutableSet<JointOperatedEntry>> = ConcurrentHashMap()
                     val stopQueryData: MutableList<JsonObject?> = ArrayList()
-                    val ctbFutures: MutableList<Future<*>> = ArrayList(ctbStopIds.size)
+                    val ctbFutures: MutableList<Deferred<*>> = ArrayList(ctbStopIds.size)
                     for (ctbStopId in ctbStopIds) {
-                        ctbFutures.add(ETA_QUERY_EXECUTOR.submit { stopQueryData.add(getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber")) })
+                        ctbFutures.add(async { stopQueryData.add(getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber")) })
                     }
                     for (future in ctbFutures) {
-                        future.get()
+                        future.await()
                     }
                     val stopSequences: MutableMap<String, MutableSet<Int>> = HashMap()
                     val queryBusDests: Array<Array<String?>?> = arrayOfNulls(stopQueryData.size)
@@ -1458,7 +1445,7 @@ class Registry {
                         }
                     }
                 }
-                kmbFuture.get()
+                kmbFuture.join()
                 if (jointOperated.isEmpty()) {
                     if (kmbSpecialMessage.get() == null || kmbSpecialMessage.get()!!.isEmpty()) {
                         lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
@@ -1845,8 +1832,7 @@ class Registry {
                                     val routeNumber = routeData.optString("route_no")
                                     val destCh = routeData.optString("dest_ch")
                                     if (routeNumber == route.routeNumber && isLrtStopOnOrAfter(stopId, destCh, route)) {
-                                        val matcher = Pattern.compile("([0-9]+) *min").matcher(routeData.optString("time_en"))
-                                        val mins = if (matcher.find()) matcher.group(1)!!.toLong() else 0
+                                        val mins = Regex("([0-9]+) *min").find(routeData.optString("time_en"))?.groupValues?.getOrNull(1)?.toLong()?: 0
                                         val minsMsg = routeData.optString(if (Shared.language == "en") "time_en" else "time_ch")
                                         val dest = routeData.optString(if (Shared.language == "en") "dest_en" else "dest_ch")
                                         val trainLength = routeData.optInt("train_length")
@@ -1877,7 +1863,7 @@ class Registry {
                             minsMessage = if (minsMessage == "即將抵達" || minsMessage == "Arriving" || minsMessage == "正在離開" || minsMessage == "Departing") {
                                 "<b>$minsMessage</b>"
                             } else {
-                                minsMessage.replace("^([0-9]+)".toRegex(), "<b>$1</b>")
+                                minsMessage.replace(Regex("^([0-9]+)"), "<b>$1</b>")
                                     .replace(" min", "<small> Min.</small>")
                                     .replace(" 分鐘", "<small> 分鐘</small>")
                             }
@@ -1996,8 +1982,7 @@ class Registry {
                 }
             }
             ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, nextCo, lines)
-        }
-        ETA_QUERY_EXECUTOR.submit(pending)
+        })
         return pending
     }
 
@@ -2021,50 +2006,30 @@ class Registry {
     class PendingETAQueryResult(
         private val context: Context,
         private val co: Operator,
-        callable: Callable<ETAQueryResult>
-    ) : FutureTask<ETAQueryResult>(callable) {
+        private val deferred: Deferred<ETAQueryResult>
+    ) {
 
         private val errorResult: ETAQueryResult @SuppressLint("RestrictedApi") get() {
             val restrictionType = if (context is ComponentActivity) BackgroundRestrictionType.NONE else context.isBackgroundRestricted()
             return ETAQueryResult.connectionError(restrictionType, co)
         }
 
-        override fun get(): ETAQueryResult {
+        fun get(): ETAQueryResult {
             return try {
-                super.get()!!
-            } catch (e: ExecutionException) {
+                runBlocking { deferred.await() }
+            } catch (e: Exception) {
                 e.printStackTrace()
-                try { cancel(true) } catch (ignore: Throwable) { }
-                errorResult
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-                try { cancel(true) } catch (ignore: Throwable) { }
-                errorResult
-            } catch (e: CancellationException) {
-                e.printStackTrace()
-                try { cancel(true) } catch (ignore: Throwable) { }
+                try { deferred.cancel() } catch (ignore: Throwable) { }
                 errorResult
             }
         }
 
-        override fun get(timeout: Long, unit: TimeUnit): ETAQueryResult {
+        fun get(timeout: Long, unit: TimeUnit): ETAQueryResult {
             return try {
-                super.get(timeout, unit)!!
-            } catch (e: ExecutionException) {
+                runBlocking { withTimeout(unit.toMillis(timeout)) { deferred.await() } }
+            } catch (e: Exception) {
                 e.printStackTrace()
-                try { cancel(true) } catch (ignore: Throwable) { }
-                errorResult
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-                try { cancel(true) } catch (ignore: Throwable) { }
-                errorResult
-            } catch (e: TimeoutException) {
-                e.printStackTrace()
-                try { cancel(true) } catch (ignore: Throwable) { }
-                errorResult
-            } catch (e: CancellationException) {
-                e.printStackTrace()
-                try { cancel(true) } catch (ignore: Throwable) { }
+                try { deferred.cancel() } catch (ignore: Throwable) { }
                 errorResult
             }
         }

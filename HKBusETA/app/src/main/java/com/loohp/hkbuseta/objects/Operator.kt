@@ -22,13 +22,12 @@ package com.loohp.hkbuseta.objects
 import androidx.compose.runtime.Immutable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.regex.Pattern
 
 @Immutable
 class Operator private constructor(
     val name: String,
     val ordinal: Int,
-    private val stopIdPattern: Pattern?,
+    private val stopIdPattern: Regex?,
     val isBuiltIn: Boolean
 ) : Comparable<Operator> {
 
@@ -47,7 +46,7 @@ class Operator private constructor(
 
         private fun createBuiltIn(name: String, stopIdPattern: String): Operator {
             return VALUES.computeIfAbsent(name.lowercase()) {
-                Operator(it, COUNTER.getAndIncrement(), Pattern.compile(stopIdPattern), true)
+                Operator(it, COUNTER.getAndIncrement(), Regex(stopIdPattern), true)
             }
         }
 
@@ -63,7 +62,7 @@ class Operator private constructor(
     }
 
     fun matchStopIdPattern(stopId: String): Boolean {
-        return stopIdPattern != null && stopIdPattern.matcher(stopId).matches()
+        return stopIdPattern != null && stopIdPattern.matches(stopId)
     }
 
     override fun toString(): String {
