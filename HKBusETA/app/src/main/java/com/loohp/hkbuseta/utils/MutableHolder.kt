@@ -20,69 +20,67 @@
 
 package com.loohp.hkbuseta.utils
 
-import java.util.concurrent.locks.ReentrantReadWriteLock
-
 
 class MutableHolder<T>(value: T? = null) {
 
-    private val lock = ReentrantReadWriteLock()
+    private val lock = ReadWriteLock()
 
     var value: T? = value
         get() {
-            lock.readLock().lock()
+            lock.readLock()
             try {
                 return field
             } finally {
-                lock.readLock().unlock()
+                lock.readUnlock()
             }
         }
         set(value) {
-            lock.writeLock().lock()
+            lock.writeLock()
             try {
                 field = value
             } finally {
-                lock.writeLock().unlock()
+                lock.writeUnlock()
             }
         }
 
     @Suppress("NON_PUBLIC_CALL_FROM_PUBLIC_INLINE")
     inline fun computeIfAbsent(compute: () -> T?) {
-        lock.writeLock().lock()
+        lock.writeLock()
         try {
             if (value == null) {
                 value = compute.invoke()
             }
         } finally {
-            lock.writeLock().unlock()
+            lock.writeUnlock()
         }
     }
 
     @Suppress("NON_PUBLIC_CALL_FROM_PUBLIC_INLINE")
     inline fun <O> ifPresent(compute: (T) -> O): O? {
-        lock.readLock().lock()
+        lock.readLock()
         try {
             return value?.let { compute.invoke(it) }
         } finally {
-            lock.readLock().unlock()
+            lock.readUnlock()
         }
     }
 
     @Suppress("NON_PUBLIC_CALL_FROM_PUBLIC_INLINE")
     inline fun replace(replace: (T) -> T?): T? {
-        lock.writeLock().lock()
+        lock.writeLock()
         try {
             return value?.let { replace.invoke(it) }.apply { value = this }
         } finally {
-            lock.writeLock().unlock()
+            lock.writeUnlock()
         }
     }
 
     fun remove(): T? {
-        lock.writeLock().lock()
+        lock.writeLock()
         try {
             return value.apply { value = null }
         } finally {
-            lock.writeLock().unlock()
+            lock.writeUnlock()
         }
     }
 
@@ -92,14 +90,13 @@ class MutableHolder<T>(value: T? = null) {
 
         other as MutableHolder<*>
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int {
-        return value?.hashCode() ?: 0
+        return javaClass.hashCode()
     }
+
 }
 
 fun <T> T.asMutableHolder(): MutableHolder<T> {

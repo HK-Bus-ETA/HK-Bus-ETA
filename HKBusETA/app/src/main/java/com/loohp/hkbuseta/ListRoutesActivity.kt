@@ -146,7 +146,7 @@ import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -246,7 +246,7 @@ class ListRoutesActivity : ComponentActivity() {
                 MainElement(it, this, result, listType, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
                     sync.execute {
                         if (isAdd) {
-                            etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                            etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
                         } else {
                             etaUpdatesMap.remove(key)?.first?.cancel(true)
                         }
@@ -266,7 +266,7 @@ class ListRoutesActivity : ComponentActivity() {
         sync.execute {
             etaUpdatesMap.replaceAll { _, value ->
                 value.first?.cancel(true)
-                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
+                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to value.second
             }
         }
     }
@@ -709,7 +709,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
             delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, key) {
-            val result = Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            val result = Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             etaStateFlow.value = result
             etaUpdateTimes.value[key] = System.currentTimeMillis()
             etaResults.value[key] = result

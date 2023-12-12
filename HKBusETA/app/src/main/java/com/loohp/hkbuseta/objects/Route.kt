@@ -38,15 +38,14 @@ import com.loohp.hkbuseta.utils.writeCollection
 import com.loohp.hkbuseta.utils.writeMap
 import com.loohp.hkbuseta.utils.writeNullable
 import com.loohp.hkbuseta.utils.writeString
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.writeBoolean
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 import kotlin.text.Charsets.UTF_8
 
 @Immutable
@@ -85,8 +84,7 @@ class Route(
             return Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, lrtCircular, dest, orig, stops)
         }
 
-        fun deserialize(inputStream: InputStream): Route {
-            val input = DataInputStream(inputStream)
+        suspend fun deserialize(input: ByteReadChannel): Route {
             val route = input.readString(UTF_8)
             val bound = input.readMap(LinkedHashMap()) { Operator.valueOf(it.readString(UTF_8)) to it.readString(UTF_8) }
             val co = input.readCollection(ArrayList()) { Operator.valueOf(it.readString(UTF_8)) }
@@ -99,7 +97,7 @@ class Route(
             val lrtCircular = input.readNullable { BilingualText.deserialize(it) }
             val dest = BilingualText.deserialize(input)
             val orig = BilingualText.deserialize(input)
-            val stops = input.readMap(LinkedHashMap()) { Operator.valueOf(it.readString(UTF_8)) to it.readCollection(ArrayList()) { it1: DataInputStream -> it1.readString(UTF_8) } }
+            val stops = input.readMap(LinkedHashMap()) { Operator.valueOf(it.readString(UTF_8)) to it.readCollection(ArrayList()) { it1 -> it1.readString(UTF_8) } }
             return Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, lrtCircular, dest, orig, stops)
         }
     }
@@ -126,8 +124,7 @@ class Route(
         }
     }
 
-    override fun serialize(outputStream: OutputStream) {
-        val out = DataOutputStream(outputStream)
+    override suspend fun serialize(out: ByteWriteChannel) {
         out.writeString(routeNumber, UTF_8)
         out.writeMap(bound) { o, k, v -> o.writeString(k.name, UTF_8) to o.writeString(v, UTF_8) }
         out.writeCollection(co) { o, t -> o.writeString(t.name, UTF_8) }

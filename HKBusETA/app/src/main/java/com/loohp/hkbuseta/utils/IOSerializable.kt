@@ -19,15 +19,21 @@
  */
 package com.loohp.hkbuseta.utils
 
-import java.io.ByteArrayOutputStream
-import java.io.OutputStream
+import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.core.readBytes
+import kotlinx.coroutines.runBlocking
 
 interface IOSerializable {
 
-    fun serialize(outputStream: OutputStream)
+    suspend fun serialize(out: ByteWriteChannel)
 
     fun toByteArray(): ByteArray {
-        return ByteArrayOutputStream().apply { serialize(this) }.toByteArray()
+        return runBlocking {
+            ByteChannel(autoFlush = true)
+                .apply { serialize(this) }
+                .let { it.readRemaining(it.availableForRead.toLong()).readBytes() }
+        }
     }
 
 }

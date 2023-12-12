@@ -52,8 +52,11 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
 import com.loohp.hkbuseta.utils.getOr
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import java.util.concurrent.Executors
@@ -232,10 +235,10 @@ class AlightReminderService : Service() {
                         }
                         updateCurrentValue(currentValue.updateLocation(currentLocation, distance))
                         if (arrived) {
-                            Thread {
+                            CoroutineScope(Dispatchers.IO).launch {
                                 stopForeground(STOP_FOREGROUND_DETACH)
                                 stopSelf()
-                            }.start()
+                            }
                         }
                     }
                 } else {

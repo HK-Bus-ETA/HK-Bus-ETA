@@ -30,14 +30,13 @@ import com.loohp.hkbuseta.utils.readNullable
 import com.loohp.hkbuseta.utils.readString
 import com.loohp.hkbuseta.utils.writeNullable
 import com.loohp.hkbuseta.utils.writeString
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.writeBoolean
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.io.ByteArrayInputStream
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 import kotlin.text.Charsets.UTF_8
 
 @Stable
@@ -55,8 +54,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable {
             return RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch)
         }
 
-        fun deserialize(inputStream: InputStream): RouteSearchResultEntry {
-            val input = DataInputStream(inputStream)
+        suspend fun deserialize(input: ByteReadChannel): RouteSearchResultEntry {
             val routeKey = input.readString(UTF_8)
             val route = input.readNullable { Route.deserialize(it) }
             val co = Operator.valueOf(input.readString(UTF_8))
@@ -91,7 +89,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable {
     }
 
     fun deepClone(): RouteSearchResultEntry {
-        return deserialize(ByteArrayInputStream(toByteArray()))
+        return runBlocking { deserialize(ByteReadChannel(toByteArray())) }
     }
 
     fun strip() {
@@ -116,8 +114,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable {
         }
     }
 
-    override fun serialize(outputStream: OutputStream) {
-        val out = DataOutputStream(outputStream)
+    override suspend fun serialize(out: ByteWriteChannel) {
         out.writeString(routeKey, UTF_8)
         out.writeNullable(route) { o, v -> v.serialize(o) }
         out.writeString(co.name, UTF_8)
@@ -166,10 +163,9 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
             return StopInfo(stopId, data, distance, co)
         }
 
-        fun deserialize(inputStream: InputStream): StopInfo {
-            val input = DataInputStream(inputStream)
+        suspend fun deserialize(input: ByteReadChannel): StopInfo {
             val stopId = input.readString(UTF_8)
-            val data = input.readNullable(Stop::deserialize)
+            val data = input.readNullable { Stop.deserialize(it) }
             val distance = input.readDouble()
             val co = Operator.valueOf(input.readString(UTF_8))
             return StopInfo(stopId, data, distance, co)
@@ -191,8 +187,7 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
         }
     }
 
-    override fun serialize(outputStream: OutputStream) {
-        val out = DataOutputStream(outputStream)
+    override suspend fun serialize(out: ByteWriteChannel) {
         out.writeString(stopId, UTF_8)
         out.writeNullable(data) { o, v -> v.serialize(o) }
         out.writeDouble(distance)

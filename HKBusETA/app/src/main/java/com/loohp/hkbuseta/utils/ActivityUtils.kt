@@ -24,12 +24,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import java.util.UUID
+import com.benasher44.uuid.Uuid
 
 
 fun ComponentActivity.startActivity(intent: Intent, callback: (ActivityResult) -> Unit) {
     var ref: ActivityResultLauncher<Intent>? = null
-    activityResultRegistry.register(UUID.randomUUID().toString(), ActivityResultContracts.StartActivityForResult()) {
+    activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.StartActivityForResult()) {
         callback.invoke(it)
         ref?.unregister()
     }.apply { ref = this }.launch(intent)

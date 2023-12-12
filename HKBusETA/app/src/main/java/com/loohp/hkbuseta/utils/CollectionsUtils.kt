@@ -20,15 +20,16 @@
 
 package com.loohp.hkbuseta.utils
 
+import co.touchlab.stately.collections.ConcurrentMutableSet
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
-import java.util.concurrent.Callable
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ForkJoinPool
-import java.util.stream.Stream
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 
 
 inline fun <T, C> Collection<T>.mapToSet(mapping: (T) -> C): Set<C> {
@@ -48,27 +49,27 @@ fun <T> Collection<T>.commonElementPercentage(other: Collection<T>): Float {
     return asSequence().map { if (other.contains(it)) 1 else 0 }.sum() / other.size.toFloat()
 }
 
-inline fun <T, R> List<T>.parallelMap(executor: ExecutorService = ForkJoinPool.commonPool(), crossinline transform: (T) -> R): List<R> {
-    return map { executor.submit(Callable { transform.invoke(it) }) }.map { it.get() }
+inline fun <T, R> List<T>.parallelMap(dispatcher: CoroutineDispatcher = Dispatchers.IO, crossinline transform: (T) -> R): List<R> {
+    return map { CoroutineScope(dispatcher).async { transform.invoke(it) } }.map { runBlocking { it.await() } }
 }
 
-inline fun <T, R> List<T>.parallelMapNotNull(executor: ExecutorService = ForkJoinPool.commonPool(), crossinline transform: (T) -> R?): List<R> {
-    return map { executor.submit(Callable { transform.invoke(it) }) }.mapNotNull { it.get() }
+inline fun <T, R> List<T>.parallelMapNotNull(dispatcher: CoroutineDispatcher = Dispatchers.IO, crossinline transform: (T) -> R?): List<R> {
+    return map { CoroutineScope(dispatcher).async { transform.invoke(it) } }.mapNotNull { runBlocking { it.await() } }
 }
 
-fun <T> Stream<T>.toImmutableList(): ImmutableList<T> {
+fun <T> Sequence<T>.toImmutableList(): ImmutableList<T> {
     val builder = persistentListOf<T>().builder()
     forEach { builder.add(it) }
     return builder.build()
 }
 
-fun <T> Stream<T>.toImmutableSet(): ImmutableSet<T> {
+fun <T> Sequence<T>.toImmutableSet(): ImmutableSet<T> {
     val builder = persistentSetOf<T>().builder()
     forEach { builder.add(it) }
     return builder.build()
 }
 
-inline fun <T> Stream<T>.distinctBy(crossinline keyExtractor: (T) -> Any): Stream<T> {
-    val seen: MutableSet<Any> = ConcurrentHashMap.newKeySet()
+inline fun <T> Sequence<T>.distinctBy(crossinline keyExtractor: (T) -> Any): Sequence<T> {
+    val seen: MutableSet<Any> = ConcurrentMutableSet()
     return this.filter { seen.add(keyExtractor.invoke(it)) }
 }

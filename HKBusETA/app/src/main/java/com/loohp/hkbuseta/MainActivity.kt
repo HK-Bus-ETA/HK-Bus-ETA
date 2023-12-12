@@ -75,10 +75,14 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.toJsonArray
+import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import java.io.ByteArrayInputStream
 import kotlin.math.absoluteValue
 
 
@@ -123,9 +127,9 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect (state) {
                 when (state) {
                     Registry.State.READY -> {
-                        Thread {
+                        CoroutineScope(Dispatchers.IO).launch {
                             if (stopId != null && co != null && (stop is String || stop is ByteArray) && (route is String || route is ByteArray)) {
-                                val routeParsed = if (route is String) Route.deserialize(Json.decodeFromString<JsonObject>(route)) else Route.deserialize(ByteArrayInputStream(route as ByteArray))
+                                val routeParsed = if (route is String) Route.deserialize(Json.decodeFromString<JsonObject>(route)) else runBlocking { Route.deserialize(ByteReadChannel(route as ByteArray)) }
                                 Registry.getInstance(this@MainActivity).findRoutes(routeParsed.routeNumber, true) { it ->
                                     val bound = it.bound
                                     if (!bound.containsKey(co) || bound[co] != routeParsed.bound[co]) {
@@ -265,16 +269,16 @@ class MainActivity : ComponentActivity() {
                                     finishAffinity()
                                 }
                             }
-                        }.start()
+                        }
                     }
                     Registry.State.ERROR -> {
-                        Thread {
+                        CoroutineScope(Dispatchers.IO).launch {
                             val intent = Intent(this@MainActivity, FatalErrorActivity::class.java)
                             intent.putExtra("zh", "發生錯誤\n請檢查您的網絡連接")
                             intent.putExtra("en", "Fatal Error\nPlease check your internet connection")
                             startActivity(intent)
                             finish()
-                        }.start()
+                        }
                     }
                     else -> {}
                 }

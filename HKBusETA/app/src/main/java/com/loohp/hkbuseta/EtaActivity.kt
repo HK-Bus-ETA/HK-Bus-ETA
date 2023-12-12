@@ -120,13 +120,15 @@ import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.startActivity
 import com.loohp.hkbuseta.utils.toSpanned
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import java.io.ByteArrayInputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -149,9 +151,9 @@ class EtaActivity : ComponentActivity() {
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")?.operator
         val index = intent.extras!!.getInt("index")
-        val stop = intent.extras!!.getByteArray("stop")?.let { Stop.deserialize(ByteArrayInputStream(it)) }?:
+        val stop = intent.extras!!.getByteArray("stop")?.let { runBlocking { Stop.deserialize(ByteReadChannel(it)) } }?:
             intent.extras!!.getString("stopStr")?.let { Stop.deserialize(Json.decodeFromString<JsonObject>(it)) }
-        val route = intent.extras!!.getByteArray("route")?.let { Route.deserialize(ByteArrayInputStream(it)) }?:
+        val route = intent.extras!!.getByteArray("route")?.let { runBlocking { Route.deserialize(ByteReadChannel(it)) } }?:
             intent.extras!!.getString("routeStr")?.let { Route.deserialize(Json.decodeFromString<JsonObject>(it)) }
         if (stopId == null || co == null || stop == null || route == null) {
             throw RuntimeException()
@@ -163,7 +165,7 @@ class EtaActivity : ComponentActivity() {
                 EtaElement(it, stopId, co, index, stop, route, offsetStart, this) { isAdd, task ->
                     sync.execute {
                         if (isAdd) {
-                            etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                            etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
                         } else {
                             etaUpdatesMap.remove()?.first?.cancel(true)
                         }
@@ -183,7 +185,7 @@ class EtaActivity : ComponentActivity() {
         sync.execute {
             etaUpdatesMap.replace { value ->
                 value.first?.cancel(true)
-                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
+                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to value.second
             }
         }
     }
@@ -336,7 +338,7 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
 
                 LaunchedEffect (Unit) {
                     schedule.invoke(true) {
-                        val result = Registry.getInstance(instance).getEta(stopId, index, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+                        val result = Registry.getInstance(instance).getEta(stopId, index, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                         if (active) {
                             etaStateFlow.value = result
                         }

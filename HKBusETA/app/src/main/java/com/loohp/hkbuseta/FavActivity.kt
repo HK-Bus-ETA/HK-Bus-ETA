@@ -131,7 +131,7 @@ import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -159,7 +159,7 @@ class FavActivity : ComponentActivity() {
             FavElements(scrollToIndex, this) { isAdd, index, task ->
                 sync.execute {
                     if (isAdd) {
-                        etaUpdatesMap.compute(index) { _, v -> v?.apply { executor.execute(task) }?: (executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!!) }
+                        etaUpdatesMap.compute(index) { _, v -> v?.apply { executor.execute(task) }?: (executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!!) }
                     } else {
                         etaUpdatesMap.remove(index)?.first?.cancel(true)
                     }
@@ -178,7 +178,7 @@ class FavActivity : ComponentActivity() {
         sync.execute {
             etaUpdatesMap.replaceAll { _, value ->
                 value.first?.cancel(true)
-                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
+                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to value.second
             }
         }
     }
@@ -602,7 +602,7 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
             delay(etaUpdateTimes.value[favoriteIndex]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, favoriteIndex) {
-            val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             etaStateFlow.value = result
             etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
             etaResults.value[favoriteIndex] = result
@@ -611,7 +611,7 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
     LaunchedEffect (stopId) {
         if (Shared.favoriteRouteStops[favoriteIndex]?.favouriteStopMode?.isRequiresLocation == true) {
             schedule.invoke(true, favoriteIndex) {
-                val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+                val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                 etaStateFlow.value = result
                 etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
                 etaResults.value[favoriteIndex] = result

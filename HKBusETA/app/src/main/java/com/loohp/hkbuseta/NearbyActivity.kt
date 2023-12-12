@@ -59,7 +59,6 @@ import com.loohp.hkbuseta.utils.toJsonArray
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
-import java.util.concurrent.ForkJoinPool
 import kotlin.math.roundToInt
 
 
@@ -194,14 +193,12 @@ fun MainElement(location: LocationResult?, exclude: ImmutableSet<String>, interc
     var result: Registry.NearbyRoutesResult? by remember { mutableStateOf(null) }
 
     LaunchedEffect (Unit) {
-        ForkJoinPool.commonPool().execute {
-            val locationResult = location?: LocationUtils.getGPSLocation(instance).get()
-            if (locationResult.isSuccess) {
-                val loc = locationResult.location
-                result = Registry.getInstance(instance).getNearbyRoutes(loc.lat, loc.lng, exclude, interchangeSearch)
-            }
-            state = true
+        val locationResult = location?: LocationUtils.getGPSLocation(instance).get()
+        if (locationResult.isSuccess) {
+            val loc = locationResult.location
+            result = Registry.getInstance(instance).getNearbyRoutes(loc.lat, loc.lng, exclude, interchangeSearch)
         }
+        state = true
     }
 
     EvaluatedElement(state, result, location == null, instance)

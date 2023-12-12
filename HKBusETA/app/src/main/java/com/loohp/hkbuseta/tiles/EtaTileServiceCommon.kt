@@ -41,7 +41,12 @@ import androidx.wear.protolayout.expression.AnimationParameterBuilders
 import androidx.wear.protolayout.expression.DynamicBuilders.DynamicColor
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
+import co.touchlab.stately.concurrency.AtomicBoolean
+import co.touchlab.stately.concurrency.AtomicInt
+import co.touchlab.stately.concurrency.AtomicLong
+import co.touchlab.stately.concurrency.AtomicReference
 import com.aghajari.compose.text.asAnnotatedString
+import com.benasher44.uuid.Uuid
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
@@ -72,22 +77,18 @@ import com.loohp.hkbuseta.utils.parallelMapNotNull
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.timeZone
 import com.loohp.hkbuseta.utils.toSpanned
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.datetime.DateTimeUnit
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.time.ZoneId
 import java.util.Date
 import java.util.TimeZone
-import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
@@ -190,7 +191,7 @@ class TileState {
     private val lastUpdated: AtomicLong = AtomicLong(0)
     private val cachedETAQueryResult: AtomicReference<Pair<MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?, Long>> = AtomicReference(null to 0)
     private val tileLayoutState: AtomicBoolean = AtomicBoolean(false)
-    private val lastTileArcColor: AtomicInteger = AtomicInteger(Int.MIN_VALUE)
+    private val lastTileArcColor: AtomicInt = AtomicInt(Int.MIN_VALUE)
     private val lastUpdateSuccessful: AtomicBoolean = AtomicBoolean(false)
     private val isCurrentlyUpdating: AtomicLong = AtomicLong(0)
     private val lastLocation: AtomicReference<Coordinates?> = AtomicReference(null)
@@ -229,11 +230,11 @@ class TileState {
     }
 
     fun getLastUpdateSuccessful(): Boolean {
-        return lastUpdateSuccessful.get()
+        return lastUpdateSuccessful.value
     }
 
     fun setLastUpdateSuccessful(value: Boolean) {
-        lastUpdateSuccessful.set(value)
+        lastUpdateSuccessful.value = value
     }
 
     fun isCurrentlyUpdating(): Boolean {
@@ -258,7 +259,7 @@ class EtaTileServiceCommon {
 
     companion object {
 
-        private val resourceVersion: AtomicReference<String> = AtomicReference(UUID.randomUUID().toString())
+        private val resourceVersion: AtomicReference<String> = AtomicReference(Uuid.randomUUID().toString())
         private val inlineImageResources: MutableMap<String, InlineImageResource> = ConcurrentHashMap()
 
         private val executor = Executors.newScheduledThreadPool(16)
@@ -273,7 +274,7 @@ class EtaTileServiceCommon {
             val hash = BigInteger(1, md.digest(resource.data)).toString(16).padStart(32, '0')
                 .plus("_").plus(resource.width).plus("_").plus(resource.height)
             inlineImageResources.computeIfAbsent(hash) {
-                resourceVersion.set(UUID.randomUUID().toString())
+                resourceVersion.set(Uuid.randomUUID().toString())
                 resource
             }
             return hash
@@ -647,10 +648,10 @@ class EtaTileServiceCommon {
                 val favouriteRouteStops = favouriteStopRoutes
                     .resolveStops(context) { it.setLastLocationOrGetLast(LocationUtils.getGPSLocation(context).getOr(7, TimeUnit.SECONDS) { null }?.location) }
                 val eta = MergedETAQueryResult.merge(
-                    favouriteRouteStops.parallelMapNotNull(executor) { pair ->
+                    favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
                         val (favStop, resolved) = pair
                         val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                        (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+                        (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                     }
                 )
                 it.markLastUpdated()
@@ -874,10 +875,10 @@ class EtaTileServiceCommon {
                                 .mapNotNull { favouriteRoute -> Shared.favoriteRouteStops[favouriteRoute] }
                                 .resolveStops(context) { it.setLastLocationOrGetLast(LocationUtils.getGPSLocation(context).getOr(7, TimeUnit.SECONDS) { null }?.location) }
                             it.cacheETAQueryResult(MergedETAQueryResult.merge(
-                                favouriteRouteStops.parallelMapNotNull(executor) { pair ->
+                                favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
                                     val (favStop, resolved) = pair
                                     val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                                    (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+                                    (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                                 }
                             ))
                             it.markLastUpdated()

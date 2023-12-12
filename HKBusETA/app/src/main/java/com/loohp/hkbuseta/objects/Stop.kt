@@ -28,13 +28,11 @@ import com.loohp.hkbuseta.utils.readNullable
 import com.loohp.hkbuseta.utils.readString
 import com.loohp.hkbuseta.utils.writeNullable
 import com.loohp.hkbuseta.utils.writeString
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.ByteWriteChannel
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 import kotlin.text.Charsets.UTF_8
 
 @Immutable
@@ -55,8 +53,7 @@ class Stop(
             return Stop(location, name, remark, kmbBbiId)
         }
 
-        fun deserialize(inputStream: InputStream): Stop {
-            val input = DataInputStream(inputStream)
+        suspend fun deserialize(input: ByteReadChannel): Stop {
             val location = Coordinates.deserialize(input)
             val name = BilingualText.deserialize(input)
             val remark = input.readNullable { BilingualText.deserialize(it) }
@@ -79,8 +76,7 @@ class Stop(
         }
     }
 
-    override fun serialize(outputStream: OutputStream) {
-        val out = DataOutputStream(outputStream)
+    override suspend fun serialize(out: ByteWriteChannel) {
         location.serialize(out)
         name.serialize(out)
         out.writeNullable(remark) { o, v -> v.serialize(o) }

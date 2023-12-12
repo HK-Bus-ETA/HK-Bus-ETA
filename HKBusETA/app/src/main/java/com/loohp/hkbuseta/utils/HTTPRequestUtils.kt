@@ -52,8 +52,8 @@ fun getTextResponse(link: String): String? {
                     append(HttpHeaders.Pragma, "no-cache")
                 }
                 timeout {
+                    requestTimeoutMillis = 20000
                     connectTimeoutMillis = 20000
-                    socketTimeoutMillis = 20000
                 }
             }.let {
                 if (it.status == HttpStatusCode.OK) {
@@ -83,8 +83,8 @@ fun getTextResponseWithPercentageCallback(link: String, customContentLength: Lon
                     append(HttpHeaders.Pragma, "no-cache")
                 }
                 timeout {
+                    requestTimeoutMillis = 20000
                     connectTimeoutMillis = 20000
-                    socketTimeoutMillis = 20000
                 }
                 onDownload { bytesSentTotal, rawContentLength ->
                     val contentLength = customContentLength.takeIf { l -> l >= 0 }?: rawContentLength
@@ -118,8 +118,8 @@ fun getJSONResponse(link: String, gzip: Boolean): JsonObject? {
                     append(HttpHeaders.Pragma, "no-cache")
                 }
                 timeout {
+                    requestTimeoutMillis = 20000
                     connectTimeoutMillis = 20000
-                    socketTimeoutMillis = 20000
                 }
             }.let {
                 if (it.status == HttpStatusCode.OK) {
@@ -147,8 +147,8 @@ fun postJSONResponse(link: String, body: JsonObject): JsonObject? {
                 contentType(ContentType.Application.Json)
                 setBody(body)
                 timeout {
+                    requestTimeoutMillis = 20000
                     connectTimeoutMillis = 20000
-                    socketTimeoutMillis = 20000
                 }
             }.let {
                 if (it.status == HttpStatusCode.OK) {

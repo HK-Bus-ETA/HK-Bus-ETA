@@ -21,19 +21,13 @@
 package com.loohp.hkbuseta.branchedlist
 
 import com.google.common.collect.Lists
-import java.util.Random
+import kotlin.random.Random
 
 class BranchedList<K, V> (
     private val conflictResolve: (V, V) -> V = { a, _ -> a },
     collection: Collection<BranchedListEntry<K, V>> = emptyList(),
-    private val branchId: Int = BRANCH_ID_GENERATOR.nextInt()
+    private val branchId: Int = Random.nextInt()
 ) : ArrayList<BranchedListEntry<K, V>>(collection) {
-
-    companion object {
-
-        private val BRANCH_ID_GENERATOR = Random()
-
-    }
 
     fun add(key: K, value: V): Boolean {
         return add(BranchedListEntry(key, value, branchId))

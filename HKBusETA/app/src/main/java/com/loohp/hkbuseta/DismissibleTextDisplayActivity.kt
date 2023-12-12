@@ -74,11 +74,12 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.toSpanned
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.io.ByteArrayInputStream
 
 
 private val defaultDismissText = "確認" withEn "OK"
@@ -91,8 +92,8 @@ class DismissibleTextDisplayActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
-        val text = intent.extras!!.getByteArray("text")?.let { BilingualText.deserialize(ByteArrayInputStream(it)) }?: BilingualText.EMPTY
-        val dismissText = intent.extras!!.getByteArray("dismissText")?.let { BilingualText.deserialize(ByteArrayInputStream(it)) }?: defaultDismissText
+        val text = intent.extras!!.getByteArray("text")?.let { runBlocking { BilingualText.deserialize(ByteReadChannel(it)) } }?: BilingualText.EMPTY
+        val dismissText = intent.extras!!.getByteArray("dismissText")?.let { runBlocking { BilingualText.deserialize(ByteReadChannel(it)) } }?: defaultDismissText
 
         setContent {
             TextElement(text, dismissText, this)

@@ -25,13 +25,11 @@ import com.loohp.hkbuseta.utils.JSONSerializable
 import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.readString
 import com.loohp.hkbuseta.utils.writeString
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.ByteWriteChannel
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 import kotlin.text.Charsets.UTF_8
 
 @Immutable
@@ -47,8 +45,7 @@ class BilingualText(val zh: String, val en: String) : JSONSerializable, IOSerial
             return BilingualText(zh, en)
         }
 
-        fun deserialize(inputStream: InputStream): BilingualText {
-            val input = DataInputStream(inputStream)
+        suspend fun deserialize(input: ByteReadChannel): BilingualText {
             val zh = input.readString(UTF_8)
             val en = input.readString(UTF_8)
             return BilingualText(zh, en)
@@ -87,8 +84,7 @@ class BilingualText(val zh: String, val en: String) : JSONSerializable, IOSerial
         }
     }
 
-    override fun serialize(outputStream: OutputStream) {
-        val out = DataOutputStream(outputStream)
+    override suspend fun serialize(out: ByteWriteChannel) {
         out.writeString(zh, UTF_8)
         out.writeString(en, UTF_8)
     }

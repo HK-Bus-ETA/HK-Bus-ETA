@@ -25,6 +25,11 @@ import android.os.Bundle
 import androidx.compose.runtime.Immutable
 import androidx.core.app.ComponentActivity
 import androidx.core.util.AtomicFile
+import co.touchlab.stately.collections.ConcurrentMutableMap
+import co.touchlab.stately.collections.ConcurrentMutableSet
+import co.touchlab.stately.concurrency.AtomicBoolean
+import co.touchlab.stately.concurrency.AtomicLong
+import co.touchlab.stately.concurrency.AtomicReference
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.branchedlist.BranchedList
@@ -66,6 +71,7 @@ import com.loohp.hkbuseta.utils.optJsonArray
 import com.loohp.hkbuseta.utils.optJsonObject
 import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.postJSONResponse
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -76,6 +82,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -85,25 +98,6 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
-import java.nio.charset.StandardCharsets
-import java.text.SimpleDateFormat
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAccessor
-import java.util.Collections
-import java.util.Locale
-import java.util.TimeZone
-import java.util.TreeSet
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.Collectors
 import kotlin.math.absoluteValue
 import kotlin.math.floor
@@ -171,7 +165,7 @@ class Registry {
     private val preferenceWriteLock = Any()
     private val lastUpdateCheckHolder = AtomicLong(0)
     private val currentChecksumTask = AtomicReference<Job?>(null)
-    private val objectCache: MutableMap<String, Any> = ConcurrentHashMap()
+    private val objectCache: MutableMap<String, Any> = ConcurrentMutableMap()
 
     private constructor(context: Context, suppressUpdateCheck: Boolean) {
         ensureData(context, suppressUpdateCheck)
@@ -190,7 +184,7 @@ class Registry {
         synchronized(preferenceWriteLock) {
             val atomicFile = AtomicFile(context.applicationContext.getFileStreamPath(PREFERENCES_FILE_NAME))
             atomicFile.startWrite().use { fos ->
-                PrintWriter(OutputStreamWriter(fos, StandardCharsets.UTF_8)).use { pw ->
+                PrintWriter(OutputStreamWriter(fos, Charsets.UTF_8)).use { pw ->
                     pw.write(PREFERENCES!!.serialize().toString())
                     pw.flush()
                     atomicFile.finishWrite(fos)
@@ -201,7 +195,7 @@ class Registry {
 
     private fun importPreference(context: Context, preferencesData: JsonObject) {
         val preferences = Preferences.deserialize(preferencesData).cleanForImport()
-        PrintWriter(OutputStreamWriter(context.applicationContext.openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), StandardCharsets.UTF_8)).use { pw ->
+        PrintWriter(OutputStreamWriter(context.applicationContext.openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), Charsets.UTF_8)).use { pw ->
             pw.write(preferences.serialize().toString())
             pw.flush()
         }
@@ -371,8 +365,7 @@ class Registry {
     }
 
     fun cancelCurrentChecksumTask() {
-        val task = currentChecksumTask.get()
-        task?.cancel()
+        currentChecksumTask.get()?.cancel()
     }
 
     private fun ensureData(context: Context, suppressUpdateCheck: Boolean) {
@@ -385,7 +378,7 @@ class Registry {
         val files = listOf(*context.applicationContext.fileList())
         if (files.contains(PREFERENCES_FILE_NAME)) {
             try {
-                BufferedReader(InputStreamReader(context.applicationContext.openFileInput(PREFERENCES_FILE_NAME), StandardCharsets.UTF_8)).use { reader ->
+                BufferedReader(InputStreamReader(context.applicationContext.openFileInput(PREFERENCES_FILE_NAME), Charsets.UTF_8)).use { reader ->
                     PREFERENCES = Preferences.deserialize(Json.decodeFromString<JsonObject>(reader.lines().collect(Collectors.joining())))
                 }
             } catch (e: Throwable) {
@@ -443,7 +436,7 @@ class Registry {
                     }
                     try {
                         val result = future.await()
-                        updateChecked.set(true)
+                        updateChecked.value = true
                         result
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -460,7 +453,7 @@ class Registry {
                     if (checksum == null) {
                         cached = true
                     } else {
-                        BufferedReader(InputStreamReader(context.applicationContext.openFileInput(CHECKSUM_FILE_NAME), StandardCharsets.UTF_8)).use { reader ->
+                        BufferedReader(InputStreamReader(context.applicationContext.openFileInput(CHECKSUM_FILE_NAME), Charsets.UTF_8)).use { reader ->
                             val localChecksum = reader.readLine()
                             if (localChecksum == checksum) {
                                 cached = true
@@ -471,7 +464,7 @@ class Registry {
                 if (cached) {
                     if (DATA == null) {
                         try {
-                            BufferedReader(InputStreamReader(context.applicationContext.openFileInput(DATA_FILE_NAME), StandardCharsets.UTF_8)).use { reader ->
+                            BufferedReader(InputStreamReader(context.applicationContext.openFileInput(DATA_FILE_NAME), Charsets.UTF_8)).use { reader ->
                                 DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(reader.lines().collect(Collectors.joining())))
                             }
                             updateTileService()
@@ -495,7 +488,7 @@ class Registry {
                         updatePercentageStateFlow.value = 0f
                         val percentageOffset =
                             if (Shared.favoriteRouteStops.isEmpty()) 0.15f else 0f
-                        if (!updateChecked.get()) {
+                        if (!updateChecked.value) {
                             checksum = checksumFetcher.invoke(true)
                         }
                         val length: Long = LongUtils.parseOr(getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size.gz.dat"), -1)
@@ -504,7 +497,7 @@ class Registry {
                         updatePercentageStateFlow.value = 0.75f + percentageOffset
                         val atomicDataFile = AtomicFile(context.applicationContext.getFileStreamPath(DATA_FILE_NAME))
                         atomicDataFile.startWrite().use { fos ->
-                            PrintWriter(OutputStreamWriter(fos, StandardCharsets.UTF_8)).use { pw ->
+                            PrintWriter(OutputStreamWriter(fos, Charsets.UTF_8)).use { pw ->
                                 pw.write(textResponse)
                                 pw.flush()
                                 atomicDataFile.finishWrite(fos)
@@ -513,7 +506,7 @@ class Registry {
                         updatePercentageStateFlow.value = 0.825f + percentageOffset
                         val atomicChecksumFile = AtomicFile(context.applicationContext.getFileStreamPath(CHECKSUM_FILE_NAME))
                         atomicChecksumFile.startWrite().use { fos ->
-                            PrintWriter(OutputStreamWriter(fos, StandardCharsets.UTF_8)).use { pw ->
+                            PrintWriter(OutputStreamWriter(fos, Charsets.UTF_8)).use { pw ->
                                 pw.write(checksum ?: "")
                                 pw.flush()
                                 atomicChecksumFile.finishWrite(fos)
@@ -600,7 +593,7 @@ class Registry {
         if (exact != null) {
             return exact
         }
-        inputKey = inputKey.lowercase(Locale.getDefault())
+        inputKey = inputKey.lowercase()
         var nearestRoute: Route? = null
         var distance = Int.MAX_VALUE
         for ((key, route) in DATA!!.dataSheet.routeList.entries) {
@@ -840,11 +833,11 @@ class Registry {
         if (nearbyRoutes.isEmpty()) {
             return NearbyRoutesResult(emptyList(), closestStop!!, closestDistance, lat, lng)
         }
-        val hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"))
+        val hongKongTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Hong_Kong"))
         val hour = hongKongTime.hour
         val isNight = hour in 1..4
         val weekday = hongKongTime.dayOfWeek
-        val date = hongKongTime.toLocalDate()
+        val date = hongKongTime.date
         val isHoliday = weekday == DayOfWeek.SATURDAY || weekday == DayOfWeek.SUNDAY || DATA!!.dataSheet.holidays.contains(date)
         return NearbyRoutesResult(nearbyRoutes.values.asSequence().sortedWith(Comparator.comparing<RouteSearchResultEntry, Int> { a ->
             val route: Route = a.route!!
@@ -1092,8 +1085,8 @@ class Registry {
     }
 
     fun getMtrStationInterchange(stopId: String, lineName: String): MTRInterchangeData {
-        val lines: MutableSet<String> = TreeSet(Comparator.comparing { Shared.getMtrLineSortingIndex(it) })
-        val outOfStationLines: MutableSet<String> = TreeSet(Comparator.comparing { Shared.getMtrLineSortingIndex(it) })
+        val lines: MutableSet<String> = mutableSetOf()
+        val outOfStationLines: MutableSet<String> = mutableSetOf()
         if (stopId == "KOW" || stopId == "AUS") {
             outOfStationLines.add("HighSpeed")
         }
@@ -1128,7 +1121,12 @@ class Registry {
                 }
             }
         }
-        return MTRInterchangeData(lines, isOutOfStationPaid, outOfStationLines, hasLightRail)
+        return MTRInterchangeData(
+            lines = lines.asSequence().sortedBy { Shared.getMtrLineSortingIndex(it) }.toCollection(LinkedHashSet()),
+            isOutOfStationPaid = isOutOfStationPaid,
+            outOfStationLines = outOfStationLines.asSequence().sortedBy { Shared.getMtrLineSortingIndex(it) }.toCollection(LinkedHashSet()),
+            isHasLightRail = hasLightRail
+        )
     }
 
     @Immutable
@@ -1151,13 +1149,12 @@ class Registry {
 
     val cachedTyphoonDataState: StateFlow<TyphoonInfo> get() = typhoonInfo
 
-    val currentTyphoonData: Future<TyphoonInfo> get() {
+    val currentTyphoonData: Deferred<TyphoonInfo> get() {
         val cache = typhoonInfo.value
         if (cache == TyphoonInfo.NULL && System.currentTimeMillis() - cache.lastUpdated < 300000) {
-            return CompletableFuture.completedFuture(cache)
+            return CompletableDeferred(cache)
         }
-        val future = CompletableFuture<TyphoonInfo>()
-        CoroutineScope(Dispatchers.IO).launch {
+        return CoroutineScope(Dispatchers.IO).async {
             val data: JsonObject? = getJSONResponse("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=" + if (Shared.language == "en") "en" else "tc")
             if (data != null && data.contains("WTCSGNL")) {
                 val matchingGroups = Regex("TC([0-9]+)(.*)").find(data.optJsonObject("WTCSGNL")!!.optString("code"))?.groupValues
@@ -1177,15 +1174,13 @@ class Registry {
                     }
                     val info = TyphoonInfo.info(isAboveTyphoonSignalEight, isAboveTyphoonSignalNine, typhoonWarningTitle, currentTyphoonSignalId)
                     typhoonInfo.value = info
-                    future.complete(info)
-                    return@launch
+                    return@async info
                 }
             }
             val info = TyphoonInfo.none()
             typhoonInfo.value = info
-            future.complete(info)
-        }.start()
-        return future
+            return@async info
+        }
     }
 
     @Immutable
@@ -1242,7 +1237,7 @@ class Registry {
             putString("by_route", route.routeNumber + "," + co.name)
         })
         val pending = PendingETAQueryResult(context, co, CoroutineScope(Dispatchers.IO).async {
-            val typhoonInfo = currentTyphoonData.get()
+            val typhoonInfo = currentTyphoonData.await()
             val lines: MutableMap<Int, ETALineEntry> = HashMap()
             var isMtrEndOfLine = false
             var isTyphoonSchedule = false
@@ -1251,9 +1246,9 @@ class Registry {
             val language = Shared.language
             if (route.isKmbCtbJoint) {
                 isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                val jointOperated: MutableSet<JointOperatedEntry> = ConcurrentHashMap.newKeySet()
-                val kmbSpecialMessage = AtomicReference<String?>(null)
-                val kmbFirstScheduledBus = AtomicLong(Long.MAX_VALUE)
+                val jointOperated: MutableSet<JointOperatedEntry> = ConcurrentMutableSet()
+                var kmbSpecialMessage: String? = null
+                var kmbFirstScheduledBus = Long.MAX_VALUE
                 val kmbFuture = launch {
                     val data: JsonObject? = getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
                     val buses = data!!.optJsonArray("data")!!
@@ -1278,9 +1273,8 @@ class Registry {
                             val stopSeq = bus.optInt("seq")
                             if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq && usedRealSeq.add(bus.optInt("eta_seq"))) {
                                 val eta = bus.optString("eta")
-                                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
                                 if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
-                                    val mins = (formatter.parse(eta) { temporal: TemporalAccessor? -> ZonedDateTime.from(temporal) }.toEpochSecond() - Instant.now().epochSecond) / 60.0
+                                    val mins = (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
                                     val minsRounded = mins.roundToInt()
                                     var message = ""
                                     if (language == "en") {
@@ -1306,8 +1300,8 @@ class Registry {
                                         .replace("原定", "預定")
                                         .replace("最後班次", "尾班車")
                                         .replace("尾班車已過", "尾班車已過本站")
-                                    if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus.get()) {
-                                        kmbFirstScheduledBus.set(minsRounded.toLong())
+                                    if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
+                                        kmbFirstScheduledBus = minsRounded.toLong()
                                     }
                                     jointOperated.add(JointOperatedEntry(mins, minsRounded.toLong(), message, Operator.KMB))
                                 } else {
@@ -1331,7 +1325,7 @@ class Registry {
                                         } else {
                                             "<b></b>$message"
                                         }
-                                    kmbSpecialMessage.set(message)
+                                    kmbSpecialMessage = message
                                 }
                             }
                         }
@@ -1365,7 +1359,7 @@ class Registry {
                     }
                     val (first, second) = getAllDestinationsByDirection(routeNumber, Operator.KMB, null, null, route, stopId)
                     val destKeys = second.asSequence().map { it.zh.replace(" ", "") }.toSet()
-                    val ctbEtaEntries: MutableMap<String?, MutableSet<JointOperatedEntry>> = ConcurrentHashMap()
+                    val ctbEtaEntries: MutableMap<String?, MutableSet<JointOperatedEntry>> = ConcurrentMutableMap()
                     val stopQueryData: MutableList<JsonObject?> = ArrayList()
                     val ctbFutures: MutableList<Deferred<*>> = ArrayList(ctbStopIds.size)
                     for (ctbStopId in ctbStopIds) {
@@ -1405,9 +1399,8 @@ class Registry {
                                 val stopSeq = bus.optInt("seq")
                                 if ((stopSeq == (matchingSeq[busDest]?: 0)) && usedRealSeq.computeIfAbsent(busDest) { HashSet() }.add(bus.optInt("eta_seq"))) {
                                     val eta = bus.optString("eta")
-                                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
                                     if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
-                                        val mins = (formatter.parse(eta) { temporal: TemporalAccessor? -> ZonedDateTime.from(temporal) }.toEpochSecond() - Instant.now().epochSecond) / 60.0
+                                        val mins = (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
                                         val minsRounded = mins.roundToInt()
                                         var message = ""
                                         if (language == "en") {
@@ -1433,7 +1426,7 @@ class Registry {
                                             .replace("原定", "預定")
                                             .replace("最後班次", "尾班車")
                                             .replace("尾班車已過", "尾班車已過本站")
-                                        ctbEtaEntries.computeIfAbsent(busDest) { ConcurrentHashMap.newKeySet() }.add(JointOperatedEntry(mins, minsRounded.toLong(), message, Operator.CTB))
+                                        ctbEtaEntries.computeIfAbsent(busDest) { ConcurrentMutableSet() }.add(JointOperatedEntry(mins, minsRounded.toLong(), message, Operator.CTB))
                                     }
                                 }
                             }
@@ -1447,10 +1440,10 @@ class Registry {
                 }
                 kmbFuture.join()
                 if (jointOperated.isEmpty()) {
-                    if (kmbSpecialMessage.get() == null || kmbSpecialMessage.get()!!.isEmpty()) {
+                    if (kmbSpecialMessage.isNullOrEmpty()) {
                         lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
                     } else {
-                        lines[1] = ETALineEntry.textEntry(kmbSpecialMessage.get())
+                        lines[1] = ETALineEntry.textEntry(kmbSpecialMessage)
                     }
                 } else {
                     var counter = 0
@@ -1461,7 +1454,7 @@ class Registry {
                         val minsRounded = entry.minsRounded
                         var message = "<b></b>" + entry.line.replace("(尾班車)", "").replace("(Final Bus)", "").trim { it <= ' ' }
                         val entryCo = entry.co
-                        if (minsRounded > kmbFirstScheduledBus.get() && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
+                        if (minsRounded > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
                             message += "<small>" + (if (Shared.language == "en") " (Scheduled Bus)" else " (預定班次)") + "</small>"
                         }
                         message += if (entryCo === Operator.KMB) {
@@ -1508,8 +1501,7 @@ class Registry {
                             val seq = ++counter
                             if (usedRealSeq.add(bus.optInt("eta_seq"))) {
                                 val eta = bus.optString("eta")
-                                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
-                                val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (formatter.parse(eta) { temporal: TemporalAccessor? -> ZonedDateTime.from(temporal) }.toEpochSecond() - Instant.now().epochSecond) / 60.0
+                                val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
                                 val minsRounded = mins.roundToInt()
                                 var message = ""
                                 if (language == "en") {
@@ -1577,8 +1569,7 @@ class Registry {
                             val seq = ++counter
                             if (usedRealSeq.add(bus.optInt("eta_seq"))) {
                                 val eta = bus.optString("eta")
-                                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
-                                val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (formatter.parse(eta) { temporal: TemporalAccessor? -> ZonedDateTime.from(temporal) }.toEpochSecond() - Instant.now().epochSecond) / 60.0
+                                val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
                                 val minsRounded = mins.roundToInt()
                                 var message = ""
                                 if (language == "en") {
@@ -1626,10 +1617,9 @@ class Registry {
                     for (u in 0 until buses.size) {
                         val bus = buses.optJsonObject(u)!!
                         val seq = u + 1
-                        val eta = bus.optString("estimatedArrivalTime") + "+08:00"
+                        val eta = bus.optString("estimatedArrivalTime")
                         val variant = bus.optString("routeVariantName").trim { it <= ' ' }
-                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssXXX")
-                        val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (formatter.parse(eta) { temporal: TemporalAccessor? -> ZonedDateTime.from(temporal) }.toEpochSecond() - Instant.now().epochSecond) / 60.0
+                        val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.let { "${it.substring(0, 10)}T${it.substring(11)}" }.toLocalDateTime().toInstant(TimeZone.of("Asia/Hong_Kong")).epochSeconds - Clock.System.now().epochSeconds) / 60.0
                         val minsRounded = mins.roundToInt()
                         var message = ""
                         if (language == "en") {
@@ -1755,8 +1745,7 @@ class Registry {
                             val bus = buses.optJsonObject(u)!!
                             if (routeNumber == route.routeNumber) {
                                 val eta = bus.optString("timestamp")
-                                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-                                val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (formatter.parse(eta) { temporal: TemporalAccessor? -> ZonedDateTime.from(temporal) }.toEpochSecond() - Instant.now().epochSecond) / 60.0
+                                val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
                                 stopSequences.add(stopSeq)
                                 busList.add(Triple(stopSeq, mins, bus))
                             }
@@ -1816,7 +1805,7 @@ class Registry {
                     lines[1] =
                         ETALineEntry.textEntry(if (Shared.language == "en") "End of Line" else "終點站")
                 } else {
-                    val hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"))
+                    val hongKongTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Hong_Kong"))
                     val hour = hongKongTime.hour
                     val results: MutableList<LrtETAData> = ArrayList()
                     val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=${stopId.substring(2)}")
@@ -1889,7 +1878,8 @@ class Registry {
                     isMtrEndOfLine = true
                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "End of Line" else "終點站")
                 } else {
-                    val hongKongTime = ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong"))
+                    val hongKongTimeZone = TimeZone.of("Asia/Hong_Kong")
+                    val hongKongTime = Clock.System.now().toLocalDateTime(hongKongTimeZone)
                     val hour = hongKongTime.hour
                     val dayOfWeek = hongKongTime.dayOfWeek
                     val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=$lineName&sta=$stopId")
@@ -1907,7 +1897,7 @@ class Registry {
                                 } else {
                                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
                                 }
-                            } else if (hour < 3 || stopId == "LMC" && hour >= 10) {
+                            } else if (hour < 3 || stopId == "LMC" && hour >= 10 || stopId == "SHS" && hour >= 11) {
                                 lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Last train has departed" else "尾班車已開出")
                             } else if (hour < 6) {
                                 lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
@@ -1927,7 +1917,7 @@ class Registry {
                                     } else {
                                         lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
                                     }
-                                } else if (hour < 3 || stopId == "LMC" && hour >= 10) {
+                                } else if (hour < 3 || stopId == "LMC" && hour >= 10 || stopId == "SHS" && hour >= 11) {
                                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Last train has departed" else "尾班車已開出")
                                 } else if (hour < 6) {
                                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
@@ -1953,14 +1943,12 @@ class Registry {
                                         dest += "<small>" + (if (Shared.language == "en") " via " else " 經") + via + "</small>"
                                     }
                                     val timeType = trainData.optString("timeType")
-                                    val eta = trainData.optString("time")
-                                    @SuppressLint("SimpleDateFormat")
-                                    val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                                    format.timeZone = TimeZone.getTimeZone(hongKongTime.zone)
-                                    val mins = (format.parse(eta)!!.time - Instant.now().toEpochMilli()) / 60000.0
+                                    val eta = trainData.optString("time").let { "${it.substring(0, 10)}T${it.substring(11)}" }
+                                    val mins = (eta.toLocalDateTime().toInstant(hongKongTimeZone).toEpochMilliseconds() - Clock.System.now().toEpochMilliseconds()) / 60000.0
                                     val minsRounded = mins.roundToInt()
                                     val minsMessage = if (minsRounded > 59) {
-                                        "<b>" + hongKongTime.plusMinutes(minsRounded.toLong()).format(DateTimeFormatter.ofPattern("HH:mm")) + "</b>"
+                                        val time = hongKongTime.toInstant(hongKongTimeZone).plus(minsRounded, DateTimeUnit.MINUTE, hongKongTimeZone).toLocalDateTime(hongKongTimeZone)
+                                        "<b>${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}</b>"
                                     } else if (minsRounded > 1) {
                                         "<b>" + minsRounded + "</b><small>" + (if (Shared.language == "en") " Min." else " 分鐘") + "</small>"
                                     } else if (minsRounded == 1 && timeType != "D") {
@@ -2024,9 +2012,9 @@ class Registry {
             }
         }
 
-        fun get(timeout: Long, unit: TimeUnit): ETAQueryResult {
+        fun get(timeout: Int, unit: DateTimeUnit.TimeBased): ETAQueryResult {
             return try {
-                runBlocking { withTimeout(unit.toMillis(timeout)) { deferred.await() } }
+                runBlocking { withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() } }
             } catch (e: Exception) {
                 e.printStackTrace()
                 try { deferred.cancel() } catch (ignore: Throwable) { }
@@ -2181,7 +2169,7 @@ class Registry {
 
         }
 
-        val rawLines: Map<Int, ETALineEntry> = Collections.unmodifiableMap(lines)
+        val rawLines: Map<Int, ETALineEntry> = lines
         val nextScheduledBus: Long = lines[1]?.etaRounded ?: -1
 
         val firstLine: ETALineEntry get() = this[1]

@@ -23,8 +23,8 @@ package com.loohp.hkbuseta.utils
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.charset
+import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.jvm.javaio.toInputStream
-import java.nio.charset.Charset
 import java.util.stream.Collectors
 import java.util.zip.GZIPInputStream
 

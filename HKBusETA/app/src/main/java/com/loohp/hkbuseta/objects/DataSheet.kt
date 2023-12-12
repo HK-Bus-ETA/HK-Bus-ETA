@@ -28,6 +28,7 @@ import com.loohp.hkbuseta.utils.optJsonObject
 import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.toJsonArray
 import com.loohp.hkbuseta.utils.toJsonObject
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
@@ -35,8 +36,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Immutable
 class DataSheet(
@@ -48,23 +47,30 @@ class DataSheet(
 
     companion object {
 
-        private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd")
-
         fun deserialize(json: JsonObject): DataSheet {
-            val holidays = json.optJsonArray("holidays")!!.map { LocalDate.parse(it.jsonPrimitive.content, DATE_FORMATTER) }
+            val holidays = json.optJsonArray("holidays")!!.map { LocalDate.parse(formatHolidaysDate(it.jsonPrimitive.content)) }
             val routeList = json.optJsonObject("routeList")!!.mapToMutableMap { Route.deserialize(it.jsonObject) }
             val stopList = json.optJsonObject("stopList")!!.mapToMutableMap { Stop.deserialize(it.jsonObject) }
-            val stopMap = json.optJsonObject("stopMap")!!.mapToMutableMap { v -> v.jsonArray.mapToMutableList { vv ->
-                val array = vv.jsonArray
+            val stopMap = json.optJsonObject("stopMap")!!.mapToMutableMap { it.jsonArray.mapToMutableList { v ->
+                val array = v.jsonArray
                 Operator.valueOf(array.optString(0)) to array.optString(1)
             } }
             return DataSheet(holidays, routeList, stopList, stopMap)
         }
+
+        private fun formatHolidaysDate(date: String): String {
+            return if (date.length == 8 && !date.contains('-')) {
+                "${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}"
+            } else {
+                date
+            }
+        }
+
     }
 
     override fun serialize(): JsonObject {
         return buildJsonObject {
-            put("holidays", holidays.asSequence().map { DATE_FORMATTER.format(it) }.toJsonArray())
+            put("holidays", holidays.asSequence().map { it.toString() }.toJsonArray())
             put("routeList", routeList.toJsonObject { it.serialize() })
             put("stopList", stopList.toJsonObject { it.serialize() })
             put("stopMap", stopMap.toJsonObject { v -> v.asSequence().map { (first, second) -> buildJsonArray { add(first.name); add(second) } }.toJsonArray() })

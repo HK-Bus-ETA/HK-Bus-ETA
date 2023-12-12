@@ -22,8 +22,8 @@
 package com.loohp.hkbuseta.objects
 
 import androidx.compose.runtime.Immutable
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
+import co.touchlab.stately.collections.ConcurrentMutableMap
+import co.touchlab.stately.concurrency.AtomicInt
 
 @Immutable
 class RouteListType private constructor(
@@ -34,8 +34,8 @@ class RouteListType private constructor(
 
     companion object {
 
-        private val VALUES: MutableMap<String, RouteListType> = ConcurrentHashMap()
-        private val COUNTER = AtomicInteger(0)
+        private val VALUES: MutableMap<String, RouteListType> = ConcurrentMutableMap()
+        private val COUNTER = AtomicInt(0)
 
         val NORMAL = createBuiltIn("normal")
         val NEARBY = createBuiltIn("nearby")

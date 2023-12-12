@@ -26,7 +26,6 @@ import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.wearable.Wearable
 import kotlinx.serialization.json.JsonObject
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ForkJoinPool
 
@@ -61,7 +60,7 @@ class RemoteActivityUtils {
         }
 
         fun dataToPhone(instance: Context, path: String, data: JsonObject, noPhone: () -> Unit = {}, failed: () -> Unit = {}, success: () -> Unit = {}) {
-            val dataRaw = data.toString().toByteArray(StandardCharsets.UTF_8)
+            val dataRaw = data.toString().toByteArray(Charsets.UTF_8)
             Wearable.getNodeClient(instance).connectedNodes.addOnCompleteListener { nodes ->
                 if (nodes.result.isEmpty()) {
                     noPhone.invoke()

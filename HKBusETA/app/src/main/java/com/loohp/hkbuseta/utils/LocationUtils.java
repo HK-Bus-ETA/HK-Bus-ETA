@@ -129,8 +129,7 @@ public class LocationUtils {
                         });
                         ref0.set(launcher0);
                         new Thread(() -> {
-                            try {
-                                TimeUnit.MILLISECONDS.sleep(1500);} catch (InterruptedException ignore) {}
+                            try {TimeUnit.MILLISECONDS.sleep(1500);} catch (InterruptedException ignore) {}
                             launcher0.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
                         }).start();
                         ref.get().unregister();

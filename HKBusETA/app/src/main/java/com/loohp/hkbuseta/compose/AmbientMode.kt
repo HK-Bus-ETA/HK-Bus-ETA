@@ -29,7 +29,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.compose.ambient.AmbientStateUpdate
-import java.util.concurrent.ThreadLocalRandom
+import kotlin.random.Random
 
 
 @Composable
@@ -41,7 +41,7 @@ fun rememberBurnInTranslation(
         when (val state = ambientStateUpdate.ambientState) {
             AmbientState.Interactive -> 0F
             is AmbientState.Ambient -> if (state.ambientDetails?.burnInProtectionRequired == true) {
-                ThreadLocalRandom.current().nextInt(-burnInOffsetPx, burnInOffsetPx + 1).toFloat()
+                Random.nextInt(-burnInOffsetPx, burnInOffsetPx + 1).toFloat()
             } else {
                 0F
             }

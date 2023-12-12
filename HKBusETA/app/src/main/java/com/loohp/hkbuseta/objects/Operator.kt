@@ -20,8 +20,8 @@
 package com.loohp.hkbuseta.objects
 
 import androidx.compose.runtime.Immutable
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
+import co.touchlab.stately.collections.ConcurrentMutableMap
+import co.touchlab.stately.concurrency.AtomicInt
 
 @Immutable
 class Operator private constructor(
@@ -33,8 +33,8 @@ class Operator private constructor(
 
     companion object {
 
-        private val VALUES: MutableMap<String, Operator> = ConcurrentHashMap()
-        private val COUNTER = AtomicInteger(0)
+        private val VALUES: MutableMap<String, Operator> = ConcurrentMutableMap()
+        private val COUNTER = AtomicInt(0)
 
         val KMB = createBuiltIn("kmb", "^[0-9A-Z]{16}$")
         val CTB = createBuiltIn("ctb", "^[0-9]{6}$")

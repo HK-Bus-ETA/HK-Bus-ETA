@@ -31,6 +31,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.TimeTextDefaults
+import co.touchlab.stately.collections.ConcurrentMutableMap
+import co.touchlab.stately.concurrency.AtomicReference
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
@@ -48,10 +50,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.io.PrintWriter
-import java.io.StringWriter
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
 
 
 enum class TileUseState {
@@ -140,7 +138,7 @@ class Shared {
     @Stable
     companion object {
 
-        const val ETA_UPDATE_INTERVAL: Long = 15000
+        const val ETA_UPDATE_INTERVAL: Int = 15000
 
         fun setDefaultExceptionHandler(context: Context) {
             val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
@@ -148,11 +146,7 @@ class Shared {
                 try {
                     invalidateCache(context)
                     if (context is Activity) {
-                        val sw = StringWriter()
-                        PrintWriter(sw).use {
-                            throwable.printStackTrace(it)
-                        }
-                        var stacktrace = sw.toString()
+                        var stacktrace = throwable.stackTraceToString()
                         if (stacktrace.length > 459000) {
                             stacktrace = stacktrace.substring(0, 459000).plus("...")
                         }
@@ -247,9 +241,9 @@ class Shared {
 
         private val suggestedMaxFavouriteRouteStop = MutableStateFlow(0)
         private val currentMaxFavouriteRouteStop = MutableStateFlow(0)
-        val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentHashMap()
+        val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentMutableMap()
 
-        private val etaTileConfigurations: Map<Int, List<Int>> = ConcurrentHashMap()
+        private val etaTileConfigurations: Map<Int, List<Int>> = ConcurrentMutableMap()
 
         fun updateEtaTileConfigurations(mutation: (MutableMap<Int, List<Int>>) -> Unit) {
             synchronized(etaTileConfigurations) {
@@ -339,9 +333,9 @@ class Shared {
             return favoriteRouteStops.isNotEmpty() || lastLookupRoutes.isNotEmpty()
         }
 
-        val routeSortModePreference: Map<RouteListType, RouteSortMode> = ConcurrentHashMap()
+        val routeSortModePreference: Map<RouteListType, RouteSortMode> = ConcurrentMutableMap()
 
-        private var currentActivity: AtomicReference<CurrentActivityData> = AtomicReference(null)
+        private var currentActivity: AtomicReference<CurrentActivityData?> = AtomicReference(null)
 
         fun getCurrentActivity(): CurrentActivityData? {
             return currentActivity.get()

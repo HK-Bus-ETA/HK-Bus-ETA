@@ -141,15 +141,18 @@ import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.spToPixels
-import com.loohp.hkbuseta.utils.toImmutableList
 import com.loohp.hkbuseta.utils.toSpanned
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import java.io.ByteArrayInputStream
+import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -186,7 +189,7 @@ class ListStopsActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(this).ifFalse { return }
         Shared.setDefaultExceptionHandler(this)
 
-        val route = intent.extras!!.getByteArray("route")?.let { RouteSearchResultEntry.deserialize(ByteArrayInputStream(it)) }!!
+        val route = intent.extras!!.getByteArray("route")?.let { runBlocking { RouteSearchResultEntry.deserialize(ByteReadChannel(it)) } }!!
         val scrollToStop = intent.extras!!.getString("scrollToStop")
         val showEta = intent.extras!!.getBoolean("showEta", true)
         val isAlightReminder = intent.extras!!.getBoolean("isAlightReminder", false)
@@ -196,7 +199,7 @@ class ListStopsActivity : ComponentActivity() {
                 MainElement(it, this, route, showEta, scrollToStop, isAlightReminder) { isAdd, index, task ->
                     sync.execute {
                         if (isAdd) {
-                            etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to task!! }
+                            etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
                         } else {
                             etaUpdatesMap.remove(index)?.first?.cancel(true)
                         }
@@ -216,7 +219,7 @@ class ListStopsActivity : ComponentActivity() {
         sync.execute {
             etaUpdatesMap.replaceAll { _, value ->
                 value.first?.cancel(true)
-                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS) to value.second
+                executor.scheduleWithFixedDelay(value.second, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to value.second
             }
         }
     }
@@ -337,7 +340,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
                 LocationUtils.checkLocationPermission(instance) {
                     if (it) {
                         val future = LocationUtils.getGPSLocation(instance)
-                        Thread {
+                        CoroutineScope(Dispatchers.IO).launch {
                             try {
                                 val locationResult = future.get()
                                 if (locationResult.isSuccess) {
@@ -347,7 +350,7 @@ fun MainElement(ambientStateUpdate: AmbientStateUpdate, instance: ListStopsActiv
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
-                        }.start()
+                        }
                     }
                 }
             }
@@ -856,7 +859,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             delay(etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
-            val result = Registry.getInstance(instance).getEta(stopId, index, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, TimeUnit.MILLISECONDS)
+            val result = Registry.getInstance(instance).getEta(stopId, index, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             etaStateFlow.value = result
             etaUpdateTimes.value[index] = System.currentTimeMillis()
             etaResults.value[index] = result

@@ -72,7 +72,6 @@ import com.loohp.hkbuseta.utils.ifFalse
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.toJsonArray
 import kotlinx.coroutines.delay
-import java.util.concurrent.ForkJoinPool
 
 
 @Stable
@@ -191,14 +190,12 @@ fun MainElement(usingGps: Boolean, instance: FavRouteListViewActivity) {
     var location: Coordinates? by remember { mutableStateOf(null) }
 
     LaunchedEffect (Unit) {
-        ForkJoinPool.commonPool().execute {
-            if (needLocation) {
-                val locationResult = LocationUtils.getGPSLocation(instance).get()
-                if (locationResult.isSuccess) {
-                    location = locationResult.location
-                }
-                state.value = true
+        if (needLocation) {
+            val locationResult = LocationUtils.getGPSLocation(instance).get()
+            if (locationResult.isSuccess) {
+                location = locationResult.location
             }
+            state.value = true
         }
     }
 

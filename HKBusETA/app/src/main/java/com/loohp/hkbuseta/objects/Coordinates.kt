@@ -24,13 +24,11 @@ import com.loohp.hkbuseta.utils.IOSerializable
 import com.loohp.hkbuseta.utils.JSONSerializable
 import com.loohp.hkbuseta.utils.findDistance
 import com.loohp.hkbuseta.utils.optDouble
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.ByteWriteChannel
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 
 @Immutable
 open class Coordinates(val lat: Double, val lng: Double) : JSONSerializable, IOSerializable {
@@ -43,8 +41,7 @@ open class Coordinates(val lat: Double, val lng: Double) : JSONSerializable, IOS
             return Coordinates(lat, lng)
         }
 
-        fun deserialize(inputStream: InputStream): Coordinates {
-            val input = DataInputStream(inputStream)
+        suspend fun deserialize(input: ByteReadChannel): Coordinates {
             val lat = input.readDouble()
             val lng = input.readDouble()
             return Coordinates(lat, lng)
@@ -79,8 +76,7 @@ open class Coordinates(val lat: Double, val lng: Double) : JSONSerializable, IOS
         }
     }
 
-    override fun serialize(outputStream: OutputStream) {
-        val out = DataOutputStream(outputStream)
+    override suspend fun serialize(out: ByteWriteChannel) {
         out.writeDouble(lat)
         out.writeDouble(lng)
     }

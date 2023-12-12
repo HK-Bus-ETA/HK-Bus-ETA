@@ -123,7 +123,8 @@ import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.startActivity
 import com.loohp.hkbuseta.utils.toSpanned
-import java.io.ByteArrayInputStream
+import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.runBlocking
 
 
 enum class FavouriteRouteState {
@@ -143,8 +144,8 @@ class EtaMenuActivity : ComponentActivity() {
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")?.operator
         val index = intent.extras!!.getInt("index")
-        val stop = intent.extras!!.getByteArray("stop")?.let { Stop.deserialize(ByteArrayInputStream(it)) }
-        val route = intent.extras!!.getByteArray("route")?.let { Route.deserialize(ByteArrayInputStream(it)) }
+        val stop = intent.extras!!.getByteArray("stop")?.let { runBlocking { Stop.deserialize(ByteReadChannel(it)) } }
+        val route = intent.extras!!.getByteArray("route")?.let { runBlocking { Route.deserialize(ByteReadChannel(it)) } }
         if (stopId == null || co == null || stop == null || route == null) {
             throw RuntimeException()
         }

@@ -20,13 +20,26 @@
 
 package com.loohp.hkbuseta.utils
 
-import co.touchlab.stately.concurrency.AtomicBoolean
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
+class ReadWriteLock {
 
-fun AtomicBoolean.getAndNegate(): Boolean {
-    var value: Boolean
-    do {
-        value = this.value
-    } while (!compareAndSet(value, !value))
-    return value
+    private val lock = ReentrantReadWriteLock()
+
+    fun readLock() {
+        lock.readLock().lock()
+    }
+
+    fun writeLock() {
+        lock.writeLock().lock()
+    }
+
+    fun readUnlock() {
+        lock.readLock().unlock()
+    }
+
+    fun writeUnlock() {
+        lock.writeLock().unlock()
+    }
+
 }
