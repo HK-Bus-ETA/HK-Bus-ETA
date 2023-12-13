@@ -87,6 +87,8 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.loohp.hkbuseta.appcontext.AppActiveContext
+import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
@@ -121,10 +123,10 @@ class EtaTileConfigureActivity : ComponentActivity() {
         Shared.setDefaultExceptionHandler(this)
 
         val tileId = intent.extras!!.getInt("com.google.android.clockwork.EXTRA_PROVIDER_CONFIG_TILE_ID")
-        Registry.getInstanceNoUpdateCheck(this)
+        Registry.getInstanceNoUpdateCheck(appContext)
 
         setContent {
-            SelectElements(tileId, this)
+            SelectElements(tileId, appContext)
         }
     }
 
@@ -137,7 +139,7 @@ class EtaTileConfigureActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable
-fun SelectElements(tileId: Int, instance: EtaTileConfigureActivity) {
+fun SelectElements(tileId: Int, instance: AppActiveContext) {
     HKBusETATheme {
         val focusRequester = rememberActiveFocusRequester()
         val state = rememberLazyListState()
@@ -197,7 +199,7 @@ fun SelectElements(tileId: Int, instance: EtaTileConfigureActivity) {
 }
 
 @Composable
-fun ConfirmButton(tileId: Int, selectStates: SnapshotStateList<Int>, instance: EtaTileConfigureActivity) {
+fun ConfirmButton(tileId: Int, selectStates: SnapshotStateList<Int>, instance: AppActiveContext) {
     val enabled = selectStates.isNotEmpty()
     Button(
         onClick = {
@@ -226,7 +228,7 @@ fun ConfirmButton(tileId: Int, selectStates: SnapshotStateList<Int>, instance: E
 }
 
 @Composable
-fun SelectTitle(instance: EtaTileConfigureActivity) {
+fun SelectTitle(instance: AppActiveContext) {
     Text(
         modifier = Modifier
             .fillMaxWidth()
@@ -239,7 +241,7 @@ fun SelectTitle(instance: EtaTileConfigureActivity) {
 }
 
 @Composable
-fun SelectDescription(instance: EtaTileConfigureActivity) {
+fun SelectDescription(instance: AppActiveContext) {
     Text(
         modifier = Modifier
             .fillMaxWidth()
@@ -261,7 +263,7 @@ fun SelectDescription(instance: EtaTileConfigureActivity) {
 }
 
 @Composable
-fun NoFavText(instance: EtaTileConfigureActivity) {
+fun NoFavText(instance: AppActiveContext) {
     Text(
         modifier = Modifier
             .fillMaxWidth()
@@ -275,7 +277,7 @@ fun NoFavText(instance: EtaTileConfigureActivity) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, instance: EtaTileConfigureActivity) {
+fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, instance: AppActiveContext) {
     val favouriteStopRoute = Shared.favoriteRouteStops[favoriteIndex]
     val haptic = LocalHapticFeedback.current
 

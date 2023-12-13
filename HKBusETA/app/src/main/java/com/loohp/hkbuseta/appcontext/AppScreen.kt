@@ -18,27 +18,24 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.hkbuseta
+package com.loohp.hkbuseta.appcontext
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.runtime.Stable
-import com.loohp.hkbuseta.app.ImageElement
-import com.loohp.hkbuseta.appcontext.appContext
+enum class AppScreen {
 
-
-@Stable
-class URLImageActivity : ComponentActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val url = intent.extras!!.getString("url")!!
-
-        setContent {
-            ImageElement(url, appContext)
-        }
-    }
+    DISMISSIBLE_TEXT_DISPLAY,
+    FATAL_ERROR,
+    ETA,
+    ETA_MENU,
+    FAV,
+    FAV_ROUTE_LIST_VIEW,
+    LIST_ROUTES,
+    LIST_STOPS,
+    MAIN,
+    NEARBY,
+    SEARCH,
+    TITLE,
+    URL_IMAGE,
+    ALIGHT_REMINDER_SERVICE,
+    ETA_TILE_CONFIGURE;
 
 }

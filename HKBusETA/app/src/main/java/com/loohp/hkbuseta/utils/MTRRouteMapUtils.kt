@@ -20,7 +20,6 @@
 
 package com.loohp.hkbuseta.utils
 
-import android.content.Context
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +42,7 @@ import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
+import com.loohp.hkbuseta.appcontext.AppContext
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.shared.Registry.MTRInterchangeData
@@ -471,7 +471,7 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData, ambientMode: Boolea
     }
 }
 
-fun createMTRLineSectionData(co: Operator, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<MTRInterchangeData>, isLrtCircular: Boolean, context: Context): List<MTRStopSectionData> {
+fun createMTRLineSectionData(co: Operator, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<MTRInterchangeData>, isLrtCircular: Boolean, context: AppContext): List<MTRStopSectionData> {
     val stopByBranchId: MutableMap<Int, MutableList<StopData>> = HashMap()
     stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.computeIfAbsent(it) { ArrayList() }.add(stop) } }
     val hasOutOfStation = mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }
@@ -494,10 +494,10 @@ data class MTRStopSectionData(
     val hasOutOfStation: Boolean,
     val stopByBranchId: MutableMap<Int, MutableList<StopData>>,
     val requireExtension: Boolean,
-    val context: Context
+    val context: AppContext
 ) {
     companion object {
-        fun build(isMainLine: Boolean, stopByBranchId: MutableMap<Int, MutableList<StopData>>, index: Int, stop: StopData, stopList: List<StopData>, co: Operator, color: Color, isLrtCircular: Boolean, interchangeData: MTRInterchangeData, hasOutOfStation: Boolean, context: Context): MTRStopSectionData {
+        fun build(isMainLine: Boolean, stopByBranchId: MutableMap<Int, MutableList<StopData>>, index: Int, stop: StopData, stopList: List<StopData>, co: Operator, color: Color, isLrtCircular: Boolean, interchangeData: MTRInterchangeData, hasOutOfStation: Boolean, context: AppContext): MTRStopSectionData {
             val requireExtension = index + 1 < stopList.size
             return if (isMainLine) MTRStopSectionData(MTRStopSectionMainLineData(
                 isFirstStation = stopByBranchId.values.all { it.indexOf(stop) <= 0 },

@@ -18,27 +18,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.hkbuseta
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.runtime.Stable
-import com.loohp.hkbuseta.app.ImageElement
-import com.loohp.hkbuseta.appcontext.appContext
+package com.loohp.hkbuseta.utils
 
 
-@Stable
-class URLImageActivity : ComponentActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val url = intent.extras!!.getString("url")!!
-
-        setContent {
-            ImageElement(url, appContext)
-        }
-    }
-
+enum class BackgroundRestrictionType {
+    NONE,
+    RESTRICT_BACKGROUND_STATUS,
+    POWER_SAVE_MODE,
+    LOW_POWER_STANDBY
 }

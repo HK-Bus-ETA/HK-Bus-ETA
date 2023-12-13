@@ -18,27 +18,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.hkbuseta
+package com.loohp.hkbuseta.appcontext
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.runtime.Stable
-import com.loohp.hkbuseta.app.ImageElement
-import com.loohp.hkbuseta.appcontext.appContext
+enum class ToastDuration {
 
-
-@Stable
-class URLImageActivity : ComponentActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val url = intent.extras!!.getString("url")!!
-
-        setContent {
-            ImageElement(url, appContext)
-        }
-    }
+    SHORT, LONG
 
 }

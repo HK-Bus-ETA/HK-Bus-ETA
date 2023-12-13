@@ -20,8 +20,8 @@
 
 package com.loohp.hkbuseta.objects
 
-import android.content.Context
 import androidx.compose.ui.graphics.Color
+import com.loohp.hkbuseta.appcontext.AppContext
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
@@ -138,11 +138,11 @@ fun DoubleArray.toCoordinates(): Coordinates {
     return Coordinates.fromArray(this)
 }
 
-fun Route.getRouteKey(context: Context): String? {
+fun Route.getRouteKey(context: AppContext): String? {
     return Registry.getInstance(context).getRouteKey(this)
 }
 
-fun String.asStop(context: Context): Stop? {
+fun String.asStop(context: AppContext): Stop? {
     return Registry.getInstance(context).getStopById(this)
 }
 
@@ -168,7 +168,7 @@ fun FavouriteRouteStop.asResolvedStop(): FavouriteResolvedStop {
     return FavouriteResolvedStop(index, stopId, stop, route)
 }
 
-inline fun FavouriteRouteStop.resolveStop(context: Context, originGetter: () -> Coordinates?): FavouriteResolvedStop {
+inline fun FavouriteRouteStop.resolveStop(context: AppContext, originGetter: () -> Coordinates?): FavouriteResolvedStop {
     if (favouriteStopMode == FavouriteStopMode.FIXED) {
         return FavouriteResolvedStop(index, stopId, stop, route)
     }
@@ -179,7 +179,7 @@ inline fun FavouriteRouteStop.resolveStop(context: Context, originGetter: () -> 
         .let { FavouriteResolvedStop(it.index + 1, it.value.stopId, it.value.stop, it.value.route) }
 }
 
-inline fun List<FavouriteRouteStop>.resolveStops(context: Context, originGetter: () -> Coordinates?): List<Pair<FavouriteRouteStop, FavouriteResolvedStop?>> {
+inline fun List<FavouriteRouteStop>.resolveStops(context: AppContext, originGetter: () -> Coordinates?): List<Pair<FavouriteRouteStop, FavouriteResolvedStop?>> {
     if (isEmpty()) {
         return emptyList()
     }

@@ -19,12 +19,8 @@
  */
 package com.loohp.hkbuseta.shared
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.os.Bundle
 import androidx.compose.runtime.Immutable
-import androidx.core.app.ComponentActivity
-import androidx.core.util.AtomicFile
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.collections.ConcurrentMutableSet
 import co.touchlab.stately.concurrency.AtomicBoolean
@@ -32,6 +28,8 @@ import co.touchlab.stately.concurrency.AtomicLong
 import co.touchlab.stately.concurrency.AtomicReference
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
+import com.loohp.hkbuseta.appcontext.AppActiveContext
+import com.loohp.hkbuseta.appcontext.AppContext
 import com.loohp.hkbuseta.branchedlist.BranchedList
 import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.Coordinates
@@ -51,7 +49,6 @@ import com.loohp.hkbuseta.objects.getColorHex
 import com.loohp.hkbuseta.objects.identifyStopCo
 import com.loohp.hkbuseta.objects.isTrain
 import com.loohp.hkbuseta.objects.prependTo
-import com.loohp.hkbuseta.tiles.EtaTileServiceCommon
 import com.loohp.hkbuseta.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.utils.IntUtils
 import com.loohp.hkbuseta.utils.LongUtils
@@ -59,12 +56,10 @@ import com.loohp.hkbuseta.utils.asMutableStateFlow
 import com.loohp.hkbuseta.utils.commonElementPercentage
 import com.loohp.hkbuseta.utils.editDistance
 import com.loohp.hkbuseta.utils.getCircledNumber
-import com.loohp.hkbuseta.utils.getConnectionType
 import com.loohp.hkbuseta.utils.getJSONResponse
 import com.loohp.hkbuseta.utils.getTextResponse
 import com.loohp.hkbuseta.utils.getTextResponseWithPercentageCallback
 import com.loohp.hkbuseta.utils.indexOf
-import com.loohp.hkbuseta.utils.isBackgroundRestricted
 import com.loohp.hkbuseta.utils.optDouble
 import com.loohp.hkbuseta.utils.optInt
 import com.loohp.hkbuseta.utils.optJsonArray
@@ -94,11 +89,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import java.io.PrintWriter
-import java.util.stream.Collectors
 import kotlin.math.absoluteValue
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -114,13 +104,13 @@ class Registry {
         private var INSTANCE: Registry? = null
         private val INSTANCE_LOCK = Any()
 
-        fun getInstance(context: Context): Registry {
+        fun getInstance(context: AppContext): Registry {
             synchronized(INSTANCE_LOCK) {
                 return INSTANCE?: Registry(context, false).apply { INSTANCE = this }
             }
         }
 
-        fun getInstanceNoUpdateCheck(context: Context): Registry {
+        fun getInstanceNoUpdateCheck(context: AppContext): Registry {
             synchronized(INSTANCE_LOCK) {
                 return INSTANCE?: Registry(context, true).apply { INSTANCE = this }
             }
@@ -138,7 +128,7 @@ class Registry {
             }
         }
 
-        fun initInstanceWithImportedPreference(context: Context, preferencesData: JsonObject) {
+        fun initInstanceWithImportedPreference(context: AppContext, preferencesData: JsonObject) {
             synchronized(INSTANCE_LOCK) {
                 try {
                     INSTANCE = Registry(context, true, preferencesData)
@@ -148,9 +138,9 @@ class Registry {
             }
         }
 
-        fun invalidateCache(context: Context) {
+        fun invalidateCache(context: AppContext) {
             try {
-                context.applicationContext.deleteFile(CHECKSUM_FILE_NAME)
+                context.deleteFile(CHECKSUM_FILE_NAME)
             } catch (ignore: Throwable) {
             }
         }
@@ -167,11 +157,11 @@ class Registry {
     private val currentChecksumTask = AtomicReference<Job?>(null)
     private val objectCache: MutableMap<String, Any> = ConcurrentMutableMap()
 
-    private constructor(context: Context, suppressUpdateCheck: Boolean) {
+    private constructor(context: AppContext, suppressUpdateCheck: Boolean) {
         ensureData(context, suppressUpdateCheck)
     }
 
-    private constructor(context: Context, suppressUpdateCheck: Boolean, importPreferencesData: JsonObject) {
+    private constructor(context: AppContext, suppressUpdateCheck: Boolean, importPreferencesData: JsonObject) {
         importPreference(context, importPreferencesData)
         ensureData(context, suppressUpdateCheck)
     }
@@ -180,25 +170,15 @@ class Registry {
     val updatePercentageState: StateFlow<Float> get() = updatePercentageStateFlow
     val lastUpdateCheck: Long get() = lastUpdateCheckHolder.get()
 
-    private fun savePreferences(context: Context) {
+    private fun savePreferences(context: AppContext) {
         synchronized(preferenceWriteLock) {
-            val atomicFile = AtomicFile(context.applicationContext.getFileStreamPath(PREFERENCES_FILE_NAME))
-            atomicFile.startWrite().use { fos ->
-                PrintWriter(OutputStreamWriter(fos, Charsets.UTF_8)).use { pw ->
-                    pw.write(PREFERENCES!!.serialize().toString())
-                    pw.flush()
-                    atomicFile.finishWrite(fos)
-                }
-            }
+            context.writeTextFile(PREFERENCES_FILE_NAME) { PREFERENCES!!.serialize().toString() }
         }
     }
 
-    private fun importPreference(context: Context, preferencesData: JsonObject) {
+    private fun importPreference(context: AppContext, preferencesData: JsonObject) {
         val preferences = Preferences.deserialize(preferencesData).cleanForImport()
-        PrintWriter(OutputStreamWriter(context.applicationContext.openFileOutput(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE), Charsets.UTF_8)).use { pw ->
-            pw.write(preferences.serialize().toString())
-            pw.flush()
-        }
+        context.writeTextFile(PREFERENCES_FILE_NAME) { preferences.serialize().toString() }
     }
 
     fun exportPreference(): JsonObject {
@@ -207,27 +187,11 @@ class Registry {
         }
     }
 
-    fun updateTileService() {
-        EtaTileServiceCommon.requestTileUpdate(0)
-        EtaTileServiceCommon.requestTileUpdate(1)
-        EtaTileServiceCommon.requestTileUpdate(2)
-        EtaTileServiceCommon.requestTileUpdate(3)
-        EtaTileServiceCommon.requestTileUpdate(4)
-        EtaTileServiceCommon.requestTileUpdate(5)
-        EtaTileServiceCommon.requestTileUpdate(6)
-        EtaTileServiceCommon.requestTileUpdate(7)
-        EtaTileServiceCommon.requestTileUpdate(8)
-    }
-
-    fun updateTileService(favoriteIndex: Int) {
-        EtaTileServiceCommon.requestTileUpdate(favoriteIndex)
-    }
-
-    fun setLanguage(language: String?, context: Context) {
+    fun setLanguage(language: String?, context: AppContext) {
         Shared.language = language!!
         PREFERENCES!!.language = language
         savePreferences(context)
-        updateTileService()
+        requestTileUpdate()
     }
 
     fun hasFavouriteRouteStop(favoriteIndex: Int): Boolean {
@@ -257,11 +221,11 @@ class Registry {
         return true
     }
 
-    fun clearFavouriteRouteStop(favoriteIndex: Int, context: Context) {
+    fun clearFavouriteRouteStop(favoriteIndex: Int, context: AppContext) {
         clearFavouriteRouteStop(favoriteIndex, true, context)
     }
 
-    private fun clearFavouriteRouteStop(favoriteIndex: Int, save: Boolean, context: Context) {
+    private fun clearFavouriteRouteStop(favoriteIndex: Int, save: Boolean, context: AppContext) {
         Shared.updateFavoriteRouteStops { it.remove(favoriteIndex) }
         PREFERENCES!!.favouriteRouteStops.remove(favoriteIndex)
         val changes: MutableMap<Int, List<Int>> = HashMap()
@@ -287,16 +251,16 @@ class Registry {
         }
         if (save) {
             savePreferences(context)
-            updateTileService(0)
-            updateTileService(favoriteIndex)
+            requestTileUpdate(0)
+            requestTileUpdate(favoriteIndex)
         }
     }
 
-    fun setFavouriteRouteStop(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, favouriteStopMode: FavouriteStopMode, context: Context) {
+    fun setFavouriteRouteStop(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, favouriteStopMode: FavouriteStopMode, context: AppContext) {
         setFavouriteRouteStop(favoriteIndex, stopId, co, index, stop, route, favouriteStopMode, bypassEtaTileCheck = false, save = true, context)
     }
 
-    private fun setFavouriteRouteStop(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, favouriteStopMode: FavouriteStopMode, bypassEtaTileCheck: Boolean, save: Boolean, context: Context) {
+    private fun setFavouriteRouteStop(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, favouriteStopMode: FavouriteStopMode, bypassEtaTileCheck: Boolean, save: Boolean, context: AppContext) {
         val favouriteRouteStop = FavouriteRouteStop(stopId, co, index, stop, route, favouriteStopMode)
         Shared.updateFavoriteRouteStops { it[favoriteIndex] = favouriteRouteStop }
         PREFERENCES!!.favouriteRouteStops[favoriteIndex] = favouriteRouteStop
@@ -325,25 +289,25 @@ class Registry {
         }
         if (save) {
             savePreferences(context)
-            updateTileService(0)
-            updateTileService(favoriteIndex)
+            requestTileUpdate(0)
+            requestTileUpdate(favoriteIndex)
         }
     }
 
-    fun clearEtaTileConfiguration(tileId: Int, context: Context) {
+    fun clearEtaTileConfiguration(tileId: Int, context: AppContext) {
         Shared.updateEtaTileConfigurations { it.remove(tileId) }
         PREFERENCES!!.etaTileConfigurations.remove(tileId)
         savePreferences(context)
     }
 
-    fun setEtaTileConfiguration(tileId: Int, favouriteIndexes: List<Int>, context: Context) {
+    fun setEtaTileConfiguration(tileId: Int, favouriteIndexes: List<Int>, context: AppContext) {
         Shared.updateEtaTileConfigurations { it[tileId] = favouriteIndexes }
         PREFERENCES!!.etaTileConfigurations[tileId] = favouriteIndexes
         savePreferences(context)
-        updateTileService(0)
+        requestTileUpdate(0)
     }
 
-    fun addLastLookupRoute(routeNumber: String?, co: Operator?, meta: String?, context: Context) {
+    fun addLastLookupRoute(routeNumber: String?, co: Operator?, meta: String?, context: AppContext) {
         Shared.addLookupRoute(routeNumber!!, co!!, meta!!)
         val lastLookupRoutes = Shared.getLookupRoutes()
         PREFERENCES!!.lastLookupRoutes.clear()
@@ -351,13 +315,13 @@ class Registry {
         savePreferences(context)
     }
 
-    fun clearLastLookupRoutes(context: Context) {
+    fun clearLastLookupRoutes(context: AppContext) {
         Shared.clearLookupRoute()
         PREFERENCES!!.lastLookupRoutes.clear()
         savePreferences(context)
     }
 
-    fun setRouteSortModePreference(context: Context, listType: RouteListType, sortMode: RouteSortMode) {
+    fun setRouteSortModePreference(context: AppContext, listType: RouteListType, sortMode: RouteSortMode) {
         (Shared.routeSortModePreference as MutableMap<RouteListType, RouteSortMode>)[listType] = sortMode
         PREFERENCES!!.routeSortModePreference.clear()
         PREFERENCES!!.routeSortModePreference.putAll(Shared.routeSortModePreference)
@@ -368,19 +332,17 @@ class Registry {
         currentChecksumTask.get()?.cancel()
     }
 
-    private fun ensureData(context: Context, suppressUpdateCheck: Boolean) {
+    private fun ensureData(context: AppContext, suppressUpdateCheck: Boolean) {
         if (stateFlow.value == State.READY) {
             return
         }
         if (PREFERENCES != null && DATA != null) {
             return
         }
-        val files = listOf(*context.applicationContext.fileList())
+        val files = context.listFiles()
         if (files.contains(PREFERENCES_FILE_NAME)) {
             try {
-                BufferedReader(InputStreamReader(context.applicationContext.openFileInput(PREFERENCES_FILE_NAME), Charsets.UTF_8)).use { reader ->
-                    PREFERENCES = Preferences.deserialize(Json.decodeFromString<JsonObject>(reader.lines().collect(Collectors.joining())))
-                }
+                PREFERENCES = Preferences.deserialize(Json.decodeFromString<JsonObject>(context.readTextFile(PREFERENCES_FILE_NAME)))
             } catch (e: Throwable) {
                 e.printStackTrace()
             }
@@ -415,19 +377,19 @@ class Registry {
         checkUpdate(context, suppressUpdateCheck)
     }
 
-    fun checkUpdate(context: Context, suppressUpdateCheck: Boolean) {
+    fun checkUpdate(context: AppContext, suppressUpdateCheck: Boolean) {
         stateFlow.value = State.LOADING
         if (!suppressUpdateCheck) {
             lastUpdateCheckHolder.set(System.currentTimeMillis())
         }
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val files = listOf(*context.applicationContext.fileList())
-                val connectionType = context.getConnectionType()
+                val files = context.listFiles()
+                val hasConnection = context.hasConnection()
                 val updateChecked = AtomicBoolean(false)
                 val checksumFetcher: suspend (Boolean) -> String? = { forced ->
                     val future = async { withTimeout(10000) {
-                        val version = context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode
+                        val version = context.versionCode
                         getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5") + "_" + version
                     } }
                     currentChecksumTask.set(future)
@@ -448,26 +410,22 @@ class Registry {
                     }
                 }
                 var cached = false
-                var checksum = if (!suppressUpdateCheck && connectionType.hasConnection()) checksumFetcher.invoke(false) else null
+                var checksum = if (!suppressUpdateCheck && hasConnection) checksumFetcher.invoke(false) else null
                 if (files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_FILE_NAME)) {
                     if (checksum == null) {
                         cached = true
                     } else {
-                        BufferedReader(InputStreamReader(context.applicationContext.openFileInput(CHECKSUM_FILE_NAME), Charsets.UTF_8)).use { reader ->
-                            val localChecksum = reader.readLine()
-                            if (localChecksum == checksum) {
-                                cached = true
-                            }
+                        val localChecksum = context.readTextFile(CHECKSUM_FILE_NAME)
+                        if (localChecksum == checksum) {
+                            cached = true
                         }
                     }
                 }
                 if (cached) {
                     if (DATA == null) {
                         try {
-                            BufferedReader(InputStreamReader(context.applicationContext.openFileInput(DATA_FILE_NAME), Charsets.UTF_8)).use { reader ->
-                                DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(reader.lines().collect(Collectors.joining())))
-                            }
-                            updateTileService()
+                            DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(context.readTextFile(DATA_FILE_NAME)))
+                            requestTileUpdate()
                             stateFlow.value = State.READY
                         } catch (e: Throwable) {
                             e.printStackTrace()
@@ -477,10 +435,10 @@ class Registry {
                     }
                 }
                 if (stateFlow.value != State.READY) {
-                    if (!connectionType.hasConnection()) {
+                    if (!hasConnection) {
                         stateFlow.value = State.ERROR
                         try {
-                            context.applicationContext.deleteFile(CHECKSUM_FILE_NAME)
+                            context.deleteFile(CHECKSUM_FILE_NAME)
                         } catch (ignore: Throwable) {
                         }
                     } else {
@@ -495,23 +453,9 @@ class Registry {
                         val textResponse: String = getTextResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json.gz", length, true) { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
                         DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(textResponse))
                         updatePercentageStateFlow.value = 0.75f + percentageOffset
-                        val atomicDataFile = AtomicFile(context.applicationContext.getFileStreamPath(DATA_FILE_NAME))
-                        atomicDataFile.startWrite().use { fos ->
-                            PrintWriter(OutputStreamWriter(fos, Charsets.UTF_8)).use { pw ->
-                                pw.write(textResponse)
-                                pw.flush()
-                                atomicDataFile.finishWrite(fos)
-                            }
-                        }
+                        context.writeTextFile(DATA_FILE_NAME) { textResponse }
                         updatePercentageStateFlow.value = 0.825f + percentageOffset
-                        val atomicChecksumFile = AtomicFile(context.applicationContext.getFileStreamPath(CHECKSUM_FILE_NAME))
-                        atomicChecksumFile.startWrite().use { fos ->
-                            PrintWriter(OutputStreamWriter(fos, Charsets.UTF_8)).use { pw ->
-                                pw.write(checksum ?: "")
-                                pw.flush()
-                                atomicChecksumFile.finishWrite(fos)
-                            }
-                        }
+                        context.writeTextFile(CHECKSUM_FILE_NAME) { checksum ?: "" }
                         updatePercentageStateFlow.value = 0.85f + percentageOffset
                         var localUpdatePercentage = updatePercentageStateFlow.value
                         val percentagePerFav = 0.15f / Shared.favoriteRouteStops.size
@@ -566,7 +510,7 @@ class Registry {
                             savePreferences(context)
                         }
                         updatePercentageStateFlow.value = 1f
-                        updateTileService()
+                        requestTileUpdate()
                         stateFlow.value = State.READY
                     }
                 }
@@ -1230,7 +1174,7 @@ class Registry {
 
     }
 
-    fun getEta(stopId: String, stopIndex: Int, co: Operator, route: Route, context: Context): PendingETAQueryResult {
+    fun getEta(stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext): PendingETAQueryResult {
         Firebase.analytics.logEvent("eta_query", Bundle().apply {
             putString("by_stop", stopId + "," + stopIndex + "," + route.routeNumber + "," + co.name + "," + route.bound[co])
             putString("by_bound", route.routeNumber + "," + co.name + "," + route.bound[co])
@@ -1992,13 +1936,13 @@ class Registry {
 
     @Immutable
     class PendingETAQueryResult(
-        private val context: Context,
+        private val context: AppContext,
         private val co: Operator,
         private val deferred: Deferred<ETAQueryResult>
     ) {
 
-        private val errorResult: ETAQueryResult @SuppressLint("RestrictedApi") get() {
-            val restrictionType = if (context is ComponentActivity) BackgroundRestrictionType.NONE else context.isBackgroundRestricted()
+        private val errorResult: ETAQueryResult get() {
+            val restrictionType = if (context is AppActiveContext) BackgroundRestrictionType.NONE else context.currentBackgroundRestrictions()
             return ETAQueryResult.connectionError(restrictionType, co)
         }
 

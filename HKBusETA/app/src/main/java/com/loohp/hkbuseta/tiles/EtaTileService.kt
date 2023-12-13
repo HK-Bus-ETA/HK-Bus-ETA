@@ -26,6 +26,7 @@ import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
+import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.shared.Shared
 
 class EtaTileService : TileService() {
@@ -35,7 +36,7 @@ class EtaTileService : TileService() {
     }
 
     override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> {
-        return EtaTileServiceCommon.buildTileRequest(requestParams.tileId, packageName, this)
+        return EtaTileServiceCommon.buildTileRequest(requestParams.tileId, packageName, appContext)
     }
 
     override fun onTileResourcesRequest(requestParams: RequestBuilders.ResourcesRequest): ListenableFuture<ResourceBuilders.Resources> {
@@ -43,7 +44,7 @@ class EtaTileService : TileService() {
     }
 
     override fun onTileEnterEvent(requestParams: EventBuilders.TileEnterEvent) {
-        EtaTileServiceCommon.handleTileEnterEvent(requestParams.tileId, this)
+        EtaTileServiceCommon.handleTileEnterEvent(requestParams.tileId, appContext)
     }
 
     override fun onTileLeaveEvent(requestParams: EventBuilders.TileLeaveEvent) {
@@ -51,7 +52,7 @@ class EtaTileService : TileService() {
     }
 
     override fun onTileRemoveEvent(requestParams: EventBuilders.TileRemoveEvent) {
-        EtaTileServiceCommon.handleTileRemoveEvent(requestParams.tileId, this)
+        EtaTileServiceCommon.handleTileRemoveEvent(requestParams.tileId, appContext)
     }
 
 }

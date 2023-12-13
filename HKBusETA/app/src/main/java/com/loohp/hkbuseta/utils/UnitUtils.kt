@@ -20,14 +20,13 @@
 
 package com.loohp.hkbuseta.utils
 
-import android.content.Context
-import android.util.TypedValue
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.coerceAtMost
+import com.loohp.hkbuseta.appcontext.AppContext
 import kotlin.math.absoluteValue
 
 
@@ -61,7 +60,7 @@ fun TextUnit.clamp(min: Dp? = null, max: Dp? = null): TextUnit {
     return dp.sp
 }
 
-fun Float.clampSp(context: Context, dpMin: Float? = null, dpMax: Float? = null): Float {
+fun Float.clampSp(context: AppContext, dpMin: Float? = null, dpMax: Float? = null): Float {
     var dp = spToDp(context)
     if (dpMin != null) {
         dp = dp.coerceAtLeast(dpMin)
@@ -72,22 +71,22 @@ fun Float.clampSp(context: Context, dpMin: Float? = null, dpMax: Float? = null):
     return dp.dpToSp(context)
 }
 
-fun Float.spToPixels(context: Context): Float {
-    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, this, context.resources.displayMetrics)
+fun Float.spToPixels(context: AppContext): Float {
+    return this * context.scaledDensity
 }
 
-fun Float.dpToPixels(context: Context): Float {
-    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, this, context.resources.displayMetrics)
+fun Float.dpToPixels(context: AppContext): Float {
+    return this * context.density
 }
 
-fun Float.pixelsToDp(context: Context): Float {
-    return this / context.resources.displayMetrics.density
+fun Float.pixelsToDp(context: AppContext): Float {
+    return this / context.density
 }
 
-fun Float.dpToSp(context: Context): Float {
-    return dpToPixels(context) / context.resources.displayMetrics.scaledDensity
+fun Float.dpToSp(context: AppContext): Float {
+    return dpToPixels(context) / context.scaledDensity
 }
 
-fun Float.spToDp(context: Context): Float {
-    return (this * context.resources.displayMetrics.scaledDensity).pixelsToDp(context)
+fun Float.spToDp(context: AppContext): Float {
+    return (this * context.scaledDensity).pixelsToDp(context)
 }

@@ -35,6 +35,8 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.concurrency.AtomicReference
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.MainActivity
+import com.loohp.hkbuseta.appcontext.AppContext
+import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteListType
@@ -144,7 +146,7 @@ class Shared {
             val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
             Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
                 try {
-                    invalidateCache(context)
+                    invalidateCache(context.appContext)
                     if (context is Activity) {
                         var stacktrace = throwable.stackTraceToString()
                         if (stacktrace.length > 459000) {
@@ -162,7 +164,7 @@ class Shared {
             }
         }
 
-        fun invalidateCache(context: Context) {
+        fun invalidateCache(context: AppContext) {
             try {
                 Registry.invalidateCache(context)
             } catch (_: Throwable) {}
@@ -351,7 +353,7 @@ class Shared {
         }
 
         fun ensureRegistryDataAvailable(activity: Activity): Boolean {
-            return if (!Registry.hasInstanceCreated() || Registry.getInstanceNoUpdateCheck(activity).state.value.isProcessing) {
+            return if (!Registry.hasInstanceCreated() || Registry.getInstanceNoUpdateCheck(activity.appContext).state.value.isProcessing) {
                 val intent = Intent(activity, MainActivity::class.java)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 activity.startActivity(intent)

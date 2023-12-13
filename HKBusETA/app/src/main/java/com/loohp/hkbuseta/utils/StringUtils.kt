@@ -53,6 +53,9 @@ import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
 import com.aghajari.compose.text.ContentAnnotatedString
 import com.aghajari.compose.text.InlineContent
+import com.loohp.hkbuseta.appcontext.AppContext
+import com.loohp.hkbuseta.appcontext.AppContextAndroid
+import com.loohp.hkbuseta.appcontext.appContext
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -66,7 +69,7 @@ class ResourceImageGetter(private val context: Context, private val heightSp: Fl
 
     }
 
-    private val height = heightSp.spToPixels(context)
+    private val height = heightSp.spToPixels(context.appContext)
 
     @SuppressLint("DiscouragedApi")
     override fun getDrawable(source: String): Drawable? {
@@ -87,11 +90,11 @@ class ResourceImageGetter(private val context: Context, private val heightSp: Fl
 
 }
 
-fun CharSequence.toSpanned(context: Context, imageHeightSp: Float = 0F): Spanned {
+fun CharSequence.toSpanned(context: AppContext, imageHeightSp: Float = 0F): Spanned {
     return if (imageHeightSp <= 0F) {
         HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT)
     } else {
-        HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT, ResourceImageGetter(context, imageHeightSp), null)
+        HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT, ResourceImageGetter((context as AppContextAndroid).context, imageHeightSp), null)
     }
 }
 
@@ -125,7 +128,7 @@ fun FontWeight?.snapToClosestLayoutWeight(): Int {
     return layoutFontValues.minBy { (it - weight).absoluteValue }
 }
 
-fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: Context, contentAnnotatedString: ContentAnnotatedString, defaultFontSp: Float, defaultFontStyle: (LayoutElementBuilders.FontStyle.Builder) -> Unit = {}, inlineImageHandler: ((ByteArray, Int, Int) -> String)? = null): LayoutElementBuilders.Spannable.Builder {
+fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: AppContext, contentAnnotatedString: ContentAnnotatedString, defaultFontSp: Float, defaultFontStyle: (LayoutElementBuilders.FontStyle.Builder) -> Unit = {}, inlineImageHandler: ((ByteArray, Int, Int) -> String)? = null): LayoutElementBuilders.Spannable.Builder {
     if (contentAnnotatedString.isEmpty()) {
         val span = LayoutElementBuilders.SpanText.Builder().setText("")
         val fontStyleBuilder = LayoutElementBuilders.FontStyle.Builder().setSize(DimensionBuilders.sp(defaultFontSp))
@@ -266,17 +269,17 @@ fun Int.getHollowCircledNumber(): String {
 }
 
 
-fun Int.scaledSize(context: Context): Float {
-    return this * ScreenSizeUtils.getScreenScale(context)
+fun Int.scaledSize(context: AppContext): Float {
+    return this * context.screenScale
 }
 
-fun Float.scaledSize(context: Context): Float {
-    return this * ScreenSizeUtils.getScreenScale(context)
+fun Float.scaledSize(context: AppContext): Float {
+    return this * context.screenScale
 }
 
-fun String.findOptimalSp(context: Context, targetWidth: Int, maxLines: Int, minSp: Float, maxSp: Float): Float {
+fun String.findOptimalSp(context: AppContext, targetWidth: Int, maxLines: Int, minSp: Float, maxSp: Float): Float {
     val paint = TextPaint()
-    paint.density = context.resources.displayMetrics.density
+    paint.density = (context as AppContextAndroid).context.resources.displayMetrics.density
     var sp = maxSp
     while (sp >= minSp) {
         paint.textSize = sp.spToPixels(context)
@@ -293,8 +296,8 @@ fun String.findOptimalSp(context: Context, targetWidth: Int, maxLines: Int, minS
     return minSp
 }
 
-fun String.findTextLengthDp(context: Context, sp: Float): Float {
-    val textView = TextView(context)
+fun String.findTextLengthDp(context: AppContext, sp: Float): Float {
+    val textView = TextView((context as AppContextAndroid).context)
     textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
     return textView.paint.measureText(this).pixelsToDp(context)
 }

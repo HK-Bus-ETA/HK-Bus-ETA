@@ -40,6 +40,10 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.analytics.FirebaseAnalytics;
+import com.loohp.hkbuseta.appcontext.AppActiveContext;
+import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid;
+import com.loohp.hkbuseta.appcontext.AppContext;
+import com.loohp.hkbuseta.appcontext.AppContextAndroid;
 import com.loohp.hkbuseta.objects.Coordinates;
 
 import java.util.Objects;
@@ -52,15 +56,16 @@ import java.util.function.Consumer;
 
 public class LocationUtils {
 
-    public static boolean checkLocationPermission(Context context, boolean askIfNotGranted) {
-        return checkLocationPermission(context, askIfNotGranted, r -> {});
+    public static boolean checkLocationPermission(AppContext appContext, boolean askIfNotGranted) {
+        return checkLocationPermission(appContext, askIfNotGranted, r -> {});
     }
 
-    public static boolean checkLocationPermission(Context context, Consumer<Boolean> callback) {
-        return checkLocationPermission(context, true, callback);
+    public static boolean checkLocationPermission(AppContext appContext, Consumer<Boolean> callback) {
+        return checkLocationPermission(appContext, true, callback);
     }
 
-    private static boolean checkLocationPermission(Context context, boolean askIfNotGranted, Consumer<Boolean> callback) {
+    private static boolean checkLocationPermission(AppContext appContext, boolean askIfNotGranted, Consumer<Boolean> callback) {
+        Context context = ((AppContextAndroid) appContext).getContext();
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             callback.accept(true);
             return true;
@@ -83,22 +88,23 @@ public class LocationUtils {
         return false;
     }
 
-    public static boolean checkBackgroundLocationPermission(Context context, boolean askIfNotGranted) {
-        return checkBackgroundLocationPermission(context, askIfNotGranted, r -> {});
+    public static boolean checkBackgroundLocationPermission(AppContext appContext, boolean askIfNotGranted) {
+        return checkBackgroundLocationPermission(appContext, askIfNotGranted, r -> {});
     }
 
-    public static boolean checkBackgroundLocationPermission(Context context, Consumer<Boolean> callback) {
-        return checkBackgroundLocationPermission(context, true, callback);
+    public static boolean checkBackgroundLocationPermission(AppContext appContext, Consumer<Boolean> callback) {
+        return checkBackgroundLocationPermission(appContext, true, callback);
     }
 
-    private static boolean checkBackgroundLocationPermission(Context context, boolean askIfNotGranted, Consumer<Boolean> callback) {
+    private static boolean checkBackgroundLocationPermission(AppContext appContext, boolean askIfNotGranted, Consumer<Boolean> callback) {
+        Context context = ((AppContextAndroid) appContext).getContext();
         if ((ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) &&
                 ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             callback.accept(true);
             return true;
         }
-        if (askIfNotGranted && context instanceof ComponentActivity) {
+        if (askIfNotGranted && appContext instanceof AppActiveContext) {
             ComponentActivity activity = (ComponentActivity) context;
             if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                     ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -146,7 +152,8 @@ public class LocationUtils {
         return false;
     }
 
-    private static boolean checkLocationPermission(ComponentActivity activity, boolean askIfNotGranted, Consumer<Boolean> callback) {
+    private static boolean checkLocationPermission(AppActiveContext appActiveContext, boolean askIfNotGranted, Consumer<Boolean> callback) {
+        ComponentActivity activity = ((AppActiveContextAndroid) appActiveContext).getActivity();
         if ((ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) &&
                 ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -198,10 +205,11 @@ public class LocationUtils {
         return false;
     }
 
-    public static Future<LocationResult> getGPSLocation(Context context) {
-        if (!checkLocationPermission(context, false)) {
+    public static Future<LocationResult> getGPSLocation(AppContext appContext) {
+        if (!checkLocationPermission(appContext, false)) {
             return CompletableFuture.completedFuture(null);
         }
+        Context context = ((AppContextAndroid) appContext).getContext();
         CompletableFuture<LocationResult> future = new CompletableFuture<>();
         FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(context);
         ForkJoinPool.commonPool().execute(() -> {

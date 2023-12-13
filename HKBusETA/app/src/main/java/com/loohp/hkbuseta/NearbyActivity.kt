@@ -20,46 +20,18 @@
 
 package com.loohp.hkbuseta
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
-import com.loohp.hkbuseta.objects.RouteListType
-import com.loohp.hkbuseta.objects.Stop
-import com.loohp.hkbuseta.shared.Registry
+import com.loohp.hkbuseta.app.NearbyPage
+import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.shared.Shared
-import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
-import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.ifFalse
-import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toJsonArray
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
-import kotlin.math.roundToInt
 
 
 @Stable
@@ -86,7 +58,7 @@ class NearbyActivity : ComponentActivity() {
         }
 
         setContent {
-            NearbyPage(location, exclude, interchangeSearch, this)
+            NearbyPage(location, exclude, interchangeSearch, appContext)
         }
     }
 
@@ -102,129 +74,4 @@ class NearbyActivity : ComponentActivity() {
         }
     }
 
-}
-
-@Composable
-fun NearbyPage(location: LocationResult?, exclude: ImmutableSet<String>, interchangeSearch: Boolean, instance: NearbyActivity) {
-    HKBusETATheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colors.background),
-            verticalArrangement = Arrangement.Top
-        ) {
-            Shared.MainTime()
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp, 0.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            MainElement(location, exclude, interchangeSearch, instance)
-        }
-    }
-}
-
-@Composable
-fun WaitingText(usingGps: Boolean, instance: NearbyActivity) {
-    Text(
-        modifier = Modifier
-            .fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        fontSize = 17F.scaledSize(instance).sp,
-        text = if (usingGps) {
-            if (Shared.language == "en") "Locating..." else "正在讀取你的位置..."
-        } else {
-            if (Shared.language == "en") "Searching Nearby..." else "正在搜尋附近路線..."
-        }
-    )
-}
-
-@Composable
-fun FailedText(instance: NearbyActivity) {
-    Text(
-        modifier = Modifier
-            .fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        fontSize = 17F.scaledSize(instance).sp,
-        text = if (Shared.language == "en") "Unable to read your location" else "無法讀取你的位置"
-    )
-    Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
-    Text(
-        modifier = Modifier
-            .fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        fontSize = 14F.scaledSize(instance).sp,
-        text = if (Shared.language == "en") "Please check whether your GPS is enabled" else "請檢查你的定位服務是否已開啟"
-    )
-}
-
-@Composable
-fun NoNearbyText(closestStop: Stop, distance: Double, instance: NearbyActivity) {
-    Text(
-        modifier = Modifier
-            .fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        fontSize = 17F.scaledSize(instance).sp,
-        text = if (Shared.language == "en") "There are no nearby bus stops" else "附近沒有巴士站"
-    )
-    Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
-    Text(
-        modifier = Modifier
-            .fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        fontSize = 12.5F.scaledSize(instance).sp,
-        text = if (Shared.language == "en")
-            "Nearest Stop: ".plus(closestStop.name.en).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("m)")
-        else
-            "最近的巴士站: ".plus(closestStop.name.zh).plus(" (").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus("米)")
-    )
-}
-
-@Composable
-fun MainElement(location: LocationResult?, exclude: ImmutableSet<String>, interchangeSearch: Boolean, instance: NearbyActivity) {
-    var state by remember { mutableStateOf(false) }
-    var result: Registry.NearbyRoutesResult? by remember { mutableStateOf(null) }
-
-    LaunchedEffect (Unit) {
-        val locationResult = location?: LocationUtils.getGPSLocation(instance).get()
-        if (locationResult.isSuccess) {
-            val loc = locationResult.location
-            result = Registry.getInstance(instance).getNearbyRoutes(loc.lat, loc.lng, exclude, interchangeSearch)
-        }
-        state = true
-    }
-
-    EvaluatedElement(state, result, location == null, instance)
-}
-
-@Composable
-fun EvaluatedElement(state: Boolean, result: Registry.NearbyRoutesResult?, usingGps: Boolean, instance: NearbyActivity) {
-    if (state) {
-        if (result == null) {
-            FailedText(instance)
-        } else {
-            val list = result.result
-            if (list.isEmpty()) {
-                NoNearbyText(result.closestStop, result.closestDistance, instance)
-            } else {
-                val intent = Intent(instance, ListRoutesActivity::class.java)
-                intent.putExtra("result", list.asSequence().map { it.strip(); it.serialize() }.toJsonArray().toString())
-                intent.putExtra("showEta", true)
-                intent.putExtra("recentSort", RecentSortMode.CHOICE.ordinal)
-                intent.putExtra("proximitySortOrigin", doubleArrayOf(result.lat, result.lng))
-                intent.putExtra("listType", RouteListType.NEARBY.name)
-                instance.startActivity(intent)
-                instance.finish()
-            }
-        }
-    } else {
-        WaitingText(usingGps, instance)
-    }
 }

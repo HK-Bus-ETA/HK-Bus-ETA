@@ -20,7 +20,6 @@
 
 package com.loohp.hkbuseta.tiles
 
-import android.content.Context
 import android.os.Build
 import android.text.format.DateFormat
 import androidx.compose.runtime.Immutable
@@ -50,6 +49,8 @@ import com.benasher44.uuid.Uuid
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
+import com.loohp.hkbuseta.appcontext.AppContext
+import com.loohp.hkbuseta.appcontext.AppContextAndroid
 import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.Coordinates
 import com.loohp.hkbuseta.objects.FavouriteResolvedStop
@@ -65,7 +66,6 @@ import com.loohp.hkbuseta.shared.Registry.ETALineEntry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.LocationUtils
-import com.loohp.hkbuseta.utils.ScreenSizeUtils
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clampSp
@@ -280,11 +280,11 @@ class EtaTileServiceCommon {
             return hash
         }
 
-        private fun targetWidth(context: Context, padding: Int): Int {
-            return ScreenSizeUtils.getScreenWidth(context) - (padding * 2F).dpToPixels(context).roundToInt()
+        private fun targetWidth(context: AppContext, padding: Int): Int {
+            return context.screenWidth - (padding * 2F).dpToPixels(context).roundToInt()
         }
 
-        private fun noFavouriteRouteStop(tileId: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+        private fun noFavouriteRouteStop(tileId: Int, packageName: String, context: AppContext): LayoutElementBuilders.LayoutElement {
             val tileState = tileState(tileId)
             tileState.setLastUpdateSuccessful(true)
             tileState.getAndSetLastTileArcColor(Color.DarkGray)
@@ -506,7 +506,7 @@ class EtaTileServiceCommon {
             }
         }
 
-        private fun title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator, context: Context): LayoutElementBuilders.Text {
+        private fun title(index: Int, stopName: BilingualText, routeNumber: String, co: Operator, context: AppContext): LayoutElementBuilders.Text {
             val name = stopName[Shared.language]
             val text = if (co.isTrain) name else index.toString().plus(". ").plus(name)
             return LayoutElementBuilders.Text.Builder()
@@ -535,7 +535,7 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun subTitle(destName: BilingualText, gpsStop: Boolean, routeNumber: String, co: Operator, context: Context): LayoutElementBuilders.Text {
+        private fun subTitle(destName: BilingualText, gpsStop: Boolean, routeNumber: String, co: Operator, context: AppContext): LayoutElementBuilders.Text {
             val name = co.getDisplayRouteNumber(routeNumber).plus(" ").plus(destName[Shared.language])
                 .plus(if (gpsStop) (if (Shared.language == "en") " - Closest" else " - 最近") else "")
             return LayoutElementBuilders.Text.Builder()
@@ -564,7 +564,7 @@ class EtaTileServiceCommon {
         }
 
         @androidx.annotation.OptIn(androidx.wear.protolayout.expression.ProtoLayoutExperimental::class)
-        private fun etaText(eta: MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?, seq: Int, mainResolvedStop: Pair<FavouriteResolvedStop, FavouriteRouteStop>, packageName: String, context: Context): LayoutElementBuilders.Spannable {
+        private fun etaText(eta: MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?, seq: Int, mainResolvedStop: Pair<FavouriteResolvedStop, FavouriteRouteStop>, packageName: String, context: AppContext): LayoutElementBuilders.Spannable {
             val line = eta?.getLine(seq)
             val lineRoute = line?.first?.let { it.second.co.getDisplayRouteNumber(it.second.route.routeNumber, true) }
             val appendRouteNumber = lineRoute == null ||
@@ -628,11 +628,11 @@ class EtaTileServiceCommon {
                 .build()
         }
 
-        private fun lastUpdated(context: Context): LayoutElementBuilders.Text {
+        private fun lastUpdated(context: AppContext): LayoutElementBuilders.Text {
             return LayoutElementBuilders.Text.Builder()
                 .setMaxLines(1)
                 .setText((if (Shared.language == "en") "Updated: " else "更新時間: ")
-                    .plus(DateFormat.getTimeFormat(context).timeZone(TimeZone.getTimeZone(ZoneId.of("Asia/Hong_Kong"))).format(Date())))
+                    .plus(DateFormat.getTimeFormat((context as AppContextAndroid).context).timeZone(TimeZone.getTimeZone(ZoneId.of("Asia/Hong_Kong"))).format(Date())))
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
@@ -641,7 +641,7 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun buildLayout(tileId: Int, favouriteStopRoutes: List<FavouriteRouteStop>, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+        private fun buildLayout(tileId: Int, favouriteStopRoutes: List<FavouriteRouteStop>, packageName: String, context: AppContext): LayoutElementBuilders.LayoutElement {
             val tileState = tileState(tileId)
 
             val eta = tileState.getETAQueryResult {
@@ -794,7 +794,7 @@ class EtaTileServiceCommon {
                 ).build()
         }
 
-        private fun buildSuitableElement(tileId: Int, packageName: String, context: Context): LayoutElementBuilders.LayoutElement {
+        private fun buildSuitableElement(tileId: Int, packageName: String, context: AppContext): LayoutElementBuilders.LayoutElement {
             while (Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
                 TimeUnit.MILLISECONDS.sleep(10)
             }
@@ -806,7 +806,7 @@ class EtaTileServiceCommon {
             }
         }
 
-        fun buildTileRequest(tileId: Int, packageName: String, context: TileService): ListenableFuture<TileBuilders.Tile> {
+        fun buildTileRequest(tileId: Int, packageName: String, context: AppContext): ListenableFuture<TileBuilders.Tile> {
             val tileState = tileState(tileId)
             tileState.setCurrentlyUpdating(true)
             return Futures.submit(Callable {
@@ -859,7 +859,7 @@ class EtaTileServiceCommon {
             }, executor)
         }
 
-        fun handleTileEnterEvent(tileId: Int, context: TileService) {
+        fun handleTileEnterEvent(tileId: Int, context: AppContext) {
             tileState(tileId).let {
                 if (!it.getLastUpdateSuccessful()) {
                     it.markShouldUpdate()
@@ -882,7 +882,7 @@ class EtaTileServiceCommon {
                                 }
                             ))
                             it.markLastUpdated()
-                            TileService.getUpdater(context).requestUpdate(context.javaClass)
+                            TileService.getUpdater((context as AppContextAndroid).context).requestUpdate((context.context as TileService).javaClass)
                         }
                     }
                 }, 0, 1000, TimeUnit.MILLISECONDS))
@@ -893,7 +893,7 @@ class EtaTileServiceCommon {
             tileState(tileId).cancelUpdateTask()
         }
 
-        fun handleTileRemoveEvent(tileId: Int, context: Context) {
+        fun handleTileRemoveEvent(tileId: Int, context: AppContext) {
             handleTileLeaveEvent(tileId)
             Registry.getInstanceNoUpdateCheck(context).clearEtaTileConfiguration(tileId, context)
         }

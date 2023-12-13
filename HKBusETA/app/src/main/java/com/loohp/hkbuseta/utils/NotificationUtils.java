@@ -33,25 +33,28 @@ import androidx.core.app.ActivityCompat;
 
 import com.benasher44.uuid.UuidKt;
 import com.google.firebase.analytics.FirebaseAnalytics;
+import com.loohp.hkbuseta.appcontext.AppContext;
+import com.loohp.hkbuseta.appcontext.AppContextAndroid;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class NotificationUtils {
 
-    public static boolean checkNotificationPermission(Context context, boolean askIfNotGranted) {
-        return checkNotificationPermission(context, askIfNotGranted, r -> {});
+    public static boolean checkNotificationPermission(AppContext appContext, boolean askIfNotGranted) {
+        return checkNotificationPermission(appContext, askIfNotGranted, r -> {});
     }
 
-    public static boolean checkNotificationPermission(Context context, Consumer<Boolean> callback) {
-        return checkNotificationPermission(context, true, callback);
+    public static boolean checkNotificationPermission(AppContext appContext, Consumer<Boolean> callback) {
+        return checkNotificationPermission(appContext, true, callback);
     }
 
-    private static boolean checkNotificationPermission(Context context, boolean askIfNotGranted, Consumer<Boolean> callback) {
+    private static boolean checkNotificationPermission(AppContext appContext, boolean askIfNotGranted, Consumer<Boolean> callback) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             callback.accept(true);
             return true;
         }
+        Context context = ((AppContextAndroid) appContext).getContext();
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
             callback.accept(true);
             return true;

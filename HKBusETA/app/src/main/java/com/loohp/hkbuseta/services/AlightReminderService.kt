@@ -40,6 +40,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.R
+import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
@@ -190,17 +191,17 @@ class AlightReminderService : Service() {
         val newOperator = intent?.extras?.getString("co")?.let { Operator.valueOf(it) }
         val newIndex = intent?.extras?.getInt("index")
         if (newStop != null && newRoute != null && newOperator != null && newIndex != null) {
-            val allStops = Registry.getInstance(this).getAllStops(newRoute.routeNumber, newRoute.bound[newOperator]!!, newOperator, newRoute.gmbRegion)
+            val allStops = Registry.getInstance(appContext).getAllStops(newRoute.routeNumber, newRoute.bound[newOperator]!!, newOperator, newRoute.gmbRegion)
             updateCurrentValue(AlightReminderData(true, newStop, newIndex, newRoute, newOperator, allStops))
             Firebase.analytics.logEvent("alight_reminder", Bundle().apply {
                 putString("value", "${newRoute.routeNumber},${newOperator.name},${newRoute.bound[newOperator]},${newRoute.stops[newOperator]?.get(newIndex)?: "???"}")
             })
         }
         val stopListIntentBuilder = getCurrentValue()!!.let { currentValue ->
-            Registry.getInstance(this).findRoutes(currentValue.route.routeNumber, true) { it -> it == currentValue.route }.first().let { {
+            Registry.getInstance(appContext).findRoutes(currentValue.route.routeNumber, true) { it -> it == currentValue.route }.first().let { {
                 val stopListIntent = Intent(this, MainActivity::class.java)
                 stopListIntent.putExtra("stopRoute", it.toByteArray())
-                stopListIntent.putExtra("scrollToStop", currentValue.route.stops[currentValue.operator]!!.minBy { it.asStop(this)!!.location.distance(currentValue.targetStop.location) })
+                stopListIntent.putExtra("scrollToStop", currentValue.route.stops[currentValue.operator]!!.minBy { it.asStop(appContext)!!.location.distance(currentValue.targetStop.location) })
                 stopListIntent.putExtra("showEta", false)
                 stopListIntent.putExtra("isAlightReminder", true)
             } }
@@ -217,7 +218,7 @@ class AlightReminderService : Service() {
             executor.scheduleWithFixedDelay({
                 val currentValue = getCurrentValue()
                 if (currentValue?.active == true) {
-                    val currentLocation = LocationUtils.getGPSLocation(this).getOr(10, TimeUnit.SECONDS) { currentValue.currentLocation }!!
+                    val currentLocation = LocationUtils.getGPSLocation(appContext).getOr(10, TimeUnit.SECONDS) { currentValue.currentLocation }!!
                     if (currentLocation.isSuccess) {
                         val distance = currentValue.targetStop.location.distance(currentLocation.location)
                         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager

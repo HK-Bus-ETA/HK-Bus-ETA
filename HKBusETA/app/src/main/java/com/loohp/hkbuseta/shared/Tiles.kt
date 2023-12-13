@@ -18,27 +18,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.hkbuseta
+package com.loohp.hkbuseta.shared
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.runtime.Stable
-import com.loohp.hkbuseta.app.ImageElement
-import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.tiles.EtaTileServiceCommon
 
 
-@Stable
-class URLImageActivity : ComponentActivity() {
+fun requestTileUpdate() {
+    (0..8).forEach { requestTileUpdate(it) }
+}
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val url = intent.extras!!.getString("url")!!
-
-        setContent {
-            ImageElement(url, appContext)
-        }
-    }
-
+fun requestTileUpdate(favoriteIndex: Int) {
+    EtaTileServiceCommon.requestTileUpdate(favoriteIndex)
 }

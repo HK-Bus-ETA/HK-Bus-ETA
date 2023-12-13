@@ -43,7 +43,7 @@ fun Context.getConnectionType(): ConnectionType {
     return ConnectionType.NONE
 }
 
-fun Context.isBackgroundRestricted(): BackgroundRestrictionType {
+fun Context.currentBackgroundRestricted(): BackgroundRestrictionType {
     val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     if (cm.isActiveNetworkMetered && cm.restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED) {
         return BackgroundRestrictionType.RESTRICT_BACKGROUND_STATUS
@@ -71,11 +71,4 @@ enum class ConnectionType(val transportType: Int) {
     fun hasConnection(): Boolean {
         return transportType >= 0
     }
-}
-
-enum class BackgroundRestrictionType {
-    NONE,
-    RESTRICT_BACKGROUND_STATUS,
-    POWER_SAVE_MODE,
-    LOW_POWER_STANDBY
 }

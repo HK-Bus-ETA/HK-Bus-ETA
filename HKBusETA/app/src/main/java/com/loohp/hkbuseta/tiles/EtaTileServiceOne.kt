@@ -28,6 +28,7 @@ import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
+import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.shared.Shared
 
 private const val ETA_TILE_INDEX = 1 or Int.MIN_VALUE
@@ -39,7 +40,7 @@ class EtaTileServiceOne : TileService() {
     }
 
     override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> {
-        return EtaTileServiceCommon.buildTileRequest(ETA_TILE_INDEX, packageName, this)
+        return EtaTileServiceCommon.buildTileRequest(ETA_TILE_INDEX, packageName, appContext)
     }
 
     override fun onTileResourcesRequest(requestParams: RequestBuilders.ResourcesRequest): ListenableFuture<ResourceBuilders.Resources> {
@@ -47,7 +48,7 @@ class EtaTileServiceOne : TileService() {
     }
 
     override fun onTileEnterEvent(requestParams: TileEnterEvent) {
-        EtaTileServiceCommon.handleTileEnterEvent(ETA_TILE_INDEX, this)
+        EtaTileServiceCommon.handleTileEnterEvent(ETA_TILE_INDEX, appContext)
     }
 
     override fun onTileLeaveEvent(requestParams: TileLeaveEvent) {

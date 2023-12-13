@@ -26,6 +26,7 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.loohp.hkbuseta.MainActivity
+import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.utils.RemoteActivityUtils.Companion.dataToPhone
 import kotlinx.serialization.SerializationException
@@ -64,7 +65,7 @@ class WearDataLayerListenerService : WearableListenerService() {
             }
             IMPORT_PREFERENCE_PATH -> {
                 try {
-                    Registry.initInstanceWithImportedPreference(this, Json.decodeFromString(String(event.data)))
+                    Registry.initInstanceWithImportedPreference(appContext, Json.decodeFromString(String(event.data)))
                     val intent = Intent(this, MainActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     startActivity(intent)
@@ -74,7 +75,7 @@ class WearDataLayerListenerService : WearableListenerService() {
             }
             EXPORT_PREFERENCE_PATH -> {
                 try {
-                    val preferences = Registry.getInstanceNoUpdateCheck(this).exportPreference()
+                    val preferences = Registry.getInstanceNoUpdateCheck(appContext).exportPreference()
                     dataToPhone(this, EXPORT_PREFERENCE_PATH, preferences)
                 } catch (e: SerializationException) {
                     e.printStackTrace()
