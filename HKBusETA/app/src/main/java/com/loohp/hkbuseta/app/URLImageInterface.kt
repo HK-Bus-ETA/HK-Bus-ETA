@@ -105,7 +105,7 @@ fun ImageElement(url: String, instance: AppActiveContext) {
                         strokeCap = StrokeCap.Round,
                     )
                 },
-                model = ImageRequest.Builder((instance as AppActiveContextAndroid).activity).size(1920).data(url).build(),
+                model = ImageRequest.Builder((instance as AppActiveContextAndroid).context).size(1920).data(url).build(),
                 contentDescription = "",
             )
         }

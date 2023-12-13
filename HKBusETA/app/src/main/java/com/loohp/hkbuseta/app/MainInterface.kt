@@ -235,7 +235,7 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                             instance.startActivity(AppIntent(instance, AppScreen.TITLE))
                             instance.finishAffinity()
                         } else {
-                            (instance as AppActiveContextAndroid).activity.apply {
+                            (instance as AppActiveContextAndroid).context.apply {
                                 val intent2 = Intent(this, currentActivity.cls)
                                 if (currentActivity.extras != null) {
                                     intent2.putExtras(currentActivity.extras)

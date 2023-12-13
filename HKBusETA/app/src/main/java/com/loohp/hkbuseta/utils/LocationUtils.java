@@ -153,7 +153,7 @@ public class LocationUtils {
     }
 
     private static boolean checkLocationPermission(AppActiveContext appActiveContext, boolean askIfNotGranted, Consumer<Boolean> callback) {
-        ComponentActivity activity = ((AppActiveContextAndroid) appActiveContext).getActivity();
+        ComponentActivity activity = ((AppActiveContextAndroid) appActiveContext).getContext();
         if ((ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) &&
                 ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {

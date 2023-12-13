@@ -64,7 +64,9 @@ import kotlin.streams.asSequence
 
 
 @Stable
-open class AppContextAndroid internal constructor(val context: Context) : AppContext {
+open class AppContextAndroid internal constructor(
+    open val context: Context
+) : AppContext {
 
     override val packageName: String
         get() = context.packageName
@@ -90,6 +92,7 @@ open class AppContextAndroid internal constructor(val context: Context) : AppCon
     override val density: Float
         get() = context.resources.displayMetrics.density
 
+    @Suppress("DEPRECATION")
     override val scaledDensity: Float
         get() = context.resources.displayMetrics.scaledDensity
 
@@ -162,23 +165,25 @@ open class AppContextAndroid internal constructor(val context: Context) : AppCon
 }
 
 @Stable
-class AppActiveContextAndroid internal constructor(val activity: ComponentActivity) : AppContextAndroid(activity), AppActiveContext {
+class AppActiveContextAndroid internal constructor(
+    override val context: ComponentActivity
+) : AppContextAndroid(context), AppActiveContext {
 
     override val screenWidth: Int
-        get() = abs(activity.windowManager.currentWindowMetrics.bounds.width())
+        get() = abs(context.windowManager.currentWindowMetrics.bounds.width())
 
     override val screenHeight: Int
-        get() = abs(activity.windowManager.currentWindowMetrics.bounds.height())
+        get() = abs(context.windowManager.currentWindowMetrics.bounds.height())
 
     override fun runOnUiThread(runnable: () -> Unit) {
-        activity.runOnUiThread(runnable)
+        context.runOnUiThread(runnable)
     }
 
     override fun startActivity(appIntent: AppIntent, callback: (AppIntentResult) -> Unit) {
         val intent = Intent((appIntent.context as AppContextAndroid).context, appIntent.screen.activityClass)
         appIntent.intentFlags.toAndroidFlags()?.let { intent.addFlags(it) }
         appIntent.extras.toAndroidBundle()?.let { intent.putExtras(it) }
-        activity.startActivity(intent) { callback.invoke(AppIntentResult(it.resultCode)) }
+        context.startActivity(intent) { callback.invoke(AppIntentResult(it.resultCode)) }
     }
 
     override fun handleOpenMaps(lat: Double, lng: Double, label: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
@@ -187,22 +192,22 @@ class AppActiveContextAndroid internal constructor(val activity: ComponentActivi
                 .addCategory(Intent.CATEGORY_BROWSABLE)
                 .setData(Uri.parse("geo:0,0?q=".plus(lat).plus(",").plus(lng).plus("(").plus(label).plus(")")))
             if (longClick) {
-                activity.startActivity(intent)
+                context.startActivity(intent)
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             } else {
                 RemoteActivityUtils.intentToPhone(
-                    instance = activity,
+                    instance = context,
                     intent = intent,
                     noPhone = {
                         try {
-                            activity.startActivity(intent)
+                            context.startActivity(intent)
                         } catch (e: Throwable) {
                             e.printStackTrace()
                         }
                     },
                     failed = {
                         try {
-                            activity.startActivity(intent)
+                            context.startActivity(intent)
                         } catch (e: Throwable) {
                             e.printStackTrace()
                         }
@@ -223,18 +228,18 @@ class AppActiveContextAndroid internal constructor(val activity: ComponentActivi
                 .addCategory(Intent.CATEGORY_BROWSABLE)
                 .setData(Uri.parse(url))
             RemoteActivityUtils.intentToPhone(
-                instance = activity,
+                instance = context,
                 intent = intent,
                 noPhone = {
                     try {
-                        activity.startActivity(intent)
+                        context.startActivity(intent)
                     } catch (e: Throwable) {
                         e.printStackTrace()
                     }
                 },
                 failed = {
                     try {
-                        activity.startActivity(intent)
+                        context.startActivity(intent)
                     } catch (e: Throwable) {
                         e.printStackTrace()
                     }
@@ -250,23 +255,23 @@ class AppActiveContextAndroid internal constructor(val activity: ComponentActivi
 
     override fun handleWebImages(url: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
         return {
-            val phoneIntent = Intent(activity, AppScreen.URL_IMAGE.activityClass)
+            val phoneIntent = Intent(context, AppScreen.URL_IMAGE.activityClass)
             phoneIntent.putExtra("url", url)
             if (longClick) {
-                activity.startActivity(phoneIntent)
+                context.startActivity(phoneIntent)
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             } else {
                 val intent = Intent(Intent.ACTION_VIEW)
                     .addCategory(Intent.CATEGORY_BROWSABLE)
                     .setData(Uri.parse(url))
                 RemoteActivityUtils.intentToPhone(
-                    instance = activity,
+                    instance = context,
                     intent = intent,
                     noPhone = {
-                        activity.startActivity(phoneIntent)
+                        context.startActivity(phoneIntent)
                     },
                     failed = {
-                        activity.startActivity(phoneIntent)
+                        context.startActivity(phoneIntent)
                     },
                     success = {
                         runOnUiThread {
@@ -279,15 +284,15 @@ class AppActiveContextAndroid internal constructor(val activity: ComponentActivi
     }
 
     override fun setResult(result: AppIntentResult) {
-        activity.setResult(result.resultCode)
+        context.setResult(result.resultCode)
     }
 
     override fun finish() {
-        activity.finish()
+        context.finish()
     }
 
     override fun finishAffinity() {
-        activity.finishAffinity()
+        context.finishAffinity()
     }
 
 }
