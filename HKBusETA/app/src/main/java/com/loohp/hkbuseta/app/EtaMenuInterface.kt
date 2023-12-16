@@ -108,11 +108,12 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.shared.TileUseState
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.LocationUtils
-import com.loohp.hkbuseta.utils.NotificationUtils
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.append
+import com.loohp.hkbuseta.utils.checkBackgroundLocationPermission
+import com.loohp.hkbuseta.utils.checkLocationPermission
+import com.loohp.hkbuseta.utils.checkNotificationPermission
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.scaledSize
@@ -304,9 +305,9 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
             .heightIn(min = 50.scaledSize(instance).sp.dp),
         shape = RoundedCornerShape(25.scaledSize(instance).dp),
         onClick = {
-            LocationUtils.checkLocationPermission(instance) { locationGranted ->
+            checkLocationPermission(instance) { locationGranted ->
                 if (locationGranted) {
-                    NotificationUtils.checkNotificationPermission(instance) { notificationGranted ->
+                    checkNotificationPermission(instance) { notificationGranted ->
                         if (notificationGranted) {
                             Registry.getInstance(instance).findRoutes(route.routeNumber, true) { it -> it == route }.first().let {
                                 val intent = AppIntent(instance, AppScreen.ALIGHT_REMINDER_SERVICE)
@@ -692,7 +693,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
     }
 
     val handleClick: (FavouriteStopMode) -> Unit = {
-        if (it.isRequiresLocation && state != FavouriteRouteState.USED_SELF && !LocationUtils.checkBackgroundLocationPermission(instance, false)) {
+        if (it.isRequiresLocation && state != FavouriteRouteState.USED_SELF && !checkBackgroundLocationPermission(instance, false)) {
             val noticeIntent = AppIntent(instance, AppScreen.DISMISSIBLE_TEXT_DISPLAY)
             val notice = BilingualText(
                 "<b>設置路線任何站為最喜愛路線</b>需要在<b>背景存取定位位置的權限</b><br>" +
@@ -710,7 +711,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
             noticeIntent.putExtra("text", notice.toByteArray())
             instance.startActivity(noticeIntent) { confirm ->
                 if (confirm.resultCode == 1) {
-                    LocationUtils.checkBackgroundLocationPermission(instance) { result ->
+                    checkBackgroundLocationPermission(instance) { result ->
                         if (result) {
                             handleClick0.invoke(it)
                         } else {

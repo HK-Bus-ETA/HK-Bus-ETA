@@ -48,9 +48,9 @@ import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.LocationUtils
-import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
+import com.loohp.hkbuseta.utils.LocationResult
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.toJsonArray
 import kotlinx.collections.immutable.ImmutableSet
@@ -146,9 +146,9 @@ fun MainElement(location: LocationResult?, exclude: ImmutableSet<String>, interc
     var result: Registry.NearbyRoutesResult? by remember { mutableStateOf(null) }
 
     LaunchedEffect (Unit) {
-        val locationResult = location?: LocationUtils.getGPSLocation(instance).get()
-        if (locationResult.isSuccess) {
-            val loc = locationResult.location
+        val locationResult = location?: getGPSLocation(instance).await()
+        if (locationResult?.isSuccess == true) {
+            val loc = locationResult.location!!
             result = Registry.getInstance(instance).getNearbyRoutes(loc.lat, loc.lng, exclude, interchangeSearch)
         }
         state = true

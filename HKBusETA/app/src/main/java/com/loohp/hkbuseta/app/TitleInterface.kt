@@ -66,7 +66,7 @@ import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.LocationUtils
+import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.scaledSize
 
@@ -151,7 +151,7 @@ fun NearbyButton(instance: AppActiveContext) {
             instance.logFirebaseEvent("title_action", AppBundle().apply {
                 putString("value", "nearby")
             })
-            LocationUtils.checkLocationPermission(instance) {
+            checkLocationPermission(instance) {
                 instance.runOnUiThread {
                     if (it) {
                         instance.startActivity(AppIntent(instance, AppScreen.NEARBY))
@@ -234,7 +234,7 @@ fun FavButton(instance: AppActiveContext) {
                 instance.logFirebaseEvent("title_action", AppBundle().apply {
                     putString("value", "favourite_list_view")
                 })
-                LocationUtils.checkLocationPermission(instance) {
+                checkLocationPermission(instance) {
                     val intent = AppIntent(instance, AppScreen.FAV_ROUTE_LIST_VIEW)
                     intent.putExtra("usingGps", it)
                     instance.startActivity(intent)

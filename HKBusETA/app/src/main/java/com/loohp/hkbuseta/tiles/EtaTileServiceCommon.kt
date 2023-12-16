@@ -66,7 +66,6 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETALineEntry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
-import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -75,12 +74,14 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dpToPixels
 import com.loohp.hkbuseta.utils.findOptimalSp
 import com.loohp.hkbuseta.utils.getAndNegate
+import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getOr
 import com.loohp.hkbuseta.utils.parallelMapNotNull
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToDp
 import com.loohp.hkbuseta.utils.timeZone
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.datetime.DateTimeUnit
 import java.time.ZoneId
 import java.util.Date
@@ -619,8 +620,7 @@ class EtaTileServiceCommon {
             val tileState = tileState(tileId)
 
             val eta = tileState.getETAQueryResult {
-                val favouriteRouteStops = favouriteStopRoutes
-                    .resolveStops(context) { it.setLastLocationOrGetLast(LocationUtils.getGPSLocation(context).getOr(7, TimeUnit.SECONDS) { null }?.location) }
+                val favouriteRouteStops = favouriteStopRoutes.resolveStops(context) { it.setLastLocationOrGetLast(getGPSLocation(context).asCompletableFuture().getOr(7, TimeUnit.SECONDS) { null }?.location) }
                 val eta = MergedETAQueryResult.merge(
                     favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
                         val (favStop, resolved) = pair
@@ -633,7 +633,7 @@ class EtaTileServiceCommon {
             }
             val mainResolvedStop = eta?.firstKey?: run {
                 val favStop = favouriteStopRoutes[0]
-                favStop.resolveStop(context) { LocationUtils.getGPSLocation(context).getOr(2, TimeUnit.SECONDS) { null }?.location } to favStop
+                favStop.resolveStop(context) { getGPSLocation(context).asCompletableFuture().getOr(2, TimeUnit.SECONDS) { null }?.location } to favStop
             }
             val (favouriteResolvedStop, favouriteStopRoute) = mainResolvedStop
 
@@ -844,7 +844,7 @@ class EtaTileServiceCommon {
                         if (favouriteRoutes.isNotEmpty()) {
                             val favouriteRouteStops = favouriteRoutes
                                 .mapNotNull { favouriteRoute -> Shared.favoriteRouteStops[favouriteRoute] }
-                                .resolveStops(context) { it.setLastLocationOrGetLast(LocationUtils.getGPSLocation(context).getOr(7, TimeUnit.SECONDS) { null }?.location) }
+                                .resolveStops(context) { it.setLastLocationOrGetLast(getGPSLocation(context).asCompletableFuture().getOr(7, TimeUnit.SECONDS) { null }?.location) }
                             it.cacheETAQueryResult(MergedETAQueryResult.merge(
                                 favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
                                     val (favStop, resolved) = pair

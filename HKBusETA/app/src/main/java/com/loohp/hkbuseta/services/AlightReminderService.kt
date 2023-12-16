@@ -50,13 +50,14 @@ import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
-import com.loohp.hkbuseta.utils.LocationUtils
-import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
+import com.loohp.hkbuseta.utils.LocationResult
+import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getOr
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -164,7 +165,7 @@ class AlightReminderService : Service() {
         }
 
         val closestStopIndex = if (currentLocation.isSuccess) {
-            val location = currentLocation.location
+            val location = currentLocation.location!!
             currentValue.allStops.withIndex().minBy {
                 val stop = it.value.stop
                 stop.location.distance(location)
@@ -218,9 +219,9 @@ class AlightReminderService : Service() {
             executor.scheduleWithFixedDelay({
                 val currentValue = getCurrentValue()
                 if (currentValue?.active == true) {
-                    val currentLocation = LocationUtils.getGPSLocation(appContext).getOr(10, TimeUnit.SECONDS) { currentValue.currentLocation }!!
+                    val currentLocation = getGPSLocation(appContext).asCompletableFuture().getOr(10, TimeUnit.SECONDS) { currentValue.currentLocation }!!
                     if (currentLocation.isSuccess) {
-                        val distance = currentValue.targetStop.location.distance(currentLocation.location)
+                        val distance = currentValue.targetStop.location.distance(currentLocation.location!!)
                         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
                         val (notification, same, overshot, isTargetStopClosest) = buildData(currentLocation, distance, false)
                         val arrived = (distance <= 0.3 && isTargetStopClosest) || overshot

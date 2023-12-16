@@ -114,13 +114,13 @@ import com.loohp.hkbuseta.shared.Registry.StopData
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
-import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.MTRLineSection
 import com.loohp.hkbuseta.utils.MTRLineSectionExtension
 import com.loohp.hkbuseta.utils.MTRStopSectionData
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asImmutableState
+import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.createMTRLineSectionData
@@ -128,6 +128,7 @@ import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.eitherContains
 import com.loohp.hkbuseta.utils.findTextLengthDp
 import com.loohp.hkbuseta.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.spToPixels
@@ -252,14 +253,14 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                 val origin = route.origin!!
                 scrollTask.invoke(OriginData(origin.lat, origin.lng), null)
             } else {
-                LocationUtils.checkLocationPermission(instance) {
+                checkLocationPermission(instance) {
                     if (it) {
-                        val future = LocationUtils.getGPSLocation(instance)
+                        val future = getGPSLocation(instance)
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
-                                val locationResult = future.get()
-                                if (locationResult.isSuccess) {
-                                    val location = locationResult.location
+                                val locationResult = future.await()
+                                if (locationResult?.isSuccess == true) {
+                                    val location = locationResult.location!!
                                     scrollTask.invoke(OriginData(location.lat, location.lng, true), null)
                                 }
                             } catch (e: Exception) {
@@ -301,7 +302,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                                         isTargetActive = false
                                     }
                                     if (alightReminderData!!.currentLocation.isSuccess) {
-                                        val location = alightReminderData!!.currentLocation.location
+                                        val location = alightReminderData!!.currentLocation.location!!
                                         closestIndex = (stopsList.withIndex().minBy {
                                             it.value.stop.location.distance(location)
                                         }.index + 1).coerceAtMost(targetStopIndex)

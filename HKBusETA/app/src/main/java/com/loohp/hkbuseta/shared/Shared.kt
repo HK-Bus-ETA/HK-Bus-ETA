@@ -20,6 +20,7 @@
 
 package com.loohp.hkbuseta.shared
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -358,6 +359,7 @@ class Shared {
             currentActivity.updateAndGet { if (it != null && it.isEqualTo(data)) null else it }
         }
 
+        @SuppressLint("WearRecents")
         fun ensureRegistryDataAvailable(activity: Activity): Boolean {
             return if (!Registry.hasInstanceCreated() || Registry.getInstanceNoUpdateCheck(activity.appContext).state.value.isProcessing) {
                 val intent = Intent(activity, MainActivity::class.java)

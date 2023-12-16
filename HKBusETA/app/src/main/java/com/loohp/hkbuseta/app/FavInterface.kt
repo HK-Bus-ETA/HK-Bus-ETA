@@ -113,19 +113,21 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.shared.TileUseState
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
-import com.loohp.hkbuseta.utils.LocationUtils
-import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
+import com.loohp.hkbuseta.utils.LocationResult
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asImmutableState
+import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToPixels
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
@@ -155,10 +157,10 @@ fun FavElements(scrollToIndex: Int, instance: AppActiveContext, schedule: (Boole
                 }
             }
             if (Shared.favoriteRouteStops.values.any { it.favouriteStopMode.isRequiresLocation }) {
-                LocationUtils.checkLocationPermission(instance) {
+                checkLocationPermission(instance) {
                     if (it) {
                         schedule.invoke(true, -1) {
-                            originState.value = LocationUtils.getGPSLocation(instance).get()
+                            originState.value = runBlocking { getGPSLocation(instance).await() }
                         }
                     }
                 }
@@ -241,7 +243,7 @@ fun FavDescription(instance: AppActiveContext) {
 fun RouteListViewButton(instance: AppActiveContext) {
     Button(
         onClick = {
-            LocationUtils.checkLocationPermission(instance) {
+            checkLocationPermission(instance) {
                 val intent = AppIntent(instance, AppScreen.FAV_ROUTE_LIST_VIEW)
                 intent.putExtra("usingGps", it)
                 instance.startActivity(intent)

@@ -63,9 +63,9 @@ import com.loohp.hkbuseta.objects.resolveStop
 import com.loohp.hkbuseta.objects.uniqueKey
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.toJsonArray
 import kotlinx.coroutines.delay
@@ -159,8 +159,8 @@ fun MainElement(usingGps: Boolean, instance: AppActiveContext) {
 
     LaunchedEffect (Unit) {
         if (needLocation) {
-            val locationResult = LocationUtils.getGPSLocation(instance).get()
-            if (locationResult.isSuccess) {
+            val locationResult = getGPSLocation(instance).await()
+            if (locationResult?.isSuccess == true) {
                 location = locationResult.location
             }
             state.value = true
