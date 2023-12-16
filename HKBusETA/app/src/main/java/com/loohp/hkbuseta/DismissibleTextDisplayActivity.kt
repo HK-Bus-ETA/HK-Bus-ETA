@@ -27,6 +27,7 @@ import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.TextElement
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ifFalse
 import io.ktor.utils.io.ByteReadChannel
@@ -38,8 +39,8 @@ class DismissibleTextDisplayActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
-        Shared.setDefaultExceptionHandler(this)
+        AndroidShared.ensureRegistryDataAvailable(this).ifFalse { return }
+        AndroidShared.setDefaultExceptionHandler(this)
 
         val specialTextIndex = intent.extras!!.getInt("specialTextIndex", -1)
         val text = intent.extras!!.getByteArray("text")?.let { runBlocking { BilingualText.deserialize(ByteReadChannel(it)) } }?: BilingualText.EMPTY
@@ -52,7 +53,7 @@ class DismissibleTextDisplayActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        Shared.setSelfAsCurrentActivity(this)
+        AndroidShared.setSelfAsCurrentActivity(this)
     }
 
 }

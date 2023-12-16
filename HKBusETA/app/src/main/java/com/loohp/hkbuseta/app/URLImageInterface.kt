@@ -50,7 +50,6 @@ import coil3.compose.SubcomposeAsyncImage
 import coil3.fetch.NetworkFetcher
 import coil3.request.ImageRequest
 import com.loohp.hkbuseta.appcontext.AppActiveContext
-import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.pixelsToDp
 import me.saket.telephoto.zoomable.ZoomSpec
@@ -77,25 +76,20 @@ fun ImageElement(url: String, instance: AppActiveContext) {
                 animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
                 label = "AnimatedZoomPadding"
             )
-            var modifier = Modifier
-                .fillMaxSize()
-                .padding(animatedZoomPadding.dp)
-            if (zoom) {
-                modifier = modifier.zoomable(
-                    state = rememberZoomableState(ZoomSpec(maxZoomFactor = 5F)),
-                    onClick = {
-                        zoom = !zoom
-                    }
-                )
-            } else {
-                modifier = modifier.combinedClickable(
-                    onClick = {
-                        zoom = !zoom
-                    }
-                )
-            }
             SubcomposeAsyncImage(
-                modifier = modifier,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(animatedZoomPadding.dp)
+                    .then(if (zoom) Modifier.zoomable(
+                        state = rememberZoomableState(ZoomSpec(maxZoomFactor = 5F)),
+                        onClick = {
+                            zoom = !zoom
+                        }
+                    ) else Modifier.combinedClickable(
+                        onClick = {
+                            zoom = !zoom
+                        }
+                    )),
                 loading = {
                     CircularProgressIndicator(
                         modifier = Modifier
@@ -107,7 +101,7 @@ fun ImageElement(url: String, instance: AppActiveContext) {
                         strokeCap = StrokeCap.Round,
                     )
                 },
-                model = ImageRequest.Builder((instance as AppActiveContextAndroid).context).fetcherFactory(NetworkFetcher.Factory()).size(1920).data(url).build(),
+                model = ImageRequest.Builder(instance.platformContext).fetcherFactory(NetworkFetcher.Factory()).size(1920).data(url).build(),
                 contentDescription = "",
             )
         }

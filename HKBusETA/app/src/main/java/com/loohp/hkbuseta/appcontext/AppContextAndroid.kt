@@ -31,6 +31,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.core.util.AtomicFile
+import coil3.PlatformContext
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.DismissibleTextDisplayActivity
@@ -72,6 +73,9 @@ open class AppContextAndroid internal constructor(
 
     override val versionCode: Long
         get() = context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode
+
+    override val platformContext: PlatformContext
+        get() = context
 
     override val screenWidth: Int
         get() = abs(context.resources.displayMetrics.widthPixels)

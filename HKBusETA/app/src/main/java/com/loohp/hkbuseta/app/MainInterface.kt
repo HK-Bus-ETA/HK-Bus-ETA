@@ -20,7 +20,6 @@
 
 package com.loohp.hkbuseta.app
 
-import android.content.Intent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.TweenSpec
@@ -61,7 +60,6 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContext
-import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.appcontext.AppIntent
 import com.loohp.hkbuseta.appcontext.AppScreen
 import com.loohp.hkbuseta.objects.GMBRegion
@@ -230,19 +228,9 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                         }
                         instance.finishAffinity()
                     } else {
-                        val currentActivity = Shared.getCurrentActivity()
-                        if (currentActivity == null || !currentActivity.shouldRelaunch) {
+                        Shared.restoreCurrentScreenOrRun(instance) {
                             instance.startActivity(AppIntent(instance, AppScreen.TITLE))
                             instance.finishAffinity()
-                        } else {
-                            (instance as AppActiveContextAndroid).context.apply {
-                                val intent2 = Intent(this, currentActivity.cls)
-                                if (currentActivity.extras != null) {
-                                    intent2.putExtras(currentActivity.extras)
-                                }
-                                startActivity(intent2)
-                                finishAffinity()
-                            }
                         }
                     }
                 }
@@ -350,7 +338,7 @@ fun UpdatingElements(instance: AppActiveContext) {
                 .padding(25.dp, 0.dp),
             color = Color(0xFFF9DE09),
             trackColor = Color(0xFF797979),
-            progress = progressAnimation
+            progress = { progressAnimation }
         )
     }
 }

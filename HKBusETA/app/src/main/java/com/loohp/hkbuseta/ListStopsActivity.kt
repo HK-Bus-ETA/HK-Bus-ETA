@@ -32,6 +32,7 @@ import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.compose.ambientMode
 import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ifFalse
 import io.ktor.utils.io.ByteReadChannel
@@ -52,8 +53,8 @@ class ListStopsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
-        Shared.setDefaultExceptionHandler(this)
+        AndroidShared.ensureRegistryDataAvailable(this).ifFalse { return }
+        AndroidShared.setDefaultExceptionHandler(this)
 
         val route = intent.extras!!.getByteArray("route")?.let { runBlocking { RouteSearchResultEntry.deserialize(ByteReadChannel(it)) } }!!
         val scrollToStop = intent.extras!!.getString("scrollToStop")
@@ -82,7 +83,7 @@ class ListStopsActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        Shared.setSelfAsCurrentActivity(this)
+        AndroidShared.setSelfAsCurrentActivity(this)
     }
 
     override fun onResume() {
@@ -107,7 +108,7 @@ class ListStopsActivity : ComponentActivity() {
         if (isFinishing) {
             executor.shutdownNow()
             sync.shutdownNow()
-            Shared.removeSelfFromCurrentActivity(this)
+            AndroidShared.removeSelfFromCurrentActivity(this)
         }
     }
 

@@ -38,6 +38,7 @@ import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.StopInfo
 import com.loohp.hkbuseta.objects.toCoordinates
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ifFalse
@@ -62,8 +63,8 @@ class ListRoutesActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
-        Shared.setDefaultExceptionHandler(this)
+        AndroidShared.ensureRegistryDataAvailable(this).ifFalse { return }
+        AndroidShared.setDefaultExceptionHandler(this)
 
         val result = Json.decodeFromString<JsonArray>(intent.extras!!.getString("result")!!).mapToMutableList { StopIndexedRouteSearchResultEntry.deserialize(it.jsonObject) }.also { list ->
             list.removeIf {
@@ -123,7 +124,7 @@ class ListRoutesActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        Shared.setSelfAsCurrentActivity(this)
+        AndroidShared.setSelfAsCurrentActivity(this)
     }
 
     override fun onResume() {
@@ -148,7 +149,7 @@ class ListRoutesActivity : ComponentActivity() {
         if (isFinishing) {
             executor.shutdownNow()
             sync.shutdownNow()
-            Shared.removeSelfFromCurrentActivity(this)
+            AndroidShared.removeSelfFromCurrentActivity(this)
         }
     }
 

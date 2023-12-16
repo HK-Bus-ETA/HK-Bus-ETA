@@ -30,6 +30,7 @@ import com.loohp.hkbuseta.app.MainLoading
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.objects.gmbRegion
 import com.loohp.hkbuseta.objects.operator
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.shared.Shared
 
 
@@ -39,7 +40,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        Shared.setDefaultExceptionHandler(this)
+        AndroidShared.setDefaultExceptionHandler(this)
 
         setShowWhenLocked(true)
         setTurnScreenOn(true)

@@ -26,6 +26,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.FavElements
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ifFalse
 import java.util.concurrent.ExecutorService
@@ -44,8 +45,8 @@ class FavActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
-        Shared.setDefaultExceptionHandler(this)
+        AndroidShared.ensureRegistryDataAvailable(this).ifFalse { return }
+        AndroidShared.setDefaultExceptionHandler(this)
 
         val scrollToIndex = intent.extras?.getInt("scrollToIndex")?: 0
 
@@ -64,7 +65,7 @@ class FavActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        Shared.setSelfAsCurrentActivity(this)
+        AndroidShared.setSelfAsCurrentActivity(this)
     }
 
     override fun onResume() {
@@ -89,7 +90,7 @@ class FavActivity : ComponentActivity() {
         if (isFinishing) {
             executor.shutdownNow()
             sync.shutdownNow()
-            Shared.removeSelfFromCurrentActivity(this)
+            AndroidShared.removeSelfFromCurrentActivity(this)
         }
     }
 

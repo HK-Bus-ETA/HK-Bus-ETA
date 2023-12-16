@@ -27,12 +27,12 @@ import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.appcontext.appContext
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.shared.AndroidShared
 
 class EtaTileService : TileService() {
 
     override fun onCreate() {
-        Shared.setDefaultExceptionHandler(this)
+        AndroidShared.setDefaultExceptionHandler(this)
     }
 
     override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> {

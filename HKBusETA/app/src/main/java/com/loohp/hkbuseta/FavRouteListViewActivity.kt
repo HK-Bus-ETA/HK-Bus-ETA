@@ -26,6 +26,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.FavRouteListViewElement
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.ifFalse
 
@@ -35,8 +36,8 @@ class FavRouteListViewActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shared.ensureRegistryDataAvailable(this).ifFalse { return }
-        Shared.setDefaultExceptionHandler(this)
+        AndroidShared.ensureRegistryDataAvailable(this).ifFalse { return }
+        AndroidShared.setDefaultExceptionHandler(this)
 
         val usingGps = intent.extras!!.getBoolean("usingGps")
 
@@ -47,13 +48,13 @@ class FavRouteListViewActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        Shared.setSelfAsCurrentActivity(this)
+        AndroidShared.setSelfAsCurrentActivity(this)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         if (isFinishing) {
-            Shared.removeSelfFromCurrentActivity(this)
+            AndroidShared.removeSelfFromCurrentActivity(this)
         }
     }
 

@@ -98,6 +98,7 @@ import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.objects.isTrain
 import com.loohp.hkbuseta.objects.withEn
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -120,7 +121,7 @@ class EtaTileConfigureActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        Shared.setDefaultExceptionHandler(this)
+        AndroidShared.setDefaultExceptionHandler(this)
 
         val tileId = intent.extras!!.getInt("com.google.android.clockwork.EXTRA_PROVIDER_CONFIG_TILE_ID")
         Registry.getInstanceNoUpdateCheck(appContext)

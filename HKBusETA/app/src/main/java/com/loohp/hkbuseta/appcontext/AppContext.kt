@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.appcontext
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.hapticfeedback.HapticFeedback
+import coil3.PlatformContext
 import com.loohp.hkbuseta.utils.BackgroundRestrictionType
 import io.ktor.utils.io.charsets.Charset
 
@@ -32,6 +33,7 @@ interface AppContext {
     val packageName: String
     val versionName: String
     val versionCode: Long
+    val platformContext: PlatformContext
     val screenWidth: Int
     val screenHeight: Int
     val minScreenSize: Int
