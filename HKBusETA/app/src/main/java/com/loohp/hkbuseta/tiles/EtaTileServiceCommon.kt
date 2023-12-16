@@ -25,6 +25,8 @@ import android.text.format.DateFormat
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.ColorProp
 import androidx.wear.protolayout.DimensionBuilders
@@ -44,7 +46,6 @@ import co.touchlab.stately.concurrency.AtomicBoolean
 import co.touchlab.stately.concurrency.AtomicInt
 import co.touchlab.stately.concurrency.AtomicLong
 import co.touchlab.stately.concurrency.AtomicReference
-import com.aghajari.compose.text.asAnnotatedString
 import com.benasher44.uuid.Uuid
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -66,8 +67,10 @@ import com.loohp.hkbuseta.shared.Registry.ETALineEntry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.LocationUtils
+import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dpToPixels
 import com.loohp.hkbuseta.utils.findOptimalSp
@@ -75,12 +78,10 @@ import com.loohp.hkbuseta.utils.getAndNegate
 import com.loohp.hkbuseta.utils.getOr
 import com.loohp.hkbuseta.utils.parallelMapNotNull
 import com.loohp.hkbuseta.utils.scaledSize
+import com.loohp.hkbuseta.utils.spToDp
 import com.loohp.hkbuseta.utils.timeZone
-import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.datetime.DateTimeUnit
-import java.math.BigInteger
-import java.security.MessageDigest
 import java.time.ZoneId
 import java.util.Date
 import java.util.TimeZone
@@ -94,27 +95,6 @@ import kotlin.collections.component2
 import kotlin.collections.set
 import kotlin.math.roundToInt
 
-
-data class InlineImageResource(val data: ByteArray, val width: Int, val height: Int) {
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as InlineImageResource
-
-        if (!data.contentEquals(other.data)) return false
-        if (width != other.width) return false
-        return height == other.height
-    }
-
-    override fun hashCode(): Int {
-        var result = data.contentHashCode()
-        result = 31 * result + width
-        result = 31 * result + height
-        return result
-    }
-}
 
 @Immutable
 class MergedETAQueryResult<T> private constructor(
@@ -260,7 +240,7 @@ class EtaTileServiceCommon {
     companion object {
 
         private val resourceVersion: AtomicReference<String> = AtomicReference(Uuid.randomUUID().toString())
-        private val inlineImageResources: MutableMap<String, InlineImageResource> = ConcurrentHashMap()
+        private val inlineImageResources: MutableMap<String, Int> = ConcurrentHashMap()
 
         private val executor = Executors.newScheduledThreadPool(16)
         private val internalTileStates: MutableMap<Int, TileState> = ConcurrentHashMap()
@@ -269,15 +249,13 @@ class EtaTileServiceCommon {
             return internalTileStates.computeIfAbsent(etaIndex) { TileState() }
         }
 
-        private fun addInlineImageResource(resource: InlineImageResource): String {
-            val md = MessageDigest.getInstance("MD5")
-            val hash = BigInteger(1, md.digest(resource.data)).toString(16).padStart(32, '0')
-                .plus("_").plus(resource.width).plus("_").plus(resource.height)
-            inlineImageResources.computeIfAbsent(hash) {
+        private fun addInlineImageResource(resource: Int): String {
+            val key = resource.toString()
+            inlineImageResources.computeIfAbsent(key) {
                 resourceVersion.set(Uuid.randomUUID().toString())
                 resource
             }
-            return hash
+            return key
         }
 
         private fun targetWidth(context: AppContext, padding: Int): Int {
@@ -571,9 +549,9 @@ class EtaTileServiceCommon {
                     (1..3).all { eta[it].first?.second?.route?.routeNumber.let { route -> route == null || route == line.first?.second?.route?.routeNumber } } ||
                     eta.allKeys.all { it.second.co == Operator.MTR } ||
                     eta.mergedCount <= 1
-            val raw = (if (appendRouteNumber) "" else "<small>$lineRoute > </small>")
-                .plus(line?.second?.text?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else "ㅤ")
-            val measure = raw.toSpanned(context, 17F).asAnnotatedString().annotatedString.text
+            val text = (if (appendRouteNumber) "".asContentAnnotatedString() else "$lineRoute > ".asContentAnnotatedString(SpanStyle(fontSize = TextUnit.Small)))
+                .plus(line?.second?.text?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中").asContentAnnotatedString() else "ㅤ".asContentAnnotatedString())
+            val measure = text.annotatedString.text
             val color = Color.White.adjustBrightness(if (eta == null) 0.7F else 1F).toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
             val padding = if (seq == 1) 20 else 35
@@ -582,7 +560,7 @@ class EtaTileServiceCommon {
             } else {
                 measure.findOptimalSp(context, targetWidth(context, padding + 2), 1, maxTextSize - (if (Shared.language == "en") 4F else 2F), maxTextSize).clampSp(context, dpMax = maxTextSize) to 1
             }
-            val text = raw.toSpanned(context, textSize).asAnnotatedString()
+            val imageHeight = textSize.spToDp(context)
 
             val (resolvedStop, favouriteStopRoute) = line?.first?: mainResolvedStop
 
@@ -620,11 +598,7 @@ class EtaTileServiceCommon {
                 )
                 .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
                 .setMaxLines(maxLines)
-                .addContentAnnotatedString(context, text, textSize, {
-                    it.setColor(
-                        ColorProp.Builder(color).build()
-                    )
-                }, { d, w, h -> addInlineImageResource(InlineImageResource(d, w, h)) })
+                .addContentAnnotatedString(text, textSize, { it.setColor(ColorProp.Builder(color).build()) }, { Shared.RESOURCE_RATIO[it]!! * imageHeight to imageHeight }, { r -> addInlineImageResource(r) })
                 .build()
         }
 
@@ -844,12 +818,9 @@ class EtaTileServiceCommon {
                 val resourceBuilder = ResourceBuilders.Resources.Builder().setVersion(resourceVersion.get().toString())
                 for ((key, resource) in inlineImageResources) {
                     resourceBuilder.addIdToImageMapping(key, ResourceBuilders.ImageResource.Builder()
-                        .setInlineResource(
-                            ResourceBuilders.InlineImageResource.Builder()
-                                .setData(resource.data)
-                                .setFormat(ResourceBuilders.IMAGE_FORMAT_UNDEFINED)
-                                .setWidthPx(resource.width)
-                                .setHeightPx(resource.height)
+                        .setAndroidResourceByResId(
+                            ResourceBuilders.AndroidImageResourceByResId.Builder()
+                                .setResourceId(resource)
                                 .build()
                         )
                         .build()

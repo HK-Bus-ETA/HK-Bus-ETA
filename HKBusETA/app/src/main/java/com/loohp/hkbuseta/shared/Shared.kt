@@ -35,6 +35,7 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.concurrency.AtomicReference
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.MainActivity
+import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppContext
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
@@ -141,6 +142,11 @@ class Shared {
     companion object {
 
         const val ETA_UPDATE_INTERVAL: Int = 15000
+
+        val RESOURCE_RATIO: Map<Int, Float> = mapOf(
+            R.mipmap.lrv to 128F / 95F,
+            R.mipmap.lrv_empty to 128F / 95F
+        )
 
         fun setDefaultExceptionHandler(context: Context) {
             val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()

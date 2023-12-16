@@ -45,8 +45,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
-import coil.compose.SubcomposeAsyncImage
-import coil.request.ImageRequest
+import coil3.annotation.ExperimentalCoilApi
+import coil3.compose.SubcomposeAsyncImage
+import coil3.fetch.NetworkFetcher
+import coil3.request.ImageRequest
 import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.theme.HKBusETATheme
@@ -56,7 +58,7 @@ import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable
 
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class, ExperimentalCoilApi::class)
 @Composable
 fun ImageElement(url: String, instance: AppActiveContext) {
     HKBusETATheme {
@@ -105,7 +107,7 @@ fun ImageElement(url: String, instance: AppActiveContext) {
                         strokeCap = StrokeCap.Round,
                     )
                 },
-                model = ImageRequest.Builder((instance as AppActiveContextAndroid).context).size(1920).data(url).build(),
+                model = ImageRequest.Builder((instance as AppActiveContextAndroid).context).fetcherFactory(NetworkFetcher.Factory()).size(1920).data(url).build(),
                 contentDescription = "",
             )
         }

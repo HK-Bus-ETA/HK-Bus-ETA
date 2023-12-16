@@ -23,12 +23,16 @@ package com.loohp.hkbuseta
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.Modifier
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.loohp.hkbuseta.app.ListRouteMainElement
 import com.loohp.hkbuseta.app.RecentSortMode
 import com.loohp.hkbuseta.app.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.compose.ambientMode
+import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.RouteListType
@@ -99,12 +103,17 @@ class ListRoutesActivity : ComponentActivity() {
             AmbientAware (
                 isAlwaysOnScreen = allowAmbient
             ) {
-                ListRouteMainElement(it, appContext, result, listType, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
-                    sync.execute {
-                        if (isAdd) {
-                            etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
-                        } else {
-                            etaUpdatesMap.remove(key)?.first?.cancel(true)
+                val ambientMode = rememberIsInAmbientMode(it)
+                Box (
+                    modifier = Modifier.ambientMode(it)
+                ) {
+                    ListRouteMainElement(ambientMode, appContext, result, listType, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
+                        sync.execute {
+                            if (isAdd) {
+                                etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
+                            } else {
+                                etaUpdatesMap.remove(key)?.first?.cancel(true)
+                            }
                         }
                     }
                 }

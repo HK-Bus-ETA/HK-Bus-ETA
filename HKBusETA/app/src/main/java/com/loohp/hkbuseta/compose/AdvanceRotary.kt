@@ -44,7 +44,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
-import com.google.android.horologist.compose.ambient.AmbientStateUpdate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -62,9 +61,8 @@ fun Modifier.rotaryScroll(
     focusRequester: FocusRequester,
     hapticsController: HapticsController = HapticsController(),
     animationSpec: AnimationSpec<Float> = TweenSpec(durationMillis = 300, easing = FastOutSlowInEasing),
-    ambientStateUpdate: AmbientStateUpdate? = null
+    ambientMode: Boolean = false
 ): Modifier = composed {
-    val ambientMode = ambientStateUpdate?.let { rememberIsInAmbientMode(it) }
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     var scrollCounter by remember { mutableIntStateOf(0) }

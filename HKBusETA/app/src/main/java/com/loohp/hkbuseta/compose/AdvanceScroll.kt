@@ -20,7 +20,6 @@
 
 package com.loohp.hkbuseta.compose
 
-import android.content.res.Configuration
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.TweenSpec
@@ -50,19 +49,19 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.loohp.hkbuseta.appcontext.AppContext
 
 
 fun Modifier.fullPageVerticalScrollbar(
     state: ScrollState,
+    context: AppContext,
     indicatorThickness: Dp = 8.dp,
     indicatorColor: Color = Color.LightGray,
-    alpha: Float = 0.8f
+    alpha: Float = 0.8f,
 ): Modifier = composed {
-    val configuration = LocalConfiguration.current
     var scrollOffsetViewPort by remember { mutableFloatStateOf(0F) }
     val animatedScrollOffsetViewPort by animateFloatAsState(
         targetValue = scrollOffsetViewPort,
@@ -83,9 +82,9 @@ fun Modifier.fullPageVerticalScrollbar(
             val halfIndicatorThicknessPx = (indicatorThickness.value / 2F).dp.toPx()
             scrollOffsetViewPort = contentOffset / contentLength
 
-            if (configuration.screenLayout and Configuration.SCREENLAYOUT_ROUND_MASK == Configuration.SCREENLAYOUT_ROUND_YES) {
+            if (context.isScreenRound()) {
                 val topLeft = Offset(halfIndicatorThicknessPx, halfIndicatorThicknessPx)
-                val size = Size(configuration.screenWidthDp.dp.toPx() - indicatorThicknessPx, configuration.screenHeightDp.dp.toPx() - indicatorThicknessPx)
+                val size = Size(context.screenWidth - indicatorThicknessPx, context.screenHeight - indicatorThicknessPx)
                 val style = Stroke(width = indicatorThicknessPx, cap = StrokeCap.Round)
                 drawArc(
                     startAngle = -30F,
@@ -109,7 +108,7 @@ fun Modifier.fullPageVerticalScrollbar(
                 )
             } else {
                 val cornerRadius = CornerRadius(indicatorThicknessPx / 2F)
-                val topLeft = Offset(configuration.screenWidthDp.dp.toPx() - indicatorThicknessPx, viewPortLength * 0.125F)
+                val topLeft = Offset(context.screenWidth - indicatorThicknessPx, viewPortLength * 0.125F)
                 val size = Size(indicatorThicknessPx, viewPortLength * 0.75F)
                 drawRoundRect(
                     color = Color.DarkGray,
@@ -130,11 +129,11 @@ fun Modifier.fullPageVerticalScrollbar(
 
 fun Modifier.fullPageVerticalScrollbar(
     state: LazyListState,
+    context: AppContext,
     indicatorThickness: Dp = 8.dp,
     indicatorColor: Color = Color.LightGray,
     alpha: Float = 0.8f
 ): Modifier = composed {
-    val configuration = LocalConfiguration.current
     val actualItemLength: MutableMap<Int, Int> = remember { mutableMapOf() }
     var totalItemCount by remember { mutableIntStateOf(0) }
     var indicatorLength by remember { mutableFloatStateOf(0F) }
@@ -172,7 +171,7 @@ fun Modifier.fullPageVerticalScrollbar(
             val halfIndicatorThicknessPx = (indicatorThickness.value / 2F).dp.toPx()
             scrollOffsetViewPort = contentOffset / contentLength
 
-            if (configuration.screenLayout and Configuration.SCREENLAYOUT_ROUND_MASK == Configuration.SCREENLAYOUT_ROUND_YES) {
+            if (context.isScreenRound()) {
                 val topLeft = Offset(halfIndicatorThicknessPx, halfIndicatorThicknessPx)
                 val size = Size(viewPortWidth - indicatorThicknessPx, viewPortLength - indicatorThicknessPx)
                 val style = Stroke(width = indicatorThicknessPx, cap = StrokeCap.Round)
@@ -199,7 +198,7 @@ fun Modifier.fullPageVerticalScrollbar(
                 )
             } else {
                 val cornerRadius = CornerRadius(indicatorThicknessPx / 2F)
-                val topLeft = Offset(configuration.screenWidthDp.dp.toPx() - indicatorThicknessPx, viewPortLength * 0.125F)
+                val topLeft = Offset(context.screenWidth - indicatorThicknessPx, viewPortLength * 0.125F)
                 val size = Size(indicatorThicknessPx, viewPortLength * 0.75F)
                 val startHeight = (topLeft.y + animatedScrollOffsetViewPort * size.height).coerceIn(topLeft.y, topLeft.y + size.height)
                 drawRoundRect(
@@ -231,10 +230,12 @@ data class FullPageScrollBarConfig(
 
 fun Modifier.fullPageVerticalLazyScrollbar(
     state: LazyListState,
+    context: AppContext,
     scrollbarConfigFullPage: FullPageScrollBarConfig = FullPageScrollBarConfig()
 ) = this
     .fullPageVerticalScrollbar(
-        state,
+        state = state,
+        context = context,
         indicatorThickness = scrollbarConfigFullPage.indicatorThickness,
         indicatorColor = scrollbarConfigFullPage.indicatorColor,
         alpha = scrollbarConfigFullPage.alpha ?: 0.8f
@@ -243,13 +244,15 @@ fun Modifier.fullPageVerticalLazyScrollbar(
 
 fun Modifier.fullPageVerticalScrollWithScrollbar(
     state: ScrollState,
+    context: AppContext,
     enabled: Boolean = true,
     flingBehavior: FlingBehavior? = null,
     reverseScrolling: Boolean = false,
     scrollbarConfigFullPage: FullPageScrollBarConfig = FullPageScrollBarConfig()
 ) = this
     .fullPageVerticalScrollbar(
-        state,
+        state = state,
+        context = context,
         indicatorThickness = scrollbarConfigFullPage.indicatorThickness,
         indicatorColor = scrollbarConfigFullPage.indicatorColor,
         alpha = scrollbarConfigFullPage.alpha ?: 0.8f

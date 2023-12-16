@@ -20,10 +20,6 @@
 
 package com.loohp.hkbuseta.app
 
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.TextUtils
-import android.text.style.AbsoluteSizeSpan
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -75,6 +71,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -85,10 +84,6 @@ import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.aghajari.compose.text.AnnotatedText
-import com.aghajari.compose.text.ContentAnnotatedString
-import com.aghajari.compose.text.asAnnotatedString
-import com.google.android.horologist.compose.ambient.AmbientStateUpdate
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppIntent
@@ -99,9 +94,7 @@ import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.RestartEffect
-import com.loohp.hkbuseta.compose.ambientMode
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
-import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.Coordinates
@@ -126,6 +119,7 @@ import com.loohp.hkbuseta.utils.MTRLineSection
 import com.loohp.hkbuseta.utils.MTRLineSectionExtension
 import com.loohp.hkbuseta.utils.MTRStopSectionData
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
@@ -137,7 +131,6 @@ import com.loohp.hkbuseta.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.spToPixels
-import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -168,12 +161,11 @@ class OriginData(
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable
-fun ListStopsMainElement(ambientStateUpdate: AmbientStateUpdate, instance: AppActiveContext, route: RouteSearchResultEntry, showEta: Boolean, scrollToStop: String?, isAlightReminder: Boolean, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route: RouteSearchResultEntry, showEta: Boolean, scrollToStop: String?, isAlightReminder: Boolean, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
         val scope = rememberCoroutineScope()
-        val ambientMode = rememberIsInAmbientMode(ambientStateUpdate)
         val haptic = LocalHapticFeedback.current
 
         val padding by remember { derivedStateOf { 7.5F.scaledSize(instance) } }
@@ -280,20 +272,19 @@ fun ListStopsMainElement(ambientStateUpdate: AmbientStateUpdate, instance: AppAc
         }
 
         Box (
-            modifier = Modifier
-                .ambientMode(ambientStateUpdate)
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             LazyColumn (
                 modifier = Modifier
                     .fillMaxSize()
                     .fullPageVerticalLazyScrollbar(
                         state = scroll,
+                        context = instance,
                         scrollbarConfigFullPage = FullPageScrollBarConfig(
                             alpha = if (ambientMode) 0F else null
                         )
                     )
-                    .rotaryScroll(scroll, focusRequester, ambientStateUpdate = ambientStateUpdate)
+                    .rotaryScroll(scroll, focusRequester, ambientMode = ambientMode)
                     .composed {
                         RestartEffect {
                             if (isAlightReminder && (alightReminderData == null || !alightReminderData!!.active || route.route != alightReminderData!!.route)) {
@@ -341,7 +332,7 @@ fun ListStopsMainElement(ambientStateUpdate: AmbientStateUpdate, instance: AppAc
                         val brightness = if (entry.serviceType == lowestServiceType) 1F else 0.65F
                         val rawColor = (if (isClosest) coColor else Color.White).adjustBrightness(brightness)
                         val stopStr = stop.name[Shared.language]
-                        val stopRemarkedName = remember { stop.remarkedName[Shared.language].toSpanned(instance).asAnnotatedString() }
+                        val stopRemarkedName = remember { stop.remarkedName[Shared.language] }
                         val mtrLineSectionData = mtrLineSectionsData?.get(index)
 
                         Column (
@@ -651,7 +642,7 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Operator, showEta: Boolean, isAlightReminder: Boolean, isClosest: Boolean, isTargetStop: Boolean, isTargetIntermediateStop: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: ContentAnnotatedString, stopList: ImmutableList<StopData>, mtrLineSectionData: MTRStopSectionData?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: AppActiveContext, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Operator, showEta: Boolean, isAlightReminder: Boolean, isClosest: Boolean, isTargetStop: Boolean, isTargetIntermediateStop: Boolean, kmbCtbJoint: Boolean, mtrStopsInterchange: ImmutableList<Registry.MTRInterchangeData>, rawColor: Color, brightness: Float, padding: Float, stopStr: AnnotatedString, stopList: ImmutableList<StopData>, mtrLineSectionData: MTRStopSectionData?, route: RouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, instance: AppActiveContext, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     val color = if (isAlightReminder) {
         if (isTargetStop) {
             Color(0xFFFF9800)
@@ -709,7 +700,7 @@ fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Op
             )
         }
         if (isAlightReminder && ((isTargetStop && !isClosest) || isClosest || isTargetIntermediateStop)) {
-            AnnotatedText(
+            Text(
                 modifier = Modifier
                     .padding(0.dp, padding.dp)
                     .weight(1F)
@@ -747,7 +738,7 @@ fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Op
                 }
             }
         } else {
-            AnnotatedText(
+            Text(
                 modifier = Modifier
                     .padding(0.dp, padding.dp)
                     .weight(1F)
@@ -808,8 +799,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             if (eta.nextScheduledBus !in 0..59) {
                 if (eta.isMtrEndOfLine) {
                     Icon(
-                        modifier = Modifier
-                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
+                        modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -817,15 +807,13 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                 } else if (eta.isTyphoonSchedule) {
                     val typhoonInfo by remember { Registry.getInstance(instance).cachedTyphoonDataState }.collectAsStateWithLifecycle()
                     Image(
-                        modifier = Modifier
-                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
+                        modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = typhoonInfo.typhoonWarningTitle
                     )
                 } else {
                     Icon(
-                        modifier = Modifier
-                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
+                        modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),
@@ -833,20 +821,19 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                 }
             } else {
                 val (text1, text2) = eta.firstLine.shortText
-                val span1 = SpannableString(text1)
-                val size1 = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).spToPixels(instance).roundToInt()
-                span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-                val span2 = SpannableString(text2)
-                val size2 = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).spToPixels(instance).roundToInt()
-                span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-                AnnotatedText(
+                val text = buildAnnotatedString {
+                    append(text1, SpanStyle(fontSize = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).sp))
+                    append("\n")
+                    append(text2, SpanStyle(fontSize = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).sp))
+                }
+                Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.End,
                     fontSize = 14F.sp,
                     color = Color(0xFFAAC3D5),
                     lineHeight = 7F.sp,
                     maxLines = 2,
-                    text = SpannableString(TextUtils.concat(span1, "\n", span2)).asAnnotatedString()
+                    text = text
                 )
             }
         }

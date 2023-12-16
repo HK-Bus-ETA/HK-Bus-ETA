@@ -55,12 +55,8 @@ import com.loohp.hkbuseta.utils.currentBackgroundRestricted
 import com.loohp.hkbuseta.utils.getConnectionType
 import com.loohp.hkbuseta.utils.startActivity
 import io.ktor.utils.io.charsets.Charset
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import kotlin.math.abs
-import kotlin.streams.asSequence
 
 
 @Stable
@@ -97,21 +93,21 @@ open class AppContextAndroid internal constructor(
         get() = context.resources.displayMetrics.scaledDensity
 
     override fun readTextFile(fileName: String, charset: Charset): String {
-        BufferedReader(InputStreamReader(context.applicationContext.openFileInput(fileName), charset)).use { reader ->
-            return reader.lines().asSequence().joinToString()
+        context.applicationContext.openFileInput(fileName).reader(charset).buffered().use { reader ->
+            return reader.lineSequence().joinToString()
         }
     }
 
-    override fun readTextFileSequence(fileName: String, charset: Charset): List<String> {
-        BufferedReader(InputStreamReader(context.applicationContext.openFileInput(fileName), charset)).use { reader ->
-            return reader.lines().asSequence().toList()
+    override fun readTextFileLines(fileName: String, charset: Charset): List<String> {
+        context.applicationContext.openFileInput(fileName).reader(charset).buffered().use { reader ->
+            return reader.lineSequence().toList()
         }
     }
 
-    override fun writeTextFileSequence(fileName: String, charset: Charset, writeText: () -> List<String>) {
+    override fun writeTextFileList(fileName: String, charset: Charset, writeText: () -> List<String>) {
         AtomicFile(context.applicationContext.getFileStreamPath(fileName)).let { file ->
             file.startWrite().use { fos ->
-                PrintWriter(OutputStreamWriter(fos, charset)).use { pw ->
+                PrintWriter(fos.writer(charset)).use { pw ->
                     writeText.invoke().forEach { pw.write(it) }
                     pw.flush()
                     file.finishWrite(fos)
@@ -142,6 +138,10 @@ open class AppContextAndroid internal constructor(
 
     override fun getResourceString(resId: Int): String {
         return context.resources.getString(resId)
+    }
+
+    override fun isScreenRound(): Boolean {
+        return context.resources.configuration.isScreenRound
     }
 
     override fun startActivity(appIntent: AppIntent) {
@@ -326,7 +326,7 @@ val AppIntentFlag.androidFlag: Int @SuppressLint("WearRecents") get() = when (th
 }
 
 fun Collection<AppIntentFlag>.toAndroidFlags(): Int? {
-    return asSequence().map { it.androidFlag }.reduceOrNull { a, b -> a or b}
+    return asSequence().map { it.androidFlag }.reduceOrNull { a, b -> a or b }
 }
 
 fun AppBundle.toAndroidBundle(): Bundle? {

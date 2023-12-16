@@ -152,7 +152,8 @@ fun SelectElements(tileId: Int, instance: AppActiveContext) {
             modifier = Modifier
                 .fillMaxSize()
                 .fullPageVerticalLazyScrollbar(
-                    state = state
+                    state = state,
+                    context = instance
                 )
                 .rotaryScroll(state, focusRequester),
             horizontalAlignment = Alignment.CenterHorizontally,

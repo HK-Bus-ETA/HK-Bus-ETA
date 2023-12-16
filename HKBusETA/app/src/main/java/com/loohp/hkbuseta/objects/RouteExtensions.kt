@@ -21,20 +21,21 @@
 package com.loohp.hkbuseta.objects
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.unit.TextUnit
 import com.loohp.hkbuseta.appcontext.AppContext
 import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
-import com.loohp.hkbuseta.utils.toHexString
+import com.loohp.hkbuseta.utils.Small
+import com.loohp.hkbuseta.utils.append
+import com.loohp.hkbuseta.utils.asAnnotatedString
 
 
 private val bilingualToPrefix = "往" withEn "To "
 
 inline val Operator.isTrain: Boolean get() = this == Operator.MTR || this == Operator.LRT
-
-fun Operator.getColorHex(routeNumber: String, elseColor: Long): String {
-    return getColor(routeNumber, Color(elseColor)).toHexString()
-}
 
 fun Operator.getColor(routeNumber: String, elseColor: Color): Color {
     return when (this) {
@@ -150,8 +151,21 @@ fun String.identifyStopCo(): Operator? {
     return Operator.values().firstOrNull { it.matchStopIdPattern(this) }
 }
 
-inline val Stop.remarkedName: BilingualText get() {
-    return remark?.let { name + "<small> " + it + "</small>" }?: name
+fun BilingualText.asAnnotatedText(spanStyle: SpanStyle? = null): BilingualAnnotatedText {
+    return BilingualAnnotatedText(zh.asAnnotatedString(spanStyle), en.asAnnotatedString(spanStyle))
+}
+
+inline val Stop.remarkedName: BilingualAnnotatedText get() {
+    return remark?.let { BilingualAnnotatedText(
+        buildAnnotatedString {
+            append(name.zh)
+            append(it.zh, SpanStyle(fontSize = TextUnit.Small))
+        },
+        buildAnnotatedString {
+            append(name.en)
+            append(it.en, SpanStyle(fontSize = TextUnit.Small))
+        }
+    ) }?: name.asAnnotatedText()
 }
 
 inline val RouteSearchResultEntry.uniqueKey: String get() {

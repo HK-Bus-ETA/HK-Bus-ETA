@@ -69,8 +69,11 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -81,8 +84,6 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.aghajari.compose.text.AnnotatedText
-import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppIntent
@@ -109,12 +110,13 @@ import com.loohp.hkbuseta.shared.TileUseState
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.NotificationUtils
+import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
-import com.loohp.hkbuseta.utils.toSpanned
 
 
 enum class FavouriteRouteState {
@@ -150,7 +152,8 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             modifier = Modifier
                 .fillMaxSize()
                 .fullPageVerticalLazyScrollbar(
-                    state = scroll
+                    state = scroll,
+                    context = instance
                 )
                 .rotaryScroll(scroll, focusRequester),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -319,11 +322,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                                 stopListIntent.putExtra("isAlightReminder", true)
 
                                 val noticeIntent = AppIntent(instance, AppScreen.DISMISSIBLE_TEXT_DISPLAY)
-                                val notice = BilingualText(
-                                    "你可能需要「<b>允許背景活動</b>」讓此功能在螢幕關閉時繼續正常運作<br><br>此功能目前在<b>測試階段</b>, 運作可能不穩定",
-                                    "You might need to \"<b>Allow Background Activity</b>\" for this feature to continue working while the screen is off.<br><br>This feature is currently in <b>beta</b>, which might be unstable."
-                                )
-                                noticeIntent.putExtra("text", notice.toByteArray())
+                                noticeIntent.putExtra("specialTextIndex", 0)
                                 instance.startActivity(noticeIntent) { result ->
                                     if (result.resultCode == 1) {
                                         AlightReminderService.terminate()
@@ -377,7 +376,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                         contentDescription = if (Shared.language == "en") "Enable Alight Reminder" else "開啟落車提示"
                     )
                 }
-                AnnotatedText(
+                Text(
                     modifier = Modifier
                         .padding(0.dp, 0.dp, 5.dp, 0.dp)
                         .fillMaxWidth(),
@@ -385,7 +384,10 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                     color = MaterialTheme.colors.primary,
                     fontSize = 14F.scaledSize(instance).sp,
                     maxLines = 2,
-                    text = (if (Shared.language == "en") "<b>Enable Alight Reminder</b> <small>Beta</small>" else "<b>開啟落車提示</b><br><small>測試版</small>").toSpanned(instance).asAnnotatedString()
+                    text = buildAnnotatedString {
+                        append(if (Shared.language == "en") "Enable Alight Reminder " else "開啟落車提示\n", SpanStyle(fontWeight = FontWeight.Bold))
+                        append(if (Shared.language == "en") "Beta" else "測試版", SpanStyle(fontSize = TextUnit.Small, fontWeight = FontWeight.Normal))
+                    }
                 )
             }
         }

@@ -21,10 +21,6 @@
 package com.loohp.hkbuseta.app
 
 import android.annotation.SuppressLint
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.TextUtils
-import android.text.style.AbsoluteSizeSpan
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.LinearEasing
@@ -77,6 +73,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -88,9 +87,6 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.aghajari.compose.text.AnnotatedText
-import com.aghajari.compose.text.asAnnotatedString
-import com.google.android.horologist.compose.ambient.AmbientStateUpdate
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppIntent
@@ -99,9 +95,7 @@ import com.loohp.hkbuseta.appcontext.ToastDuration
 import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
-import com.loohp.hkbuseta.compose.ambientMode
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
-import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.objects.Coordinates
 import com.loohp.hkbuseta.objects.Operator
@@ -121,6 +115,8 @@ import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.append
+import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
@@ -134,8 +130,6 @@ import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToDp
 import com.loohp.hkbuseta.utils.spToPixels
-import com.loohp.hkbuseta.utils.toHexString
-import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
@@ -183,13 +177,12 @@ class StopIndexedRouteSearchResultEntry(
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable
-fun ListRouteMainElement(ambientStateUpdate: AmbientStateUpdate, instance: AppActiveContext, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = rememberActiveFocusRequester()
         val hapticsController = remember { HapticsController() }
         val scroll = rememberLazyListState()
         val scope = rememberCoroutineScope()
-        val ambientMode = rememberIsInAmbientMode(ambientStateUpdate)
         val haptic = LocalHapticFeedback.current
 
         val padding by remember { derivedStateOf { 7.5F.scaledSize(instance) } }
@@ -269,20 +262,19 @@ fun ListRouteMainElement(ambientStateUpdate: AmbientStateUpdate, instance: AppAc
         }
 
         Box (
-            modifier = Modifier
-                .ambientMode(ambientStateUpdate)
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             LazyColumn (
                 modifier = Modifier
                     .fillMaxSize()
                     .fullPageVerticalLazyScrollbar(
                         state = scroll,
+                        context = instance,
                         scrollbarConfigFullPage = FullPageScrollBarConfig(
                             alpha = if (ambientMode) 0F else null
                         )
                     )
-                    .rotaryScroll(scroll, focusRequester, hapticsController, ambientStateUpdate = ambientStateUpdate)
+                    .rotaryScroll(scroll, focusRequester, hapticsController, ambientMode = ambientMode)
                     .composed {
                         LaunchedEffect (activeSortMode) {
                             Shared.routeSortModePreference[listType].let {
@@ -371,23 +363,15 @@ fun ListRouteMainElement(ambientStateUpdate: AmbientStateUpdate, instance: AppAc
                     val rawColor = co.getColor(route.route!!.routeNumber, Color.White)
                     val dest = route.route!!.resolvedDest(true)[Shared.language]
 
-                    val secondLine: MutableList<String> = ArrayList()
+                    val secondLine: MutableList<AnnotatedString> = ArrayList()
                     if (route.stopInfo != null) {
                         val stop = route.stopInfo!!.data
-                        secondLine.add(if (Shared.language == "en") stop!!.name.en else stop!!.name.zh)
+                        secondLine.add((if (Shared.language == "en") stop!!.name.en else stop!!.name.zh).asAnnotatedString())
                     }
                     if (co == Operator.NLB) {
-                        secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
-                            "From ".plus(route.route!!.orig.en)
-                        } else {
-                            "從".plus(route.route!!.orig.zh).plus("開出")
-                        }).plus("</span>"))
+                        secondLine.add((if (Shared.language == "en") "From ".plus(route.route!!.orig.en) else "從".plus(route.route!!.orig.zh).plus("開出")).asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
                     } else if (co == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
-                        secondLine.add("<span style=\"color: ${rawColor.adjustBrightness(0.75F).toHexString()}\">".plus(if (Shared.language == "en") {
-                            "Sun Bus (NR$routeNumber)"
-                        } else {
-                            "陽光巴士 (NR$routeNumber)"
-                        }).plus("</span>"))
+                        secondLine.add((if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)").asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
                     }
 
                     Box (
@@ -464,7 +448,7 @@ fun ListRouteMainElement(ambientStateUpdate: AmbientStateUpdate, instance: AppAc
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: Operator, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: ImmutableList<String>, showEta: Boolean, route: StopIndexedRouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<String, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, instance: AppActiveContext, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float, routeTextWidth: Float, co: Operator, routeNumber: String, bottomOffset: Float, mtrBottomOffset: Float, dest: String, secondLine: ImmutableList<AnnotatedString>, showEta: Boolean, route: StopIndexedRouteSearchResultEntry, etaTextWidth: Float, etaResults: ImmutableState<out MutableMap<String, ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, instance: AppActiveContext, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)
@@ -562,7 +546,7 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
                     animationSpec = tween(durationMillis = 500, easing = LinearEasing),
                     label = "SecondLineCrossFade"
                 ) {
-                    AnnotatedText(
+                    Text(
                         modifier = Modifier
                             .basicMarquee(iterations = Int.MAX_VALUE),
                         textAlign = TextAlign.Start,
@@ -573,7 +557,7 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
                         },
                         color = Color(0xFFFFFFFF).adjustBrightness(0.75F),
                         maxLines = 1,
-                        text = secondLine[it].toSpanned(instance).asAnnotatedString()
+                        text = secondLine[it]
                     )
                 }
             }
@@ -653,13 +637,12 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
                 }
             } else {
                 val (text1, text2) = eta.firstLine.shortText
-                val span1 = SpannableString(text1)
-                val size1 = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).spToPixels(instance).roundToInt()
-                span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-                val span2 = SpannableString(text2)
-                val size2 = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).spToPixels(instance).roundToInt()
-                span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-                AnnotatedText(
+                val text = buildAnnotatedString {
+                    append(text1, SpanStyle(fontSize = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).sp))
+                    append("\n")
+                    append(text2, SpanStyle(fontSize = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).sp))
+                }
+                Text(
                     modifier = Modifier
                         .fillMaxWidth()
                         .offset(0.dp, 1F.scaledSize(instance).sp.clamp(max = 2F.scaledSize(instance).dp).dp),
@@ -668,7 +651,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
                     color = Color(0xFFAAC3D5),
                     lineHeight = 7F.sp.clamp(max = 9.dp),
                     maxLines = 2,
-                    text = SpannableString(TextUtils.concat(span1, "\n", span2)).asAnnotatedString()
+                    text = text
                 )
             }
         }

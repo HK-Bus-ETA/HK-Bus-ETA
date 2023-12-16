@@ -20,10 +20,6 @@
 
 package com.loohp.hkbuseta.app
 
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.TextUtils
-import android.text.style.AbsoluteSizeSpan
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -81,8 +77,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -93,8 +92,6 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.aghajari.compose.text.AnnotatedText
-import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppIntent
@@ -118,13 +115,14 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.LocationUtils
 import com.loohp.hkbuseta.utils.LocationUtils.LocationResult
+import com.loohp.hkbuseta.utils.Small
+import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToPixels
-import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -177,7 +175,8 @@ fun FavElements(scrollToIndex: Int, instance: AppActiveContext, schedule: (Boole
             modifier = Modifier
                 .fillMaxSize()
                 .fullPageVerticalLazyScrollbar(
-                    state = state
+                    state = state,
+                    context = instance
                 )
                 .rotaryScroll(state, focusRequester),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -470,11 +469,17 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     val operator = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)
                     val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
                     val routeText = destName[Shared.language]
-                    val subText = if (Shared.language == "en") {
-                        (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.en)
-                    } else {
-                        (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.zh)
-                    }.plus(if (gpsStop) (if (Shared.language == "en") "<small><span style=\"color: #FFE496;\"> - Closest</span></small>" else "<small><span style=\"color: #FFE496;\"> - 最近</span></small>") else "")
+                    val subText = buildAnnotatedString {
+                        append(if (Shared.language == "en") {
+                            (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.en)
+                        } else {
+                            (if (co.isTrain) "" else index.toString().plus(". ")).plus(stopName.zh)
+                        })
+                        if (gpsStop) {
+                            append(if (Shared.language == "en") " - Closest" else " - 最近", SpanStyle(color = Color(0xFFFFE496), fontSize = TextUnit.Small))
+                        }
+                    }
+
                     Spacer(modifier = Modifier.size(5.dp))
                     Column (
                         modifier = Modifier
@@ -505,7 +510,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             maxLines = 1,
                             text = routeText
                         )
-                        AnnotatedText(
+                        Text(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .basicMarquee(Int.MAX_VALUE)
@@ -515,7 +520,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                             color = MaterialTheme.colors.primary,
                             fontSize = 11F.scaledSize(instance).sp,
                             maxLines = 1,
-                            text = subText.toSpanned(instance).asAnnotatedString()
+                            text = subText
                         )
                     }
                 }
@@ -587,20 +592,19 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
                 }
             } else {
                 val (text1, text2) = eta.firstLine.shortText
-                val span1 = SpannableString(text1)
-                val size1 = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).spToPixels(instance).roundToInt()
-                span1.setSpan(AbsoluteSizeSpan(size1), 0, text1.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-                val span2 = SpannableString(text2)
-                val size2 = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).spToPixels(instance).roundToInt()
-                span2.setSpan(AbsoluteSizeSpan(size2), 0, text2.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-                AnnotatedText(
+                val text = buildAnnotatedString {
+                    append(text1, SpanStyle(fontSize = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).sp))
+                    append(text2, SpanStyle(fontSize = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).sp))
+                }
+                Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     fontSize = 14F.sp,
+                    fontWeight = FontWeight.Normal,
                     color = Color(0xFFAAC3D5),
                     lineHeight = 7F.sp,
                     maxLines = 1,
-                    text = SpannableString(TextUtils.concat(span1, span2)).asAnnotatedString()
+                    text = text
                 )
             }
         }

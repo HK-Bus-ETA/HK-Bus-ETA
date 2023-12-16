@@ -23,10 +23,14 @@ package com.loohp.hkbuseta
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.Modifier
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.loohp.hkbuseta.app.EtaElement
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.compose.ambientMode
+import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.objects.Route
 import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.objects.operator
@@ -70,12 +74,17 @@ class EtaActivity : ComponentActivity() {
 
         setContent {
             AmbientAware {
-                EtaElement(it, stopId, co, index, stop, route, offsetStart, appContext) { isAdd, task ->
-                    sync.execute {
-                        if (isAdd) {
-                            etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
-                        } else {
-                            etaUpdatesMap.remove()?.first?.cancel(true)
+                val ambientMode = rememberIsInAmbientMode(it)
+                Box (
+                    modifier = Modifier.ambientMode(it)
+                ) {
+                    EtaElement(ambientMode, stopId, co, index, stop, route, offsetStart, appContext) { isAdd, task ->
+                        sync.execute {
+                            if (isAdd) {
+                                etaUpdatesMap.computeIfAbsent { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
+                            } else {
+                                etaUpdatesMap.remove()?.first?.cancel(true)
+                            }
                         }
                     }
                 }

@@ -20,86 +20,100 @@
 
 package com.loohp.hkbuseta.utils
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Typeface
-import android.graphics.drawable.Drawable
-import android.text.Html
 import android.text.Layout
-import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
-import android.text.style.DynamicDrawableSpan
-import android.text.style.ImageSpan
 import android.util.TypedValue
 import android.widget.TextView
-import androidx.compose.runtime.Immutable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
-import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.drawable.toBitmap
-import androidx.core.graphics.drawable.toDrawable
-import androidx.core.graphics.scale
-import androidx.core.text.HtmlCompat
+import androidx.compose.ui.unit.em
 import androidx.wear.protolayout.ColorBuilders
 import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
-import com.aghajari.compose.text.ContentAnnotatedString
-import com.aghajari.compose.text.InlineContent
 import com.loohp.hkbuseta.appcontext.AppContext
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
-import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.shared.Shared
 import kotlin.math.absoluteValue
-import kotlin.math.roundToInt
 
+data class ContentAnnotatedString(val annotatedString: AnnotatedString, val inlineResources: Map<String, Int>) : CharSequence {
 
-@Immutable
-class ResourceImageGetter(private val context: Context, private val heightSp: Float) : Html.ImageGetter {
-
-    companion object {
-
-        private val types = listOf("mipmap", "drawable", "raw")
-
-    }
-
-    private val height = heightSp.spToPixels(context.appContext)
-
-    @SuppressLint("DiscouragedApi")
-    override fun getDrawable(source: String): Drawable? {
-        return types.asSequence()
-            .map { context.resources.getIdentifier(source, it, context.packageName) }.filter { it != 0 }
-            .firstOrNull()?.let outer@ {
-                val drawable = ResourcesCompat.getDrawable(context.resources, it, null)
-                drawable?.let {
-                    if (drawable.intrinsicHeight >= 0) {
-                        val height = height.roundToInt()
-                        val width = ((drawable.intrinsicWidth / drawable.intrinsicHeight.toFloat()) * height).roundToInt()
-                        return@outer drawable.toBitmap().scale(width, height).toDrawable(context.resources)
-                    }
+    fun createInlineContent(imageHeight: TextUnit = 1F.em): Map<String, InlineTextContent> {
+        return inlineResources.mapValues { (id, resource) ->
+            InlineTextContent(
+                placeholder = Placeholder(
+                    width = imageHeight * (Shared.RESOURCE_RATIO[resource]?: 1F),
+                    height = imageHeight,
+                    placeholderVerticalAlign = PlaceholderVerticalAlign.TextBottom
+                ),
+                children = {
+                    Image(
+                        modifier = Modifier.fillMaxSize(),
+                        painter = painterResource(resource),
+                        contentDescription = id
+                    )
                 }
-                return@outer drawable
-            }
+            )
+        }
+    }
+
+    override val length: Int = annotatedString.length
+
+    override fun get(index: Int): Char {
+        return annotatedString[index]
+    }
+
+    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
+        return annotatedString.subSequence(startIndex, endIndex)
+    }
+
+    operator fun plus(other: ContentAnnotatedString): ContentAnnotatedString {
+        val map = mutableMapOf<String, Int>()
+        map.putAll(inlineResources)
+        map.putAll(other.inlineResources)
+        return ContentAnnotatedString(annotatedString + other.annotatedString, map)
     }
 
 }
 
-fun CharSequence.toSpanned(context: AppContext, imageHeightSp: Float = 0F): Spanned {
-    return if (imageHeightSp <= 0F) {
-        HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT)
-    } else {
-        HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT, ResourceImageGetter((context as AppContextAndroid).context, imageHeightSp), null)
-    }
+fun AnnotatedString.asContentAnnotatedString(inlineResources: Map<String, Int> = mapOf()): ContentAnnotatedString {
+    return ContentAnnotatedString(this, inlineResources)
 }
 
+fun String.asContentAnnotatedString(spanStyle: SpanStyle? = null, inlineResources: Map<String, Int> = mapOf()): ContentAnnotatedString {
+    return ContentAnnotatedString(this.asAnnotatedString(spanStyle), inlineResources)
+}
 
-data class CharacterData(val style: List<AnnotatedString.Range<SpanStyle>>, val inline: List<InlineContent>) {
+inline val TextUnit.Companion.Small: TextUnit get() = 0.8F.em
+
+inline val TextUnit.Companion.Big: TextUnit get() = 1.25F.em
+
+fun String.asAnnotatedString(spanStyle: SpanStyle? = null): AnnotatedString {
+    return spanStyle?.let { buildAnnotatedString { append(this@asAnnotatedString, spanStyle) } }?: AnnotatedString(this)
+}
+
+fun AnnotatedString.Builder.append(string: String, spanStyle: SpanStyle) {
+    val start = length
+    append(string)
+    addStyle(spanStyle, start, length)
+}
+
+data class CharacterData(val style: List<AnnotatedString.Range<SpanStyle>>, val annotations: List<AnnotatedString.Range<String>>) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -108,12 +122,12 @@ data class CharacterData(val style: List<AnnotatedString.Range<SpanStyle>>, val 
         other as CharacterData
 
         if (style != other.style) return false
-        return inline == other.inline
+        return annotations == other.annotations
     }
 
     override fun hashCode(): Int {
         var result = style.hashCode()
-        result = 31 * result + inline.hashCode()
+        result = 31 * result + annotations.hashCode()
         return result
     }
 }
@@ -128,7 +142,9 @@ fun FontWeight?.snapToClosestLayoutWeight(): Int {
     return layoutFontValues.minBy { (it - weight).absoluteValue }
 }
 
-fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: AppContext, contentAnnotatedString: ContentAnnotatedString, defaultFontSp: Float, defaultFontStyle: (LayoutElementBuilders.FontStyle.Builder) -> Unit = {}, inlineImageHandler: ((ByteArray, Int, Int) -> String)? = null): LayoutElementBuilders.Spannable.Builder {
+private const val INLINE_CONTENT_TAG = "androidx.compose.foundation.text.inlineContent"
+
+fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(contentAnnotatedString: ContentAnnotatedString, defaultFontSp: Float, defaultFontStyle: (LayoutElementBuilders.FontStyle.Builder) -> Unit = {}, imageSizeProvider: ((Int) -> Pair<Float, Float>)?, inlineImageHandler: ((Int) -> String)? = null): LayoutElementBuilders.Spannable.Builder {
     if (contentAnnotatedString.isEmpty()) {
         val span = LayoutElementBuilders.SpanText.Builder().setText("")
         val fontStyleBuilder = LayoutElementBuilders.FontStyle.Builder().setSize(DimensionBuilders.sp(defaultFontSp))
@@ -137,11 +153,11 @@ fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: A
     }
     val text = contentAnnotatedString.annotatedString.text
     val style = contentAnnotatedString.annotatedString.spanStyles
-    val inlineContent = contentAnnotatedString.inlineContents
+    val annotations = contentAnnotatedString.annotatedString.getStringAnnotations(0, contentAnnotatedString.annotatedString.length)
     val characterData: MutableList<Pair<Char, CharacterData>> = ArrayList(text.length)
     for ((i, c) in text.withIndex()) {
         val s = style.filter { i >= it.start && i < it.end }.toList()
-        val n = inlineContent.filter { i >= it.start && i < it.end }.toList()
+        val n = annotations.filter { i >= it.start && i < it.end }.toList()
         characterData.add(c to CharacterData(s, n))
     }
     val mergedData: MutableList<Pair<String, CharacterData>> = ArrayList()
@@ -175,22 +191,16 @@ fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(context: A
             if (spanStyle.letterSpacing != TextUnit.Unspecified) fontStyleBuilder.setLetterSpacing(DimensionBuilders.em(spanStyle.letterSpacing.value))
         }
         val fontStyle = fontStyleBuilder.build()
-        val imageEndPos = if (inlineImageHandler != null) {
-            d.inline.filter { it.span is ImageSpan }.minByOrNull { it.start }?.let {
-                val span = it.span as ImageSpan
-                val bitmap = span.drawable.toBitmap()
-                val data = bitmap.compressToByteArray(Bitmap.CompressFormat.PNG, 100)
-                val key = inlineImageHandler.invoke(data, bitmap.width, bitmap.height)
-                LayoutElementBuilders.SPAN_VERTICAL_ALIGN_TEXT_BASELINE
+        val imageEndPos = if (inlineImageHandler != null && imageSizeProvider != null) {
+            d.annotations.filter { it.tag == INLINE_CONTENT_TAG }.minByOrNull { it.start }?.let {
+                val resource = contentAnnotatedString.inlineResources[it.item]!!
+                val key = inlineImageHandler.invoke(resource)
+                val (width, height) = imageSizeProvider.invoke(resource)
                 this.addSpan(LayoutElementBuilders.SpanImage.Builder()
                     .setResourceId(key)
-                    .setAlignment(when (span.verticalAlignment) {
-                        DynamicDrawableSpan.ALIGN_BOTTOM -> LayoutElementBuilders.SPAN_VERTICAL_ALIGN_BOTTOM
-                        DynamicDrawableSpan.ALIGN_BASELINE -> LayoutElementBuilders.SPAN_VERTICAL_ALIGN_TEXT_BASELINE
-                        else -> LayoutElementBuilders.SPAN_VERTICAL_ALIGN_UNDEFINED
-                    })
-                    .setWidth(DimensionBuilders.dp(bitmap.width.toFloat().pixelsToDp(context)))
-                    .setHeight(DimensionBuilders.dp(bitmap.height.toFloat().pixelsToDp(context)))
+                    .setAlignment(LayoutElementBuilders.SPAN_VERTICAL_ALIGN_BOTTOM)
+                    .setWidth(DimensionBuilders.dp(width))
+                    .setHeight(DimensionBuilders.dp(height))
                     .build()
                 )
                 it.end

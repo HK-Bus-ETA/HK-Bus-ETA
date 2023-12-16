@@ -40,16 +40,16 @@ interface AppContext {
     val scaledDensity: Float
 
     fun readTextFile(fileName: String, charset: Charset = Charsets.UTF_8): String {
-        return readTextFileSequence(fileName, charset).joinToString()
+        return readTextFileLines(fileName, charset).joinToString()
     }
 
-    fun readTextFileSequence(fileName: String, charset: Charset = Charsets.UTF_8): List<String>
+    fun readTextFileLines(fileName: String, charset: Charset = Charsets.UTF_8): List<String>
 
     fun writeTextFile(fileName: String, charset: Charset = Charsets.UTF_8, writeText: () -> String) {
-        writeTextFileSequence(fileName, charset) { listOf(writeText.invoke()) }
+        writeTextFileList(fileName, charset) { listOf(writeText.invoke()) }
     }
 
-    fun writeTextFileSequence(fileName: String, charset: Charset = Charsets.UTF_8, writeText: () -> List<String>)
+    fun writeTextFileList(fileName: String, charset: Charset = Charsets.UTF_8, writeText: () -> List<String>)
 
     fun listFiles(): List<String>
 
@@ -62,6 +62,8 @@ interface AppContext {
     fun logFirebaseEvent(title: String, values: AppBundle)
 
     fun getResourceString(resId: Int): String
+
+    fun isScreenRound(): Boolean
 
     fun startActivity(appIntent: AppIntent)
 

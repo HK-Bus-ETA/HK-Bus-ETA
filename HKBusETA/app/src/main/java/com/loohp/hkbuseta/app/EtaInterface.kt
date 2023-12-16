@@ -77,9 +77,6 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.rememberSwipeableState
 import androidx.wear.compose.material.swipeable
-import com.aghajari.compose.text.AnnotatedText
-import com.aghajari.compose.text.asAnnotatedString
-import com.google.android.horologist.compose.ambient.AmbientStateUpdate
 import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppIntent
 import com.loohp.hkbuseta.appcontext.AppIntentFlag
@@ -90,8 +87,6 @@ import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.PauseEffect
 import com.loohp.hkbuseta.compose.RestartEffect
-import com.loohp.hkbuseta.compose.ambientMode
-import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.objects.BilingualText
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Route
@@ -103,13 +98,13 @@ import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
-import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -120,12 +115,11 @@ import kotlinx.datetime.DateTimeUnit
 @OptIn(ExperimentalWearMaterialApi::class, ExperimentalWearFoundationApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
-fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: AppActiveContext, schedule: (Boolean, (() -> Unit)?) -> Unit) {
+fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: AppActiveContext, schedule: (Boolean, (() -> Unit)?) -> Unit) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val swipe = rememberSwipeableState(initialValue = false)
     var swiping by remember { mutableStateOf(swipe.offset.value != 0F) }
-    val ambientMode = rememberIsInAmbientMode(ambientStateUpdate)
 
     val routeNumber = route.routeNumber
 
@@ -180,7 +174,6 @@ fun EtaElement(ambientStateUpdate: AmbientStateUpdate, stopId: String, co: Opera
     HKBusETATheme {
         Box (
             modifier = Modifier
-                .ambientMode(ambientStateUpdate)
                 .fillMaxSize()
                 .composed {
                     this.offset(
@@ -437,6 +430,7 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: AppActiveContext) {
+    val content = (lines?.getLine(seq)?.text?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中").asContentAnnotatedString() else "".asContentAnnotatedString())
     val textSize = 16F.scaledSize(instance).sp.clamp(max = 16F.scaledSize(instance).dp)
     Box (
         modifier = Modifier
@@ -444,7 +438,7 @@ fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: Ap
             .heightIn(min = textSize.dp + 7.dp)
             .padding((if (seq == 1) 5 else 20).dp, 0.dp)
     ) {
-        AnnotatedText(
+        Text(
             modifier = Modifier
                 .fillMaxWidth()
                 .basicMarquee(iterations = Int.MAX_VALUE),
@@ -452,7 +446,8 @@ fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: Ap
             fontSize = textSize,
             color = MaterialTheme.colors.primary.adjustBrightness(if (lines == null || (ambientMode && seq > 1)) 0.7F else 1F),
             maxLines = 1,
-            text = (lines?.getLine(seq)?.text?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中") else "").toSpanned(instance, textSize.value).asAnnotatedString()
+            text = content.annotatedString,
+            inlineContent = content.createInlineContent(textSize)
         )
     }
 }

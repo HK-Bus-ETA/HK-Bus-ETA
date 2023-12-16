@@ -50,6 +50,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -60,16 +62,16 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.aghajari.compose.text.AnnotatedText
-import com.aghajari.compose.text.asAnnotatedString
 import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.compose.fullPageVerticalScrollWithScrollbar
+import com.loohp.hkbuseta.objects.BilingualAnnotatedText
 import com.loohp.hkbuseta.objects.BilingualText
+import com.loohp.hkbuseta.objects.asAnnotatedText
 import com.loohp.hkbuseta.objects.withEn
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toSpanned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -78,9 +80,31 @@ import kotlinx.coroutines.sync.withLock
 
 private val defaultDismissText = "確認" withEn "OK"
 
+private val specialText = listOf(
+    BilingualAnnotatedText(
+        buildAnnotatedString {
+            append("你可能需要「")
+            append("允許背景活動", SpanStyle(fontWeight = FontWeight.Bold))
+            append("」讓此功能在螢幕關閉時繼續正常運作\n\n此功能目前在")
+            append("測試階段", SpanStyle(fontWeight = FontWeight.Bold))
+            append(", 運作可能不穩定")
+
+        },
+        buildAnnotatedString {
+            append("You might need to \"")
+            append("Allow Background Activity", SpanStyle(fontWeight = FontWeight.Bold))
+            append("\" for this feature to continue working while the screen is off.\n\nThis feature is currently in ")
+            append("beta", SpanStyle(fontWeight = FontWeight.Bold))
+            append(", which might be unstable.")
+        }
+    )
+)
+
 @OptIn(ExperimentalWearFoundationApi::class)
 @Composable
-fun TextElement(text: BilingualText, dismissText: BilingualText, instance: AppActiveContext) {
+fun TextElement(specialTextIndex: Int, inputText: BilingualText, optDismissText: BilingualText?, instance: AppActiveContext) {
+    val text = specialText.getOrElse(specialTextIndex) { inputText.asAnnotatedText() }
+    val dismissText = optDismissText?: defaultDismissText
     HKBusETATheme {
         val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberScrollState()
@@ -120,6 +144,7 @@ fun TextElement(text: BilingualText, dismissText: BilingualText, instance: AppAc
                 .fillMaxSize()
                 .fullPageVerticalScrollWithScrollbar(
                     state = scroll,
+                    context = instance,
                     flingBehavior = ScrollableDefaults.flingBehavior()
                 )
                 .onRotaryScrollEvent {
@@ -143,13 +168,13 @@ fun TextElement(text: BilingualText, dismissText: BilingualText, instance: AppAc
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.size(50.scaledSize(instance).dp))
-            AnnotatedText(
+            Text(
                 modifier = Modifier.fillMaxWidth(0.8F),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary,
                 fontWeight = FontWeight.Normal,
                 fontSize = 15F.scaledSize(instance).sp,
-                text = text[Shared.language].toSpanned(instance).asAnnotatedString()
+                text = text[Shared.language]
             )
             Spacer(modifier = Modifier.size(20.scaledSize(instance).dp))
             Button(
