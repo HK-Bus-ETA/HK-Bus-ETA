@@ -24,7 +24,8 @@ import android.content.Intent
 import android.os.Bundle
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
-import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.shared.Registry
@@ -54,10 +55,9 @@ class WearDataLayerListenerService : WearableListenerService() {
                     for ((key, value) in data) {
                         intent.putExtra(key, value.jsonPrimitive.content)
                     }
-                    val bundle = Bundle().apply {
+                    Firebase.analytics.logEvent("remote_launch", Bundle().apply {
                         putString("value", "1")
-                    }
-                    FirebaseAnalytics.getInstance(this).logEvent("remote_launch", bundle)
+                    })
                     startActivity(intent)
                 } catch (e: SerializationException) {
                     e.printStackTrace()

@@ -108,7 +108,8 @@ import com.loohp.hkbuseta.objects.getColor
 import com.loohp.hkbuseta.objects.getDisplayName
 import com.loohp.hkbuseta.objects.resolvedDest
 import com.loohp.hkbuseta.objects.uniqueKey
-import com.loohp.hkbuseta.shared.KMBSubsidiary
+import com.loohp.hkbuseta.objects.KMBSubsidiary
+import com.loohp.hkbuseta.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
@@ -370,7 +371,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                     }
                     if (co == Operator.NLB) {
                         secondLine.add((if (Shared.language == "en") "From ".plus(route.route!!.orig.en) else "從".plus(route.route!!.orig.zh).plus("開出")).asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
-                    } else if (co == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+                    } else if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
                         secondLine.add((if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)").asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
                     }
 

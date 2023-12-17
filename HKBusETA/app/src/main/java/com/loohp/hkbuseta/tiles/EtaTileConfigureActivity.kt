@@ -101,6 +101,7 @@ import com.loohp.hkbuseta.objects.withEn
 import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.shared.Tiles
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
@@ -147,7 +148,7 @@ fun SelectElements(tileId: Int, instance: AppActiveContext) {
 
         val maxFavItems by Shared.getCurrentMaxFavouriteRouteStopState().collectAsStateWithLifecycle()
 
-        val selectStates = remember { mutableStateListOf<Int>().also { it.addAll(Shared.getEtaTileConfiguration(tileId)) } }
+        val selectStates = remember { mutableStateListOf<Int>().also { it.addAll(Tiles.getEtaTileConfiguration(tileId)) } }
 
         LazyColumn(
             modifier = Modifier

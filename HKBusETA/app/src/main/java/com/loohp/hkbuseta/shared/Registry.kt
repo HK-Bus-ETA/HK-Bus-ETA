@@ -19,7 +19,6 @@
  */
 package com.loohp.hkbuseta.shared
 
-import android.os.Bundle
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
@@ -33,10 +32,9 @@ import co.touchlab.stately.collections.ConcurrentMutableSet
 import co.touchlab.stately.concurrency.AtomicBoolean
 import co.touchlab.stately.concurrency.AtomicLong
 import co.touchlab.stately.concurrency.AtomicReference
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContext
+import com.loohp.hkbuseta.appcontext.AppBundle
 import com.loohp.hkbuseta.appcontext.AppContext
 import com.loohp.hkbuseta.branchedlist.BranchedList
 import com.loohp.hkbuseta.objects.BilingualText
@@ -45,6 +43,7 @@ import com.loohp.hkbuseta.objects.DataContainer
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.objects.FavouriteStopMode
 import com.loohp.hkbuseta.objects.GMBRegion
+import com.loohp.hkbuseta.objects.KMBSubsidiary
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.Preferences
 import com.loohp.hkbuseta.objects.Route
@@ -54,6 +53,7 @@ import com.loohp.hkbuseta.objects.RouteSortMode
 import com.loohp.hkbuseta.objects.Stop
 import com.loohp.hkbuseta.objects.StopInfo
 import com.loohp.hkbuseta.objects.getColor
+import com.loohp.hkbuseta.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.objects.identifyStopCo
 import com.loohp.hkbuseta.objects.isTrain
 import com.loohp.hkbuseta.objects.prependTo
@@ -204,7 +204,7 @@ class Registry {
         Shared.language = language!!
         PREFERENCES!!.language = language
         savePreferences(context)
-        requestTileUpdate()
+        Tiles.requestTileUpdate()
     }
 
     fun hasFavouriteRouteStop(favoriteIndex: Int): Boolean {
@@ -243,7 +243,7 @@ class Registry {
         PREFERENCES!!.favouriteRouteStops.remove(favoriteIndex)
         val changes: MutableMap<Int, List<Int>> = HashMap()
         val deletions: MutableList<Int> = ArrayList()
-        for ((key, value) in Shared.getRawEtaTileConfigurations()) {
+        for ((key, value) in Tiles.getRawEtaTileConfigurations()) {
             if (value.contains(favoriteIndex)) {
                 val updated: MutableList<Int> = ArrayList(
                     value
@@ -258,14 +258,14 @@ class Registry {
         }
         PREFERENCES!!.etaTileConfigurations.putAll(changes)
         deletions.forEach { PREFERENCES!!.etaTileConfigurations.remove(it) }
-        Shared.updateEtaTileConfigurations {
+        Tiles.updateEtaTileConfigurations {
             it.putAll(changes)
             deletions.forEach { key -> it.remove(key) }
         }
         if (save) {
             savePreferences(context)
-            requestTileUpdate(0)
-            requestTileUpdate(favoriteIndex)
+            Tiles.requestTileUpdate(0)
+            Tiles.requestTileUpdate(favoriteIndex)
         }
     }
 
@@ -280,11 +280,9 @@ class Registry {
         if (!bypassEtaTileCheck) {
             val changes: MutableMap<Int, List<Int>> = HashMap()
             val deletions: MutableList<Int> = ArrayList()
-            for ((key, value) in Shared.getRawEtaTileConfigurations()) {
+            for ((key, value) in Tiles.getRawEtaTileConfigurations()) {
                 if (value.contains(favoriteIndex)) {
-                    val updated: MutableList<Int> = ArrayList(
-                        value
-                    )
+                    val updated: MutableList<Int> = ArrayList(value)
                     updated.remove(favoriteIndex)
                     if (updated.isEmpty()) {
                         deletions.add(key)
@@ -295,29 +293,29 @@ class Registry {
             }
             PREFERENCES!!.etaTileConfigurations.putAll(changes)
             deletions.forEach { PREFERENCES!!.etaTileConfigurations.remove(it) }
-            Shared.updateEtaTileConfigurations {
+            Tiles.updateEtaTileConfigurations {
                 it.putAll(changes)
                 deletions.forEach { key -> it.remove(key) }
             }
         }
         if (save) {
             savePreferences(context)
-            requestTileUpdate(0)
-            requestTileUpdate(favoriteIndex)
+            Tiles.requestTileUpdate(0)
+            Tiles.requestTileUpdate(favoriteIndex)
         }
     }
 
     fun clearEtaTileConfiguration(tileId: Int, context: AppContext) {
-        Shared.updateEtaTileConfigurations { it.remove(tileId) }
+        Tiles.updateEtaTileConfigurations { it.remove(tileId) }
         PREFERENCES!!.etaTileConfigurations.remove(tileId)
         savePreferences(context)
     }
 
     fun setEtaTileConfiguration(tileId: Int, favouriteIndexes: List<Int>, context: AppContext) {
-        Shared.updateEtaTileConfigurations { it[tileId] = favouriteIndexes }
+        Tiles.updateEtaTileConfigurations { it[tileId] = favouriteIndexes }
         PREFERENCES!!.etaTileConfigurations[tileId] = favouriteIndexes
         savePreferences(context)
-        requestTileUpdate(0)
+        Tiles.requestTileUpdate(0)
     }
 
     fun addLastLookupRoute(routeNumber: String?, co: Operator?, meta: String?, context: AppContext) {
@@ -369,7 +367,7 @@ class Registry {
             it.clear()
             it.putAll(PREFERENCES!!.favouriteRouteStops)
         }
-        Shared.updateEtaTileConfigurations {
+        Tiles.updateEtaTileConfigurations {
             it.clear()
             it.putAll(PREFERENCES!!.etaTileConfigurations)
         }
@@ -438,7 +436,7 @@ class Registry {
                     if (DATA == null) {
                         try {
                             DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(context.readTextFile(DATA_FILE_NAME)))
-                            requestTileUpdate()
+                            Tiles.requestTileUpdate()
                             stateFlow.value = State.READY
                         } catch (e: Throwable) {
                             e.printStackTrace()
@@ -523,7 +521,7 @@ class Registry {
                             savePreferences(context)
                         }
                         updatePercentageStateFlow.value = 1f
-                        requestTileUpdate()
+                        Tiles.requestTileUpdate()
                         stateFlow.value = State.READY
                     }
                 }
@@ -1190,7 +1188,7 @@ class Registry {
     }
 
     fun getEta(stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext): PendingETAQueryResult {
-        Firebase.analytics.logEvent("eta_query", Bundle().apply {
+        context.logFirebaseEvent("eta_query", AppBundle().apply {
             putString("by_stop", stopId + "," + stopIndex + "," + route.routeNumber + "," + co.name + "," + route.bound[co])
             putString("by_bound", route.routeNumber + "," + co.name + "," + route.bound[co])
             putString("by_route", route.routeNumber + "," + co.name)
@@ -1487,7 +1485,7 @@ class Registry {
                                 message += (if (Shared.language == "en") " (Scheduled Bus)" else " (預定班次)").asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))
                             }
                             message += if (entryCo === Operator.KMB) {
-                                if (Shared.getKMBSubsidiary(route.routeNumber) === KMBSubsidiary.LWB) {
+                                if (route.routeNumber.getKMBSubsidiary() === KMBSubsidiary.LWB) {
                                     (if (Shared.language == "en") " - LWB" else " - 龍運").asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))
                                 } else {
                                     (if (Shared.language == "en") " - KMB" else " - 九巴").asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))

@@ -35,7 +35,8 @@ import com.google.android.gms.location.LocationAvailability
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.Task
-import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.ktx.Firebase
 import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.appcontext.AppContext
@@ -66,9 +67,9 @@ private fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boo
     if (askIfNotGranted && context is ComponentActivity) {
         var ref: ActivityResultLauncher<String>? = null
         val launcher: ActivityResultLauncher<String> = context.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) {
-            val bundle = Bundle()
-            bundle.putBoolean("value", it)
-            FirebaseAnalytics.getInstance(context).logEvent("location_request_result", bundle)
+            Firebase.analytics.logEvent("location_request_result", Bundle().apply {
+                putBoolean("value", it)
+            })
             callback.invoke(it)
             ref?.unregister()
         }
@@ -99,9 +100,9 @@ private fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGr
         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             var ref0: ActivityResultLauncher<String>? = null
             val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
-                val bundle0 = Bundle()
-                bundle0.putBoolean("value", result0)
-                FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0)
+                Firebase.analytics.logEvent("background_location_request_result", Bundle().apply {
+                    putBoolean("value", result0)
+                })
                 callback.invoke(result0)
                 ref0?.unregister()
             }
@@ -110,15 +111,15 @@ private fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGr
         } else {
             var ref: ActivityResultLauncher<String>? = null
             val launcher: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result: Boolean ->
-                val bundle = Bundle()
-                bundle.putBoolean("value", result)
-                FirebaseAnalytics.getInstance(activity).logEvent("location_request_result", bundle)
+                Firebase.analytics.logEvent("location_request_result", Bundle().apply {
+                    putBoolean("value", result)
+                })
                 if (result) {
                     var ref0: ActivityResultLauncher<String>? = null
                     val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
-                        val bundle0 = Bundle()
-                        bundle0.putBoolean("value", result0)
-                        FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0)
+                        Firebase.analytics.logEvent("background_location_request_result", Bundle().apply {
+                            putBoolean("value", result0)
+                        })
                         callback.invoke(result0)
                         ref0?.unregister()
                     }
@@ -154,9 +155,9 @@ private fun checkLocationPermission(appActiveContext: AppActiveContext, askIfNot
         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             var ref0: ActivityResultLauncher<String>? = null
             val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register<String, Boolean>(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
-                val bundle0 = Bundle()
-                bundle0.putBoolean("value", result0)
-                FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0)
+                Firebase.analytics.logEvent("background_location_request_result", Bundle().apply {
+                    putBoolean("value", result0)
+                })
                 callback.invoke(result0)
                 ref0?.unregister()
             }
@@ -165,15 +166,15 @@ private fun checkLocationPermission(appActiveContext: AppActiveContext, askIfNot
         } else {
             var ref: ActivityResultLauncher<String>? = null
             val launcher: ActivityResultLauncher<String> = activity.activityResultRegistry.register<String, Boolean>(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result: Boolean ->
-                val bundle = Bundle()
-                bundle.putBoolean("value", result)
-                FirebaseAnalytics.getInstance(activity).logEvent("location_request_result", bundle)
+                Firebase.analytics.logEvent("location_request_result", Bundle().apply {
+                    putBoolean("value", result)
+                })
                 if (result) {
                     var ref0: ActivityResultLauncher<String>? = null
                     val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register<String, Boolean>(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
-                        val bundle0 = Bundle()
-                        bundle0.putBoolean("value", result0)
-                        FirebaseAnalytics.getInstance(activity).logEvent("background_location_request_result", bundle0)
+                        Firebase.analytics.logEvent("background_location_request_result", Bundle().apply {
+                            putBoolean("value", result0)
+                        })
                         callback.invoke(result0)
                         ref0?.unregister()
                     }

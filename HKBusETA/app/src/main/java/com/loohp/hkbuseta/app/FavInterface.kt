@@ -111,6 +111,7 @@ import com.loohp.hkbuseta.objects.resolveStop
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.shared.TileUseState
+import com.loohp.hkbuseta.shared.Tiles
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.LocationResult
@@ -273,7 +274,7 @@ fun RouteListViewButton(instance: AppActiveContext) {
 @Composable
 fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>, origin: LocationResult?, instance: AppActiveContext, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     var favouriteStopRoute by remember { mutableStateOf(Shared.favoriteRouteStops[favoriteIndex]) }
-    var anyTileUses by remember { mutableStateOf(Shared.getTileUseState(favoriteIndex)) }
+    var anyTileUses by remember { mutableStateOf(Tiles.getTileUseState(favoriteIndex)) }
 
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
@@ -293,7 +294,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
         if (newState != favouriteStopRoute) {
             favouriteStopRoute = newState
         }
-        val newAnyTileUses = Shared.getTileUseState(favoriteIndex)
+        val newAnyTileUses = Tiles.getTileUseState(favoriteIndex)
         if (newAnyTileUses != anyTileUses) {
             anyTileUses = newAnyTileUses
         }
@@ -321,7 +322,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     instance.showToastText(if (Shared.language == "en") "Cleared Favourite Route ".plus(favoriteIndex) else "已清除最喜愛路線".plus(favoriteIndex), ToastDuration.SHORT)
                 }
                 favouriteStopRoute = Shared.favoriteRouteStops[favoriteIndex]
-                anyTileUses = Shared.getTileUseState(favoriteIndex)
+                anyTileUses = Tiles.getTileUseState(favoriteIndex)
                 scope.launch { deleteAnimatable.snapTo(0F) }
             } else {
                 val favStopRoute = Shared.favoriteRouteStops[favoriteIndex]

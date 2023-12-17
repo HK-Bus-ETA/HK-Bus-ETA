@@ -25,7 +25,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.TextUnit
 import com.loohp.hkbuseta.appcontext.AppContext
-import com.loohp.hkbuseta.shared.KMBSubsidiary
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.Small
@@ -39,7 +38,7 @@ inline val Operator.isTrain: Boolean get() = this == Operator.MTR || this == Ope
 
 fun Operator.getColor(routeNumber: String, elseColor: Color): Color {
     return when (this) {
-        Operator.KMB -> if (Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
+        Operator.KMB -> if (routeNumber.getKMBSubsidiary() == KMBSubsidiary.LWB) Color(0xFFF26C33) else Color(0xFFFF4747)
         Operator.CTB -> Color(0xFFFFE15E)
         Operator.NLB -> Color(0xFF9BFFC6)
         Operator.MTR_BUS -> Color(0xFFAAD4FF)
@@ -82,16 +81,29 @@ fun Operator.getLineColor(routeNumber: String, elseColor: Color): Color {
 fun Operator.getDisplayRouteNumber(routeNumber: String, shortened: Boolean = false): String {
     return if (this == Operator.MTR) {
         if (shortened && Shared.language == "en") routeNumber else Shared.getMtrLineName(routeNumber, "???")
-    } else if (this == Operator.KMB && Shared.getKMBSubsidiary(routeNumber) == KMBSubsidiary.SUNB) {
+    } else if (this == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
         "NR".plus(routeNumber)
     } else {
         routeNumber
     }
 }
 
+fun String.getKMBSubsidiary(): KMBSubsidiary {
+    val routeNumberFiltered = if (this.startsWith("N")) this.substring(1) else this
+    if (routeNumberFiltered.startsWith("A") || routeNumberFiltered.startsWith("E") || routeNumberFiltered.startsWith("S")) {
+        return KMBSubsidiary.LWB
+    }
+    return when (this) {
+        "N30", "N31", "N42", "N42A", "N64", "R8", "R33", "R42", "X1", "X33", "X34", "X40", "X43", "X47" -> KMBSubsidiary.LWB
+        "331", "331S", "917", "918", "945" -> KMBSubsidiary.SUNB
+        else -> KMBSubsidiary.KMB
+    }
+
+}
+
 fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language: String, elseName: String = "???"): String {
     return if (language == "en") when (this) {
-        Operator.KMB -> when (Shared.getKMBSubsidiary(routeNumber)) {
+        Operator.KMB -> when (routeNumber.getKMBSubsidiary()) {
             KMBSubsidiary.SUNB -> "Sun Bus"
             KMBSubsidiary.LWB -> if (kmbCtbJoint) "LWB/CTB" else "LWB"
             else -> if (kmbCtbJoint) "KMB/CTB" else "KMB"
@@ -104,7 +116,7 @@ fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language:
         Operator.MTR -> "MTR"
         else -> elseName
     } else when (this) {
-        Operator.KMB -> when (Shared.getKMBSubsidiary(routeNumber)) {
+        Operator.KMB -> when (routeNumber.getKMBSubsidiary()) {
             KMBSubsidiary.SUNB -> "陽光巴士"
             KMBSubsidiary.LWB -> if (kmbCtbJoint) "龍運/城巴" else "龍運"
             else -> if (kmbCtbJoint) "九巴/城巴" else "九巴"

@@ -66,6 +66,7 @@ import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Registry.ETALineEntry
 import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.shared.Tiles
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -772,7 +773,7 @@ class EtaTileServiceCommon {
             while (Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
                 TimeUnit.MILLISECONDS.sleep(10)
             }
-            val favouriteRoutes = Shared.getEtaTileConfiguration(tileId)
+            val favouriteRoutes = Tiles.getEtaTileConfiguration(tileId)
             return if (favouriteRoutes.isEmpty() || favouriteRoutes.none { Shared.favoriteRouteStops[it] != null }) {
                 noFavouriteRouteStop(tileId, packageName, context)
             } else {
@@ -840,7 +841,7 @@ class EtaTileServiceCommon {
                         TimeUnit.MILLISECONDS.sleep(10)
                     }
                     if (it.shouldUpdate()) {
-                        val favouriteRoutes = Shared.getEtaTileConfiguration(tileId)
+                        val favouriteRoutes = Tiles.getEtaTileConfiguration(tileId)
                         if (favouriteRoutes.isNotEmpty()) {
                             val favouriteRouteStops = favouriteRoutes
                                 .mapNotNull { favouriteRoute -> Shared.favoriteRouteStops[favouriteRoute] }

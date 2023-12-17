@@ -20,13 +20,48 @@
 
 package com.loohp.hkbuseta.shared
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.loohp.hkbuseta.tiles.EtaTileServiceCommon
 
 
-fun requestTileUpdate() {
-    (0..8).forEach { requestTileUpdate(it) }
+enum class TileUseState {
+
+    PRIMARY, SECONDARY, NONE
+
 }
 
-fun requestTileUpdate(favoriteIndex: Int) {
-    EtaTileServiceCommon.requestTileUpdate(favoriteIndex)
+object Tiles {
+
+    private val etaTileConfigurations: Map<Int, List<Int>> = ConcurrentMutableMap()
+
+    fun updateEtaTileConfigurations(mutation: (MutableMap<Int, List<Int>>) -> Unit) {
+        synchronized(etaTileConfigurations) {
+            mutation.invoke(etaTileConfigurations as MutableMap<Int, List<Int>>)
+        }
+    }
+
+    fun getEtaTileConfiguration(tileId: Int): List<Int> {
+        return if (tileId in (1 or Int.MIN_VALUE)..(8 or Int.MIN_VALUE)) listOf(tileId and Int.MAX_VALUE) else etaTileConfigurations.getOrElse(tileId) { emptyList() }
+    }
+
+    fun getRawEtaTileConfigurations(): Map<Int, List<Int>> {
+        return etaTileConfigurations
+    }
+
+    fun getTileUseState(index: Int): TileUseState {
+        return when (etaTileConfigurations.values.minOfOrNull { it.indexOf(index).let { i -> if (i >= 0) i else Int.MAX_VALUE } }?: Int.MAX_VALUE) {
+            0 -> TileUseState.PRIMARY
+            Int.MAX_VALUE -> TileUseState.NONE
+            else -> TileUseState.SECONDARY
+        }
+    }
+
+    fun requestTileUpdate() {
+        (0..8).forEach { requestTileUpdate(it) }
+    }
+
+    fun requestTileUpdate(favoriteIndex: Int) {
+        EtaTileServiceCommon.requestTileUpdate(favoriteIndex)
+    }
+
 }

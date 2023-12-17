@@ -19,7 +19,6 @@
  */
 package com.loohp.hkbuseta.objects
 
-import com.loohp.hkbuseta.shared.LastLookupRoute
 import com.loohp.hkbuseta.utils.JSONSerializable
 import com.loohp.hkbuseta.utils.mapToMutableList
 import com.loohp.hkbuseta.utils.mapToMutableMap

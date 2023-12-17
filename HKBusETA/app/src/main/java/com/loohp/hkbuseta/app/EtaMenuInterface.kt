@@ -107,6 +107,7 @@ import com.loohp.hkbuseta.services.AlightReminderService
 import com.loohp.hkbuseta.shared.Registry
 import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.shared.TileUseState
+import com.loohp.hkbuseta.shared.Tiles
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -667,14 +668,14 @@ fun getFavState(favoriteIndex: Int, stopId: String, co: Operator, index: Int, st
 @Composable
 fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: AppActiveContext) {
     var state by remember { mutableStateOf(getFavState(favoriteIndex, stopId, co, index, stop, route, instance)) }
-    var anyTileUses by remember { mutableStateOf(Shared.getTileUseState(favoriteIndex)) }
+    var anyTileUses by remember { mutableStateOf(Tiles.getTileUseState(favoriteIndex)) }
 
     RestartEffect {
         val newState = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
         if (newState != state) {
             state = newState
         }
-        val newAnyTileUses = Shared.getTileUseState(favoriteIndex)
+        val newAnyTileUses = Tiles.getTileUseState(favoriteIndex)
         if (newAnyTileUses != anyTileUses) {
             anyTileUses = newAnyTileUses
         }
@@ -689,7 +690,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
             instance.showToastText(if (Shared.language == "en") "Set Favourite Route ".plus(favoriteIndex) else "已設置最喜愛路線".plus(favoriteIndex), ToastDuration.SHORT)
         }
         state = getFavState(favoriteIndex, stopId, co, index, stop, route, instance)
-        anyTileUses = Shared.getTileUseState(favoriteIndex)
+        anyTileUses = Tiles.getTileUseState(favoriteIndex)
     }
 
     val handleClick: (FavouriteStopMode) -> Unit = {

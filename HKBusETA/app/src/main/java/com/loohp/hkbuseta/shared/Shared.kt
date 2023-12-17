@@ -22,7 +22,6 @@ package com.loohp.hkbuseta.shared
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material.TimeText
@@ -32,89 +31,15 @@ import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppContext
 import com.loohp.hkbuseta.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.objects.LastLookupRoute
 import com.loohp.hkbuseta.objects.Operator
 import com.loohp.hkbuseta.objects.RouteListType
 import com.loohp.hkbuseta.objects.RouteSortMode
 import com.loohp.hkbuseta.objects.gmbRegion
-import com.loohp.hkbuseta.objects.operator
 import com.loohp.hkbuseta.utils.HongKongTimeSource
-import com.loohp.hkbuseta.utils.JSONSerializable
-import com.loohp.hkbuseta.utils.optString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
-
-enum class TileUseState {
-
-    PRIMARY, SECONDARY, NONE
-
-}
-
-@Immutable
-data class LastLookupRoute(val routeNumber: String, val co: Operator, val meta: String) : JSONSerializable {
-
-    companion object {
-
-        fun deserialize(json: JsonObject): LastLookupRoute {
-            val routeNumber = json.optString("r")
-            val co = json.optString("c").operator
-            val meta = if (co == Operator.GMB || co == Operator.NLB) json.optString("m") else ""
-            return LastLookupRoute(routeNumber, co, meta)
-        }
-
-    }
-
-    fun isValid(): Boolean {
-        if (routeNumber.isBlank() || !co.isBuiltIn) {
-            return false
-        }
-        if ((co == Operator.GMB || co == Operator.NLB) && meta.isBlank()) {
-            return false
-        }
-        if (co == Operator.GMB && meta.gmbRegion == null) {
-            return false
-        }
-        return true
-    }
-
-    override fun serialize(): JsonObject {
-        return buildJsonObject {
-            put("r", routeNumber)
-            put("c", co.name)
-            if (co == Operator.GMB || co == Operator.NLB) put("m", meta)
-        }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as LastLookupRoute
-
-        if (routeNumber != other.routeNumber) return false
-        if (co != other.co) return false
-        if ((co == Operator.GMB || co == Operator.NLB) && meta != other.meta) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = routeNumber.hashCode()
-        result = 31 * result + co.hashCode()
-        if (co == Operator.GMB || co == Operator.NLB) result = 31 * result + meta.hashCode()
-        return result
-    }
-
-}
-
-enum class KMBSubsidiary {
-
-    KMB, LWB, SUNB
-
-}
 
 @Stable
 object Shared {
@@ -192,48 +117,11 @@ object Shared {
         }
     }
 
-    fun getKMBSubsidiary(routeNumber: String): KMBSubsidiary {
-        val routeNumberFiltered = if (routeNumber.startsWith("N")) routeNumber.substring(1) else routeNumber
-        if (routeNumberFiltered.startsWith("A") || routeNumberFiltered.startsWith("E") || routeNumberFiltered.startsWith("S")) {
-            return KMBSubsidiary.LWB
-        }
-        return when (routeNumber) {
-            "N30", "N31", "N42", "N42A", "N64", "R8", "R33", "R42", "X1", "X33", "X34", "X40", "X43", "X47" -> KMBSubsidiary.LWB
-            "331", "331S", "917", "918", "945" -> KMBSubsidiary.SUNB
-            else -> KMBSubsidiary.KMB
-        }
-
-    }
-
     var language = "zh"
 
     private val suggestedMaxFavouriteRouteStop = MutableStateFlow(0)
     private val currentMaxFavouriteRouteStop = MutableStateFlow(0)
     val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentMutableMap()
-
-    private val etaTileConfigurations: Map<Int, List<Int>> = ConcurrentMutableMap()
-
-    fun updateEtaTileConfigurations(mutation: (MutableMap<Int, List<Int>>) -> Unit) {
-        synchronized(etaTileConfigurations) {
-            mutation.invoke(etaTileConfigurations as MutableMap<Int, List<Int>>)
-        }
-    }
-
-    fun getEtaTileConfiguration(tileId: Int): List<Int> {
-        return if (tileId in (1 or Int.MIN_VALUE)..(8 or Int.MIN_VALUE)) listOf(tileId and Int.MAX_VALUE) else etaTileConfigurations.getOrElse(tileId) { emptyList() }
-    }
-
-    fun getRawEtaTileConfigurations(): Map<Int, List<Int>> {
-        return etaTileConfigurations
-    }
-
-    fun getTileUseState(index: Int): TileUseState {
-        return when (etaTileConfigurations.values.minOfOrNull { it.indexOf(index).let { i -> if (i >= 0) i else Int.MAX_VALUE } }?: Int.MAX_VALUE) {
-            0 -> TileUseState.PRIMARY
-            Int.MAX_VALUE -> TileUseState.NONE
-            else -> TileUseState.SECONDARY
-        }
-    }
 
     fun updateFavoriteRouteStops(mutation: (MutableMap<Int, FavouriteRouteStop>) -> Unit) {
         synchronized(favoriteRouteStops) {
