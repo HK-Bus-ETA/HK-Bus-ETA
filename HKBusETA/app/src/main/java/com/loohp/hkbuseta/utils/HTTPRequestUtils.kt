@@ -87,8 +87,9 @@ fun getTextResponseWithPercentageCallback(link: String, customContentLength: Lon
                     connectTimeoutMillis = 20000
                 }
                 onDownload { bytesSentTotal, rawContentLength ->
-                    val contentLength = customContentLength.takeIf { l -> l >= 0 }?: rawContentLength
-                    percentageCallback.invoke(0f.coerceAtLeast((bytesSentTotal.toFloat() / contentLength).coerceAtMost(1f)))
+                    (customContentLength.takeIf { l -> l >= 0 }?: rawContentLength)?.let {
+                        percentageCallback.invoke(0f.coerceAtLeast((bytesSentTotal.toFloat() / it).coerceAtMost(1f)))
+                    }
                 }
             }.let {
                 if (it.status == HttpStatusCode.OK) {
