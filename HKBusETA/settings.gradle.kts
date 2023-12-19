@@ -24,6 +24,7 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
+        maven("https://maven.pkg.jetbrains.space/kotlin/p/wasm/experimental")
     }
 }
 dependencyResolutionManagement {
@@ -32,6 +33,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
+        maven("https://maven.pkg.jetbrains.space/kotlin/p/wasm/experimental")
     }
 }
 
