@@ -50,8 +50,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -62,15 +60,17 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.loohp.hkbuseta.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.objects.BilingualFormattedText
+import com.loohp.hkbuseta.common.objects.BilingualText
+import com.loohp.hkbuseta.common.objects.asFormattedText
+import com.loohp.hkbuseta.common.objects.withEn
+import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.BoldStyle
+import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.compose.fullPageVerticalScrollWithScrollbar
-import com.loohp.hkbuseta.objects.BilingualAnnotatedText
-import com.loohp.hkbuseta.objects.BilingualText
-import com.loohp.hkbuseta.objects.asAnnotatedText
-import com.loohp.hkbuseta.objects.withEn
-import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.append
+import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -81,20 +81,20 @@ import kotlinx.coroutines.sync.withLock
 private val defaultDismissText = "確認" withEn "OK"
 
 private val specialText = listOf(
-    BilingualAnnotatedText(
-        buildAnnotatedString {
+    BilingualFormattedText(
+        buildFormattedString {
             append("你可能需要「")
-            append("允許背景活動", SpanStyle(fontWeight = FontWeight.Bold))
+            append("允許背景活動", BoldStyle)
             append("」讓此功能在螢幕關閉時繼續正常運作\n\n此功能目前在")
-            append("測試階段", SpanStyle(fontWeight = FontWeight.Bold))
+            append("測試階段", BoldStyle)
             append(", 運作可能不穩定")
 
         },
-        buildAnnotatedString {
+        buildFormattedString {
             append("You might need to \"")
-            append("Allow Background Activity", SpanStyle(fontWeight = FontWeight.Bold))
+            append("Allow Background Activity", BoldStyle)
             append("\" for this feature to continue working while the screen is off.\n\nThis feature is currently in ")
-            append("beta", SpanStyle(fontWeight = FontWeight.Bold))
+            append("beta", BoldStyle)
             append(", which might be unstable.")
         }
     )
@@ -103,7 +103,7 @@ private val specialText = listOf(
 @OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun TextElement(specialTextIndex: Int, inputText: BilingualText, optDismissText: BilingualText?, instance: AppActiveContext) {
-    val text = specialText.getOrElse(specialTextIndex) { inputText.asAnnotatedText() }
+    val text = specialText.getOrElse(specialTextIndex) { inputText.asFormattedText() }
     val dismissText = optDismissText?: defaultDismissText
     HKBusETATheme {
         val focusRequester = rememberActiveFocusRequester()
@@ -174,7 +174,7 @@ fun TextElement(specialTextIndex: Int, inputText: BilingualText, optDismissText:
                 color = MaterialTheme.colors.primary,
                 fontWeight = FontWeight.Normal,
                 fontSize = 15F.scaledSize(instance).sp,
-                text = text[Shared.language]
+                text = text[Shared.language].asContentAnnotatedString().annotatedString
             )
             Spacer(modifier = Modifier.size(20.scaledSize(instance).dp))
             Button(

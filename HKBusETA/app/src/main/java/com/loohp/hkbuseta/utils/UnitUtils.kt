@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.coerceAtMost
-import com.loohp.hkbuseta.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import kotlin.math.absoluteValue
 
 

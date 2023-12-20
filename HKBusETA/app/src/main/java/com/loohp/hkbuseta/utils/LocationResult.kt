@@ -21,7 +21,7 @@
 package com.loohp.hkbuseta.utils
 
 import androidx.compose.runtime.Immutable
-import com.loohp.hkbuseta.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.Coordinates
 
 
 @Immutable

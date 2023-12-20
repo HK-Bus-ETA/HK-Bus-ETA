@@ -27,9 +27,8 @@ import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.NearbyPage
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.shared.AndroidShared
-import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.utils.LocationResult
-import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.common.utils.ifFalse
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet

@@ -26,7 +26,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.Message
 import com.loohp.hkbuseta.appcontext.appContext
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.common.shared.Shared
 
 
 @Stable

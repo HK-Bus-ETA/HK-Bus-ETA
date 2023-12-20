@@ -85,10 +85,10 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.R
-import com.loohp.hkbuseta.appcontext.AppActiveContext
-import com.loohp.hkbuseta.appcontext.AppIntent
-import com.loohp.hkbuseta.appcontext.AppScreen
-import com.loohp.hkbuseta.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
@@ -96,22 +96,23 @@ import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
-import com.loohp.hkbuseta.objects.BilingualText
-import com.loohp.hkbuseta.objects.Coordinates
-import com.loohp.hkbuseta.objects.Operator
-import com.loohp.hkbuseta.objects.RouteSearchResultEntry
-import com.loohp.hkbuseta.objects.Stop
-import com.loohp.hkbuseta.objects.getColor
-import com.loohp.hkbuseta.objects.getDisplayName
-import com.loohp.hkbuseta.objects.getDisplayRouteNumber
-import com.loohp.hkbuseta.objects.getLineColor
-import com.loohp.hkbuseta.objects.isTrain
-import com.loohp.hkbuseta.objects.remarkedName
-import com.loohp.hkbuseta.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.BilingualText
+import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.Stop
+import com.loohp.hkbuseta.common.objects.getColor
+import com.loohp.hkbuseta.common.objects.getDisplayName
+import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getLineColor
+import com.loohp.hkbuseta.common.objects.isTrain
+import com.loohp.hkbuseta.common.objects.remarkedName
+import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.services.AlightReminderService
-import com.loohp.hkbuseta.shared.Registry
-import com.loohp.hkbuseta.shared.Registry.StopData
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Registry.StopData
+import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.eitherContains
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.MTRLineSection
@@ -125,10 +126,13 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.utils.dp
-import com.loohp.hkbuseta.utils.eitherContains
 import com.loohp.hkbuseta.utils.findTextLengthDp
-import com.loohp.hkbuseta.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.shared.AndroidShared
+import com.loohp.hkbuseta.utils.asContentAnnotatedString
+import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.spToPixels
@@ -333,7 +337,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                         val brightness = if (entry.serviceType == lowestServiceType) 1F else 0.65F
                         val rawColor = (if (isClosest) coColor else Color.White).adjustBrightness(brightness)
                         val stopStr = stop.name[Shared.language]
-                        val stopRemarkedName = remember { stop.remarkedName[Shared.language] }
+                        val stopRemarkedName = remember { stop.remarkedName[Shared.language].asContentAnnotatedString().annotatedString }
                         val mtrLineSectionData = mtrLineSectionsData?.get(index)
 
                         Column (
@@ -431,7 +435,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                         .background(Color.Transparent),
                     verticalArrangement = Arrangement.Top
                 ) {
-                    Shared.MainTime()
+                    AndroidShared.MainTime()
                 }
             }
         }
@@ -774,7 +778,8 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             delay(etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
-            val result = Registry.getInstance(instance).getEta(stopId, index, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            val result = Registry.getInstance(instance).getEta(stopId, index, route.co, route.route!!, instance).get(
+                Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             etaStateFlow.value = result
             etaUpdateTimes.value[index] = System.currentTimeMillis()
             etaResults.value[index] = result

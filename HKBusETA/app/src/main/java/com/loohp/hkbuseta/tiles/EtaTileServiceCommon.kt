@@ -50,22 +50,24 @@ import com.benasher44.uuid.Uuid
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
-import com.loohp.hkbuseta.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
-import com.loohp.hkbuseta.objects.BilingualText
-import com.loohp.hkbuseta.objects.Coordinates
-import com.loohp.hkbuseta.objects.FavouriteResolvedStop
-import com.loohp.hkbuseta.objects.FavouriteRouteStop
-import com.loohp.hkbuseta.objects.Operator
-import com.loohp.hkbuseta.objects.getColor
-import com.loohp.hkbuseta.objects.getDisplayRouteNumber
-import com.loohp.hkbuseta.objects.isTrain
-import com.loohp.hkbuseta.objects.resolveStop
-import com.loohp.hkbuseta.objects.resolveStops
-import com.loohp.hkbuseta.shared.Registry
-import com.loohp.hkbuseta.shared.Registry.ETALineEntry
-import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.common.objects.BilingualText
+import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
+import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.isTrain
+import com.loohp.hkbuseta.common.objects.resolveStop
+import com.loohp.hkbuseta.common.objects.resolveStops
+import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Registry.ETALineEntry
+import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
+import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.getAndNegate
+import com.loohp.hkbuseta.common.utils.parallelMapNotNull
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.shared.Tiles
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
@@ -74,10 +76,9 @@ import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dpToPixels
 import com.loohp.hkbuseta.utils.findOptimalSp
-import com.loohp.hkbuseta.utils.getAndNegate
+import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getOr
-import com.loohp.hkbuseta.utils.parallelMapNotNull
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToDp
 import com.loohp.hkbuseta.utils.timeZone
@@ -552,7 +553,7 @@ class EtaTileServiceCommon {
                     eta.allKeys.all { it.second.co == Operator.MTR } ||
                     eta.mergedCount <= 1
             val text = (if (appendRouteNumber) "".asContentAnnotatedString() else "$lineRoute > ".asContentAnnotatedString(SpanStyle(fontSize = TextUnit.Small)))
-                .plus(line?.second?.text?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中").asContentAnnotatedString() else "ㅤ".asContentAnnotatedString())
+                .plus(line?.second?.text?.asContentAnnotatedString()?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中").asContentAnnotatedString() else "ㅤ".asContentAnnotatedString())
             val measure = text.annotatedString.text
             val color = Color.White.adjustBrightness(if (eta == null) 0.7F else 1F).toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
@@ -600,7 +601,7 @@ class EtaTileServiceCommon {
                 )
                 .setOverflow(LayoutElementBuilders.TEXT_OVERFLOW_MARQUEE)
                 .setMaxLines(maxLines)
-                .addContentAnnotatedString(text, textSize, { it.setColor(ColorProp.Builder(color).build()) }, { Shared.RESOURCE_RATIO[it]!! * imageHeight to imageHeight }, { r -> addInlineImageResource(r) })
+                .addContentAnnotatedString(text, textSize, { it.setColor(ColorProp.Builder(color).build()) }, { AndroidShared.RESOURCE_RATIO[it]!! * imageHeight to imageHeight }, { r -> addInlineImageResource(r) })
                 .build()
         }
 
@@ -626,7 +627,8 @@ class EtaTileServiceCommon {
                     favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
                         val (favStop, resolved) = pair
                         val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                        (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                        (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(
+                            Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                     }
                 )
                 it.markLastUpdated()
@@ -850,7 +852,8 @@ class EtaTileServiceCommon {
                                 favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
                                     val (favStop, resolved) = pair
                                     val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                                    (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                                    (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(
+                                        Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                                 }
                             ))
                             it.markLastUpdated()

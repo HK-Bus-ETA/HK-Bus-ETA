@@ -78,23 +78,24 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.R
-import com.loohp.hkbuseta.appcontext.AppActiveContext
-import com.loohp.hkbuseta.appcontext.AppIntent
-import com.loohp.hkbuseta.appcontext.AppScreen
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
-import com.loohp.hkbuseta.objects.Operator
-import com.loohp.hkbuseta.objects.RouteListType
-import com.loohp.hkbuseta.shared.Registry
-import com.loohp.hkbuseta.shared.Registry.PossibleNextCharResult
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.RouteListType
+import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Registry.PossibleNextCharResult
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toJsonArray
+import com.loohp.hkbuseta.common.utils.toJsonArray
+import com.loohp.hkbuseta.shared.AndroidShared
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Job
@@ -129,7 +130,7 @@ fun SearchPage(instance: AppActiveContext) {
                 .background(MaterialTheme.colors.background),
             verticalArrangement = Arrangement.Top
         ) {
-            Shared.MainTime()
+            AndroidShared.MainTime()
         }
         SearchMainElement(instance)
     }

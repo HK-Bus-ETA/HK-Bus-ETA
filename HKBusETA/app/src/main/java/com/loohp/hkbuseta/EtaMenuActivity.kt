@@ -26,12 +26,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.EtaMenuElement
 import com.loohp.hkbuseta.appcontext.appContext
-import com.loohp.hkbuseta.objects.Route
-import com.loohp.hkbuseta.objects.Stop
-import com.loohp.hkbuseta.objects.operator
+import com.loohp.hkbuseta.common.objects.Route
+import com.loohp.hkbuseta.common.objects.Stop
+import com.loohp.hkbuseta.common.objects.operator
 import com.loohp.hkbuseta.shared.AndroidShared
-import com.loohp.hkbuseta.shared.Shared
-import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.common.utils.ifFalse
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
 

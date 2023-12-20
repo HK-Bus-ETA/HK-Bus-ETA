@@ -31,10 +31,10 @@ import com.loohp.hkbuseta.app.ListStopsMainElement
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.compose.ambientMode
 import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
-import com.loohp.hkbuseta.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.shared.AndroidShared
-import com.loohp.hkbuseta.shared.Shared
-import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.ifFalse
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ExecutorService

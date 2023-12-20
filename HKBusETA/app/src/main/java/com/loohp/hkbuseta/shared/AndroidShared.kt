@@ -25,11 +25,21 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.Modifier
+import androidx.wear.compose.material.TimeText
+import androidx.wear.compose.material.TimeTextDefaults
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.MainActivity
-import com.loohp.hkbuseta.appcontext.AppActiveContext
+import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.utils.HongKongTimeSource
 import com.loohp.hkbuseta.utils.isEqualTo
 import java.util.concurrent.atomic.AtomicReference
 
@@ -45,7 +55,21 @@ data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?, va
 
 }
 
+@Immutable
 object AndroidShared {
+
+    val RESOURCE_RATIO: Map<Int, Float> = mapOf(
+        R.mipmap.lrv to 128F / 95F,
+        R.mipmap.lrv_empty to 128F / 95F
+    )
+
+    @Composable
+    fun MainTime() {
+        TimeText(
+            modifier = Modifier.fillMaxWidth(),
+            timeSource = HongKongTimeSource(TimeTextDefaults.timeFormat())
+        )
+    }
 
     @SuppressLint("WearRecents")
     fun setDefaultExceptionHandler(context: Context) {

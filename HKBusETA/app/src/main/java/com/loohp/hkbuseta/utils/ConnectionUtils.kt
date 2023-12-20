@@ -25,6 +25,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.PowerManager
+import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 
 
 private val CONNECTION_TYPE_VALUES = ConnectionType.entries.toTypedArray()

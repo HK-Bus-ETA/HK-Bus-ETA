@@ -88,31 +88,35 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.R
-import com.loohp.hkbuseta.appcontext.AppActiveContext
-import com.loohp.hkbuseta.appcontext.AppIntent
-import com.loohp.hkbuseta.appcontext.AppScreen
-import com.loohp.hkbuseta.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.KMBSubsidiary
+import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.Route
+import com.loohp.hkbuseta.common.objects.RouteListType
+import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.RouteSortMode
+import com.loohp.hkbuseta.common.objects.StopInfo
+import com.loohp.hkbuseta.common.objects.getDisplayName
+import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
+import com.loohp.hkbuseta.common.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.uniqueKey
+import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
+import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.common.utils.optBoolean
+import com.loohp.hkbuseta.common.utils.optJsonObject
+import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
-import com.loohp.hkbuseta.objects.Coordinates
-import com.loohp.hkbuseta.objects.Operator
-import com.loohp.hkbuseta.objects.Route
-import com.loohp.hkbuseta.objects.RouteListType
-import com.loohp.hkbuseta.objects.RouteSearchResultEntry
-import com.loohp.hkbuseta.objects.RouteSortMode
-import com.loohp.hkbuseta.objects.StopInfo
-import com.loohp.hkbuseta.objects.getColor
-import com.loohp.hkbuseta.objects.getDisplayName
-import com.loohp.hkbuseta.objects.resolvedDest
-import com.loohp.hkbuseta.objects.uniqueKey
-import com.loohp.hkbuseta.objects.KMBSubsidiary
-import com.loohp.hkbuseta.objects.getKMBSubsidiary
-import com.loohp.hkbuseta.shared.Registry
-import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -123,10 +127,7 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.findTextLengthDp
-import com.loohp.hkbuseta.utils.formatDecimalSeparator
-import com.loohp.hkbuseta.utils.optBoolean
-import com.loohp.hkbuseta.utils.optJsonObject
-import com.loohp.hkbuseta.utils.optString
+import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToDp
@@ -440,7 +441,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                         .background(Color.Transparent),
                     verticalArrangement = Arrangement.Top
                 ) {
-                    Shared.MainTime()
+                    AndroidShared.MainTime()
                 }
             }
         }
@@ -586,7 +587,8 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
             delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, key) {
-            val result = Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            val result = Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(
+                Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             etaStateFlow.value = result
             etaUpdateTimes.value[key] = System.currentTimeMillis()
             etaResults.value[key] = result

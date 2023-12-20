@@ -27,8 +27,7 @@ import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.FavRouteListViewElement
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.shared.AndroidShared
-import com.loohp.hkbuseta.shared.Shared
-import com.loohp.hkbuseta.utils.ifFalse
+import com.loohp.hkbuseta.common.utils.ifFalse
 
 
 @Stable

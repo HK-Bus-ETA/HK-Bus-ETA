@@ -42,11 +42,10 @@ import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
-import com.loohp.hkbuseta.appcontext.AppContext
-import com.loohp.hkbuseta.objects.Operator
-import com.loohp.hkbuseta.objects.getColor
-import com.loohp.hkbuseta.shared.Registry.MTRInterchangeData
-import com.loohp.hkbuseta.shared.Registry.StopData
+import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.shared.Registry.MTRInterchangeData
+import com.loohp.hkbuseta.common.shared.Registry.StopData
 
 
 @Composable

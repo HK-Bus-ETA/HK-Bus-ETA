@@ -77,25 +77,26 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.rememberSwipeableState
 import androidx.wear.compose.material.swipeable
-import com.loohp.hkbuseta.appcontext.AppActiveContext
-import com.loohp.hkbuseta.appcontext.AppIntent
-import com.loohp.hkbuseta.appcontext.AppIntentFlag
-import com.loohp.hkbuseta.appcontext.AppScreen
-import com.loohp.hkbuseta.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
+import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.BilingualText
+import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.Route
+import com.loohp.hkbuseta.common.objects.Stop
+import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.isTrain
+import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.PauseEffect
 import com.loohp.hkbuseta.compose.RestartEffect
-import com.loohp.hkbuseta.objects.BilingualText
-import com.loohp.hkbuseta.objects.Operator
-import com.loohp.hkbuseta.objects.Route
-import com.loohp.hkbuseta.objects.Stop
-import com.loohp.hkbuseta.objects.getDisplayRouteNumber
-import com.loohp.hkbuseta.objects.isTrain
-import com.loohp.hkbuseta.shared.Registry
-import com.loohp.hkbuseta.shared.Registry.ETAQueryResult
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
@@ -216,7 +217,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                     .background(MaterialTheme.colors.background),
                 verticalArrangement = Arrangement.Top
             ) {
-                Shared.MainTime()
+                AndroidShared.MainTime()
             }
             Column(
                 modifier = Modifier
@@ -240,7 +241,8 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
 
                 LaunchedEffect (Unit) {
                     schedule.invoke(true) {
-                        val result = Registry.getInstance(instance).getEta(stopId, index, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                        val result = Registry.getInstance(instance).getEta(stopId, index, co, route, instance).get(
+                            Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                         if (active) {
                             etaStateFlow.value = result
                         }
@@ -430,7 +432,7 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: AppActiveContext) {
-    val content = (lines?.getLine(seq)?.text?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中").asContentAnnotatedString() else "".asContentAnnotatedString())
+    val content = (lines?.getLine(seq)?.text?.asContentAnnotatedString()?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中").asContentAnnotatedString() else "".asContentAnnotatedString())
     val textSize = 16F.scaledSize(instance).sp.clamp(max = 16F.scaledSize(instance).dp)
     Box (
         modifier = Modifier

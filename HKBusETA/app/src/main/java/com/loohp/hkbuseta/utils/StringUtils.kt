@@ -29,6 +29,7 @@ import android.widget.TextView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -46,9 +47,19 @@ import androidx.compose.ui.unit.em
 import androidx.wear.protolayout.ColorBuilders
 import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
-import com.loohp.hkbuseta.appcontext.AppContext
+import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.BigContentStyle
+import com.loohp.hkbuseta.common.utils.BoldContentStyle
+import com.loohp.hkbuseta.common.utils.ColorContentStyle
+import com.loohp.hkbuseta.common.utils.FormattedText
+import com.loohp.hkbuseta.common.utils.FormattingTextContentStyle
+import com.loohp.hkbuseta.common.utils.InlineImage
+import com.loohp.hkbuseta.common.utils.InlineImageStyle
+import com.loohp.hkbuseta.common.utils.SmallContentStyle
+import com.loohp.hkbuseta.shared.AndroidShared
 import kotlin.math.absoluteValue
 
 data class ContentAnnotatedString(val annotatedString: AnnotatedString, val inlineResources: Map<String, Int>) : CharSequence {
@@ -57,7 +68,7 @@ data class ContentAnnotatedString(val annotatedString: AnnotatedString, val inli
         return inlineResources.mapValues { (id, resource) ->
             InlineTextContent(
                 placeholder = Placeholder(
-                    width = imageHeight * (Shared.RESOURCE_RATIO[resource]?: 1F),
+                    width = imageHeight * (AndroidShared.RESOURCE_RATIO[resource]?: 1F),
                     height = imageHeight,
                     placeholderVerticalAlign = PlaceholderVerticalAlign.TextBottom
                 ),
@@ -218,67 +229,6 @@ fun LayoutElementBuilders.Spannable.Builder.addContentAnnotatedString(contentAnn
     return this
 }
 
-fun CharSequence.eitherContains(other: CharSequence): Boolean {
-    return this.contains(other) || other.contains(this)
-}
-
-fun String.editDistance(other: String): Int {
-    if (this == other) {
-        return 0
-    }
-    val dp = Array(this.length + 1) {
-        IntArray(
-            other.length + 1
-        )
-    }
-    for (i in 0..this.length) {
-        for (j in 0..other.length) {
-            if (i == 0) {
-                dp[i][j] = j
-            } else if (j == 0) {
-                dp[i][j] = i
-            } else {
-                dp[i][j] = min(
-                    dp[i - 1][j - 1] + costOfSubstitution(this[i - 1], other[j - 1]),
-                    dp[i - 1][j] + 1,
-                    dp[i][j - 1] + 1
-                )
-            }
-        }
-    }
-    return dp[this.length][other.length]
-}
-
-private fun costOfSubstitution(a: Char, b: Char): Int {
-    return if (a == b) 0 else 1
-}
-
-private fun min(vararg numbers: Int): Int {
-    return numbers.minOrNull()?: Int.MAX_VALUE
-}
-
-fun Int.getCircledNumber(): String {
-    if (this < 0 || this > 20) {
-        return this.toString()
-    }
-    if (this == 0) {
-        return "⓿"
-    }
-    return if (this > 10) {
-        (9451 + (this - 11)).toChar().toString()
-    } else (10102 + (this - 1)).toChar().toString()
-}
-
-fun Int.getHollowCircledNumber(): String {
-    if (this < 0 || this > 10) {
-        return this.toString()
-    }
-    return if (this == 0) {
-        "⓪"
-    } else (9312 + (this - 1)).toChar().toString()
-}
-
-
 fun Int.scaledSize(context: AppContext): Float {
     return this * context.screenScale
 }
@@ -310,4 +260,30 @@ fun String.findTextLengthDp(context: AppContext, sp: Float): Float {
     val textView = TextView((context as AppContextAndroid).context)
     textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
     return textView.paint.measureText(this).pixelsToDp(context)
+}
+
+fun Collection<FormattingTextContentStyle>.toSpanStyles(): SpanStyle {
+    return SpanStyle(
+        fontSize = if (any { it is SmallContentStyle }) TextUnit.Small else if (any { it is BigContentStyle }) TextUnit.Big else TextUnit.Unspecified,
+        color = firstOrNull { it is ColorContentStyle }?.let { Color((it as ColorContentStyle).color) }?: Color.Unspecified,
+        fontWeight = if (any { it is BoldContentStyle }) FontWeight.Bold else null
+    )
+}
+
+val InlineImage.androidRes: Int get() = when (this) {
+    InlineImage.LRV -> R.mipmap.lrv
+    InlineImage.LRV_EMPTY -> R.mipmap.lrv_empty
+}
+
+fun FormattedText.asContentAnnotatedString(): ContentAnnotatedString {
+    val inlineContents: MutableMap<String, Int> = mutableMapOf()
+    return buildAnnotatedString {
+        content.forEach { (string, style) ->
+            style.firstOrNull { it is InlineImageStyle }?.let {
+                it as InlineImageStyle
+                inlineContents[it.image.name] = it.image.androidRes
+                appendInlineContent(it.image.name, string)
+            }?: append(string, style.toSpanStyles())
+        }
+    }.asContentAnnotatedString(inlineContents)
 }

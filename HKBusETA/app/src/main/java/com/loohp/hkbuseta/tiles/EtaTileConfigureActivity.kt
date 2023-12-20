@@ -87,26 +87,26 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.loohp.hkbuseta.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.objects.FavouriteStopMode
+import com.loohp.hkbuseta.common.objects.getDisplayName
+import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.isTrain
+import com.loohp.hkbuseta.common.objects.withEn
+import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
-import com.loohp.hkbuseta.objects.FavouriteStopMode
-import com.loohp.hkbuseta.objects.getColor
-import com.loohp.hkbuseta.objects.getDisplayName
-import com.loohp.hkbuseta.objects.getDisplayRouteNumber
-import com.loohp.hkbuseta.objects.isTrain
-import com.loohp.hkbuseta.objects.withEn
 import com.loohp.hkbuseta.shared.AndroidShared
-import com.loohp.hkbuseta.shared.Registry
-import com.loohp.hkbuseta.shared.Shared
 import com.loohp.hkbuseta.shared.Tiles
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.dpToPixels
+import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.scaledSize
 
 

@@ -37,11 +37,11 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.Task
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
-import com.loohp.hkbuseta.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
-import com.loohp.hkbuseta.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
-import com.loohp.hkbuseta.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.Coordinates
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.future.asDeferred
@@ -85,7 +85,7 @@ fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGranted: B
     return checkBackgroundLocationPermission(appContext, askIfNotGranted) { }
 }
 
-fun checkBackgroundLocationPermission(appContext: AppContext,callback: (Boolean) -> Unit): Boolean {
+fun checkBackgroundLocationPermission(appContext: AppContext, callback: (Boolean) -> Unit): Boolean {
     return checkBackgroundLocationPermission(appContext, true, callback)
 }
 

@@ -51,23 +51,24 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.loohp.hkbuseta.appcontext.AppActiveContext
-import com.loohp.hkbuseta.appcontext.AppIntent
-import com.loohp.hkbuseta.appcontext.AppScreen
-import com.loohp.hkbuseta.objects.Coordinates
-import com.loohp.hkbuseta.objects.RouteListType
-import com.loohp.hkbuseta.objects.RouteSearchResultEntry
-import com.loohp.hkbuseta.objects.StopInfo
-import com.loohp.hkbuseta.objects.getRouteKey
-import com.loohp.hkbuseta.objects.resolveStop
-import com.loohp.hkbuseta.objects.uniqueKey
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.RouteListType
+import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.StopInfo
+import com.loohp.hkbuseta.common.objects.getRouteKey
+import com.loohp.hkbuseta.common.objects.resolveStop
+import com.loohp.hkbuseta.common.objects.uniqueKey
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toJsonArray
+import com.loohp.hkbuseta.common.utils.toJsonArray
+import com.loohp.hkbuseta.shared.AndroidShared
 import kotlinx.coroutines.delay
 
 
@@ -80,7 +81,7 @@ fun FavRouteListViewElement(usingGps: Boolean, instance: AppActiveContext) {
                 .background(MaterialTheme.colors.background),
             verticalArrangement = Arrangement.Top
         ) {
-            Shared.MainTime()
+            AndroidShared.MainTime()
         }
         Column(
             modifier = Modifier

@@ -23,6 +23,9 @@ package com.loohp.hkbuseta.utils
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.alpha
+import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.getColor
+import com.loohp.hkbuseta.common.objects.getLineColor
 
 
 fun Color.adjustBrightness(percentage: Float): Color {
@@ -48,4 +51,12 @@ fun Color.withAlpha(alpha: Int): Color {
 
 fun Color.toHexString(): String {
     return "#${(this.toArgb() and 0xFFFFFF).toString(16).padStart(6, '0')}"
+}
+
+fun Operator.getColor(routeNumber: String, elseColor: Color): Color {
+    return Color(getColor(routeNumber, elseColor.toArgb().toLong()))
+}
+
+fun Operator.getLineColor(routeNumber: String, elseColor: Color): Color {
+    return Color(getLineColor(routeNumber, elseColor.toArgb().toLong()))
 }

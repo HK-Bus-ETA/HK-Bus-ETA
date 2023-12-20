@@ -52,7 +52,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.loohp.hkbuseta.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.AppContext
 
 
 fun Modifier.fullPageVerticalScrollbar(

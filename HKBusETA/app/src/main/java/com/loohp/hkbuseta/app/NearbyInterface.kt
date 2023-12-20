@@ -40,19 +40,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.loohp.hkbuseta.appcontext.AppActiveContext
-import com.loohp.hkbuseta.appcontext.AppIntent
-import com.loohp.hkbuseta.appcontext.AppScreen
-import com.loohp.hkbuseta.objects.RouteListType
-import com.loohp.hkbuseta.objects.Stop
-import com.loohp.hkbuseta.shared.Registry
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.objects.RouteListType
+import com.loohp.hkbuseta.common.objects.Stop
+import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.LocationResult
-import com.loohp.hkbuseta.utils.formatDecimalSeparator
+import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toJsonArray
+import com.loohp.hkbuseta.common.utils.toJsonArray
+import com.loohp.hkbuseta.shared.AndroidShared
 import kotlinx.collections.immutable.ImmutableSet
 import kotlin.math.roundToInt
 
@@ -66,7 +67,7 @@ fun NearbyPage(location: LocationResult?, exclude: ImmutableSet<String>, interch
                 .background(MaterialTheme.colors.background),
             verticalArrangement = Arrangement.Top
         ) {
-            Shared.MainTime()
+            AndroidShared.MainTime()
         }
         Column(
             modifier = Modifier

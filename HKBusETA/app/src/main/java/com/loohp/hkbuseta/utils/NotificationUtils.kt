@@ -30,7 +30,7 @@ import androidx.core.app.ActivityCompat
 import com.benasher44.uuid.Uuid
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
-import com.loohp.hkbuseta.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
 
 fun checkNotificationPermission(appContext: AppContext, askIfNotGranted: Boolean): Boolean {

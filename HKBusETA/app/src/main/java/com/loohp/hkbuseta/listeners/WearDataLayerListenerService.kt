@@ -28,7 +28,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.appcontext.appContext
-import com.loohp.hkbuseta.shared.Registry
+import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.utils.RemoteActivityUtils.Companion.dataToPhone
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json

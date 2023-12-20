@@ -59,18 +59,19 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.R
-import com.loohp.hkbuseta.appcontext.AppActiveContext
-import com.loohp.hkbuseta.appcontext.AppIntent
-import com.loohp.hkbuseta.appcontext.AppScreen
-import com.loohp.hkbuseta.objects.GMBRegion
-import com.loohp.hkbuseta.objects.Operator
-import com.loohp.hkbuseta.objects.Route
-import com.loohp.hkbuseta.shared.Registry
-import com.loohp.hkbuseta.shared.Shared
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.objects.GMBRegion
+import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.Route
+import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.toJsonArray
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.toJsonArray
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -228,7 +229,7 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                         }
                         instance.finishAffinity()
                     } else {
-                        Shared.restoreCurrentScreenOrRun(instance) {
+                        AndroidShared.restoreCurrentScreenOrRun(instance) {
                             instance.startActivity(AppIntent(instance, AppScreen.TITLE))
                             instance.finishAffinity()
                         }
@@ -260,7 +261,7 @@ fun Loading(instance: AppActiveContext) {
                 .background(MaterialTheme.colors.background),
             verticalArrangement = Arrangement.Top
         ) {
-            Shared.MainTime()
+            AndroidShared.MainTime()
         }
         LoadingUpdatingElements(instance)
     }
