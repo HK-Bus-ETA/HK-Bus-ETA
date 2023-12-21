@@ -19,8 +19,9 @@
  */
 
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.kotlinAndroid)
+    alias(libs.plugins.googleServices)
 }
 
 android {
@@ -63,7 +64,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.3"
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
     packaging {
         resources {
@@ -72,62 +73,50 @@ android {
     }
 }
 
-kotlin {
-    sourceSets {
-        dependencies {
-            implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.6")
-        }
-    }
-}
-
 dependencies {
-    implementation("com.benasher44:uuid:0.8.2")
-    implementation("io.ktor:ktor-client-core:3.0.0-wasm2")
-    implementation("io.ktor:ktor-client-cio:3.0.0-beta-1")
-    implementation("io.ktor:ktor-client-encoding:3.0.0-beta-1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
-    implementation("co.touchlab:stately-concurrency:2.0.0")
-    implementation("co.touchlab:stately-concurrent-collections:2.0.0")
-    implementation("androidx.core:core-splashscreen:1.1.0-alpha02")
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.wear:wear-ongoing:1.1.0-alpha01")
-    implementation("androidx.percentlayout:percentlayout:1.0.0")
-    implementation("androidx.legacy:legacy-support-v4:1.0.0")
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation(platform("androidx.compose:compose-bom:2023.10.01"))
-    implementation("androidx.compose.ui:ui:1.5.4")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.5.4")
-    implementation("androidx.compose.material3:material3:1.2.0-beta01")
-    implementation("androidx.compose.material3:material3-window-size-class:1.2.0-beta01")
-    implementation("androidx.wear.compose:compose-material:1.2.1")
-    implementation("androidx.wear.compose:compose-foundation:1.2.1")
-    implementation("androidx.wear:wear:1.3.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
-    implementation("androidx.activity:activity-compose:1.8.2")
-    implementation("androidx.wear.tiles:tiles:1.3.0-alpha04")
-    implementation("androidx.concurrent:concurrent-futures-ktx:1.1.0")
-    implementation("com.google.android.gms:play-services-wearable:18.1.0")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
-    implementation("androidx.wear:wear-input:1.1.0")
-    implementation("androidx.wear:wear-input-testing:1.1.0")
-    implementation("androidx.wear:wear-ongoing:1.0.0")
-    implementation("androidx.wear:wear-phone-interactions:1.0.1")
-    implementation("androidx.wear:wear-remote-interactions:1.0.0")
-    implementation("androidx.wear.protolayout:protolayout-expression:1.1.0-alpha04")
-    implementation("androidx.wear.protolayout:protolayout:1.1.0-alpha04")
-    implementation("androidx.wear.protolayout:protolayout-material:1.1.0-alpha04")
-    implementation("io.coil-kt.coil3:coil-compose:3.0.0-SNAPSHOT")
-    implementation("io.coil-kt.coil3:coil-network:3.0.0-SNAPSHOT")
-    implementation("me.saket.telephoto:zoomable:0.5.0")
-    implementation("com.google.android.horologist:horologist-compose-layout:0.5.11")
-    implementation(platform("com.google.firebase:firebase-bom:32.6.0"))
+    implementation(projects.shared)
+    implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.uuid)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.encoding)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.datetime)
+    implementation(libs.stately.concurrency)
+    implementation(libs.stately.concurrent.collections)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.wear.ongoing)
+    implementation(libs.androidx.percentlayout)
+    implementation(libs.androidx.legacy.support.v4)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.material3.window.size.clazz)
+    implementation(libs.androidx.compose.material)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.wear)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.tiles)
+    implementation(libs.androidx.concurrent.futures.ktx)
+    implementation(libs.play.services.wearable)
+    implementation(libs.play.services.location)
+    implementation(libs.androidx.wear.input)
+    implementation(libs.androidx.wear.input.testing)
+    implementation(libs.androidx.wear.ongoing.v100)
+    implementation(libs.androidx.wear.phone.interactions)
+    implementation(libs.androidx.wear.remote.interactions)
+    implementation(libs.androidx.protolayout.expression)
+    implementation(libs.androidx.protolayout)
+    implementation(libs.androidx.protolayout.material)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network)
+    implementation(libs.zoomable)
+    implementation(libs.horologist.compose.layout)
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-analytics")
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.10.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
-
-apply(plugin = "com.google.gms.google-services")

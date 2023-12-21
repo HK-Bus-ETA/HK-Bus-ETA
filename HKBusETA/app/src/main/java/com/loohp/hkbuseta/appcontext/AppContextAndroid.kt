@@ -28,10 +28,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Stable
-import androidx.compose.ui.hapticfeedback.HapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.core.util.AtomicFile
-import coil3.PlatformContext
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.DismissibleTextDisplayActivity
@@ -54,6 +51,8 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
 import com.loohp.hkbuseta.common.appcontext.AppIntentResult
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.appcontext.HapticFeedback
+import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
@@ -81,9 +80,6 @@ open class AppContextAndroid internal constructor(
 
     override val versionCode: Long
         get() = context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode
-
-    override val platformContext: PlatformContext
-        get() = context
 
     override val screenWidth: Int
         get() = abs(context.resources.displayMetrics.widthPixels)
@@ -186,6 +182,14 @@ class AppActiveContextAndroid internal constructor(
 
     override val screenHeight: Int
         get() = abs(context.windowManager.currentWindowMetrics.bounds.height())
+
+    override fun writeTextFileList(fileName: String, charset: Charset, writeText: () -> List<String>) {
+        super.writeTextFileList(fileName, charset, writeText)
+    }
+
+    override fun readTextFileLines(fileName: String, charset: Charset): List<String> {
+        return super.readTextFileLines(fileName, charset)
+    }
 
     override fun runOnUiThread(runnable: () -> Unit) {
         context.runOnUiThread(runnable)
@@ -376,4 +380,28 @@ fun AppBundle.toAndroidBundle(): Bundle? {
 val ToastDuration.androidValue: Int get() = when (this) {
     ToastDuration.SHORT -> Toast.LENGTH_SHORT
     ToastDuration.LONG -> Toast.LENGTH_LONG
+}
+
+val androidx.compose.ui.hapticfeedback.HapticFeedbackType.common: HapticFeedbackType get() {
+    return when (this) {
+        androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress -> HapticFeedbackType.LongPress
+        androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove -> HapticFeedbackType.TextHandleMove
+        else -> HapticFeedbackType.LongPress
+    }
+}
+
+val HapticFeedbackType.android: androidx.compose.ui.hapticfeedback.HapticFeedbackType get() {
+    return when (this) {
+        HapticFeedbackType.LongPress -> androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
+        HapticFeedbackType.TextHandleMove -> androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove
+        else -> androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
+    }
+}
+
+val androidx.compose.ui.hapticfeedback.HapticFeedback.common: HapticFeedback get() {
+    return object : HapticFeedback {
+        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+            this@common.performHapticFeedback(hapticFeedbackType.android)
+        }
+    }
 }

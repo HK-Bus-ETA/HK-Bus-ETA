@@ -18,6 +18,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 pluginManagement {
     repositories {
         google()
@@ -39,3 +41,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "HKBusETA"
 include(":app")
+include(":shared")

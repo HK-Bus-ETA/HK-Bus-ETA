@@ -70,6 +70,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.scaledSize
 import io.ktor.utils.io.ByteReadChannel
@@ -85,7 +86,7 @@ import kotlin.math.absoluteValue
 
 @Suppress("NAME_SHADOWING")
 @Composable
-fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, index: Int?, stop: Any?, route: Any?, listStopRoute: ByteArray?, listStopScrollToStop: String?, listStopShowEta: Boolean?, listStopIsAlightReminder: Boolean?, queryKey: String?, queryRouteNumber: String?, queryBound: String?, queryCo: Operator?, queryDest: String?, queryGMBRegion: GMBRegion?, queryStop: String?, queryStopIndex: Int, queryStopDirectLaunch: Boolean) {
+fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, index: Int?, stop: ImmutableState<Any?>, route: ImmutableState<Any?>, listStopRoute: ImmutableState<ByteArray?>, listStopScrollToStop: String?, listStopShowEta: Boolean?, listStopIsAlightReminder: Boolean?, queryKey: String?, queryRouteNumber: String?, queryBound: String?, queryCo: Operator?, queryDest: String?, queryGMBRegion: GMBRegion?, queryStop: String?, queryStopIndex: Int, queryStopDirectLaunch: Boolean) {
     val state by remember { Registry.getInstance(instance).also {
         if (System.currentTimeMillis() - it.lastUpdateCheck > 30000) it.checkUpdate(instance, false)
     }.state }.collectAsStateWithLifecycle()
@@ -94,6 +95,9 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
         when (state) {
             Registry.State.READY -> {
                 CoroutineScope(Dispatchers.IO).launch {
+                    val stop = stop.value
+                    val route = route.value
+                    val listStopRoute = listStopRoute.value
                     var queryRouteNumber = queryRouteNumber
                     var queryCo = queryCo
                     var queryBound = queryBound

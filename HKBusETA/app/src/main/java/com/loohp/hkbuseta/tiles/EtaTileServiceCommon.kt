@@ -65,10 +65,10 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.ETALineEntry
 import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.getAndNegate
 import com.loohp.hkbuseta.common.utils.parallelMapNotNull
 import com.loohp.hkbuseta.shared.AndroidShared
-import com.loohp.hkbuseta.shared.Tiles
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -834,6 +834,7 @@ class EtaTileServiceCommon {
         }
 
         fun handleTileEnterEvent(tileId: Int, context: AppContext) {
+            Tiles.providePlatformUpdate { requestTileUpdate(it) }
             tileState(tileId).let {
                 if (!it.getLastUpdateSuccessful()) {
                     it.markShouldUpdate()

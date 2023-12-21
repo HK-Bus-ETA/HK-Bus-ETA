@@ -49,6 +49,7 @@ import coil3.annotation.ExperimentalCoilApi
 import coil3.compose.SubcomposeAsyncImage
 import coil3.fetch.NetworkFetcher
 import coil3.request.ImageRequest
+import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.pixelsToDp
@@ -101,7 +102,7 @@ fun ImageElement(url: String, instance: AppActiveContext) {
                         strokeCap = StrokeCap.Round,
                     )
                 },
-                model = ImageRequest.Builder(instance.platformContext).fetcherFactory(NetworkFetcher.Factory()).size(1920).data(url).build(),
+                model = ImageRequest.Builder((instance as AppActiveContextAndroid).context).fetcherFactory(NetworkFetcher.Factory()).size(1920).data(url).build(),
                 contentDescription = "",
             )
         }

@@ -30,7 +30,10 @@ import com.loohp.hkbuseta.app.MainLoading
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.objects.gmbRegion
 import com.loohp.hkbuseta.common.objects.operator
+import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.shared.AndroidShared
+import com.loohp.hkbuseta.tiles.EtaTileServiceCommon
+import com.loohp.hkbuseta.utils.asImmutableState
 
 
 @Stable
@@ -40,6 +43,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         AndroidShared.setDefaultExceptionHandler(this)
+        Tiles.providePlatformUpdate { EtaTileServiceCommon.requestTileUpdate(it) }
 
         setShowWhenLocked(true)
         setTurnScreenOn(true)
@@ -67,7 +71,7 @@ class MainActivity : ComponentActivity() {
         val queryStopDirectLaunch = intent.extras?.getBoolean("sd", false)?: false
 
         setContent {
-            MainLoading(appContext, stopId, co, index, stop, route, listStopRoute, listStopScrollToStop, listStopShowEta, listStopIsAlightReminder, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch)
+            MainLoading(appContext, stopId, co, index, stop.asImmutableState(), route.asImmutableState(), listStopRoute.asImmutableState(), listStopScrollToStop, listStopShowEta, listStopIsAlightReminder, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch)
         }
     }
 }

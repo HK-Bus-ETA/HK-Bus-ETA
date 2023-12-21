@@ -85,6 +85,7 @@ import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.R
+import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
@@ -98,6 +99,8 @@ import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.shared.TileUseState
+import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
@@ -105,8 +108,6 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.services.AlightReminderService
-import com.loohp.hkbuseta.shared.TileUseState
-import com.loohp.hkbuseta.shared.Tiles
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -173,9 +174,9 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
                 MoreInfoHeader(instance)
             }
             item {
-                if (stop.kmbBbiId != null) {
+                stop.kmbBbiId?.let {
                     Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
-                    OpenOpenKmbBbiMapButton(stop.kmbBbiId, instance)
+                    OpenOpenKmbBbiMapButton(it, instance)
                 }
             }
             item {
@@ -407,8 +408,8 @@ fun OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double, instance
             .width(220.scaledSize(instance).dp)
             .heightIn(min = 50.scaledSize(instance).sp.dp),
         shape = RoundedCornerShape(25.scaledSize(instance).dp),
-        onClick = instance.handleOpenMaps(lat, lng, name, false, haptic),
-        onLongClick = instance.handleOpenMaps(lat, lng, name, true, haptic),
+        onClick = instance.handleOpenMaps(lat, lng, name, false, haptic.common),
+        onLongClick = instance.handleOpenMaps(lat, lng, name, true, haptic.common),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary
@@ -469,8 +470,8 @@ fun OpenOpenKmbBbiMapButton(kmbBbiId: String, instance: AppActiveContext) {
             .width(220.scaledSize(instance).dp)
             .heightIn(min = 50.scaledSize(instance).sp.dp),
         shape = RoundedCornerShape(25.scaledSize(instance).dp),
-        onClick = instance.handleWebImages("https://app.kmb.hk/app1933/BBI/map/$kmbBbiId.jpg", false, haptic),
-        onLongClick = instance.handleWebImages("https://app.kmb.hk/app1933/BBI/map/$kmbBbiId.jpg", true, haptic),
+        onClick = instance.handleWebImages("https://app.kmb.hk/app1933/BBI/map/$kmbBbiId.jpg", false, haptic.common),
+        onLongClick = instance.handleWebImages("https://app.kmb.hk/app1933/BBI/map/$kmbBbiId.jpg", true, haptic.common),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
             contentColor = MaterialTheme.colors.primary

@@ -77,6 +77,7 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.rememberSwipeableState
 import androidx.wear.compose.material.swipeable
+import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
@@ -389,8 +390,8 @@ fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double
             .fillMaxWidth()
             .padding(37.dp, 0.dp)
             .combinedClickable(
-                onClick = instance.handleOpenMaps(lat, lng, name, false, haptic),
-                onLongClick = instance.handleOpenMaps(lat, lng, name, true, haptic)
+                onClick = instance.handleOpenMaps(lat, lng, name, false, haptic.common),
+                onLongClick = instance.handleOpenMaps(lat, lng, name, true, haptic.common)
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
@@ -414,8 +415,8 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
             .fillMaxWidth()
             .padding(20.dp, 0.dp)
             .combinedClickable(
-                onClick = instance.handleOpenMaps(lat, lng, name, false, haptic),
-                onLongClick = instance.handleOpenMaps(lat, lng, name, true, haptic)
+                onClick = instance.handleOpenMaps(lat, lng, name, false, haptic.common),
+                onLongClick = instance.handleOpenMaps(lat, lng, name, true, haptic.common)
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),

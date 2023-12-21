@@ -57,6 +57,7 @@ import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.R
+import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppIntent
@@ -268,8 +269,8 @@ fun CreditVersionText(instance: AppActiveContext) {
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = instance.handleWebpages("https://play.google.com/store/apps/details?id=com.loohp.hkbuseta", false, haptic),
-                onLongClick = instance.handleWebpages("https://loohpjames.com", true, haptic)
+                onClick = instance.handleWebpages("https://play.google.com/store/apps/details?id=com.loohp.hkbuseta", false, haptic.common),
+                onLongClick = instance.handleWebpages("https://loohpjames.com", true, haptic.common)
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
