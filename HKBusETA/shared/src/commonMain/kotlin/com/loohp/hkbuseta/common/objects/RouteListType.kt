@@ -27,6 +27,7 @@ import co.touchlab.stately.concurrency.AtomicInt
 import co.touchlab.stately.concurrency.synchronize
 import com.loohp.hkbuseta.common.utils.Immutable
 
+
 @Immutable
 class RouteListType private constructor(
     val name: String,

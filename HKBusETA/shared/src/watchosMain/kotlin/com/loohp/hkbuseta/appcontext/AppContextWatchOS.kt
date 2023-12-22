@@ -26,15 +26,18 @@ import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentResult
+import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.getTextResponse
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import io.ktor.utils.io.charsets.Charset
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UnsafeNumber
 import kotlinx.cinterop.useContents
+import kotlinx.coroutines.flow.MutableStateFlow
 import platform.Foundation.NSBundle
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
@@ -160,6 +163,56 @@ open class AppContextWatchOS internal constructor() : AppContext {
 
 class AppActiveContextWatchOS internal constructor() : AppContextWatchOS(), AppActiveContext {
 
+    @NativeCoroutinesState
+    val historyStack: MutableStateFlow<List<HistoryStackEntry>> = MutableStateFlow(listOf(HistoryStackEntry.DEFAULT_ENTRY))
+
+    fun appendStack(screen: AppScreen) {
+        appendStack(screen, emptyMap())
+    }
+
+    fun appendStack(screen: AppScreen, mutableData: MutableMap<String, Any?>) {
+        appendStack(screen, data = mutableData)
+    }
+
+    fun appendStack(screen: AppScreen, data: Map<String, Any?>) {
+        historyStack.value = historyStack.value.toMutableList().apply { add(HistoryStackEntry(screen, data)) }
+    }
+
+    fun peekStack(): HistoryStackEntry? {
+        return historyStack.value.lastOrNull()
+    }
+
+    fun popStack(): HistoryStackEntry? {
+        val stack = historyStack.value.toMutableList()
+        val last = stack.removeLastOrNull()
+        if (stack.isEmpty()) {
+            stack.add(HistoryStackEntry.DEFAULT_ENTRY)
+        }
+        historyStack.value = stack
+        return last
+    }
+
+    fun popStackIfMatches(predicate: (HistoryStackEntry) -> Boolean): HistoryStackEntry? {
+        val stack = historyStack.value.toMutableList()
+        val last = stack.lastOrNull()?.let {
+            if (predicate.invoke(it)) {
+                stack.removeLastOrNull()
+                it
+            } else {
+                null
+            }
+        }
+        if (stack.isEmpty()) {
+            stack.add(HistoryStackEntry.DEFAULT_ENTRY)
+        }
+        historyStack.value = stack
+        return last
+    }
+
+    fun clearStack() {
+        historyStack.value = listOf(HistoryStackEntry.DEFAULT_ENTRY)
+    }
+
     override fun runOnUiThread(runnable: () -> Unit) {
         dispatch_async(dispatch_get_main_queue(), runnable)
     }
@@ -192,4 +245,31 @@ class AppActiveContextWatchOS internal constructor() : AppContextWatchOS(), AppA
         throw RuntimeException("Unsupported Platform Operation")
     }
 
+}
+
+fun createMutableAppDataContainer(): MutableMap<String, Any?> {
+    return HashMap()
+}
+
+data class HistoryStackEntry(val screen: AppScreen, val data: Map<String, Any?>) {
+
+    companion object {
+
+        val DEFAULT_ENTRY = HistoryStackEntry(AppScreen.MAIN, emptyMap())
+
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is HistoryStackEntry) return false
+
+        if (screen != other.screen) return false
+        return data == other.data
+    }
+
+    override fun hashCode(): Int {
+        var result = screen.hashCode()
+        result = 31 * result + data.hashCode()
+        return result
+    }
 }

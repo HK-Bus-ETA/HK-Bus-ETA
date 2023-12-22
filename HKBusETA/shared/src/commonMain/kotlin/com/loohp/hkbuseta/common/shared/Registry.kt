@@ -81,6 +81,7 @@ import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.common.utils.postJSONResponse
 import com.loohp.hkbuseta.common.utils.strEq
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -183,8 +184,10 @@ class Registry {
         ensureData(context, suppressUpdateCheck)
     }
 
-    val state: StateFlow<State> get() = stateFlow
-    val updatePercentageState: StateFlow<Float> get() = updatePercentageStateFlow
+    @NativeCoroutinesState
+    val state: StateFlow<State> = stateFlow
+    @NativeCoroutinesState
+    val updatePercentageState: StateFlow<Float> = updatePercentageStateFlow
     val lastUpdateCheck: Long get() = lastUpdateCheckHolder.get()
 
     private fun savePreferences(context: AppContext) {

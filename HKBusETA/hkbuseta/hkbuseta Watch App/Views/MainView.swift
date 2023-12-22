@@ -1,0 +1,63 @@
+//
+//  MainView.swift
+//  hkbuseta Watch App
+//
+//  Created by LOOHP on 21/12/2023.
+//
+
+import SwiftUI
+import shared
+import KMPNativeCoroutinesCore
+import KMPNativeCoroutinesRxSwift
+import KMPNativeCoroutinesAsync
+import KMPNativeCoroutinesCombine
+import RxSwift
+
+struct MainView: View {
+    
+    @StateObject private var registryState = FlowStateObservable(defaultValue: registry().state, nativeFlow: registry().stateFlow)
+    
+    @StateObject private var updateProgressState = FlowStateObservable(defaultValue: KotlinFloat(value: registry().updatePercentageState), nativeFlow: registry().updatePercentageStateFlow)
+    
+    init(data: [String: Any]?) {
+        
+    }
+    
+    var body: some View {
+        VStack {
+            if registryState.state == Registry.State.updating {
+                Text("更新數據中...")
+                Text("更新需時 請稍等").font(.system(size: 14)).padding(.bottom)
+                Text("Updating...")
+                Text("Might take a moment").font(.system(size: 14)).padding(.bottom)
+                ProgressView(value: updateProgressState.state.floatValue)
+                    .padding(.top)
+                    .frame(width: 150.0)
+            } else {
+                Image("icon_full")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 60.0, height: 60.0)
+                Text("載入中...").padding(.top)
+                Text("Loading...").padding(.bottom)
+            }
+        }.onChange(of: registryState.state) {
+            if registryState.state == Registry.State.ready {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    appContext().appendStack(screen: AppScreen.title)
+                }
+            }
+        }.onAppear {
+            appContext().clearStack()
+            if registryState.state == Registry.State.ready {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    appContext().appendStack(screen: AppScreen.title)
+                }
+            }
+        }
+    }
+}
+
+#Preview {
+    MainView(data: nil)
+}

@@ -28,14 +28,14 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.loohp.hkbuseta.app.ListRouteMainElement
-import com.loohp.hkbuseta.app.RecentSortMode
-import com.loohp.hkbuseta.app.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.compose.ambientMode
 import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
+import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.StopInfo
 import com.loohp.hkbuseta.common.objects.toCoordinates
 import com.loohp.hkbuseta.shared.AndroidShared
@@ -67,11 +67,11 @@ class ListRoutesActivity : ComponentActivity() {
         AndroidShared.setDefaultExceptionHandler(this)
 
         val result = Json.decodeFromString<JsonArray>(intent.extras!!.getString("result")!!).mapToMutableList { StopIndexedRouteSearchResultEntry.deserialize(it.jsonObject) }.also { list ->
-            list.removeIf {
+            list.removeAll {
                 if (it.route == null) {
                     val route = Registry.getInstance(appContext).findRouteByKey(it.routeKey, null)
                     if (route == null) {
-                        return@removeIf true
+                        return@removeAll true
                     } else {
                         it.route = route
                     }
@@ -79,12 +79,12 @@ class ListRoutesActivity : ComponentActivity() {
                 if (it.stopInfo != null && it.stopInfo!!.data == null) {
                     val stop = Registry.getInstance(appContext).getStopById(it.stopInfo!!.stopId)
                     if (stop == null) {
-                        return@removeIf true
+                        return@removeAll true
                     } else {
                         it.stopInfo!!.data = stop
                     }
                 }
-                return@removeIf false
+                return@removeAll false
             }
         }.onEach {
             val route: Route? = it.route

@@ -58,7 +58,6 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -95,11 +94,10 @@ import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
-import com.loohp.hkbuseta.common.objects.Route
+import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
-import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteSortMode
-import com.loohp.hkbuseta.common.objects.StopInfo
+import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.resolvedDest
@@ -108,9 +106,6 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
-import com.loohp.hkbuseta.common.utils.optBoolean
-import com.loohp.hkbuseta.common.utils.optJsonObject
-import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
@@ -139,43 +134,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.serialization.json.JsonObject
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 import kotlin.math.roundToInt
 
-enum class RecentSortMode(val enabled: Boolean, val defaultSortMode: RouteSortMode = RouteSortMode.NORMAL, val forcedMode: Boolean = false) {
-
-    DISABLED(false), CHOICE(true), FORCED(true, RouteSortMode.RECENT, true);
-
-}
-
-@Stable
-class StopIndexedRouteSearchResultEntry(
-    routeKey: String,
-    route: Route?,
-    co: Operator,
-    stopInfo: StopInfo?,
-    var stopInfoIndex: Int,
-    origin: Coordinates?,
-    isInterchangeSearch: Boolean
-) : RouteSearchResultEntry(routeKey, route, co, stopInfo, origin, isInterchangeSearch) {
-
-    companion object {
-
-        fun deserialize(json: JsonObject): StopIndexedRouteSearchResultEntry {
-            val routeKey = json.optString("routeKey");
-            val route = if (json.contains("route")) Route.deserialize(json.optJsonObject("route")!!) else null
-            val co = Operator.valueOf(json.optString("co"));
-            val stop = if (json.contains("stop")) StopInfo.deserialize(json.optJsonObject("stop")!!) else null
-            val origin = if (json.contains("origin")) Coordinates.deserialize(json.optJsonObject("origin")!!) else null
-            val isInterchangeSearch = json.optBoolean("isInterchangeSearch")
-            return StopIndexedRouteSearchResultEntry(routeKey, route, co, stop, 0, origin, isInterchangeSearch)
-        }
-
-    }
-
-}
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable

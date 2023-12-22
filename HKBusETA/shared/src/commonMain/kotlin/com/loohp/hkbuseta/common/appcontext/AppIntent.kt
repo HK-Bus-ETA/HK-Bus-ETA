@@ -152,7 +152,25 @@ class AppIntent(val context: AppContext, val screen: AppScreen) {
     fun removeExtra(name: String) {
         extras.remove(name)
     }
-    
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AppIntent) return false
+
+        if (context != other.context) return false
+        if (screen != other.screen) return false
+        if (extras != other.extras) return false
+        return intentFlags == other.intentFlags
+    }
+
+    override fun hashCode(): Int {
+        var result = context.hashCode()
+        result = 31 * result + screen.hashCode()
+        result = 31 * result + extras.hashCode()
+        result = 31 * result + intentFlags.hashCode()
+        return result
+    }
+
 }
 
 data class AppIntentResult(val resultCode: Int)
@@ -283,5 +301,16 @@ class AppBundle {
     fun remove(name: String) {
         data.remove(name)
     }
-    
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AppBundle) return false
+
+        return data == other.data
+    }
+
+    override fun hashCode(): Int {
+        return data.hashCode()
+    }
+
 }

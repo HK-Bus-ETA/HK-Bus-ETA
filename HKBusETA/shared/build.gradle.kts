@@ -22,6 +22,8 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
+    id("com.google.devtools.ksp") version "1.9.21-1.0.16"
+    id("com.rickclephas.kmp.nativecoroutines") version "1.0.0-ALPHA-23"
 }
 
 kotlin {
@@ -66,6 +68,9 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        all {
+            languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
         }
     }
 }

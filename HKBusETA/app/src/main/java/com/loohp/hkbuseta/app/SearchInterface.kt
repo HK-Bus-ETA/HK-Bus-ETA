@@ -86,6 +86,7 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.PossibleNextCharResult
@@ -105,17 +106,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 @Immutable
-data class RouteKeyboardState(val text: String, val nextCharResult: PossibleNextCharResult) {
-
-    fun withText(text: String): RouteKeyboardState {
-        return RouteKeyboardState(text, nextCharResult)
-    }
-
-    fun withNextCharResult(nextCharResult: PossibleNextCharResult): RouteKeyboardState {
-        return RouteKeyboardState(text, nextCharResult)
-    }
-
-}
+data class RouteKeyboardState(val text: String, val nextCharResult: PossibleNextCharResult)
 
 fun defaultText(): String {
     return if (Shared.language == "en") "Input Route" else "輸入路線"

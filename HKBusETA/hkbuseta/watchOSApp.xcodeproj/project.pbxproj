@@ -12,8 +12,18 @@
 		81D16ABE2B33C21F003D9817 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16ABD2B33C21F003D9817 /* Assets.xcassets */; };
 		81D16AC12B33C21F003D9817 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16AC02B33C21F003D9817 /* Preview Assets.xcassets */; };
 		81D16ACE2B33C238003D9817 /* hkbusetaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16ACB2B33C238003D9817 /* hkbusetaApp.swift */; };
-		81D16AD02B33C238003D9817 /* TitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16ACD2B33C238003D9817 /* TitleView.swift */; };
 		81D16AF82B33E1D8003D9817 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16AF72B33E1D8003D9817 /* MainView.swift */; };
+		81D16AFB2B348871003D9817 /* Collector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16AFA2B348871003D9817 /* Collector.swift */; };
+		81D16AFE2B34982B003D9817 /* KMPNativeCoroutinesAsync in Frameworks */ = {isa = PBXBuildFile; productRef = 81D16AFD2B34982B003D9817 /* KMPNativeCoroutinesAsync */; };
+		81D16B002B34982B003D9817 /* KMPNativeCoroutinesCombine in Frameworks */ = {isa = PBXBuildFile; productRef = 81D16AFF2B34982B003D9817 /* KMPNativeCoroutinesCombine */; };
+		81D16B022B34982B003D9817 /* KMPNativeCoroutinesCore in Frameworks */ = {isa = PBXBuildFile; productRef = 81D16B012B34982B003D9817 /* KMPNativeCoroutinesCore */; };
+		81D16B042B34982B003D9817 /* KMPNativeCoroutinesRxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 81D16B032B34982B003D9817 /* KMPNativeCoroutinesRxSwift */; };
+		81D16B062B34BC96003D9817 /* FlowStateObservable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B052B34BC96003D9817 /* FlowStateObservable.swift */; };
+		81D16B082B34C12C003D9817 /* Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B072B34C12C003D9817 /* Shared.swift */; };
+		81D16B0E2B34CFEC003D9817 /* TitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B0D2B34CFA4003D9817 /* TitleView.swift */; };
+		81D16B102B34D07A003D9817 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B0F2B34D07A003D9817 /* SearchView.swift */; };
+		81D16B122B34D44C003D9817 /* ColorUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B112B34D44C003D9817 /* ColorUtils.swift */; };
+		81D16B142B35109F003D9817 /* ListRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B132B35109F003D9817 /* ListRouteView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,8 +57,14 @@
 		81D16ABD2B33C21F003D9817 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		81D16AC02B33C21F003D9817 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		81D16ACB2B33C238003D9817 /* hkbusetaApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = hkbusetaApp.swift; path = "../../../../Desktop/Xcode Projects/hkbuseta_bak/hkbuseta Watch App/hkbusetaApp.swift"; sourceTree = "<group>"; };
-		81D16ACD2B33C238003D9817 /* TitleView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = TitleView.swift; path = "../../../../Desktop/Xcode Projects/hkbuseta_bak/hkbuseta Watch App/TitleView.swift"; sourceTree = "<group>"; };
 		81D16AF72B33E1D8003D9817 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		81D16AFA2B348871003D9817 /* Collector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Collector.swift; path = "hkbuseta Watch App/Collector.swift"; sourceTree = SOURCE_ROOT; };
+		81D16B052B34BC96003D9817 /* FlowStateObservable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowStateObservable.swift; sourceTree = "<group>"; };
+		81D16B072B34C12C003D9817 /* Shared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared.swift; sourceTree = "<group>"; };
+		81D16B0D2B34CFA4003D9817 /* TitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleView.swift; sourceTree = "<group>"; };
+		81D16B0F2B34D07A003D9817 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		81D16B112B34D44C003D9817 /* ColorUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorUtils.swift; sourceTree = "<group>"; };
+		81D16B132B35109F003D9817 /* ListRouteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListRouteView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +72,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				81D16AFE2B34982B003D9817 /* KMPNativeCoroutinesAsync in Frameworks */,
+				81D16B002B34982B003D9817 /* KMPNativeCoroutinesCombine in Frameworks */,
+				81D16B022B34982B003D9817 /* KMPNativeCoroutinesCore in Frameworks */,
+				81D16B042B34982B003D9817 /* KMPNativeCoroutinesRxSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -82,12 +102,12 @@
 		81D16AB82B33C21E003D9817 /* hkbuseta Watch App */ = {
 			isa = PBXGroup;
 			children = (
+				81D16B0C2B34CF98003D9817 /* Views */,
+				81D16B0B2B34CF87003D9817 /* Shared */,
+				81D16AF92B348866003D9817 /* Utils */,
 				81D16ACB2B33C238003D9817 /* hkbusetaApp.swift */,
-				81D16ACD2B33C238003D9817 /* TitleView.swift */,
-				81D16ABB2B33C21E003D9817 /* ContentView.swift */,
 				81D16ABD2B33C21F003D9817 /* Assets.xcassets */,
 				81D16ABF2B33C21F003D9817 /* Preview Content */,
-				81D16AF72B33E1D8003D9817 /* MainView.swift */,
 			);
 			path = "hkbuseta Watch App";
 			sourceTree = "<group>";
@@ -98,6 +118,36 @@
 				81D16AC02B33C21F003D9817 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		81D16AF92B348866003D9817 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				81D16AFA2B348871003D9817 /* Collector.swift */,
+				81D16B052B34BC96003D9817 /* FlowStateObservable.swift */,
+				81D16B112B34D44C003D9817 /* ColorUtils.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		81D16B0B2B34CF87003D9817 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				81D16B072B34C12C003D9817 /* Shared.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		81D16B0C2B34CF98003D9817 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				81D16B0D2B34CFA4003D9817 /* TitleView.swift */,
+				81D16ABB2B33C21E003D9817 /* ContentView.swift */,
+				81D16AF72B33E1D8003D9817 /* MainView.swift */,
+				81D16B0F2B34D07A003D9817 /* SearchView.swift */,
+				81D16B132B35109F003D9817 /* ListRouteView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -134,6 +184,12 @@
 			dependencies = (
 			);
 			name = "hkbuseta Watch App";
+			packageProductDependencies = (
+				81D16AFD2B34982B003D9817 /* KMPNativeCoroutinesAsync */,
+				81D16AFF2B34982B003D9817 /* KMPNativeCoroutinesCombine */,
+				81D16B012B34982B003D9817 /* KMPNativeCoroutinesCore */,
+				81D16B032B34982B003D9817 /* KMPNativeCoroutinesRxSwift */,
+			);
 			productName = "hkbuseta Watch App";
 			productReference = 81D16AB42B33C21E003D9817 /* hkbuseta Watch App.app */;
 			productType = "com.apple.product-type.application";
@@ -165,6 +221,9 @@
 				Base,
 			);
 			mainGroup = 81D16AA72B33C21D003D9817;
+			packageReferences = (
+				81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */,
+			);
 			productRefGroup = 81D16AAF2B33C21E003D9817 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -219,10 +278,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				81D16B122B34D44C003D9817 /* ColorUtils.swift in Sources */,
+				81D16B082B34C12C003D9817 /* Shared.swift in Sources */,
 				81D16ABC2B33C21E003D9817 /* ContentView.swift in Sources */,
+				81D16AFB2B348871003D9817 /* Collector.swift in Sources */,
+				81D16B0E2B34CFEC003D9817 /* TitleView.swift in Sources */,
+				81D16B102B34D07A003D9817 /* SearchView.swift in Sources */,
 				81D16ACE2B33C238003D9817 /* hkbusetaApp.swift in Sources */,
 				81D16AF82B33E1D8003D9817 /* MainView.swift in Sources */,
-				81D16AD02B33C238003D9817 /* TitleView.swift in Sources */,
+				81D16B142B35109F003D9817 /* ListRouteView.swift in Sources */,
+				81D16B062B34BC96003D9817 /* FlowStateObservable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -484,6 +549,40 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/rickclephas/KMP-NativeCoroutines.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		81D16AFD2B34982B003D9817 /* KMPNativeCoroutinesAsync */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */;
+			productName = KMPNativeCoroutinesAsync;
+		};
+		81D16AFF2B34982B003D9817 /* KMPNativeCoroutinesCombine */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */;
+			productName = KMPNativeCoroutinesCombine;
+		};
+		81D16B012B34982B003D9817 /* KMPNativeCoroutinesCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */;
+			productName = KMPNativeCoroutinesCore;
+		};
+		81D16B032B34982B003D9817 /* KMPNativeCoroutinesRxSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */;
+			productName = KMPNativeCoroutinesRxSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 81D16AA82B33C21D003D9817 /* Project object */;
 }
