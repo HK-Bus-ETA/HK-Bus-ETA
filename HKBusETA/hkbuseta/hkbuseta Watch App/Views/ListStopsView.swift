@@ -72,63 +72,36 @@ struct ListStopsView: View {
     
     var body: some View {
         ZStack {
-            ScrollView(.vertical) {
-                LazyVStack {
-                    VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2) {
-                        Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
-                            .foregroundColor(coColor)
-                            .autoResizing(maxSize: 23)
-                            .bold()
-                            .lineLimit(1)
-                        Text(resolvedDestName.get(language: Shared().language))
-                            .foregroundColor(0xFFFFFFFF.asColor())
-                            .autoResizing(maxSize: 12)
-                            .lineLimit(2)
-                        if !specialOrigs.isEmpty {
-                            Text(Shared().language == "en" ? ("Special From " + specialOrigs.map { $0.en }.joined(separator: "/")) : ("特別班 從" + specialOrigs.map { $0.zh }.joined(separator: "/") + "開出"))
-                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
-                                .lineLimit(2)
-                                .autoResizing(maxSize: 12)
-                        }
-                        if !specialDests.isEmpty {
-                            Text(Shared().language == "en" ? ("Special To " + specialDests.map { $0.en }.joined(separator: "/")) : ("特別班 往" + specialDests.map { $0.zh }.joined(separator: "/")))
-                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
-                                .lineLimit(2)
-                                .autoResizing(maxSize: 12)
-                        }
-                    }
-                    ForEach(stopList.indices, id: \.self) { index in
-                        let stopData = stopList[index]
-                        let stopNumber = index + 1
-                        Button(action: {
-                            let data = newAppDataConatiner()
-                            data["stopId"] = stopData.stopId
-                            data["co"] = co
-                            data["index"] = stopNumber
-                            data["stop"] = stopData.stop
-                            data["route"] = stopData.route
-                            appContext().appendStack(screen: AppScreen.eta, mutableData: data)
-                        }) {
-                            HStack(alignment: .center, spacing: 2) {
-                                Text("\(stopNumber).")
-                                    .frame(width: 37, alignment: .leading)
-                                    .font(.system(size: 18))
-                                    .foregroundColor(0xFFFFFFFF.asColor())
-                                MarqueeText(
-                                    text: stopData.stop.name.get(language: Shared().language),
-                                    font: UIFont.systemFont(ofSize: 18),
-                                    leftFade: 8,
-                                    rightFade: 8,
-                                    startDelay: 2,
-                                    alignment: .bottomLeading
-                                )
+            ScrollViewReader { value in
+                ScrollView(.vertical) {
+                    LazyVStack {
+                        VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2) {
+                            Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
+                                .foregroundColor(coColor)
+                                .autoResizing(maxSize: 23)
+                                .bold()
+                                .lineLimit(1)
+                            Text(resolvedDestName.get(language: Shared().language))
                                 .foregroundColor(0xFFFFFFFF.asColor())
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }.contentShape(Rectangle())
+                                .autoResizing(maxSize: 12)
+                                .lineLimit(2)
+                            if !specialOrigs.isEmpty {
+                                Text(Shared().language == "en" ? ("Special From " + specialOrigs.map { $0.en }.joined(separator: "/")) : ("特別班 從" + specialOrigs.map { $0.zh }.joined(separator: "/") + "開出"))
+                                    .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
+                                    .lineLimit(2)
+                                    .autoResizing(maxSize: 12)
+                            }
+                            if !specialDests.isEmpty {
+                                Text(Shared().language == "en" ? ("Special To " + specialDests.map { $0.en }.joined(separator: "/")) : ("特別班 往" + specialDests.map { $0.zh }.joined(separator: "/")))
+                                    .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
+                                    .lineLimit(2)
+                                    .autoResizing(maxSize: 12)
+                            }
                         }
-                        .frame(width: 170, height: 30)
-                        .buttonStyle(PlainButtonStyle())
-                        Divider()
+                        ForEach(stopList.indices, id: \.self) { index in
+                            StopRow(index: index)
+                            Divider()
+                        }
                     }
                 }
             }
@@ -137,6 +110,39 @@ struct ListStopsView: View {
         .onReceive(timer) { _ in
             self.animationTick += 1
         }
+    }
+    
+    func StopRow(index: Int) -> some View {
+        let stopData = stopList[index]
+        let stopNumber = index + 1
+        return Button(action: {
+            let data = newAppDataConatiner()
+            data["stopId"] = stopData.stopId
+            data["co"] = co
+            data["index"] = stopNumber
+            data["stop"] = stopData.stop
+            data["route"] = stopData.route
+            appContext().appendStack(screen: AppScreen.eta, mutableData: data)
+        }) {
+            HStack(alignment: .center, spacing: 2) {
+                Text("\(stopNumber).")
+                    .frame(width: 37, alignment: .leading)
+                    .font(.system(size: 18))
+                    .foregroundColor(0xFFFFFFFF.asColor())
+                MarqueeText(
+                    text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18),
+                    font: UIFont.systemFont(ofSize: 18),
+                    leftFade: 8,
+                    rightFade: 8,
+                    startDelay: 2,
+                    alignment: .bottomLeading
+                )
+                .foregroundColor(0xFFFFFFFF.asColor())
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }.contentShape(Rectangle())
+        }
+        .frame(width: 170, height: 30)
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

@@ -92,7 +92,7 @@ struct SearchView: View {
             switch content {
             case "<":
                 if hasHistory && state.text.isEmpty || state.text == defaultText() {
-                    Image(systemName: "clock")
+                    Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 17))
                         .foregroundColor(0xFF03A9F4.asColor())
                 } else {

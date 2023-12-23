@@ -23,6 +23,8 @@ package com.loohp.hkbuseta.common.objects
 import com.loohp.hkbuseta.common.utils.IOSerializable
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.JSONSerializable
+import com.loohp.hkbuseta.common.utils.SmallSize
+import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.common.utils.readNullable
@@ -62,6 +64,19 @@ class Stop(
             return Stop(location, name, remark, kmbBbiId)
         }
 
+    }
+
+    val remarkedName: BilingualFormattedText get() {
+        return remark?.let { BilingualFormattedText(
+            buildFormattedString {
+                append(name.zh)
+                append(it.zh, SmallSize)
+            },
+            buildFormattedString {
+                append(name.en)
+                append(it.en, SmallSize)
+            }
+        ) }?: name.asFormattedText()
     }
 
     override fun serialize(): JsonObject {

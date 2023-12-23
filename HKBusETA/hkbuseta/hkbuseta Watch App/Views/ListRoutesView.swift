@@ -76,68 +76,57 @@ struct ListRoutesView: View {
     
     var body: some View {
         ZStack {
-            ScrollView(.vertical) {
-                LazyVStack {
-                    ForEach(result, id: \.uniqueKey) { route in
-                        let color = route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF).asColor()
-                        let kmbCtbJoint = route.route!.isKmbCtbJoint
-                        let dest = route.route!.resolvedDest(prependTo: true).get(language: Shared().language)
-                        let altSize = route.co == Operator.Companion().MTR && Shared().language != "en"
-                        let routeNumber = altSize ? Shared().getMtrLineName(lineName: route.route!.routeNumber) : route.route!.routeNumber
-                        let secondLine: [AttributedString] = {
-                            var list: [AttributedString] = []
-                            if route.stopInfo != nil {
-                                let stop = route.stopInfo!.data!
-                                list.append((stop.name.get(language: Shared().language)).asAttributedString())
-                            }
-                            if (kmbCtbJoint) {
-                                if Shared().language == "en" {
-                                    list.append("九巴".asAttributedString(color: color) + "城巴聯營線".asAttributedString(color: 0xFFFFE15E.asColor()))
-                                } else {
-                                    list.append("KMB ".asAttributedString(color: color) + "CTB Joint Operated".asAttributedString(color: 0xFFFFE15E.asColor()))
+            ScrollViewReader { value in
+                ScrollView(.vertical) {
+                    LazyVStack {
+                        ForEach(result, id: \.uniqueKey) { route in
+                            let color = route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF).asColor()
+                            let kmbCtbJoint = route.route!.isKmbCtbJoint
+                            let dest = route.route!.resolvedDest(prependTo: true).get(language: Shared().language)
+                            let altSize = route.co == Operator.Companion().MTR && Shared().language != "en"
+                            let routeNumber = altSize ? Shared().getMtrLineName(lineName: route.route!.routeNumber) : route.route!.routeNumber
+                            let secondLine: [AttributedString] = {
+                                var list: [AttributedString] = []
+                                if route.stopInfo != nil {
+                                    let stop = route.stopInfo!.data!
+                                    list.append((stop.name.get(language: Shared().language)).asAttributedString())
                                 }
-                            }
-                            if route.co == Operator.Companion().NLB {
-                                list.append((Shared().language == "en" ? ("From " + route.route!.orig.en) : ("從" + route.route!.orig.zh + "開出")).asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
-                            } else if route.co == Operator.Companion().KMB && RouteExtensionsKt.getKMBSubsidiary(routeNumber) == KMBSubsidiary.sunb {
-                                list.append((Shared().language == "en" ? ("Sun Bus (NR" + route.route!.orig.en + ")") : ("陽光巴士 (NR" + route.route!.orig.zh + ")")).asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
-                            }
-                            return list
-                        }()
-                        
-                        Button(action: {
-                            let meta: String
-                            switch route.co {
-                            case Operator.Companion().GMB:
-                                meta = route.route!.gmbRegion!.name
-                            case Operator.Companion().NLB:
-                                meta = route.route!.nlbId
-                            default:
-                                meta = ""
-                            }
-                            registry().addLastLookupRoute(routeNumber: route.route!.routeNumber, co: route.co, meta: meta, context: appContext())
-                            let data = newAppDataConatiner()
-                            data["route"] = route
-                            appContext().appendStack(screen: AppScreen.listStops, mutableData: data)
-                        }) {
-                            HStack(alignment: .center, spacing: 2) {
-                                Text(routeNumber)
-                                    .frame(width: altSize ? 67 : 47, alignment: .leading)
-                                    .font(.system(size: altSize ? 18 : 21))
-                                    .foregroundColor(color)
-                                if secondLine.isEmpty {
-                                    MarqueeText(
-                                        text: dest,
-                                        font: UIFont.systemFont(ofSize: 17),
-                                        leftFade: 8,
-                                        rightFade: 8,
-                                        startDelay: 2,
-                                        alignment: .bottomLeading
-                                    )
-                                    .foregroundColor(color)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                } else {
-                                    VStack(spacing: 0) {
+                                if (kmbCtbJoint) {
+                                    if Shared().language == "en" {
+                                        list.append("九巴".asAttributedString(color: color) + "城巴聯營線".asAttributedString(color: 0xFFFFE15E.asColor()))
+                                    } else {
+                                        list.append("KMB ".asAttributedString(color: color) + "CTB Joint Operated".asAttributedString(color: 0xFFFFE15E.asColor()))
+                                    }
+                                }
+                                if route.co == Operator.Companion().NLB {
+                                    list.append((Shared().language == "en" ? ("From " + route.route!.orig.en) : ("從" + route.route!.orig.zh + "開出")).asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
+                                } else if route.co == Operator.Companion().KMB && RouteExtensionsKt.getKMBSubsidiary(routeNumber) == KMBSubsidiary.sunb {
+                                    list.append((Shared().language == "en" ? ("Sun Bus (NR" + route.route!.orig.en + ")") : ("陽光巴士 (NR" + route.route!.orig.zh + ")")).asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
+                                }
+                                return list
+                            }()
+                            
+                            Button(action: {
+                                let meta: String
+                                switch route.co {
+                                case Operator.Companion().GMB:
+                                    meta = route.route!.gmbRegion!.name
+                                case Operator.Companion().NLB:
+                                    meta = route.route!.nlbId
+                                default:
+                                    meta = ""
+                                }
+                                registry().addLastLookupRoute(routeNumber: route.route!.routeNumber, co: route.co, meta: meta, context: appContext())
+                                let data = newAppDataConatiner()
+                                data["route"] = route
+                                appContext().appendStack(screen: AppScreen.listStops, mutableData: data)
+                            }) {
+                                HStack(alignment: .center, spacing: 2) {
+                                    Text(routeNumber)
+                                        .frame(width: altSize ? 67 : 47, alignment: .leading)
+                                        .font(.system(size: altSize ? 18 : 21))
+                                        .foregroundColor(color)
+                                    if secondLine.isEmpty {
                                         MarqueeText(
                                             text: dest,
                                             font: UIFont.systemFont(ofSize: 17),
@@ -148,24 +137,37 @@ struct ListRoutesView: View {
                                         )
                                         .foregroundColor(color)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        CrossfadeMarqueeText(
-                                            textList: secondLine,
-                                            state: animationTick,
-                                            font: UIFont.systemFont(ofSize: altSize ? 11 : 12),
-                                            leftFade: 8,
-                                            rightFade: 8,
-                                            startDelay: 2,
-                                            alignment: .bottomLeading
-                                        )
+                                    } else {
+                                        VStack(spacing: 0) {
+                                            MarqueeText(
+                                                text: dest,
+                                                font: UIFont.systemFont(ofSize: 17),
+                                                leftFade: 8,
+                                                rightFade: 8,
+                                                startDelay: 2,
+                                                alignment: .bottomLeading
+                                            )
+                                            .foregroundColor(color)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            CrossfadeMarqueeText(
+                                                textList: secondLine,
+                                                state: animationTick,
+                                                font: UIFont.systemFont(ofSize: altSize ? 11 : 12),
+                                                leftFade: 8,
+                                                rightFade: 8,
+                                                startDelay: 2,
+                                                alignment: .bottomLeading
+                                            )
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                     }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                            }.contentShape(Rectangle())
+                                }.contentShape(Rectangle())
+                            }
+                            .frame(width: 170, height: 35)
+                            .buttonStyle(PlainButtonStyle())
+                            Divider()
                         }
-                        .frame(width: 170, height: 35)
-                        .buttonStyle(PlainButtonStyle())
-                        Divider()
                     }
                 }
             }

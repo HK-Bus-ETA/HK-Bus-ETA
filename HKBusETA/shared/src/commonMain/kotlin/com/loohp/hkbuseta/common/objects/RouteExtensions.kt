@@ -167,19 +167,6 @@ fun BilingualText.asFormattedText(vararg style: FormattingTextContentStyle): Bil
     }
 }
 
-inline val Stop.remarkedName: BilingualFormattedText get() {
-    return remark?.let { BilingualFormattedText(
-        buildFormattedString {
-            append(name.zh)
-            append(it.zh, SmallSize)
-        },
-        buildFormattedString {
-            append(name.en)
-            append(it.en, SmallSize)
-        }
-    ) }?: name.asFormattedText()
-}
-
 inline val RouteSearchResultEntry.uniqueKey: String get() {
     return stopInfo?.let { routeKey.plus(":").plus(it.stopId) }?: routeKey
 }
