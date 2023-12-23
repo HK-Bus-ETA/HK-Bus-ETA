@@ -38,13 +38,17 @@ inline fun <T, C> Collection<T>.mapToSet(mapping: (T) -> C): Set<C> {
     return buildSet { this@mapToSet.forEach { this.add(mapping.invoke(it)) } }
 }
 
-fun <T> Collection<T>.indexOf(matcher: (T) -> Boolean): Int {
+inline fun <T> Collection<T>.indexOf(matcher: (T) -> Boolean): Int {
     for ((i, t) in withIndex()) {
         if (matcher.invoke(t)) {
             return i
         }
     }
     return -1
+}
+
+fun <T> Collection<T>.indexesOf(element: T): Set<Int> {
+    return withIndex().asSequence().filter { it.value == element }.map { it.index }.toSet().takeIf { it.isNotEmpty() }?: setOf(-1)
 }
 
 fun <T> Collection<T>.commonElementPercentage(other: Collection<T>): Float {

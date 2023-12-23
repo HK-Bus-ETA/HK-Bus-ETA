@@ -33,6 +33,7 @@ struct MainView: View {
                 ProgressView(value: updateProgressState.state.floatValue)
                     .padding(.top)
                     .frame(width: 150.0)
+                    .animation(.easeInOut(duration: 0.2), value: updateProgressState.state.floatValue)
             } else {
                 Image("icon_full")
                     .resizable()

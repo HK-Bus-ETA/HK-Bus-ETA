@@ -98,6 +98,7 @@ import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSortMode
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.bySortModes
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.resolvedDest
@@ -169,43 +170,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                     proximitySortOrigin != null
             )) it else null }?: RouteSortMode.NORMAL
         }) }
-        val sortTask = remember { {
-            buildMap {
-                this[RouteSortMode.NORMAL] = result
-                if (recentSort.enabled) {
-                    this[RouteSortMode.RECENT] = result.sortedBy {
-                        val co = it.co
-                        val meta = when (co) {
-                            Operator.GMB -> it.route!!.gmbRegion!!.name
-                            Operator.NLB -> it.route!!.nlbId
-                            else -> ""
-                        }
-                        Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
-                    }
-                }
-                if (proximitySortOrigin != null) {
-                    if (recentSort.enabled) {
-                        this[RouteSortMode.PROXIMITY] = result.sortedWith(compareBy({
-                            val location = it.stopInfo!!.data!!.location
-                            proximitySortOrigin.distance(location)
-                        }, {
-                            val co = it.co
-                            val meta = when (co) {
-                                Operator.GMB -> it.route!!.gmbRegion!!.name
-                                Operator.NLB -> it.route!!.nlbId
-                                else -> ""
-                            }
-                            Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
-                        }))
-                    } else {
-                        this[RouteSortMode.PROXIMITY] = result.sortedBy {
-                            val location = it.stopInfo!!.data!!.location
-                            proximitySortOrigin.distance(location)
-                        }
-                    }
-                }
-            }.toImmutableMap()
-        } }
+        val sortTask = remember { { result.bySortModes(recentSort, proximitySortOrigin).toImmutableMap() } }
         @SuppressLint("MutableCollectionMutableState")
         var sortedByMode by remember { mutableStateOf(sortTask.invoke()) }
         val sortedResults by remember { derivedStateOf { sortedByMode[activeSortMode]?: result } }
@@ -329,8 +294,8 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
 
                     val secondLine: MutableList<AnnotatedString> = ArrayList()
                     if (route.stopInfo != null) {
-                        val stop = route.stopInfo!!.data
-                        secondLine.add((if (Shared.language == "en") stop!!.name.en else stop!!.name.zh).asAnnotatedString())
+                        val stop = route.stopInfo!!.data!!
+                        secondLine.add(stop.name[Shared.language].asAnnotatedString())
                     }
                     if (co == Operator.NLB) {
                         secondLine.add((if (Shared.language == "en") "From ".plus(route.route!!.orig.en) else "從".plus(route.route!!.orig.zh).plus("開出")).asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
@@ -360,7 +325,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                                         var text = routeNumber.plus(" ").plus(dest).plus("\n(").plus(route.co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)).plus(")")
                                         if (proximitySortOrigin != null && route.stopInfo != null) {
                                             val location = route.stopInfo!!.data!!.location
-                                            val distance =proximitySortOrigin.distance(location)
+                                            val distance = proximitySortOrigin.distance(location)
                                             text = text.plus(" - ").plus((distance * 1000).roundToInt().formatDecimalSeparator()).plus(if (Shared.language == "en") "m" else "米")
                                         }
                                         instance.showToastText(text, ToastDuration.LONG)

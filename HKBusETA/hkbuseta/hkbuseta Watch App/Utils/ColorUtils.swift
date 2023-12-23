@@ -34,8 +34,79 @@ extension UIColor {
         return nil
     }
     
+    func adjustBrightness(percentage: CGFloat) -> UIColor {
+        if percentage == 1 {
+            return self
+        }
+
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+
+        getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+
+        if percentage > 1 {
+            saturation *= (1 - (percentage - 1)).clamped(to: 0...1)
+        } else {
+            brightness *= percentage.clamped(to: 0...1)
+        }
+
+        return UIColor(hue: hue, saturation: saturation, brightness: brightness, alpha: alpha)
+    }
+    
+    func withAlpha(alpha: Int) -> UIColor {
+        return self.withAlphaComponent(CGFloat(alpha) / 255)
+    }
+    
     func toColor() -> Color {
         return Color(uiColor: self)
+    }
+    
+}
+
+extension Color {
+    
+    func adjustBrightness(percentage: CGFloat) -> Color {
+        return UIColor(self).adjustBrightness(percentage: percentage).toColor()
+    }
+    
+    func withAlpha(alpha: Int) -> Color {
+        return UIColor(self).withAlpha(alpha: alpha).toColor()
+    }
+    
+}
+
+extension Int {
+    
+    func asUIColor() -> UIColor {
+        let r, g, b, a: CGFloat
+        a = CGFloat((self & 0xff000000) >> 24) / 255
+        r = CGFloat((self & 0x00ff0000) >> 16) / 255
+        g = CGFloat((self & 0x0000ff00) >> 8) / 255
+        b = CGFloat(self & 0x000000ff) / 255
+        return UIColor(red: r, green: g, blue: b, alpha: a)
+    }
+    
+    func asColor() -> Color {
+        return asUIColor().toColor()
+    }
+    
+}
+
+extension Int64 {
+    
+    func asUIColor() -> UIColor {
+        let r, g, b, a: CGFloat
+        a = CGFloat((self & 0xff000000) >> 24) / 255
+        r = CGFloat((self & 0x00ff0000) >> 16) / 255
+        g = CGFloat((self & 0x0000ff00) >> 8) / 255
+        b = CGFloat(self & 0x000000ff) / 255
+        return UIColor(red: r, green: g, blue: b, alpha: a)
+    }
+    
+    func asColor() -> Color {
+        return asUIColor().toColor()
     }
     
 }

@@ -19,25 +19,16 @@
  *
  */
 
-package com.loohp.hkbuseta.common.appcontext
+package com.loohp.hkbuseta.common.objects
 
-enum class AppScreen {
+import com.loohp.hkbuseta.common.shared.Registry
 
-    DISMISSIBLE_TEXT_DISPLAY,
-    FATAL_ERROR,
-    ETA,
-    ETA_MENU,
-    FAV,
-    FAV_ROUTE_LIST_VIEW,
-    LIST_ROUTES,
-    LIST_STOPS,
-    MAIN,
-    NEARBY,
-    SEARCH,
-    TITLE,
-    URL_IMAGE,
-    ALIGHT_REMINDER_SERVICE,
-    ETA_TILE_CONFIGURE,
-    DUMMY;
 
-}
+class StopEntry(
+    val stopIndex: Int,
+    val stopName: String,
+    val stopData: Registry.StopData,
+    lat: Double,
+    lng: Double,
+    var distance: Double = Double.MAX_VALUE
+) : Coordinates(lat, lng)

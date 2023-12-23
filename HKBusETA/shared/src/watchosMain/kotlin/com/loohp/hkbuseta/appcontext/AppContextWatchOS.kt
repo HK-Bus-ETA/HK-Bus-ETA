@@ -21,6 +21,7 @@
 
 package com.loohp.hkbuseta.appcontext
 
+import com.benasher44.uuid.uuid4
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppContext
@@ -209,6 +210,33 @@ class AppActiveContextWatchOS internal constructor() : AppContextWatchOS(), AppA
         return last
     }
 
+    fun popSecondLastStack(): HistoryStackEntry? {
+        val stack = historyStack.value.toMutableList()
+        if (stack.size < 2) {
+            return null
+        }
+        val last = stack.removeAt(stack.size - 2)
+        historyStack.value = stack
+        return last
+    }
+
+    fun popSecondLastStackIfMatches(predicate: (HistoryStackEntry) -> Boolean): HistoryStackEntry? {
+        val stack = historyStack.value.toMutableList()
+        if (stack.size < 2) {
+            return null
+        }
+        val last = stack.removeAt(stack.size - 2).let {
+            if (predicate.invoke(it)) {
+                stack.removeAt(stack.size - 2)
+                it
+            } else {
+                null
+            }
+        }
+        historyStack.value = stack
+        return last
+    }
+
     fun clearStack() {
         historyStack.value = listOf(HistoryStackEntry.DEFAULT_ENTRY)
     }
@@ -259,17 +287,17 @@ data class HistoryStackEntry(val screen: AppScreen, val data: Map<String, Any?>)
 
     }
 
+    private val id = uuid4()
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is HistoryStackEntry) return false
 
-        if (screen != other.screen) return false
-        return data == other.data
+        return id == other.id
     }
 
     override fun hashCode(): Int {
-        var result = screen.hashCode()
-        result = 31 * result + data.hashCode()
-        return result
+        return id.hashCode()
     }
+
 }

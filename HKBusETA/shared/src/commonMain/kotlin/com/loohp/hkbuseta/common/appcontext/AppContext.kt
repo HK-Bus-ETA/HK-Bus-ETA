@@ -41,7 +41,7 @@ interface AppContext {
     val scaledDensity: Float
 
     fun readTextFile(fileName: String, charset: Charset = Charsets.UTF_8): String {
-        return readTextFileLines(fileName, charset).joinToString()
+        return readTextFileLines(fileName, charset).joinToString("")
     }
 
     fun readTextFileLines(fileName: String, charset: Charset = Charsets.UTF_8): List<String>

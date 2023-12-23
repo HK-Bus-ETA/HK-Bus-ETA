@@ -25,7 +25,7 @@ data class FormattedText(
     val content: MutableList<FormattedTextContent>
 ) : CharSequence {
 
-    val string: String = content.joinToString { it.string }
+    val string: String = content.joinToString("") { it.string }
 
     override val length: Int = string.length
 

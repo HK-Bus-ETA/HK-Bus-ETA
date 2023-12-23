@@ -99,8 +99,10 @@ import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.OriginData
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.Stop
+import com.loohp.hkbuseta.common.objects.StopEntry
 import com.loohp.hkbuseta.common.objects.getColor
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
@@ -112,6 +114,7 @@ import com.loohp.hkbuseta.services.AlightReminderService
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.StopData
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.debugLog
 import com.loohp.hkbuseta.common.utils.eitherContains
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
@@ -148,21 +151,6 @@ import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
-
-class StopEntry(
-    val stopIndex: Int,
-    val stopName: String,
-    val stopData: StopData,
-    lat: Double,
-    lng: Double,
-    var distance: Double = Double.MAX_VALUE
-) : Coordinates(lat, lng)
-
-class OriginData(
-    lat: Double,
-    lng: Double,
-    val onlyInRange: Boolean = false
-) : Coordinates(lat, lng)
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable

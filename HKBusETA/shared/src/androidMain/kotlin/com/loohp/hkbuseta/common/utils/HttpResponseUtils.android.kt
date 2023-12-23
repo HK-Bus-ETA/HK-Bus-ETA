@@ -31,7 +31,7 @@ import java.util.zip.GZIPInputStream
 
 actual suspend fun HttpResponse.gzipBodyAsText(fallbackCharset: Charset): String {
     GZIPInputStream(bodyAsChannel().toInputStream()).bufferedReader(charset()?: fallbackCharset).use {
-        return it.lineSequence().joinToString()
+        return it.lineSequence().joinToString("")
     }
 }
 

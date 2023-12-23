@@ -21,6 +21,7 @@
 
 package com.loohp.hkbuseta.common.objects
 
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Stable
 import com.loohp.hkbuseta.common.utils.optBoolean
 import com.loohp.hkbuseta.common.utils.optJsonObject
@@ -65,4 +66,59 @@ class StopIndexedRouteSearchResultEntry(
 
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is StopIndexedRouteSearchResultEntry) return false
+        if (!super.equals(other)) return false
+
+        return stopInfoIndex == other.stopInfoIndex
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + stopInfoIndex
+        return result
+    }
+
+}
+
+fun List<StopIndexedRouteSearchResultEntry>.bySortModes(
+    recentSortMode: RecentSortMode,
+    proximitySortOrigin: Coordinates? = null
+): Map<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> {
+    val map: MutableMap<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> = mutableMapOf()
+    map[RouteSortMode.NORMAL] = this
+    if (recentSortMode.enabled) {
+        map[RouteSortMode.RECENT] = sortedBy {
+            val co = it.co
+            val meta = when (co) {
+                Operator.GMB -> it.route!!.gmbRegion!!.name
+                Operator.NLB -> it.route!!.nlbId
+                else -> ""
+            }
+            Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
+        }
+    }
+    if (proximitySortOrigin != null) {
+        if (recentSortMode.enabled) {
+            map[RouteSortMode.PROXIMITY] = sortedWith(compareBy({
+                val location = it.stopInfo!!.data!!.location
+                proximitySortOrigin.distance(location)
+            }, {
+                val co = it.co
+                val meta = when (co) {
+                    Operator.GMB -> it.route!!.gmbRegion!!.name
+                    Operator.NLB -> it.route!!.nlbId
+                    else -> ""
+                }
+                Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
+            }))
+        } else {
+            map[RouteSortMode.PROXIMITY] = sortedBy {
+                val location = it.stopInfo!!.data!!.location
+                proximitySortOrigin.distance(location)
+            }
+        }
+    }
+    return map
 }

@@ -46,6 +46,8 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.shared.Registry.MTRInterchangeData
 import com.loohp.hkbuseta.common.shared.Registry.StopData
+import com.loohp.hkbuseta.common.utils.indexesOf
+import kotlin.math.absoluteValue
 
 
 @Composable
@@ -499,15 +501,15 @@ data class MTRStopSectionData(
         fun build(isMainLine: Boolean, stopByBranchId: MutableMap<Int, MutableList<StopData>>, index: Int, stop: StopData, stopList: List<StopData>, co: Operator, color: Color, isLrtCircular: Boolean, interchangeData: MTRInterchangeData, hasOutOfStation: Boolean, context: AppContext): MTRStopSectionData {
             val requireExtension = index + 1 < stopList.size
             return if (isMainLine) MTRStopSectionData(MTRStopSectionMainLineData(
-                isFirstStation = stopByBranchId.values.all { it.indexOf(stop) <= 0 },
-                isLastStation = stopByBranchId.values.all { it.indexOf(stop).let { x -> x < 0 || x >= it.size - 1 } },
+                isFirstStation = stopByBranchId.values.all { it.indexesOf(stop).minBy { i -> (i - index).absoluteValue } <= 0 },
+                isLastStation = stopByBranchId.values.all { it.indexesOf(stop).minBy { i -> (i - index).absoluteValue }.let { x -> x < 0 || x >= it.size - 1 } },
                 hasOtherParallelBranches = hasOtherParallelBranches(stopList, stopByBranchId, stop),
                 sideSpurLineType = getSideSpurLineType(stopList, stopByBranchId, stop)
             ), null, index, stop, co, color, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, requireExtension, context) else MTRStopSectionData(null, MTRStopSectionSpurLineData(
                 hasParallelMainLine = index > 0 && index < stopList.size - 1,
                 dashLineResult = isDashLineSpur(stopList, stop),
-                isFirstStation = stopByBranchId.values.all { it.indexOf(stop) <= 0 },
-                isLastStation = stopByBranchId.values.all { it.indexOf(stop).let { x -> x < 0 || x >= it.size - 1 } }
+                isFirstStation = stopByBranchId.values.all { it.indexesOf(stop).minBy { i -> (i - index).absoluteValue } <= 0 },
+                isLastStation = stopByBranchId.values.all { it.indexesOf(stop).minBy { i -> (i - index).absoluteValue }.let { x -> x < 0 || x >= it.size - 1 } }
             ), index, stop, co, color, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, requireExtension, context)
         }
     }

@@ -19,25 +19,11 @@
  *
  */
 
-package com.loohp.hkbuseta.common.appcontext
+package com.loohp.hkbuseta.common.objects
 
-enum class AppScreen {
 
-    DISMISSIBLE_TEXT_DISPLAY,
-    FATAL_ERROR,
-    ETA,
-    ETA_MENU,
-    FAV,
-    FAV_ROUTE_LIST_VIEW,
-    LIST_ROUTES,
-    LIST_STOPS,
-    MAIN,
-    NEARBY,
-    SEARCH,
-    TITLE,
-    URL_IMAGE,
-    ALIGHT_REMINDER_SERVICE,
-    ETA_TILE_CONFIGURE,
-    DUMMY;
-
-}
+class OriginData(
+    lat: Double,
+    lng: Double,
+    val onlyInRange: Boolean = false
+) : Coordinates(lat, lng)

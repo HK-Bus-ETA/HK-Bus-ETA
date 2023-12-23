@@ -16,6 +16,7 @@ import RxSwift
 struct SearchView: View {
     
     @State var state = RouteKeyboardState(text: defaultText(), nextCharResult: registry().getPossibleNextChar(input: ""))
+    @State var hasHistory = Shared().hasFavoriteAndLookupRoute()
     
     init(data: [String: Any]?) {
         
@@ -27,10 +28,10 @@ struct SearchView: View {
                 Text(Shared().getMtrLineName(lineName: state.text))
                     .font(.system(size: 22))
                     .frame(width: 150.0, height: 40.0)
-                    .background { UIColor(hex: "FF1A1A1A")!.toColor() }
+                    .background { 0xFF1A1A1A.asColor() }
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(UIColor(hex: "FF252525")!.toColor(), lineWidth: 4)
+                            .stroke(0xFF252525.asColor(), lineWidth: 4)
                     )
                     .padding()
                 HStack {
@@ -68,6 +69,9 @@ struct SearchView: View {
             }
             BackButton { $0.screen == AppScreen.search }
         }
+        .onAppear {
+            hasHistory = Shared().hasFavoriteAndLookupRoute()
+        }
     }
     
     func KeyboardKey(content: Character) -> some View {
@@ -75,16 +79,31 @@ struct SearchView: View {
     }
     
     func KeyboardKey(content: Character, longContent: Character) -> some View {
-        Button(action: {}) {
+        let enabled: Bool
+        switch content {
+        case "/":
+            enabled = state.nextCharResult.hasExactMatch
+        case "<", "!":
+            enabled = true
+        default:
+            enabled = !state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty
+        }
+        return Button(action: {}) {
             switch content {
             case "<":
-                Image(systemName: "trash.fill")
-                    .font(.system(size: 17))
-                    .foregroundColor(.red)
+                if hasHistory && state.text.isEmpty || state.text == defaultText() {
+                    Image(systemName: "clock")
+                        .font(.system(size: 17))
+                        .foregroundColor(0xFF03A9F4.asColor())
+                } else {
+                    Image(systemName: "trash")
+                        .font(.system(size: 17))
+                        .foregroundColor(.red)
+                }
             case "/":
                 Image(systemName: "checkmark")
                     .font(.system(size: 17))
-                    .foregroundColor(state.nextCharResult.hasExactMatch ? .green : UIColor(hex: "FF444444")!.toColor())
+                    .foregroundColor(state.nextCharResult.hasExactMatch ? .green : 0xFF444444.asColor())
             case "!":
                 Image("mtr")
                     .resizable()
@@ -93,7 +112,7 @@ struct SearchView: View {
             default:
                 Text(content.description)
                     .font(.system(size: 20))
-                    .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : UIColor(hex: "FF444444")!.toColor())
+                    .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : 0xFF444444.asColor())
                     .bold()
             }
         }
@@ -112,6 +131,7 @@ struct SearchView: View {
                     handleInput(input: content)
                 }
         )
+        .disabled(!enabled)
     }
     
     func handleInput(input: Character) {
@@ -138,7 +158,7 @@ struct SearchView: View {
                     default:
                         meta = ""
                     }
-                    return KotlinBoolean(bool: Shared().getFavoriteAndLookupRouteIndex(routeNumber: r.routeNumber, co: c, meta: meta) < Int.max)
+                    return KotlinBoolean(bool: Shared().getFavoriteAndLookupRouteIndex(routeNumber: r.routeNumber, co: c, meta: meta) < Int32.max)
                 })
             default:
                 result = registry().findRoutes(input: originalText, exact: true)
