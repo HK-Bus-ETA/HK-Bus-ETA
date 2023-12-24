@@ -15,9 +15,17 @@ import RxSwift
 
 struct ListStopsView: View {
     
+    @ObservedObject private var locationManager = SingleLocationManager()
+    @State private var scrollTarget: Int? = nil
+    @State private var scrolled = false
+    
     @State private var animationTick = 0
     
     let timer = Timer.publish(every: 5.5, on: .main, in: .common).autoconnect()
+    
+    let etaTimer = Timer.publish(every: Double(Shared().ETA_UPDATE_INTERVAL) / 1000, on: .main, in: .common).autoconnect()
+    @State private var etaActive: [Int] = []
+    @State private var etaResults: [Int: Registry.ETAQueryResult?] = [:]
     
     @State private var route: RouteSearchResultEntry
     @State private var scrollToStop: String?
@@ -71,44 +79,93 @@ struct ListStopsView: View {
     }
     
     var body: some View {
-        ZStack {
-            ScrollViewReader { value in
-                ScrollView(.vertical) {
-                    LazyVStack {
-                        VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2) {
-                            Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
-                                .foregroundColor(coColor)
-                                .autoResizing(maxSize: 23)
-                                .bold()
-                                .lineLimit(1)
-                            Text(resolvedDestName.get(language: Shared().language))
-                                .foregroundColor(0xFFFFFFFF.asColor())
-                                .autoResizing(maxSize: 12)
+        ScrollViewReader { value in
+            ScrollView(.vertical) {
+                LazyVStack {
+                    VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2.scaled()) {
+                        Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
+                            .foregroundColor(coColor)
+                            .lineLimit(1)
+                            .autoResizing(maxSize: 23.scaled())
+                            .bold()
+                        Text(resolvedDestName.get(language: Shared().language))
+                            .foregroundColor(0xFFFFFFFF.asColor())
+                            .lineLimit(2)
+                            .autoResizing(maxSize: 12.scaled())
+                        if !specialOrigs.isEmpty {
+                            Text(Shared().language == "en" ? ("Special From " + specialOrigs.map { $0.en }.joined(separator: "/")) : ("特別班 從" + specialOrigs.map { $0.zh }.joined(separator: "/") + "開出"))
+                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
                                 .lineLimit(2)
-                            if !specialOrigs.isEmpty {
-                                Text(Shared().language == "en" ? ("Special From " + specialOrigs.map { $0.en }.joined(separator: "/")) : ("特別班 從" + specialOrigs.map { $0.zh }.joined(separator: "/") + "開出"))
-                                    .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
-                                    .lineLimit(2)
-                                    .autoResizing(maxSize: 12)
-                            }
-                            if !specialDests.isEmpty {
-                                Text(Shared().language == "en" ? ("Special To " + specialDests.map { $0.en }.joined(separator: "/")) : ("特別班 往" + specialDests.map { $0.zh }.joined(separator: "/")))
-                                    .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
-                                    .lineLimit(2)
-                                    .autoResizing(maxSize: 12)
-                            }
+                                .autoResizing(maxSize: 12.scaled())
                         }
-                        ForEach(stopList.indices, id: \.self) { index in
-                            StopRow(index: index)
-                            Divider()
+                        if !specialDests.isEmpty {
+                            Text(Shared().language == "en" ? ("Special To " + specialDests.map { $0.en }.joined(separator: "/")) : ("特別班 往" + specialDests.map { $0.zh }.joined(separator: "/")))
+                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
+                                .lineLimit(2)
+                                .autoResizing(maxSize: 12.scaled())
                         }
+                    }
+                    ForEach(stopList.indices, id: \.self) { index in
+                        StopRow(index: index).id(index)
+                        Divider()
                     }
                 }
             }
-            BackButton { $0.screen == AppScreen.listStops }
+            .onChange(of: scrollTarget) {
+                if !scrolled && scrollTarget != nil {
+                    value.scrollTo(scrollTarget!, anchor: .center)
+                    scrolled = true
+                }
+            }
         }
         .onReceive(timer) { _ in
             self.animationTick += 1
+        }
+        .onReceive(etaTimer) { _ in
+            if showEta {
+                for index in etaActive {
+                    fetchEta(stopId: stopList[index].stopId, stopIndex: index, co: co, route: route.route!) { etaResults[index] = $0 }
+                }
+            }
+        }
+        .onChange(of: locationManager.readyForRequest) {
+            if !scrolled {
+                locationManager.requestLocation()
+            }
+        }
+        .onAppear {
+            if scrollToStop == nil {
+                if locationManager.readyForRequest {
+                    locationManager.requestLocation()
+                } else if !locationManager.authorizationDenied {
+                    locationManager.requestPermission()
+                }
+            } else {
+                let index = stopList.firstIndex(where: { $0.stopId == scrollToStop! })
+                if index != nil {
+                    scrollTarget = index!
+                }
+            }
+        }
+        .onChange(of: locationManager.isLocationFetched) {
+            if locationManager.location != nil {
+                let origin = locationManager.location!.coordinate.toLocationResult().location!
+                let closest = stopList.indices.map { index in
+                    let entry = stopList[index]
+                    let stop = entry.stop
+                    let location = stop.location
+                    let stopStr = stop.name.get(language: Shared().language)
+                    return StopEntry(stopIndex: (index + 1).asInt32(), stopName: stopStr, stopData: entry, lat: location.lat, lng: location.lng, distance: kotlinMaxDouble)
+                }.map {
+                    $0.distance = origin.distance(other: $0)
+                    return $0
+                }.min(by: {
+                    $0.distance < $1.distance
+                })
+                if closest!.distance <= 0.3 {
+                    scrollTarget = Int(closest!.stopIndex) - 1
+                }
+            }
         }
     }
     
@@ -124,25 +181,68 @@ struct ListStopsView: View {
             data["route"] = stopData.route
             appContext().appendStack(screen: AppScreen.eta, mutableData: data)
         }) {
-            HStack(alignment: .center, spacing: 2) {
+            HStack(alignment: .center, spacing: 2.scaled()) {
                 Text("\(stopNumber).")
-                    .frame(width: 37, alignment: .leading)
-                    .font(.system(size: 18))
+                    .frame(width: 37.scaled(), alignment: .leading)
+                    .font(.system(size: 18.scaled()))
                     .foregroundColor(0xFFFFFFFF.asColor())
                 MarqueeText(
-                    text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18),
-                    font: UIFont.systemFont(ofSize: 18),
-                    leftFade: 8,
-                    rightFade: 8,
+                    text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled()),
+                    font: UIFont.systemFont(ofSize: 18.scaled()),
+                    leftFade: 8.scaled(),
+                    rightFade: 8.scaled(),
                     startDelay: 2,
                     alignment: .bottomLeading
                 )
                 .foregroundColor(0xFFFFFFFF.asColor())
                 .frame(maxWidth: .infinity, alignment: .leading)
+                if showEta {
+                    let optEta = etaResults[index]
+                    if optEta != nil && optEta! != nil {
+                        let eta = optEta!!
+                        if !eta.isConnectionError {
+                            if !(0..<60).contains(eta.nextScheduledBus) {
+                                if eta.isMtrEndOfLine {
+                                    Image(systemName: "arrow.forward.to.line.circle")
+                                        .font(.system(size: 17.scaled()))
+                                        .foregroundColor(0xFF798996.asColor())
+                                } else if (eta.isTyphoonSchedule) {
+                                    Image(systemName: "hurricane")
+                                        .font(.system(size: 17.scaled()))
+                                        .foregroundColor(0xFF798996.asColor())
+                                } else {
+                                    Image(systemName: "clock")
+                                        .font(.system(size: 17.scaled()))
+                                        .foregroundColor(0xFF798996.asColor())
+                                }
+                            } else {
+                                let shortText = eta.firstLine.shortText
+                                let text1 = shortText.first
+                                let text2 = "\n" + shortText.second
+                                let text = text1.asAttributedString(fontSize: 17.scaled()) + text2.asAttributedString(fontSize: 8.scaled())
+                                Text(text)
+                                    .multilineTextAlignment(.trailing)
+                                    .lineSpacing(0)
+                                    .frame(alignment: .trailing)
+                                    .foregroundColor(0xFF798996.asColor())
+                                    .lineLimit(2)
+                            }
+                        }
+                    }
+                }
             }.contentShape(Rectangle())
         }
-        .frame(width: 170, height: 30)
+        .frame(width: 170.scaled(), height: 30.scaled())
         .buttonStyle(PlainButtonStyle())
+        .onAppear {
+            if showEta {
+                etaActive.append(index)
+                fetchEta(stopId: stopData.stopId, stopIndex: index, co: co, route: route.route!) { etaResults[index] = $0 }
+            }
+        }
+        .onDisappear {
+            etaActive.removeAll(where: { $0 == index })
+        }
     }
 }
 

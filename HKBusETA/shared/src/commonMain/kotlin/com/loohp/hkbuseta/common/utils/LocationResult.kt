@@ -7,7 +7,7 @@
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * (at your option) any later version.a
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,16 +16,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package com.loohp.hkbuseta.utils
+package com.loohp.hkbuseta.common.utils
 
-import androidx.compose.runtime.Immutable
 import com.loohp.hkbuseta.common.objects.Coordinates
 
 
 @Immutable
-class LocationResult internal constructor(val location: Coordinates?) {
+class LocationResult(val location: Coordinates?) {
 
     companion object {
 
@@ -45,9 +45,7 @@ class LocationResult internal constructor(val location: Coordinates?) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as LocationResult
+        if (other !is LocationResult) return false
 
         return location == other.location
     }
@@ -55,6 +53,5 @@ class LocationResult internal constructor(val location: Coordinates?) {
     override fun hashCode(): Int {
         return location?.hashCode() ?: 0
     }
-
 
 }

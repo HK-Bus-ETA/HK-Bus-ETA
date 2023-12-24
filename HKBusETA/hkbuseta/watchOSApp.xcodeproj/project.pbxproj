@@ -28,6 +28,11 @@
 		81D16B292B36559B003D9817 /* EtaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B282B36559B003D9817 /* EtaView.swift */; };
 		81D16B2F2B367178003D9817 /* DummyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B2E2B367178003D9817 /* DummyView.swift */; };
 		81D16B332B36729B003D9817 /* hkbusetaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B322B36729B003D9817 /* hkbusetaApp.swift */; };
+		81D16B352B373E74003D9817 /* NearbyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B342B373E74003D9817 /* NearbyView.swift */; };
+		81D16B372B374DBF003D9817 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B362B374DBF003D9817 /* LocationManager.swift */; };
+		81D16B392B37738D003D9817 /* EtaMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B382B37738D003D9817 /* EtaMenuView.swift */; };
+		81D16B3B2B379FC0003D9817 /* FavRouteListViewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B3A2B379FC0003D9817 /* FavRouteListViewView.swift */; };
+		81D16B3F2B37A609003D9817 /* FavView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B3E2B37A609003D9817 /* FavView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +78,11 @@
 		81D16B282B36559B003D9817 /* EtaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtaView.swift; sourceTree = "<group>"; };
 		81D16B2E2B367178003D9817 /* DummyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DummyView.swift; sourceTree = "<group>"; };
 		81D16B322B36729B003D9817 /* hkbusetaApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = hkbusetaApp.swift; sourceTree = "<group>"; };
+		81D16B342B373E74003D9817 /* NearbyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyView.swift; sourceTree = "<group>"; };
+		81D16B362B374DBF003D9817 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		81D16B382B37738D003D9817 /* EtaMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtaMenuView.swift; sourceTree = "<group>"; };
+		81D16B3A2B379FC0003D9817 /* FavRouteListViewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavRouteListViewView.swift; sourceTree = "<group>"; };
+		81D16B3E2B37A609003D9817 /* FavView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -137,6 +147,7 @@
 				81D16B182B360050003D9817 /* StringUtils.swift */,
 				81D16B1A2B360AD8003D9817 /* MathUtils.swift */,
 				81D16B262B364071003D9817 /* MarqueeText.swift */,
+				81D16B362B374DBF003D9817 /* LocationManager.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -152,6 +163,9 @@
 		81D16B0C2B34CF98003D9817 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				81D16B3E2B37A609003D9817 /* FavView.swift */,
+				81D16B3A2B379FC0003D9817 /* FavRouteListViewView.swift */,
+				81D16B382B37738D003D9817 /* EtaMenuView.swift */,
 				81D16B0D2B34CFA4003D9817 /* TitleView.swift */,
 				81D16AF72B33E1D8003D9817 /* MainView.swift */,
 				81D16B0F2B34D07A003D9817 /* SearchView.swift */,
@@ -159,6 +173,7 @@
 				81D16B1C2B36214F003D9817 /* ListStopsView.swift */,
 				81D16B282B36559B003D9817 /* EtaView.swift */,
 				81D16B2E2B367178003D9817 /* DummyView.swift */,
+				81D16B342B373E74003D9817 /* NearbyView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -299,8 +314,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				81D16B122B34D44C003D9817 /* ColorUtils.swift in Sources */,
+				81D16B352B373E74003D9817 /* NearbyView.swift in Sources */,
 				81D16B082B34C12C003D9817 /* Shared.swift in Sources */,
+				81D16B3F2B37A609003D9817 /* FavView.swift in Sources */,
 				81D16B0E2B34CFEC003D9817 /* TitleView.swift in Sources */,
+				81D16B372B374DBF003D9817 /* LocationManager.swift in Sources */,
+				81D16B3B2B379FC0003D9817 /* FavRouteListViewView.swift in Sources */,
 				81D16B272B364071003D9817 /* MarqueeText.swift in Sources */,
 				81D16B332B36729B003D9817 /* hkbusetaApp.swift in Sources */,
 				81D16B102B34D07A003D9817 /* SearchView.swift in Sources */,
@@ -311,6 +330,7 @@
 				81D16B192B360050003D9817 /* StringUtils.swift in Sources */,
 				81D16B1B2B360AD8003D9817 /* MathUtils.swift in Sources */,
 				81D16B142B35109F003D9817 /* ListRoutesView.swift in Sources */,
+				81D16B392B37738D003D9817 /* EtaMenuView.swift in Sources */,
 				81D16B062B34BC96003D9817 /* FlowStateObservable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -453,6 +473,7 @@
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = hkbuseta;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = Test;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				LD_MAP_FILE_PATH = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
@@ -486,6 +507,7 @@
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = hkbuseta;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = Test;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				LD_MAP_FILE_PATH = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";

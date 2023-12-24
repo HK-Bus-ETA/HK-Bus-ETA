@@ -23,51 +23,48 @@ struct SearchView: View {
     }
     
     var body: some View {
-        ZStack {
-            VStack {
-                Text(Shared().getMtrLineName(lineName: state.text))
-                    .font(.system(size: 22))
-                    .frame(width: 150.0, height: 40.0)
-                    .background { 0xFF1A1A1A.asColor() }
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(0xFF252525.asColor(), lineWidth: 4)
-                    )
-                    .padding()
-                HStack {
-                    VStack {
-                        KeyboardKey(content: "7")
-                        KeyboardKey(content: "4")
-                        KeyboardKey(content: "1")
-                        KeyboardKey(content: "<", longContent: "-")
-                    }.frame(width: 35, height: 155)
-                    VStack {
-                        KeyboardKey(content: "8")
-                        KeyboardKey(content: "5")
-                        KeyboardKey(content: "2")
-                        KeyboardKey(content: "0")
-                    }.frame(width: 35, height: 155)
-                    VStack {
-                        KeyboardKey(content: "9")
-                        KeyboardKey(content: "6")
-                        KeyboardKey(content: "3")
-                        KeyboardKey(content: "/")
-                    }.frame(width: 35, height: 155)
-                    ScrollView(.vertical) {
-                        let currentText = state.text
-                        if currentText.isEmpty || currentText == defaultText() {
-                            KeyboardKey(content: "!")
+        VStack {
+            Text(Shared().getMtrLineName(lineName: state.text))
+                .font(.system(size: 22.scaled()))
+                .frame(width: 150.0.scaled(), height: 40.0.scaled())
+                .background { 0xFF1A1A1A.asColor() }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(0xFF252525.asColor(), lineWidth: 4.scaled())
+                )
+                .padding()
+            HStack {
+                VStack {
+                    KeyboardKey(content: "7")
+                    KeyboardKey(content: "4")
+                    KeyboardKey(content: "1")
+                    KeyboardKey(content: "<", longContent: "-")
+                }.frame(width: 35.scaled(), height: 155.scaled())
+                VStack {
+                    KeyboardKey(content: "8")
+                    KeyboardKey(content: "5")
+                    KeyboardKey(content: "2")
+                    KeyboardKey(content: "0")
+                }.frame(width: 35.scaled(), height: 155.scaled())
+                VStack {
+                    KeyboardKey(content: "9")
+                    KeyboardKey(content: "6")
+                    KeyboardKey(content: "3")
+                    KeyboardKey(content: "/")
+                }.frame(width: 35.scaled(), height: 155.scaled())
+                ScrollView(.vertical) {
+                    let currentText = state.text
+                    if currentText.isEmpty || currentText == defaultText() {
+                        KeyboardKey(content: "!")
+                    }
+                    ForEach(65..<91) { codePoint in
+                        let alphabet = Character(UnicodeScalar(codePoint)!)
+                        if (!state.nextCharResult.characters.filter { $0.description == alphabet.description }.isEmpty) {
+                            KeyboardKey(content: alphabet)
                         }
-                        ForEach(65..<91) { codePoint in
-                            let alphabet = Character(UnicodeScalar(codePoint)!)
-                            if (!state.nextCharResult.characters.filter { $0.description == alphabet.description }.isEmpty) {
-                                KeyboardKey(content: alphabet)
-                            }
-                        }
-                    }.frame(width: 35, height: 155)
-                }
+                    }
+                }.frame(width: 35.scaled(), height: 155.scaled())
             }
-            BackButton { $0.screen == AppScreen.search }
         }
         .onAppear {
             hasHistory = Shared().hasFavoriteAndLookupRoute()
@@ -93,30 +90,30 @@ struct SearchView: View {
             case "<":
                 if hasHistory && state.text.isEmpty || state.text == defaultText() {
                     Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 17))
+                        .font(.system(size: 17.scaled()))
                         .foregroundColor(0xFF03A9F4.asColor())
                 } else {
                     Image(systemName: "trash")
-                        .font(.system(size: 17))
+                        .font(.system(size: 17.scaled()))
                         .foregroundColor(.red)
                 }
             case "/":
                 Image(systemName: "checkmark")
-                    .font(.system(size: 17))
+                    .font(.system(size: 17.scaled()))
                     .foregroundColor(state.nextCharResult.hasExactMatch ? .green : 0xFF444444.asColor())
             case "!":
                 Image("mtr")
                     .resizable()
-                    .frame(width: 20.0, height: 20.0)
+                    .frame(width: 20.0.scaled(), height: 20.0.scaled())
                     .foregroundColor(.red)
             default:
                 Text(content.description)
-                    .font(.system(size: 20))
+                    .font(.system(size: 20.scaled()))
                     .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : 0xFF444444.asColor())
                     .bold()
             }
         }
-        .frame(width: 35.0, height: content.isLetter || content == "!" ? 30.0 : 35.0)
+        .frame(width: 35.0.scaled(), height: (content.isLetter || content == "!" ? 30.0 : 35.0).scaled())
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(
             LongPressGesture()

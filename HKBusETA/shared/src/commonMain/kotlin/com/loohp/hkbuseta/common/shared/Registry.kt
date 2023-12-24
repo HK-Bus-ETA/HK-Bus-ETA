@@ -86,6 +86,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -1123,7 +1124,7 @@ class Registry {
 
     val currentTyphoonData: Deferred<TyphoonInfo> get() {
         val cache = typhoonInfo.value
-        if (cache == TyphoonInfo.NO_DATA && currentTimeMillis() - cache.lastUpdated < 300000) {
+        if (cache != TyphoonInfo.NO_DATA && currentTimeMillis() - cache.lastUpdated < 300000) {
             return CompletableDeferred(cache)
         }
         return typhoonInfoDeferred.value.takeIf { it.isActive }?: CoroutineScope(Dispatchers.IO).async {
@@ -1214,20 +1215,320 @@ class Registry {
             putString("by_route", route.routeNumber + "," + co.name)
         })
         val pending = PendingETAQueryResult(context, co, CoroutineScope(Dispatchers.IO).async {
-            val typhoonInfo = currentTyphoonData.await()
-            val lines: MutableMap<Int, ETALineEntry> = HashMap()
-            var isMtrEndOfLine = false
-            var isTyphoonSchedule = false
-            var nextCo: Operator = co
-            lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
-            val language = Shared.language
-            when {
-                route.isKmbCtbJoint -> {
-                    isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                    val jointOperated: MutableSet<JointOperatedEntry> = ConcurrentMutableSet()
-                    var kmbSpecialMessage: FormattedText? = null
-                    var kmbFirstScheduledBus = Long.MAX_VALUE
-                    val kmbFuture = launch {
+            try {
+                val typhoonInfo = currentTyphoonData.await()
+                val lines: MutableMap<Int, ETALineEntry> = HashMap()
+                var isMtrEndOfLine = false
+                var isTyphoonSchedule = false
+                var nextCo: Operator = co
+                lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
+                val language = Shared.language
+                when {
+                    route.isKmbCtbJoint -> {
+                        isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
+                        val jointOperated: MutableSet<JointOperatedEntry> = ConcurrentMutableSet()
+                        var kmbSpecialMessage: FormattedText? = null
+                        var kmbFirstScheduledBus = Long.MAX_VALUE
+                        val kmbFuture = launch {
+                            val data: JsonObject? = getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
+                            val buses = data!!.optJsonArray("data")!!
+                            val stopSequences: MutableSet<Int> = HashSet()
+                            for (u in 0 until buses.size) {
+                                val bus = buses.optJsonObject(u)!!
+                                if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
+                                    val routeNumber = bus.optString("route")
+                                    val bound = bus.optString("dir")
+                                    if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB]) {
+                                        stopSequences.add(bus.optInt("seq"))
+                                    }
+                                }
+                            }
+                            val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
+                            val usedRealSeq: MutableSet<Int> = HashSet()
+                            for (u in 0 until buses.size) {
+                                val bus = buses.optJsonObject(u)!!
+                                if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
+                                    val routeNumber = bus.optString("route")
+                                    val bound = bus.optString("dir")
+                                    val stopSeq = bus.optInt("seq")
+                                    if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq && usedRealSeq.add(bus.optInt("eta_seq"))) {
+                                        val eta = bus.optString("eta")
+                                        if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
+                                            val mins = (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
+                                            val minsRounded = mins.roundToInt()
+                                            var message = "".asFormattedText()
+                                            if (language == "en") {
+                                                if (minsRounded > 0) {
+                                                    message = buildFormattedString {
+                                                        append(minsRounded.toString(), BoldStyle)
+                                                        append(" Min.", SmallSize)
+                                                    }
+                                                } else if (minsRounded > -60) {
+                                                    message = buildFormattedString {
+                                                        append("-", BoldStyle)
+                                                        append(" Min.", SmallSize)
+                                                    }
+                                                }
+                                                if (bus.optString("rmk_en").isNotEmpty()) {
+                                                    message += buildFormattedString {
+                                                        if (message.isEmpty()) {
+                                                            append(bus.optString("rmk_en"))
+                                                        } else {
+                                                            append(" (${bus.optString("rmk_en")})", SmallSize)
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                if (minsRounded > 0) {
+                                                    message = buildFormattedString {
+                                                        append(minsRounded.toString(), BoldStyle)
+                                                        append(" 分鐘", SmallSize)
+                                                    }
+                                                } else if (minsRounded > -60) {
+                                                    message = buildFormattedString {
+                                                        append("-", BoldStyle)
+                                                        append(" 分鐘", SmallSize)
+                                                    }
+                                                }
+                                                if (bus.optString("rmk_tc").isNotEmpty()) {
+                                                    message += buildFormattedString {
+                                                        if (message.isEmpty()) {
+                                                            append(bus.optString("rmk_tc")
+                                                                .replace("原定", "預定")
+                                                                .replace("最後班次", "尾班車")
+                                                                .replace("尾班車已過", "尾班車已過本站"))
+                                                        } else {
+                                                            append(" (${bus.optString("rmk_tc")
+                                                                .replace("原定", "預定")
+                                                                .replace("最後班次", "尾班車")
+                                                                .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
+                                                kmbFirstScheduledBus = minsRounded.toLong()
+                                            }
+                                            jointOperated.add(JointOperatedEntry(mins, minsRounded.toLong(), message, Operator.KMB))
+                                        } else {
+                                            var message = "".asFormattedText()
+                                            if (language == "en") {
+                                                if (bus.optString("rmk_en").isNotEmpty()) {
+                                                    message += buildFormattedString {
+                                                        if (message.isEmpty()) {
+                                                            append(bus.optString("rmk_en").replace("(Final Bus)", ""))
+                                                        } else {
+                                                            append(" (${bus.optString("rmk_en").replace("(Final Bus)", "")})", SmallSize)
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                if (bus.optString("rmk_tc").isNotEmpty()) {
+                                                    message += buildFormattedString {
+                                                        if (message.isEmpty()) {
+                                                            append(bus.optString("rmk_tc")
+                                                                .replace("(尾班車)", "")
+                                                                .replace("原定", "預定")
+                                                                .replace("最後班次", "尾班車")
+                                                                .replace("尾班車已過", "尾班車已過本站"))
+                                                        } else {
+                                                            append(" (${bus.optString("rmk_tc")
+                                                                .replace("(尾班車)", "")
+                                                                .replace("原定", "預定")
+                                                                .replace("最後班次", "尾班車")
+                                                                .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            message = if (message.isEmpty() || typhoonInfo.isAboveTyphoonSignalEight && (message strEq "ETA service suspended" || message strEq "暫停預報")) {
+                                                getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                            } else {
+                                                "".asFormattedText(BoldStyle) + message
+                                            }
+                                            kmbSpecialMessage = message
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        run {
+                            val routeNumber = route.routeNumber
+                            val matchingStops: List<Pair<Operator, String>>? = DATA!!.dataSheet.stopMap[stopId]
+                            val ctbStopIds: MutableList<String> = ArrayList()
+                            if (matchingStops == null) {
+                                val cacheKey = routeNumber + "_" + stopId + "_" + stopIndex + "_ctb"
+                                @Suppress("UNCHECKED_CAST")
+                                val cachedIds = objectCache[cacheKey] as List<String>?
+                                if (cachedIds == null) {
+                                    val location: Coordinates = DATA!!.dataSheet.stopList[stopId]!!.location
+                                    for ((key, value) in DATA!!.dataSheet.stopList.entries) {
+                                        if (Operator.CTB.matchStopIdPattern(key) && location.distance(value.location) < 0.4) {
+                                            ctbStopIds.add(key)
+                                        }
+                                    }
+                                    objectCache[cacheKey] = ArrayList(ctbStopIds)
+                                } else {
+                                    ctbStopIds.addAll(cachedIds)
+                                }
+                            } else {
+                                for ((first, second) in matchingStops) {
+                                    if (Operator.CTB === first) {
+                                        ctbStopIds.add(second)
+                                    }
+                                }
+                            }
+                            val (first, second) = getAllDestinationsByDirection(routeNumber, Operator.KMB, null, null, route, stopId)
+                            val destKeys = second.asSequence().map { it.zh.replace(" ", "") }.toSet()
+                            val ctbEtaEntries: ConcurrentMutableMap<String?, MutableSet<JointOperatedEntry>> = ConcurrentMutableMap()
+                            val stopQueryData: MutableList<JsonObject?> = ArrayList()
+                            val ctbFutures: MutableList<Deferred<*>> = ArrayList(ctbStopIds.size)
+                            for (ctbStopId in ctbStopIds) {
+                                ctbFutures.add(async { stopQueryData.add(getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber")) })
+                            }
+                            for (future in ctbFutures) {
+                                future.await()
+                            }
+                            val stopSequences: MutableMap<String, MutableSet<Int>> = HashMap()
+                            val queryBusDests: Array<Array<String?>?> = arrayOfNulls(stopQueryData.size)
+                            for (i in stopQueryData.indices) {
+                                val data = stopQueryData[i]
+                                val buses = data!!.optJsonArray("data")!!
+                                val busDests = arrayOfNulls<String>(buses.size)
+                                for (u in 0 until buses.size) {
+                                    val bus = buses.optJsonObject(u)!!
+                                    if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
+                                        val rawBusDest = bus.optString("dest_tc").replace(" ", "")
+                                        val busDest = destKeys.asSequence().minBy { it.editDistance(rawBusDest) }
+                                        busDests[u] = busDest
+                                        stopSequences.getOrPut(busDest) { HashSet() }.add(bus.optInt("seq"))
+                                    }
+                                }
+                                queryBusDests[i] = busDests
+                            }
+                            val matchingSeq = stopSequences.entries.asSequence()
+                                .map { (key, value) -> key to (value.minByOrNull { (it - stopIndex).absoluteValue }?: -1) }
+                                .toMap()
+                            for (i in stopQueryData.indices) {
+                                val data = stopQueryData[i]!!
+                                val buses = data.optJsonArray("data")!!
+                                val usedRealSeq: MutableMap<String?, MutableSet<Int>> = HashMap()
+                                for (u in 0 until buses.size) {
+                                    val bus = buses.optJsonObject(u)!!
+                                    if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
+                                        val busDest = queryBusDests[i]!![u]!!
+                                        val stopSeq = bus.optInt("seq")
+                                        if ((stopSeq == (matchingSeq[busDest]?: 0)) && usedRealSeq.getOrPut(busDest) { HashSet() }.add(bus.optInt("eta_seq"))) {
+                                            val eta = bus.optString("eta")
+                                            if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
+                                                val mins = (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
+                                                val minsRounded = mins.roundToInt()
+                                                var message = "".asFormattedText()
+                                                if (language == "en") {
+                                                    if (minsRounded > 0) {
+                                                        message = buildFormattedString {
+                                                            append(minsRounded.toString(), BoldStyle)
+                                                            append(" Min.", SmallSize)
+                                                        }
+                                                    } else if (minsRounded > -60) {
+                                                        message = buildFormattedString {
+                                                            append("-", BoldStyle)
+                                                            append(" Min.", SmallSize)
+                                                        }
+                                                    }
+                                                    if (bus.optString("rmk_en").isNotEmpty()) {
+                                                        message = buildFormattedString {
+                                                            if (message.isEmpty()) {
+                                                                append(bus.optString("rmk_en"))
+                                                            } else {
+                                                                append(" (${bus.optString("rmk_en")})", SmallSize)
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    if (minsRounded > 0) {
+                                                        message = buildFormattedString {
+                                                            append(minsRounded.toString(), BoldStyle)
+                                                            append(" 分鐘", SmallSize)
+                                                        }
+                                                    } else if (minsRounded > -60) {
+                                                        message = buildFormattedString {
+                                                            append("-", BoldStyle)
+                                                            append(" 分鐘", SmallSize)
+                                                        }
+                                                    }
+                                                    if (bus.optString("rmk_tc").isNotEmpty()) {
+                                                        message += buildFormattedString {
+                                                            if (message.isEmpty()) {
+                                                                append(bus.optString("rmk_tc")
+                                                                    .replace("(尾班車)", "")
+                                                                    .replace("原定", "預定")
+                                                                    .replace("最後班次", "尾班車")
+                                                                    .replace("尾班車已過", "尾班車已過本站"))
+                                                            } else {
+                                                                append(" (${bus.optString("rmk_tc")
+                                                                    .replace("(尾班車)", "")
+                                                                    .replace("原定", "預定")
+                                                                    .replace("最後班次", "尾班車")
+                                                                    .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                ctbEtaEntries.synchronize {
+                                                    ctbEtaEntries.getOrPut(busDest) { ConcurrentMutableSet() }.add(
+                                                        JointOperatedEntry(mins, minsRounded.toLong(), message, Operator.CTB)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            first.asSequence().map { ctbEtaEntries[it.zh.replace(" ", "")] }.forEach {
+                                if (it != null) {
+                                    jointOperated.addAll(it)
+                                }
+                            }
+                        }
+                        kmbFuture.join()
+                        if (jointOperated.isEmpty()) {
+                            if (kmbSpecialMessage.isNullOrEmpty()) {
+                                lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
+                            } else {
+                                lines[1] = ETALineEntry.textEntry(kmbSpecialMessage)
+                            }
+                        } else {
+                            var counter = 0
+                            val itr = jointOperated.asSequence().sorted().iterator()
+                            while (itr.hasNext()) {
+                                val entry = itr.next()
+                                val mins = entry.mins
+                                val minsRounded = entry.minsRounded
+                                var message = "".asFormattedText(BoldStyle) + entry.line
+                                val entryCo = entry.co
+                                if (minsRounded > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
+                                    message += (if (Shared.language == "en") " (Scheduled Bus)" else " (預定班次)").asFormattedText(SmallSize)
+                                }
+                                message += if (entryCo === Operator.KMB) {
+                                    if (route.routeNumber.getKMBSubsidiary() === KMBSubsidiary.LWB) {
+                                        (if (Shared.language == "en") " - LWB" else " - 龍運").asFormattedText(SmallSize)
+                                    } else {
+                                        (if (Shared.language == "en") " - KMB" else " - 九巴").asFormattedText(SmallSize)
+                                    }
+                                } else {
+                                    (if (Shared.language == "en") " - CTB" else " - 城巴").asFormattedText(SmallSize)
+                                }
+                                val seq = ++counter
+                                if (seq == 1) {
+                                    nextCo = entryCo
+                                }
+                                lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded)
+                            }
+                        }
+                    }
+                    co === Operator.KMB -> {
+                        isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
                         val data: JsonObject? = getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
                         val buses = data!!.optJsonArray("data")!!
                         val stopSequences: MutableSet<Int> = HashSet()
@@ -1242,6 +1543,7 @@ class Registry {
                             }
                         }
                         val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
+                        var counter = 0
                         val usedRealSeq: MutableSet<Int> = HashSet()
                         for (u in 0 until buses.size) {
                             val bus = buses.optJsonObject(u)!!
@@ -1249,10 +1551,11 @@ class Registry {
                                 val routeNumber = bus.optString("route")
                                 val bound = bus.optString("dir")
                                 val stopSeq = bus.optInt("seq")
-                                if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq && usedRealSeq.add(bus.optInt("eta_seq"))) {
-                                    val eta = bus.optString("eta")
-                                    if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
-                                        val mins = (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
+                                if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq) {
+                                    val seq = ++counter
+                                    if (usedRealSeq.add(bus.optInt("eta_seq"))) {
+                                        val eta = bus.optString("eta")
+                                        val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
                                         val minsRounded = mins.roundToInt()
                                         var message = "".asFormattedText()
                                         if (language == "en") {
@@ -1268,7 +1571,7 @@ class Registry {
                                                 }
                                             }
                                             if (bus.optString("rmk_en").isNotEmpty()) {
-                                                message += buildFormattedString {
+                                                message = buildFormattedString {
                                                     if (message.isEmpty()) {
                                                         append(bus.optString("rmk_en"))
                                                     } else {
@@ -1304,34 +1607,97 @@ class Registry {
                                                 }
                                             }
                                         }
-                                        if ((message.contains("預定班次") || message.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
-                                            kmbFirstScheduledBus = minsRounded.toLong()
+                                        message = if (message.isEmpty() || typhoonInfo.isAboveTyphoonSignalEight && (message strEq "ETA service suspended" || message strEq "暫停預報")) {
+                                            if (seq == 1) {
+                                                getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                            } else {
+                                                buildFormattedString {
+                                                    append("", BoldStyle)
+                                                    append("-")
+                                                }
+                                            }
+                                        } else {
+                                            "".asFormattedText(BoldStyle) + message
                                         }
-                                        jointOperated.add(JointOperatedEntry(mins, minsRounded.toLong(), message, Operator.KMB))
-                                    } else {
+                                        lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded.toLong(), 0), mins, minsRounded.toLong())
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    co === Operator.CTB -> {
+                        isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
+                        val routeNumber = route.routeNumber
+                        val routeBound = route.bound[Operator.CTB]
+                        val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$stopId/$routeNumber")
+                        val buses = data!!.optJsonArray("data")!!
+                        val stopSequences: MutableSet<Int> = HashSet()
+                        for (u in 0 until buses.size) {
+                            val bus = buses.optJsonObject(u)!!
+                            if (Operator.CTB === Operator.valueOf(bus.optString("co"))) {
+                                val bound = bus.optString("dir")
+                                if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound)) {
+                                    stopSequences.add(bus.optInt("seq"))
+                                }
+                            }
+                        }
+                        val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
+                        var counter = 0
+                        val usedRealSeq: MutableSet<Int> = HashSet()
+                        for (u in 0 until buses.size) {
+                            val bus = buses.optJsonObject(u)!!
+                            if (Operator.CTB === Operator.valueOf(bus.optString("co"))) {
+                                val bound = bus.optString("dir")
+                                val stopSeq = bus.optInt("seq")
+                                if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound) && stopSeq == matchingSeq) {
+                                    val seq = ++counter
+                                    if (usedRealSeq.add(bus.optInt("eta_seq"))) {
+                                        val eta = bus.optString("eta")
+                                        val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
+                                        val minsRounded = mins.roundToInt()
                                         var message = "".asFormattedText()
                                         if (language == "en") {
+                                            if (minsRounded > 0) {
+                                                message = buildFormattedString {
+                                                    append(minsRounded.toString(), BoldStyle)
+                                                    append(" Min.", SmallSize)
+                                                }
+                                            } else if (minsRounded > -60) {
+                                                message = buildFormattedString {
+                                                    append("-", BoldStyle)
+                                                    append(" Min.", SmallSize)
+                                                }
+                                            }
                                             if (bus.optString("rmk_en").isNotEmpty()) {
-                                                message += buildFormattedString {
+                                                message = buildFormattedString {
                                                     if (message.isEmpty()) {
-                                                        append(bus.optString("rmk_en").replace("(Final Bus)", ""))
+                                                        append(bus.optString("rmk_en"))
                                                     } else {
-                                                        append(" (${bus.optString("rmk_en").replace("(Final Bus)", "")})", SmallSize)
+                                                        append(" (${bus.optString("rmk_en")})", SmallSize)
                                                     }
                                                 }
                                             }
                                         } else {
+                                            if (minsRounded > 0) {
+                                                message = buildFormattedString {
+                                                    append(minsRounded.toString(), BoldStyle)
+                                                    append(" 分鐘", SmallSize)
+                                                }
+                                            } else if (minsRounded > -60) {
+                                                message = buildFormattedString {
+                                                    append("-", BoldStyle)
+                                                    append(" 分鐘", SmallSize)
+                                                }
+                                            }
                                             if (bus.optString("rmk_tc").isNotEmpty()) {
                                                 message += buildFormattedString {
                                                     if (message.isEmpty()) {
                                                         append(bus.optString("rmk_tc")
-                                                            .replace("(尾班車)", "")
                                                             .replace("原定", "預定")
                                                             .replace("最後班次", "尾班車")
                                                             .replace("尾班車已過", "尾班車已過本站"))
                                                     } else {
                                                         append(" (${bus.optString("rmk_tc")
-                                                            .replace("(尾班車)", "")
                                                             .replace("原定", "預定")
                                                             .replace("最後班次", "尾班車")
                                                             .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
@@ -1339,320 +1705,134 @@ class Registry {
                                                 }
                                             }
                                         }
-                                        message = if (message.isEmpty() || typhoonInfo.isAboveTyphoonSignalEight && (message strEq "ETA service suspended" || message strEq "暫停預報")) {
-                                            getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                        message = if (message.isEmpty()) {
+                                            if (seq == 1) {
+                                                getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                            } else {
+                                                buildFormattedString {
+                                                    append("", BoldStyle)
+                                                    append("-")
+                                                }
+                                            }
                                         } else {
                                             "".asFormattedText(BoldStyle) + message
                                         }
-                                        kmbSpecialMessage = message
+                                        lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded.toLong(), 0), mins, minsRounded.toLong())
                                     }
                                 }
                             }
                         }
                     }
-                    run {
-                        val routeNumber = route.routeNumber
-                        val matchingStops: List<Pair<Operator, String>>? = DATA!!.dataSheet.stopMap[stopId]
-                        val ctbStopIds: MutableList<String> = ArrayList()
-                        if (matchingStops == null) {
-                            val cacheKey = routeNumber + "_" + stopId + "_" + stopIndex + "_ctb"
-                            @Suppress("UNCHECKED_CAST")
-                            val cachedIds = objectCache[cacheKey] as List<String>?
-                            if (cachedIds == null) {
-                                val location: Coordinates = DATA!!.dataSheet.stopList[stopId]!!.location
-                                for ((key, value) in DATA!!.dataSheet.stopList.entries) {
-                                    if (Operator.CTB.matchStopIdPattern(key) && location.distance(value.location) < 0.4) {
-                                        ctbStopIds.add(key)
-                                    }
-                                }
-                                objectCache[cacheKey] = ArrayList(ctbStopIds)
-                            } else {
-                                ctbStopIds.addAll(cachedIds)
-                            }
-                        } else {
-                            for ((first, second) in matchingStops) {
-                                if (Operator.CTB === first) {
-                                    ctbStopIds.add(second)
-                                }
-                            }
-                        }
-                        val (first, second) = getAllDestinationsByDirection(routeNumber, Operator.KMB, null, null, route, stopId)
-                        val destKeys = second.asSequence().map { it.zh.replace(" ", "") }.toSet()
-                        val ctbEtaEntries: ConcurrentMutableMap<String?, MutableSet<JointOperatedEntry>> = ConcurrentMutableMap()
-                        val stopQueryData: MutableList<JsonObject?> = ArrayList()
-                        val ctbFutures: MutableList<Deferred<*>> = ArrayList(ctbStopIds.size)
-                        for (ctbStopId in ctbStopIds) {
-                            ctbFutures.add(async { stopQueryData.add(getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber")) })
-                        }
-                        for (future in ctbFutures) {
-                            future.await()
-                        }
-                        val stopSequences: MutableMap<String, MutableSet<Int>> = HashMap()
-                        val queryBusDests: Array<Array<String?>?> = arrayOfNulls(stopQueryData.size)
-                        for (i in stopQueryData.indices) {
-                            val data = stopQueryData[i]
-                            val buses = data!!.optJsonArray("data")!!
-                            val busDests = arrayOfNulls<String>(buses.size)
+                    co === Operator.NLB -> {
+                        isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
+                        val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=${route.nlbId}&stopId=$stopId&language=${Shared.language}")
+                        if (!data.isNullOrEmpty() && data.contains("estimatedArrivals")) {
+                            val buses = data.optJsonArray("estimatedArrivals")!!
                             for (u in 0 until buses.size) {
                                 val bus = buses.optJsonObject(u)!!
-                                if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
-                                    val rawBusDest = bus.optString("dest_tc").replace(" ", "")
-                                    val busDest = destKeys.asSequence().minBy { it.editDistance(rawBusDest) }
-                                    busDests[u] = busDest
-                                    stopSequences.getOrPut(busDest) { HashSet() }.add(bus.optInt("seq"))
-                                }
-                            }
-                            queryBusDests[i] = busDests
-                        }
-                        val matchingSeq = stopSequences.entries.asSequence()
-                            .map { (key, value) -> key to (value.minByOrNull { (it - stopIndex).absoluteValue }?: -1) }
-                            .toMap()
-                        for (i in stopQueryData.indices) {
-                            val data = stopQueryData[i]!!
-                            val buses = data.optJsonArray("data")!!
-                            val usedRealSeq: MutableMap<String?, MutableSet<Int>> = HashMap()
-                            for (u in 0 until buses.size) {
-                                val bus = buses.optJsonObject(u)!!
-                                if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
-                                    val busDest = queryBusDests[i]!![u]!!
-                                    val stopSeq = bus.optInt("seq")
-                                    if ((stopSeq == (matchingSeq[busDest]?: 0)) && usedRealSeq.getOrPut(busDest) { HashSet() }.add(bus.optInt("eta_seq"))) {
-                                        val eta = bus.optString("eta")
-                                        if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
-                                            val mins = (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
-                                            val minsRounded = mins.roundToInt()
-                                            var message = "".asFormattedText()
-                                            if (language == "en") {
-                                                if (minsRounded > 0) {
-                                                    message = buildFormattedString {
-                                                        append(minsRounded.toString(), BoldStyle)
-                                                        append(" Min.", SmallSize)
-                                                    }
-                                                } else if (minsRounded > -60) {
-                                                    message = buildFormattedString {
-                                                        append("-", BoldStyle)
-                                                        append(" Min.", SmallSize)
-                                                    }
-                                                }
-                                                if (bus.optString("rmk_en").isNotEmpty()) {
-                                                    message = buildFormattedString {
-                                                        if (message.isEmpty()) {
-                                                            append(bus.optString("rmk_en"))
-                                                        } else {
-                                                            append(" (${bus.optString("rmk_en")})", SmallSize)
-                                                        }
-                                                    }
-                                                }
-                                            } else {
-                                                if (minsRounded > 0) {
-                                                    message = buildFormattedString {
-                                                        append(minsRounded.toString(), BoldStyle)
-                                                        append(" 分鐘", SmallSize)
-                                                    }
-                                                } else if (minsRounded > -60) {
-                                                    message = buildFormattedString {
-                                                        append("-", BoldStyle)
-                                                        append(" 分鐘", SmallSize)
-                                                    }
-                                                }
-                                                if (bus.optString("rmk_tc").isNotEmpty()) {
-                                                    message += buildFormattedString {
-                                                        if (message.isEmpty()) {
-                                                            append(bus.optString("rmk_tc")
-                                                                .replace("(尾班車)", "")
-                                                                .replace("原定", "預定")
-                                                                .replace("最後班次", "尾班車")
-                                                                .replace("尾班車已過", "尾班車已過本站"))
-                                                        } else {
-                                                            append(" (${bus.optString("rmk_tc")
-                                                                .replace("(尾班車)", "")
-                                                                .replace("原定", "預定")
-                                                                .replace("最後班次", "尾班車")
-                                                                .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            ctbEtaEntries.synchronize {
-                                                ctbEtaEntries.getOrPut(busDest) { ConcurrentMutableSet() }.add(
-                                                    JointOperatedEntry(mins, minsRounded.toLong(), message, Operator.CTB)
-                                                )
-                                            }
+                                val seq = u + 1
+                                val eta = bus.optString("estimatedArrivalTime")
+                                val variant = bus.optString("routeVariantName").trim { it <= ' ' }
+                                val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.let { "${it.substring(0, 10)}T${it.substring(11)}" }.toLocalDateTime().toInstant(TimeZone.of("Asia/Hong_Kong")).epochSeconds - Clock.System.now().epochSeconds) / 60.0
+                                val minsRounded = mins.roundToInt()
+                                var message = "".asFormattedText()
+                                if (language == "en") {
+                                    if (minsRounded > 0) {
+                                        message = buildFormattedString {
+                                            append(minsRounded.toString(), BoldStyle)
+                                            append(" Min.", SmallSize)
+                                        }
+                                    } else if (minsRounded > -60) {
+                                        message = buildFormattedString {
+                                            append("-", BoldStyle)
+                                            append(" Min.", SmallSize)
                                         }
                                     }
-                                }
-                            }
-                        }
-                        first.asSequence().map { ctbEtaEntries[it.zh.replace(" ", "")] }.forEach {
-                            if (it != null) {
-                                jointOperated.addAll(it)
-                            }
-                        }
-                    }
-                    kmbFuture.join()
-                    if (jointOperated.isEmpty()) {
-                        if (kmbSpecialMessage.isNullOrEmpty()) {
-                            lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
-                        } else {
-                            lines[1] = ETALineEntry.textEntry(kmbSpecialMessage)
-                        }
-                    } else {
-                        var counter = 0
-                        val itr = jointOperated.asSequence().sorted().iterator()
-                        while (itr.hasNext()) {
-                            val entry = itr.next()
-                            val mins = entry.mins
-                            val minsRounded = entry.minsRounded
-                            var message = "".asFormattedText(BoldStyle) + entry.line
-                            val entryCo = entry.co
-                            if (minsRounded > kmbFirstScheduledBus && !(message.contains("預定班次") || message.contains("Scheduled Bus"))) {
-                                message += (if (Shared.language == "en") " (Scheduled Bus)" else " (預定班次)").asFormattedText(SmallSize)
-                            }
-                            message += if (entryCo === Operator.KMB) {
-                                if (route.routeNumber.getKMBSubsidiary() === KMBSubsidiary.LWB) {
-                                    (if (Shared.language == "en") " - LWB" else " - 龍運").asFormattedText(SmallSize)
                                 } else {
-                                    (if (Shared.language == "en") " - KMB" else " - 九巴").asFormattedText(SmallSize)
-                                }
-                            } else {
-                                (if (Shared.language == "en") " - CTB" else " - 城巴").asFormattedText(SmallSize)
-                            }
-                            val seq = ++counter
-                            if (seq == 1) {
-                                nextCo = entryCo
-                            }
-                            lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded)
-                        }
-                    }
-                }
-                co === Operator.KMB -> {
-                    isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                    val data: JsonObject? = getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
-                    val buses = data!!.optJsonArray("data")!!
-                    val stopSequences: MutableSet<Int> = HashSet()
-                    for (u in 0 until buses.size) {
-                        val bus = buses.optJsonObject(u)!!
-                        if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
-                            val routeNumber = bus.optString("route")
-                            val bound = bus.optString("dir")
-                            if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB]) {
-                                stopSequences.add(bus.optInt("seq"))
-                            }
-                        }
-                    }
-                    val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
-                    var counter = 0
-                    val usedRealSeq: MutableSet<Int> = HashSet()
-                    for (u in 0 until buses.size) {
-                        val bus = buses.optJsonObject(u)!!
-                        if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
-                            val routeNumber = bus.optString("route")
-                            val bound = bus.optString("dir")
-                            val stopSeq = bus.optInt("seq")
-                            if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq) {
-                                val seq = ++counter
-                                if (usedRealSeq.add(bus.optInt("eta_seq"))) {
-                                    val eta = bus.optString("eta")
-                                    val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
-                                    val minsRounded = mins.roundToInt()
-                                    var message = "".asFormattedText()
-                                    if (language == "en") {
-                                        if (minsRounded > 0) {
-                                            message = buildFormattedString {
-                                                append(minsRounded.toString(), BoldStyle)
-                                                append(" Min.", SmallSize)
-                                            }
-                                        } else if (minsRounded > -60) {
-                                            message = buildFormattedString {
-                                                append("-", BoldStyle)
-                                                append(" Min.", SmallSize)
-                                            }
+                                    if (minsRounded > 0) {
+                                        message = buildFormattedString {
+                                            append(minsRounded.toString(), BoldStyle)
+                                            append(" 分鐘", SmallSize)
                                         }
-                                        if (bus.optString("rmk_en").isNotEmpty()) {
-                                            message = buildFormattedString {
-                                                if (message.isEmpty()) {
-                                                    append(bus.optString("rmk_en"))
-                                                } else {
-                                                    append(" (${bus.optString("rmk_en")})", SmallSize)
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        if (minsRounded > 0) {
-                                            message = buildFormattedString {
-                                                append(minsRounded.toString(), BoldStyle)
-                                                append(" 分鐘", SmallSize)
-                                            }
-                                        } else if (minsRounded > -60) {
-                                            message = buildFormattedString {
-                                                append("-", BoldStyle)
-                                                append(" 分鐘", SmallSize)
-                                            }
-                                        }
-                                        if (bus.optString("rmk_tc").isNotEmpty()) {
-                                            message += buildFormattedString {
-                                                if (message.isEmpty()) {
-                                                    append(bus.optString("rmk_tc")
-                                                        .replace("原定", "預定")
-                                                        .replace("最後班次", "尾班車")
-                                                        .replace("尾班車已過", "尾班車已過本站"))
-                                                } else {
-                                                    append(" (${bus.optString("rmk_tc")
-                                                        .replace("原定", "預定")
-                                                        .replace("最後班次", "尾班車")
-                                                        .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
-                                                }
-                                            }
+                                    } else if (minsRounded > -60) {
+                                        message = buildFormattedString {
+                                            append("-", BoldStyle)
+                                            append(" 分鐘", SmallSize)
                                         }
                                     }
-                                    message = if (message.isEmpty() || typhoonInfo.isAboveTyphoonSignalEight && (message strEq "ETA service suspended" || message strEq "暫停預報")) {
-                                        if (seq == 1) {
-                                            getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                }
+                                if (variant.isNotEmpty()) {
+                                    message += buildFormattedString {
+                                        if (message.isEmpty()) {
+                                            append(variant
+                                                .replace("原定", "預定")
+                                                .replace("最後班次", "尾班車")
+                                                .replace("尾班車已過", "尾班車已過本站"))
                                         } else {
-                                            buildFormattedString {
-                                                append("", BoldStyle)
-                                                append("-")
-                                            }
+                                            append(" (${variant
+                                                .replace("原定", "預定")
+                                                .replace("最後班次", "尾班車")
+                                                .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
                                         }
-                                    } else {
-                                        "".asFormattedText(BoldStyle) + message
                                     }
-                                    lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded.toLong(), 0), mins, minsRounded.toLong())
                                 }
+                                message = if (message.isEmpty()) {
+                                    if (seq == 1) {
+                                        getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                    } else {
+                                        buildFormattedString {
+                                            append("", BoldStyle)
+                                            append("-")
+                                        }
+                                    }
+                                } else {
+                                    "".asFormattedText(BoldStyle) + message
+                                }
+                                lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded.toLong(), 0), mins, minsRounded.toLong())
                             }
                         }
                     }
-                }
-                co === Operator.CTB -> {
-                    isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                    val routeNumber = route.routeNumber
-                    val routeBound = route.bound[Operator.CTB]
-                    val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$stopId/$routeNumber")
-                    val buses = data!!.optJsonArray("data")!!
-                    val stopSequences: MutableSet<Int> = HashSet()
-                    for (u in 0 until buses.size) {
-                        val bus = buses.optJsonObject(u)!!
-                        if (Operator.CTB === Operator.valueOf(bus.optString("co"))) {
-                            val bound = bus.optString("dir")
-                            if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound)) {
-                                stopSequences.add(bus.optInt("seq"))
-                            }
+                    co === Operator.MTR_BUS -> {
+                        isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
+                        val routeNumber = route.routeNumber
+                        val body = buildJsonObject {
+                            put("language", Shared.language)
+                            put("routeName", routeNumber)
                         }
-                    }
-                    val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
-                    var counter = 0
-                    val usedRealSeq: MutableSet<Int> = HashSet()
-                    for (u in 0 until buses.size) {
-                        val bus = buses.optJsonObject(u)!!
-                        if (Operator.CTB === Operator.valueOf(bus.optString("co"))) {
-                            val bound = bus.optString("dir")
-                            val stopSeq = bus.optInt("seq")
-                            if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound) && stopSeq == matchingSeq) {
-                                val seq = ++counter
-                                if (usedRealSeq.add(bus.optInt("eta_seq"))) {
-                                    val eta = bus.optString("eta")
-                                    val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
-                                    val minsRounded = mins.roundToInt()
+                        val data: JsonObject? = postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body)
+                        val busStops = data!!.optJsonArray("busStop")!!
+                        for (k in 0 until busStops.size) {
+                            val busStop = busStops.optJsonObject(k)!!
+                            val buses = busStop.optJsonArray("bus")!!
+                            val busStopId = busStop.optString("busStopId")
+                            for (u in 0 until buses.size) {
+                                val bus = buses.optJsonObject(u)!!
+                                val seq = u + 1
+                                var eta = bus.optDouble("arrivalTimeInSecond")
+                                if (eta >= 108000) {
+                                    eta = bus.optDouble("departureTimeInSecond")
+                                }
+                                var remark = bus.optString("busRemark")
+                                if (remark.isEmpty() || remark.equals("null", ignoreCase = true)) {
+                                    remark = ""
+                                }
+                                val isScheduled = bus.optString("isScheduled") == "1"
+                                if (isScheduled) {
+                                    if (remark.isNotEmpty()) {
+                                        remark += "/"
+                                    }
+                                    remark += if (language == "en") "Scheduled Bus" else "預定班次"
+                                }
+                                val isDelayed = bus.optString("isDelayed") == "1"
+                                if (isDelayed) {
+                                    if (remark.isNotEmpty()) {
+                                        remark += "/"
+                                    }
+                                    remark += if (language == "en") "Bus Delayed" else "行車緩慢"
+                                }
+                                val mins = eta / 60.0
+                                val minsRounded = floor(mins).toLong()
+                                if (DATA!!.mtrBusStopAlias[stopId]!!.contains(busStopId)) {
                                     var message = "".asFormattedText()
                                     if (language == "en") {
                                         if (minsRounded > 0) {
@@ -1666,15 +1846,6 @@ class Registry {
                                                 append(" Min.", SmallSize)
                                             }
                                         }
-                                        if (bus.optString("rmk_en").isNotEmpty()) {
-                                            message = buildFormattedString {
-                                                if (message.isEmpty()) {
-                                                    append(bus.optString("rmk_en"))
-                                                } else {
-                                                    append(" (${bus.optString("rmk_en")})", SmallSize)
-                                                }
-                                            }
-                                        }
                                     } else {
                                         if (minsRounded > 0) {
                                             message = buildFormattedString {
@@ -1687,19 +1858,19 @@ class Registry {
                                                 append(" 分鐘", SmallSize)
                                             }
                                         }
-                                        if (bus.optString("rmk_tc").isNotEmpty()) {
-                                            message += buildFormattedString {
-                                                if (message.isEmpty()) {
-                                                    append(bus.optString("rmk_tc")
-                                                        .replace("原定", "預定")
-                                                        .replace("最後班次", "尾班車")
-                                                        .replace("尾班車已過", "尾班車已過本站"))
-                                                } else {
-                                                    append(" (${bus.optString("rmk_tc")
-                                                        .replace("原定", "預定")
-                                                        .replace("最後班次", "尾班車")
-                                                        .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
-                                                }
+                                    }
+                                    if (remark.isNotEmpty()) {
+                                        message += buildFormattedString {
+                                            if (message.isEmpty()) {
+                                                append(remark
+                                                    .replace("原定", "預定")
+                                                    .replace("最後班次", "尾班車")
+                                                    .replace("尾班車已過", "尾班車已過本站"))
+                                            } else {
+                                                append(" (${remark
+                                                    .replace("原定", "預定")
+                                                    .replace("最後班次", "尾班車")
+                                                    .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
                                             }
                                         }
                                     }
@@ -1715,23 +1886,46 @@ class Registry {
                                     } else {
                                         "".asFormattedText(BoldStyle) + message
                                     }
-                                    lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded.toLong(), 0), mins, minsRounded.toLong())
+                                    lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded)
                                 }
                             }
                         }
                     }
-                }
-                co === Operator.NLB -> {
-                    isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                    val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=${route.nlbId}&stopId=$stopId&language=${Shared.language}")
-                    if (!data.isNullOrEmpty() && data.contains("estimatedArrivals")) {
-                        val buses = data.optJsonArray("estimatedArrivals")!!
-                        for (u in 0 until buses.size) {
-                            val bus = buses.optJsonObject(u)!!
-                            val seq = u + 1
-                            val eta = bus.optString("estimatedArrivalTime")
-                            val variant = bus.optString("routeVariantName").trim { it <= ' ' }
-                            val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.let { "${it.substring(0, 10)}T${it.substring(11)}" }.toLocalDateTime().toInstant(TimeZone.of("Asia/Hong_Kong")).epochSeconds - Clock.System.now().epochSeconds) / 60.0
+                    co === Operator.GMB -> {
+                        isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
+                        val data: JsonObject? = getJSONResponse("https://data.etagmb.gov.hk/eta/stop/$stopId")
+                        val stopSequences: MutableSet<Int> = HashSet()
+                        val busList: MutableList<Triple<Int, Double, JsonObject>> = ArrayList()
+                        for (i in 0 until data!!.optJsonArray("data")!!.size) {
+                            val routeData = data.optJsonArray("data")!!.optJsonObject(i)!!
+                            val buses = routeData.optJsonArray("eta")
+                            val filteredEntry = DATA!!.dataSheet.routeList.values.firstOrNull { it.bound.containsKey(Operator.GMB) && it.gtfsId == routeData.optString("route_id") }
+                            if (filteredEntry != null && buses != null) {
+                                val routeNumber = filteredEntry.routeNumber
+                                val stopSeq = routeData.optInt("stop_seq")
+                                for (u in 0 until buses.size) {
+                                    val bus = buses.optJsonObject(u)!!
+                                    if (routeNumber == route.routeNumber) {
+                                        val eta = bus.optString("timestamp")
+                                        val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
+                                        stopSequences.add(stopSeq)
+                                        busList.add(Triple(stopSeq, mins, bus))
+                                    }
+                                }
+                            }
+                        }
+                        if (stopSequences.size > 1) {
+                            val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
+                            busList.removeAll { it.first != matchingSeq }
+                        }
+                        busList.sortBy { it.second }
+                        for (i in busList.indices) {
+                            val (_, mins, bus) = busList[i]
+                            val seq = i + 1
+                            var remark = if (language == "en") bus.optString("remarks_en") else bus.optString("remarks_tc")
+                            if (remark.equals("null", ignoreCase = true)) {
+                                remark = ""
+                            }
                             val minsRounded = mins.roundToInt()
                             var message = "".asFormattedText()
                             if (language == "en") {
@@ -1759,15 +1953,15 @@ class Registry {
                                     }
                                 }
                             }
-                            if (variant.isNotEmpty()) {
+                            if (remark.isNotEmpty()) {
                                 message += buildFormattedString {
                                     if (message.isEmpty()) {
-                                        append(variant
+                                        append(remark
                                             .replace("原定", "預定")
                                             .replace("最後班次", "尾班車")
                                             .replace("尾班車已過", "尾班車已過本站"))
                                     } else {
-                                        append(" (${variant
+                                        append(" (${remark
                                             .replace("原定", "預定")
                                             .replace("最後班次", "尾班車")
                                             .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
@@ -1789,312 +1983,42 @@ class Registry {
                             lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded.toLong(), 0), mins, minsRounded.toLong())
                         }
                     }
-                }
-                co === Operator.MTR_BUS -> {
-                    isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                    val routeNumber = route.routeNumber
-                    val body = buildJsonObject {
-                        put("language", Shared.language)
-                        put("routeName", routeNumber)
-                    }
-                    val data: JsonObject? = postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body)
-                    val busStops = data!!.optJsonArray("busStop")!!
-                    for (k in 0 until busStops.size) {
-                        val busStop = busStops.optJsonObject(k)!!
-                        val buses = busStop.optJsonArray("bus")!!
-                        val busStopId = busStop.optString("busStopId")
-                        for (u in 0 until buses.size) {
-                            val bus = buses.optJsonObject(u)!!
-                            val seq = u + 1
-                            var eta = bus.optDouble("arrivalTimeInSecond")
-                            if (eta >= 108000) {
-                                eta = bus.optDouble("departureTimeInSecond")
-                            }
-                            var remark = bus.optString("busRemark")
-                            if (remark.isEmpty() || remark.equals("null", ignoreCase = true)) {
-                                remark = ""
-                            }
-                            val isScheduled = bus.optString("isScheduled") == "1"
-                            if (isScheduled) {
-                                if (remark.isNotEmpty()) {
-                                    remark += "/"
-                                }
-                                remark += if (language == "en") "Scheduled Bus" else "預定班次"
-                            }
-                            val isDelayed = bus.optString("isDelayed") == "1"
-                            if (isDelayed) {
-                                if (remark.isNotEmpty()) {
-                                    remark += "/"
-                                }
-                                remark += if (language == "en") "Bus Delayed" else "行車緩慢"
-                            }
-                            val mins = eta / 60.0
-                            val minsRounded = floor(mins).toLong()
-                            if (DATA!!.mtrBusStopAlias[stopId]!!.contains(busStopId)) {
-                                var message = "".asFormattedText()
-                                if (language == "en") {
-                                    if (minsRounded > 0) {
-                                        message = buildFormattedString {
-                                            append(minsRounded.toString(), BoldStyle)
-                                            append(" Min.", SmallSize)
-                                        }
-                                    } else if (minsRounded > -60) {
-                                        message = buildFormattedString {
-                                            append("-", BoldStyle)
-                                            append(" Min.", SmallSize)
-                                        }
-                                    }
-                                } else {
-                                    if (minsRounded > 0) {
-                                        message = buildFormattedString {
-                                            append(minsRounded.toString(), BoldStyle)
-                                            append(" 分鐘", SmallSize)
-                                        }
-                                    } else if (minsRounded > -60) {
-                                        message = buildFormattedString {
-                                            append("-", BoldStyle)
-                                            append(" 分鐘", SmallSize)
-                                        }
-                                    }
-                                }
-                                if (remark.isNotEmpty()) {
-                                    message += buildFormattedString {
-                                        if (message.isEmpty()) {
-                                            append(remark
-                                                .replace("原定", "預定")
-                                                .replace("最後班次", "尾班車")
-                                                .replace("尾班車已過", "尾班車已過本站"))
-                                        } else {
-                                            append(" (${remark
-                                                .replace("原定", "預定")
-                                                .replace("最後班次", "尾班車")
-                                                .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
-                                        }
-                                    }
-                                }
-                                message = if (message.isEmpty()) {
-                                    if (seq == 1) {
-                                        getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
-                                    } else {
-                                        buildFormattedString {
-                                            append("", BoldStyle)
-                                            append("-")
-                                        }
-                                    }
-                                } else {
-                                    "".asFormattedText(BoldStyle) + message
-                                }
-                                lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded)
-                            }
-                        }
-                    }
-                }
-                co === Operator.GMB -> {
-                    isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                    val data: JsonObject? = getJSONResponse("https://data.etagmb.gov.hk/eta/stop/$stopId")
-                    val stopSequences: MutableSet<Int> = HashSet()
-                    val busList: MutableList<Triple<Int, Double, JsonObject>> = ArrayList()
-                    for (i in 0 until data!!.optJsonArray("data")!!.size) {
-                        val routeData = data.optJsonArray("data")!!.optJsonObject(i)!!
-                        val buses = routeData.optJsonArray("eta")
-                        val filteredEntry = DATA!!.dataSheet.routeList.values.firstOrNull { it.bound.containsKey(Operator.GMB) && it.gtfsId == routeData.optString("route_id") }
-                        if (filteredEntry != null && buses != null) {
-                            val routeNumber = filteredEntry.routeNumber
-                            val stopSeq = routeData.optInt("stop_seq")
-                            for (u in 0 until buses.size) {
-                                val bus = buses.optJsonObject(u)!!
-                                if (routeNumber == route.routeNumber) {
-                                    val eta = bus.optString("timestamp")
-                                    val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - Clock.System.now().epochSeconds) / 60.0
-                                    stopSequences.add(stopSeq)
-                                    busList.add(Triple(stopSeq, mins, bus))
-                                }
-                            }
-                        }
-                    }
-                    if (stopSequences.size > 1) {
-                        val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
-                        busList.removeAll { it.first != matchingSeq }
-                    }
-                    busList.sortBy { it.second }
-                    for (i in busList.indices) {
-                        val (_, mins, bus) = busList[i]
-                        val seq = i + 1
-                        var remark = if (language == "en") bus.optString("remarks_en") else bus.optString("remarks_tc")
-                        if (remark.equals("null", ignoreCase = true)) {
-                            remark = ""
-                        }
-                        val minsRounded = mins.roundToInt()
-                        var message = "".asFormattedText()
-                        if (language == "en") {
-                            if (minsRounded > 0) {
-                                message = buildFormattedString {
-                                    append(minsRounded.toString(), BoldStyle)
-                                    append(" Min.", SmallSize)
-                                }
-                            } else if (minsRounded > -60) {
-                                message = buildFormattedString {
-                                    append("-", BoldStyle)
-                                    append(" Min.", SmallSize)
-                                }
-                            }
+                    co === Operator.LRT -> {
+                        isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine
+                        val stopsList = route.stops[Operator.LRT]!!
+                        if (stopsList.indexOf(stopId) + 1 >= stopsList.size) {
+                            isMtrEndOfLine = true
+                            lines[1] =
+                                ETALineEntry.textEntry(if (Shared.language == "en") "End of Line" else "終點站")
                         } else {
-                            if (minsRounded > 0) {
-                                message = buildFormattedString {
-                                    append(minsRounded.toString(), BoldStyle)
-                                    append(" 分鐘", SmallSize)
-                                }
-                            } else if (minsRounded > -60) {
-                                message = buildFormattedString {
-                                    append("-", BoldStyle)
-                                    append(" 分鐘", SmallSize)
-                                }
-                            }
-                        }
-                        if (remark.isNotEmpty()) {
-                            message += buildFormattedString {
-                                if (message.isEmpty()) {
-                                    append(remark
-                                        .replace("原定", "預定")
-                                        .replace("最後班次", "尾班車")
-                                        .replace("尾班車已過", "尾班車已過本站"))
-                                } else {
-                                    append(" (${remark
-                                        .replace("原定", "預定")
-                                        .replace("最後班次", "尾班車")
-                                        .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
-                                }
-                            }
-                        }
-                        message = if (message.isEmpty()) {
-                            if (seq == 1) {
-                                getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
-                            } else {
-                                buildFormattedString {
-                                    append("", BoldStyle)
-                                    append("-")
-                                }
-                            }
-                        } else {
-                            "".asFormattedText(BoldStyle) + message
-                        }
-                        lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded.toLong(), 0), mins, minsRounded.toLong())
-                    }
-                }
-                co === Operator.LRT -> {
-                    isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine
-                    val stopsList = route.stops[Operator.LRT]!!
-                    if (stopsList.indexOf(stopId) + 1 >= stopsList.size) {
-                        isMtrEndOfLine = true
-                        lines[1] =
-                            ETALineEntry.textEntry(if (Shared.language == "en") "End of Line" else "終點站")
-                    } else {
-                        val hongKongTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Hong_Kong"))
-                        val hour = hongKongTime.hour
-                        val results: MutableList<LrtETAData> = ArrayList()
-                        val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=${stopId.substring(2)}")
-                        if (data!!.optInt("status") != 0) {
-                            val platformList = data.optJsonArray("platform_list")!!
-                            for (i in 0 until platformList.size) {
-                                val platform = platformList.optJsonObject(i)!!
-                                val platformNumber = platform.optInt("platform_id")
-                                val routeList = platform.optJsonArray("route_list")
-                                if (routeList != null) {
-                                    for (u in 0 until routeList.size) {
-                                        val routeData = routeList.optJsonObject(u)!!
-                                        val routeNumber = routeData.optString("route_no")
-                                        val destCh = routeData.optString("dest_ch")
-                                        if (routeNumber == route.routeNumber && isLrtStopOnOrAfter(stopId, destCh, route)) {
-                                            val mins = Regex("([0-9]+) *min").find(routeData.optString("time_en"))?.groupValues?.getOrNull(1)?.toLong()?: 0
-                                            val minsMsg = routeData.optString(if (Shared.language == "en") "time_en" else "time_ch")
-                                            val dest = routeData.optString(if (Shared.language == "en") "dest_en" else "dest_ch")
-                                            val trainLength = routeData.optInt("train_length")
-                                            results.add(LrtETAData(routeNumber, dest, trainLength, platformNumber, mins, minsMsg))
+                            val hongKongTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Hong_Kong"))
+                            val hour = hongKongTime.hour
+                            val results: MutableList<LrtETAData> = ArrayList()
+                            val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=${stopId.substring(2)}")
+                            if (data!!.optInt("status") != 0) {
+                                val platformList = data.optJsonArray("platform_list")!!
+                                for (i in 0 until platformList.size) {
+                                    val platform = platformList.optJsonObject(i)!!
+                                    val platformNumber = platform.optInt("platform_id")
+                                    val routeList = platform.optJsonArray("route_list")
+                                    if (routeList != null) {
+                                        for (u in 0 until routeList.size) {
+                                            val routeData = routeList.optJsonObject(u)!!
+                                            val routeNumber = routeData.optString("route_no")
+                                            val destCh = routeData.optString("dest_ch")
+                                            if (routeNumber == route.routeNumber && isLrtStopOnOrAfter(stopId, destCh, route)) {
+                                                val mins = Regex("([0-9]+) *min").find(routeData.optString("time_en"))?.groupValues?.getOrNull(1)?.toLong()?: 0
+                                                val minsMsg = routeData.optString(if (Shared.language == "en") "time_en" else "time_ch")
+                                                val dest = routeData.optString(if (Shared.language == "en") "dest_en" else "dest_ch")
+                                                val trainLength = routeData.optInt("train_length")
+                                                results.add(LrtETAData(routeNumber, dest, trainLength, platformNumber, mins, minsMsg))
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        if (results.isEmpty()) {
-                            if (hour < 3) {
-                                lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Last train has departed" else "尾班車已開出")
-                            } else if (hour < 6) {
-                                lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
-                            } else {
-                                lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Server unable to provide data" else "系統未能提供資訊")
-                            }
-                        } else {
-                            val lineColor = co.getColor(route.routeNumber, 0xFFFFFFFFL)
-                            results.sortWith(naturalOrder())
-                            for (i in results.indices) {
-                                val lrt = results[i]
-                                val seq = i + 1
-                                var minsMessage = lrt.etaMessage
-                                if (minsMessage == "-") {
-                                    minsMessage = if (Shared.language == "en") "Departing" else "正在離開"
-                                }
-                                val annotatedMinsMessage = if (minsMessage == "即將抵達" || minsMessage == "Arriving" || minsMessage == "正在離開" || minsMessage == "Departing") {
-                                    minsMessage.asFormattedText(BoldStyle)
-                                } else {
-                                    val mins = Regex("^([0-9]+)").find(minsMessage)?.groupValues?.getOrNull(1)?.toLong()
-                                    if (mins == null) {
-                                        minsMessage.asFormattedText(BoldStyle)
-                                    } else {
-                                        buildFormattedString {
-                                            append(mins.toString(), BoldStyle)
-                                            append(if (language == "en") " Min." else " 分鐘", SmallSize)
-                                        }
-                                    }
-                                }
-                                val mins = lrt.eta
-                                val message = buildFormattedString {
-                                    append("", BoldStyle)
-                                    append(lrt.platformNumber.getCircledNumber(), Colored(lineColor))
-                                    append(" ")
-                                    for (u in 0 until lrt.trainLength) {
-                                        appendInlineContent(InlineImage.LRV, "\uD83D\uDE83")
-                                    }
-                                    if (lrt.trainLength == 1) {
-                                        appendInlineContent(InlineImage.LRV_EMPTY, " ")
-                                    }
-                                    append(" ")
-                                    append(annotatedMinsMessage)
-                                }
-                                lines[seq] = ETALineEntry.etaEntry(message, toShortText(mins, 1), mins.toDouble(), mins)
-                            }
-                        }
-                    }
-                }
-                co === Operator.MTR -> {
-                    isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine
-                    val lineName = route.routeNumber
-                    val lineColor = co.getColor(lineName, 0xFFFFFFFF)
-                    val bound = route.bound[Operator.MTR]
-                    if (isMtrStopEndOfLine(stopId, lineName, bound)) {
-                        isMtrEndOfLine = true
-                        lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "End of Line" else "終點站")
-                    } else {
-                        val hongKongTimeZone = TimeZone.of("Asia/Hong_Kong")
-                        val hongKongTime = Clock.System.now().toLocalDateTime(hongKongTimeZone)
-                        val hour = hongKongTime.hour
-                        val dayOfWeek = hongKongTime.dayOfWeek
-                        val start = currentTimeMillis()
-                        val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=$lineName&sta=$stopId")
-                        if (data!!.optInt("status") == 0) {
-                            lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Server unable to provide data" else "系統未能提供資訊")
-                        } else {
-                            val lineStops = data.optJsonObject("data")!!.optJsonObject("$lineName-$stopId")
-                            val raceDay = dayOfWeek == DayOfWeek.WEDNESDAY || dayOfWeek == DayOfWeek.SUNDAY
-                            if (lineStops == null) {
-                                if (stopId == "RAC") {
-                                    if (!raceDay) {
-                                        lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service on race days only" else "僅在賽馬日提供服務")
-                                    } else if (hour >= 15 || hour < 3) {
-                                        lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Last train has departed" else "尾班車已開出")
-                                    } else {
-                                        lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
-                                    }
-                                } else if (hour < 3 || stopId == "LMC" && hour >= 10 || stopId == "SHS" && hour >= 11) {
+                            if (results.isEmpty()) {
+                                if (hour < 3) {
                                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Last train has departed" else "尾班車已開出")
                                 } else if (hour < 6) {
                                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
@@ -2102,10 +2026,68 @@ class Registry {
                                     lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Server unable to provide data" else "系統未能提供資訊")
                                 }
                             } else {
-                                val delayed = data.optString("isdelay", "N") != "N"
-                                val dir = if (bound == "UT") "UP" else "DOWN"
-                                val trains = lineStops.optJsonArray(dir)
-                                if (trains.isNullOrEmpty()) {
+                                val lineColor = co.getColor(route.routeNumber, 0xFFFFFFFFL)
+                                results.sortWith(naturalOrder())
+                                for (i in results.indices) {
+                                    val lrt = results[i]
+                                    val seq = i + 1
+                                    var minsMessage = lrt.etaMessage
+                                    if (minsMessage == "-") {
+                                        minsMessage = if (Shared.language == "en") "Departing" else "正在離開"
+                                    }
+                                    val annotatedMinsMessage = if (minsMessage == "即將抵達" || minsMessage == "Arriving" || minsMessage == "正在離開" || minsMessage == "Departing") {
+                                        minsMessage.asFormattedText(BoldStyle)
+                                    } else {
+                                        val mins = Regex("^([0-9]+)").find(minsMessage)?.groupValues?.getOrNull(1)?.toLong()
+                                        if (mins == null) {
+                                            minsMessage.asFormattedText(BoldStyle)
+                                        } else {
+                                            buildFormattedString {
+                                                append(mins.toString(), BoldStyle)
+                                                append(if (language == "en") " Min." else " 分鐘", SmallSize)
+                                            }
+                                        }
+                                    }
+                                    val mins = lrt.eta
+                                    val message = buildFormattedString {
+                                        append("", BoldStyle)
+                                        append(lrt.platformNumber.getCircledNumber(), Colored(lineColor))
+                                        append(" ")
+                                        for (u in 0 until lrt.trainLength) {
+                                            appendInlineContent(InlineImage.LRV, "\uD83D\uDE83")
+                                        }
+                                        if (lrt.trainLength == 1) {
+                                            appendInlineContent(InlineImage.LRV_EMPTY, " ")
+                                        }
+                                        append(" ")
+                                        append(annotatedMinsMessage)
+                                    }
+                                    lines[seq] = ETALineEntry.etaEntry(message, toShortText(mins, 1), mins.toDouble(), mins)
+                                }
+                            }
+                        }
+                    }
+                    co === Operator.MTR -> {
+                        isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine
+                        val lineName = route.routeNumber
+                        val lineColor = co.getColor(lineName, 0xFFFFFFFF)
+                        val bound = route.bound[Operator.MTR]
+                        if (isMtrStopEndOfLine(stopId, lineName, bound)) {
+                            isMtrEndOfLine = true
+                            lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "End of Line" else "終點站")
+                        } else {
+                            val hongKongTimeZone = TimeZone.of("Asia/Hong_Kong")
+                            val hongKongTime = Clock.System.now().toLocalDateTime(hongKongTimeZone)
+                            val hour = hongKongTime.hour
+                            val dayOfWeek = hongKongTime.dayOfWeek
+                            val start = currentTimeMillis()
+                            val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=$lineName&sta=$stopId")
+                            if (data!!.optInt("status") == 0) {
+                                lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Server unable to provide data" else "系統未能提供資訊")
+                            } else {
+                                val lineStops = data.optJsonObject("data")!!.optJsonObject("$lineName-$stopId")
+                                val raceDay = dayOfWeek == DayOfWeek.WEDNESDAY || dayOfWeek == DayOfWeek.SUNDAY
+                                if (lineStops == null) {
                                     if (stopId == "RAC") {
                                         if (!raceDay) {
                                             lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service on race days only" else "僅在賽馬日提供服務")
@@ -2122,65 +2104,89 @@ class Registry {
                                         lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Server unable to provide data" else "系統未能提供資訊")
                                     }
                                 } else {
-                                    for (u in 0 until trains.size) {
-                                        val trainData = trains.optJsonObject(u)!!
-                                        val seq = trainData.optString("seq").toInt()
-                                        val platform = trainData.optString("plat").toInt()
-                                        val specialRoute = trainData.optString("route")
-                                        var dest: String = DATA!!.dataSheet.stopList[trainData.optString("dest")]!!.name[Shared.language]
-                                        if (stopId != "AIR") {
-                                            if (dest == "博覽館") {
-                                                dest = "機場及博覽館"
-                                            } else if (dest == "AsiaWorld-Expo") {
-                                                dest = "Airport & AsiaWorld-Expo"
+                                    val delayed = data.optString("isdelay", "N") != "N"
+                                    val dir = if (bound == "UT") "UP" else "DOWN"
+                                    val trains = lineStops.optJsonArray(dir)
+                                    if (trains.isNullOrEmpty()) {
+                                        if (stopId == "RAC") {
+                                            if (!raceDay) {
+                                                lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service on race days only" else "僅在賽馬日提供服務")
+                                            } else if (hour >= 15 || hour < 3) {
+                                                lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Last train has departed" else "尾班車已開出")
+                                            } else {
+                                                lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
                                             }
-                                        }
-                                        var annotatedDest = dest.asFormattedText()
-                                        if (specialRoute.isNotEmpty() && !isMtrStopOnOrAfter(stopId, specialRoute, lineName, bound)) {
-                                            val via: String = DATA!!.dataSheet.stopList[specialRoute]!!.name[Shared.language]
-                                            annotatedDest += ((if (Shared.language == "en") " via " else " 經") + via).asFormattedText(
-                                                SmallSize
-                                            )
-                                        }
-                                        val timeType = trainData.optString("timeType")
-                                        val eta = trainData.optString("time").let { "${it.substring(0, 10)}T${it.substring(11)}" }
-                                        val mins = (eta.toLocalDateTime().toInstant(hongKongTimeZone).toEpochMilliseconds() - currentTimeMillis()) / 60000.0
-                                        val minsRounded = mins.roundToInt()
-                                        val minsMessage = if (minsRounded > 59) {
-                                            val time = hongKongTime.toInstant(hongKongTimeZone).plus(minsRounded, DateTimeUnit.MINUTE, hongKongTimeZone).toLocalDateTime(hongKongTimeZone)
-                                            "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}".asFormattedText(BoldStyle)
-                                        } else if (minsRounded > 1) {
-                                            buildFormattedString {
-                                                append(minsRounded.toString(), BoldStyle)
-                                                append(if (Shared.language == "en") " Min." else " 分鐘", SmallSize)
-                                            }
-                                        } else if (minsRounded == 1 && timeType != "D") {
-                                            (if (Shared.language == "en") "Arriving" else "即將抵達").asFormattedText(BoldStyle)
+                                        } else if (hour < 3 || stopId == "LMC" && hour >= 10 || stopId == "SHS" && hour >= 11) {
+                                            lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Last train has departed" else "尾班車已開出")
+                                        } else if (hour < 6) {
+                                            lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Service has not yet started" else "今日服務尚未開始")
                                         } else {
-                                            (if (Shared.language == "en") "Departing" else "正在離開").asFormattedText(BoldStyle)
+                                            lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Server unable to provide data" else "系統未能提供資訊")
                                         }
-                                        var message = buildFormattedString {
-                                            append("", BoldStyle)
-                                            append(platform.getCircledNumber(), Colored(lineColor))
-                                            append(" ")
-                                            append(annotatedDest)
-                                            append(" ")
-                                            append(minsMessage)
-                                        }
-                                        if (seq == 1) {
-                                            if (delayed) {
-                                                message += (if (Shared.language == "en") " (Delayed)" else " (服務延誤)").asFormattedText(SmallSize)
+                                    } else {
+                                        for (u in 0 until trains.size) {
+                                            val trainData = trains.optJsonObject(u)!!
+                                            val seq = trainData.optString("seq").toInt()
+                                            val platform = trainData.optString("plat").toInt()
+                                            val specialRoute = trainData.optString("route")
+                                            var dest: String = DATA!!.dataSheet.stopList[trainData.optString("dest")]!!.name[Shared.language]
+                                            if (stopId != "AIR") {
+                                                if (dest == "博覽館") {
+                                                    dest = "機場及博覽館"
+                                                } else if (dest == "AsiaWorld-Expo") {
+                                                    dest = "Airport & AsiaWorld-Expo"
+                                                }
                                             }
+                                            var annotatedDest = dest.asFormattedText()
+                                            if (specialRoute.isNotEmpty() && !isMtrStopOnOrAfter(stopId, specialRoute, lineName, bound)) {
+                                                val via: String = DATA!!.dataSheet.stopList[specialRoute]!!.name[Shared.language]
+                                                annotatedDest += ((if (Shared.language == "en") " via " else " 經") + via).asFormattedText(
+                                                    SmallSize
+                                                )
+                                            }
+                                            val timeType = trainData.optString("timeType")
+                                            val eta = trainData.optString("time").let { "${it.substring(0, 10)}T${it.substring(11)}" }
+                                            val mins = (eta.toLocalDateTime().toInstant(hongKongTimeZone).toEpochMilliseconds() - currentTimeMillis()) / 60000.0
+                                            val minsRounded = mins.roundToInt()
+                                            val minsMessage = if (minsRounded > 59) {
+                                                val time = hongKongTime.toInstant(hongKongTimeZone).plus(minsRounded, DateTimeUnit.MINUTE, hongKongTimeZone).toLocalDateTime(hongKongTimeZone)
+                                                "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}".asFormattedText(BoldStyle)
+                                            } else if (minsRounded > 1) {
+                                                buildFormattedString {
+                                                    append(minsRounded.toString(), BoldStyle)
+                                                    append(if (Shared.language == "en") " Min." else " 分鐘", SmallSize)
+                                                }
+                                            } else if (minsRounded == 1 && timeType != "D") {
+                                                (if (Shared.language == "en") "Arriving" else "即將抵達").asFormattedText(BoldStyle)
+                                            } else {
+                                                (if (Shared.language == "en") "Departing" else "正在離開").asFormattedText(BoldStyle)
+                                            }
+                                            var message = buildFormattedString {
+                                                append("", BoldStyle)
+                                                append(platform.getCircledNumber(), Colored(lineColor))
+                                                append(" ")
+                                                append(annotatedDest)
+                                                append(" ")
+                                                append(minsMessage)
+                                            }
+                                            if (seq == 1) {
+                                                if (delayed) {
+                                                    message += (if (Shared.language == "en") " (Delayed)" else " (服務延誤)").asFormattedText(SmallSize)
+                                                }
+                                            }
+                                            lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded.toLong(), 1), mins, minsRounded.toLong())
                                         }
-                                        lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded.toLong(), 1), mins, minsRounded.toLong())
                                     }
                                 }
                             }
                         }
                     }
                 }
+                ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, nextCo, lines)
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                ETAQueryResult.connectionError(context.currentBackgroundRestrictions(), co)
             }
-            ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, nextCo, lines)
         })
         return pending
     }
@@ -2231,6 +2237,26 @@ class Registry {
                 e.printStackTrace()
                 try { deferred.cancel() } catch (ignore: Throwable) { }
                 errorResult
+            }
+        }
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        fun onComplete(callback: (ETAQueryResult) -> Unit) {
+            deferred.invokeOnCompletion { it?.let {
+                it.printStackTrace()
+                callback.invoke(errorResult)
+            }?: callback.invoke(deferred.getCompleted()) }
+        }
+
+        fun onComplete(timeout: Int, unit: DateTimeUnit.TimeBased, callback: (ETAQueryResult) -> Unit) {
+            CoroutineScope(Dispatchers.IO).launch {
+               try {
+                   callback.invoke(withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() })
+               } catch (e: Exception) {
+                   e.printStackTrace()
+                   try { deferred.cancel() } catch (ignore: Throwable) { }
+                   callback.invoke(errorResult)
+               }
             }
         }
     }

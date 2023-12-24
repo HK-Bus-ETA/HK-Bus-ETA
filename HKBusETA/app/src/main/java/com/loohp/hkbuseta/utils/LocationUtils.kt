@@ -42,6 +42,7 @@ import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.utils.LocationResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.future.asDeferred
@@ -208,13 +209,16 @@ fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
     ForkJoinPool.commonPool().execute {
         client.locationAvailability.addOnCompleteListener { task: Task<LocationAvailability> ->
             if (task.isSuccessful && task.result.isLocationAvailable) {
-                client.getCurrentLocation(CurrentLocationRequest.Builder().setMaxUpdateAgeMillis(2000).setDurationMillis(60000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), null).addOnCompleteListener { future.complete(LocationResult.fromTask(it)) }
+                client.getCurrentLocation(CurrentLocationRequest.Builder().setMaxUpdateAgeMillis(2000).setDurationMillis(60000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), null).addOnCompleteListener { future.complete(
+                    LocationResult.fromTask(it)) }
             } else {
                 val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, ForkJoinPool.commonPool()) { future.complete(LocationResult.fromLocationNullable(it)) }
+                    locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, ForkJoinPool.commonPool()) { future.complete(
+                        LocationResult.fromLocationNullable(it)) }
                 } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                    locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, ForkJoinPool.commonPool()) { future.complete(LocationResult.fromLocationNullable(it)) }
+                    locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, ForkJoinPool.commonPool()) { future.complete(
+                        LocationResult.fromLocationNullable(it)) }
                 } else {
                     future.complete(LocationResult.FAILED_RESULT)
                 }

@@ -113,7 +113,7 @@ import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
-import com.loohp.hkbuseta.utils.LocationResult
+import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asImmutableState
@@ -142,7 +142,7 @@ fun FavElements(scrollToIndex: Int, instance: AppActiveContext, schedule: (Boole
         val scope = rememberCoroutineScope()
         val state = rememberLazyListState()
 
-        val maxFavItems by Shared.getCurrentMaxFavouriteRouteStopState().collectAsStateWithLifecycle()
+        val maxFavItems by Shared.currentMaxFavouriteRouteStopState.collectAsStateWithLifecycle()
         val showRouteListViewButton by remember { derivedStateOf { (Shared.favoriteRouteStops.keys.maxOrNull()?: 0) > 2 } }
 
         val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }

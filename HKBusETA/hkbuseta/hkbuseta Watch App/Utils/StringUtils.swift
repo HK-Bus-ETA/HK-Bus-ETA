@@ -38,11 +38,14 @@ extension FormattedText {
 
 extension String {
     
-    func asAttributedString(color: Color? = nil) -> AttributedString {
+    func asAttributedString(color: Color? = nil, fontSize: CGFloat? = nil) -> AttributedString {
         let attributedString = NSMutableAttributedString(string: self)
         let range = NSMakeRange(0, self.count)
         if color != nil {
             attributedString.addAttribute(.foregroundColor, value: UIColor(color!), range: range)
+        }
+        if fontSize != nil {
+            attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: fontSize!), range: range)
         }
         return AttributedString(attributedString)
     }

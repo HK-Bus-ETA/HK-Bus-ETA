@@ -7,6 +7,8 @@
 
 import Foundation
 
+let kotlinMaxDouble: Double = 1.7976931348623157E308
+
 extension Comparable {
     
     func clamped(to limits: ClosedRange<Self>) -> Self {

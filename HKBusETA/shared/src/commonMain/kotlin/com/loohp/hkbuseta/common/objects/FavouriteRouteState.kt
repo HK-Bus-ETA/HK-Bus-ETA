@@ -19,9 +19,10 @@
  *
  */
 
-package com.loohp.hkbuseta.common.utils
+package com.loohp.hkbuseta.common.objects
 
+enum class FavouriteRouteState {
 
-actual fun debugLog(message: String) {
-    println(message)
+    NOT_USED, USED_OTHER, USED_SELF
+
 }

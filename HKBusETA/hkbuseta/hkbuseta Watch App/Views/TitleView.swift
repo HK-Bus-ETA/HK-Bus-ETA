@@ -19,55 +19,55 @@ struct TitleView: View {
     
     var body: some View {
         VStack {
-            Spacer().frame(height: 25.0)
+            Spacer().frame(height: 25.0.scaled())
             Button(action: {
                 appContext().appendStack(screen: AppScreen.search)
             }) {
-                Text(Shared().language == "en" ? "Input Route" : "輸入巴士路線").font(.system(size: 20)).bold()
+                Text(Shared().language == "en" ? "Input Route" : "輸入巴士路線").font(.system(size: 20.scaled())).bold()
             }
             .background(
                 Image("bus_background")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 178.0, height: 53.0)
+                    .frame(width: 178.0.scaled(), height: 53.0.scaled())
                     .brightness(/*@START_MENU_TOKEN@*/-0.2/*@END_MENU_TOKEN@*/)
                     .clipShape(RoundedRectangle(cornerRadius: 50))
             )
-            .frame(width: 178.0, height: 53.0)
+            .frame(width: 178.0.scaled(), height: 53.0.scaled())
             .clipShape(RoundedRectangle(cornerRadius: 50))
             Button(action: {
-                print("Button tapped!")
+                appContext().appendStack(screen: AppScreen.nearby)
             }) {
-                Text(Shared().language == "en" ? "Search Nearby" : "附近巴士路線").font(.system(size: 20)).bold()
+                Text(Shared().language == "en" ? "Search Nearby" : "附近巴士路線").font(.system(size: 20.scaled())).bold()
             }.background(
                 Image("nearby_background")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 178.0, height: 53.0)
+                    .frame(width: 178.0.scaled(), height: 53.0.scaled())
                     .brightness(/*@START_MENU_TOKEN@*/-0.4/*@END_MENU_TOKEN@*/)
                     .clipShape(RoundedRectangle(cornerRadius: 50))
             )
-            .frame(width: 178.0, height: 53.0)
+            .frame(width: 178.0.scaled(), height: 53.0.scaled())
             .clipShape(RoundedRectangle(cornerRadius: 50))
             HStack {
                 Button(action: {
                     registry().setLanguage(language: Shared().language == "en" ? "zh" : "en", context: appContext())
                     appContext().appendStack(screen: AppScreen.main)
                 }) {
-                    Text(Shared().language == "en" ? "中文" : "English").font(.system(size: 20)).bold()
+                    Text(Shared().language == "en" ? "中文" : "English").font(.system(size: 20.scaled())).bold()
                 }
-                .frame(width: 115)
+                .frame(width: 115.scaled())
                 .controlSize(.small)
                 Button(action: {
-                    print("Button tapped!")
+                    appContext().appendStack(screen: AppScreen.fav)
                 }) {
-                    Image(systemName: "star.fill").font(.system(size: 21)).foregroundColor(.yellow)
+                    Image(systemName: "star.fill").font(.system(size: 21.scaled())).foregroundColor(.yellow)
                 }
-                .frame(width: 55)
+                .frame(width: 55.scaled())
                 .controlSize(.small)
             }
-            Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報").font(.system(size: 12))
-            Text("v\(appVersion) (\(buildVersion)) @loohpjames").font(.system(size: 12)).padding(.bottom)
+            Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報").font(.system(size: 12.scaled()))
+            Text("v\(appVersion) (\(buildVersion)) @loohpjames").font(.system(size: 12.scaled())).padding(.bottom)
         }
         .padding()
     }

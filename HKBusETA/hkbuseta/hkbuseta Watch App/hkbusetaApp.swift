@@ -16,23 +16,36 @@ struct hkbuseta_Watch_AppApp: App {
     var body: some Scene {
         WindowGroup {
             let item = historyStackState.state.last!
-            switch item.screen {
-            case AppScreen.dummy:
-                DummyView(data: item.data).defaultStyle()
-            case AppScreen.main:
-                MainView(data: item.data).defaultStyle()
-            case AppScreen.title:
-                TitleView(data: item.data).defaultStyle()
-            case AppScreen.search:
-                SearchView(data: item.data).defaultStyle()
-            case AppScreen.listRoutes:
-                ListRoutesView(data: item.data).defaultStyle()
-            case AppScreen.listStops:
-                ListStopsView(data: item.data).defaultStyle()
-            case AppScreen.eta:
-                EtaView(data: item.data).defaultStyle()
-            default:
-                MainView(data: item.data).defaultStyle()
+            ZStack {
+                switch item.screen {
+                case AppScreen.dummy:
+                    DummyView(data: item.data).defaultStyle()
+                case AppScreen.main:
+                    MainView(data: item.data).defaultStyle()
+                case AppScreen.title:
+                    TitleView(data: item.data).defaultStyle()
+                case AppScreen.search:
+                    SearchView(data: item.data).defaultStyle()
+                case AppScreen.nearby:
+                    NearbyView(data: item.data).defaultStyle()
+                case AppScreen.listRoutes:
+                    ListRoutesView(data: item.data).defaultStyle()
+                case AppScreen.listStops:
+                    ListStopsView(data: item.data).defaultStyle()
+                case AppScreen.eta:
+                    EtaView(data: item.data).defaultStyle()
+                case AppScreen.etaMenu:
+                    EtaMenuView(data: item.data).defaultStyle()
+                case AppScreen.fav:
+                    FavView(data: item.data).defaultStyle()
+                case AppScreen.favRouteListView:
+                    FavRouteListViewView(data: item.data).defaultStyle()
+                default:
+                    MainView(data: item.data).defaultStyle()
+                }
+                if item.screen.needBackButton() {
+                    BackButton { _ in true }
+                }
             }
         }
     }

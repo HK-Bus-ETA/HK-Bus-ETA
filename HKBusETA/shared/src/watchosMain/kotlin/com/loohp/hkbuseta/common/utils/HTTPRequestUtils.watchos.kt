@@ -21,7 +21,16 @@
 
 package com.loohp.hkbuseta.common.utils
 
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.darwin.Darwin
 
-actual fun debugLog(message: String) {
-    println(message)
+actual val httpClient: HttpClient = HttpClient(Darwin) {
+    engine {
+        configureRequest {
+            setAllowsCellularAccess(true)
+            setAllowsConstrainedNetworkAccess(true)
+            setAllowsExpensiveNetworkAccess(true)
+        }
+    }
+    installPlugins()
 }

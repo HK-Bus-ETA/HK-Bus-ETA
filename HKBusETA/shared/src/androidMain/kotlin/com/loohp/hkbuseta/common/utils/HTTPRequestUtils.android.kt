@@ -21,7 +21,7 @@
 
 package com.loohp.hkbuseta.common.utils
 
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.android.Android
 
-actual fun debugLog(message: String) {
-    println(message)
-}
+actual val httpClient: HttpClient = HttpClient(Android) { installPlugins() }

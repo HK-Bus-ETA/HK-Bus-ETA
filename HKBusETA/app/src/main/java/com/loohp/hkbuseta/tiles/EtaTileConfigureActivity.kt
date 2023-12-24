@@ -146,7 +146,7 @@ fun SelectElements(tileId: Int, instance: AppActiveContext) {
         val focusRequester = rememberActiveFocusRequester()
         val state = rememberLazyListState()
 
-        val maxFavItems by Shared.getCurrentMaxFavouriteRouteStopState().collectAsStateWithLifecycle()
+        val maxFavItems by Shared.currentMaxFavouriteRouteStopState.collectAsStateWithLifecycle()
 
         val selectStates = remember { mutableStateListOf<Int>().also { it.addAll(Tiles.getEtaTileConfiguration(tileId)) } }
 

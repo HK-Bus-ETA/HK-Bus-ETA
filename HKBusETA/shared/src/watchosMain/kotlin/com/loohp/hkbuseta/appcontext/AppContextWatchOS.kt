@@ -38,7 +38,11 @@ import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UnsafeNumber
 import kotlinx.cinterop.useContents
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import platform.Foundation.NSBundle
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
@@ -78,7 +82,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
         get() = screenWidth.coerceAtMost(screenHeight)
 
     override val screenScale: Float
-        get() = minScreenSize / 396f
+        get() = minScreenSize / 198F
 
     override val density: Float
         get() = 0F
@@ -277,6 +281,10 @@ class AppActiveContextWatchOS internal constructor() : AppContextWatchOS(), AppA
 
 fun createMutableAppDataContainer(): MutableMap<String, Any?> {
     return HashMap()
+}
+
+fun dispatcherIO(task: () -> Unit) {
+    CoroutineScope(Dispatchers.IO).launch { task.invoke() }
 }
 
 data class HistoryStackEntry(val screen: AppScreen, val data: Map<String, Any?>) {

@@ -21,6 +21,7 @@
 package com.loohp.hkbuseta.common.utils
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.api.Send
 import io.ktor.client.plugins.api.createClientPlugin
@@ -43,7 +44,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
 
-private val httpClient = HttpClient {
+expect val httpClient: HttpClient
+
+fun HttpClientConfig<*>.installPlugins() {
     install(HttpTimeout)
     install(createClientPlugin("remove-utf-8") {
         on(Send) { request ->

@@ -91,6 +91,7 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.BilingualText
+import com.loohp.hkbuseta.common.objects.FavouriteRouteState
 import com.loohp.hkbuseta.common.objects.FavouriteStopMode
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
@@ -122,12 +123,6 @@ import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 
 
-enum class FavouriteRouteState {
-
-    NOT_USED, USED_OTHER, USED_SELF
-
-}
-
 @OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: AppActiveContext) {
@@ -135,7 +130,7 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
         val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
 
-        val maxFavItems by Shared.getSuggestedMaxFavouriteRouteStopState().collectAsStateWithLifecycle()
+        val maxFavItems by Shared.suggestedMaxFavouriteRouteStopState.collectAsStateWithLifecycle()
 
         val routeNumber = route.routeNumber
         val lat = stop.location.lat

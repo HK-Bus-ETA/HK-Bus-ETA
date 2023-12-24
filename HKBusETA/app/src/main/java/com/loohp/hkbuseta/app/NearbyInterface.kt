@@ -49,7 +49,7 @@ import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.theme.HKBusETATheme
-import com.loohp.hkbuseta.utils.LocationResult
+import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize

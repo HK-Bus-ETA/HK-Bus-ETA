@@ -50,7 +50,7 @@ import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.StopData
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.utils.LocationResult
+import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getOr
 import kotlinx.coroutines.CoroutineScope

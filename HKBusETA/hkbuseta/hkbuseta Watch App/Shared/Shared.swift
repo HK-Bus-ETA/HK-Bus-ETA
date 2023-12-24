@@ -9,6 +9,7 @@ import Foundation
 import WatchKit
 import SwiftUI
 import shared
+import AuthenticationServices
 
 func appContext() -> AppActiveContextWatchOS {
     return AppContextWatchOSKt.appContext
@@ -16,6 +17,19 @@ func appContext() -> AppActiveContextWatchOS {
 
 func registry() -> Registry {
     return Registry.Companion().getInstance(context: appContext())
+}
+
+func fetchEta(stopId: String, stopIndex: Int, co: Operator, route: Route, callback: @escaping (Registry.ETAQueryResult) -> Void) {
+    fetchEta(stopId: stopId, stopIndex: stopIndex.asInt32(), co: co, route: route, callback: callback)
+}
+
+func fetchEta(stopId: String, stopIndex: Int32, co: Operator, route: Route, callback: @escaping (Registry.ETAQueryResult) -> Void) {
+    let pending = registry().getEta(stopId: stopId, stopIndex: stopIndex, co: co, route: route, context: appContext())
+    pending.onComplete(timeout: Shared().ETA_UPDATE_INTERVAL, unit: Kotlinx_datetimeDateTimeUnit.Companion().MILLISECOND, callback: { result in
+        DispatchQueue.main.async {
+            callback(result)
+        }
+    })
 }
 
 func playHaptics() {
@@ -26,19 +40,32 @@ func newAppDataConatiner() -> KotlinMutableDictionary<NSString, AnyObject> {
     return AppContextWatchOSKt.createMutableAppDataContainer()
 }
 
+func dispatcherIO(task: @escaping () -> Void) {
+    AppContextWatchOSKt.dispatcherIO(task: task)
+}
+
+func openUrl(link: String) {
+    guard let url = URL(string: link) else {
+        return
+    }
+    let session = ASWebAuthenticationSession(url: url,callbackURLScheme: nil) { _, _ in }
+    session.prefersEphemeralWebBrowserSession = true
+    session.start()
+}
+
 func BackButton(predicate: @escaping (HistoryStackEntry) -> Bool) -> some View {
     ZStack {
         Button(action: {
             appContext().popStackIfMatches { predicate($0).asKt() }
         }) {
             Image(systemName: "arrow.left")
-                .font(.system(size: 17))
+                .font(.system(size: 17.scaled()))
                 .bold()
                 .foregroundColor(.white)
         }
-        .frame(width: 30, height: 30)
+        .frame(width: 30.scaled(), height: 30.scaled())
         .buttonStyle(PlainButtonStyle())
-        .position(x: 23, y: 23)
+        .position(x: 23.scaled(), y: 23.scaled())
     }
     .frame(
         maxWidth: .infinity,
@@ -46,6 +73,19 @@ func BackButton(predicate: @escaping (HistoryStackEntry) -> Bool) -> some View {
         alignment: .top
     )
     .edgesIgnoringSafeArea(.all)
+}
+
+extension AppScreen {
+    
+    func needBackButton() -> Bool {
+        switch self {
+        case AppScreen.main, AppScreen.title:
+            return false
+        default:
+            return true
+        }
+    }
+    
 }
 
 extension View {
@@ -69,8 +109,8 @@ extension View {
         .transition(.opacity.animation(.linear(duration: 0.5)))
     }
     
-    func autoResizing(maxSize: CGFloat = 200) -> some View {
-        self.font(.system(size: maxSize)).minimumScaleFactor(0.0001)
+    func autoResizing(maxSize: CGFloat = 200, minSize: CGFloat = 1) -> some View {
+        self.font(.system(size: maxSize)).minimumScaleFactor(minSize / maxSize)
     }
     
 }
@@ -81,12 +121,38 @@ extension Int {
         return Int32(clamping: self)
     }
     
+    func formattedWithDecimalSeparator() -> String {
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = .decimal
+        return numberFormatter.string(from: NSNumber(value: self)) ?? "\(self)"
+    }
+    
+    func scaled() -> Int {
+        return Int(appContext().screenScale.rounded()) * self
+    }
+    
 }
 
 extension Bool {
     
     func asKt() -> KotlinBoolean {
         return KotlinBoolean(bool: self)
+    }
+    
+}
+
+extension Float {
+    
+    func scaled() -> Float {
+        return appContext().screenScale * self
+    }
+    
+}
+
+extension Double {
+    
+    func scaled() -> Double {
+        return Double(appContext().screenScale) * self
     }
     
 }

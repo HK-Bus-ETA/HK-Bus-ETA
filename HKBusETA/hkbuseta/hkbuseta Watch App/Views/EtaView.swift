@@ -41,115 +41,109 @@ struct EtaView: View {
     }
     
     var body: some View {
-        ZStack {
-            VStack(alignment: .center, spacing: 3) {
+        VStack(alignment: .center, spacing: 3.scaled()) {
+            Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
+                .foregroundColor(0xFFFFFFFF.asColor())
+                .lineLimit(2)
+                .autoResizing(maxSize: 23.scaled())
+                .bold()
+            let destName = registry().getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
+            Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + destName.get(language: Shared().language))
+                .foregroundColor(0xFFFFFFFF.asColor())
+                .lineLimit(1)
+                .autoResizing(maxSize: 12.scaled())
+            Spacer(minLength: 10.scaled())
+            ETALine(line: eta, seq: 1)
+            ETALine(line: eta, seq: 2)
+            ETALine(line: eta, seq: 3)
+            Spacer(minLength: 10.scaled())
+            HStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 3.scaled()) {
                 Button(action: {
-                    print("Button tapped!")
+                    let data = newAppDataConatiner()
+                    let newStopData = stopList[index - 2]
+                    data["stopId"] = newStopData.stopId
+                    data["co"] = co
+                    data["index"] = index - 1
+                    data["stop"] = newStopData.stop
+                    data["route"] = newStopData.route
+                    appContext().appendStack(screen: AppScreen.dummy)
+                    appContext().popSecondLastStack()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        appContext().appendStack(screen: AppScreen.eta, mutableData: data)
+                        appContext().popSecondLastStack()
+                    }
                 }) {
-                    VStack(alignment: .center) {
-                        Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
-                            .foregroundColor(0xFFFFFFFF.asColor())
-                            .autoResizing(maxSize: 23)
-                            .lineLimit(2)
-                        let destName = registry().getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
-                        Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + destName.get(language: Shared().language))
-                            .foregroundColor(0xFFFFFFFF.asColor())
-                            .autoResizing(maxSize: 12)
-                            .lineLimit(1)
-                    }
+                    Image(systemName: "arrow.left")
+                        .font(.system(size: 17.scaled()))
+                        .foregroundColor(index > 1 ? 0xFFFFFFFF.asColor() : 0xFF494949.asColor())
                 }
-                .buttonStyle(PlainButtonStyle())
-                Spacer(minLength: 10)
-                ETALine(line: eta, seq: 1)
-                ETALine(line: eta, seq: 2)
-                ETALine(line: eta, seq: 3)
-                Spacer(minLength: 10)
-                HStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 3) {
-                    Button(action: {
-                        let data = newAppDataConatiner()
-                        let newStopData = stopList[index - 2]
-                        data["stopId"] = newStopData.stopId
-                        data["co"] = co
-                        data["index"] = index - 1
-                        data["stop"] = newStopData.stop
-                        data["route"] = newStopData.route
-                        appContext().appendStack(screen: AppScreen.dummy)
-                        appContext().popSecondLastStack()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            appContext().appendStack(screen: AppScreen.eta, mutableData: data)
-                            appContext().popSecondLastStack()
-                        }
-                    }) {
-                        Image(systemName: "arrow.left")
-                            .font(.system(size: 17))
-                            .foregroundColor(index > 1 ? 0xFFFFFFFF.asColor() : 0xFF494949.asColor())
-                    }
-                    .frame(width: 25, height: 25)
-                    .clipShape(RoundedRectangle(cornerRadius: 25))
-                    .edgesIgnoringSafeArea(.all)
-                    .disabled(index <= 1)
-                    
-                    Button(action: {
-                        print("Button tapped!")
-                    }) {
-                        Text(Shared().language == "en" ? "More" : "更多")
-                    }
-                    .frame(width: 55, height: 25)
-                    .clipShape(RoundedRectangle(cornerRadius: 25))
-                    .edgesIgnoringSafeArea(.all)
-                    
-                    Button(action: {
-                        let data = newAppDataConatiner()
-                        let newStopData = stopList[index]
-                        data["stopId"] = newStopData.stopId
-                        data["co"] = co
-                        data["index"] = index + 1
-                        data["stop"] = newStopData.stop
-                        data["route"] = newStopData.route
-                        appContext().appendStack(screen: AppScreen.dummy)
-                        appContext().popSecondLastStack()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            appContext().appendStack(screen: AppScreen.eta, mutableData: data)
-                            appContext().popSecondLastStack()
-                        }
-                    }) {
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 17))
-                            .foregroundColor(index < stopList.count ? 0xFFFFFFFF.asColor() : 0xFF494949.asColor())
-                    }
-                    .frame(width: 25, height: 25)
-                    .clipShape(RoundedRectangle(cornerRadius: 25))
-                    .edgesIgnoringSafeArea(.all)
-                    .disabled(index >= stopList.count)
+                .frame(width: 25.scaled(), height: 25.scaled())
+                .clipShape(RoundedRectangle(cornerRadius: 25))
+                .edgesIgnoringSafeArea(.all)
+                .disabled(index <= 1)
+                
+                Button(action: {
+                    let data = newAppDataConatiner()
+                    data["stopId"] = stopId
+                    data["co"] = co
+                    data["index"] = index
+                    data["stop"] = stop
+                    data["route"] = route
+                    appContext().appendStack(screen: AppScreen.etaMenu, mutableData: data)
+                }) {
+                    Text(Shared().language == "en" ? "More" : "更多")
                 }
+                .frame(width: 65.scaled(), height: 25.scaled())
+                .clipShape(RoundedRectangle(cornerRadius: 25))
+                .edgesIgnoringSafeArea(.all)
+                
+                Button(action: {
+                    let data = newAppDataConatiner()
+                    let newStopData = stopList[index]
+                    data["stopId"] = newStopData.stopId
+                    data["co"] = co
+                    data["index"] = index + 1
+                    data["stop"] = newStopData.stop
+                    data["route"] = newStopData.route
+                    appContext().appendStack(screen: AppScreen.dummy)
+                    appContext().popSecondLastStack()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        appContext().appendStack(screen: AppScreen.eta, mutableData: data)
+                        appContext().popSecondLastStack()
+                    }
+                }) {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 17.scaled()))
+                        .foregroundColor(index < stopList.count ? 0xFFFFFFFF.asColor() : 0xFF494949.asColor())
+                }
+                .frame(width: 25.scaled(), height: 25.scaled())
+                .clipShape(RoundedRectangle(cornerRadius: 25))
+                .edgesIgnoringSafeArea(.all)
+                .disabled(index >= stopList.count)
             }
-            BackButton { $0.screen == AppScreen.eta }
         }
         .onReceive(etaTimer) { _ in
-            Task { await fetchEta() }
+            fetchEta(stopId: stopId, stopIndex: index, co: co, route: route) { eta = $0 }
         }
         .onAppear {
-            Task { await fetchEta() }
+            fetchEta(stopId: stopId, stopIndex: index, co: co, route: route) { eta = $0 }
         }
     }
     
     func ETALine(line: Registry.ETAQueryResult?, seq: Int) -> some View {
-        let text = line?.getLine(index: seq.asInt32()).text?.asAttributedString(defaultFontSize: 22) ?? (seq == 1 ? (Shared().language == "en" ? "Updating" : "更新中") : "").asAttributedString()
+        let text = line?.getLine(index: seq.asInt32()).text?.asAttributedString(defaultFontSize: 18.scaled()) ?? (seq == 1 ? (Shared().language == "en" ? "Updating" : "更新中") : "").asAttributedString()
         return MarqueeText(
             text: text,
-            font: UIFont.systemFont(ofSize: 22),
-            leftFade: 8,
-            rightFade: 8,
+            font: UIFont.systemFont(ofSize: 18.scaled()),
+            leftFade: 8.scaled(),
+            rightFade: 8.scaled(),
             startDelay: 2,
             alignment: .center
         )
         .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: line == nil ? 0.7 : 1))
         .lineLimit(1)
     }
-    
-    func fetchEta() async {
-        eta = registry().getEta(stopId: stopId, stopIndex: index.asInt32(), co: co, route: route, context: appContext()).get(timeout: Shared().ETA_UPDATE_INTERVAL, unit: Kotlinx_datetimeDateTimeUnit.Companion().MILLISECOND)
-    }
+
 }
 
 #Preview {

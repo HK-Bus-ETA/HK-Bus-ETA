@@ -32,6 +32,7 @@ import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSortMode
 import com.loohp.hkbuseta.common.objects.gmbRegion
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -111,13 +112,10 @@ object Shared {
         }
     }
 
-    fun getSuggestedMaxFavouriteRouteStopState(): StateFlow<Int> {
-        return suggestedMaxFavouriteRouteStop
-    }
-
-    fun getCurrentMaxFavouriteRouteStopState(): StateFlow<Int> {
-        return currentMaxFavouriteRouteStop
-    }
+    @NativeCoroutinesState
+    val suggestedMaxFavouriteRouteStopState: StateFlow<Int> = suggestedMaxFavouriteRouteStop
+    @NativeCoroutinesState
+    val currentMaxFavouriteRouteStopState: StateFlow<Int> = currentMaxFavouriteRouteStop
 
     private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
     private val lastLookupRouteLock: Lock = Lock()

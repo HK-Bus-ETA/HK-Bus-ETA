@@ -27,18 +27,18 @@ struct MainView: View {
         VStack {
             if registryState.state == Registry.State.updating {
                 Text("更新數據中...")
-                Text("更新需時 請稍等").font(.system(size: 14)).padding(.bottom)
+                Text("更新需時 請稍等").font(.system(size: 14.scaled())).padding(.bottom)
                 Text("Updating...")
-                Text("Might take a moment").font(.system(size: 14)).padding(.bottom)
+                Text("Might take a moment").font(.system(size: 14.scaled())).padding(.bottom)
                 ProgressView(value: updateProgressState.state.floatValue)
                     .padding(.top)
-                    .frame(width: 150.0)
+                    .frame(width: 150.0.scaled())
                     .animation(.easeInOut(duration: 0.2), value: updateProgressState.state.floatValue)
             } else {
                 Image("icon_full")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 60.0, height: 60.0)
+                    .frame(width: 60.0.scaled(), height: 60.0.scaled())
                 Text("載入中...").padding(.top)
                 Text("Loading...").padding(.bottom)
             }
