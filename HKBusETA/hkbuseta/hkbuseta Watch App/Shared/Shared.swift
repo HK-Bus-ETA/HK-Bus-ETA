@@ -156,3 +156,11 @@ extension Double {
     }
     
 }
+
+extension String {
+    
+    func getKMBSubsidiary() -> KMBSubsidiary {
+        return RouteExtensionsKt.getKMBSubsidiary(self)
+    }
+    
+}
