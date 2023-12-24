@@ -70,8 +70,8 @@ struct ListStopsView: View {
         self.destName = destName
         self.resolvedDestName = route.route!.resolvedDest(prependTo: true)
         let specialOrigsDests = registry().getAllOriginsAndDestinations(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
-        self.specialOrigs = specialOrigsDests.first!.map { $0 as! BilingualText }.filter { $0.zh.eitherContains(other: origName.zh) }
-        self.specialDests = specialOrigsDests.second!.map { $0 as! BilingualText }.filter { $0.zh.eitherContains(other: destName.zh) }
+        self.specialOrigs = specialOrigsDests.first!.map { $0 as! BilingualText }.filter { !$0.zh.eitherContains(other: origName.zh) }
+        self.specialDests = specialOrigsDests.second!.map { $0 as! BilingualText }.filter { !$0.zh.eitherContains(other: destName.zh) }
         self.coColor = co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF).asColor()
         let stopList = registry().getAllStops(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         self.stopList = stopList
