@@ -25,12 +25,18 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.concurrency.Lock
 import co.touchlab.stately.concurrency.withLock
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.LastLookupRoute
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RouteListType
+import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteSortMode
+import com.loohp.hkbuseta.common.objects.StopInfo
+import com.loohp.hkbuseta.common.objects.getRouteKey
 import com.loohp.hkbuseta.common.objects.gmbRegion
+import com.loohp.hkbuseta.common.objects.resolveStop
+import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -102,6 +108,25 @@ object Shared {
     private val currentMaxFavouriteRouteStop = MutableStateFlow(0)
     private val favouriteRouteStopLock: Lock = Lock()
     val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentMutableMap()
+
+    fun getFavouriteRouteStop(index: Int): FavouriteRouteStop? {
+        return favoriteRouteStops[index]
+    }
+
+    val shouldShowFavListRouteView: Boolean get() = (favoriteRouteStops.keys.maxOrNull()?: 0) > 2
+
+    fun sortedForListRouteView(instance: AppContext, origin: Coordinates?): List<RouteSearchResultEntry> {
+        return favoriteRouteStops.entries.asSequence()
+            .sortedBy { it.key }
+            .map { (_, fav) ->
+                val (_, stopId, stop, route) = fav.resolveStop(instance) { origin }
+                val routeEntry = RouteSearchResultEntry(route.getRouteKey(instance)!!, route, fav.co, StopInfo(stopId, stop, 0.0, fav.co), null, false)
+                routeEntry.strip()
+                routeEntry
+            }
+            .distinctBy { routeEntry -> routeEntry.uniqueKey }
+            .toList()
+    }
 
     fun updateFavoriteRouteStops(mutation: (MutableMap<Int, FavouriteRouteStop>) -> Unit) {
         favouriteRouteStopLock.withLock {

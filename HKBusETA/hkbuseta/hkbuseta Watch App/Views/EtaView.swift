@@ -27,15 +27,15 @@ struct EtaView: View {
     
     @State private var stopList: [Registry.StopData]
     
-    init(data: [String: Any]?) {
-        self.stopId = data?["stopId"] as! String
-        let co = data?["co"] as! Operator
+    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.stopId = data["stopId"] as! String
+        let co = data["co"] as! Operator
         self.co = co
-        self.index = data?["index"] as! Int
-        self.stop = data?["stop"] as! Stop
-        let route = data?["route"] as! Route
+        self.index = data["index"] as! Int
+        self.stop = data["stop"] as! Stop
+        let route = data["route"] as! Route
         self.route = route
-        self.offsetStart = data?["offsetStart"] as? Int ?? 0
+        self.offsetStart = data["offsetStart"] as? Int ?? 0
         
         self.stopList = registry().getAllStops(routeNumber: route.routeNumber, bound: co == Operator.Companion().NLB ? route.nlbId : route.bound[co]!, co: co, gmbRegion: route.gmbRegion)
     }
@@ -147,5 +147,5 @@ struct EtaView: View {
 }
 
 #Preview {
-    EtaView(data: nil)
+    EtaView(data: [:], storage: KotlinMutableDictionary())
 }

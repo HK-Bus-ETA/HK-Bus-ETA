@@ -13,7 +13,7 @@ struct TitleView: View {
     let appVersion: String = appContext().versionName
     let buildVersion: String = appContext().versionCode.description
     
-    init(data: [String: Any]?) {
+    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         
     }
     
@@ -74,5 +74,5 @@ struct TitleView: View {
 }
 
 #Preview {
-    TitleView(data: nil)
+    TitleView(data: [:], storage: KotlinMutableDictionary())
 }

@@ -287,7 +287,7 @@ fun dispatcherIO(task: () -> Unit) {
     CoroutineScope(Dispatchers.IO).launch { task.invoke() }
 }
 
-data class HistoryStackEntry(val screen: AppScreen, val data: Map<String, Any?>) {
+data class HistoryStackEntry(val screen: AppScreen, val data: Map<String, Any?>, val storage: MutableMap<String, Any?> = mutableMapOf()) {
 
     companion object {
 

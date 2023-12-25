@@ -15,11 +15,15 @@ import RxSwift
 
 struct SearchView: View {
     
-    @State var state = RouteKeyboardState(text: defaultText(), nextCharResult: registry().getPossibleNextChar(input: ""))
+    @State var state: RouteKeyboardState
     @State var hasHistory = Shared().hasFavoriteAndLookupRoute()
     
-    init(data: [String: Any]?) {
-        
+    private let storage: KotlinMutableDictionary<NSString, AnyObject>
+    
+    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.storage = storage
+        let input = storage["input"] as? String ?? ""
+        self.state = RouteKeyboardState(text: input.isEmpty ? defaultText() : input, nextCharResult: registry().getPossibleNextChar(input: input))
     }
     
     var body: some View {
@@ -68,6 +72,9 @@ struct SearchView: View {
         }
         .onAppear {
             hasHistory = Shared().hasFavoriteAndLookupRoute()
+        }
+        .onChange(of: state.text) {
+            storage["input"] = state.text == defaultText() ? "" : state.text
         }
     }
     
@@ -186,7 +193,7 @@ struct SearchView: View {
 }
 
 #Preview {
-    SearchView(data: nil)
+    SearchView(data: [:], storage: KotlinMutableDictionary())
 }
 
 struct RouteKeyboardState {

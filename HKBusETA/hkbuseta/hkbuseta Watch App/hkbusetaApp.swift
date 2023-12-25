@@ -19,29 +19,29 @@ struct hkbuseta_Watch_AppApp: App {
             ZStack {
                 switch item.screen {
                 case AppScreen.dummy:
-                    DummyView(data: item.data).defaultStyle()
+                    DummyView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.main:
-                    MainView(data: item.data).defaultStyle()
+                    MainView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.title:
-                    TitleView(data: item.data).defaultStyle()
+                    TitleView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.search:
-                    SearchView(data: item.data).defaultStyle()
+                    SearchView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.nearby:
-                    NearbyView(data: item.data).defaultStyle()
+                    NearbyView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.listRoutes:
-                    ListRoutesView(data: item.data).defaultStyle()
+                    ListRoutesView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.listStops:
-                    ListStopsView(data: item.data).defaultStyle()
+                    ListStopsView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.eta:
-                    EtaView(data: item.data).defaultStyle()
+                    EtaView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.etaMenu:
-                    EtaMenuView(data: item.data).defaultStyle()
+                    EtaMenuView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.fav:
-                    FavView(data: item.data).defaultStyle()
+                    FavView(data: item.data, storage: item.storage).defaultStyle()
                 case AppScreen.favRouteListView:
-                    FavRouteListViewView(data: item.data).defaultStyle()
+                    FavRouteListViewView(data: item.data, storage: item.storage).defaultStyle()
                 default:
-                    MainView(data: item.data).defaultStyle()
+                    MainView(data: item.data, storage: item.storage).defaultStyle()
                 }
                 if item.screen.needBackButton() {
                     BackButton { _ in true }

@@ -33,6 +33,7 @@
 		81D16B392B37738D003D9817 /* EtaMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B382B37738D003D9817 /* EtaMenuView.swift */; };
 		81D16B3B2B379FC0003D9817 /* FavRouteListViewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B3A2B379FC0003D9817 /* FavRouteListViewView.swift */; };
 		81D16B3F2B37A609003D9817 /* FavView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B3E2B37A609003D9817 /* FavView.swift */; };
+		81D16B412B384B6C003D9817 /* ScrollDirection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B402B384B6C003D9817 /* ScrollDirection.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,6 +84,7 @@
 		81D16B382B37738D003D9817 /* EtaMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtaMenuView.swift; sourceTree = "<group>"; };
 		81D16B3A2B379FC0003D9817 /* FavRouteListViewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavRouteListViewView.swift; sourceTree = "<group>"; };
 		81D16B3E2B37A609003D9817 /* FavView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavView.swift; sourceTree = "<group>"; };
+		81D16B402B384B6C003D9817 /* ScrollDirection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollDirection.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -148,6 +150,7 @@
 				81D16B1A2B360AD8003D9817 /* MathUtils.swift */,
 				81D16B262B364071003D9817 /* MarqueeText.swift */,
 				81D16B362B374DBF003D9817 /* LocationManager.swift */,
+				81D16B402B384B6C003D9817 /* ScrollDirection.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -317,6 +320,7 @@
 				81D16B352B373E74003D9817 /* NearbyView.swift in Sources */,
 				81D16B082B34C12C003D9817 /* Shared.swift in Sources */,
 				81D16B3F2B37A609003D9817 /* FavView.swift in Sources */,
+				81D16B412B384B6C003D9817 /* ScrollDirection.swift in Sources */,
 				81D16B0E2B34CFEC003D9817 /* TitleView.swift in Sources */,
 				81D16B372B374DBF003D9817 /* LocationManager.swift in Sources */,
 				81D16B3B2B379FC0003D9817 /* FavRouteListViewView.swift in Sources */,

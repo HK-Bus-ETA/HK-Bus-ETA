@@ -175,18 +175,7 @@ fun MainElement(usingGps: Boolean, instance: AppActiveContext) {
 fun EvaluatedElement(state: MutableState<Boolean>, origin: Coordinates?, location: Coordinates?, instance: AppActiveContext) {
     if (state.value) {
         val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
-        intent.putExtra("result", Shared.favoriteRouteStops.entries.asSequence()
-            .sortedBy { it.key }
-            .map { (_, fav) ->
-                val (_, stopId, stop, route) = fav.resolveStop(instance) { origin }
-                val routeEntry = RouteSearchResultEntry(route.getRouteKey(instance)!!, route, fav.co, StopInfo(stopId, stop, 0.0, fav.co), null, false)
-                routeEntry.strip()
-                routeEntry
-            }
-            .distinctBy { routeEntry -> routeEntry.uniqueKey }
-            .map { routeEntry -> routeEntry.serialize() }
-            .toJsonArray().toString()
-        )
+        intent.putExtra("result", Shared.sortedForListRouteView(instance, origin).map { routeEntry -> routeEntry.serialize() }.toJsonArray().toString())
         intent.putExtra("showEta", true)
         if (location != null) {
             intent.putExtra("proximitySortOrigin", doubleArrayOf(location.lat, location.lng))

@@ -47,12 +47,12 @@ struct ListStopsView: View {
     @State private var stopList: [Registry.StopData]
     @State private var lowestServiceType: Int32
     
-    init(data: [String: Any]?) {
-        let route = data?["route"] as! RouteSearchResultEntry
+    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        let route = data["route"] as! RouteSearchResultEntry
         self.route = route
-        self.scrollToStop = data?["scrollToStop"] as? String
-        self.showEta = data?["showEta"] as? Bool ?? true
-        self.isAlightReminder = data?["isAlightReminder"] as? Bool ?? false
+        self.scrollToStop = data["scrollToStop"] as? String
+        self.showEta = data["showEta"] as? Bool ?? true
+        self.isAlightReminder = data["isAlightReminder"] as? Bool ?? false
         
         let routeNumber = route.route!.routeNumber
         self.routeNumber = routeNumber
@@ -247,5 +247,5 @@ struct ListStopsView: View {
 }
 
 #Preview {
-    ListStopsView(data: nil)
+    ListStopsView(data: [:], storage: KotlinMutableDictionary())
 }

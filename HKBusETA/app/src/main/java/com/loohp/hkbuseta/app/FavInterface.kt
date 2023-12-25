@@ -143,7 +143,7 @@ fun FavElements(scrollToIndex: Int, instance: AppActiveContext, schedule: (Boole
         val state = rememberLazyListState()
 
         val maxFavItems by Shared.currentMaxFavouriteRouteStopState.collectAsStateWithLifecycle()
-        val showRouteListViewButton by remember { derivedStateOf { (Shared.favoriteRouteStops.keys.maxOrNull()?: 0) > 2 } }
+        val showRouteListViewButton by remember { derivedStateOf { Shared.shouldShowFavListRouteView } }
 
         val etaUpdateTimes = remember { ConcurrentHashMap<Int, Long>().asImmutableState() }
         val etaResults = remember { ConcurrentHashMap<Int, Registry.ETAQueryResult>().asImmutableState() }

@@ -23,16 +23,16 @@ struct NearbyView: View {
     @State private var noNearby: Bool = false
     @State private var failed: Bool = false
     
-    init(data: [String: Any]?) {
-        let lat = data?["lat"] as? Double
-        let lng = data?["lng"] as? Double
+    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        let lat = data["lat"] as? Double
+        let lng = data["lng"] as? Double
         if lat != nil && lng != nil {
             self.location = LocationResult.Companion().fromLatLng(lat: lat!, lng: lng!)
         } else {
             self.location = nil
         }
-        self.exclude = data?["exclude"] as? [String] ?? []
-        self.interchangeSearch = data?["interchangeSearch"] as? Bool ?? false
+        self.exclude = data["exclude"] as? [String] ?? []
+        self.interchangeSearch = data["interchangeSearch"] as? Bool ?? false
     }
     
     var body: some View {
@@ -134,5 +134,5 @@ struct NearbyView: View {
 }
 
 #Preview {
-    NearbyView(data: nil)
+    NearbyView(data: [:], storage: KotlinMutableDictionary())
 }

@@ -6,10 +6,11 @@
 //
 
 import SwiftUI
+import shared
 
 struct DummyView: View {
     
-    init(data: [String: Any]?) {
+    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         
     }
     
@@ -19,5 +20,5 @@ struct DummyView: View {
 }
 
 #Preview {
-    DummyView(data: nil)
+    DummyView(data: [:], storage: KotlinMutableDictionary())
 }

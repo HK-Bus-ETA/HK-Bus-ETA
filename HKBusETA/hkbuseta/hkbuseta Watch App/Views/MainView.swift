@@ -19,7 +19,7 @@ struct MainView: View {
     
     @StateObject private var updateProgressState = FlowStateObservable(defaultValue: KotlinFloat(value: registry().updatePercentageState), nativeFlow: registry().updatePercentageStateFlow)
     
-    init(data: [String: Any]?) {
+    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         
     }
     
@@ -60,5 +60,5 @@ struct MainView: View {
 }
 
 #Preview {
-    MainView(data: nil)
+    MainView(data: [:], storage: KotlinMutableDictionary())
 }

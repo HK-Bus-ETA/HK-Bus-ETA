@@ -27,15 +27,15 @@ struct EtaMenuView: View {
     @State private var stopList: [Registry.StopData]
     @State private var favStates: [Int: FavouriteRouteState] = [:]
     
-    init(data: [String: Any]?) {
-        self.stopId = data?["stopId"] as! String
-        let co = data?["co"] as! Operator
+    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.stopId = data["stopId"] as! String
+        let co = data["co"] as! Operator
         self.co = co
-        self.index = data?["index"] as! Int
-        self.stop = data?["stop"] as! Stop
-        let route = data?["route"] as! Route
+        self.index = data["index"] as! Int
+        self.stop = data["stop"] as! Stop
+        let route = data["route"] as! Route
         self.route = route
-        self.offsetStart = data?["offsetStart"] as? Int ?? 0
+        self.offsetStart = data["offsetStart"] as? Int ?? 0
         
         self.stopList = registry().getAllStops(routeNumber: route.routeNumber, bound: co == Operator.Companion().NLB ? route.nlbId : route.bound[co]!, co: co, gmbRegion: route.gmbRegion)
     }
@@ -80,11 +80,6 @@ struct EtaMenuView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled())
                     Text(Shared().language == "en" ? "Section to set/clear this route stop from the corresponding indexed favourite route" : "以下可設置/清除對應的最喜愛路線")
-                        .font(.system(size: 10.scaled()))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20.scaled())
-                    Text(Shared().language == "en" ?"Route stops can be used in Tiles" : "最喜愛路線可在資訊方塊中顯示")
                         .font(.system(size: 10.scaled()))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
@@ -234,7 +229,7 @@ struct EtaMenuView: View {
             HStack(spacing: 2.scaled()) {
                 ZStack() {
                     Circle()
-                        .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
+                        .fill(state == FavouriteRouteState.usedSelf ? 0xFF3D3D3D.asColor() : 0xFF131313.asColor())
                         .frame(width: 30.scaled(), height: 30.scaled())
                     Text("\(favIndex)")
                         .bold()
@@ -346,5 +341,5 @@ struct EtaMenuView: View {
 }
 
 #Preview {
-    EtaMenuView(data: nil)
+    EtaMenuView(data: [:], storage: KotlinMutableDictionary())
 }

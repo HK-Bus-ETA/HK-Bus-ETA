@@ -20,8 +20,8 @@ struct FavRouteListViewView: View {
     
     @State private var failed: Bool = false
     
-    init(data: [String: Any]?) {
-        self.usingGps = data?["usingGps"] as! Bool
+    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.usingGps = data["usingGps"] as! Bool
     }
     
     var body: some View {
@@ -86,19 +86,8 @@ struct FavRouteListViewView: View {
         dispatcherIO {
             let loc: Coordinates? = usingGps && location != nil ? location!.location! : nil
             let origin: Coordinates? = Shared().favoriteRouteStops.values.filter { $0.favouriteStopMode.isRequiresLocation }.isEmpty ? nil : loc
-            let sortedEntries = Shared().favoriteRouteStops.sorted { $0.key.intValue < $1.key.intValue }
-            let routeEntries = sortedEntries.compactMap { (_, fav) in
-                let resolvedStop = fav.resolveStop(context: appContext(), originGetter: { origin })
-                let stopId = resolvedStop.stopId
-                let stop = resolvedStop.stop
-                let route = resolvedStop.route
-                return RouteSearchResultEntry(routeKey: route.getRouteKey(context: appContext())!, route: route, co: fav.co, stopInfo: StopInfo(stopId: stopId, data: stop, distance: 0.0, co: fav.co), origin: nil, isInterchangeSearch: false)
-            }
-            let distinctEntries = Array(Set(routeEntries.map { $0.uniqueKey })).compactMap { key in
-                routeEntries.first { $0.uniqueKey == key }
-            }
             let data = newAppDataConatiner()
-            data["result"] = distinctEntries
+            data["result"] = Shared().sortedForListRouteView(instance: appContext(), origin: origin)
             data["showEta"] = true
             if loc != nil {
                 data["proximitySortOrigin"] = loc!
@@ -111,5 +100,5 @@ struct FavRouteListViewView: View {
 }
 
 #Preview {
-    FavRouteListViewView(data: nil)
+    FavRouteListViewView(data: [:], storage: KotlinMutableDictionary())
 }
