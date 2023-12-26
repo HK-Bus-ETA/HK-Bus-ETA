@@ -136,7 +136,6 @@ struct FavView: View {
                         let stopName = resolvedStop.stop.name
                         let index = resolvedStop.index
                         let route = resolvedStop.route
-                        let stop = resolvedStop.stop
                         let co = currentFavRouteStop!.co
                         let routeNumber = route.routeNumber
                         let gpsStop = currentFavRouteStop!.favouriteStopMode == FavouriteStopMode.fixed

@@ -43,6 +43,7 @@ struct EtaView: View {
     var body: some View {
         VStack(alignment: .center, spacing: 3.scaled()) {
             Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
+                .multilineTextAlignment(.center)
                 .foregroundColor(0xFFFFFFFF.asColor())
                 .lineLimit(2)
                 .autoResizing(maxSize: 23.scaled())
@@ -52,11 +53,11 @@ struct EtaView: View {
                 .foregroundColor(0xFFFFFFFF.asColor())
                 .lineLimit(1)
                 .autoResizing(maxSize: 12.scaled())
-            Spacer(minLength: 10.scaled())
+            Spacer(minLength: 7.scaled())
             ETALine(line: eta, seq: 1)
             ETALine(line: eta, seq: 2)
             ETALine(line: eta, seq: 3)
-            Spacer(minLength: 10.scaled())
+            Spacer(minLength: 7.scaled())
             HStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 3.scaled()) {
                 Button(action: {
                     let data = newAppDataConatiner()
@@ -122,6 +123,7 @@ struct EtaView: View {
                 .disabled(index >= stopList.count)
             }
         }
+        .frame(height: CGFloat(appContext().screenHeight) * 0.8)
         .onReceive(etaTimer) { _ in
             fetchEta(stopId: stopId, stopIndex: index, co: co, route: route) { eta = $0 }
         }
@@ -131,10 +133,10 @@ struct EtaView: View {
     }
     
     func ETALine(line: Registry.ETAQueryResult?, seq: Int) -> some View {
-        let text = line?.getLine(index: seq.asInt32()).text?.asAttributedString(defaultFontSize: 18.scaled()) ?? (seq == 1 ? (Shared().language == "en" ? "Updating" : "更新中") : "").asAttributedString()
+        let text = line?.getLine(index: seq.asInt32()).text?.asAttributedString(defaultFontSize: 20.scaled()) ?? (seq == 1 ? (Shared().language == "en" ? "Updating" : "更新中") : "").asAttributedString()
         return MarqueeText(
             text: text,
-            font: UIFont.systemFont(ofSize: 18.scaled()),
+            font: UIFont.systemFont(ofSize: 20.scaled()),
             leftFade: 8.scaled(),
             rightFade: 8.scaled(),
             startDelay: 2,
