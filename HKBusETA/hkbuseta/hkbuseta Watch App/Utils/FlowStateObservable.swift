@@ -30,13 +30,13 @@ class FlowStateObservable<T>: ObservableObject {
             DispatchQueue.main.async {
                 self.state = value
             }
-            print("Received value: \(value)")
+            // print("Received value: \(value)")
         }, onError: { error in
-            print("Received error: \(error)")
+            // print("Received error: \(error)")
         }, onCompleted: {
-            print("Observable completed")
+            // print("Observable completed")
         }, onDisposed: {
-            print("Observable disposed")
+            // print("Observable disposed")
         })
     }
     
