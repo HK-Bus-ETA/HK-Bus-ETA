@@ -244,11 +244,11 @@ struct FavView: View {
                             }
                             
                             let data = newAppDataConatiner()
-                            data["stopId"] = currentFavRouteStop!.stopId
-                            data["co"] = currentFavRouteStop!.co
-                            data["index"] = currentFavRouteStop!.index
-                            data["stop"] = currentFavRouteStop!.stop
-                            data["route"] = currentFavRouteStop!.route
+                            data["stopId"] = stopId
+                            data["co"] = co
+                            data["index"] = index
+                            data["stop"] = stop
+                            data["route"] = route
                             appContext().appendStack(screen: AppScreen.eta, mutableData: data)
                         }
                     }
