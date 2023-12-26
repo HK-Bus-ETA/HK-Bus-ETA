@@ -68,6 +68,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -97,11 +98,14 @@ import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.StopEntry
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getLineColor
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.StopData
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.MTRStopSectionData
+import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.common.utils.eitherContains
 import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.compose.AdvanceButton
@@ -117,7 +121,6 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.MTRLineSection
 import com.loohp.hkbuseta.utils.MTRLineSectionExtension
-import com.loohp.hkbuseta.utils.MTRStopSectionData
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
@@ -125,12 +128,10 @@ import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clampSp
-import com.loohp.hkbuseta.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.findTextLengthDp
 import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
-import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.spToPixels
@@ -180,7 +181,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
         } else persistentListOf() }
         val mtrLineSectionsData = remember { if (co.isTrain) createMTRLineSectionData(
             co = co,
-            color = co.getLineColor(routeNumber, Color.White),
+            color = co.getLineColor(routeNumber, 0xFFFFFFFF),
             stopList = stopsList,
             mtrStopsInterchange = mtrStopsInterchange,
             isLrtCircular = route.route!!.lrtCircular != null,

@@ -24,7 +24,6 @@ import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -42,17 +41,15 @@ import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
-import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.Operator
-import com.loohp.hkbuseta.common.shared.Registry.MTRInterchangeData
-import com.loohp.hkbuseta.common.shared.Registry.StopData
-import com.loohp.hkbuseta.common.utils.indexesOf
-import kotlin.math.absoluteValue
+import com.loohp.hkbuseta.common.utils.MTRStopSectionData
+import com.loohp.hkbuseta.common.utils.SideSpurLineType
 
 
 @Composable
 fun MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Boolean) {
-    val (mainLine, spurLine, _, _, co, color, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, _, context) = sectionData
+    val (mainLine, spurLine, _, _, co, rawColor, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, _, context) = sectionData
+    val color = Color(rawColor)
     Canvas(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -366,7 +363,8 @@ fun MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Boolean) {
 
 @Composable
 fun MTRLineSectionExtension(sectionData: MTRStopSectionData, ambientMode: Boolean) {
-    val (mainLine, spurLine, _, _, _, color, _, _, hasOutOfStation, stopByBranchId, requireExtension, context) = sectionData
+    val (mainLine, spurLine, _, _, _, rawColor, _, _, hasOutOfStation, stopByBranchId, requireExtension, context) = sectionData
+    val color = Color(rawColor)
     Canvas(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -470,178 +468,6 @@ fun MTRLineSectionExtension(sectionData: MTRStopSectionData, ambientMode: Boolea
             }
         }
     }
-}
-
-fun createMTRLineSectionData(co: Operator, color: Color, stopList: List<StopData>, mtrStopsInterchange: List<MTRInterchangeData>, isLrtCircular: Boolean, context: AppContext): List<MTRStopSectionData> {
-    val stopByBranchId: MutableMap<Int, MutableList<StopData>> = HashMap()
-    stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.computeIfAbsent(it) { ArrayList() }.add(stop) } }
-    val hasOutOfStation = mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }
-    return stopList.withIndex().map {
-        val (index, stop) = it
-        MTRStopSectionData.build(stop.serviceType == 1, stopByBranchId, index, stop, stopList, co, color, isLrtCircular, mtrStopsInterchange[index], hasOutOfStation, context)
-    }
-}
-
-@Immutable
-data class MTRStopSectionData(
-    val mainLine: MTRStopSectionMainLineData?,
-    val spurLine: MTRStopSectionSpurLineData?,
-    val index: Int,
-    val stop: StopData,
-    val co: Operator,
-    val color: Color,
-    val isLrtCircular: Boolean,
-    val interchangeData: MTRInterchangeData,
-    val hasOutOfStation: Boolean,
-    val stopByBranchId: MutableMap<Int, MutableList<StopData>>,
-    val requireExtension: Boolean,
-    val context: AppContext
-) {
-    companion object {
-        fun build(isMainLine: Boolean, stopByBranchId: MutableMap<Int, MutableList<StopData>>, index: Int, stop: StopData, stopList: List<StopData>, co: Operator, color: Color, isLrtCircular: Boolean, interchangeData: MTRInterchangeData, hasOutOfStation: Boolean, context: AppContext): MTRStopSectionData {
-            val requireExtension = index + 1 < stopList.size
-            return if (isMainLine) MTRStopSectionData(MTRStopSectionMainLineData(
-                isFirstStation = stopByBranchId.values.all { it.indexesOf(stop).minBy { i -> (i - index).absoluteValue } <= 0 },
-                isLastStation = stopByBranchId.values.all { it.indexesOf(stop).minBy { i -> (i - index).absoluteValue }.let { x -> x < 0 || x >= it.size - 1 } },
-                hasOtherParallelBranches = hasOtherParallelBranches(stopList, stopByBranchId, stop),
-                sideSpurLineType = getSideSpurLineType(stopList, stopByBranchId, stop)
-            ), null, index, stop, co, color, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, requireExtension, context) else MTRStopSectionData(null, MTRStopSectionSpurLineData(
-                hasParallelMainLine = index > 0 && index < stopList.size - 1,
-                dashLineResult = isDashLineSpur(stopList, stop),
-                isFirstStation = stopByBranchId.values.all { it.indexesOf(stop).minBy { i -> (i - index).absoluteValue } <= 0 },
-                isLastStation = stopByBranchId.values.all { it.indexesOf(stop).minBy { i -> (i - index).absoluteValue }.let { x -> x < 0 || x >= it.size - 1 } }
-            ), index, stop, co, color, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, requireExtension, context)
-        }
-    }
-}
-
-@Immutable
-data class MTRStopSectionMainLineData(
-    val isFirstStation: Boolean,
-    val isLastStation: Boolean,
-    val hasOtherParallelBranches: Boolean,
-    val sideSpurLineType: SideSpurLineType
-)
-
-@Immutable
-data class MTRStopSectionSpurLineData(
-    val hasParallelMainLine: Boolean,
-    val dashLineResult: DashLineSpurResult,
-    val isFirstStation: Boolean,
-    val isLastStation: Boolean
-)
-
-private fun hasOtherParallelBranches(stopList: List<StopData>, stopByBranchId: MutableMap<Int, MutableList<StopData>>, stop: StopData): Boolean {
-    if (stopByBranchId.size == stopByBranchId.filter { it.value.contains(stop) }.size) {
-        return false
-    }
-    val mainIndex = stopList.indexOf(stop)
-    val branchIds = stop.branchIds
-    var branchStart = -1
-    var branchStartStop: StopData? = null
-    for (i in (mainIndex - 1) downTo 0) {
-        if (stopList[i].branchIds != branchIds && stopList[i].branchIds.containsAll(branchIds)) {
-            branchStart = i
-            branchStartStop = stopList[i]
-            break
-        }
-    }
-    if (branchStartStop == null) {
-        for (i in stopList.indices) {
-            if (stopList[i].branchIds != branchIds) {
-                branchStart = i
-                branchStartStop = stopList[i]
-                break
-            }
-        }
-    }
-    var branchEnd = stopList.size
-    var branchEndStop: StopData? = null
-    for (i in (mainIndex + 1) until stopList.size) {
-        if (stopList[i].branchIds != branchIds && stopList[i].branchIds.containsAll(branchIds)) {
-            branchEnd = i
-            branchEndStop = stopList[i]
-            break
-        }
-    }
-    if (branchEndStop == null) {
-        for (i in (stopList.size - 1) downTo 0) {
-            if (stopList[i].branchIds != branchIds) {
-                branchEnd = i
-                branchEndStop = stopList[i]
-                break
-            }
-        }
-    }
-    val matchingBranchStart = branchStart == mainIndex
-    val matchingBranchEnd = branchEnd == mainIndex
-    val isStartOfSpur = matchingBranchStart && stopByBranchId.values.none { it.indexOf(branchStartStop) <= 0 }
-    val isEndOfSpur = matchingBranchEnd && stopByBranchId.values.none { it.indexOf(branchEndStop) >= (it.size - 1) }
-    if (matchingBranchStart != isStartOfSpur || matchingBranchEnd != isEndOfSpur) {
-        return false
-    }
-    return mainIndex in branchStart..branchEnd
-}
-
-enum class SideSpurLineType {
-
-    NONE, COMBINE, DIVERGE
-
-}
-
-private fun getSideSpurLineType(stopList: List<StopData>, stopByBranchId: MutableMap<Int, MutableList<StopData>>, stop: StopData): SideSpurLineType {
-    val mainIndex = stopList.indexOf(stop)
-    val branchIds = stop.branchIds
-    if (mainIndex > 0) {
-        if (stopList[mainIndex - 1].branchIds != branchIds) {
-            if (stopByBranchId.values.all { (!it.contains(stopList[mainIndex - 1]) || it.subList(0, it.indexOf(stopList[mainIndex - 1])).none { that -> that.branchIds.containsAll(branchIds) }) && it.indexOf(stop) != 0 }) {
-                return SideSpurLineType.COMBINE
-            }
-        }
-    }
-    if (mainIndex < stopList.size - 1) {
-        if (stopList[mainIndex + 1].branchIds != branchIds) {
-            if (stopByBranchId.values.all { (!it.contains(stopList[mainIndex + 1]) || it.subList(it.indexOf(stopList[mainIndex + 1]) + 1, it.size).none { that -> that.branchIds.containsAll(branchIds) }) && it.indexOf(stop) < it.size - 1 }) {
-                return SideSpurLineType.DIVERGE
-            }
-        }
-    }
-    return SideSpurLineType.NONE
-}
-
-data class DashLineSpurResult(val value: Boolean, val isStartOfSpur: Boolean, val isEndOfSpur: Boolean) {
-
-    companion object {
-
-        val FALSE = DashLineSpurResult(value = false, isStartOfSpur = false, isEndOfSpur = false)
-
-    }
-
-}
-
-private fun isDashLineSpur(stopList: List<StopData>, stop: StopData): DashLineSpurResult {
-    val mainIndex = stopList.indexOf(stop)
-    val branchIds = stop.branchIds
-    var possible = false
-    var branchStart = false
-    for (i in (mainIndex - 1) downTo 0) {
-        if (stopList[i].branchIds.containsAll(branchIds)) {
-            if (i + 1 == mainIndex && stopList[i].branchIds != branchIds) {
-                branchStart = true
-            }
-            possible = true
-            break
-        }
-    }
-    if (!possible) {
-        return DashLineSpurResult.FALSE
-    }
-    for (i in (mainIndex + 1) until stopList.size) {
-        if (stopList[i].branchIds.containsAll(branchIds)) {
-            return DashLineSpurResult(true, branchStart, i - 1 == mainIndex && stopList[i].branchIds != branchIds)
-        }
-    }
-    return DashLineSpurResult.FALSE
 }
 
 @Suppress("NOTHING_TO_INLINE")

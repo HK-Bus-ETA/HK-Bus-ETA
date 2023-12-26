@@ -30,7 +30,7 @@ struct MainView: View {
                 Text("更新需時 請稍等").font(.system(size: 14.scaled())).padding(.bottom)
                 Text("Updating...")
                 Text("Might take a moment").font(.system(size: 14.scaled())).padding(.bottom)
-                ProgressView(value: updateProgressState.state.floatValue)
+                ProgressView(value: max(0.0, min(1.0, updateProgressState.state.floatValue)))
                     .padding(.top)
                     .frame(width: 150.0.scaled())
                     .animation(.easeInOut(duration: 0.2), value: updateProgressState.state.floatValue)

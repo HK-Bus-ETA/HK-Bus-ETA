@@ -219,6 +219,30 @@ struct FavView: View {
                         }
                     } else {
                         if currentFavRouteStop != nil {
+                            let co = currentFavRouteStop!.co
+                            let resolvedStop = currentFavRouteStop!.resolveStop(context: appContext()) { origin?.location }
+                            let index = resolvedStop.index
+                            let stopId = resolvedStop.stopId
+                            let stop = resolvedStop.stop
+                            let route = resolvedStop.route
+                            let entry = registry().findRoutes(input: route.routeNumber, exact: true, predicate: {
+                                let bound = $0.bound
+                                if !bound.keys.contains(where: { $0 == co }) || bound[co] != route.bound[co] {
+                                    return false.asKt()
+                                }
+                                let stops = $0.stops[co]
+                                if stops == nil {
+                                    return false.asKt()
+                                }
+                                return stops!.contains { $0 == stopId }.asKt()
+                            })
+                            if !entry.isEmpty {
+                                let data = newAppDataConatiner()
+                                data["route"] = entry[0]
+                                data["scrollToStop"] = stopId
+                                appContext().appendStack(screen: AppScreen.listStops, mutableData: data)
+                            }
+                            
                             let data = newAppDataConatiner()
                             data["stopId"] = currentFavRouteStop!.stopId
                             data["co"] = currentFavRouteStop!.co

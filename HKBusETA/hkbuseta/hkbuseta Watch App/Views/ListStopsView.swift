@@ -46,6 +46,8 @@ struct ListStopsView: View {
     @State private var coColor: Color
     @State private var stopList: [Registry.StopData]
     @State private var lowestServiceType: Int32
+    @State private var mtrStopsInterchange: [Registry.MTRInterchangeData]
+    @State private var mtrLineSectionData: [MTRStopSectionData]
     
     init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         let route = data["route"] as! RouteSearchResultEntry
@@ -76,12 +78,20 @@ struct ListStopsView: View {
         let stopList = registry().getAllStops(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         self.stopList = stopList
         self.lowestServiceType = stopList.min { $0.serviceType < $1.serviceType }!.serviceType
+        if co.isTrain {
+            let mtrStopsInterchange = stopList.map { registry().getMtrStationInterchange(stopId: $0.stopId, lineName: routeNumber) }
+            self.mtrStopsInterchange = mtrStopsInterchange
+            self.mtrLineSectionData = MTRRouteMapUtilsKt.createMTRLineSectionData(co: co, color: co.getLineColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF), stopList: stopList, mtrStopsInterchange: mtrStopsInterchange, isLrtCircular: route.route!.lrtCircular != nil, context: appContext())
+        } else {
+            self.mtrStopsInterchange = []
+            self.mtrLineSectionData = []
+        }
     }
     
     var body: some View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
-                LazyVStack {
+                LazyVStack(spacing: 0) {
                     VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2.scaled()) {
                         Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
                             .foregroundColor(coColor)
@@ -182,10 +192,16 @@ struct ListStopsView: View {
             appContext().appendStack(screen: AppScreen.eta, mutableData: data)
         }) {
             HStack(alignment: .center, spacing: 2.scaled()) {
-                Text("\(stopNumber).")
-                    .frame(width: 37.scaled(), alignment: .leading)
-                    .font(.system(size: 18.scaled()))
-                    .foregroundColor(0xFFFFFFFF.asColor())
+                if co.isTrain && !mtrLineSectionData.isEmpty {
+                    let width: CGFloat = Set(stopList.map { $0.serviceType }).count > 1 || mtrStopsInterchange.contains(where: { !$0.outOfStationLines.isEmpty }) ? 64 : 47
+                    MTRLineSection(sectionData: mtrLineSectionData[index])
+                        .frame(minWidth: width, maxWidth: width, maxHeight: .infinity)
+                } else {
+                    Text("\(stopNumber).")
+                        .frame(width: 37.scaled(), alignment: .leading)
+                        .font(.system(size: 18.scaled()))
+                        .foregroundColor(0xFFFFFFFF.asColor())
+                }
                 MarqueeText(
                     text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled()),
                     font: UIFont.systemFont(ofSize: 18.scaled()),
@@ -232,7 +248,7 @@ struct ListStopsView: View {
                 }
             }.contentShape(Rectangle())
         }
-        .frame(width: 170.scaled(), height: 30.scaled())
+        .frame(width: 170.scaled(), height: 40.scaled())
         .buttonStyle(PlainButtonStyle())
         .onAppear {
             if showEta {
