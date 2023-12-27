@@ -48,6 +48,7 @@ struct ListStopsView: View {
     @State private var lowestServiceType: Int32
     @State private var mtrStopsInterchange: [Registry.MTRInterchangeData]
     @State private var mtrLineSectionData: [MTRStopSectionData]
+    @State private var closestIndex: Int
     
     init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         let route = data["route"] as! RouteSearchResultEntry
@@ -86,6 +87,7 @@ struct ListStopsView: View {
             self.mtrStopsInterchange = []
             self.mtrLineSectionData = []
         }
+        self.closestIndex = 0
     }
     
     var body: some View {
@@ -173,7 +175,9 @@ struct ListStopsView: View {
                     $0.distance < $1.distance
                 })
                 if closest!.distance <= 0.3 {
-                    scrollTarget = Int(closest!.stopIndex) - 1
+                    let target = Int(closest!.stopIndex)
+                    closestIndex = target
+                    scrollTarget = target - 1
                 }
             }
         }
@@ -182,6 +186,9 @@ struct ListStopsView: View {
     func StopRow(index: Int) -> some View {
         let stopData = stopList[index]
         let stopNumber = index + 1
+        let isClosest = closestIndex == stopNumber
+        let brightness = stopData.serviceType == lowestServiceType ? 1 : 0.65
+        let color = (isClosest ? coColor : Color.white).adjustBrightness(percentage: brightness)
         return Button(action: {
             let data = newAppDataConatiner()
             data["stopId"] = stopData.stopId
@@ -200,7 +207,8 @@ struct ListStopsView: View {
                     Text("\(stopNumber).")
                         .frame(width: 37.scaled(), alignment: .leading)
                         .font(.system(size: 18.scaled()))
-                        .foregroundColor(0xFFFFFFFF.asColor())
+                        .foregroundColor(color)
+                        .bold(isClosest)
                 }
                 MarqueeText(
                     text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled()),
@@ -210,7 +218,8 @@ struct ListStopsView: View {
                     startDelay: 2,
                     alignment: .bottomLeading
                 )
-                .foregroundColor(0xFFFFFFFF.asColor())
+                .foregroundColor(color)
+                .bold(isClosest)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if showEta {
                     let optEta = etaResults[index]
