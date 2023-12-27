@@ -27,9 +27,15 @@ struct MainView: View {
         VStack {
             if registryState.state == Registry.State.updating {
                 Text("更新數據中...")
-                Text("更新需時 請稍等").font(.system(size: 14.scaled())).padding(.bottom)
+                    .font(.system(size: 23.scaled()))
+                Text("更新需時 請稍等")
+                    .font(.system(size: 14.scaled()))
+                    .padding(.bottom)
                 Text("Updating...")
-                Text("Might take a moment").font(.system(size: 14.scaled())).padding(.bottom)
+                    .font(.system(size: 23.scaled()))
+                Text("Might take a moment")
+                    .font(.system(size: 14.scaled()))
+                    .padding(.bottom)
                 ProgressView(value: max(0.0, min(1.0, updateProgressState.state.floatValue)))
                     .padding(.top)
                     .frame(width: 150.0.scaled())
@@ -39,8 +45,12 @@ struct MainView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 60.0.scaled(), height: 60.0.scaled())
-                Text("載入中...").padding(.top)
-                Text("Loading...").padding(.bottom)
+                Text("載入中...")
+                    .font(.system(size: 23.scaled()))
+                    .padding(.top)
+                Text("Loading...")
+                    .font(.system(size: 23.scaled()))
+                    .padding(.bottom)
             }
         }.onChange(of: registryState.state) {
             if registryState.state == Registry.State.ready {
