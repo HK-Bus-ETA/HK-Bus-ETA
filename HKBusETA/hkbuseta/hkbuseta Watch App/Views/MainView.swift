@@ -19,13 +19,15 @@ struct MainView: View {
     
     @StateObject private var updateProgressState = FlowStateObservable(defaultValue: KotlinFloat(value: registry().updatePercentageState), nativeFlow: registry().updatePercentageStateFlow)
     
+    @State private var updateScreen = false
+    
     init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         
     }
     
     var body: some View {
         VStack {
-            if registryState.state == Registry.State.updating {
+            if updateScreen {
                 Text("更新數據中...")
                     .font(.system(size: 23.scaled()))
                 Text("更新需時 請稍等")
@@ -57,6 +59,8 @@ struct MainView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     appContext().appendStack(screen: AppScreen.title)
                 }
+            } else if registryState.state == Registry.State.updating {
+                updateScreen = true
             }
         }.onAppear {
             appContext().clearStack()
@@ -64,6 +68,8 @@ struct MainView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     appContext().appendStack(screen: AppScreen.title)
                 }
+            } else if registryState.state == Registry.State.updating {
+                updateScreen = true
             }
         }
     }
