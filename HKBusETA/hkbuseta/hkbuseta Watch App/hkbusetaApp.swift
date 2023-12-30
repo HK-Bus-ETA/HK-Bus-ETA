@@ -44,11 +44,39 @@ struct hkbuseta_Watch_AppApp: App {
                     MainView(data: item.data, storage: item.storage).defaultStyle()
                 }
                 if item.screen.needBackButton() {
-                    BackButton { _ in true }
+                    BackButton(scrollingScreen: item.screen.isScrollingScreen())
                 }
             }
         }
     }
+}
+
+func BackButton(scrollingScreen: Bool) -> some View {
+    ZStack {
+        Button(action: {
+            appContext().popStack()
+        }) {
+            Image(systemName: "arrow.left")
+                .font(.system(size: 17.scaled()))
+                .bold()
+                .foregroundColor(.white)
+        }
+        .frame(width: 30.scaled(), height: 30.scaled())
+        .buttonStyle(PlainButtonStyle())
+        .position(x: 23.scaled(), y: 23.scaled())
+    }
+    .background(alignment: .top) {
+        if scrollingScreen {
+            LinearGradient(gradient: Gradient(colors: [0xFF000000.asColor(), 0xFF000000.asColor(), 0xFF000000.asColor(), 0x00000000.asColor()]), startPoint: .top, endPoint: .bottom)
+                .frame(height: 45.scaled())
+        }
+    }
+    .frame(
+        maxWidth: .infinity,
+        maxHeight: .infinity,
+        alignment: .top
+    )
+    .edgesIgnoringSafeArea(.all)
 }
 
 extension View {
@@ -57,6 +85,28 @@ extension View {
         return self
             .transition(AnyTransition.scale.animation(.easeInOut(duration: 0.25)))
             .background { 0xFF000000.asColor() }
+    }
+    
+}
+
+extension AppScreen {
+    
+    func needBackButton() -> Bool {
+        switch self {
+        case AppScreen.main, AppScreen.title:
+            return false
+        default:
+            return true
+        }
+    }
+    
+    func isScrollingScreen() -> Bool {
+        switch self {
+        case AppScreen.listStops, AppScreen.listRoutes, AppScreen.fav:
+            return true
+        default:
+            return false
+        }
     }
     
 }

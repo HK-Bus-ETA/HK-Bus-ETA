@@ -53,41 +53,6 @@ func openUrl(link: String) {
     session.start()
 }
 
-func BackButton(predicate: @escaping (HistoryStackEntry) -> Bool) -> some View {
-    ZStack {
-        Button(action: {
-            appContext().popStackIfMatches { predicate($0).asKt() }
-        }) {
-            Image(systemName: "arrow.left")
-                .font(.system(size: 17.scaled()))
-                .bold()
-                .foregroundColor(.white)
-        }
-        .frame(width: 30.scaled(), height: 30.scaled())
-        .buttonStyle(PlainButtonStyle())
-        .position(x: 23.scaled(), y: 23.scaled())
-    }
-    .frame(
-        maxWidth: .infinity,
-        maxHeight: .infinity,
-        alignment: .top
-    )
-    .edgesIgnoringSafeArea(.all)
-}
-
-extension AppScreen {
-    
-    func needBackButton() -> Bool {
-        switch self {
-        case AppScreen.main, AppScreen.title:
-            return false
-        default:
-            return true
-        }
-    }
-    
-}
-
 extension View {
     
     func CrossfadeText(textList: [AttributedString], state: Int) -> some View {
