@@ -7,14 +7,17 @@
 
 import SwiftUI
 
-public struct MarqueeText : View {
-    public var attributedString: AttributedString?
-    public var string: String
-    public var font: UIFont
-    public var leftFade: CGFloat
-    public var rightFade: CGFloat
-    public var startDelay: Double
-    public var alignment: Alignment
+struct MarqueeText : View {
+    
+    @Environment(\.isLuminanceReduced) var ambientMode
+    
+    var attributedString: AttributedString?
+    var string: String
+    var font: UIFont
+    var leftFade: CGFloat
+    var rightFade: CGFloat
+    var startDelay: Double
+    var alignment: Alignment
     
     @State private var animate = false
     var isCompact = false
@@ -23,7 +26,7 @@ public struct MarqueeText : View {
         return self.attributedString == nil ? Text(self.string) : Text(self.attributedString!)
     }
     
-    public var body : some View {
+    var body : some View {
         let stringWidth = string.widthOfString(usingFont: font)
         let stringHeight = string.heightOfString(usingFont: font)
         
@@ -37,7 +40,7 @@ public struct MarqueeText : View {
         
         return ZStack {
             GeometryReader { geo in
-                if stringWidth > geo.size.width { // don't use self.animate as conditional here
+                if stringWidth > geo.size.width {
                     Group {
                         text()
                             .lineLimit(1)
@@ -46,7 +49,7 @@ public struct MarqueeText : View {
                             .animation(self.animate ? animation : nullAnimation, value: self.animate)
                             .onAppear {
                                 DispatchQueue.main.async {
-                                    self.animate = geo.size.width < stringWidth
+                                    self.animate = geo.size.width < stringWidth && !ambientMode
                                 }
                             }
                             .fixedSize(horizontal: true, vertical: false)
@@ -59,14 +62,21 @@ public struct MarqueeText : View {
                             .animation(self.animate ? animation : nullAnimation, value: self.animate)
                             .onAppear {
                                 DispatchQueue.main.async {
-                                    self.animate = geo.size.width < stringWidth
+                                    self.animate = geo.size.width < stringWidth && !ambientMode
                                 }
                             }
                             .fixedSize(horizontal: true, vertical: false)
                             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
                     }
                     .onChange(of: self.string) {
-                        self.animate = geo.size.width < stringWidth
+                        DispatchQueue.main.async {
+                            self.animate = geo.size.width < stringWidth && !ambientMode
+                        }
+                    }
+                    .onChange(of: ambientMode) {
+                        DispatchQueue.main.async {
+                            self.animate = geo.size.width < stringWidth && !ambientMode
+                        }
                     }
                     .offset(x: leftFade)
                     .mask(
@@ -89,7 +99,14 @@ public struct MarqueeText : View {
                     text()
                         .font(.init(font))
                         .onChange(of: self.string) {
-                            self.animate = geo.size.width < stringWidth
+                            DispatchQueue.main.async {
+                                self.animate = geo.size.width < stringWidth && !ambientMode
+                            }
+                        }
+                        .onChange(of: ambientMode) {
+                            DispatchQueue.main.async {
+                                self.animate = geo.size.width < stringWidth && !ambientMode
+                            }
                         }
                         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: alignment)
                 }
@@ -100,7 +117,7 @@ public struct MarqueeText : View {
         .onDisappear { self.animate = false }
     }
     
-    public init(text: String, font: UIFont, leftFade: CGFloat, rightFade: CGFloat, startDelay: Double, alignment: Alignment? = nil) {
+    init(text: String, font: UIFont, leftFade: CGFloat, rightFade: CGFloat, startDelay: Double, alignment: Alignment? = nil) {
         self.attributedString = nil
         self.string = text
         self.font = font
@@ -110,7 +127,7 @@ public struct MarqueeText : View {
         self.alignment = alignment != nil ? alignment! : .topLeading
     }
     
-    public init(text: AttributedString, font: UIFont, leftFade: CGFloat, rightFade: CGFloat, startDelay: Double, alignment: Alignment? = nil) {
+    init(text: AttributedString, font: UIFont, leftFade: CGFloat, rightFade: CGFloat, startDelay: Double, alignment: Alignment? = nil) {
         self.attributedString = text
         self.string = String(text.characters[...])
         self.font = font
@@ -122,11 +139,13 @@ public struct MarqueeText : View {
 }
 
 extension MarqueeText {
+    
     public func makeCompact(_ compact: Bool = true) -> Self {
         var view = self
         view.isCompact = compact
         return view
     }
+    
 }
 
 extension String {
