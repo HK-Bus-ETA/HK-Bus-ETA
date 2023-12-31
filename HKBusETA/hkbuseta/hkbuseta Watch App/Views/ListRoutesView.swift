@@ -218,7 +218,7 @@ struct ListRoutesView: View {
         }) {
             HStack(alignment: .center, spacing: 2.scaled()) {
                 Text(routeNumber)
-                    .frame(width: altSize ? 67.scaled() : 47.scaled(), alignment: .leading)
+                    .frame(width: altSize ? 67.scaled() : 50.scaled(), alignment: .leading)
                     .font(.system(size: altSize ? 18.scaled() : 21.scaled()))
                     .foregroundColor(color)
                 if secondLine.isEmpty {
@@ -246,7 +246,7 @@ struct ListRoutesView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         CrossfadeMarqueeText(
                             textList: secondLine,
-                            state: animationTick,
+                            state: isLuminanceReduced ? 0 : animationTick,
                             font: UIFont.systemFont(ofSize: altSize ? 11.scaled() : 12.scaled()),
                             leftFade: 8.scaled(),
                             rightFade: 8.scaled(),

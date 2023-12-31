@@ -86,6 +86,21 @@ struct FavView: View {
                 }
             }
         }
+        .onChange(of: locationManager.readyForRequest) {
+            locationManager.requestLocation()
+        }
+        .onAppear {
+            if locationManager.readyForRequest {
+                locationManager.requestLocation()
+            } else if !locationManager.authorizationDenied {
+                locationManager.requestPermission()
+            }
+        }
+        .onChange(of: locationManager.isLocationFetched) {
+            if locationManager.location != nil {
+                origin = locationManager.location!.coordinate.toLocationResult()
+            }
+        }
     }
     
     func FavButton(favIndex: Int) -> some View {
@@ -141,7 +156,7 @@ struct FavView: View {
                         let route = resolvedStop.route
                         let co = currentFavRouteStop!.co
                         let routeNumber = route.routeNumber
-                        let gpsStop = currentFavRouteStop!.favouriteStopMode == FavouriteStopMode.fixed
+                        let gpsStop = currentFavRouteStop!.favouriteStopMode.isRequiresLocation
                         let destName = registry().getStopSpecialDestinations(stopId: currentFavRouteStop!.stopId, co: currentFavRouteStop!.co, route: route, prependTo: true)
                         let color = currentFavRouteStop!.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF)
                         let operatorName = currentFavRouteStop!.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, language: Shared().language, elseName: "???")
