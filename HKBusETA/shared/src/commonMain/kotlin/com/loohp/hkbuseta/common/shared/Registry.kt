@@ -1094,15 +1094,15 @@ class Registry {
             }
         }
         return MTRInterchangeData(
-            lines = lines.asSequence().sortedBy { Shared.getMtrLineSortingIndex(it) }.toCollection(LinkedHashSet()),
+            lines = lines.asSequence().distinct().sortedBy { Shared.getMtrLineSortingIndex(it) }.toList(),
             isOutOfStationPaid = isOutOfStationPaid,
-            outOfStationLines = outOfStationLines.asSequence().sortedBy { Shared.getMtrLineSortingIndex(it) }.toCollection(LinkedHashSet()),
+            outOfStationLines = outOfStationLines.asSequence().distinct().sortedBy { Shared.getMtrLineSortingIndex(it) }.toList(),
             isHasLightRail = hasLightRail
         )
     }
 
     @Immutable
-    data class MTRInterchangeData(val lines: Set<String>, val isOutOfStationPaid: Boolean, val outOfStationLines: Set<String>, val isHasLightRail: Boolean)
+    data class MTRInterchangeData(val lines: List<String>, val isOutOfStationPaid: Boolean, val outOfStationLines: List<String>, val isHasLightRail: Boolean)
 
     fun getNoScheduledDepartureMessage(altMessageInput: FormattedText?, isAboveTyphoonSignalEight: Boolean, typhoonWarningTitle: String): FormattedText {
         var altMessage = altMessageInput

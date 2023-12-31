@@ -60,6 +60,12 @@ import platform.darwin.dispatch_get_main_queue
 
 val appContext: AppActiveContextWatchOS = AppActiveContextWatchOS()
 
+private var firebaseImpl: (String, AppBundle) -> Unit = { _, _ -> }
+
+fun setFirebaseLogImpl(handler: (String, AppBundle) -> Unit) {
+    firebaseImpl = handler
+}
+
 @OptIn(ExperimentalForeignApi::class, UnsafeNumber::class, BetaInteropApi::class)
 open class AppContextWatchOS internal constructor() : AppContext {
 
@@ -141,7 +147,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override fun logFirebaseEvent(title: String, values: AppBundle) {
-        //do nothing
+        firebaseImpl.invoke(title, values)
     }
 
     override fun getResourceString(resId: Int): String {
