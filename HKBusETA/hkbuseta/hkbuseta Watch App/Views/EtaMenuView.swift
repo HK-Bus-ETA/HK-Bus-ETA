@@ -46,6 +46,7 @@ struct EtaMenuView: View {
                 VStack(alignment: .center, spacing: 1.scaled()) {
                     VStack(alignment: .center) {
                         Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
+                            .multilineTextAlignment(.center)
                             .foregroundColor(0xFFFFFFFF.asColor())
                             .lineLimit(2)
                             .autoResizing(maxSize: 23.scaled())
@@ -232,6 +233,7 @@ struct EtaMenuView: View {
                         .fill(state == FavouriteRouteState.usedSelf ? 0xFF3D3D3D.asColor() : 0xFF131313.asColor())
                         .frame(width: 30.scaled(), height: 30.scaled())
                     Text("\(favIndex)")
+                        .font(.system(size: 17.scaled()))
                         .bold()
                         .frame(width: 17.scaled(), height: 17.scaled())
                         .foregroundColor({

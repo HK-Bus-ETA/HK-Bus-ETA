@@ -93,6 +93,7 @@ struct FavRouteListViewView: View {
                 data["proximitySortOrigin"] = loc!
             }
             data["listType"] = RouteListType.Companion().FAVOURITE
+            data["allowAmbient"] = true
             appContext().appendStack(screen: AppScreen.listRoutes, mutableData: data)
             appContext().popSecondLastStack()
         }

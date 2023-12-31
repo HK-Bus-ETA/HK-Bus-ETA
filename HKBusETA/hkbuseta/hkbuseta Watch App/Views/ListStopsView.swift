@@ -27,6 +27,8 @@ struct ListStopsView: View {
     @State private var etaActive: [Int] = []
     @State private var etaResults: [Int: Registry.ETAQueryResult?] = [:]
     
+    @Environment(\.isLuminanceReduced) var ambientMode
+    
     @State private var route: RouteSearchResultEntry
     @State private var scrollToStop: String?
     @State private var showEta: Bool
@@ -96,23 +98,23 @@ struct ListStopsView: View {
                 LazyVStack(spacing: 0) {
                     VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2.scaled()) {
                         Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
-                            .foregroundColor(coColor)
+                            .foregroundColor(coColor.adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .lineLimit(1)
                             .autoResizing(maxSize: 23.scaled())
                             .bold()
                         Text(resolvedDestName.get(language: Shared().language))
-                            .foregroundColor(0xFFFFFFFF.asColor())
+                            .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .lineLimit(2)
                             .autoResizing(maxSize: 12.scaled())
                         if !specialOrigs.isEmpty {
                             Text(Shared().language == "en" ? ("Special From " + specialOrigs.map { $0.en }.joined(separator: "/")) : ("特別班 從" + specialOrigs.map { $0.zh }.joined(separator: "/") + "開出"))
-                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
+                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                                 .lineLimit(2)
                                 .autoResizing(maxSize: 12.scaled())
                         }
                         if !specialDests.isEmpty {
                             Text(Shared().language == "en" ? ("Special To " + specialDests.map { $0.en }.joined(separator: "/")) : ("特別班 往" + specialDests.map { $0.zh }.joined(separator: "/")))
-                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65))
+                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                                 .lineLimit(2)
                                 .autoResizing(maxSize: 12.scaled())
                         }
@@ -201,7 +203,7 @@ struct ListStopsView: View {
             HStack(alignment: .center, spacing: 2.scaled()) {
                 if co.isTrain && !mtrLineSectionData.isEmpty {
                     let width: CGFloat = Set(stopList.map { $0.serviceType }).count > 1 || mtrStopsInterchange.contains(where: { !$0.outOfStationLines.isEmpty }) ? 64 : 47
-                    MTRLineSection(sectionData: mtrLineSectionData[index])
+                    MTRLineSection(sectionData: mtrLineSectionData[index], ambientMode: ambientMode)
                         .frame(minWidth: width, maxWidth: width, maxHeight: .infinity)
                 } else {
                     Text("\(stopNumber).")
@@ -230,15 +232,15 @@ struct ListStopsView: View {
                                 if eta.isMtrEndOfLine {
                                     Image(systemName: "arrow.forward.to.line.circle")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF798996.asColor())
+                                        .foregroundColor(0xFF92C6F0.asColor())
                                 } else if (eta.isTyphoonSchedule) {
                                     Image(systemName: "hurricane")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF798996.asColor())
+                                        .foregroundColor(0xFF92C6F0.asColor())
                                 } else {
                                     Image(systemName: "clock")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF798996.asColor())
+                                        .foregroundColor(0xFF92C6F0.asColor())
                                 }
                             } else {
                                 let shortText = eta.firstLine.shortText
@@ -249,7 +251,7 @@ struct ListStopsView: View {
                                     .multilineTextAlignment(.trailing)
                                     .lineSpacing(0)
                                     .frame(alignment: .trailing)
-                                    .foregroundColor(0xFF798996.asColor())
+                                    .foregroundColor(0xFF92C6F0.asColor())
                                     .lineLimit(2)
                             }
                         }

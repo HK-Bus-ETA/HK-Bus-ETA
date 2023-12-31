@@ -51,6 +51,8 @@ struct FavView: View {
                             appContext().appendStack(screen: AppScreen.favRouteListView, mutableData: data)
                         }) {
                             Text(Shared().language == "en" ? "Route List View" : "路線一覽列表")
+                                .font(.system(size: 17.scaled()))
+                                .bold()
                         }
                         .frame(width: 160.scaled(), height: 35.scaled())
                         .clipShape(RoundedRectangle(cornerRadius: 25))
@@ -109,13 +111,14 @@ struct FavView: View {
                             .foregroundColor(0xFFFF0000.asColor())
                     } else {
                         Text("\(favIndex)")
+                            .font(.system(size: 17.scaled()))
                             .bold()
                             .frame(width: 17.scaled(), height: 17.scaled())
                             .foregroundColor(currentFavRouteStop != nil ? 0xFFFFFF00.asColor() : 0xFF444444.asColor())
                     }
                     if currentFavRouteStop != nil {
                         ETAElement(favIndex: favIndex, currentFavRouteStop: currentFavRouteStop!)
-                            .offset(y: 25.scaled())
+                            .offset(y: 30.5.scaled())
                     }
                 }.padding(10)
                 VStack(alignment: .leading, spacing: 1.scaled()) {
@@ -156,7 +159,7 @@ struct FavView: View {
                         VStack(alignment: .leading, spacing: 0) {
                             MarqueeText(
                                 text: mainText,
-                                font: UIFont.systemFont(ofSize: 17.scaled()),
+                                font: UIFont.systemFont(ofSize: 19.scaled()),
                                 leftFade: 8.scaled(),
                                 rightFade: 8.scaled(),
                                 startDelay: 2,
@@ -167,7 +170,7 @@ struct FavView: View {
                             .lineLimit(1)
                             MarqueeText(
                                 text: routeText,
-                                font: UIFont.systemFont(ofSize: 15.scaled()),
+                                font: UIFont.systemFont(ofSize: 17.scaled()),
                                 leftFade: 8.scaled(),
                                 rightFade: 8.scaled(),
                                 startDelay: 2,
@@ -177,7 +180,7 @@ struct FavView: View {
                             .lineLimit(1)
                             MarqueeText(
                                 text: subText,
-                                font: UIFont.systemFont(ofSize: 12.scaled()),
+                                font: UIFont.systemFont(ofSize: 14.scaled()),
                                 leftFade: 8.scaled(),
                                 rightFade: 8.scaled(),
                                 startDelay: 2,
@@ -265,15 +268,15 @@ struct FavView: View {
                         if eta.isMtrEndOfLine {
                             Image(systemName: "arrow.forward.to.line.circle")
                                 .font(.system(size: 17.scaled()))
-                                .foregroundColor(0xFF798996.asColor())
+                                .foregroundColor(0xFF92C6F0.asColor())
                         } else if (eta.isTyphoonSchedule) {
                             Image(systemName: "hurricane")
                                 .font(.system(size: 17.scaled()))
-                                .foregroundColor(0xFF798996.asColor())
+                                .foregroundColor(0xFF92C6F0.asColor())
                         } else {
                             Image(systemName: "clock")
                                 .font(.system(size: 17.scaled()))
-                                .foregroundColor(0xFF798996.asColor())
+                                .foregroundColor(0xFF92C6F0.asColor())
                         }
                     } else {
                         let shortText = eta.firstLine.shortText
@@ -284,7 +287,7 @@ struct FavView: View {
                             .multilineTextAlignment(.trailing)
                             .lineSpacing(0)
                             .frame(alignment: .trailing)
-                            .foregroundColor(0xFF798996.asColor())
+                            .foregroundColor(0xFF92C6F0.asColor())
                             .lineLimit(1)
                     }
                 }

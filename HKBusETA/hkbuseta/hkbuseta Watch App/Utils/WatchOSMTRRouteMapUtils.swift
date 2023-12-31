@@ -8,7 +8,7 @@
 import SwiftUI
 import shared
 
-func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
+func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some View {
     let mainLine = sectionData.mainLine
     let spurLine = sectionData.spurLine
     let co = sectionData.co
@@ -28,6 +28,7 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
         let horizontalCenterSecondary = horizontalPartition * 7.0
         let verticalCenter = height / 2.0
         let lineWidth = 6.0.scaled()
+        let outlineWidth = lineWidth * 0.6
         let lineOffset = 6.0.scaled()
         let dashEffect: [CGFloat] = [10.0.scaled(), 5.0.scaled()]
         
@@ -40,7 +41,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.addLine(to: CGPoint(x: horizontalCenterPrimary, y: size.height))
                     },
                     with: .color(color),
-                    lineWidth: lineWidth
+                    lineWidth: lineWidth,
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth
                 )
 
                 if isLrtCircular {
@@ -57,7 +60,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                             startPoint: CGPoint(x: horizontalCenterPrimary, y: -verticalCenter / 2),
                             endPoint: CGPoint(x: horizontalCenterPrimary, y: verticalCenter)
                         ),
-                        lineWidth: lineWidth
+                        lineWidth: lineWidth,
+                        outlineMode: ambientMode,
+                        outlineWidth: outlineWidth
                     )
                 }
             } else if mainLine!.isLastStation {
@@ -67,7 +72,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.addLine(to: CGPoint(x: horizontalCenterPrimary, y: verticalCenter))
                     },
                     with: .color(color),
-                    lineWidth: lineWidth
+                    lineWidth: lineWidth,
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth
                 )
 
                 if isLrtCircular {
@@ -81,7 +88,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                             startPoint: CGPoint(x: horizontalCenterPrimary, y: verticalCenter),
                             endPoint: CGPoint(x: horizontalCenterPrimary, y: height + verticalCenter / 2)
                         ),
-                        lineWidth: lineWidth
+                        lineWidth: lineWidth,
+                        outlineMode: ambientMode,
+                        outlineWidth: outlineWidth
                     )
                 }
             } else {
@@ -91,7 +100,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.addLine(to: CGPoint(x: horizontalCenterPrimary, y: height))
                     },
                     with: .color(color),
-                    lineWidth: lineWidth
+                    lineWidth: lineWidth,
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth
                 )
             }
             if mainLine!.hasOtherParallelBranches {
@@ -110,7 +121,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                     style: StrokeStyle(
                         lineWidth: lineWidth,
                         dash: dashEffect
-                    )
+                    ),
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth
                 )
             }
             switch mainLine!.sideSpurLineType {
@@ -128,7 +141,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.addLine(to: CGPoint(x: horizontalCenterSecondary, y: 0))
                     }, 
                     with: .color(color), 
-                    lineWidth: lineWidth
+                    lineWidth: lineWidth,
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth
                 )
 
             case .diverge:
@@ -145,7 +160,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.addLine(to: CGPoint(x: horizontalCenterSecondary, y: height))
                     },
                     with: .color(color),
-                    lineWidth: lineWidth
+                    lineWidth: lineWidth,
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth
                 )
             default:
                 break
@@ -157,7 +174,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                     path.addLine(to: CGPoint(x: horizontalCenterPrimary, y: height))
                 },
                 with: .color(color),
-                lineWidth: lineWidth
+                lineWidth: lineWidth,
+                outlineMode: ambientMode,
+                outlineWidth: outlineWidth
             )
             let dashLineResult = spurLine!.dashLineResult
             if dashLineResult.value {
@@ -177,7 +196,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         style: StrokeStyle(
                             lineWidth: lineWidth,
                             dash: dashEffect
-                        )
+                        ),
+                        outlineMode: ambientMode,
+                        outlineWidth: outlineWidth
                     )
                 } else if dashLineResult.isEndOfSpur {
                     context.stroke(
@@ -195,7 +216,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         style: StrokeStyle(
                             lineWidth: lineWidth,
                             dash: dashEffect
-                        )
+                        ),
+                        outlineMode: ambientMode,
+                        outlineWidth: outlineWidth
                     )
                 } else {
                     context.stroke(
@@ -207,7 +230,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         style: StrokeStyle(
                             lineWidth: lineWidth,
                             dash: dashEffect
-                        )
+                        ),
+                        outlineMode: ambientMode,
+                        outlineWidth: outlineWidth
                     )
                 }
             } else if spurLine!.isFirstStation {
@@ -217,7 +242,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.addLine(to: CGPoint(x: horizontalCenterSecondary, y: height))
                     },
                     with: .color(color),
-                    lineWidth: lineWidth
+                    lineWidth: lineWidth,
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth
                 )
             } else if spurLine!.isLastStation {
                 context.stroke(
@@ -226,7 +253,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.addLine(to: CGPoint(x: horizontalCenterSecondary, y: verticalCenter))
                     },
                     with: .color(color),
-                    lineWidth: lineWidth
+                    lineWidth: lineWidth,
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth
                 )
             } else {
                 context.stroke(
@@ -235,7 +264,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.addLine(to: CGPoint(x: horizontalCenterSecondary, y: height))
                     },
                     with: .color(color),
-                    lineWidth: lineWidth
+                    lineWidth: lineWidth,
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth
                 )
             }
         }
@@ -252,7 +283,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                     ),
                      cornerSize: CGSize(width: interchangeLineHeight / 2, height: interchangeLineHeight / 2)
                 ),
-                with: .color(0xFFD3A809.asColor())
+                with: .color(0xFFD3A809.asColor()),
+                outlineMode: ambientMode,
+                outlineWidth: outlineWidth * 0.75
             )
         } else if !interchangeData.lines.isEmpty {
             var leftCorner = CGPoint(
@@ -269,7 +302,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         ),
                          cornerSize: CGSize(width: interchangeLineHeight / 2, height: interchangeLineHeight / 2)
                     ),
-                    with: .color(interchange == "HighSpeed" ? 0xFF9C948B.asColor() : Operator.Companion().MTR.getColor(routeNumber: interchange, elseColor: 0xFFFFFFFF).asColor())
+                    with: .color(interchange == "HighSpeed" ? 0xFF9C948B.asColor() : Operator.Companion().MTR.getColor(routeNumber: interchange, elseColor: 0xFFFFFFFF).asColor()),
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth * 0.75
                 )
                 leftCorner = CGPoint(x: leftCorner.x, y: leftCorner.y + interchangeLineSpacing)
             }
@@ -284,7 +319,7 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.move(to: CGPoint(x: horizontalCenterPrimary, y: verticalCenter))
                         path.addLine(to: CGPoint(x: otherStationHorizontalCenter, y: verticalCenter))
                     },
-                    with: .color(0xFF003180.asColor()),
+                    with: .color(0xFF003180.asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1)),
                     lineWidth: connectionLineWidth
                 )
             } else {
@@ -293,7 +328,7 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         path.move(to: CGPoint(x: horizontalCenterPrimary, y: verticalCenter))
                         path.addLine(to: CGPoint(x: otherStationHorizontalCenter, y: verticalCenter))
                     },
-                    with: .color(0xFF003180.asColor()),
+                    with: .color(0xFF003180.asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1)),
                     style: StrokeStyle(
                         lineWidth: connectionLineWidth,
                         dash: [2.0.scaled(), 1.0.scaled()]
@@ -313,7 +348,9 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                             width: interchangeLineWidth,
                             height: interchangeLineHeight),
                          cornerSize: CGSize(width: interchangeLineHeight / 2, height: interchangeLineHeight / 2)),
-                    with: .color(interchange == "HighSpeed" ? 0xFF9C948B.asColor() : Operator.Companion().MTR.getColor(routeNumber: interchange, elseColor: 0xFFFFFFFF).asColor())
+                    with: .color(interchange == "HighSpeed" ? 0xFF9C948B.asColor() : Operator.Companion().MTR.getColor(routeNumber: interchange, elseColor: 0xFFFFFFFF).asColor()),
+                    outlineMode: ambientMode,
+                    outlineWidth: outlineWidth * 0.75
                 )
                 leftCorner = CGPoint(x: leftCorner.x, y: leftCorner.y + interchangeLineSpacing)
             }
@@ -328,7 +365,7 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         height: circleWidth / 1.4 * 2 + heightExpand
                     ),
                     cornerSize: CGSize(width: circleWidth / 1.4, height: circleWidth / 1.4)),
-                with: .color(0xFF003180.asColor())
+                with: .color(0xFF003180.asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1))
             )
             context.fill(
                 Path(roundedRect: CGRect(
@@ -338,7 +375,7 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                         height: circleWidth + heightExpand
                     ),
                     cornerSize: CGSize(width: circleWidth / 2, height: circleWidth / 2)),
-                with: .color(.white)
+                with: .color(ambientMode ? 0xFF000000.asColor() : 0xFFFFFFFF.asColor())
             )
         }
         let circleCenter = CGPoint(x: mainLine != nil ? horizontalCenterPrimary : horizontalCenterSecondary, y: verticalCenter)
@@ -350,7 +387,7 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                                      width: circleWidth / 1.4 * 2 + widthExpand,
                                      height: circleWidth / 1.4 * 2 + heightExpand),
                  cornerSize: CGSize(width: circleWidth / 1.4, height: circleWidth / 1.4)),
-            with: .color(0xFF003180.asColor())
+            with: .color(0xFF003180.asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1))
         )
         context.fill(
             Path(roundedRect: CGRect(x: circleCenter.x - (circleWidth / 2),
@@ -358,7 +395,44 @@ func MTRLineSection(sectionData: MTRStopSectionData) -> some View {
                                      width: circleWidth + widthExpand,
                                      height: circleWidth + heightExpand),
                  cornerSize: CGSize(width: circleWidth / 1.4, height: circleWidth / 1.4)),
-            with: .color(.white)
+            with: .color(ambientMode ? 0xFF000000.asColor() : 0xFFFFFFFF.asColor())
         )
     }
+}
+
+extension GraphicsContext {
+    
+    func fill(_ path: Path, with shading: GraphicsContext.Shading, style: FillStyle = FillStyle(), outlineMode: Bool, outlineWidth: CGFloat) {
+        self.fill(path, with: shading, style: style)
+        if outlineMode {
+            let boundingBox = path.cgPath.boundingBox
+            let scaleFactor = (boundingBox.width - outlineWidth) / boundingBox.width
+            let transform = CGAffineTransform(translationX: boundingBox.midX, y: boundingBox.midY)
+                .scaledBy(x: scaleFactor, y: scaleFactor)
+                .translatedBy(x: -boundingBox.midX, y: -boundingBox.midY)
+            self.fill(path.applying(transform), with: .color(0xFF000000.asColor()), style: style)
+        }
+    }
+
+    func stroke(_ path: Path, with shading: GraphicsContext.Shading, style: StrokeStyle, outlineMode: Bool, outlineWidth: CGFloat) {
+        self.stroke(path, with: shading, style: style)
+        if outlineMode {
+            self.stroke(path, with: .color(0xFF000000.asColor()), style: StrokeStyle(
+                lineWidth: style.lineWidth - outlineWidth,
+                lineCap: style.lineCap,
+                lineJoin: style.lineJoin,
+                miterLimit: style.miterLimit,
+                dash: style.dash,
+                dashPhase: style.dashPhase
+            ))
+        }
+    }
+
+    func stroke(_ path: Path, with shading: GraphicsContext.Shading, lineWidth: CGFloat = 1, outlineMode: Bool, outlineWidth: CGFloat) {
+        self.stroke(path, with: shading, lineWidth: lineWidth)
+        if outlineMode {
+            self.stroke(path, with: .color(0xFF000000.asColor()), lineWidth: lineWidth - outlineWidth)
+        }
+    }
+    
 }

@@ -23,6 +23,9 @@ struct ListRoutesView: View {
     @State private var etaActive: [String: StopIndexedRouteSearchResultEntry] = [:]
     @State private var etaResults: [String: Registry.ETAQueryResult?] = [:]
     
+    @Environment(\.isLuminanceReduced) var isLuminanceReduced
+    @State var ambientMode = false
+    
     @State var result: [StopIndexedRouteSearchResultEntry]
     @State var listType: RouteListType
     @State var showEta: Bool
@@ -105,36 +108,38 @@ struct ListRoutesView: View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 LazyVStack {
-                    if recentSort == RecentSortMode.forced {
-                        Button(action: {
-                            registry().clearLastLookupRoutes(context: appContext())
-                            appContext().popStack()
-                        }) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 17.scaled()))
-                                .foregroundColor(.red)
-                        }
-                        .frame(width: 45.scaled(), height: 45.scaled())
-                        .clipShape(RoundedRectangle(cornerRadius: 25))
-                        .edgesIgnoringSafeArea(.all)
-                    } else if recentSort == RecentSortMode.choice || proximitySortOrigin != nil {
-                        Button(action: {
-                            activeSortMode = activeSortMode.nextMode(allowRecentSort: recentSort == RecentSortMode.choice, allowProximitySort: proximitySortOrigin != nil)
-                        }) {
-                            switch activeSortMode {
-                            case RouteSortMode.proximity:
-                                Text(Shared().language == "en" ? "Sort: Proximity" : "排序: 巴士站距離").bold()
-                            case RouteSortMode.recent:
-                                Text(Shared().language == "en" ? "Sort: Fav/Recent" : "排序: 喜歡/最近瀏覽").bold()
-                            default:
-                                Text(Shared().language == "en" ? "Sort: Normal" : "排序: 正常").bold()
+                    if !ambientMode {
+                        if recentSort == RecentSortMode.forced {
+                            Button(action: {
+                                registry().clearLastLookupRoutes(context: appContext())
+                                appContext().popStack()
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 17.scaled()))
+                                    .foregroundColor(.red)
                             }
+                            .frame(width: 45.scaled(), height: 45.scaled())
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .edgesIgnoringSafeArea(.all)
+                        } else if recentSort == RecentSortMode.choice || proximitySortOrigin != nil {
+                            Button(action: {
+                                activeSortMode = activeSortMode.nextMode(allowRecentSort: recentSort == RecentSortMode.choice, allowProximitySort: proximitySortOrigin != nil)
+                            }) {
+                                switch activeSortMode {
+                                case RouteSortMode.proximity:
+                                    Text(Shared().language == "en" ? "Sort: Proximity" : "排序: 巴士站距離").bold()
+                                case RouteSortMode.recent:
+                                    Text(Shared().language == "en" ? "Sort: Fav/Recent" : "排序: 喜歡/最近瀏覽").bold()
+                                default:
+                                    Text(Shared().language == "en" ? "Sort: Normal" : "排序: 正常").bold()
+                                }
+                            }
+                            .font(.system(size: 17.scaled()))
+                            .frame(width: 170.scaled(), height: 45.scaled())
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .edgesIgnoringSafeArea(.all)
                         }
-                        .frame(width: 170.scaled(), height: 45.scaled())
-                        .clipShape(RoundedRectangle(cornerRadius: 25))
-                        .edgesIgnoringSafeArea(.all)
                     }
-                    
                     ForEach(sortedResults, id: \.uniqueKey) { route in
                         RouteRow(route: route)
                         Divider()
@@ -160,6 +165,12 @@ struct ListRoutesView: View {
             withAnimation() { () -> () in
                 sortedResults = sortedByMode[activeSortMode]!
             }
+        }
+        .onChange(of: isLuminanceReduced) {
+            ambientMode = isLuminanceReduced && allowAmbient
+        }
+        .onAppear {
+            ambientMode = isLuminanceReduced && allowAmbient
         }
     }
     
@@ -256,15 +267,15 @@ struct ListRoutesView: View {
                                 if eta.isMtrEndOfLine {
                                     Image(systemName: "arrow.forward.to.line.circle")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF798996.asColor())
+                                        .foregroundColor(0xFF92C6F0.asColor())
                                 } else if (eta.isTyphoonSchedule) {
                                     Image(systemName: "hurricane")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF798996.asColor())
+                                        .foregroundColor(0xFF92C6F0.asColor())
                                 } else {
                                     Image(systemName: "clock")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF798996.asColor())
+                                        .foregroundColor(0xFF92C6F0.asColor())
                                 }
                             } else {
                                 let shortText = eta.firstLine.shortText
@@ -275,7 +286,7 @@ struct ListRoutesView: View {
                                     .multilineTextAlignment(.trailing)
                                     .lineSpacing(0)
                                     .frame(alignment: .trailing)
-                                    .foregroundColor(0xFF798996.asColor())
+                                    .foregroundColor(0xFF92C6F0.asColor())
                                     .lineLimit(2)
                             }
                         }
