@@ -38,7 +38,7 @@ struct FavView: View {
                 VStack(alignment: .center, spacing: 1.scaled()) {
                     VStack(alignment: .center) {
                         Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
-                            .foregroundColor(0xFFFFFFFF.asColor())
+                            .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
                             .autoResizing(maxSize: 23.scaled())
                             .bold()
@@ -116,20 +116,20 @@ struct FavView: View {
             HStack(alignment: .top, spacing: 0) {
                 ZStack() {
                     Circle()
-                        .fill(currentFavRouteStop != nil ? 0xFF3D3D3D.asColor() : 0xFF131313.asColor())
+                        .fill(currentFavRouteStop != nil ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
                         .frame(width: 30.scaled(), height: 30.scaled())
                     if deleteState {
                         Image(systemName: "xmark")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 17.scaled(), height: 17.scaled())
-                            .foregroundColor(0xFFFF0000.asColor())
+                            .foregroundColor(colorInt(0xFFFF0000).asColor())
                     } else {
                         Text("\(favIndex)")
                             .font(.system(size: 17.scaled()))
                             .bold()
                             .frame(width: 17.scaled(), height: 17.scaled())
-                            .foregroundColor(currentFavRouteStop != nil ? 0xFFFFFF00.asColor() : 0xFF444444.asColor())
+                            .foregroundColor(currentFavRouteStop != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor())
                     }
                     if currentFavRouteStop != nil {
                         ETAElement(favIndex: favIndex, currentFavRouteStop: currentFavRouteStop!)
@@ -142,7 +142,7 @@ struct FavView: View {
                             Text(Shared().language == "en" ? "No Route Selected" : "未有設置路線")
                                 .font(.system(size: 16.scaled()))
                                 .bold()
-                                .foregroundColor(0xFF505050.asColor())
+                                .foregroundColor(colorInt(0xFF505050).asColor())
                                 .lineLimit(2)
                                 .lineSpacing(0)
                                 .multilineTextAlignment(.leading)
@@ -158,7 +158,7 @@ struct FavView: View {
                         let routeNumber = route.routeNumber
                         let gpsStop = currentFavRouteStop!.favouriteStopMode.isRequiresLocation
                         let destName = registry().getStopSpecialDestinations(stopId: currentFavRouteStop!.stopId, co: currentFavRouteStop!.co, route: route, prependTo: true)
-                        let color = currentFavRouteStop!.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF)
+                        let color = currentFavRouteStop!.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64)
                         let operatorName = currentFavRouteStop!.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, language: Shared().language, elseName: "???")
                         let mainText = "\(operatorName) \(currentFavRouteStop!.co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))"
                         let routeText = destName.get(language: Shared().language)
@@ -166,7 +166,7 @@ struct FavView: View {
                         let subText = {
                             var text = ((co.isTrain ? "" : "\(index). ") + stopName.get(language: Shared().language)).asAttributedString()
                             if gpsStop {
-                                text += (Shared().language == "en" ? " - Closest" : " - 最近").asAttributedString(color: 0xFFFFE496.asColor(), fontSize: 12 * 0.8)
+                                text += (Shared().language == "en" ? " - Closest" : " - 最近").asAttributedString(color: colorInt(0xFFFFE496).asColor(), fontSize: 12 * 0.8)
                             }
                             return text
                         }()
@@ -209,7 +209,7 @@ struct FavView: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .background { deleteState ? 0xFF633A3A.asColor() : 0xFF1A1A1A.asColor() }
+        .background { deleteState ? colorInt(0xFF633A3A).asColor() : colorInt(0xFF1A1A1A).asColor() }
         .frame(minWidth: 178.0.scaled(), maxWidth: 178.0.scaled(), minHeight: 47.0.scaled())
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .simultaneousGesture(
@@ -283,15 +283,15 @@ struct FavView: View {
                         if eta.isMtrEndOfLine {
                             Image(systemName: "arrow.forward.to.line.circle")
                                 .font(.system(size: 17.scaled()))
-                                .foregroundColor(0xFF92C6F0.asColor())
+                                .foregroundColor(colorInt(0xFF92C6F0).asColor())
                         } else if (eta.isTyphoonSchedule) {
                             Image(systemName: "hurricane")
                                 .font(.system(size: 17.scaled()))
-                                .foregroundColor(0xFF92C6F0.asColor())
+                                .foregroundColor(colorInt(0xFF92C6F0).asColor())
                         } else {
                             Image(systemName: "clock")
                                 .font(.system(size: 17.scaled()))
-                                .foregroundColor(0xFF92C6F0.asColor())
+                                .foregroundColor(colorInt(0xFF92C6F0).asColor())
                         }
                     } else {
                         let shortText = eta.firstLine.shortText
@@ -302,7 +302,7 @@ struct FavView: View {
                             .multilineTextAlignment(.trailing)
                             .lineSpacing(0)
                             .frame(alignment: .trailing)
-                            .foregroundColor(0xFF92C6F0.asColor())
+                            .foregroundColor(colorInt(0xFF92C6F0).asColor())
                             .lineLimit(1)
                     }
                 }

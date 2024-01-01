@@ -67,7 +67,7 @@ func BackButton(scrollingScreen: Bool) -> some View {
     }
     .background(alignment: .top) {
         if scrollingScreen {
-            LinearGradient(gradient: Gradient(colors: [0xFF000000.asColor(), 0xFF000000.asColor(), 0xFF000000.asColor(), 0x00000000.asColor()]), startPoint: .top, endPoint: .bottom)
+            LinearGradient(gradient: Gradient(colors: [colorInt(0xFF000000).asColor(), colorInt(0xFF000000).asColor(), colorInt(0xFF000000).asColor(), colorInt(0x00000000).asColor()]), startPoint: .top, endPoint: .bottom)
                 .frame(height: 45.scaled())
         }
     }
@@ -84,7 +84,7 @@ extension View {
     func defaultStyle() -> some View {
         return self
             .transition(AnyTransition.scale.animation(.easeInOut(duration: 0.25)))
-            .background { 0xFF000000.asColor() }
+            .background { colorInt(0xFF000000).asColor() }
     }
     
 }

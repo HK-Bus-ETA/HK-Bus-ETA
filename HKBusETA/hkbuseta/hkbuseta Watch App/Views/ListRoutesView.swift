@@ -175,7 +175,7 @@ struct ListRoutesView: View {
     }
     
     func RouteRow(route: StopIndexedRouteSearchResultEntry) -> some View {
-        let color = route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF).asColor()
+        let color = route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF as Int64).asColor()
         let kmbCtbJoint = route.route!.isKmbCtbJoint
         let dest = route.route!.resolvedDest(prependTo: true).get(language: Shared().language)
         let altSize = route.co == Operator.Companion().MTR && Shared().language != "en"
@@ -188,9 +188,9 @@ struct ListRoutesView: View {
             }
             if (kmbCtbJoint) {
                 if Shared().language == "en" {
-                    list.append((routeNumber.getKMBSubsidiary() == KMBSubsidiary.lwb ? "LWB" : "KMB").asAttributedString(color: color) + " CTB Joint Operated".asAttributedString(color: 0xFFFFE15E.asColor()))
+                    list.append((routeNumber.getKMBSubsidiary() == KMBSubsidiary.lwb ? "LWB" : "KMB").asAttributedString(color: color) + " CTB Joint Operated".asAttributedString(color: colorInt(0xFFFFE15E).asColor()))
                 } else {
-                    list.append((routeNumber.getKMBSubsidiary() == KMBSubsidiary.lwb ? "龍運" : "九巴").asAttributedString(color: color) + "城巴聯營線".asAttributedString(color: 0xFFFFE15E.asColor()))
+                    list.append((routeNumber.getKMBSubsidiary() == KMBSubsidiary.lwb ? "龍運" : "九巴").asAttributedString(color: color) + "城巴聯營線".asAttributedString(color: colorInt(0xFFFFE15E).asColor()))
                 }
             }
             if route.co == Operator.Companion().NLB {
@@ -253,7 +253,7 @@ struct ListRoutesView: View {
                             startDelay: 2,
                             alignment: .bottomLeading
                         )
-                        .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.75))
+                        .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.75))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -267,15 +267,15 @@ struct ListRoutesView: View {
                                 if eta.isMtrEndOfLine {
                                     Image(systemName: "arrow.forward.to.line.circle")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF92C6F0.asColor())
+                                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
                                 } else if (eta.isTyphoonSchedule) {
                                     Image(systemName: "hurricane")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF92C6F0.asColor())
+                                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
                                 } else {
                                     Image(systemName: "clock")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF92C6F0.asColor())
+                                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
                                 }
                             } else {
                                 let shortText = eta.firstLine.shortText
@@ -286,7 +286,7 @@ struct ListRoutesView: View {
                                     .multilineTextAlignment(.trailing)
                                     .lineSpacing(0)
                                     .frame(alignment: .trailing)
-                                    .foregroundColor(0xFF92C6F0.asColor())
+                                    .foregroundColor(colorInt(0xFF92C6F0).asColor())
                                     .lineLimit(2)
                             }
                         }

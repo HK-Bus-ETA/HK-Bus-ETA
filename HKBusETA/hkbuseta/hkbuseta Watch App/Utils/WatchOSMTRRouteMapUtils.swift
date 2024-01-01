@@ -283,7 +283,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                     ),
                      cornerSize: CGSize(width: interchangeLineHeight / 2, height: interchangeLineHeight / 2)
                 ),
-                with: .color(0xFFD3A809.asColor()),
+                with: .color(colorInt(0xFFD3A809).asColor()),
                 outlineMode: ambientMode,
                 outlineWidth: outlineWidth * 0.75
             )
@@ -302,7 +302,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                         ),
                          cornerSize: CGSize(width: interchangeLineHeight / 2, height: interchangeLineHeight / 2)
                     ),
-                    with: .color(interchange == "HighSpeed" ? 0xFF9C948B.asColor() : Operator.Companion().MTR.getColor(routeNumber: interchange, elseColor: 0xFFFFFFFF).asColor()),
+                    with: .color(interchange == "HighSpeed" ? colorInt(0xFF9C948B).asColor() : Operator.Companion().MTR.getColor(routeNumber: interchange, elseColor: 0xFFFFFFFF as Int64).asColor()),
                     outlineMode: ambientMode,
                     outlineWidth: outlineWidth * 0.75
                 )
@@ -319,7 +319,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                         path.move(to: CGPoint(x: horizontalCenterPrimary, y: verticalCenter))
                         path.addLine(to: CGPoint(x: otherStationHorizontalCenter, y: verticalCenter))
                     },
-                    with: .color(0xFF003180.asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1)),
+                    with: .color(colorInt(0xFF003180).asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1)),
                     lineWidth: connectionLineWidth
                 )
             } else {
@@ -328,7 +328,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                         path.move(to: CGPoint(x: horizontalCenterPrimary, y: verticalCenter))
                         path.addLine(to: CGPoint(x: otherStationHorizontalCenter, y: verticalCenter))
                     },
-                    with: .color(0xFF003180.asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1)),
+                    with: .color(colorInt(0xFF003180).asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1)),
                     style: StrokeStyle(
                         lineWidth: connectionLineWidth,
                         dash: [2.0.scaled(), 1.0.scaled()]
@@ -348,7 +348,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                             width: interchangeLineWidth,
                             height: interchangeLineHeight),
                          cornerSize: CGSize(width: interchangeLineHeight / 2, height: interchangeLineHeight / 2)),
-                    with: .color(interchange == "HighSpeed" ? 0xFF9C948B.asColor() : Operator.Companion().MTR.getColor(routeNumber: interchange, elseColor: 0xFFFFFFFF).asColor()),
+                    with: .color(interchange == "HighSpeed" ? colorInt(0xFF9C948B).asColor() : Operator.Companion().MTR.getColor(routeNumber: interchange, elseColor: 0xFFFFFFFF as Int64).asColor()),
                     outlineMode: ambientMode,
                     outlineWidth: outlineWidth * 0.75
                 )
@@ -365,7 +365,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                         height: circleWidth / 1.4 * 2 + heightExpand
                     ),
                     cornerSize: CGSize(width: circleWidth / 1.4, height: circleWidth / 1.4)),
-                with: .color(0xFF003180.asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1))
+                with: .color(colorInt(0xFF003180).asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1))
             )
             context.fill(
                 Path(roundedRect: CGRect(
@@ -375,7 +375,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                         height: circleWidth + heightExpand
                     ),
                     cornerSize: CGSize(width: circleWidth / 2, height: circleWidth / 2)),
-                with: .color(ambientMode ? 0xFF000000.asColor() : 0xFFFFFFFF.asColor())
+                with: .color(ambientMode ? colorInt(0xFF000000).asColor() : colorInt(0xFFFFFFFF).asColor())
             )
         }
         let circleCenter = CGPoint(x: mainLine != nil ? horizontalCenterPrimary : horizontalCenterSecondary, y: verticalCenter)
@@ -387,7 +387,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                                      width: circleWidth / 1.4 * 2 + widthExpand,
                                      height: circleWidth / 1.4 * 2 + heightExpand),
                  cornerSize: CGSize(width: circleWidth / 1.4, height: circleWidth / 1.4)),
-            with: .color(0xFF003180.asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1))
+            with: .color(colorInt(0xFF003180).asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1))
         )
         context.fill(
             Path(roundedRect: CGRect(x: circleCenter.x - (circleWidth / 2),
@@ -395,7 +395,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                                      width: circleWidth + widthExpand,
                                      height: circleWidth + heightExpand),
                  cornerSize: CGSize(width: circleWidth / 1.4, height: circleWidth / 1.4)),
-            with: .color(ambientMode ? 0xFF000000.asColor() : 0xFFFFFFFF.asColor())
+            with: .color(ambientMode ? colorInt(0xFF000000).asColor() : colorInt(0xFFFFFFFF).asColor())
         )
     }
 }
@@ -410,14 +410,14 @@ extension GraphicsContext {
             let transform = CGAffineTransform(translationX: boundingBox.midX, y: boundingBox.midY)
                 .scaledBy(x: scaleFactor, y: scaleFactor)
                 .translatedBy(x: -boundingBox.midX, y: -boundingBox.midY)
-            self.fill(path.applying(transform), with: .color(0xFF000000.asColor()), style: style)
+            self.fill(path.applying(transform), with: .color(colorInt(0xFF000000).asColor()), style: style)
         }
     }
 
     func stroke(_ path: Path, with shading: GraphicsContext.Shading, style: StrokeStyle, outlineMode: Bool, outlineWidth: CGFloat) {
         self.stroke(path, with: shading, style: style)
         if outlineMode {
-            self.stroke(path, with: .color(0xFF000000.asColor()), style: StrokeStyle(
+            self.stroke(path, with: .color(colorInt(0xFF000000).asColor()), style: StrokeStyle(
                 lineWidth: style.lineWidth - outlineWidth,
                 lineCap: style.lineCap,
                 lineJoin: style.lineJoin,
@@ -431,7 +431,7 @@ extension GraphicsContext {
     func stroke(_ path: Path, with shading: GraphicsContext.Shading, lineWidth: CGFloat = 1, outlineMode: Bool, outlineWidth: CGFloat) {
         self.stroke(path, with: shading, lineWidth: lineWidth)
         if outlineMode {
-            self.stroke(path, with: .color(0xFF000000.asColor()), lineWidth: lineWidth - outlineWidth)
+            self.stroke(path, with: .color(colorInt(0xFF000000).asColor()), lineWidth: lineWidth - outlineWidth)
         }
     }
     

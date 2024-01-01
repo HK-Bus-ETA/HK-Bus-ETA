@@ -21,10 +21,10 @@ extension UIColor {
             var hexNumber: UInt64 = 0
 
             if scanner.scanHexInt64(&hexNumber) {
-                a = CGFloat((hexNumber & 0xff000000) >> 24) / 255
-                r = CGFloat((hexNumber & 0x00ff0000) >> 16) / 255
-                g = CGFloat((hexNumber & 0x0000ff00) >> 8) / 255
-                b = CGFloat(hexNumber & 0x000000ff) / 255
+                a = CGFloat((hexNumber & 0xff000000 as UInt64) >> 24) / 255
+                r = CGFloat((hexNumber & 0x00ff0000 as UInt64) >> 16) / 255
+                g = CGFloat((hexNumber & 0x0000ff00 as UInt64) >> 8) / 255
+                b = CGFloat(hexNumber & 0x000000ff as UInt64) / 255
 
                 self.init(red: r, green: g, blue: b, alpha: a)
                 return
@@ -80,12 +80,7 @@ extension Color {
 extension Int {
     
     func asUIColor() -> UIColor {
-        let r, g, b, a: CGFloat
-        a = CGFloat((self & 0xff000000) >> 24) / 255
-        r = CGFloat((self & 0x00ff0000) >> 16) / 255
-        g = CGFloat((self & 0x0000ff00) >> 8) / 255
-        b = CGFloat(self & 0x000000ff) / 255
-        return UIColor(red: r, green: g, blue: b, alpha: a)
+        return Int64(self).asUIColor()
     }
     
     func asColor() -> Color {
@@ -98,10 +93,10 @@ extension Int64 {
     
     func asUIColor() -> UIColor {
         let r, g, b, a: CGFloat
-        a = CGFloat((self & 0xff000000) >> 24) / 255
-        r = CGFloat((self & 0x00ff0000) >> 16) / 255
-        g = CGFloat((self & 0x0000ff00) >> 8) / 255
-        b = CGFloat(self & 0x000000ff) / 255
+        a = CGFloat((self & 0xff000000 as Int64) >> 24) / 255
+        r = CGFloat((self & 0x00ff0000 as Int64) >> 16) / 255
+        g = CGFloat((self & 0x0000ff00 as Int64) >> 8) / 255
+        b = CGFloat(self & 0x000000ff as Int64) / 255
         return UIColor(red: r, green: g, blue: b, alpha: a)
     }
     

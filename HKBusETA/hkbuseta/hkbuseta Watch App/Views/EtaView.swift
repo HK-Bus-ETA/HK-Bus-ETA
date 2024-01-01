@@ -46,13 +46,13 @@ struct EtaView: View {
         VStack(alignment: .center, spacing: 3.scaled()) {
             Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
                 .multilineTextAlignment(.center)
-                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(2)
                 .autoResizing(maxSize: 23.scaled())
                 .bold()
             let destName = registry().getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
             Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + destName.get(language: Shared().language))
-                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(1)
                 .autoResizing(maxSize: 12.scaled())
             Spacer(minLength: 7.scaled())
@@ -81,7 +81,7 @@ struct EtaView: View {
                     }) {
                         Image(systemName: "arrow.left")
                             .font(.system(size: 17.scaled()))
-                            .foregroundColor(index > 1 ? 0xFFFFFFFF.asColor() : 0xFF494949.asColor())
+                            .foregroundColor(index > 1 ? colorInt(0xFFFFFFFF).asColor() : colorInt(0xFF494949).asColor())
                     }
                     .frame(width: 25.scaled(), height: 25.scaled())
                     .clipShape(RoundedRectangle(cornerRadius: 25))
@@ -121,7 +121,7 @@ struct EtaView: View {
                     }) {
                         Image(systemName: "arrow.right")
                             .font(.system(size: 17.scaled()))
-                            .foregroundColor(index < stopList.count ? 0xFFFFFFFF.asColor() : 0xFF494949.asColor())
+                            .foregroundColor(index < stopList.count ? colorInt(0xFFFFFFFF).asColor() : colorInt(0xFF494949).asColor())
                     }
                     .frame(width: 25.scaled(), height: 25.scaled())
                     .clipShape(RoundedRectangle(cornerRadius: 25))
@@ -149,7 +149,7 @@ struct EtaView: View {
             startDelay: 2,
             alignment: .center
         )
-        .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: lines == nil || (ambientMode && seq > 1) ? 0.7 : 1))
+        .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: lines == nil || (ambientMode && seq > 1) ? 0.7 : 1))
         .lineLimit(1)
     }
 

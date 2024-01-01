@@ -31,10 +31,10 @@ struct SearchView: View {
             Text(Shared().getMtrLineName(lineName: state.text))
                 .font(.system(size: 22.scaled()))
                 .frame(width: 150.0.scaled(), height: 40.0.scaled())
-                .background { 0xFF1A1A1A.asColor() }
+                .background { colorInt(0xFF1A1A1A).asColor() }
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(0xFF252525.asColor(), lineWidth: 4.scaled())
+                        .stroke(colorInt(0xFF252525).asColor(), lineWidth: 4.scaled())
                 )
                 .padding()
             HStack {
@@ -98,7 +98,7 @@ struct SearchView: View {
                 if hasHistory && state.text.isEmpty || state.text == defaultText() {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 17.scaled()))
-                        .foregroundColor(0xFF03A9F4.asColor())
+                        .foregroundColor(colorInt(0xFF03A9F4).asColor())
                 } else {
                     Image(systemName: "trash")
                         .font(.system(size: 17.scaled()))
@@ -107,7 +107,7 @@ struct SearchView: View {
             case "/":
                 Image(systemName: "checkmark")
                     .font(.system(size: 17.scaled()))
-                    .foregroundColor(state.nextCharResult.hasExactMatch ? .green : 0xFF444444.asColor())
+                    .foregroundColor(state.nextCharResult.hasExactMatch ? .green : colorInt(0xFF444444).asColor())
             case "!":
                 Image("mtr")
                     .resizable()
@@ -116,7 +116,7 @@ struct SearchView: View {
             default:
                 Text(content.description)
                     .font(.system(size: 20.scaled()))
-                    .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : 0xFF444444.asColor())
+                    .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : colorInt(0xFF444444).asColor())
                     .bold()
             }
         }

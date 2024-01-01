@@ -16,3 +16,7 @@ extension Comparable {
     }
     
 }
+
+func colorInt(_ value: Int64) -> Int {
+    return Int(truncatingIfNeeded: value)
+}

@@ -77,14 +77,14 @@ struct ListStopsView: View {
         let specialOrigsDests = registry().getAllOriginsAndDestinations(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         self.specialOrigs = specialOrigsDests.first!.map { $0 as! BilingualText }.filter { !$0.zh.eitherContains(other: origName.zh) }
         self.specialDests = specialOrigsDests.second!.map { $0 as! BilingualText }.filter { !$0.zh.eitherContains(other: destName.zh) }
-        self.coColor = co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF).asColor()
+        self.coColor = co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64).asColor()
         let stopList = registry().getAllStops(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         self.stopList = stopList
         self.lowestServiceType = stopList.min { $0.serviceType < $1.serviceType }!.serviceType
         if co.isTrain {
             let mtrStopsInterchange = stopList.map { registry().getMtrStationInterchange(stopId: $0.stopId, lineName: routeNumber) }
             self.mtrStopsInterchange = mtrStopsInterchange
-            self.mtrLineSectionData = MTRRouteMapUtilsKt.createMTRLineSectionData(co: co, color: co.getLineColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF), stopList: stopList, mtrStopsInterchange: mtrStopsInterchange, isLrtCircular: route.route!.lrtCircular != nil, context: appContext())
+            self.mtrLineSectionData = MTRRouteMapUtilsKt.createMTRLineSectionData(co: co, color: co.getLineColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), stopList: stopList, mtrStopsInterchange: mtrStopsInterchange, isLrtCircular: route.route!.lrtCircular != nil, context: appContext())
         } else {
             self.mtrStopsInterchange = []
             self.mtrLineSectionData = []
@@ -103,18 +103,18 @@ struct ListStopsView: View {
                             .autoResizing(maxSize: 23.scaled())
                             .bold()
                         Text(resolvedDestName.get(language: Shared().language))
-                            .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                            .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .lineLimit(2)
                             .autoResizing(maxSize: 12.scaled())
                         if !specialOrigs.isEmpty {
                             Text(Shared().language == "en" ? ("Special From " + specialOrigs.map { $0.en }.joined(separator: "/")) : ("特別班 從" + specialOrigs.map { $0.zh }.joined(separator: "/") + "開出"))
-                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                                .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                                 .lineLimit(2)
                                 .autoResizing(maxSize: 12.scaled())
                         }
                         if !specialDests.isEmpty {
                             Text(Shared().language == "en" ? ("Special To " + specialDests.map { $0.en }.joined(separator: "/")) : ("特別班 往" + specialDests.map { $0.zh }.joined(separator: "/")))
-                                .foregroundColor(0xFFFFFFFF.asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                                .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                                 .lineLimit(2)
                                 .autoResizing(maxSize: 12.scaled())
                         }
@@ -232,15 +232,15 @@ struct ListStopsView: View {
                                 if eta.isMtrEndOfLine {
                                     Image(systemName: "arrow.forward.to.line.circle")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF92C6F0.asColor())
+                                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
                                 } else if (eta.isTyphoonSchedule) {
                                     Image(systemName: "hurricane")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF92C6F0.asColor())
+                                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
                                 } else {
                                     Image(systemName: "clock")
                                         .font(.system(size: 17.scaled()))
-                                        .foregroundColor(0xFF92C6F0.asColor())
+                                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
                                 }
                             } else {
                                 let shortText = eta.firstLine.shortText
@@ -251,7 +251,7 @@ struct ListStopsView: View {
                                     .multilineTextAlignment(.trailing)
                                     .lineSpacing(0)
                                     .frame(alignment: .trailing)
-                                    .foregroundColor(0xFF92C6F0.asColor())
+                                    .foregroundColor(colorInt(0xFF92C6F0).asColor())
                                     .lineLimit(2)
                             }
                         }

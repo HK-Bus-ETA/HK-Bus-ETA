@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		81D16AB52B33C21E003D9817 /* hkbuseta Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 81D16AB42B33C21E003D9817 /* hkbuseta Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		81D16AB52B33C21E003D9817 /* HKBusETA.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 81D16AB42B33C21E003D9817 /* HKBusETA.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		81D16ABE2B33C21F003D9817 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16ABD2B33C21F003D9817 /* Assets.xcassets */; };
 		81D16AC12B33C21F003D9817 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16AC02B33C21F003D9817 /* Preview Assets.xcassets */; };
 		81D16AF82B33E1D8003D9817 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16AF72B33E1D8003D9817 /* MainView.swift */; };
@@ -53,7 +53,7 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
-				81D16AB52B33C21E003D9817 /* hkbuseta Watch App.app in Embed Watch Content */,
+				81D16AB52B33C21E003D9817 /* HKBusETA.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -62,7 +62,7 @@
 
 /* Begin PBXFileReference section */
 		81D16AAE2B33C21E003D9817 /* hkbuseta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = hkbuseta.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		81D16AB42B33C21E003D9817 /* hkbuseta Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "hkbuseta Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		81D16AB42B33C21E003D9817 /* HKBusETA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HKBusETA.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		81D16ABD2B33C21F003D9817 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		81D16AC02B33C21F003D9817 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		81D16AF72B33E1D8003D9817 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
@@ -115,7 +115,7 @@
 			isa = PBXGroup;
 			children = (
 				81D16AAE2B33C21E003D9817 /* hkbuseta.app */,
-				81D16AB42B33C21E003D9817 /* hkbuseta Watch App.app */,
+				81D16AB42B33C21E003D9817 /* HKBusETA.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -229,7 +229,7 @@
 				81D16B032B34982B003D9817 /* KMPNativeCoroutinesRxSwift */,
 			);
 			productName = "hkbuseta Watch App";
-			productReference = 81D16AB42B33C21E003D9817 /* hkbuseta Watch App.app */;
+			productReference = 81D16AB42B33C21E003D9817 /* HKBusETA.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -471,6 +471,7 @@
 		81D16AC52B33C21F003D9817 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -480,9 +481,9 @@
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				EXCLUDED_ARCHS = arm64;
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = hkbuseta;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to locate nearby bus stops";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
@@ -493,8 +494,8 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp;
+				PRODUCT_NAME = HKBusETA;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -508,6 +509,7 @@
 		81D16AC62B33C21F003D9817 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -517,9 +519,9 @@
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				EXCLUDED_ARCHS = arm64;
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = hkbuseta;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to locate nearby bus stops";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
@@ -530,8 +532,8 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp;
+				PRODUCT_NAME = HKBusETA;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
