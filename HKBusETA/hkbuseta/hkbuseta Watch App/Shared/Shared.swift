@@ -74,8 +74,8 @@ extension View {
         .transition(.opacity.animation(.linear(duration: 0.5)))
     }
     
-    func autoResizing(maxSize: CGFloat = 200, minSize: CGFloat = 1) -> some View {
-        self.font(.system(size: maxSize)).minimumScaleFactor(minSize / maxSize)
+    func autoResizing(maxSize: CGFloat = 200, minSize: CGFloat = 1, weight: Font.Weight = .regular) -> some View {
+        self.font(.system(size: maxSize, weight: weight)).minimumScaleFactor(minSize / maxSize)
     }
     
 }

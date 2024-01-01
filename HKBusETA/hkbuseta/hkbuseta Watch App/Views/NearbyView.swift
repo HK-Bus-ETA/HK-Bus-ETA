@@ -69,7 +69,7 @@ struct NearbyView: View {
                 }
             }
         }
-        .onChange(of: locationManager.isLocationFetched) {
+        .onChange(of: locationManager.isLocationFetched) { _ in
             if locationManager.authorizationDenied {
                 denied = true
             } else if locationManager.isLocationFetched {
@@ -81,7 +81,7 @@ struct NearbyView: View {
                 }
             }
         }
-        .onChange(of: locationManager.readyForRequest) {
+        .onChange(of: locationManager.readyForRequest) { _ in
             if location == nil && locationManager.readyForRequest {
                 locationManager.requestLocation()
             }

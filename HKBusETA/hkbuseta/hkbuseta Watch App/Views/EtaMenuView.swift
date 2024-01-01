@@ -49,8 +49,7 @@ struct EtaMenuView: View {
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
-                            .autoResizing(maxSize: 23.scaled())
-                            .bold()
+                            .autoResizing(maxSize: 23.scaled(), weight: .bold)
                         if (stop.remark != nil) {
                             Text(stop.remark!.get(language: Shared().language))
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor())
@@ -87,8 +86,7 @@ struct EtaMenuView: View {
                         .padding(.horizontal, 20.scaled())
                     Spacer().frame(height: 5.scaled())
                     Text(Shared().language == "en" ? "Tap to set this stop\nLong press to set to display any closes stop of the route" : "點擊設置此站 長按設置顯示路線最近的任何站")
-                        .font(.system(size: 10.scaled()))
-                        .bold()
+                        .font(.system(size: 10.scaled(), weight: .bold))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled())
@@ -136,8 +134,7 @@ struct EtaMenuView: View {
                         .foregroundColor(colorInt(0xFFFF0000).asColor())
                 }
                 Text(Shared().language == "en" ? "Open KMB BBI Layout Map" : "顯示九巴轉車站位置圖")
-                    .font(.system(size: 15.scaled()))
-                    .bold()
+                    .font(.system(size: 15.scaled(), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -180,8 +177,7 @@ struct EtaMenuView: View {
                         .foregroundColor(colorInt(0xFFFFE15E).asColor())
                 }
                 Text(Shared().language == "en" ? "Find Nearby Interchanges" : "尋找附近轉乘路線")
-                    .font(.system(size: 15.scaled()))
-                    .bold()
+                    .font(.system(size: 15.scaled(), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -233,8 +229,7 @@ struct EtaMenuView: View {
                         .fill(state == FavouriteRouteState.usedSelf ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
                         .frame(width: 30.scaled(), height: 30.scaled())
                     Text("\(favIndex)")
-                        .font(.system(size: 17.scaled()))
-                        .bold()
+                        .font(.system(size: 17.scaled(), weight: .bold))
                         .frame(width: 17.scaled(), height: 17.scaled())
                         .foregroundColor({
                             switch state {
@@ -251,8 +246,7 @@ struct EtaMenuView: View {
                     switch state {
                     case FavouriteRouteState.notUsed:
                         Text(Shared().language == "en" ? "No Route Stop Selected" : "未有設置路線巴士站")
-                            .font(.system(size: 15.scaled()))
-                            .bold()
+                            .font(.system(size: 15.scaled(), weight: .bold))
                             .foregroundColor(colorInt(0xFFB9B9B9).asColor())
                             .lineLimit(2)
                             .lineSpacing(0)
@@ -278,13 +272,12 @@ struct EtaMenuView: View {
                         let color = currentRoute.co.getColor(routeNumber: currentRoute.route.routeNumber, elseColor: 0xFFFFFFFF as Int64).asColor()
                         MarqueeText(
                             text: "\(coDisplay) \(routeNumberDisplay)",
-                            font: UIFont.systemFont(ofSize: 15.scaled()),
+                            font: UIFont.systemFont(ofSize: 15.scaled(), weight: .bold),
                             leftFade: 8.scaled(),
                             rightFade: 8.scaled(),
                             startDelay: 2,
                             alignment: .bottomLeading
                         )
-                            .bold()
                             .foregroundColor(color.adjustBrightness(percentage: 0.3))
                             .lineLimit(1)
                             .lineSpacing(0)
@@ -306,8 +299,7 @@ struct EtaMenuView: View {
                     case FavouriteRouteState.usedSelf:
                         let isClosestStopMode = Shared().favoriteRouteStops[KotlinInt(int: favIndex.asInt32())]?.favouriteStopMode == FavouriteStopMode.closest
                         Text(isClosestStopMode ? (Shared().language == "en" ? "Selected as Any Closes Stop on This Route" : "已設置為本路線最近的任何巴士站") : (Shared().language == "en" ? "Selected as This Route Stop" : "已設置為本路線巴士站"))
-                            .font(.system(size: 15.scaled()))
-                            .bold()
+                            .font(.system(size: 15.scaled(), weight: .bold))
                             .foregroundColor((isClosestStopMode ? colorInt(0xFFFFE496) : colorInt(0xFFFFFFFF)).asColor())
                             .lineLimit(2)
                             .lineSpacing(0)

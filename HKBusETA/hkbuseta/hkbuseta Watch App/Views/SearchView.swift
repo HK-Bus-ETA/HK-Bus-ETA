@@ -73,7 +73,7 @@ struct SearchView: View {
         .onAppear {
             hasHistory = Shared().hasFavoriteAndLookupRoute()
         }
-        .onChange(of: state.text) {
+        .onChange(of: state.text) { _ in
             storage["input"] = state.text == defaultText() ? "" : state.text
         }
     }
@@ -115,9 +115,8 @@ struct SearchView: View {
                     .foregroundColor(.red)
             default:
                 Text(content.description)
-                    .font(.system(size: 20.scaled()))
+                    .font(.system(size: 20.scaled(), weight: .bold))
                     .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : colorInt(0xFF444444).asColor())
-                    .bold()
             }
         }
         .frame(width: 35.0.scaled(), height: (content.isLetter || content == "!" ? 30.0 : 35.0).scaled())

@@ -57,8 +57,7 @@ func BackButton(scrollingScreen: Bool) -> some View {
             appContext().popStack()
         }) {
             Image(systemName: "arrow.left")
-                .font(.system(size: 17.scaled()))
-                .bold()
+                .font(.system(size: 17.scaled(), weight: .bold))
                 .foregroundColor(.white)
         }
         .frame(width: 30.scaled(), height: 30.scaled())

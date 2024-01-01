@@ -54,7 +54,7 @@ struct MainView: View {
                     .font(.system(size: 23.scaled()))
                     .padding(.bottom)
             }
-        }.onChange(of: registryState.state) {
+        }.onChange(of: registryState.state) { _ in
             if registryState.state == Registry.State.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     appContext().appendStack(screen: AppScreen.title)

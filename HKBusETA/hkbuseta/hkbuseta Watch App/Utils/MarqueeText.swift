@@ -68,12 +68,12 @@ struct MarqueeText : View {
                             .fixedSize(horizontal: true, vertical: false)
                             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
                     }
-                    .onChange(of: self.string) {
+                    .onChange(of: self.string) { _ in
                         DispatchQueue.main.async {
                             self.animate = geo.size.width < stringWidth && !ambientMode
                         }
                     }
-                    .onChange(of: ambientMode) {
+                    .onChange(of: ambientMode) { _ in
                         DispatchQueue.main.async {
                             self.animate = geo.size.width < stringWidth && !ambientMode
                         }
@@ -98,12 +98,12 @@ struct MarqueeText : View {
                 } else {
                     text()
                         .font(.init(font))
-                        .onChange(of: self.string) {
+                        .onChange(of: self.string) { _ in
                             DispatchQueue.main.async {
                                 self.animate = geo.size.width < stringWidth && !ambientMode
                             }
                         }
-                        .onChange(of: ambientMode) {
+                        .onChange(of: ambientMode) { _ in
                             DispatchQueue.main.async {
                                 self.animate = geo.size.width < stringWidth && !ambientMode
                             }

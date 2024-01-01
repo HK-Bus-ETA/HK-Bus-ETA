@@ -127,14 +127,14 @@ struct ListRoutesView: View {
                             }) {
                                 switch activeSortMode {
                                 case RouteSortMode.proximity:
-                                    Text(Shared().language == "en" ? "Sort: Proximity" : "排序: 巴士站距離").bold()
+                                    Text(Shared().language == "en" ? "Sort: Proximity" : "排序: 巴士站距離")
                                 case RouteSortMode.recent:
-                                    Text(Shared().language == "en" ? "Sort: Fav/Recent" : "排序: 喜歡/最近瀏覽").bold()
+                                    Text(Shared().language == "en" ? "Sort: Fav/Recent" : "排序: 喜歡/最近瀏覽")
                                 default:
-                                    Text(Shared().language == "en" ? "Sort: Normal" : "排序: 正常").bold()
+                                    Text(Shared().language == "en" ? "Sort: Normal" : "排序: 正常")
                                 }
                             }
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(), weight: .bold))
                             .frame(width: 170.scaled(), height: 45.scaled())
                             .clipShape(RoundedRectangle(cornerRadius: 25))
                             .edgesIgnoringSafeArea(.all)
@@ -157,7 +157,7 @@ struct ListRoutesView: View {
                 }
             }
         }
-        .onChange(of: activeSortMode) {
+        .onChange(of: activeSortMode) { _ in
             let preferred = Shared().routeSortModePreference[listType]
             if preferred == nil || activeSortMode != preferred {
                 registry().setRouteSortModePreference(context: appContext(), listType: listType, sortMode: activeSortMode)
@@ -166,7 +166,7 @@ struct ListRoutesView: View {
                 sortedResults = sortedByMode[activeSortMode]!
             }
         }
-        .onChange(of: isLuminanceReduced) {
+        .onChange(of: isLuminanceReduced) { _ in
             ambientMode = isLuminanceReduced && allowAmbient
         }
         .onAppear {

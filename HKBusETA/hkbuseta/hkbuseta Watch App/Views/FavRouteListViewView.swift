@@ -34,7 +34,8 @@ struct FavRouteListViewView: View {
                 Button(action: {
                     failed = true
                 }) {
-                    Text(Shared().language == "en" ? "Skip sort by distance" : "略過按距離排序").bold()
+                    Text(Shared().language == "en" ? "Skip sort by distance" : "略過按距離排序")
+                        .font(.system(size: 17.scaled(), weight: .bold))
                 }
                 .frame(width: 170.scaled(), height: 45.scaled())
                 .clipShape(RoundedRectangle(cornerRadius: 25))
@@ -42,7 +43,7 @@ struct FavRouteListViewView: View {
                 .offset(x: 0, y: 70.scaled())
             }
         }
-        .onChange(of: locationManager.isLocationFetched) {
+        .onChange(of: locationManager.isLocationFetched) { _ in
             if locationManager.authorizationDenied {
                 failed = true
             } else if locationManager.isLocationFetched {
@@ -54,7 +55,7 @@ struct FavRouteListViewView: View {
                 }
             }
         }
-        .onChange(of: locationManager.readyForRequest) {
+        .onChange(of: locationManager.readyForRequest) { _ in
             if location == nil && locationManager.readyForRequest {
                 locationManager.requestLocation()
             }
@@ -70,7 +71,7 @@ struct FavRouteListViewView: View {
                 handleLocation()
             }
         }
-        .onChange(of: failed) {
+        .onChange(of: failed) { _ in
             if failed {
                 handleLocation()
             }

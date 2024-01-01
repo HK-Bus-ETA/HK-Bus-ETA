@@ -40,8 +40,7 @@ struct FavView: View {
                         Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
-                            .autoResizing(maxSize: 23.scaled())
-                            .bold()
+                            .autoResizing(maxSize: 23.scaled(), weight: .bold)
                     }
                     Spacer(minLength: 10.scaled())
                     if showRouteListViewButton {
@@ -51,8 +50,7 @@ struct FavView: View {
                             appContext().appendStack(screen: AppScreen.favRouteListView, mutableData: data)
                         }) {
                             Text(Shared().language == "en" ? "Route List View" : "路線一覽列表")
-                                .font(.system(size: 17.scaled()))
-                                .bold()
+                                .font(.system(size: 17.scaled(), weight: .bold))
                         }
                         .frame(width: 160.scaled(), height: 35.scaled())
                         .clipShape(RoundedRectangle(cornerRadius: 25))
@@ -66,7 +64,7 @@ struct FavView: View {
                 }
             }
         }
-        .onChange(of: maxFavItems.state) {
+        .onChange(of: maxFavItems.state) { _ in
             showRouteListViewButton = Shared().shouldShowFavListRouteView
         }
         .onAppear {
@@ -86,7 +84,7 @@ struct FavView: View {
                 }
             }
         }
-        .onChange(of: locationManager.readyForRequest) {
+        .onChange(of: locationManager.readyForRequest) { _ in
             locationManager.requestLocation()
         }
         .onAppear {
@@ -96,7 +94,7 @@ struct FavView: View {
                 locationManager.requestPermission()
             }
         }
-        .onChange(of: locationManager.isLocationFetched) {
+        .onChange(of: locationManager.isLocationFetched) { _ in
             if locationManager.location != nil {
                 origin = locationManager.location!.coordinate.toLocationResult()
             }
@@ -126,8 +124,7 @@ struct FavView: View {
                             .foregroundColor(colorInt(0xFFFF0000).asColor())
                     } else {
                         Text("\(favIndex)")
-                            .font(.system(size: 17.scaled()))
-                            .bold()
+                            .font(.system(size: 17.scaled(), weight: .bold))
                             .frame(width: 17.scaled(), height: 17.scaled())
                             .foregroundColor(currentFavRouteStop != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor())
                     }
@@ -140,8 +137,7 @@ struct FavView: View {
                     if currentFavRouteStop == nil {
                         HStack(alignment: .center) {
                             Text(Shared().language == "en" ? "No Route Selected" : "未有設置路線")
-                                .font(.system(size: 16.scaled()))
-                                .bold()
+                                .font(.system(size: 16.scaled(), weight: .bold))
                                 .foregroundColor(colorInt(0xFF505050).asColor())
                                 .lineLimit(2)
                                 .lineSpacing(0)
@@ -174,13 +170,12 @@ struct FavView: View {
                         VStack(alignment: .leading, spacing: 0) {
                             MarqueeText(
                                 text: mainText,
-                                font: UIFont.systemFont(ofSize: 19.scaled()),
+                                font: UIFont.systemFont(ofSize: 19.scaled(), weight: .bold),
                                 leftFade: 8.scaled(),
                                 rightFade: 8.scaled(),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )
-                            .bold()
                             .foregroundColor(color.asColor())
                             .lineLimit(1)
                             MarqueeText(

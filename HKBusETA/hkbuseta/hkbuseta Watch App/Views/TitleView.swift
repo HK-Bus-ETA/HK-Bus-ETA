@@ -23,7 +23,8 @@ struct TitleView: View {
             Button(action: {
                 appContext().appendStack(screen: AppScreen.search)
             }) {
-                Text(Shared().language == "en" ? "Input Route" : "輸入巴士路線").font(.system(size: 20.scaled())).bold()
+                Text(Shared().language == "en" ? "Input Route" : "輸入巴士路線")
+                    .font(.system(size: 20.scaled(), weight: .bold))
             }
             .background(
                 Image("bus_background")
@@ -38,7 +39,8 @@ struct TitleView: View {
             Button(action: {
                 appContext().appendStack(screen: AppScreen.nearby)
             }) {
-                Text(Shared().language == "en" ? "Search Nearby" : "附近巴士路線").font(.system(size: 20.scaled())).bold()
+                Text(Shared().language == "en" ? "Search Nearby" : "附近巴士路線")
+                    .font(.system(size: 20.scaled(), weight: .bold))
             }.background(
                 Image("nearby_background")
                     .resizable()
@@ -54,17 +56,16 @@ struct TitleView: View {
                     registry().setLanguage(language: Shared().language == "en" ? "zh" : "en", context: appContext())
                     appContext().appendStack(screen: AppScreen.main)
                 }) {
-                    Text(Shared().language == "en" ? "中文" : "English").font(.system(size: 20.scaled())).bold()
+                    Text(Shared().language == "en" ? "中文" : "English")
+                        .font(.system(size: 20.scaled(), weight: .bold))
                 }
                 .frame(width: 115.scaled())
-                .controlSize(.small)
                 Button(action: {
                     appContext().appendStack(screen: AppScreen.fav)
                 }) {
                     Image(systemName: "star.fill").font(.system(size: 21.scaled())).foregroundColor(.yellow)
                 }
                 .frame(width: 55.scaled())
-                .controlSize(.small)
             }
             Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報").font(.system(size: 12.scaled()))
             Text("v\(appVersion) (\(buildVersion)) @loohpjames").font(.system(size: 12.scaled())).padding(.bottom)

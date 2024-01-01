@@ -100,8 +100,7 @@ struct ListStopsView: View {
                         Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
                             .foregroundColor(coColor.adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .lineLimit(1)
-                            .autoResizing(maxSize: 23.scaled())
-                            .bold()
+                            .autoResizing(maxSize: 23.scaled(), weight: .bold)
                         Text(resolvedDestName.get(language: Shared().language))
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .lineLimit(2)
@@ -125,7 +124,7 @@ struct ListStopsView: View {
                     }
                 }
             }
-            .onChange(of: scrollTarget) {
+            .onChange(of: scrollTarget) { _ in
                 if !scrolled && scrollTarget != nil {
                     value.scrollTo(scrollTarget!, anchor: .center)
                     scrolled = true
@@ -142,7 +141,7 @@ struct ListStopsView: View {
                 }
             }
         }
-        .onChange(of: locationManager.readyForRequest) {
+        .onChange(of: locationManager.readyForRequest) { _ in
             if !scrolled {
                 locationManager.requestLocation()
             }
@@ -161,7 +160,7 @@ struct ListStopsView: View {
                 }
             }
         }
-        .onChange(of: locationManager.isLocationFetched) {
+        .onChange(of: locationManager.isLocationFetched) { _ in
             if locationManager.location != nil {
                 let origin = locationManager.location!.coordinate.toLocationResult().location!
                 let closest = stopList.indices.map { index in
@@ -208,20 +207,18 @@ struct ListStopsView: View {
                 } else {
                     Text("\(stopNumber).")
                         .frame(width: 37.scaled(), alignment: .leading)
-                        .font(.system(size: 18.scaled()))
+                        .font(.system(size: 18.scaled(), weight: isClosest ? .bold : .regular))
                         .foregroundColor(color)
-                        .bold(isClosest)
                 }
                 MarqueeText(
                     text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled()),
-                    font: UIFont.systemFont(ofSize: 18.scaled()),
+                    font: UIFont.systemFont(ofSize: 18.scaled(), weight: isClosest ? .bold : .regular),
                     leftFade: 8.scaled(),
                     rightFade: 8.scaled(),
                     startDelay: 2,
                     alignment: .bottomLeading
                 )
                 .foregroundColor(color)
-                .bold(isClosest)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if showEta {
                     let optEta = etaResults[index]
