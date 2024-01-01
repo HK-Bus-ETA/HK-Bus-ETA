@@ -67,7 +67,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "81D16AB32B33C21E003D9817"
-            BuildableName = "hkbuseta Watch App.app"
+            BuildableName = "HKBusETA.app"
             BlueprintName = "hkbuseta Watch App"
             ReferencedContainer = "container:watchOSApp.xcodeproj">
          </BuildableReference>
@@ -84,7 +84,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "81D16AB32B33C21E003D9817"
-            BuildableName = "hkbuseta Watch App.app"
+            BuildableName = "HKBusETA.app"
             BlueprintName = "hkbuseta Watch App"
             ReferencedContainer = "container:watchOSApp.xcodeproj">
          </BuildableReference>
