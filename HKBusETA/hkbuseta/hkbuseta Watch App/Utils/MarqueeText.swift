@@ -73,7 +73,7 @@ struct MarqueeText : View {
                             self.animate = geo.size.width < stringWidth && !ambientMode
                         }
                     }
-                    .onChange(of: ambientMode) { _ in
+                    .onChange(of: ambientMode) { ambientMode in
                         DispatchQueue.main.async {
                             self.animate = geo.size.width < stringWidth && !ambientMode
                         }
@@ -103,7 +103,7 @@ struct MarqueeText : View {
                                 self.animate = geo.size.width < stringWidth && !ambientMode
                             }
                         }
-                        .onChange(of: ambientMode) { _ in
+                        .onChange(of: ambientMode) { ambientMode in
                             DispatchQueue.main.async {
                                 self.animate = geo.size.width < stringWidth && !ambientMode
                             }
