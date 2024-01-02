@@ -66,7 +66,7 @@ fun getTextResponse(link: String): String? {
                     append(HttpHeaders.Pragma, "no-cache")
                 }
                 timeout {
-                    requestTimeoutMillis = 20000
+                    requestTimeoutMillis = 120000
                     connectTimeoutMillis = 20000
                 }
             }.let {
@@ -97,7 +97,7 @@ fun getTextResponseWithPercentageCallback(link: String, customContentLength: Lon
                     append(HttpHeaders.Pragma, "no-cache")
                 }
                 timeout {
-                    requestTimeoutMillis = 20000
+                    requestTimeoutMillis = 120000
                     connectTimeoutMillis = 20000
                 }
                 onDownload { bytesSentTotal, rawContentLength ->
@@ -133,7 +133,7 @@ fun getJSONResponse(link: String, gzip: Boolean): JsonObject? {
                     append(HttpHeaders.Pragma, "no-cache")
                 }
                 timeout {
-                    requestTimeoutMillis = 20000
+                    requestTimeoutMillis = 120000
                     connectTimeoutMillis = 20000
                 }
             }.let {
@@ -162,7 +162,7 @@ fun postJSONResponse(link: String, body: JsonObject): JsonObject? {
                 contentType(ContentType.Application.Json)
                 setBody(body)
                 timeout {
-                    requestTimeoutMillis = 20000
+                    requestTimeoutMillis = 120000
                     connectTimeoutMillis = 20000
                 }
             }.let {

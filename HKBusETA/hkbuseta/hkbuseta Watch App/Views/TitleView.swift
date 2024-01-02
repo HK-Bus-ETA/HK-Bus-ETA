@@ -59,12 +59,14 @@ struct TitleView: View {
                     Text(Shared().language == "en" ? "中文" : "English")
                         .font(.system(size: 20.scaled(), weight: .bold))
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 50))
                 .frame(width: 115.scaled())
                 Button(action: {
                     appContext().appendStack(screen: AppScreen.fav)
                 }) {
                     Image(systemName: "star.fill").font(.system(size: 21.scaled())).foregroundColor(.yellow)
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 50))
                 .frame(width: 55.scaled())
             }
             Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報").font(.system(size: 12.scaled()))
