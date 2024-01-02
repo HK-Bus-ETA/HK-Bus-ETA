@@ -279,15 +279,8 @@ fun handleInput(instance: AppActiveContext, state: MutableState<RouteKeyboardSta
     }
     if (input == '/' || input == '!' || (input == '<' && Shared.hasFavoriteAndLookupRoute() && originalText.isEmpty())) {
         val result = when (input) {
-            '!' -> Registry.getInstance(instance).findRoutes("", false) { r -> r.bound.containsKey(Operator.MTR) }
-            '<' -> Registry.getInstance(instance).findRoutes("", false) { r, c ->
-                val meta = when (c) {
-                    Operator.GMB -> r.gmbRegion!!.name
-                    Operator.NLB -> r.nlbId
-                    else -> ""
-                }
-                Shared.getFavoriteAndLookupRouteIndex(r.routeNumber, c, meta) < Int.MAX_VALUE
-            }
+            '!' -> Registry.getInstance(instance).findRoutes("", false, Shared.MTR_ROUTE_FILTER)
+            '<' -> Registry.getInstance(instance).findRoutes("", false, Shared.RECENT_ROUTE_FILTER)
             else -> Registry.getInstance(instance).findRoutes(originalText, true)
         }
         if (result.isNotEmpty()) {

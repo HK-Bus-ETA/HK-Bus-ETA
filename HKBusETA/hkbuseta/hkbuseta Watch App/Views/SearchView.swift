@@ -147,22 +147,9 @@ struct SearchView: View {
             let result: [RouteSearchResultEntry]
             switch input {
             case "!":
-                result = registry().findRoutes(input: "", exact: false, predicate: { r in
-                    KotlinBoolean(bool: r.bound[Operator.Companion().MTR] != nil)
-                })
+                result = registry().findRoutes(input: "", exact: false, predicate: Shared().MTR_ROUTE_FILTER)
             case "<":
-                result = registry().findRoutes(input: "", exact: false, coPredicate: { r, c in
-                    let meta: String
-                    switch c {
-                    case Operator.Companion().GMB:
-                        meta = r.gmbRegion!.name
-                    case Operator.Companion().NLB:
-                        meta = r.nlbId
-                    default:
-                        meta = ""
-                    }
-                    return KotlinBoolean(bool: Shared().getFavoriteAndLookupRouteIndex(routeNumber: r.routeNumber, co: c, meta: meta) < Int32.max)
-                })
+                result = registry().findRoutes(input: "", exact: false, coPredicate: Shared().RECENT_ROUTE_FILTER)
             default:
                 result = registry().findRoutes(input: originalText, exact: true)
             }

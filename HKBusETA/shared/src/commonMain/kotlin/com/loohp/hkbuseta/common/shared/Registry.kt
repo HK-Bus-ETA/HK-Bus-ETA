@@ -602,25 +602,24 @@ class Registry {
     data class PossibleNextCharResult(val characters: Set<Char>, val hasExactMatch: Boolean)
 
     fun findRoutes(input: String, exact: Boolean): List<RouteSearchResultEntry> {
-        return findRoutes(input, exact, { true }, { _, _ -> true })
+        return findRoutes(input, exact, null, null)
     }
 
     fun findRoutes(input: String, exact: Boolean, predicate: (Route) -> Boolean): List<RouteSearchResultEntry> {
-        return findRoutes(input, exact, predicate) { _, _ -> true }
+        return findRoutes(input, exact, predicate, null)
     }
 
     fun findRoutes(input: String, exact: Boolean, coPredicate: (Route, Operator) -> Boolean): List<RouteSearchResultEntry> {
-        return findRoutes(input, exact, { true }, coPredicate)
+        return findRoutes(input, exact, null, coPredicate)
     }
 
-    private fun findRoutes(input: String, exact: Boolean, predicate: (Route) -> Boolean = { true }, coPredicate: (Route, Operator) -> Boolean = { _, _ -> true }): List<RouteSearchResultEntry> {
-        val routeMatcher: (String) -> Boolean = if (exact) ({ it == input }) else ({ it.startsWith(input) })
-        val matchingRoutes: MutableMap<String, RouteSearchResultEntry> = HashMap()
+    private fun findRoutes(input: String, exact: Boolean, predicate: ((Route) -> Boolean)?, coPredicate: ((Route, Operator) -> Boolean)?): List<RouteSearchResultEntry> {
+        val matchingRoutes: MutableMap<String, RouteSearchResultEntry> = hashMapOf()
         for ((key, data) in DATA!!.dataSheet.routeList.entries) {
             if (data.isCtbIsCircular) {
                 continue
             }
-            if (routeMatcher.invoke(data.routeNumber) && predicate.invoke(data)) {
+            if ((if (exact) data.routeNumber == input else data.routeNumber.startsWith(input)) && predicate?.invoke(data) != false) {
                 var co: Operator
                 val bound = data.bound
                 co = if (bound.containsKey(Operator.KMB)) {
@@ -640,7 +639,7 @@ class Registry {
                 } else {
                     continue
                 }
-                if (!coPredicate.invoke(data, co)) {
+                if (coPredicate?.invoke(data, co) == false) {
                     continue
                 }
                 val key0 = (data.routeNumber + "," + co.name) + "," + (if (co === Operator.NLB) data.nlbId else data.bound[co]) + if (co === Operator.GMB) "," + data.gmbRegion else ""
@@ -673,8 +672,8 @@ class Registry {
         return if (matchingRoutes.isEmpty()) {
             emptyList()
         } else matchingRoutes.values.asSequence().sortedWith { a, b ->
-                val routeA: Route = a.route!!
-                val routeB: Route = b.route!!
+                val routeA = a.route!!
+                val routeB = b.route!!
                 val boundA = routeA.bound
                 val boundB = routeB.bound
                 val coA = boundA.keys.max()
@@ -686,8 +685,7 @@ class Registry {
                 val routeNumberA = routeA.routeNumber
                 val routeNumberB = routeB.routeNumber
                 if (coA.isTrain && coB.isTrain) {
-                    val lineDiff = Shared.getMtrLineSortingIndex(routeNumberA)
-                        .compareTo(Shared.getMtrLineSortingIndex(routeNumberB))
+                    val lineDiff = Shared.getMtrLineSortingIndex(routeNumberA).compareTo(Shared.getMtrLineSortingIndex(routeNumberB))
                     if (lineDiff != 0) {
                         return@sortedWith lineDiff
                     }
@@ -702,21 +700,19 @@ class Registry {
                     return@sortedWith IntUtils.parseOrZero(routeA.nlbId) - IntUtils.parseOrZero(routeB.nlbId)
                 }
                 if (coA === Operator.GMB) {
-                    val gtfsDiff: Int =
-                        IntUtils.parseOrZero(routeA.gtfsId) - IntUtils.parseOrZero(routeB.gtfsId)
+                    val gtfsDiff: Int = IntUtils.parseOrZero(routeA.gtfsId) - IntUtils.parseOrZero(routeB.gtfsId)
                     if (gtfsDiff != 0) {
                         return@sortedWith gtfsDiff
                     }
                 }
-                val typeDiff: Int =
-                    IntUtils.parseOrZero(routeA.serviceType) - IntUtils.parseOrZero(routeB.serviceType)
+                val typeDiff = IntUtils.parseOrZero(routeA.serviceType) - IntUtils.parseOrZero(routeB.serviceType)
                 if (typeDiff == 0) {
                     if (coA === Operator.CTB) {
                         return@sortedWith 0
                     }
                     return@sortedWith -boundA[coA]!!.compareTo(boundB[coB]!!)
                 }
-                typeDiff
+                return@sortedWith typeDiff
             }.toList()
     }
 

@@ -29,6 +29,7 @@ import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.LastLookupRoute
 import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteSortMode
@@ -47,6 +48,15 @@ import kotlinx.coroutines.flow.StateFlow
 object Shared {
 
     const val ETA_UPDATE_INTERVAL: Int = 15000
+
+    val MTR_ROUTE_FILTER: (Route) -> Boolean = { r -> r.bound.containsKey(Operator.MTR) }
+    val RECENT_ROUTE_FILTER: (Route, Operator) -> Boolean = { r, c ->
+        getFavoriteAndLookupRouteIndex(r.routeNumber, c, when (c) {
+            Operator.GMB -> r.gmbRegion!!.name
+            Operator.NLB -> r.nlbId
+            else -> ""
+        }) < Int.MAX_VALUE
+    }
 
     fun invalidateCache(context: AppContext) {
         try {
