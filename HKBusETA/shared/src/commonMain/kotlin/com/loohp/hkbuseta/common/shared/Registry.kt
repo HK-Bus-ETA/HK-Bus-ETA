@@ -1437,7 +1437,7 @@ class Registry {
                                                         }
                                                     }
                                                     if (bus.optString("rmk_en").isNotEmpty()) {
-                                                        message = buildFormattedString {
+                                                        message += buildFormattedString {
                                                             if (message.isEmpty()) {
                                                                 append(bus.optString("rmk_en"))
                                                             } else {
@@ -1571,7 +1571,7 @@ class Registry {
                                                 }
                                             }
                                             if (bus.optString("rmk_en").isNotEmpty()) {
-                                                message = buildFormattedString {
+                                                message += buildFormattedString {
                                                     if (message.isEmpty()) {
                                                         append(bus.optString("rmk_en"))
                                                     } else {
@@ -1669,7 +1669,7 @@ class Registry {
                                                 }
                                             }
                                             if (bus.optString("rmk_en").isNotEmpty()) {
-                                                message = buildFormattedString {
+                                                message += buildFormattedString {
                                                     if (message.isEmpty()) {
                                                         append(bus.optString("rmk_en"))
                                                     } else {
