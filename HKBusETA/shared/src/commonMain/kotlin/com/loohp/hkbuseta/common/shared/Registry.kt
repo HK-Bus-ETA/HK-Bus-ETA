@@ -1988,8 +1988,7 @@ class Registry {
                         val stopsList = route.stops[Operator.LRT]!!
                         if (stopsList.indexOf(stopId) + 1 >= stopsList.size) {
                             isMtrEndOfLine = true
-                            lines[1] =
-                                ETALineEntry.textEntry(if (Shared.language == "en") "End of Line" else "終點站")
+                            lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "End of Line" else "終點站")
                         } else {
                             val hongKongTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Hong_Kong"))
                             val hour = hongKongTime.hour
@@ -2080,7 +2079,6 @@ class Registry {
                             val hongKongTime = Clock.System.now().toLocalDateTime(hongKongTimeZone)
                             val hour = hongKongTime.hour
                             val dayOfWeek = hongKongTime.dayOfWeek
-                            val start = currentTimeMillis()
                             val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=$lineName&sta=$stopId")
                             if (data!!.optInt("status") == 0) {
                                 lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Server unable to provide data" else "系統未能提供資訊")
