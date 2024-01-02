@@ -188,6 +188,7 @@ struct FavView: View {
                             )
                             .foregroundColor(.white)
                             .lineLimit(1)
+                            Spacer(minLength: 3.scaled())
                             MarqueeText(
                                 text: subText,
                                 font: UIFont.systemFont(ofSize: 14.scaled()),
