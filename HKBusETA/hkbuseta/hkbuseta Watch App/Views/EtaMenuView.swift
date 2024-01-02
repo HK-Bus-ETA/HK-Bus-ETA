@@ -44,6 +44,7 @@ struct EtaMenuView: View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 VStack(alignment: .center, spacing: 1.scaled()) {
+                    Spacer(minLength: 10.scaled())
                     VStack(alignment: .center) {
                         Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
                             .multilineTextAlignment(.center)

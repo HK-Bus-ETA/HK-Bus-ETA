@@ -108,6 +108,7 @@ struct ListRoutesView: View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 LazyVStack {
+                    Spacer(minLength: 10.scaled())
                     if !ambientMode {
                         if recentSort == RecentSortMode.forced {
                             Button(action: {

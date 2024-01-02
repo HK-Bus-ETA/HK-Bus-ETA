@@ -36,6 +36,7 @@ struct FavView: View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 VStack(alignment: .center, spacing: 1.scaled()) {
+                    Spacer(minLength: 10.scaled())
                     VStack(alignment: .center) {
                         Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())

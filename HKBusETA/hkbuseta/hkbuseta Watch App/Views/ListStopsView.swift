@@ -96,6 +96,7 @@ struct ListStopsView: View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
+                    Spacer(minLength: 10.scaled())
                     VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2.scaled()) {
                         Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
                             .foregroundColor(coColor.adjustBrightness(percentage: ambientMode ? 0.7 : 1))
