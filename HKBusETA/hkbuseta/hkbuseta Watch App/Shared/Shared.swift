@@ -86,6 +86,10 @@ extension Int {
         return Int32(clamping: self)
     }
     
+    func asKt() -> KotlinInt {
+        return KotlinInt(int: self.asInt32())
+    }
+    
     func formattedWithDecimalSeparator() -> String {
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .decimal
@@ -123,6 +127,10 @@ extension Double {
 }
 
 extension String {
+    
+    func asNs() -> NSString {
+        return NSString(string: self)
+    }
     
     func getKMBSubsidiary() -> KMBSubsidiary {
         return RouteExtensionsKt.getKMBSubsidiary(self)

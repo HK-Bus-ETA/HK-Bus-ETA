@@ -25,7 +25,7 @@ struct ListStopsView: View {
     
     let etaTimer = Timer.publish(every: Double(Shared().ETA_UPDATE_INTERVAL) / 1000, on: .main, in: .common).autoconnect()
     @State private var etaActive: [Int] = []
-    @State private var etaResults: [Int: Registry.ETAQueryResult?] = [:]
+    @State private var etaResults: ETAResultsContainer<KotlinInt> = ETAResultsContainer()
     
     @Environment(\.isLuminanceReduced) var ambientMode
     
@@ -138,7 +138,7 @@ struct ListStopsView: View {
         .onReceive(etaTimer) { _ in
             if showEta {
                 for index in etaActive {
-                    fetchEta(stopId: stopList[index].stopId, stopIndex: index, co: co, route: route.route!) { etaResults[index] = $0 }
+                    fetchEta(stopId: stopList[index].stopId, stopIndex: index, co: co, route: route.route!) { etaResults.set(key: index.asKt(), result: $0) }
                 }
             }
         }
@@ -222,38 +222,7 @@ struct ListStopsView: View {
                 .foregroundColor(color)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if showEta {
-                    let optEta = etaResults[index]
-                    if optEta != nil && optEta! != nil {
-                        let eta = optEta!!
-                        if !eta.isConnectionError {
-                            if !(0..<60).contains(eta.nextScheduledBus) {
-                                if eta.isMtrEndOfLine {
-                                    Image(systemName: "arrow.forward.to.line.circle")
-                                        .font(.system(size: 17.scaled()))
-                                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
-                                } else if (eta.isTyphoonSchedule) {
-                                    Image(systemName: "hurricane")
-                                        .font(.system(size: 17.scaled()))
-                                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
-                                } else {
-                                    Image(systemName: "clock")
-                                        .font(.system(size: 17.scaled()))
-                                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
-                                }
-                            } else {
-                                let shortText = eta.firstLine.shortText
-                                let text1 = shortText.first
-                                let text2 = "\n" + shortText.second
-                                let text = text1.asAttributedString(fontSize: 17.scaled()) + text2.asAttributedString(fontSize: 8.scaled())
-                                Text(text)
-                                    .multilineTextAlignment(.trailing)
-                                    .lineSpacing(0)
-                                    .frame(alignment: .trailing)
-                                    .foregroundColor(colorInt(0xFF92C6F0).asColor())
-                                    .lineLimit(2)
-                            }
-                        }
-                    }
+                    ListStopETAView(etaState: etaResults.getState(key: index.asKt()))
                 }
             }.contentShape(Rectangle())
         }
@@ -262,13 +231,58 @@ struct ListStopsView: View {
         .onAppear {
             if showEta {
                 etaActive.append(index)
-                fetchEta(stopId: stopData.stopId, stopIndex: index, co: co, route: route.route!) { etaResults[index] = $0 }
+                fetchEta(stopId: stopData.stopId, stopIndex: index, co: co, route: route.route!) { etaResults.set(key: index.asKt(), result: $0) }
             }
         }
         .onDisappear {
             etaActive.removeAll(where: { $0 == index })
         }
     }
+}
+
+struct ListStopETAView: View {
+    
+    @StateObject private var etaState: FlowStateObservable<Registry.ETAQueryResult?>
+    
+    init(etaState: ETAResultsState) {
+        self._etaState = StateObject(wrappedValue: FlowStateObservable(defaultValue: etaState.state, nativeFlow: etaState.stateFlow))
+    }
+    
+    var body: some View {
+        let optEta = etaState.state
+        if optEta != nil {
+            let eta = optEta!
+            if !eta.isConnectionError {
+                if !(0..<60).contains(eta.nextScheduledBus) {
+                    if eta.isMtrEndOfLine {
+                        Image(systemName: "arrow.forward.to.line.circle")
+                            .font(.system(size: 17.scaled()))
+                            .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                    } else if (eta.isTyphoonSchedule) {
+                        Image(systemName: "hurricane")
+                            .font(.system(size: 17.scaled()))
+                            .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                    } else {
+                        Image(systemName: "clock")
+                            .font(.system(size: 17.scaled()))
+                            .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                    }
+                } else {
+                    let shortText = eta.firstLine.shortText
+                    let text1 = shortText.first
+                    let text2 = "\n" + shortText.second
+                    let text = text1.asAttributedString(fontSize: 17.scaled()) + text2.asAttributedString(fontSize: 8.scaled())
+                    Text(text)
+                        .multilineTextAlignment(.trailing)
+                        .lineSpacing(0)
+                        .frame(alignment: .trailing)
+                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                        .lineLimit(2)
+                }
+            }
+        }
+    }
+    
 }
 
 #Preview {
