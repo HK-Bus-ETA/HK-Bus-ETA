@@ -27,8 +27,8 @@ struct MarqueeText : View {
     }
     
     var body : some View {
-        let stringWidth = string.widthOfString(usingFont: font)
-        let stringHeight = string.heightOfString(usingFont: font)
+        let stringWidth = attributedString == nil ? string.widthOfString(usingFont: font) : attributedString!.widthOfString(usingFont: font)
+        let stringHeight = attributedString == nil ? string.heightOfString(usingFont: font) : attributedString!.heightOfString(usingFont: font)
         
         let animation = Animation
             .linear(duration: Double(stringWidth) / 30)
@@ -159,6 +159,21 @@ extension String {
     func heightOfString(usingFont font: UIFont) -> CGFloat {
         let fontAttributes = [NSAttributedString.Key.font: font]
         let size = self.size(withAttributes: fontAttributes)
+        return size.height
+    }
+}
+
+extension AttributedString {
+    
+    func widthOfString(usingFont font: UIFont) -> CGFloat {
+        let nsa = NSMutableAttributedString(self)
+        let size = nsa.size()
+        return size.width
+    }
+
+    func heightOfString(usingFont font: UIFont) -> CGFloat {
+        let nsa = NSMutableAttributedString(self)
+        let size = nsa.size()
         return size.height
     }
 }

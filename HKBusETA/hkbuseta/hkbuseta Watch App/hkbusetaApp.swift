@@ -101,7 +101,7 @@ extension AppScreen {
     
     func isScrollingScreen() -> Bool {
         switch self {
-        case AppScreen.listStops, AppScreen.listRoutes, AppScreen.fav:
+        case AppScreen.listStops, AppScreen.listRoutes, AppScreen.fav, AppScreen.etaMenu:
             return true
         default:
             return false
