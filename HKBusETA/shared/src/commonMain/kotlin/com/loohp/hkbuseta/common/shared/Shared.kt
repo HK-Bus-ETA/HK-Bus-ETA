@@ -46,6 +46,8 @@ import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 
 @Immutable
@@ -69,7 +71,7 @@ object Shared {
     }
 
     fun Registry.ETAQueryResult?.getResolvedText(seq: Int, clockTimeMode: Boolean, context: AppContext): FormattedText {
-        return (this?.getLine(seq)?.let { if (clockTimeMode && it.etaRounded >= 0) "${context.formatTime(currentLocalDateTime())} ".asFormattedText(Colored(0xFFFFFF00)) + it.text else it.text }?: if (seq == 1) (if (language == "en") "Updating" else "更新中").asFormattedText() else "".asFormattedText())
+        return (this?.getLine(seq)?.let { if (clockTimeMode && it.etaRounded >= 0) "${context.formatTime(currentLocalDateTime(it.etaRounded.toDuration(DurationUnit.MINUTES)))} ".asFormattedText(Colored(0xFFFFFF00)) + it.text else it.text }?: if (seq == 1) (if (language == "en") "Updating" else "更新中").asFormattedText() else "".asFormattedText())
     }
 
     fun getMtrLineSortingIndex(lineName: String): Int {
