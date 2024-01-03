@@ -38,7 +38,11 @@ import com.loohp.hkbuseta.common.objects.getRouteKey
 import com.loohp.hkbuseta.common.objects.gmbRegion
 import com.loohp.hkbuseta.common.objects.resolveStop
 import com.loohp.hkbuseta.common.objects.uniqueKey
+import com.loohp.hkbuseta.common.utils.Colored
+import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.asFormattedText
+import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +66,10 @@ object Shared {
         try {
             Registry.invalidateCache(context)
         } catch (_: Throwable) {}
+    }
+
+    fun Registry.ETAQueryResult?.getResolvedText(seq: Int, clockTimeMode: Boolean, context: AppContext): FormattedText {
+        return (this?.getLine(seq)?.let { if (clockTimeMode && it.etaRounded >= 0) "${context.formatTime(currentLocalDateTime())} ".asFormattedText(Colored(0xFFFFFF00)) + it.text else it.text }?: if (seq == 1) (if (language == "en") "Updating" else "更新中").asFormattedText() else "".asFormattedText())
     }
 
     fun getMtrLineSortingIndex(lineName: String): Int {
@@ -113,6 +121,7 @@ object Shared {
     }
 
     var language = "zh"
+    var clockTimeMode = false
 
     private val suggestedMaxFavouriteRouteStop = MutableStateFlow(0)
     private val currentMaxFavouriteRouteStop = MutableStateFlow(0)

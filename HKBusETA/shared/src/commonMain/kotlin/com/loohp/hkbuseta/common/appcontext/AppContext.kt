@@ -25,6 +25,7 @@ import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.Immutable
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.charsets.Charsets
+import kotlinx.datetime.LocalDateTime
 
 
 @Immutable
@@ -71,6 +72,8 @@ interface AppContext {
     fun startForegroundService(appIntent: AppIntent)
 
     fun showToastText(text: String, duration: ToastDuration)
+
+    fun formatTime(localDateTime: LocalDateTime): String
 
 }
 

@@ -50,8 +50,8 @@ import com.benasher44.uuid.Uuid
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
-import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop

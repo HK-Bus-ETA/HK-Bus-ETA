@@ -25,6 +25,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Stable
@@ -63,7 +64,11 @@ import com.loohp.hkbuseta.utils.currentBackgroundRestricted
 import com.loohp.hkbuseta.utils.getConnectionType
 import com.loohp.hkbuseta.utils.startActivity
 import io.ktor.utils.io.charsets.Charset
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toJavaLocalDateTime
 import java.io.PrintWriter
+import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 
 
@@ -168,6 +173,10 @@ open class AppContextAndroid internal constructor(
 
     override fun showToastText(text: String, duration: ToastDuration) {
         Toast.makeText(context, text, duration.androidValue).show()
+    }
+
+    override fun formatTime(localDateTime: LocalDateTime): String {
+        return localDateTime.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern((DateFormat.getTimeFormat(context) as? SimpleDateFormat)?.toPattern()?: "HH:mm"))
     }
 
 }

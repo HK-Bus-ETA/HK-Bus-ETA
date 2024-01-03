@@ -47,6 +47,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		818FD0282B44C405008EE8AB /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81D16AC72B33C21F003D9817 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -61,6 +71,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		818FD0162B44C403008EE8AB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		818FD0182B44C403008EE8AB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		81D16AAE2B33C21E003D9817 /* hkbuseta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = hkbuseta.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		81D16AB42B33C21E003D9817 /* HKBusETA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HKBusETA.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		81D16ABD2B33C21F003D9817 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -184,6 +196,8 @@
 		81D16B202B363B01003D9817 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				818FD0162B44C403008EE8AB /* WidgetKit.framework */,
+				818FD0182B44C403008EE8AB /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -216,6 +230,7 @@
 				81D16AB02B33C21E003D9817 /* Sources */,
 				81D16AB12B33C21E003D9817 /* Frameworks */,
 				81D16AB22B33C21E003D9817 /* Resources */,
+				818FD0282B44C405008EE8AB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);

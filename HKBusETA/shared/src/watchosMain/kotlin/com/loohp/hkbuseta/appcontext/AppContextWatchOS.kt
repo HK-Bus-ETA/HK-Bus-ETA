@@ -43,7 +43,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toNSDateComponents
 import platform.Foundation.NSBundle
+import platform.Foundation.NSCalendar
+import platform.Foundation.NSDateFormatter
+import platform.Foundation.NSDateFormatterNoStyle
+import platform.Foundation.NSDateFormatterShortStyle
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSString
@@ -168,6 +174,15 @@ open class AppContextWatchOS internal constructor() : AppContext {
 
     override fun showToastText(text: String, duration: ToastDuration) {
         throw RuntimeException("Unsupported Platform Operation")
+    }
+
+    override fun formatTime(localDateTime: LocalDateTime): String {
+        return NSCalendar.currentCalendar.dateFromComponents(localDateTime.toNSDateComponents())?.let {
+            NSDateFormatter().apply {
+                dateStyle = NSDateFormatterNoStyle
+                timeStyle = NSDateFormatterShortStyle
+            }.stringFromDate(it)
+        }?: localDateTime.let { "${it.hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')}" }
     }
 
 }

@@ -28,6 +28,7 @@ struct EtaView: View {
     @State private var offsetStart: Int
     
     @State private var stopList: [Registry.StopData]
+    @State private var clockTimeMode: Bool
     
     init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.stopId = data["stopId"] as! String
@@ -40,6 +41,7 @@ struct EtaView: View {
         self.offsetStart = data["offsetStart"] as? Int ?? 0
         
         self.stopList = registry().getAllStops(routeNumber: route.routeNumber, bound: co == Operator.Companion().NLB ? route.nlbId : route.bound[co]!, co: co, gmbRegion: route.gmbRegion)
+        self.clockTimeMode = Shared().clockTimeMode
     }
     
     var body: some View {
@@ -136,10 +138,17 @@ struct EtaView: View {
         .onAppear {
             fetchEta(stopId: stopId, stopIndex: index, co: co, route: route) { eta = $0 }
         }
+        .gesture(
+            TapGesture()
+                .onEnded { _ in
+                    clockTimeMode = !clockTimeMode
+                    registry().setClockTimeMode(clockTimeMode: clockTimeMode, context: appContext())
+                }
+        )
     }
     
     func ETALine(lines: Registry.ETAQueryResult?, seq: Int) -> some View {
-        let text = lines?.getLine(index: seq.asInt32()).text?.asAttributedString(defaultFontSize: 20.scaled()) ?? (seq == 1 ? (Shared().language == "en" ? "Updating" : "更新中") : "").asAttributedString()
+        let text = Shared().getResolvedText(lines, seq: seq.asInt32(), clockTimeMode: clockTimeMode, context: appContext()).asAttributedString(defaultFontSize: 20.scaled())
         return MarqueeText(
             text: text,
             font: UIFont.systemFont(ofSize: 20.scaled()),

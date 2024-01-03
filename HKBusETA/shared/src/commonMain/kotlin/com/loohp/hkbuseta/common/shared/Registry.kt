@@ -208,11 +208,17 @@ class Registry {
         }
     }
 
-    fun setLanguage(language: String?, context: AppContext) {
-        Shared.language = language!!
+    fun setLanguage(language: String, context: AppContext) {
+        Shared.language = language
         PREFERENCES!!.language = language
         savePreferences(context)
         Tiles.requestTileUpdate()
+    }
+
+    fun setClockTimeMode(clockTimeMode: Boolean, context: AppContext) {
+        Shared.clockTimeMode = clockTimeMode
+        PREFERENCES!!.clockTimeMode = clockTimeMode
+        savePreferences(context)
     }
 
     fun hasFavouriteRouteStop(favoriteIndex: Int): Boolean {
@@ -373,6 +379,7 @@ class Registry {
             savePreferences(context)
         }
         Shared.language = PREFERENCES!!.language
+        Shared.clockTimeMode = PREFERENCES!!.clockTimeMode
         Shared.updateFavoriteRouteStops {
             it.clear()
             it.putAll(PREFERENCES!!.favouriteRouteStops)
@@ -602,24 +609,25 @@ class Registry {
     data class PossibleNextCharResult(val characters: Set<Char>, val hasExactMatch: Boolean)
 
     fun findRoutes(input: String, exact: Boolean): List<RouteSearchResultEntry> {
-        return findRoutes(input, exact, null, null)
+        return findRoutes(input, exact, { true }, { _, _ -> true })
     }
 
     fun findRoutes(input: String, exact: Boolean, predicate: (Route) -> Boolean): List<RouteSearchResultEntry> {
-        return findRoutes(input, exact, predicate, null)
+        return findRoutes(input, exact, predicate) { _, _ -> true }
     }
 
     fun findRoutes(input: String, exact: Boolean, coPredicate: (Route, Operator) -> Boolean): List<RouteSearchResultEntry> {
-        return findRoutes(input, exact, null, coPredicate)
+        return findRoutes(input, exact, { true }, coPredicate)
     }
 
-    private fun findRoutes(input: String, exact: Boolean, predicate: ((Route) -> Boolean)?, coPredicate: ((Route, Operator) -> Boolean)?): List<RouteSearchResultEntry> {
-        val matchingRoutes: MutableMap<String, RouteSearchResultEntry> = hashMapOf()
+    private fun findRoutes(input: String, exact: Boolean, predicate: (Route) -> Boolean = { true }, coPredicate: (Route, Operator) -> Boolean = { _, _ -> true }): List<RouteSearchResultEntry> {
+        val routeMatcher: (String) -> Boolean = if (exact) ({ it == input }) else ({ it.startsWith(input) })
+        val matchingRoutes: MutableMap<String, RouteSearchResultEntry> = HashMap()
         for ((key, data) in DATA!!.dataSheet.routeList.entries) {
             if (data.isCtbIsCircular) {
                 continue
             }
-            if ((if (exact) data.routeNumber == input else data.routeNumber.startsWith(input)) && predicate?.invoke(data) != false) {
+            if (routeMatcher.invoke(data.routeNumber) && predicate.invoke(data)) {
                 var co: Operator
                 val bound = data.bound
                 co = if (bound.containsKey(Operator.KMB)) {
@@ -639,7 +647,7 @@ class Registry {
                 } else {
                     continue
                 }
-                if (coPredicate?.invoke(data, co) == false) {
+                if (!coPredicate.invoke(data, co)) {
                     continue
                 }
                 val key0 = (data.routeNumber + "," + co.name) + "," + (if (co === Operator.NLB) data.nlbId else data.bound[co]) + if (co === Operator.GMB) "," + data.gmbRegion else ""
@@ -672,8 +680,8 @@ class Registry {
         return if (matchingRoutes.isEmpty()) {
             emptyList()
         } else matchingRoutes.values.asSequence().sortedWith { a, b ->
-                val routeA = a.route!!
-                val routeB = b.route!!
+                val routeA: Route = a.route!!
+                val routeB: Route = b.route!!
                 val boundA = routeA.bound
                 val boundB = routeB.bound
                 val coA = boundA.keys.max()
@@ -685,7 +693,8 @@ class Registry {
                 val routeNumberA = routeA.routeNumber
                 val routeNumberB = routeB.routeNumber
                 if (coA.isTrain && coB.isTrain) {
-                    val lineDiff = Shared.getMtrLineSortingIndex(routeNumberA).compareTo(Shared.getMtrLineSortingIndex(routeNumberB))
+                    val lineDiff = Shared.getMtrLineSortingIndex(routeNumberA)
+                        .compareTo(Shared.getMtrLineSortingIndex(routeNumberB))
                     if (lineDiff != 0) {
                         return@sortedWith lineDiff
                     }
@@ -700,19 +709,21 @@ class Registry {
                     return@sortedWith IntUtils.parseOrZero(routeA.nlbId) - IntUtils.parseOrZero(routeB.nlbId)
                 }
                 if (coA === Operator.GMB) {
-                    val gtfsDiff: Int = IntUtils.parseOrZero(routeA.gtfsId) - IntUtils.parseOrZero(routeB.gtfsId)
+                    val gtfsDiff: Int =
+                        IntUtils.parseOrZero(routeA.gtfsId) - IntUtils.parseOrZero(routeB.gtfsId)
                     if (gtfsDiff != 0) {
                         return@sortedWith gtfsDiff
                     }
                 }
-                val typeDiff = IntUtils.parseOrZero(routeA.serviceType) - IntUtils.parseOrZero(routeB.serviceType)
+                val typeDiff: Int =
+                    IntUtils.parseOrZero(routeA.serviceType) - IntUtils.parseOrZero(routeB.serviceType)
                 if (typeDiff == 0) {
                     if (coA === Operator.CTB) {
                         return@sortedWith 0
                     }
                     return@sortedWith -boundA[coA]!!.compareTo(boundB[coB]!!)
                 }
-                return@sortedWith typeDiff
+                typeDiff
             }.toList()
     }
 
@@ -1492,7 +1503,7 @@ class Registry {
                             if (kmbSpecialMessage.isNullOrEmpty()) {
                                 lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
                             } else {
-                                lines[1] = ETALineEntry.textEntry(kmbSpecialMessage)
+                                lines[1] = ETALineEntry.textEntry(kmbSpecialMessage!!)
                             }
                         } else {
                             var counter = 0
@@ -2277,7 +2288,7 @@ class Registry {
 
     @Immutable
     class ETALineEntry private constructor(
-        val text: FormattedText?,
+        val text: FormattedText,
         val shortText: ETAShortText,
         val eta: Double,
         val etaRounded: Long
@@ -2287,23 +2298,23 @@ class Registry {
 
             val EMPTY = ETALineEntry("-".asFormattedText(), ETAShortText.EMPTY, -1.0, -1)
 
-            fun textEntry(text: String?): ETALineEntry {
-                return ETALineEntry(text?.asFormattedText(), ETAShortText.EMPTY, -1.0, -1)
+            fun textEntry(text: String): ETALineEntry {
+                return ETALineEntry(text.asFormattedText(), ETAShortText.EMPTY, -1.0, -1)
             }
 
-            fun textEntry(text: FormattedText?): ETALineEntry {
+            fun textEntry(text: FormattedText): ETALineEntry {
                 return ETALineEntry(text, ETAShortText.EMPTY, -1.0, -1)
             }
 
-            fun etaEntry(text: String?, shortText: ETAShortText, eta: Double, etaRounded: Long): ETALineEntry {
+            fun etaEntry(text: String, shortText: ETAShortText, eta: Double, etaRounded: Long): ETALineEntry {
                 return if (etaRounded > -60) {
-                    ETALineEntry(text?.asFormattedText(), shortText, eta.coerceAtLeast(0.0), etaRounded.coerceAtLeast(0))
+                    ETALineEntry(text.asFormattedText(), shortText, eta.coerceAtLeast(0.0), etaRounded.coerceAtLeast(0))
                 } else {
-                    ETALineEntry(text?.asFormattedText(), shortText, -1.0, -1)
+                    ETALineEntry(text.asFormattedText(), shortText, -1.0, -1)
                 }
             }
 
-            fun etaEntry(text: FormattedText?, shortText: ETAShortText, eta: Double, etaRounded: Long): ETALineEntry {
+            fun etaEntry(text: FormattedText, shortText: ETAShortText, eta: Double, etaRounded: Long): ETALineEntry {
                 return if (etaRounded > -60) {
                     ETALineEntry(text, shortText, eta.coerceAtLeast(0.0), etaRounded.coerceAtLeast(0))
                 } else {
@@ -2325,7 +2336,7 @@ class Registry {
         }
 
         override fun hashCode(): Int {
-            var result = text?.hashCode() ?: 0
+            var result = text.hashCode()
             result = 31 * result + shortText.hashCode()
             result = 31 * result + eta.hashCode()
             result = 31 * result + etaRounded.hashCode()

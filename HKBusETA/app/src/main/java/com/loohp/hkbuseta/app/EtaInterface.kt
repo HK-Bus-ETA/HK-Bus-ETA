@@ -92,6 +92,7 @@ import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
@@ -114,7 +115,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 
 
-@OptIn(ExperimentalWearMaterialApi::class, ExperimentalWearFoundationApi::class)
+@OptIn(ExperimentalWearMaterialApi::class, ExperimentalWearFoundationApi::class, ExperimentalFoundationApi::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: AppActiveContext, schedule: (Boolean, (() -> Unit)?) -> Unit) {
@@ -169,8 +170,13 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
         label = "OffsetAnimation"
     )
 
+    var clockTimeMode by remember { mutableStateOf(Shared.clockTimeMode) }
+
     LaunchedEffect (Unit) {
         currentOffset = 0F
+    }
+    RestartEffect {
+        clockTimeMode = Shared.clockTimeMode
     }
 
     HKBusETATheme {
@@ -183,6 +189,12 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                         swipe.offset.value.coerceAtMost(0F).equivalentDp
                     )
                 }
+                .combinedClickable(
+                    onClick = {
+                        clockTimeMode = !clockTimeMode
+                        Registry.getInstance(instance).setClockTimeMode(clockTimeMode, instance)
+                    }
+                )
                 .swipeable(
                     state = swipe,
                     anchors = mapOf(
@@ -259,11 +271,11 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 Title(ambientMode, index, stop.name, lat, lng, routeNumber, co, instance)
                 SubTitle(ambientMode, Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(9.scaledSize(instance).dp))
-                EtaText(ambientMode, eta, 1, instance)
+                EtaText(ambientMode, eta, 1, clockTimeMode, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
-                EtaText(ambientMode, eta, 2, instance)
+                EtaText(ambientMode, eta, 2, clockTimeMode, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
-                EtaText(ambientMode, eta, 3, instance)
+                EtaText(ambientMode, eta, 3, clockTimeMode, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
                 if (ambientMode) {
                     Spacer(modifier = Modifier.size(24.scaledSize(instance).dp))
@@ -432,8 +444,8 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, instance: AppActiveContext) {
-    val content = (lines?.getLine(seq)?.text?.asContentAnnotatedString()?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中").asContentAnnotatedString() else "".asContentAnnotatedString())
+fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, clockTimeMode: Boolean, instance: AppActiveContext) {
+    val content = lines.getResolvedText(seq, clockTimeMode, instance).asContentAnnotatedString()
     val textSize = 16F.scaledSize(instance).sp.clamp(max = 16F.scaledSize(instance).dp)
     Box (
         modifier = Modifier

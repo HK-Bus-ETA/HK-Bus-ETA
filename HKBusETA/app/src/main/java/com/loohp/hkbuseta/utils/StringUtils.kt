@@ -50,7 +50,6 @@ import androidx.wear.protolayout.LayoutElementBuilders
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
 import com.loohp.hkbuseta.common.appcontext.AppContext
-import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.BigContentStyle
 import com.loohp.hkbuseta.common.utils.BoldContentStyle
 import com.loohp.hkbuseta.common.utils.ColorContentStyle
