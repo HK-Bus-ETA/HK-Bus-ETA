@@ -22,9 +22,10 @@
 package com.loohp.hkbuseta.common.utils
 
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.readBytes
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.charset
 import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.core.readBytes
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UnsafeNumber
@@ -43,7 +44,7 @@ fun provideGzipBodyAsTextImpl(impl: ((NSData, String) -> String)?) {
 @OptIn(ExperimentalForeignApi::class, UnsafeNumber::class, BetaInteropApi::class)
 actual suspend fun HttpResponse.gzipBodyAsText(fallbackCharset: Charset): String {
     return gzipBodyAsTextImpl?.let { impl ->
-        this.readBytes().let {
+        this.bodyAsChannel().readRemaining().readBytes().let {
             it.usePinned { pinned ->
                 val nsData = NSData.create(bytes = pinned.addressOf(0), length = it.size.convert())
                 impl.invoke(nsData, (this.charset()?: fallbackCharset).toString())
