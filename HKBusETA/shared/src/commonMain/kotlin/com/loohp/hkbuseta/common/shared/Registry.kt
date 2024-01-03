@@ -418,7 +418,7 @@ class Registry {
                 val checksumFetcher: suspend (Boolean) -> String? = { forced ->
                     val future = async { withTimeout(10000) {
                         val version = context.versionCode
-                        getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/checksum.md5") + "_" + version
+                        getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/checksum.md5") + "_" + version
                     } }
                     currentChecksumTask.set(future)
                     if (!forced && files.contains(CHECKSUM_FILE_NAME) && files.contains(
@@ -483,8 +483,8 @@ class Registry {
                         }
                         val gzip = gzipSupported()
                         val gzLabel = if (gzip) ".gz" else ""
-                        val length: Long = LongUtils.parseOr(getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/size$gzLabel.dat"), -1)
-                        val textResponse: String = getTextResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS/data/data.json$gzLabel", length, gzip) { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
+                        val length: Long = LongUtils.parseOr(getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/size$gzLabel.dat"), -1)
+                        val textResponse: String = getTextResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/data.json$gzLabel", length, gzip) { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
                         DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(textResponse))
                         updatePercentageStateFlow.value = 0.75f + percentageOffset
                         context.writeTextFile(DATA_FILE_NAME) { textResponse }
