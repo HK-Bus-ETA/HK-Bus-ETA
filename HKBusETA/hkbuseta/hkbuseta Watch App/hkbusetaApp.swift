@@ -7,11 +7,19 @@
 
 import SwiftUI
 import shared
+import Gzip
 
 @main
 struct hkbuseta_Watch_AppApp: App {
     
     @StateObject private var historyStackState = FlowStateObservable(defaultValue: appContext().historyStack, nativeFlow: appContext().historyStackFlow)
+    
+    init() {
+        HttpResponseUtils_watchosKt.provideGzipBodyAsTextImpl(impl: { data, charset in
+            let decompressedData: Data = data.isGzipped ? try! data.gunzipped() : data
+            return String(data: decompressedData, encoding: encoding(from: charset))!
+        })
+    }
     
     var body: some Scene {
         WindowGroup {

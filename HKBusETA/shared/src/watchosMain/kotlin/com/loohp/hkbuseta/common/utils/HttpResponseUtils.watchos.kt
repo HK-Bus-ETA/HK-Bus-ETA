@@ -22,13 +22,36 @@
 package com.loohp.hkbuseta.common.utils
 
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.readBytes
+import io.ktor.http.charset
 import io.ktor.utils.io.charsets.Charset
+import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.UnsafeNumber
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.convert
+import kotlinx.cinterop.usePinned
+import platform.Foundation.NSData
+import platform.Foundation.create
 
+private var gzipBodyAsTextImpl: ((NSData, String) -> String)? = null
 
+fun provideGzipBodyAsTextImpl(impl: ((NSData, String) -> String)?) {
+    gzipBodyAsTextImpl = impl
+}
+
+@OptIn(ExperimentalForeignApi::class, UnsafeNumber::class, BetaInteropApi::class)
 actual suspend fun HttpResponse.gzipBodyAsText(fallbackCharset: Charset): String {
-    throw RuntimeException("Unsupported Platform Operation")
+    return gzipBodyAsTextImpl?.let { impl ->
+        this.readBytes().let {
+            it.usePinned { pinned ->
+                val nsData = NSData.create(bytes = pinned.addressOf(0), length = it.size.convert())
+                impl.invoke(nsData, (this.charset()?: fallbackCharset).toString())
+            }
+        }
+    }?: throw RuntimeException("Unsupported Platform Operation")
 }
 
 actual fun gzipSupported(): Boolean {
-    return false
+    return gzipBodyAsTextImpl != null
 }

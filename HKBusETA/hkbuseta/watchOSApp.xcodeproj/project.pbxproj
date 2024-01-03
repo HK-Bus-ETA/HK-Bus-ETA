@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		818FD02B2B45C917008EE8AB /* Gzip in Frameworks */ = {isa = PBXBuildFile; productRef = 818FD02A2B45C917008EE8AB /* Gzip */; };
 		81D16AB52B33C21E003D9817 /* HKBusETA.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 81D16AB42B33C21E003D9817 /* HKBusETA.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		81D16ABE2B33C21F003D9817 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16ABD2B33C21F003D9817 /* Assets.xcassets */; };
 		81D16AC12B33C21F003D9817 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16AC02B33C21F003D9817 /* Preview Assets.xcassets */; };
@@ -105,6 +106,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				81D16AFE2B34982B003D9817 /* KMPNativeCoroutinesAsync in Frameworks */,
+				818FD02B2B45C917008EE8AB /* Gzip in Frameworks */,
 				81D16B002B34982B003D9817 /* KMPNativeCoroutinesCombine in Frameworks */,
 				81D16B022B34982B003D9817 /* KMPNativeCoroutinesCore in Frameworks */,
 				81D16B042B34982B003D9817 /* KMPNativeCoroutinesRxSwift in Frameworks */,
@@ -242,6 +244,7 @@
 				81D16AFF2B34982B003D9817 /* KMPNativeCoroutinesCombine */,
 				81D16B012B34982B003D9817 /* KMPNativeCoroutinesCore */,
 				81D16B032B34982B003D9817 /* KMPNativeCoroutinesRxSwift */,
+				818FD02A2B45C917008EE8AB /* Gzip */,
 			);
 			productName = "hkbuseta Watch App";
 			productReference = 81D16AB42B33C21E003D9817 /* HKBusETA.app */;
@@ -276,6 +279,7 @@
 			mainGroup = 81D16AA72B33C21D003D9817;
 			packageReferences = (
 				81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */,
+				818FD0292B45C917008EE8AB /* XCRemoteSwiftPackageReference "GzipSwift" */,
 			);
 			productRefGroup = 81D16AAF2B33C21E003D9817 /* Products */;
 			projectDirPath = "";
@@ -495,7 +499,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -533,7 +537,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -640,6 +644,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		818FD0292B45C917008EE8AB /* XCRemoteSwiftPackageReference "GzipSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/1024jp/GzipSwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.0.1;
+			};
+		};
 		81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/rickclephas/KMP-NativeCoroutines.git";
@@ -651,6 +663,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		818FD02A2B45C917008EE8AB /* Gzip */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 818FD0292B45C917008EE8AB /* XCRemoteSwiftPackageReference "GzipSwift" */;
+			productName = Gzip;
+		};
 		81D16AFD2B34982B003D9817 /* KMPNativeCoroutinesAsync */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */;

@@ -10,6 +10,30 @@ import WatchKit
 import SwiftUI
 import shared
 
+func encoding(from charsetName: String) -> String.Encoding {
+    switch charsetName {
+    case "UTF-8", "utf-8":
+        return .utf8
+    case "US-ASCII", "us-ascii":
+        return .ascii
+    case "ISO-8859-1", "iso-8859-1":
+        return .isoLatin1
+    case "ISO-8859-2", "iso-8859-2":
+        return .isoLatin2
+    case "WINDOWS-1251", "windows-1251":
+        return .windowsCP1251
+    case "WINDOWS-1252", "windows-1252":
+        return .windowsCP1252
+    case "WINDOWS-1253", "windows-1253":
+        return .windowsCP1253
+    case "WINDOWS-1254", "windows-1254":
+        return .windowsCP1254
+    default:
+        print("Warning: Unknown charset \(charsetName). Defaulting to UTF-8.")
+        return .utf8
+    }
+}
+
 extension FormattedText {
     
     func asAttributedString(defaultFontSize: CGFloat) -> AttributedString {
