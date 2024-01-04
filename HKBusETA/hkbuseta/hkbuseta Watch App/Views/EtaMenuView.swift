@@ -74,6 +74,8 @@ struct EtaMenuView: View {
                     }
                     Spacer(minLength: 5.scaled())
                     SearchNearbyButton()
+                    Spacer(minLength: 5.scaled())
+                    OpenOnMapsButton(stopName: stop.name, lat: stop.location.lat, lng: stop.location.lng)
                     Spacer(minLength: 10.scaled())
                     Text(Shared().language == "en" ? "Set Favourite Routes" : "設置最喜愛路線")
                         .font(.system(size: 14.scaled()))
@@ -116,6 +118,44 @@ struct EtaMenuView: View {
                 }
             }
         }
+    }
+    
+    func OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double) -> some View {
+        Button(action: {
+            openMaps(lat: lat, lng: lng, label: stopName.get(language: Shared().language))
+        }) {
+            HStack(spacing: 2.scaled()) {
+                ZStack {
+                    Circle()
+                        .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
+                        .frame(width: 30.scaled(), height: 30.scaled())
+                    Image(systemName: "map")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 17.scaled(), height: 17.scaled())
+                        .foregroundColor(colorInt(0xFF4CFF00).asColor())
+                }
+                Text(Shared().language == "en" ? "Open Stop Location on Maps" : "在地圖上顯示巴士站位置")
+                    .font(.system(size: 15.scaled(), weight: .bold))
+                    .foregroundColor(colorInt(0xFFFFFFFF).asColor())
+                    .lineLimit(2)
+                    .lineSpacing(0)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(10.scaled())
+        }.background(
+            Image("open_map_background")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 178.0.scaled(), height: 47.0.scaled())
+                .brightness(-0.4)
+                .clipShape(RoundedRectangle(cornerRadius: 50))
+        )
+        .buttonStyle(PlainButtonStyle())
+        .frame(width: 178.0.scaled(), height: 47.0.scaled())
+        .clipShape(RoundedRectangle(cornerRadius: 50))
     }
     
     func KmbBbiButton(kmbBbiId: String) -> some View {

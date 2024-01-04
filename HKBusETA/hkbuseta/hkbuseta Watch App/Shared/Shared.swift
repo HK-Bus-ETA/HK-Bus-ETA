@@ -53,6 +53,15 @@ func openUrl(link: String) {
     session.start()
 }
 
+func openMaps(lat: Double, lng: Double, label: String) {
+    let coordinate = CLLocationCoordinate2DMake(lat, lng)
+    let placemark = MKPlacemark(coordinate: coordinate)
+    let mapItem = MKMapItem(placemark: placemark)
+    mapItem.name = label
+    mapItem.timeZone = TimeZone(identifier: "Asia/Hong_Kong")
+    mapItem.openInMaps()
+}
+
 extension View {
     
     func CrossfadeText(textList: [AttributedString], state: Int) -> some View {
