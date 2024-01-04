@@ -12,7 +12,7 @@ In addition, it also supports **English**.<br>
 
 ## Live Demonstration & Screenshots 下載連結及截圖
 <a href='https://play.google.com/store/apps/details?id=com.loohp.hkbuseta&utm_source=GitHub-Repo&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://loohpjames.com/assets/images/get-it-on-google-play.png' height="50"/></a>
-<a href='https://apps.apple.com/us/app/hk-bus-eta-watchos/id6475241017'><img alt='Download on the App Store' src='https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg' height="50"></a>
+<a href='https://apps.apple.com/app/id6475241017'><img alt='Download on the App Store' src='https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg' height="50"></a>
 
 ## Data Sources 數據來源
 - [DATA.GOV.HK 資料一線通](https://data.gov.hk)
