@@ -32,3 +32,4 @@ HTTPS Requests are made to the above data sources to retrieve bus routes, stops 
 
 ## Flaticon Attribution 圖標致謝 (只供英文版本)
 <a href="https://www.flaticon.com/free-icons/hurricane" title="hurricane icons">Hurricane icons created by Mehwish - Flaticon</a> (WearOS only)
+<a href="https://www.flaticon.com/free-icons/smartwatch-app" title="smartwatch app icons">Smartwatch app icons created by Freepik - Flaticon</a> (WatchOS only)
