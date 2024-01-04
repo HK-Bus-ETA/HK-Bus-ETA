@@ -3,7 +3,7 @@ WearOS & WatchOS app for checking Hong Kong Bus Estimated Time of Arrival. With 
 WearOS 及 WatchOS 手錶平台上的香港巴士到站預報應用程式 而WearOS版本更支援使用資訊方塊
 
 For more info, check out the app listing on Google Play / *App Store (Coming Soon)* with the link below.<br>
-欲了解更多資訊，請查閱以下 Google Play / *App Store (即將推出)* 應用程式連結
+欲了解更多資訊，請查閱以下 Google Play / App Store 應用程式連結
 
 ## Language 語言
 This WearOS (Android) / WatchOS (Apple Watch) app is in the native language of Hong Kong: **Traditional Chinese**.<br>
@@ -11,8 +11,8 @@ In addition, it also supports **English**.<br>
 此 WearOS (Android) / WatchOS (Apple Watch) 手錶應用程式支援 **繁體中文** 及 **英文**
 
 ## Live Demonstration & Screenshots 下載連結及截圖
-<a href='https://play.google.com/store/apps/details?id=com.loohp.hkbuseta&utm_source=GitHub-Repo&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width="200"/></a>
-<br>*App Store 即將推出 Coming Soon*
+<a href='https://play.google.com/store/apps/details?id=com.loohp.hkbuseta&utm_source=GitHub-Repo&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/360px-Google_Play_Store_badge_EN.svg.png' height="50"/></a>
+<a href='https://apps.apple.com/us/app/hk-bus-eta-watchos/id6475241017'><img alt='Download on the App Store' src='https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg' height="50"></a>
 
 ## Data Sources 數據來源
 - [DATA.GOV.HK 資料一線通](https://data.gov.hk)
