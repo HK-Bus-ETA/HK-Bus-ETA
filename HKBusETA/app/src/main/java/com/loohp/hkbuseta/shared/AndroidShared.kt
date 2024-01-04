@@ -122,19 +122,20 @@ object AndroidShared {
         }
     }
 
-    fun restoreCurrentScreenOrRun(context: AppActiveContext, orElse: () -> Unit) {
+    fun restoreCurrentScreenOrRun(context: AppActiveContext, runBehindAnyway: Boolean, orElse: () -> Unit) {
         val currentActivity = getCurrentActivity()
-        if (currentActivity == null || !currentActivity.shouldRelaunch) {
+        if (currentActivity == null || context !is AppActiveContextAndroid || !currentActivity.shouldRelaunch) {
             orElse.invoke()
         } else {
-            (context as AppActiveContextAndroid).context.apply {
-                val intent2 = Intent(this, currentActivity.cls)
-                if (currentActivity.extras != null) {
-                    intent2.putExtras(currentActivity.extras)
-                }
-                startActivity(intent2)
-                finishAffinity()
+            val intent2 = Intent(context.context, currentActivity.cls)
+            if (currentActivity.extras != null) {
+                intent2.putExtras(currentActivity.extras)
             }
+            if (runBehindAnyway) {
+                orElse.invoke()
+            }
+            context.context.startActivity(intent2)
+            context.context.finishAffinity()
         }
     }
 

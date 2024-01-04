@@ -233,7 +233,7 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                         }
                         instance.finishAffinity()
                     } else {
-                        AndroidShared.restoreCurrentScreenOrRun(instance) {
+                        AndroidShared.restoreCurrentScreenOrRun(instance, true) {
                             instance.startActivity(AppIntent(instance, AppScreen.TITLE))
                             instance.finishAffinity()
                         }
