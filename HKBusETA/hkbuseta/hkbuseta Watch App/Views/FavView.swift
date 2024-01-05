@@ -129,7 +129,7 @@ struct FavView: View {
             HStack(alignment: .top, spacing: 0) {
                 ZStack(alignment: .leading) {
                     Text("")
-                        .frame(width: 35)
+                        .frame(width: 38)
                     ZStack {
                         Circle()
                             .fill(currentFavRouteStop != nil ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
