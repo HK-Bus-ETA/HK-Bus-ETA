@@ -157,12 +157,14 @@ extension AttributedString {
     
     func widthOfString(usingFont font: UIFont) -> CGFloat {
         let nsa = NSMutableAttributedString(self)
+        nsa.addAttributeBehind(.font, value: font, range: NSRange(location: 0, length: nsa.length))
         let size = nsa.size()
         return size.width
     }
 
     func heightOfString(usingFont font: UIFont) -> CGFloat {
         let nsa = NSMutableAttributedString(self)
+        nsa.addAttributeBehind(.font, value: font, range: NSRange(location: 0, length: nsa.length))
         let size = nsa.size()
         return size.height
     }

@@ -160,7 +160,7 @@ struct FavView: View {
                 .overlay(alignment: .leading) {
                     if currentFavRouteStop != nil {
                         ETAElement(favIndex: favIndex, currentFavRouteStop: currentFavRouteStop!)
-                            .offset(y: 30.scaled())
+                            .offset(y: (Shared().language == "en" ? 34.5 : 32.5).scaled())
                     }
                 }
                 .padding(10)
@@ -193,7 +193,7 @@ struct FavView: View {
                         let subText = {
                             var text = ((co.isTrain ? "" : "\(index). ") + stopName.get(language: Shared().language)).asAttributedString()
                             if gpsStop {
-                                text += (Shared().language == "en" ? " - Closest" : " - 最近").asAttributedString(color: colorInt(0xFFFFE496).asColor(), fontSize: 12 * 0.8)
+                                text += (Shared().language == "en" ? " - Closest" : " - 最近").asAttributedString(color: colorInt(0xFFFFE496).asColor(), fontSize: 14 * 0.8)
                             }
                             return text
                         }()

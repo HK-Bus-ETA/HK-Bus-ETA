@@ -85,3 +85,18 @@ extension String {
     }
     
 }
+
+extension NSMutableAttributedString {
+    
+    func addAttributeBehind(_ name: NSAttributedString.Key, value: Any, range: NSRange) {
+        var existingAttributes: [(attributes: [NSAttributedString.Key: Any], range: NSRange)] = []
+        self.enumerateAttributes(in: NSRange(location: 0, length: self.length), options: []) { attributes, range, _ in
+            existingAttributes.append((attributes, range))
+        }
+        self.addAttribute(name, value: value, range: range)
+        for (attributes, range) in existingAttributes {
+            self.addAttributes(attributes, range: range)
+        }
+    }
+    
+}
