@@ -113,27 +113,34 @@ struct FavView: View {
         let deleteState = deleteStates.contains { $0 == favIndex }
         return Button(action: {}) {
             HStack(alignment: .top, spacing: 0) {
-                ZStack() {
-                    Circle()
-                        .fill(currentFavRouteStop != nil ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
-                        .frame(width: 30.scaled(), height: 30.scaled())
-                    if deleteState {
-                        Image(systemName: "xmark")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 17.scaled(), height: 17.scaled())
-                            .foregroundColor(colorInt(0xFFFF0000).asColor())
-                    } else {
-                        Text("\(favIndex)")
-                            .font(.system(size: 17.scaled(), weight: .bold))
-                            .frame(width: 17.scaled(), height: 17.scaled())
-                            .foregroundColor(currentFavRouteStop != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor())
+                ZStack(alignment: .leading) {
+                    Text("")
+                        .frame(width: 35)
+                    ZStack {
+                        Circle()
+                            .fill(currentFavRouteStop != nil ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
+                            .frame(width: 30.scaled(), height: 30.scaled())
+                        if deleteState {
+                            Image(systemName: "xmark")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 17.scaled(), height: 17.scaled())
+                                .foregroundColor(colorInt(0xFFFF0000).asColor())
+                        } else {
+                            Text("\(favIndex)")
+                                .font(.system(size: 17.scaled(), weight: .bold))
+                                .frame(width: 17.scaled(), height: 17.scaled())
+                                .foregroundColor(currentFavRouteStop != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor())
+                        }
                     }
+                }
+                .overlay(alignment: .leading) {
                     if currentFavRouteStop != nil {
                         ETAElement(favIndex: favIndex, currentFavRouteStop: currentFavRouteStop!)
-                            .offset(y: 30.5.scaled())
+                            .offset(y: 30.scaled())
                     }
-                }.padding(10)
+                }
+                .padding(10)
                 VStack(alignment: .leading, spacing: 1.scaled()) {
                     if currentFavRouteStop == nil {
                         HStack(alignment: .center) {
