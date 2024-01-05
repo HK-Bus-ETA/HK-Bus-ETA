@@ -22,11 +22,13 @@ struct FavView: View {
     @State private var etaActive: [Int] = []
     @State private var etaResults: ETAResultsContainer<KotlinInt> = ETAResultsContainer()
     
+    let deleteTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    
     @ObservedObject private var locationManager = SingleLocationManager()
     @State private var origin: LocationResult? = nil
     
     @State private var favRouteStops: [Int: FavouriteRouteStop] = [:]
-    @State private var deleteStates: [Int] = []
+    @State private var deleteStates: [Int: Double] = [:]
     
     init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
 
@@ -85,6 +87,18 @@ struct FavView: View {
                 }
             }
         }
+        .onReceive(deleteTimer) { _ in
+            for (favIndex, time) in deleteStates {
+                let newTime = time - 0.1
+                DispatchQueue.main.async {
+                    if newTime > 0 {
+                        deleteStates[favIndex] = newTime
+                    } else {
+                        deleteStates.removeValue(forKey: favIndex)
+                    }
+                }
+            }
+        }
         .onChange(of: locationManager.readyForRequest) { _ in
             locationManager.requestLocation()
         }
@@ -110,7 +124,7 @@ struct FavView: View {
             }
             return s
         }()
-        let deleteState = deleteStates.contains { $0 == favIndex }
+        let deleteState = deleteStates[favIndex] ?? 0.0
         return Button(action: {}) {
             HStack(alignment: .top, spacing: 0) {
                 ZStack(alignment: .leading) {
@@ -120,11 +134,20 @@ struct FavView: View {
                         Circle()
                             .fill(currentFavRouteStop != nil ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
                             .frame(width: 30.scaled(), height: 30.scaled())
-                        if deleteState {
+                            .overlay {
+                                if deleteState > 0.0 {
+                                    Circle()
+                                        .trim(from: 0.0, to: deleteState / 5.0)
+                                        .rotation(.degrees(-90))
+                                        .stroke(colorInt(0xFFFF0000).asColor(), style: StrokeStyle(lineWidth: 2.scaled(), lineCap: .butt))
+                                        .animation(.linear, value: deleteState)
+                                }
+                            }
+                        if deleteState > 0.0 {
                             Image(systemName: "xmark")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(width: 17.scaled(), height: 17.scaled())
+                                .frame(width: 13.scaled(), height: 13.scaled())
                                 .foregroundColor(colorInt(0xFFFF0000).asColor())
                         } else {
                             Text("\(favIndex)")
@@ -213,29 +236,28 @@ struct FavView: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .background { deleteState ? colorInt(0xFF633A3A).asColor() : colorInt(0xFF1A1A1A).asColor() }
+        .background { deleteState > 0.0 ? colorInt(0xFF633A3A).asColor() : colorInt(0xFF1A1A1A).asColor() }
+        .animation(.linear(duration: 0.25), value: deleteState)
         .frame(minWidth: 178.0.scaled(), maxWidth: 178.0.scaled(), minHeight: 47.0.scaled())
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in
-                    playHaptics()
-                    if deleteState {
-                        deleteStates.removeAll { $0 == favIndex }
-                    } else {
-                        deleteStates.append(favIndex)
+                    if deleteState <= 0.0 {
+                        playHaptics()
+                        deleteStates[favIndex] = 5.0
                     }
                 }
         )
         .highPriorityGesture(
             TapGesture()
                 .onEnded { _ in
-                    if deleteState {
+                    if deleteState > 0.0 {
                         if (registry().hasFavouriteRouteStop(favoriteIndex: favIndex.asInt32())) {
                             registry().clearFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), context: appContext())
                         }
                         DispatchQueue.main.async {
-                            deleteStates.removeAll { $0 == favIndex }
+                            deleteStates.removeValue(forKey: favIndex)
                             favRouteStops[favIndex] = Shared().getFavouriteRouteStop(index: favIndex.asInt32())
                         }
                     } else {
