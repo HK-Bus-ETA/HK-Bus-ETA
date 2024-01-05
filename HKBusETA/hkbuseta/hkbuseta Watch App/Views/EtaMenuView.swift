@@ -136,7 +136,7 @@ struct EtaMenuView: View {
                         .foregroundColor(colorInt(0xFF4CFF00).asColor())
                 }
                 Text(Shared().language == "en" ? "Open Stop Location on Maps" : "在地圖上顯示巴士站位置")
-                    .font(.system(size: 15.scaled(), weight: .bold))
+                    .font(.system(size: 14.5.scaled(), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -175,7 +175,7 @@ struct EtaMenuView: View {
                         .foregroundColor(colorInt(0xFFFF0000).asColor())
                 }
                 Text(Shared().language == "en" ? "Open KMB BBI Layout Map" : "顯示九巴轉車站位置圖")
-                    .font(.system(size: 15.scaled(), weight: .bold))
+                    .font(.system(size: 14.5.scaled(), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -218,7 +218,7 @@ struct EtaMenuView: View {
                         .foregroundColor(colorInt(0xFFFFE15E).asColor())
                 }
                 Text(Shared().language == "en" ? "Find Nearby Interchanges" : "尋找附近轉乘路線")
-                    .font(.system(size: 15.scaled(), weight: .bold))
+                    .font(.system(size: 14.5.scaled(), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
