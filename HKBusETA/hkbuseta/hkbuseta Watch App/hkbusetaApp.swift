@@ -8,9 +8,21 @@
 import SwiftUI
 import shared
 import Gzip
+import FirebaseCore
+import WatchKit
+
+class ApplicationDelegate: NSObject, WKApplicationDelegate {
+    
+  func applicationDidFinishLaunching() {
+      FirebaseApp.configure()
+  }
+    
+}
 
 @main
 struct hkbuseta_Watch_AppApp: App {
+    
+    @WKApplicationDelegateAdaptor(ApplicationDelegate.self) var delegate
     
     @StateObject private var historyStackState = FlowStateObservable(defaultValue: appContext().historyStack, nativeFlow: appContext().historyStackFlow)
     

@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		81812AB32B48CA000060A30B /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB22B48CA000060A30B /* FirebaseAnalytics */; };
+		81812AB52B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB42B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion */; };
+		81812AB72B48CA000060A30B /* FirebaseAnalyticsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB62B48CA000060A30B /* FirebaseAnalyticsSwift */; };
+		81812AB92B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB82B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport */; };
+		81812ABB2B48CA000060A30B /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 81812ABA2B48CA000060A30B /* FirebaseAppCheck */; };
+		81812AC12B48D0400060A30B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 81812AC02B48D0400060A30B /* GoogleService-Info.plist */; };
 		818FD02B2B45C917008EE8AB /* Gzip in Frameworks */ = {isa = PBXBuildFile; productRef = 818FD02A2B45C917008EE8AB /* Gzip */; };
 		81D16AB52B33C21E003D9817 /* HKBusETA.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 81D16AB42B33C21E003D9817 /* HKBusETA.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		81D16ABE2B33C21F003D9817 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16ABD2B33C21F003D9817 /* Assets.xcassets */; };
@@ -72,6 +78,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		81812AC02B48D0400060A30B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		818FD0162B44C403008EE8AB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		818FD0182B44C403008EE8AB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		81D16AAE2B33C21E003D9817 /* hkbuseta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = hkbuseta.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -107,8 +114,13 @@
 			files = (
 				81D16AFE2B34982B003D9817 /* KMPNativeCoroutinesAsync in Frameworks */,
 				818FD02B2B45C917008EE8AB /* Gzip in Frameworks */,
+				81812AB32B48CA000060A30B /* FirebaseAnalytics in Frameworks */,
+				81812AB52B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
+				81812AB72B48CA000060A30B /* FirebaseAnalyticsSwift in Frameworks */,
 				81D16B002B34982B003D9817 /* KMPNativeCoroutinesCombine in Frameworks */,
 				81D16B022B34982B003D9817 /* KMPNativeCoroutinesCore in Frameworks */,
+				81812AB92B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
+				81812ABB2B48CA000060A30B /* FirebaseAppCheck in Frameworks */,
 				81D16B042B34982B003D9817 /* KMPNativeCoroutinesRxSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -137,6 +149,7 @@
 		81D16AB82B33C21E003D9817 /* hkbuseta Watch App */ = {
 			isa = PBXGroup;
 			children = (
+				81812AC02B48D0400060A30B /* GoogleService-Info.plist */,
 				81D16B322B36729B003D9817 /* hkbusetaApp.swift */,
 				81D16B0C2B34CF98003D9817 /* Views */,
 				81D16B0B2B34CF87003D9817 /* Shared */,
@@ -245,6 +258,11 @@
 				81D16B012B34982B003D9817 /* KMPNativeCoroutinesCore */,
 				81D16B032B34982B003D9817 /* KMPNativeCoroutinesRxSwift */,
 				818FD02A2B45C917008EE8AB /* Gzip */,
+				81812AB22B48CA000060A30B /* FirebaseAnalytics */,
+				81812AB42B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion */,
+				81812AB62B48CA000060A30B /* FirebaseAnalyticsSwift */,
+				81812AB82B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport */,
+				81812ABA2B48CA000060A30B /* FirebaseAppCheck */,
 			);
 			productName = "hkbuseta Watch App";
 			productReference = 81D16AB42B33C21E003D9817 /* HKBusETA.app */;
@@ -280,6 +298,7 @@
 			packageReferences = (
 				81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */,
 				818FD0292B45C917008EE8AB /* XCRemoteSwiftPackageReference "GzipSwift" */,
+				81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = 81D16AAF2B33C21E003D9817 /* Products */;
 			projectDirPath = "";
@@ -305,6 +324,7 @@
 			files = (
 				81D16AC12B33C21F003D9817 /* Preview Assets.xcassets in Resources */,
 				81D16ABE2B33C21F003D9817 /* Assets.xcassets in Resources */,
+				81812AC12B48D0400060A30B /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -499,7 +519,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -515,7 +535,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp;
 				PRODUCT_NAME = HKBusETA;
@@ -537,7 +557,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -553,7 +573,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp;
 				PRODUCT_NAME = HKBusETA;
@@ -574,12 +594,12 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				EXCLUDED_ARCHS = "";
 				INFOPLIST_KEY_CFBundleDisplayName = hkbuseta;
 				LD_MAP_FILE_PATH = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				OTHER_LDFLAGS = "\"$(inherited) -framework shared\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -595,12 +615,12 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				EXCLUDED_ARCHS = "";
 				INFOPLIST_KEY_CFBundleDisplayName = hkbuseta;
 				LD_MAP_FILE_PATH = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
-				MARKETING_VERSION = 1.1.3;
+				MARKETING_VERSION = 1.1.4;
 				OTHER_LDFLAGS = "\"$(inherited) -framework shared\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -644,6 +664,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.19.1;
+			};
+		};
 		818FD0292B45C917008EE8AB /* XCRemoteSwiftPackageReference "GzipSwift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/1024jp/GzipSwift";
@@ -663,6 +691,31 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		81812AB22B48CA000060A30B /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		81812AB42B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsOnDeviceConversion;
+		};
+		81812AB62B48CA000060A30B /* FirebaseAnalyticsSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsSwift;
+		};
+		81812AB82B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsWithoutAdIdSupport;
+		};
+		81812ABA2B48CA000060A30B /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
 		818FD02A2B45C917008EE8AB /* Gzip */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 818FD0292B45C917008EE8AB /* XCRemoteSwiftPackageReference "GzipSwift" */;
