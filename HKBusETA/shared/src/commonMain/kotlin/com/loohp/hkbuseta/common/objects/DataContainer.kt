@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.JSONSerializable
+import com.loohp.hkbuseta.common.utils.mapToMutableMap
 import com.loohp.hkbuseta.common.utils.mapToSet
 import com.loohp.hkbuseta.common.utils.optJsonArray
 import com.loohp.hkbuseta.common.utils.optJsonObject
@@ -36,7 +37,8 @@ import kotlinx.serialization.json.jsonPrimitive
 class DataContainer(
     val dataSheet: DataSheet,
     val busRoute: Set<String>,
-    val mtrBusStopAlias: Map<String, List<String>>
+    val mtrBusStopAlias: Map<String, List<String>>,
+    val kmbSubsidiary: Map<KMBSubsidiary, List<String>>
 ) : JSONSerializable {
 
     companion object {
@@ -45,7 +47,8 @@ class DataContainer(
             val dataSheet = DataSheet.deserialize(json.optJsonObject("dataSheet")!!)
             val busRoute = json.optJsonArray("busRoute")!!.mapToSet { it.jsonPrimitive.content }
             val mtrBusStopAlias = json.optJsonObject("mtrBusStopAlias")!!.mapValues { it.value.jsonArray.map { e -> e.jsonPrimitive.content } }
-            return DataContainer(dataSheet, busRoute, mtrBusStopAlias)
+            val kmbSubsidiary = json.optJsonObject("kmbSubsidiary")!!.mapToMutableMap({ KMBSubsidiary.valueOf(it) }, { it.jsonArray.map { e -> e.jsonPrimitive.content } })
+            return DataContainer(dataSheet, busRoute, mtrBusStopAlias, kmbSubsidiary)
         }
 
     }
@@ -55,6 +58,7 @@ class DataContainer(
             put("dataSheet", dataSheet.serialize())
             put("busRoute", busRoute.toJsonArray())
             put("mtrBusStopAlias", mtrBusStopAlias.toJsonObject { it.toJsonArray() })
+            put("kmbSubsidiary", kmbSubsidiary.toJsonObject { it.toJsonArray() })
         }
     }
 
@@ -64,13 +68,15 @@ class DataContainer(
 
         if (dataSheet != other.dataSheet) return false
         if (busRoute != other.busRoute) return false
-        return mtrBusStopAlias == other.mtrBusStopAlias
+        if (mtrBusStopAlias != other.mtrBusStopAlias) return false
+        return kmbSubsidiary == other.kmbSubsidiary
     }
 
     override fun hashCode(): Int {
         var result = dataSheet.hashCode()
         result = 31 * result + busRoute.hashCode()
         result = 31 * result + mtrBusStopAlias.hashCode()
+        result = 31 * result + kmbSubsidiary.hashCode()
         return result
     }
 

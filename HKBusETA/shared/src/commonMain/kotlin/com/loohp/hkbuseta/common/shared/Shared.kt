@@ -27,6 +27,7 @@ import co.touchlab.stately.concurrency.withLock
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.LastLookupRoute
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
@@ -68,6 +69,18 @@ object Shared {
         try {
             Registry.invalidateCache(context)
         } catch (_: Throwable) {}
+    }
+
+    internal val kmbSubsidiary: Map<String, KMBSubsidiary> = HashMap()
+
+    fun setKmbSubsidiary(values: Map<KMBSubsidiary, List<String>>) {
+        kmbSubsidiary as MutableMap
+        kmbSubsidiary.clear()
+        for ((type, list) in values) {
+            for (route in list) {
+                kmbSubsidiary.put(route, type)
+            }
+        }
     }
 
     fun Registry.ETAQueryResult?.getResolvedText(seq: Int, clockTimeMode: Boolean, context: AppContext): FormattedText {

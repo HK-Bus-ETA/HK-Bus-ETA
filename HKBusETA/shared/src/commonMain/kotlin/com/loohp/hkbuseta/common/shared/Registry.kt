@@ -454,10 +454,9 @@ class Registry {
                 if (cached) {
                     if (DATA == null) {
                         try {
-                            DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(context.readTextFile(
-                                DATA_FILE_NAME
-                            )))
+                            DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(context.readTextFile(DATA_FILE_NAME)))
                             Tiles.requestTileUpdate()
+                            Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
                             stateFlow.value = State.READY
                         } catch (e: Throwable) {
                             e.printStackTrace()
@@ -486,6 +485,7 @@ class Registry {
                         val length: Long = LongUtils.parseOr(getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/size$gzLabel.dat"), -1)
                         val textResponse: String = getTextResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/data.json$gzLabel", length, gzip) { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
                         DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(textResponse))
+                        Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
                         updatePercentageStateFlow.value = 0.75f + percentageOffset
                         context.writeTextFile(DATA_FILE_NAME) { textResponse }
                         updatePercentageStateFlow.value = 0.825f + percentageOffset

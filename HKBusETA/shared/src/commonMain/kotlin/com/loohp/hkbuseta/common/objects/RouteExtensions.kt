@@ -25,9 +25,7 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.FormattingTextContentStyle
-import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
-import com.loohp.hkbuseta.common.utils.buildFormattedString
 
 
 private val bilingualToPrefix = "往" withEn "To "
@@ -87,16 +85,7 @@ fun Operator.getDisplayRouteNumber(routeNumber: String, shortened: Boolean = fal
 }
 
 fun String.getKMBSubsidiary(): KMBSubsidiary {
-    val routeNumberFiltered = if (this.startsWith("N")) this.substring(1) else this
-    if (routeNumberFiltered.startsWith("A") || routeNumberFiltered.startsWith("E") || routeNumberFiltered.startsWith("S")) {
-        return KMBSubsidiary.LWB
-    }
-    return when (this) {
-        "N30", "N31", "N42", "N42A", "N64", "R8", "R33", "R42", "X1", "X33", "X34", "X40", "X43", "X47" -> KMBSubsidiary.LWB
-        "331", "331S", "917", "918", "945" -> KMBSubsidiary.SUNB
-        else -> KMBSubsidiary.KMB
-    }
-
+    return Shared.kmbSubsidiary[this]?: KMBSubsidiary.KMB
 }
 
 fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language: String, elseName: String = "???"): String {
