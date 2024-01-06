@@ -5,10 +5,12 @@ import concurrent.futures
 import zlib
 import chardet
 import requests
+from shapely.geometry import Point, Polygon
 
 BUS_ROUTE = set()
 MTR_BUS_STOP_ALIAS = {}
 DATA_SHEET = {}
+KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
 
 DATA_SHEET_FILE_NAME = "data.json"
 DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
@@ -24,6 +26,7 @@ RECAPITALIZE_KEYWORDS = [
     "apm"
 ]
 
+SUN_BUS_ROUTES = {"331", "331S", "917", "918", "945"}
 
 def get_web_json(url):
     with urllib.request.urlopen(url) as data:
@@ -485,6 +488,31 @@ def inject_gmb_region():
         del DATA_SHEET["routeList"][key]
 
 
+def list_kmb_subsidiary_routes():
+    global DATA_SHEET
+    global SUN_BUS_ROUTES
+    global KMB_SUBSIDIARY_ROUTES
+    data = get_web_json("https://www.had.gov.hk/psi/hong-kong-administrative-boundaries/hksar_18_district_boundary.json")
+    islands_points = []
+    for each in data["features"]:
+        if each["properties"]["District"] == "Islands":
+            islands_points = each["geometry"]["coordinates"][0]
+            break
+    polygon_coords = [(x[1], x[0]) for x in islands_points]
+    poly = Polygon(polygon_coords)
+    for key, route in DATA_SHEET["routeList"].items():
+        if "kmb" in route["bound"]:
+            route_number = route["route"]
+            if route_number in SUN_BUS_ROUTES:
+                KMB_SUBSIDIARY_ROUTES["SUNB"].add(route_number)
+                continue
+            stops = route["stops"]["kmb"]
+            first_stop = DATA_SHEET["stopList"][stops[0]]["location"]
+            last_stop = DATA_SHEET["stopList"][stops[-1]]["location"]
+            if poly.contains(Point(first_stop["lat"], first_stop["lng"])) or poly.contains(Point(last_stop["lat"], last_stop["lng"])):
+                KMB_SUBSIDIARY_ROUTES["LWB"].add(route_number)
+
+
 print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
 print("Downloading & Processing CTB Routes")
@@ -499,13 +527,16 @@ print("Downloading & Processing MTR-Bus Data")
 download_and_process_mtr_bus_data()
 print("Capitalizing KMB English Names")
 capitalize_kmb_english_names()
+print("Listing KMB Subsidiary Routes")
+list_kmb_subsidiary_routes()
 print("Searching & Injecting GMB Region")
 inject_gmb_region()
 
 output = {
     "dataSheet": DATA_SHEET,
     "mtrBusStopAlias": MTR_BUS_STOP_ALIAS,
-    "busRoute": sorted(BUS_ROUTE)
+    "busRoute": sorted(BUS_ROUTE),
+    "kmbSubsidiary": {key: sorted(value) for key, value in KMB_SUBSIDIARY_ROUTES.items()}
 }
 
 with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
