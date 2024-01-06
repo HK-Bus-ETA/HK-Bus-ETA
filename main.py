@@ -27,6 +27,14 @@ RECAPITALIZE_KEYWORDS = [
 ]
 
 SUN_BUS_ROUTES = {"331", "331S", "917", "918", "945"}
+LWB_AREA = Polygon([
+    (22.353035101615237, 114.04468147886547),
+    (22.33535147194486, 114.06412468869647),
+    (22.188100849108828, 114.06444874219365),
+    (22.18870096192713, 113.82594536826676),
+    (22.35273539776945, 113.83145427771888)
+])
+
 
 def get_web_json(url):
     with urllib.request.urlopen(url) as data:
@@ -491,15 +499,8 @@ def inject_gmb_region():
 def list_kmb_subsidiary_routes():
     global DATA_SHEET
     global SUN_BUS_ROUTES
-    global KMB_SUBSIDIARY_ROUTES
-    data = get_web_json("https://www.had.gov.hk/psi/hong-kong-administrative-boundaries/hksar_18_district_boundary.json")
-    islands_points = []
-    for each in data["features"]:
-        if each["properties"]["District"] == "Islands":
-            islands_points = each["geometry"]["coordinates"][0]
-            break
-    polygon_coords = [(x[1], x[0]) for x in islands_points]
-    poly = Polygon(polygon_coords)
+    global KMB_SUBSIDIARY_ROUTE
+    global LWB_AREA
     for key, route in DATA_SHEET["routeList"].items():
         if "kmb" in route["bound"]:
             route_number = route["route"]
@@ -509,7 +510,7 @@ def list_kmb_subsidiary_routes():
             stops = route["stops"]["kmb"]
             first_stop = DATA_SHEET["stopList"][stops[0]]["location"]
             last_stop = DATA_SHEET["stopList"][stops[-1]]["location"]
-            if poly.contains(Point(first_stop["lat"], first_stop["lng"])) or poly.contains(Point(last_stop["lat"], last_stop["lng"])):
+            if LWB_AREA.contains(Point(first_stop["lat"], first_stop["lng"])) or LWB_AREA.contains(Point(last_stop["lat"], last_stop["lng"])):
                 KMB_SUBSIDIARY_ROUTES["LWB"].add(route_number)
 
 
