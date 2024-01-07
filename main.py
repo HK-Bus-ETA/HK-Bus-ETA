@@ -501,6 +501,12 @@ def list_kmb_subsidiary_routes():
     global SUN_BUS_ROUTES
     global KMB_SUBSIDIARY_ROUTE
     global LWB_AREA
+    gtfs = get_web_text("https://static.data.gov.hk/td/pt-headway-tc/routes.txt").splitlines()[1:]
+    lwb_routes = set()
+    for line in gtfs:
+        row = line.split(",")
+        if "LWB" in row[1]:
+            lwb_routes.add(row[2])
     for key, route in DATA_SHEET["routeList"].items():
         if "kmb" in route["bound"]:
             route_number = route["route"]
@@ -510,7 +516,7 @@ def list_kmb_subsidiary_routes():
             stops = route["stops"]["kmb"]
             first_stop = DATA_SHEET["stopList"][stops[0]]["location"]
             last_stop = DATA_SHEET["stopList"][stops[-1]]["location"]
-            if LWB_AREA.contains(Point(first_stop["lat"], first_stop["lng"])) or LWB_AREA.contains(Point(last_stop["lat"], last_stop["lng"])):
+            if route_number in lwb_routes or LWB_AREA.contains(Point(first_stop["lat"], first_stop["lng"])) or LWB_AREA.contains(Point(last_stop["lat"], last_stop["lng"])):
                 KMB_SUBSIDIARY_ROUTES["LWB"].add(route_number)
 
 
