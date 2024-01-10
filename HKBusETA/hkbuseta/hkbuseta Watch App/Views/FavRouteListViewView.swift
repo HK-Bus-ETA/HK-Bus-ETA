@@ -99,7 +99,7 @@ struct FavRouteListViewView: View {
             data["listType"] = RouteListType.Companion().FAVOURITE
             data["allowAmbient"] = true
             appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listRoutes, data))
-            appContext.finishAffinity()
+            appContext.finish()
         }
     }
 }

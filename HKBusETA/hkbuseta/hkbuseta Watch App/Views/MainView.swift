@@ -62,15 +62,16 @@ struct MainView: View {
             if registryState.state == Registry.State.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
+                    appContext.finishAffinity()
                 }
             } else if registryState.state == Registry.State.updating {
                 updateScreen = true
             }
         }.onAppear {
-            appContext.finishAffinity()
             if registryState.state == Registry.State.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
+                    appContext.finishAffinity()
                 }
             } else if registryState.state == Registry.State.updating {
                 updateScreen = true

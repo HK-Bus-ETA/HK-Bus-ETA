@@ -225,7 +225,7 @@ class AppActiveContextWatchOS internal constructor(
     val screen: AppScreen,
     val data: Map<String, Any?>,
     val storage: MutableMap<String, Any?> = mutableMapOf(),
-    val finishCallback: ((AppIntentResult) -> Unit)? = null
+    internal val finishCallback: ((AppIntentResult) -> Unit)? = null
 ) : AppContextWatchOS(), AppActiveContext {
 
     companion object {
@@ -279,9 +279,7 @@ class AppActiveContextWatchOS internal constructor(
         if (index < 0) {
             return
         }
-        for (i in (stack.size - 1) downTo index) {
-            stack.removeAt(i)
-        }
+        (0..index).onEach { stack.removeFirstOrNull() }
         if (stack.isEmpty()) {
             stack.add(DEFAULT_ENTRY)
         }
