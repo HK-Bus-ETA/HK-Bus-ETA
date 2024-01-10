@@ -316,7 +316,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                                     }
                                     Registry.getInstance(instance).addLastLookupRoute(route.route!!.routeNumber, co, meta, instance)
                                     val intent = AppIntent(instance, AppScreen.LIST_STOPS)
-                                    intent.putExtra("route", route.toByteArray())
+                                    intent.putExtra("route", route)
                                     instance.startActivity(intent)
                                 },
                                 onLongClick = {

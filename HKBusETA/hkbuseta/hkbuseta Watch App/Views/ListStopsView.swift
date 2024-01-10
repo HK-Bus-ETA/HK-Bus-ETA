@@ -52,7 +52,10 @@ struct ListStopsView: View {
     @State private var mtrLineSectionData: [MTRStopSectionData]
     @State private var closestIndex: Int
     
-    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.appContext = appContext
         let route = data["route"] as! RouteSearchResultEntry
         self.route = route
         self.scrollToStop = data["scrollToStop"] as? String
@@ -74,17 +77,17 @@ struct ListStopsView: View {
         let destName = route.route!.dest
         self.destName = destName
         self.resolvedDestName = route.route!.resolvedDest(prependTo: true)
-        let specialOrigsDests = registry().getAllOriginsAndDestinations(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
+        let specialOrigsDests = registry(appContext).getAllOriginsAndDestinations(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         self.specialOrigs = specialOrigsDests.first!.map { $0 as! BilingualText }.filter { !$0.zh.eitherContains(other: origName.zh) }
         self.specialDests = specialOrigsDests.second!.map { $0 as! BilingualText }.filter { !$0.zh.eitherContains(other: destName.zh) }
         self.coColor = co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64).asColor()
-        let stopList = registry().getAllStops(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
+        let stopList = registry(appContext).getAllStops(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         self.stopList = stopList
         self.lowestServiceType = stopList.min { $0.serviceType < $1.serviceType }!.serviceType
         if co.isTrain {
-            let mtrStopsInterchange = stopList.map { registry().getMtrStationInterchange(stopId: $0.stopId, lineName: routeNumber) }
+            let mtrStopsInterchange = stopList.map { registry(appContext).getMtrStationInterchange(stopId: $0.stopId, lineName: routeNumber) }
             self.mtrStopsInterchange = mtrStopsInterchange
-            self.mtrLineSectionData = MTRRouteMapUtilsKt.createMTRLineSectionData(co: co, color: co.getLineColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), stopList: stopList, mtrStopsInterchange: mtrStopsInterchange, isLrtCircular: route.route!.lrtCircular != nil, context: appContext())
+            self.mtrLineSectionData = MTRRouteMapUtilsKt.createMTRLineSectionData(co: co, color: co.getLineColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), stopList: stopList, mtrStopsInterchange: mtrStopsInterchange, isLrtCircular: route.route!.lrtCircular != nil, context: appContext)
         } else {
             self.mtrStopsInterchange = []
             self.mtrLineSectionData = []
@@ -96,27 +99,27 @@ struct ListStopsView: View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
-                    Spacer(minLength: 10.scaled())
-                    VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2.scaled()) {
+                    Spacer(minLength: 10.scaled(appContext))
+                    VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2.scaled(appContext)) {
                         Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
                             .foregroundColor(coColor.adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .lineLimit(1)
-                            .autoResizing(maxSize: 23.scaled(), weight: .bold)
+                            .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
                         Text(resolvedDestName.get(language: Shared().language))
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .lineLimit(2)
-                            .autoResizing(maxSize: 12.scaled())
+                            .autoResizing(maxSize: 12.scaled(appContext))
                         if !specialOrigs.isEmpty {
                             Text(Shared().language == "en" ? ("Special From " + specialOrigs.map { $0.en }.joined(separator: "/")) : ("特別班 從" + specialOrigs.map { $0.zh }.joined(separator: "/") + "開出"))
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                                 .lineLimit(2)
-                                .autoResizing(maxSize: 12.scaled())
+                                .autoResizing(maxSize: 12.scaled(appContext))
                         }
                         if !specialDests.isEmpty {
                             Text(Shared().language == "en" ? ("Special To " + specialDests.map { $0.en }.joined(separator: "/")) : ("特別班 往" + specialDests.map { $0.zh }.joined(separator: "/")))
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                                 .lineLimit(2)
-                                .autoResizing(maxSize: 12.scaled())
+                                .autoResizing(maxSize: 12.scaled(appContext))
                         }
                     }
                     ForEach(stopList.indices, id: \.self) { index in
@@ -138,7 +141,7 @@ struct ListStopsView: View {
         .onReceive(etaTimer) { _ in
             if showEta {
                 for index in etaActive {
-                    fetchEta(stopId: stopList[index].stopId, stopIndex: index, co: co, route: route.route!) { etaResults.set(key: index.asKt(), result: $0) }
+                    fetchEta(appContext: appContext, stopId: stopList[index].stopId, stopIndex: index, co: co, route: route.route!) { etaResults.set(key: index.asKt(), result: $0) }
                 }
             }
         }
@@ -198,40 +201,40 @@ struct ListStopsView: View {
             data["index"] = stopNumber
             data["stop"] = stopData.stop
             data["route"] = stopData.route
-            appContext().appendStack(screen: AppScreen.eta, mutableData: data)
+            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.eta, data))
         }) {
-            HStack(alignment: .center, spacing: 2.scaled()) {
+            HStack(alignment: .center, spacing: 2.scaled(appContext)) {
                 if co.isTrain && !mtrLineSectionData.isEmpty {
                     let width: CGFloat = Set(stopList.map { $0.serviceType }).count > 1 || mtrStopsInterchange.contains(where: { !$0.outOfStationLines.isEmpty }) ? 64 : 47
-                    MTRLineSection(sectionData: mtrLineSectionData[index], ambientMode: ambientMode)
+                    MTRLineSection(appContext: appContext, sectionData: mtrLineSectionData[index], ambientMode: ambientMode)
                         .frame(minWidth: width, maxWidth: width, maxHeight: .infinity)
                 } else {
                     Text("\(stopNumber).")
-                        .frame(width: 37.scaled(), alignment: .leading)
-                        .font(.system(size: 18.scaled(), weight: isClosest ? .bold : .regular))
+                        .frame(width: 37.scaled(appContext), alignment: .leading)
+                        .font(.system(size: 18.scaled(appContext), weight: isClosest ? .bold : .regular))
                         .foregroundColor(color)
                 }
                 MarqueeText(
-                    text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled()),
-                    font: UIFont.systemFont(ofSize: 18.scaled(), weight: isClosest ? .bold : .regular),
-                    leftFade: 8.scaled(),
-                    rightFade: 8.scaled(),
+                    text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled(appContext)),
+                    font: UIFont.systemFont(ofSize: 18.scaled(appContext), weight: isClosest ? .bold : .regular),
+                    leftFade: 8.scaled(appContext),
+                    rightFade: 8.scaled(appContext),
                     startDelay: 2,
                     alignment: .bottomLeading
                 )
                 .foregroundColor(color)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if showEta {
-                    ListStopETAView(etaState: etaResults.getState(key: index.asKt()))
+                    ListStopETAView(appContext: appContext, etaState: etaResults.getState(key: index.asKt()))
                 }
             }.contentShape(Rectangle())
         }
-        .frame(width: 170.scaled(), height: 40.scaled())
+        .frame(width: 170.scaled(appContext), height: 40.scaled(appContext))
         .buttonStyle(PlainButtonStyle())
         .onAppear {
             if showEta {
                 etaActive.append(index)
-                fetchEta(stopId: stopData.stopId, stopIndex: index, co: co, route: route.route!) { etaResults.set(key: index.asKt(), result: $0) }
+                fetchEta(appContext: appContext, stopId: stopData.stopId, stopIndex: index, co: co, route: route.route!) { etaResults.set(key: index.asKt(), result: $0) }
             }
         }
         .onDisappear {
@@ -244,7 +247,10 @@ struct ListStopETAView: View {
     
     @StateObject private var etaState: FlowStateObservable<Registry.ETAQueryResult?>
     
-    init(etaState: ETAResultsState) {
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, etaState: ETAResultsState) {
+        self.appContext = appContext
         self._etaState = StateObject(wrappedValue: FlowStateObservable(defaultValue: etaState.state, nativeFlow: etaState.stateFlow))
     }
     
@@ -256,22 +262,22 @@ struct ListStopETAView: View {
                 if !(0..<60).contains(eta.nextScheduledBus) {
                     if eta.isMtrEndOfLine {
                         Image(systemName: "arrow.forward.to.line.circle")
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(appContext)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else if (eta.isTyphoonSchedule) {
                         Image(systemName: "hurricane")
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(appContext)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else {
                         Image(systemName: "clock")
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(appContext)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     }
                 } else {
                     let shortText = eta.firstLine.shortText
                     let text1 = shortText.first
                     let text2 = "\n" + shortText.second
-                    let text = text1.asAttributedString(fontSize: 17.scaled()) + text2.asAttributedString(fontSize: 8.scaled())
+                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext)) + text2.asAttributedString(fontSize: 8.scaled(appContext))
                     Text(text)
                         .multilineTextAlignment(.trailing)
                         .lineSpacing(0)
@@ -283,8 +289,4 @@ struct ListStopETAView: View {
         }
     }
     
-}
-
-#Preview {
-    ListStopsView(data: [:], storage: KotlinMutableDictionary())
 }

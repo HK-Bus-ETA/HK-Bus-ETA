@@ -293,8 +293,8 @@ fun launchOtherStop(newIndex: Int, co: Operator, stopList: List<Registry.StopDat
     intent.putExtra("stopId", newStopData.stopId)
     intent.putExtra("co", co.name)
     intent.putExtra("index", newIndex)
-    intent.putExtra("stop", newStopData.stop.toByteArray())
-    intent.putExtra("route", newStopData.route.toByteArray())
+    intent.putExtra("stop", newStopData.stop)
+    intent.putExtra("route", newStopData.route)
     intent.putExtra("offset", offset)
     if (!animation) {
         intent.addFlags(AppIntentFlag.NO_ANIMATION)
@@ -342,8 +342,8 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
                 intent.putExtra("stopId", stopId)
                 intent.putExtra("co", co.name)
                 intent.putExtra("index", index)
-                intent.putExtra("stop", stop.toByteArray())
-                intent.putExtra("route", route.toByteArray())
+                intent.putExtra("stop", stop)
+                intent.putExtra("route", route)
                 instance.startActivity(intent)
             },
             modifier = Modifier

@@ -37,7 +37,10 @@ struct ListRoutesView: View {
     @State var sortedByMode: [RouteSortMode: [StopIndexedRouteSearchResultEntry]]
     @State var sortedResults: [StopIndexedRouteSearchResultEntry]
     
-    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.appContext = appContext
         let rawResult = data["result"]! as! [Any]
         var casedResult: [StopIndexedRouteSearchResultEntry]
         if rawResult.isEmpty {
@@ -50,7 +53,7 @@ struct ListRoutesView: View {
         }
         casedResult.removeAll(where: {
             if $0.route == nil {
-                let route = registry().findRouteByKey(lookupKey: $0.routeKey, routeNumber: nil)
+                let route = registry(appContext).findRouteByKey(lookupKey: $0.routeKey, routeNumber: nil)
                 if route == nil {
                     return true
                 } else {
@@ -58,7 +61,7 @@ struct ListRoutesView: View {
                 }
             }
             if $0.stopInfo != nil && $0.stopInfo!.data == nil {
-                let stop = registry().getStopById(stopId: $0.stopInfo!.stopId)
+                let stop = registry(appContext).getStopById(stopId: $0.stopInfo!.stopId)
                 if stop == nil {
                     return true
                 } else {
@@ -72,7 +75,7 @@ struct ListRoutesView: View {
             let co = $0.co
             let stopInfo = $0.stopInfo
             if route != nil && stopInfo != nil {
-                $0.stopInfoIndex = registry().getAllStops(routeNumber: route!.routeNumber, bound: route!.bound[co]!, co: co, gmbRegion: route!.gmbRegion).firstIndex(where: {
+                $0.stopInfoIndex = registry(appContext).getAllStops(routeNumber: route!.routeNumber, bound: route!.bound[co]!, co: co, gmbRegion: route!.gmbRegion).firstIndex(where: {
                     $0.stopId == stopInfo!.stopId
                 })?.asInt32() ?? -1
             }
@@ -108,18 +111,18 @@ struct ListRoutesView: View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 LazyVStack {
-                    Spacer(minLength: 10.scaled())
+                    Spacer(minLength: 10.scaled(appContext))
                     if !ambientMode {
                         if recentSort == RecentSortMode.forced {
                             Button(action: {
-                                registry().clearLastLookupRoutes(context: appContext())
-                                appContext().popStack()
+                                registry(appContext).clearLastLookupRoutes(context: appContext)
+                                appContext.finish()
                             }) {
                                 Image(systemName: "trash")
-                                    .font(.system(size: 17.scaled()))
+                                    .font(.system(size: 17.scaled(appContext)))
                                     .foregroundColor(.red)
                             }
-                            .frame(width: 45.scaled(), height: 45.scaled())
+                            .frame(width: 45.scaled(appContext), height: 45.scaled(appContext))
                             .clipShape(RoundedRectangle(cornerRadius: 25))
                             .edgesIgnoringSafeArea(.all)
                         } else if recentSort == RecentSortMode.choice || proximitySortOrigin != nil {
@@ -135,8 +138,8 @@ struct ListRoutesView: View {
                                     Text(Shared().language == "en" ? "Sort: Normal" : "排序: 正常")
                                 }
                             }
-                            .font(.system(size: 17.scaled(), weight: .bold))
-                            .frame(width: 170.scaled(), height: 45.scaled())
+                            .font(.system(size: 17.scaled(appContext), weight: .bold))
+                            .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
                             .clipShape(RoundedRectangle(cornerRadius: 25))
                             .edgesIgnoringSafeArea(.all)
                         }
@@ -154,14 +157,14 @@ struct ListRoutesView: View {
         .onReceive(etaTimer) { _ in
             if showEta {
                 for (uniqueKey, entry) in etaActive {
-                    fetchEta(stopId: entry.stopInfo!.stopId, stopIndex: entry.stopInfoIndex, co: entry.co, route: entry.route!) { etaResults.set(key: uniqueKey.asNs(), result: $0) }
+                    fetchEta(appContext: appContext, stopId: entry.stopInfo!.stopId, stopIndex: entry.stopInfoIndex, co: entry.co, route: entry.route!) { etaResults.set(key: uniqueKey.asNs(), result: $0) }
                 }
             }
         }
         .onChange(of: activeSortMode) { _ in
             let preferred = Shared().routeSortModePreference[listType]
             if preferred == nil || activeSortMode != preferred {
-                registry().setRouteSortModePreference(context: appContext(), listType: listType, sortMode: activeSortMode)
+                registry(appContext).setRouteSortModePreference(context: appContext, listType: listType, sortMode: activeSortMode)
             }
             withAnimation() { () -> () in
                 sortedResults = sortedByMode[activeSortMode]!
@@ -212,22 +215,22 @@ struct ListRoutesView: View {
             default:
                 meta = ""
             }
-            registry().addLastLookupRoute(routeNumber: route.route!.routeNumber, co: route.co, meta: meta, context: appContext())
+            registry(appContext).addLastLookupRoute(routeNumber: route.route!.routeNumber, co: route.co, meta: meta, context: appContext)
             let data = newAppDataConatiner()
             data["route"] = route
-            appContext().appendStack(screen: AppScreen.listStops, mutableData: data)
+            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listStops, data))
         }) {
-            HStack(alignment: .center, spacing: 2.scaled()) {
+            HStack(alignment: .center, spacing: 2.scaled(appContext)) {
                 Text(routeNumber)
-                    .frame(width: altSize ? 67.scaled() : 50.scaled(), alignment: .leading)
-                    .font(.system(size: altSize ? 18.scaled() : 21.scaled()))
+                    .frame(width: altSize ? 67.scaled(appContext) : 50.scaled(appContext), alignment: .leading)
+                    .font(.system(size: altSize ? 18.scaled(appContext) : 21.scaled(appContext)))
                     .foregroundColor(color)
                 if secondLine.isEmpty {
                     MarqueeText(
                         text: dest,
-                        font: UIFont.systemFont(ofSize: 17.scaled()),
-                        leftFade: 8.scaled(),
-                        rightFade: 8.scaled(),
+                        font: UIFont.systemFont(ofSize: 17.scaled(appContext)),
+                        leftFade: 8.scaled(appContext),
+                        rightFade: 8.scaled(appContext),
                         startDelay: 2,
                         alignment: .bottomLeading
                     )
@@ -237,9 +240,9 @@ struct ListRoutesView: View {
                     VStack(spacing: 0) {
                         MarqueeText(
                             text: dest,
-                            font: UIFont.systemFont(ofSize: 17.scaled()),
-                            leftFade: 8.scaled(),
-                            rightFade: 8.scaled(),
+                            font: UIFont.systemFont(ofSize: 17.scaled(appContext)),
+                            leftFade: 8.scaled(appContext),
+                            rightFade: 8.scaled(appContext),
                             startDelay: 2,
                             alignment: .bottomLeading
                         )
@@ -248,9 +251,9 @@ struct ListRoutesView: View {
                         CrossfadeMarqueeText(
                             textList: secondLine,
                             state: isLuminanceReduced ? 0 : animationTick,
-                            font: UIFont.systemFont(ofSize: altSize ? 11.scaled() : 12.scaled()),
-                            leftFade: 8.scaled(),
-                            rightFade: 8.scaled(),
+                            font: UIFont.systemFont(ofSize: altSize ? 11.scaled(appContext) : 12.scaled(appContext)),
+                            leftFade: 8.scaled(appContext),
+                            rightFade: 8.scaled(appContext),
                             startDelay: 2,
                             alignment: .bottomLeading
                         )
@@ -260,17 +263,17 @@ struct ListRoutesView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if showEta {
-                    ListRoutesEtaView(etaState: etaResults.getState(key: route.uniqueKey.asNs()))
+                    ListRoutesEtaView(appContext: appContext, etaState: etaResults.getState(key: route.uniqueKey.asNs()))
                 }
             }.contentShape(Rectangle())
         }
-        .frame(width: 170.scaled(), height: 35.scaled())
+        .frame(width: 170.scaled(appContext), height: 35.scaled(appContext))
         .buttonStyle(PlainButtonStyle())
         .transition(AnyTransition.scale)
         .onAppear {
             if showEta {
                 etaActive[route.uniqueKey] = route
-                fetchEta(stopId: route.stopInfo!.stopId, stopIndex: route.stopInfoIndex, co: route.co, route: route.route!) { etaResults.set(key: route.uniqueKey.asNs(), result: $0) }
+                fetchEta(appContext: appContext, stopId: route.stopInfo!.stopId, stopIndex: route.stopInfoIndex, co: route.co, route: route.route!) { etaResults.set(key: route.uniqueKey.asNs(), result: $0) }
             }
         }
         .onDisappear {
@@ -283,7 +286,10 @@ struct ListRoutesEtaView: View {
     
     @StateObject private var etaState: FlowStateObservable<Registry.ETAQueryResult?>
     
-    init(etaState: ETAResultsState) {
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, etaState: ETAResultsState) {
+        self.appContext = appContext
         self._etaState = StateObject(wrappedValue: FlowStateObservable(defaultValue: etaState.state, nativeFlow: etaState.stateFlow))
     }
     
@@ -295,22 +301,22 @@ struct ListRoutesEtaView: View {
                 if !(0..<60).contains(eta.nextScheduledBus) {
                     if eta.isMtrEndOfLine {
                         Image(systemName: "arrow.forward.to.line.circle")
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(appContext)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else if (eta.isTyphoonSchedule) {
                         Image(systemName: "hurricane")
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(appContext)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else {
                         Image(systemName: "clock")
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(appContext)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     }
                 } else {
                     let shortText = eta.firstLine.shortText
                     let text1 = shortText.first
                     let text2 = "\n" + shortText.second
-                    let text = text1.asAttributedString(fontSize: 17.scaled()) + text2.asAttributedString(fontSize: 8.scaled())
+                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext)) + text2.asAttributedString(fontSize: 8.scaled(appContext))
                     Text(text)
                         .multilineTextAlignment(.trailing)
                         .lineSpacing(0)
@@ -322,8 +328,4 @@ struct ListRoutesEtaView: View {
         }
     }
     
-}
-
-#Preview {
-    ListRoutesView(data: [:], storage: KotlinMutableDictionary())
 }

@@ -11,20 +11,17 @@ import SwiftUI
 import shared
 import AuthenticationServices
 
-func appContext() -> AppActiveContextWatchOS {
-    return AppContextWatchOSKt.appContext
+
+func registry(_ appContext: AppContext) -> Registry {
+    return Registry.Companion().getInstance(context: appContext)
 }
 
-func registry() -> Registry {
-    return Registry.Companion().getInstance(context: appContext())
+func fetchEta(appContext: AppContext, stopId: String, stopIndex: Int, co: Operator, route: Route, callback: @escaping (Registry.ETAQueryResult) -> Void) {
+    fetchEta(appContext: appContext, stopId: stopId, stopIndex: stopIndex.asInt32(), co: co, route: route, callback: callback)
 }
 
-func fetchEta(stopId: String, stopIndex: Int, co: Operator, route: Route, callback: @escaping (Registry.ETAQueryResult) -> Void) {
-    fetchEta(stopId: stopId, stopIndex: stopIndex.asInt32(), co: co, route: route, callback: callback)
-}
-
-func fetchEta(stopId: String, stopIndex: Int32, co: Operator, route: Route, callback: @escaping (Registry.ETAQueryResult) -> Void) {
-    let pending = registry().getEta(stopId: stopId, stopIndex: stopIndex, co: co, route: route, context: appContext())
+func fetchEta(appContext: AppContext, stopId: String, stopIndex: Int32, co: Operator, route: Route, callback: @escaping (Registry.ETAQueryResult) -> Void) {
+    let pending = registry(appContext).getEta(stopId: stopId, stopIndex: stopIndex, co: co, route: route, context: appContext)
     pending.onComplete(timeout: Shared().ETA_UPDATE_INTERVAL, unit: Kotlinx_datetimeDateTimeUnit.Companion().MILLISECOND, callback: { result in
         DispatchQueue.main.async {
             callback(result)
@@ -33,11 +30,15 @@ func fetchEta(stopId: String, stopIndex: Int32, co: Operator, route: Route, call
 }
 
 func playHaptics() {
-    WKInterfaceDevice.current().play(.success)
+    AppContextWatchOSKt.hapticFeedback.performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
 }
 
 func newAppDataConatiner() -> KotlinMutableDictionary<NSString, AnyObject> {
     return AppContextWatchOSKt.createMutableAppDataContainer()
+}
+
+func newAppIntent(_ context: AppContext, _ screen: AppScreen, _ data: KotlinMutableDictionary<NSString, AnyObject> = KotlinMutableDictionary()) -> AppIntent {
+    return AppContextWatchOSKt.createAppIntent(context: context, screen: screen, appDataContainer: data)
 }
 
 func dispatcherIO(task: @escaping () -> Void) {
@@ -105,8 +106,8 @@ extension Int {
         return numberFormatter.string(from: NSNumber(value: self)) ?? "\(self)"
     }
     
-    func scaled() -> Int {
-        return Int(appContext().screenScale.rounded()) * self
+    func scaled(_ appContext: AppContext) -> Int {
+        return Int(appContext.screenScale.rounded()) * self
     }
     
 }
@@ -121,16 +122,16 @@ extension Bool {
 
 extension Float {
     
-    func scaled() -> Float {
-        return appContext().screenScale * self
+    func scaled(_ appContext: AppContext) -> Float {
+        return appContext.screenScale * self
     }
     
 }
 
 extension Double {
     
-    func scaled() -> Double {
-        return Double(appContext().screenScale) * self
+    func scaled(_ appContext: AppContext) -> Double {
+        return Double(appContext.screenScale) * self
     }
     
 }

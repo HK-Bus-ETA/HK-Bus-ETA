@@ -20,14 +20,17 @@ struct FavRouteListViewView: View {
     
     @State private var failed: Bool = false
     
-    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.appContext = appContext
         self.usingGps = data["usingGps"] as! Bool
     }
     
     var body: some View {
         ZStack {
             Text(Shared().language == "en" ? "Locating..." : "正在讀取你的位置...")
-                .font(.system(size: 20.scaled()))
+                .font(.system(size: 20.scaled(appContext)))
                 .frame(alignment: .center)
                 .multilineTextAlignment(.center)
             if showingSkip {
@@ -35,12 +38,12 @@ struct FavRouteListViewView: View {
                     failed = true
                 }) {
                     Text(Shared().language == "en" ? "Skip sort by distance" : "略過按距離排序")
-                        .font(.system(size: 17.scaled(), weight: .bold))
+                        .font(.system(size: 17.scaled(appContext), weight: .bold))
                 }
-                .frame(width: 170.scaled(), height: 45.scaled())
+                .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
                 .clipShape(RoundedRectangle(cornerRadius: 25))
                 .edgesIgnoringSafeArea(.all)
-                .offset(x: 0, y: 70.scaled())
+                .offset(x: 0, y: 70.scaled(appContext))
             }
         }
         .onChange(of: locationManager.isLocationFetched) { _ in
@@ -88,19 +91,15 @@ struct FavRouteListViewView: View {
             let loc: Coordinates? = usingGps && location != nil ? location!.location! : nil
             let origin: Coordinates? = Shared().favoriteRouteStops.values.filter { $0.favouriteStopMode.isRequiresLocation }.isEmpty ? nil : loc
             let data = newAppDataConatiner()
-            data["result"] = Shared().sortedForListRouteView(instance: appContext(), origin: origin)
+            data["result"] = Shared().sortedForListRouteView(instance: appContext, origin: origin)
             data["showEta"] = true
             if loc != nil {
                 data["proximitySortOrigin"] = loc!
             }
             data["listType"] = RouteListType.Companion().FAVOURITE
             data["allowAmbient"] = true
-            appContext().appendStack(screen: AppScreen.listRoutes, mutableData: data)
-            appContext().popSecondLastStack()
+            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listRoutes, data))
+            appContext.finishAffinity()
         }
     }
-}
-
-#Preview {
-    FavRouteListViewView(data: [:], storage: KotlinMutableDictionary())
 }

@@ -24,70 +24,88 @@ struct hkbuseta_Watch_AppApp: App {
     
     @WKApplicationDelegateAdaptor(ApplicationDelegate.self) var delegate
     
-    @StateObject private var historyStackState = FlowStateObservable(defaultValue: appContext().historyStack, nativeFlow: appContext().historyStackFlow)
+    @StateObject private var historyStackState = FlowStateObservable(defaultValue: HistoryStack().historyStack, nativeFlow: HistoryStack().historyStackFlow)
     
     init() {
         HttpResponseUtils_watchosKt.provideGzipBodyAsTextImpl(impl: { data, charset in
             let decompressedData: Data = data.isGzipped ? try! data.gunzipped() : data
             return String(data: decompressedData, encoding: encoding(from: charset))!
         })
+        AppContextWatchOSKt.setOpenMapsImpl(handler: { lat, lng, label, longClick, haptics in
+            if Bool(truncating: longClick) {
+                haptics.performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
+            }
+            openMaps(lat: Double(truncating: lat), lng: Double(truncating: lng), label: label)
+        })
+        AppContextWatchOSKt.setOpenWebpagesImpl(handler: { url, longClick, haptics in
+            if Bool(truncating: longClick) {
+                haptics.performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
+            }
+            openUrl(link: url)
+        })
+        AppContextWatchOSKt.setOpenImagesImpl(handler: { url, longClick, haptics in
+            if Bool(truncating: longClick) {
+                haptics.performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
+            }
+            openUrl(link: url)
+        })
     }
     
     var body: some Scene {
         WindowGroup {
-            let item = historyStackState.state.last!
+            let context = historyStackState.state.last!
             ZStack {
-                switch item.screen {
+                switch context.screen {
                 case AppScreen.dummy:
-                    DummyView(data: item.data, storage: item.storage).defaultStyle()
+                    DummyView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.main:
-                    MainView(data: item.data, storage: item.storage).defaultStyle()
+                    MainView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.title:
-                    TitleView(data: item.data, storage: item.storage).defaultStyle()
+                    TitleView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.search:
-                    SearchView(data: item.data, storage: item.storage).defaultStyle()
+                    SearchView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.nearby:
-                    NearbyView(data: item.data, storage: item.storage).defaultStyle()
+                    NearbyView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.listRoutes:
-                    ListRoutesView(data: item.data, storage: item.storage).defaultStyle()
+                    ListRoutesView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.listStops:
-                    ListStopsView(data: item.data, storage: item.storage).defaultStyle()
+                    ListStopsView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.eta:
-                    EtaView(data: item.data, storage: item.storage).defaultStyle()
+                    EtaView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.etaMenu:
-                    EtaMenuView(data: item.data, storage: item.storage).defaultStyle()
+                    EtaMenuView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.fav:
-                    FavView(data: item.data, storage: item.storage).defaultStyle()
+                    FavView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.favRouteListView:
-                    FavRouteListViewView(data: item.data, storage: item.storage).defaultStyle()
+                    FavRouteListViewView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 default:
-                    MainView(data: item.data, storage: item.storage).defaultStyle()
+                    MainView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 }
-                if item.screen.needBackButton() {
-                    BackButton(scrollingScreen: item.screen.isScrollingScreen())
+                if context.screen.needBackButton() {
+                    BackButton(context, scrollingScreen: context.screen.isScrollingScreen())
                 }
             }
         }
     }
 }
 
-func BackButton(scrollingScreen: Bool) -> some View {
+func BackButton(_ appContext: AppContext, scrollingScreen: Bool) -> some View {
     ZStack {
         Button(action: {
-            appContext().popStack()
+            HistoryStack().popHistoryStack()
         }) {
             Image(systemName: "arrow.left")
-                .font(.system(size: 17.scaled(), weight: .bold))
+                .font(.system(size: 17.scaled(appContext), weight: .bold))
                 .foregroundColor(.white)
         }
-        .frame(width: 30.scaled(), height: 30.scaled())
+        .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
         .buttonStyle(PlainButtonStyle())
-        .position(x: 23.scaled(), y: 23.scaled())
+        .position(x: 23.scaled(appContext), y: 23.scaled(appContext))
     }
     .background(alignment: .top) {
         if scrollingScreen {
             LinearGradient(gradient: Gradient(colors: [colorInt(0xFF000000).asColor(), colorInt(0xFF000000).asColor(), colorInt(0xFF000000).asColor(), colorInt(0x00000000).asColor()]), startPoint: .top, endPoint: .bottom)
-                .frame(height: 45.scaled())
+                .frame(height: 45.scaled(appContext))
         }
     }
     .frame(

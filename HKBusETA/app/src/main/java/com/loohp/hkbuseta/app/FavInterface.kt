@@ -339,7 +339,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                         return@findRoutes stops.contains(stopId)
                     }.firstOrNull()?.let {
                         val intent = AppIntent(instance, AppScreen.LIST_STOPS)
-                        intent.putExtra("route", it.toByteArray())
+                        intent.putExtra("route", it)
                         intent.putExtra("scrollToStop", stopId)
                         instance.startActivity(intent)
                     }
@@ -348,8 +348,8 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     intent.putExtra("stopId", stopId)
                     intent.putExtra("co", co.name)
                     intent.putExtra("index", index)
-                    intent.putExtra("stop", stop.toByteArray())
-                    intent.putExtra("route", route.toByteArray())
+                    intent.putExtra("stop", stop)
+                    intent.putExtra("route", route)
                     instance.startActivity(intent)
                 }
             }

@@ -29,6 +29,7 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentResult
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
+import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.getTextResponse
@@ -59,17 +60,50 @@ import platform.Foundation.URLByAppendingPathComponent
 import platform.Foundation.create
 import platform.Foundation.lastPathComponent
 import platform.Foundation.writeToURL
+import platform.WatchKit.WKHapticType
 import platform.WatchKit.WKInterfaceDevice
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 
 
-val appContext: AppActiveContextWatchOS = AppActiveContextWatchOS()
+object HistoryStack {
+
+    @NativeCoroutinesState
+    val historyStack: MutableStateFlow<List<AppActiveContextWatchOS>> = MutableStateFlow(listOf(AppActiveContextWatchOS.DEFAULT_ENTRY))
+
+    fun popHistoryStack() {
+        val stack = historyStack.value.toMutableList()
+        val last = stack.removeLastOrNull()
+        if (stack.isEmpty()) {
+            stack.add(AppActiveContextWatchOS.DEFAULT_ENTRY)
+        }
+        historyStack.value = stack
+        last?.finishCallback?.invoke(last.result)
+    }
+
+}
+
+val applicationContext: AppContextWatchOS = AppContextWatchOS()
 
 private var firebaseImpl: (String, AppBundle) -> Unit = { _, _ -> }
+private var openMapsImpl: (Double, Double, String, Boolean, HapticFeedback) -> Unit = { _, _, _, _, _ -> }
+private var openWebpagesImpl: (String, Boolean, HapticFeedback) -> Unit = { _, _, _ -> }
+private var openWebImagesImpl: (String, Boolean, HapticFeedback) -> Unit = { _, _, _ -> }
 
 fun setFirebaseLogImpl(handler: (String, AppBundle) -> Unit) {
     firebaseImpl = handler
+}
+
+fun setOpenMapsImpl(handler: (Double, Double, String, Boolean, HapticFeedback) -> Unit) {
+    openMapsImpl = handler
+}
+
+fun setOpenWebpagesImpl(handler: (String, Boolean, HapticFeedback) -> Unit) {
+    openWebpagesImpl = handler
+}
+
+fun setOpenImagesImpl(handler: (String, Boolean, HapticFeedback) -> Unit) {
+    openWebImagesImpl = handler
 }
 
 @OptIn(ExperimentalForeignApi::class, UnsafeNumber::class, BetaInteropApi::class)
@@ -165,7 +199,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override fun startActivity(appIntent: AppIntent) {
-        throw RuntimeException("Unsupported Platform Operation")
+        HistoryStack.historyStack.value = HistoryStack.historyStack.value.toMutableList().apply { add(AppActiveContextWatchOS(appIntent.screen, appIntent.extras.data)) }
     }
 
     override fun startForegroundService(appIntent: AppIntent) {
@@ -187,115 +221,83 @@ open class AppContextWatchOS internal constructor() : AppContext {
 
 }
 
-class AppActiveContextWatchOS internal constructor() : AppContextWatchOS(), AppActiveContext {
+class AppActiveContextWatchOS internal constructor(
+    val screen: AppScreen,
+    val data: Map<String, Any?>,
+    val storage: MutableMap<String, Any?> = mutableMapOf(),
+    val finishCallback: ((AppIntentResult) -> Unit)? = null
+) : AppContextWatchOS(), AppActiveContext {
 
-    @NativeCoroutinesState
-    val historyStack: MutableStateFlow<List<HistoryStackEntry>> = MutableStateFlow(listOf(HistoryStackEntry.DEFAULT_ENTRY))
+    companion object {
 
-    fun appendStack(screen: AppScreen) {
-        appendStack(screen, emptyMap())
+        val DEFAULT_ENTRY get() = AppActiveContextWatchOS(AppScreen.MAIN, emptyMap())
+
     }
 
-    fun appendStack(screen: AppScreen, mutableData: MutableMap<String, Any?>) {
-        appendStack(screen, data = mutableData)
-    }
-
-    fun appendStack(screen: AppScreen, data: Map<String, Any?>) {
-        historyStack.value = historyStack.value.toMutableList().apply { add(HistoryStackEntry(screen, data)) }
-    }
-
-    fun peekStack(): HistoryStackEntry? {
-        return historyStack.value.lastOrNull()
-    }
-
-    fun popStack(): HistoryStackEntry? {
-        val stack = historyStack.value.toMutableList()
-        val last = stack.removeLastOrNull()
-        if (stack.isEmpty()) {
-            stack.add(HistoryStackEntry.DEFAULT_ENTRY)
-        }
-        historyStack.value = stack
-        return last
-    }
-
-    fun popStackIfMatches(predicate: (HistoryStackEntry) -> Boolean): HistoryStackEntry? {
-        val stack = historyStack.value.toMutableList()
-        val last = stack.lastOrNull()?.let {
-            if (predicate.invoke(it)) {
-                stack.removeLastOrNull()
-                it
-            } else {
-                null
-            }
-        }
-        if (stack.isEmpty()) {
-            stack.add(HistoryStackEntry.DEFAULT_ENTRY)
-        }
-        historyStack.value = stack
-        return last
-    }
-
-    fun popSecondLastStack(): HistoryStackEntry? {
-        val stack = historyStack.value.toMutableList()
-        if (stack.size < 2) {
-            return null
-        }
-        val last = stack.removeAt(stack.size - 2)
-        historyStack.value = stack
-        return last
-    }
-
-    fun popSecondLastStackIfMatches(predicate: (HistoryStackEntry) -> Boolean): HistoryStackEntry? {
-        val stack = historyStack.value.toMutableList()
-        if (stack.size < 2) {
-            return null
-        }
-        val last = stack.removeAt(stack.size - 2).let {
-            if (predicate.invoke(it)) {
-                stack.removeAt(stack.size - 2)
-                it
-            } else {
-                null
-            }
-        }
-        historyStack.value = stack
-        return last
-    }
-
-    fun clearStack() {
-        historyStack.value = listOf(HistoryStackEntry.DEFAULT_ENTRY)
-    }
+    private val id = uuid4()
+    internal var result: AppIntentResult = AppIntentResult.NORMAL
 
     override fun runOnUiThread(runnable: () -> Unit) {
         dispatch_async(dispatch_get_main_queue(), runnable)
     }
 
     override fun startActivity(appIntent: AppIntent, callback: (AppIntentResult) -> Unit) {
-        throw RuntimeException("Unsupported Platform Operation")
+        HistoryStack.historyStack.value = HistoryStack.historyStack.value.toMutableList().apply { add(AppActiveContextWatchOS(appIntent.screen, appIntent.extras.data, finishCallback = callback)) }
     }
 
     override fun handleOpenMaps(lat: Double, lng: Double, label: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
-        throw RuntimeException("Unsupported Platform Operation")
+        return { openMapsImpl.invoke(lat, lng, label, longClick, haptics) }
     }
 
     override fun handleWebpages(url: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
-        throw RuntimeException("Unsupported Platform Operation")
+        return { openWebpagesImpl.invoke(url, longClick, haptics) }
     }
 
     override fun handleWebImages(url: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
-        throw RuntimeException("Unsupported Platform Operation")
+        return { openWebImagesImpl.invoke(url, longClick, haptics) }
     }
 
     override fun setResult(result: AppIntentResult) {
-        throw RuntimeException("Unsupported Platform Operation")
+        this.result = result
     }
 
     override fun finish() {
-        throw RuntimeException("Unsupported Platform Operation")
+        val stack = HistoryStack.historyStack.value.toMutableList()
+        val removed = stack.remove(this)
+        if (stack.isEmpty()) {
+            stack.add(DEFAULT_ENTRY)
+        }
+        HistoryStack.historyStack.value = stack
+        if (removed) {
+            finishCallback?.invoke(result)
+        }
     }
 
     override fun finishAffinity() {
-        throw RuntimeException("Unsupported Platform Operation")
+        val stack = HistoryStack.historyStack.value.toMutableList()
+        val index = stack.indexOf(this)
+        if (index < 0) {
+            return
+        }
+        for (i in (stack.size - 1) downTo index) {
+            stack.removeAt(i)
+        }
+        if (stack.isEmpty()) {
+            stack.add(DEFAULT_ENTRY)
+        }
+        HistoryStack.historyStack.value = stack
+        finishCallback?.invoke(result)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AppActiveContextWatchOS) return false
+
+        return id == other.id
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
     }
 
 }
@@ -304,29 +306,23 @@ fun createMutableAppDataContainer(): MutableMap<String, Any?> {
     return HashMap()
 }
 
+fun createAppIntent(context: AppContext, screen: AppScreen, appDataContainer: MutableMap<String, Any?>): AppIntent {
+    return AppIntent(context, screen).apply { extras.data.putAll(appDataContainer) }
+}
+
 fun dispatcherIO(task: () -> Unit) {
     CoroutineScope(Dispatchers.IO).launch { task.invoke() }
 }
 
-data class HistoryStackEntry(val screen: AppScreen, val data: Map<String, Any?>, val storage: MutableMap<String, Any?> = mutableMapOf()) {
+val HapticFeedbackType.native: WKHapticType get() = when (this) {
+    HapticFeedbackType.LongPress -> WKHapticType.WKHapticTypeClick
+    HapticFeedbackType.TextHandleMove -> WKHapticType.WKHapticTypeClick
+}
 
-    companion object {
+val hapticFeedback: HapticFeedback = object : HapticFeedback {
 
-        val DEFAULT_ENTRY = HistoryStackEntry(AppScreen.MAIN, emptyMap())
-
-    }
-
-    private val id = uuid4()
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is HistoryStackEntry) return false
-
-        return id == other.id
-    }
-
-    override fun hashCode(): Int {
-        return id.hashCode()
+    override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+        WKInterfaceDevice.currentDevice().playHaptic(hapticFeedbackType.native)
     }
 
 }

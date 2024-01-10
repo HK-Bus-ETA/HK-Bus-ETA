@@ -21,6 +21,8 @@
 
 package com.loohp.hkbuseta.common.appcontext
 
+import com.loohp.hkbuseta.common.utils.IOSerializable
+
 class AppIntent(val context: AppContext, val screen: AppScreen) {
 
     val extras: AppBundle = AppBundle()
@@ -37,6 +39,11 @@ class AppIntent(val context: AppContext, val screen: AppScreen) {
 
     fun hasFlags(vararg flags: AppIntentFlag): Boolean {
         return intentFlags.containsAll(flags.toSet())
+    }
+
+    fun putExtra(name: String, value: IOSerializable): AppIntent {
+        extras.putObject(name, value)
+        return this
     }
 
     fun putExtra(name: String, value: Boolean): AppIntent {
@@ -173,7 +180,15 @@ class AppIntent(val context: AppContext, val screen: AppScreen) {
 
 }
 
-data class AppIntentResult(val resultCode: Int)
+data class AppIntentResult(val resultCode: Int) {
+
+    companion object {
+
+        val NORMAL = AppIntentResult(0)
+
+    }
+
+}
 
 enum class AppIntentFlag {
 
@@ -186,6 +201,11 @@ enum class AppIntentFlag {
 class AppBundle {
     
     val data: MutableMap<String, Any?> = mutableMapOf()
+
+    fun putObject(name: String, value: IOSerializable): AppBundle {
+        data[name] = value
+        return this
+    }
 
     fun putBoolean(name: String, value: Boolean): AppBundle {
         data[name] = value

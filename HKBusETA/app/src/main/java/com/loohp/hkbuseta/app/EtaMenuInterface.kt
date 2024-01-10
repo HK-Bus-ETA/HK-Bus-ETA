@@ -314,7 +314,7 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                                 intent.putExtra("co", co.name)
 
                                 val stopListIntent = AppIntent(instance, AppScreen.LIST_STOPS)
-                                stopListIntent.putExtra("route", it.toByteArray())
+                                stopListIntent.putExtra("route", it)
                                 stopListIntent.putExtra("scrollToStop", stopId)
                                 stopListIntent.putExtra("showEta", false)
                                 stopListIntent.putExtra("isAlightReminder", true)
@@ -705,7 +705,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                         "<br>" +
                         "If prompted, please choose \"<b>While using this app</b>\" and then \"<b>All the time</b>\"."
             )
-            noticeIntent.putExtra("text", notice.toByteArray())
+            noticeIntent.putExtra("text", notice)
             instance.startActivity(noticeIntent) { confirm ->
                 if (confirm.resultCode == 1) {
                     checkBackgroundLocationPermission(instance) { result ->

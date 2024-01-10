@@ -8,7 +8,7 @@
 import SwiftUI
 import shared
 
-func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some View {
+func MTRLineSection(appContext: AppContext, sectionData: MTRStopSectionData, ambientMode: Bool) -> some View {
     let mainLine = sectionData.mainLine
     let spurLine = sectionData.spurLine
     let co = sectionData.co
@@ -21,16 +21,16 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
         let width = size.width
         let height = size.height
         
-        let leftShift = hasOutOfStation ? 17.0.scaled() : 0
+        let leftShift = hasOutOfStation ? 17.0.scaled(appContext) : 0
         let horizontalCenter = width / 2.0 - leftShift
         let horizontalPartition = width / 10.0
         let horizontalCenterPrimary = stopByBranceId.count == 1 ? horizontalCenter : horizontalPartition * 3.0
         let horizontalCenterSecondary = horizontalPartition * 7.0
         let verticalCenter = height / 2.0
-        let lineWidth = 6.0.scaled()
+        let lineWidth = 6.0.scaled(appContext)
         let outlineWidth = lineWidth * 0.6
-        let lineOffset = 6.0.scaled()
-        let dashEffect: [CGFloat] = [10.0.scaled(), 5.0.scaled()]
+        let lineOffset = 6.0.scaled(appContext)
+        let dashEffect: [CGFloat] = [10.0.scaled(appContext), 5.0.scaled(appContext)]
         
         var useSpurStopCircle = false
         if mainLine != nil {
@@ -270,8 +270,8 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                 )
             }
         }
-        let interchangeLineWidth = 15.0.scaled()
-        let interchangeLineHeight = 6.0.scaled()
+        let interchangeLineWidth = 15.0.scaled(appContext)
+        let interchangeLineHeight = 6.0.scaled(appContext)
         let interchangeLineSpacing = interchangeLineHeight * 1.5
         if interchangeData.isHasLightRail && co != Operator.Companion().LRT {
             context.fill(
@@ -309,10 +309,10 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                 leftCorner = CGPoint(x: leftCorner.x, y: leftCorner.y + interchangeLineSpacing)
             }
         }
-        let circleWidth = 10.5.scaled()
+        let circleWidth = 10.5.scaled(appContext)
         if !interchangeData.outOfStationLines.isEmpty {
             let otherStationHorizontalCenter = horizontalCenterPrimary + circleWidth * 2
-            let connectionLineWidth: CGFloat = 2.0.scaled()
+            let connectionLineWidth: CGFloat = 2.0.scaled(appContext)
             if interchangeData.isOutOfStationPaid {
                 context.stroke(
                     Path { path in
@@ -331,7 +331,7 @@ func MTRLineSection(sectionData: MTRStopSectionData, ambientMode: Bool) -> some 
                     with: .color(colorInt(0xFF003180).asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1)),
                     style: StrokeStyle(
                         lineWidth: connectionLineWidth,
-                        dash: [2.0.scaled(), 1.0.scaled()]
+                        dash: [2.0.scaled(appContext), 1.0.scaled(appContext)]
                     )
                 )
             }

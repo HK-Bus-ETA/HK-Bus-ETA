@@ -20,21 +20,24 @@ struct SearchView: View {
     
     private let storage: KotlinMutableDictionary<NSString, AnyObject>
     
-    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.appContext = appContext
         self.storage = storage
         let input = storage["input"] as? String ?? ""
-        self.state = RouteKeyboardState(text: input.isEmpty ? defaultText() : input, nextCharResult: registry().getPossibleNextChar(input: input))
+        self.state = RouteKeyboardState(text: input.isEmpty ? defaultText() : input, nextCharResult: registry(appContext).getPossibleNextChar(input: input))
     }
     
     var body: some View {
         VStack {
             Text(Shared().getMtrLineName(lineName: state.text))
-                .font(.system(size: 22.scaled()))
-                .frame(width: 150.0.scaled(), height: 40.0.scaled())
+                .font(.system(size: 22.scaled(appContext)))
+                .frame(width: 150.0.scaled(appContext), height: 40.0.scaled(appContext))
                 .background { colorInt(0xFF1A1A1A).asColor() }
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(colorInt(0xFF252525).asColor(), lineWidth: 4.scaled())
+                        .stroke(colorInt(0xFF252525).asColor(), lineWidth: 4.scaled(appContext))
                 )
                 .padding()
             HStack {
@@ -43,19 +46,19 @@ struct SearchView: View {
                     KeyboardKey(content: "4")
                     KeyboardKey(content: "1")
                     KeyboardKey(content: "<", longContent: "-")
-                }.frame(width: 35.scaled(), height: 155.scaled())
+                }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
                 VStack {
                     KeyboardKey(content: "8")
                     KeyboardKey(content: "5")
                     KeyboardKey(content: "2")
                     KeyboardKey(content: "0")
-                }.frame(width: 35.scaled(), height: 155.scaled())
+                }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
                 VStack {
                     KeyboardKey(content: "9")
                     KeyboardKey(content: "6")
                     KeyboardKey(content: "3")
                     KeyboardKey(content: "/")
-                }.frame(width: 35.scaled(), height: 155.scaled())
+                }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
                 ScrollView(.vertical) {
                     let currentText = state.text
                     if currentText.isEmpty || currentText == defaultText() {
@@ -67,7 +70,7 @@ struct SearchView: View {
                             KeyboardKey(content: alphabet)
                         }
                     }
-                }.frame(width: 35.scaled(), height: 155.scaled())
+                }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
             }
         }
         .onAppear {
@@ -97,29 +100,29 @@ struct SearchView: View {
             case "<":
                 if hasHistory && state.text.isEmpty || state.text == defaultText() {
                     Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 17.scaled()))
+                        .font(.system(size: 17.scaled(appContext)))
                         .foregroundColor(colorInt(0xFF03A9F4).asColor())
                 } else {
                     Image(systemName: "trash")
-                        .font(.system(size: 17.scaled()))
+                        .font(.system(size: 17.scaled(appContext)))
                         .foregroundColor(.red)
                 }
             case "/":
                 Image(systemName: "checkmark")
-                    .font(.system(size: 17.scaled()))
+                    .font(.system(size: 17.scaled(appContext)))
                     .foregroundColor(state.nextCharResult.hasExactMatch ? .green : colorInt(0xFF444444).asColor())
             case "!":
                 Image("mtr")
                     .resizable()
-                    .frame(width: 20.0.scaled(), height: 20.0.scaled())
+                    .frame(width: 20.0.scaled(appContext), height: 20.0.scaled(appContext))
                     .foregroundColor(.red)
             default:
                 Text(content.description)
-                    .font(.system(size: 20.scaled(), weight: .bold))
+                    .font(.system(size: 20.scaled(appContext), weight: .bold))
                     .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : colorInt(0xFF444444).asColor())
             }
         }
-        .frame(width: 35.0.scaled(), height: (content.isLetter || content == "!" ? 30.0 : 35.0).scaled())
+        .frame(width: 35.0.scaled(appContext), height: (content.isLetter || content == "!" ? 30.0 : 35.0).scaled(appContext))
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(
             LongPressGesture()
@@ -147,11 +150,11 @@ struct SearchView: View {
             let result: [RouteSearchResultEntry]
             switch input {
             case "!":
-                result = registry().findRoutes(input: "", exact: false, predicate: Shared().MTR_ROUTE_FILTER)
+                result = registry(appContext).findRoutes(input: "", exact: false, predicate: Shared().MTR_ROUTE_FILTER)
             case "<":
-                result = registry().findRoutes(input: "", exact: false, coPredicate: Shared().RECENT_ROUTE_FILTER)
+                result = registry(appContext).findRoutes(input: "", exact: false, coPredicate: Shared().RECENT_ROUTE_FILTER)
             default:
-                result = registry().findRoutes(input: originalText, exact: true)
+                result = registry(appContext).findRoutes(input: originalText, exact: true)
             }
             if !result.isEmpty {
                 let data = newAppDataConatiner()
@@ -160,7 +163,7 @@ struct SearchView: View {
                     data["recentSort"] = RecentSortMode.forced
                 }
                 data["listType"] = RouteListType.Companion().RECENT
-                appContext().appendStack(screen: AppScreen.listRoutes, mutableData: data)
+                appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listRoutes, data))
             }
         } else {
             let newText: String
@@ -171,15 +174,11 @@ struct SearchView: View {
             } else {
                 newText = originalText + String(input)
             }
-            let possibleNextChar = registry().getPossibleNextChar(input: newText)
+            let possibleNextChar = registry(appContext).getPossibleNextChar(input: newText)
             let text = newText.isEmpty ? defaultText() : newText
             state = RouteKeyboardState(text: text, nextCharResult: possibleNextChar)
         }
     }
-}
-
-#Preview {
-    SearchView(data: [:], storage: KotlinMutableDictionary())
 }
 
 struct RouteKeyboardState {

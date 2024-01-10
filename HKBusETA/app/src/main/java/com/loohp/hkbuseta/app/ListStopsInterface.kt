@@ -333,8 +333,8 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                                         intent.putExtra("stopId", stopId)
                                         intent.putExtra("co", co.name)
                                         intent.putExtra("index", stopNumber)
-                                        intent.putExtra("stop", stop.toByteArray())
-                                        intent.putExtra("route", entry.route.toByteArray())
+                                        intent.putExtra("stop", stop)
+                                        intent.putExtra("route", entry.route)
                                         instance.startActivity(intent)
                                     },
                                     onLongClick = {

@@ -117,7 +117,7 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                         }.firstOrNull()?.let {
                             val intent = AppIntent(instance, AppScreen.LIST_STOPS)
                             intent.putExtra("shouldRelaunch", false)
-                            intent.putExtra("route", it.toByteArray())
+                            intent.putExtra("route", it)
                             intent.putExtra("scrollToStop", stopId)
                             instance.startActivity(intent)
                         }
@@ -207,7 +207,7 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
 
                                 if (queryStop != null) {
                                     val intent2 = AppIntent(instance, AppScreen.LIST_STOPS)
-                                    intent2.putExtra("route", it.toByteArray())
+                                    intent2.putExtra("route", it)
                                     intent2.putExtra("scrollToStop", queryStop)
                                     instance.startActivity(intent2)
 
@@ -219,14 +219,14 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                                             intent3.putExtra("stopId", stopId)
                                             intent3.putExtra("co", it.co.name)
                                             intent3.putExtra("index", i + 1)
-                                            intent3.putExtra("stop", stopData.stop.toByteArray())
-                                            intent3.putExtra("route", it.route!!.toByteArray())
+                                            intent3.putExtra("stop", stopData.stop)
+                                            intent3.putExtra("route", it.route!!)
                                             instance.startActivity(intent3)
                                         }
                                     }
                                 } else if (filteredResult.size == 1) {
                                     val intent2 = AppIntent(instance, AppScreen.LIST_STOPS)
-                                    intent2.putExtra("route", it.toByteArray())
+                                    intent2.putExtra("route", it)
                                     instance.startActivity(intent2)
                                 }
                             }

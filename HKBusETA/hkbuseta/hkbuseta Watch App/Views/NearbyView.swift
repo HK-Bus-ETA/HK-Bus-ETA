@@ -23,7 +23,10 @@ struct NearbyView: View {
     @State private var noNearby: Bool = false
     @State private var failed: Bool = false
     
-    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.appContext = appContext
         let lat = data["lat"] as? Double
         let lng = data["lng"] as? Double
         if lat != nil && lng != nil {
@@ -36,34 +39,34 @@ struct NearbyView: View {
     }
     
     var body: some View {
-        VStack(alignment: .center, spacing: 5.scaled()) {
+        VStack(alignment: .center, spacing: 5.scaled(appContext)) {
             if noNearby {
                 Text(Shared().language == "en" ? "There are no nearby bus stops" : "附近沒有巴士站")
-                    .font(.system(size: 20.scaled()))
+                    .font(.system(size: 20.scaled(appContext)))
                     .frame(alignment: .center)
                     .multilineTextAlignment(.center)
                 Text(Shared().language == "en" ? ("Nearest Stop: \(closestStop!.name.en) (\(Int(closesDistance! * 1000).formattedWithDecimalSeparator())m)") : ("最近的巴士站: \(closestStop!.name.zh) (\(Int(closesDistance! * 1000).formattedWithDecimalSeparator())米)"))
-                    .font(.system(size: 13.scaled()))
+                    .font(.system(size: 13.scaled(appContext)))
                     .frame(alignment: .center)
                     .multilineTextAlignment(.center)
             } else if failed {
                 Text(Shared().language == "en" ? "Unable to read your location" : "無法讀取你的位置")
-                    .font(.system(size: 20.scaled()))
+                    .font(.system(size: 20.scaled(appContext)))
                     .frame(alignment: .center)
                     .multilineTextAlignment(.center)
                 Text(Shared().language == "en" ? "Please check whether your GPS is enabled" : "請檢查你的定位服務是否已開啟")
-                    .font(.system(size: 15.scaled()))
+                    .font(.system(size: 15.scaled(appContext)))
                     .frame(alignment: .center)
                     .multilineTextAlignment(.center)
             } else {
                 if location == nil {
                     Text(Shared().language == "en" ? "Locating..." : "正在讀取你的位置...")
-                        .font(.system(size: 20.scaled()))
+                        .font(.system(size: 20.scaled(appContext)))
                         .frame(alignment: .center)
                         .multilineTextAlignment(.center)
                 } else {
                     Text(Shared().language == "en" ? "Searching Nearby..." : "正在搜尋附近路線...")
-                        .font(.system(size: 20.scaled()))
+                        .font(.system(size: 20.scaled(appContext)))
                         .frame(alignment: .center)
                         .multilineTextAlignment(.center)
                 }
@@ -99,7 +102,7 @@ struct NearbyView: View {
         }
         .alert(Shared().language == "en" ? "Location Access Permission Denied" : "位置存取權限被拒絕", isPresented: $denied) {
             Button("OK", role: .cancel) {
-                appContext().popStackIfMatches { KotlinBoolean(bool: $0.screen == AppScreen.nearby) }
+                appContext.finish()
             }
         }
     }
@@ -108,7 +111,7 @@ struct NearbyView: View {
         dispatcherIO {
             if location != nil {
                 let loc = location!.location!
-                let result: Registry.NearbyRoutesResult? = registry().getNearbyRoutes(lat: loc.lat, lng: loc.lng, excludedRouteNumbers: Set(exclude.map { AnyHashable($0) }), isInterchangeSearch: interchangeSearch)
+                let result: Registry.NearbyRoutesResult? = registry(appContext).getNearbyRoutes(lat: loc.lat, lng: loc.lng, excludedRouteNumbers: Set(exclude.map { AnyHashable($0) }), isInterchangeSearch: interchangeSearch)
                 if result == nil {
                     failed = true
                 } else {
@@ -124,15 +127,11 @@ struct NearbyView: View {
                         data["recentSort"] = RecentSortMode.choice
                         data["proximitySortOrigin"] = Coordinates(lat: result!.lat, lng: result!.lng)
                         data["listType"] = RouteListType.Companion().NEARBY
-                        appContext().appendStack(screen: AppScreen.listRoutes, mutableData: data)
-                        appContext().popSecondLastStack()
+                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listRoutes, data))
+                        appContext.finish()
                     }
                 }
             }
         }
     }
-}
-
-#Preview {
-    NearbyView(data: [:], storage: KotlinMutableDictionary())
 }

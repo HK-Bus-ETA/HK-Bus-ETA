@@ -27,7 +27,10 @@ struct EtaMenuView: View {
     @State private var stopList: [Registry.StopData]
     @State private var favStates: [Int: FavouriteRouteState] = [:]
     
-    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.appContext = appContext
         self.stopId = data["stopId"] as! String
         let co = data["co"] as! Operator
         self.co = co
@@ -37,63 +40,63 @@ struct EtaMenuView: View {
         self.route = route
         self.offsetStart = data["offsetStart"] as? Int ?? 0
         
-        self.stopList = registry().getAllStops(routeNumber: route.routeNumber, bound: co == Operator.Companion().NLB ? route.nlbId : route.bound[co]!, co: co, gmbRegion: route.gmbRegion)
+        self.stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: co == Operator.Companion().NLB ? route.nlbId : route.bound[co]!, co: co, gmbRegion: route.gmbRegion)
     }
     
     var body: some View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
-                VStack(alignment: .center, spacing: 1.scaled()) {
-                    Spacer(minLength: 10.scaled())
+                VStack(alignment: .center, spacing: 1.scaled(appContext)) {
+                    Spacer(minLength: 10.scaled(appContext))
                     VStack(alignment: .center) {
                         Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
-                            .autoResizing(maxSize: 23.scaled(), weight: .bold)
+                            .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
                         if (stop.remark != nil) {
                             Text(stop.remark!.get(language: Shared().language))
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                                 .lineLimit(1)
-                                .autoResizing(maxSize: 13.scaled())
+                                .autoResizing(maxSize: 13.scaled(appContext))
                         }
-                        let destName = registry().getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
+                        let destName = registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
                         Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + destName.get(language: Shared().language))
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(1)
-                            .autoResizing(maxSize: 12.scaled())
+                            .autoResizing(maxSize: 12.scaled(appContext))
                     }
-                    Spacer(minLength: 10.scaled())
+                    Spacer(minLength: 10.scaled(appContext))
                     Text(Shared().language == "en" ? "More Info & Actions" : "更多資訊及功能")
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(1)
-                        .autoResizing(maxSize: 14.scaled())
-                    Spacer(minLength: 5.scaled())
+                        .autoResizing(maxSize: 14.scaled(appContext))
+                    Spacer(minLength: 5.scaled(appContext))
                     if stop.kmbBbiId != nil {
                         KmbBbiButton(kmbBbiId: stop.kmbBbiId!)
                     }
-                    Spacer(minLength: 5.scaled())
+                    Spacer(minLength: 5.scaled(appContext))
                     SearchNearbyButton()
-                    Spacer(minLength: 5.scaled())
+                    Spacer(minLength: 5.scaled(appContext))
                     OpenOnMapsButton(stopName: stop.name, lat: stop.location.lat, lng: stop.location.lng)
-                    Spacer(minLength: 10.scaled())
+                    Spacer(minLength: 10.scaled(appContext))
                     Text(Shared().language == "en" ? "Set Favourite Routes" : "設置最喜愛路線")
-                        .font(.system(size: 14.scaled()))
+                        .font(.system(size: 14.scaled(appContext)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20.scaled())
+                        .padding(.horizontal, 20.scaled(appContext))
                     Text(Shared().language == "en" ? "Section to set/clear this route stop from the corresponding indexed favourite route" : "以下可設置/清除對應的最喜愛路線")
-                        .font(.system(size: 10.scaled()))
+                        .font(.system(size: 10.scaled(appContext)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20.scaled())
-                    Spacer().frame(height: 5.scaled())
+                        .padding(.horizontal, 20.scaled(appContext))
+                    Spacer().frame(height: 5.scaled(appContext))
                     Text(Shared().language == "en" ? "Tap to set this stop\nLong press to set to display any closes stop of the route" : "點擊設置此站 長按設置顯示路線最近的任何站")
-                        .font(.system(size: 10.scaled(), weight: .bold))
+                        .font(.system(size: 10.scaled(appContext), weight: .bold))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20.scaled())
-                    Spacer(minLength: 10.scaled())
+                        .padding(.horizontal, 20.scaled(appContext))
+                    Spacer(minLength: 10.scaled(appContext))
                     Button(action: {
                         let target = (1...30).first {
                             let favState = getFavState(favoriteIndex: $0, stopId: stopId, co: co, index: index, stop: stop, route: route)
@@ -104,16 +107,16 @@ struct EtaMenuView: View {
                         Image(systemName: "chevron.down")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 15.scaled(), height: 15.scaled())
-                            .padding(3.scaled())
+                            .frame(width: 15.scaled(appContext), height: 15.scaled(appContext))
+                            .padding(3.scaled(appContext))
                             .foregroundColor(colorInt(0xFFFFB700).asColor())
                     }
-                    .frame(width: 50.scaled(), height: 30.scaled())
+                    .frame(width: 50.scaled(appContext), height: 30.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
-                    Spacer(minLength: 10.scaled())
+                    Spacer(minLength: 10.scaled(appContext))
                     ForEach(1..<(Int(truncating: maxFavItems.state) + 1), id: \.self) { index in
                         FavButton(favIndex: index).id(index)
-                        Spacer(minLength: 5.scaled())
+                        Spacer(minLength: 5.scaled(appContext))
                     }
                 }
             }
@@ -124,19 +127,19 @@ struct EtaMenuView: View {
         Button(action: {
             openMaps(lat: lat, lng: lng, label: stopName.get(language: Shared().language))
         }) {
-            HStack(spacing: 2.scaled()) {
+            HStack(spacing: 2.scaled(appContext)) {
                 ZStack {
                     Circle()
                         .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
-                        .frame(width: 30.scaled(), height: 30.scaled())
+                        .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                     Image(systemName: "map")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 17.scaled(), height: 17.scaled())
+                        .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                         .foregroundColor(colorInt(0xFF4CFF00).asColor())
                 }
                 Text(Shared().language == "en" ? "Open Stop Location on Maps" : "在地圖上顯示巴士站位置")
-                    .font(.system(size: 14.5.scaled(), weight: .bold))
+                    .font(.system(size: 14.5.scaled(appContext), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -144,17 +147,17 @@ struct EtaMenuView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(10.scaled())
+            .padding(10.scaled(appContext))
         }.background(
             Image("open_map_background")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 178.0.scaled(), height: 47.0.scaled())
+                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
                 .brightness(-0.4)
                 .clipShape(RoundedRectangle(cornerRadius: 50))
         )
         .buttonStyle(PlainButtonStyle())
-        .frame(width: 178.0.scaled(), height: 47.0.scaled())
+        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 50))
     }
     
@@ -163,19 +166,19 @@ struct EtaMenuView: View {
             let url = "https://app.kmb.hk/app1933/BBI/map/\(kmbBbiId).jpg"
             openUrl(link: url)
         }) {
-            HStack(spacing: 2.scaled()) {
+            HStack(spacing: 2.scaled(appContext)) {
                 ZStack {
                     Circle()
                         .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
-                        .frame(width: 30.scaled(), height: 30.scaled())
+                        .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                     Image(systemName: "figure.walk")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 17.scaled(), height: 17.scaled())
+                        .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                         .foregroundColor(colorInt(0xFFFF0000).asColor())
                 }
                 Text(Shared().language == "en" ? "Open KMB BBI Layout Map" : "顯示九巴轉車站位置圖")
-                    .font(.system(size: 14.5.scaled(), weight: .bold))
+                    .font(.system(size: 14.5.scaled(appContext), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -183,17 +186,17 @@ struct EtaMenuView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(10.scaled())
+            .padding(10.scaled(appContext))
         }.background(
             Image("kmb_bbi_background")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 178.0.scaled(), height: 47.0.scaled())
+                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
                 .brightness(-0.4)
                 .clipShape(RoundedRectangle(cornerRadius: 50))
         )
         .buttonStyle(PlainButtonStyle())
-        .frame(width: 178.0.scaled(), height: 47.0.scaled())
+        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 50))
     }
     
@@ -204,21 +207,21 @@ struct EtaMenuView: View {
             data["lat"] = stop.location.lat
             data["lng"] = stop.location.lng
             data["exclude"] = [route.routeNumber]
-            appContext().appendStack(screen: AppScreen.nearby, mutableData: data)
+            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.nearby, data))
         }) {
-            HStack(spacing: 2.scaled()) {
+            HStack(spacing: 2.scaled(appContext)) {
                 ZStack {
                     Circle()
                         .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
-                        .frame(width: 30.scaled(), height: 30.scaled())
+                        .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                     Image(systemName: "bus.doubledecker")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 17.scaled(), height: 17.scaled())
+                        .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                         .foregroundColor(colorInt(0xFFFFE15E).asColor())
                 }
                 Text(Shared().language == "en" ? "Find Nearby Interchanges" : "尋找附近轉乘路線")
-                    .font(.system(size: 14.5.scaled(), weight: .bold))
+                    .font(.system(size: 14.5.scaled(appContext), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -226,23 +229,23 @@ struct EtaMenuView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(10.scaled())
+            .padding(10.scaled(appContext))
         }.background(
             Image("interchange_background")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 178.0.scaled(), height: 47.0.scaled())
+                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
                 .brightness(-0.4)
                 .clipShape(RoundedRectangle(cornerRadius: 50))
         )
         .buttonStyle(PlainButtonStyle())
-        .frame(width: 178.0.scaled(), height: 47.0.scaled())
+        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 50))
     }
     
     func getFavState(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route) -> FavouriteRouteState {
-        if (registry().hasFavouriteRouteStop(favoriteIndex: favoriteIndex.asInt32())) {
-            return registry().isFavouriteRouteStop(favoriteIndex: favoriteIndex.asInt32(), stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route) ? FavouriteRouteState.usedSelf : FavouriteRouteState.usedOther
+        if (registry(appContext).hasFavouriteRouteStop(favoriteIndex: favoriteIndex.asInt32())) {
+            return registry(appContext).isFavouriteRouteStop(favoriteIndex: favoriteIndex.asInt32(), stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route) ? FavouriteRouteState.usedSelf : FavouriteRouteState.usedOther
         }
         return FavouriteRouteState.notUsed
     }
@@ -257,21 +260,21 @@ struct EtaMenuView: View {
         }()
         let handleClick: (FavouriteStopMode) -> Void = {
             if state == FavouriteRouteState.usedSelf {
-                registry().clearFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), context: appContext())
+                registry(appContext).clearFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), context: appContext)
             } else {
-                registry().setFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route, favouriteStopMode: $0, context: appContext())
+                registry(appContext).setFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route, favouriteStopMode: $0, context: appContext)
             }
             favStates[favIndex] = getFavState(favoriteIndex: favIndex, stopId: stopId, co: co, index: index, stop: stop, route: route)
         }
         return Button(action: {}) {
-            HStack(spacing: 2.scaled()) {
+            HStack(spacing: 2.scaled(appContext)) {
                 ZStack() {
                     Circle()
                         .fill(state == FavouriteRouteState.usedSelf ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
-                        .frame(width: 30.scaled(), height: 30.scaled())
+                        .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                     Text("\(favIndex)")
-                        .font(.system(size: 17.scaled(), weight: .bold))
-                        .frame(width: 17.scaled(), height: 17.scaled())
+                        .font(.system(size: 17.scaled(appContext), weight: .bold))
+                        .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                         .foregroundColor({
                             switch state {
                             case FavouriteRouteState.usedOther:
@@ -287,7 +290,7 @@ struct EtaMenuView: View {
                     switch state {
                     case FavouriteRouteState.notUsed:
                         Text(Shared().language == "en" ? "No Route Stop Selected" : "未有設置路線巴士站")
-                            .font(.system(size: 15.scaled(), weight: .bold))
+                            .font(.system(size: 15.scaled(appContext), weight: .bold))
                             .foregroundColor(colorInt(0xFFB9B9B9).asColor())
                             .lineLimit(2)
                             .lineSpacing(0)
@@ -313,9 +316,9 @@ struct EtaMenuView: View {
                         let color = currentRoute.co.getColor(routeNumber: currentRoute.route.routeNumber, elseColor: 0xFFFFFFFF as Int64).asColor()
                         MarqueeText(
                             text: "\(coDisplay) \(routeNumberDisplay)",
-                            font: UIFont.systemFont(ofSize: 15.scaled(), weight: .bold),
-                            leftFade: 8.scaled(),
-                            rightFade: 8.scaled(),
+                            font: UIFont.systemFont(ofSize: 15.scaled(appContext), weight: .bold),
+                            leftFade: 8.scaled(appContext),
+                            rightFade: 8.scaled(appContext),
                             startDelay: 2,
                             alignment: .bottomLeading
                         )
@@ -326,9 +329,9 @@ struct EtaMenuView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         MarqueeText(
                             text: stopName,
-                            font: UIFont.systemFont(ofSize: 15.scaled()),
-                            leftFade: 8.scaled(),
-                            rightFade: 8.scaled(),
+                            font: UIFont.systemFont(ofSize: 15.scaled(appContext)),
+                            leftFade: 8.scaled(appContext),
+                            rightFade: 8.scaled(appContext),
                             startDelay: 2,
                             alignment: .bottomLeading
                         )
@@ -340,7 +343,7 @@ struct EtaMenuView: View {
                     case FavouriteRouteState.usedSelf:
                         let isClosestStopMode = Shared().favoriteRouteStops[KotlinInt(int: favIndex.asInt32())]?.favouriteStopMode == FavouriteStopMode.closest
                         Text(isClosestStopMode ? (Shared().language == "en" ? "Selected as Any Closes Stop on This Route" : "已設置為本路線最近的任何巴士站") : (Shared().language == "en" ? "Selected as This Route Stop" : "已設置為本路線巴士站"))
-                            .font(.system(size: 15.scaled(), weight: .bold))
+                            .font(.system(size: 15.scaled(appContext), weight: .bold))
                             .foregroundColor((isClosestStopMode ? colorInt(0xFFFFE496) : colorInt(0xFFFFFFFF)).asColor())
                             .lineLimit(2)
                             .lineSpacing(0)
@@ -356,7 +359,7 @@ struct EtaMenuView: View {
         }
         .buttonStyle(PlainButtonStyle())
         .background { colorInt(0xFF1A1A1A).asColor() }
-        .frame(width: 178.0.scaled(), height: 47.0.scaled())
+        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 50))
         .simultaneousGesture(
             LongPressGesture()
@@ -373,8 +376,4 @@ struct EtaMenuView: View {
         )
     }
 
-}
-
-#Preview {
-    EtaMenuView(data: [:], storage: KotlinMutableDictionary())
 }
