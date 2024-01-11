@@ -11,6 +11,9 @@ import SwiftUI
 import shared
 import AuthenticationServices
 
+func applicationContext() -> AppContextWatchOS {
+    return AppContextWatchOSKt.applicationContext
+}
 
 func registry(_ appContext: AppContext) -> Registry {
     return Registry.Companion().getInstance(context: appContext)

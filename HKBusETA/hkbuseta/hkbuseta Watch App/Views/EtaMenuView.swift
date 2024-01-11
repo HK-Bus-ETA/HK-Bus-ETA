@@ -261,8 +261,10 @@ struct EtaMenuView: View {
         let handleClick: (FavouriteStopMode) -> Void = {
             if state == FavouriteRouteState.usedSelf {
                 registry(appContext).clearFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), context: appContext)
+                appContext.showToastText(text: Shared().language == "en" ? "Cleared Favourite Route \(favIndex)" : "已清除最喜愛路線\(favIndex)", duration: ToastDuration.short_)
             } else {
                 registry(appContext).setFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route, favouriteStopMode: $0, context: appContext)
+                appContext.showToastText(text: Shared().language == "en" ? "Set Favourite Route \(favIndex)" : "已設置最喜愛路線\(favIndex)", duration: ToastDuration.short_)
             }
             favStates[favIndex] = getFavState(favoriteIndex: favIndex, stopId: stopId, co: co, index: index, stop: stop, route: route)
         }

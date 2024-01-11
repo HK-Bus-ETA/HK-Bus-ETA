@@ -83,6 +83,15 @@ object HistoryStack {
 
 }
 
+data class ToastTextData(val text: String, val duration: ToastDuration)
+
+object ToastTextState {
+
+    @NativeCoroutinesState
+    val toastState: MutableStateFlow<ToastTextData> = MutableStateFlow(ToastTextData("", ToastDuration.SHORT))
+
+}
+
 val applicationContext: AppContextWatchOS = AppContextWatchOS()
 
 private var firebaseImpl: (String, AppBundle) -> Unit = { _, _ -> }
@@ -179,7 +188,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override fun hasConnection(): Boolean {
-        return getTextResponse("https://www.google.com/") != null
+        return getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/checksum.md5") != null
     }
 
     override fun currentBackgroundRestrictions(): BackgroundRestrictionType {
@@ -207,7 +216,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override fun showToastText(text: String, duration: ToastDuration) {
-        throw RuntimeException("Unsupported Platform Operation")
+        ToastTextState.toastState.value = ToastTextData(text, duration)
     }
 
     override fun formatTime(localDateTime: LocalDateTime): String {

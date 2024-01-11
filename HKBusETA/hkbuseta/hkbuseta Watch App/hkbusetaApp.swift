@@ -26,7 +26,17 @@ struct hkbuseta_Watch_AppApp: App {
     
     @StateObject private var historyStackState = FlowStateObservable(defaultValue: HistoryStack().historyStack, nativeFlow: HistoryStack().historyStackFlow)
     
+    let toastTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    @State private var toastText = ""
+    @State private var toastShowTimeLeft = 0.0
+    
+    @StateObject private var toastState = FlowStateObservable(defaultValue: ToastTextState().toastState, nativeFlow: ToastTextState().toastStateFlow)
+    
     init() {
+        initImplementations()
+    }
+    
+    private func initImplementations() {
         HttpResponseUtils_watchosKt.provideGzipBodyAsTextImpl(impl: { data, charset in
             let decompressedData: Data = data.isGzipped ? try! data.gunzipped() : data
             return String(data: decompressedData, encoding: encoding(from: charset))!
@@ -84,6 +94,28 @@ struct hkbuseta_Watch_AppApp: App {
                 if context.screen.needBackButton() {
                     BackButton(context, scrollingScreen: context.screen.isScrollingScreen())
                 }
+                if toastShowTimeLeft > 0 {
+                    Text(toastText)
+                        .multilineTextAlignment(.center)
+                        .autoResizing(maxSize: 17.scaled(applicationContext()))
+                        .padding(10.scaled(applicationContext()))
+                        .background(colorInt(0xFF333333).asColor())
+                        .cornerRadius(10.scaled(applicationContext()))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.clear)
+                        .edgesIgnoringSafeArea(.all)
+                        .transition(.opacity.animation(.linear(duration: 0.4)))
+                        .zIndex(1)
+                }
+            }
+            .onChange(of: toastState.state) { state in
+                self.toastText = state.text
+                self.toastShowTimeLeft = state.duration.seconds()
+            }
+            .onReceive(toastTimer) { _ in
+                if self.toastShowTimeLeft > 0 {
+                    self.toastShowTimeLeft -= 0.1
+                }
             }
         }
     }
@@ -120,7 +152,7 @@ extension View {
     
     func defaultStyle() -> some View {
         return self
-            .transition(AnyTransition.scale.animation(.easeInOut(duration: 0.25)))
+            .transition(.scale.animation(.easeInOut(duration: 0.25)))
             .background { colorInt(0xFF000000).asColor() }
     }
     
@@ -143,6 +175,21 @@ extension AppScreen {
             return true
         default:
             return false
+        }
+    }
+    
+}
+
+extension ToastDuration {
+    
+    func seconds() -> Double {
+        switch self {
+        case ToastDuration.short_:
+            return 3.0
+        case ToastDuration.long_:
+            return 6.0
+        default:
+            return 3.0
         }
     }
     

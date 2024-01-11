@@ -257,6 +257,7 @@ struct FavView: View {
                     if deleteState > 0.0 {
                         if (registry(appContext).hasFavouriteRouteStop(favoriteIndex: favIndex.asInt32())) {
                             registry(appContext).clearFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), context: appContext)
+                            appContext.showToastText(text: Shared().language == "en" ? "Cleared Favourite Route \(favIndex)" : "已清除最喜愛路線\(favIndex)", duration: ToastDuration.short_)
                         }
                         DispatchQueue.main.async {
                             deleteStates.removeValue(forKey: favIndex)

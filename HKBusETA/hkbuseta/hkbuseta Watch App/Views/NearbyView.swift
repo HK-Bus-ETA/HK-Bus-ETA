@@ -100,10 +100,8 @@ struct NearbyView: View {
                 handleLocation()
             }
         }
-        .alert(Shared().language == "en" ? "Location Access Permission Denied" : "位置存取權限被拒絕", isPresented: $denied) {
-            Button("OK", role: .cancel) {
-                appContext.finish()
-            }
+        .onChange(of: denied) { denied in
+            appContext.showToastText(text: Shared().language == "en" ? "Location Access Permission Denied" : "位置存取權限被拒絕", duration: ToastDuration.short_)
         }
     }
     
