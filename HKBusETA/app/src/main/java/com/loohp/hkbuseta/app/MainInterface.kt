@@ -64,27 +64,19 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.Operator
-import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.scaledSize
-import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlin.math.absoluteValue
 
 
-@Suppress("NAME_SHADOWING")
 @Composable
 fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, index: Int?, stop: ImmutableState<Any?>, route: ImmutableState<Any?>, listStopRoute: ImmutableState<ByteArray?>, listStopScrollToStop: String?, listStopShowEta: Boolean?, listStopIsAlightReminder: Boolean?, queryKey: String?, queryRouteNumber: String?, queryBound: String?, queryCo: Operator?, queryDest: String?, queryGMBRegion: GMBRegion?, queryStop: String?, queryStopIndex: Int, queryStopDirectLaunch: Boolean) {
     val state by remember { Registry.getInstance(instance).also {
@@ -94,149 +86,10 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
     LaunchedEffect (state) {
         when (state) {
             Registry.State.READY -> {
-                CoroutineScope(Dispatchers.IO).launch {
-                    val stop = stop.value
-                    val route = route.value
-                    val listStopRoute = listStopRoute.value
-                    var queryRouteNumber = queryRouteNumber
-                    var queryCo = queryCo
-                    var queryBound = queryBound
-                    var queryGMBRegion = queryGMBRegion
-
-                    if (stopId != null && co != null && (stop is String || stop is ByteArray) && (route is String || route is ByteArray)) {
-                        val routeParsed = if (route is String) Route.deserialize(Json.decodeFromString<JsonObject>(route)) else runBlocking { Route.deserialize(
-                            ByteReadChannel(route as ByteArray)
-                        ) }
-                        Registry.getInstance(instance).findRoutes(routeParsed.routeNumber, true) { it ->
-                            val bound = it.bound
-                            if (!bound.containsKey(co) || bound[co] != routeParsed.bound[co]) {
-                                return@findRoutes false
-                            }
-                            val stops = it.stops[co]?: return@findRoutes false
-                            return@findRoutes stops.contains(stopId)
-                        }.firstOrNull()?.let {
-                            val intent = AppIntent(instance, AppScreen.LIST_STOPS)
-                            intent.putExtra("shouldRelaunch", false)
-                            intent.putExtra("route", it)
-                            intent.putExtra("scrollToStop", stopId)
-                            instance.startActivity(intent)
-                        }
-
-                        val intent = AppIntent(instance, AppScreen.ETA)
-                        intent.putExtra("shouldRelaunch", false)
-                        intent.putExtra("stopId", stopId)
-                        intent.putExtra("co", co.name)
-                        intent.putExtra("index", index!!)
-                        if (stop is String) {
-                            intent.putExtra("stopStr", stop)
-                        } else {
-                            intent.putExtra("stop", stop as ByteArray)
-                        }
-                        if (route is String) {
-                            intent.putExtra("routeStr", route)
-                        } else {
-                            intent.putExtra("route", route as ByteArray)
-                        }
-                        instance.startActivity(intent)
-                        instance.finish()
-                    } else if (listStopRoute != null && listStopScrollToStop != null && listStopShowEta != null && listStopIsAlightReminder != null) {
-                        val intent = AppIntent(instance, AppScreen.LIST_STOPS)
-                        intent.putExtra("route", listStopRoute)
-                        intent.putExtra("scrollToStop", listStopScrollToStop)
-                        intent.putExtra("showEta", listStopShowEta)
-                        intent.putExtra("isAlightReminder", listStopIsAlightReminder)
-                        instance.startActivity(intent)
-                        instance.finish()
-                    } else if (queryRouteNumber != null || queryKey != null) {
-                        if (queryKey != null) {
-                            val routeNumber = Regex("^([0-9a-zA-Z]+)").find(queryKey)?.groupValues?.getOrNull(1)
-                            val nearestRoute = Registry.getInstance(instance).findRouteByKey(queryKey, routeNumber)
-                            queryRouteNumber = nearestRoute!!.routeNumber
-                            queryCo = if (nearestRoute.isKmbCtbJoint) Operator.KMB else nearestRoute.co[0]
-                            queryBound = if (queryCo == Operator.NLB) nearestRoute.nlbId else nearestRoute.bound[queryCo]
-                            queryGMBRegion = nearestRoute.gmbRegion
-                        }
-
+                Shared.handleLaunchOptions(instance, stopId, co, index, stop.value, route.value, listStopRoute.value, listStopScrollToStop, listStopShowEta, listStopIsAlightReminder, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch) {
+                    AndroidShared.restoreCurrentScreenOrRun(instance, true) {
                         instance.startActivity(AppIntent(instance, AppScreen.TITLE))
-
-                        val result = Registry.getInstance(instance).findRoutes(queryRouteNumber?: "", true)
-                        if (result.isNotEmpty()) {
-                            var filteredResult = result.asSequence().filter {
-                                return@filter when (queryCo) {
-                                    Operator.NLB -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route!!.nlbId == queryBound)
-                                    Operator.GMB -> {
-                                        val r = it.route!!
-                                        (queryCo == null || it.co == queryCo) && (queryBound == null || r.bound[queryCo] == queryBound) && r.gmbRegion == queryGMBRegion
-                                    }
-                                    else -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route!!.bound[queryCo] == queryBound)
-                                }
-                            }.toList()
-                            if (queryDest != null) {
-                                val destFiltered = filteredResult.asSequence().filter {
-                                    val dest = it.route!!.dest
-                                    return@filter queryDest == dest.zh || queryDest == dest.en
-                                }.toList()
-                                if (destFiltered.isNotEmpty()) {
-                                    filteredResult = destFiltered
-                                }
-                            }
-                            if (filteredResult.isEmpty()) {
-                                val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
-                                intent.putExtra("result", result.asSequence().map {
-                                    val clone = it.deepClone()
-                                    clone.strip()
-                                    clone.serialize()
-                                }.toJsonArray().toString())
-                                instance.startActivity(intent)
-                            } else {
-                                val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
-                                intent.putExtra("result", filteredResult.asSequence().map {
-                                    val clone = it.deepClone()
-                                    clone.strip()
-                                    clone.serialize()
-                                }.toJsonArray().toString())
-                                instance.startActivity(intent)
-
-                                val it = filteredResult[0]
-                                val meta = when (it.co) {
-                                    Operator.GMB -> it.route!!.gmbRegion!!.name
-                                    Operator.NLB -> it.route!!.nlbId
-                                    else -> ""
-                                }
-                                Registry.getInstance(instance).addLastLookupRoute(queryRouteNumber, it.co, meta, instance)
-
-                                if (queryStop != null) {
-                                    val intent2 = AppIntent(instance, AppScreen.LIST_STOPS)
-                                    intent2.putExtra("route", it)
-                                    intent2.putExtra("scrollToStop", queryStop)
-                                    instance.startActivity(intent2)
-
-                                    if (queryStopDirectLaunch) {
-                                        val stops = Registry.getInstance(instance).getAllStops(queryRouteNumber!!, queryBound!!, queryCo!!, queryGMBRegion)
-                                        stops.withIndex().filter { it.value.stopId == queryStop }.minByOrNull { (queryStopIndex - it.index).absoluteValue }?.let { r ->
-                                            val (i, stopData) = r
-                                            val intent3 = AppIntent(instance, AppScreen.ETA)
-                                            intent3.putExtra("stopId", stopId)
-                                            intent3.putExtra("co", it.co.name)
-                                            intent3.putExtra("index", i + 1)
-                                            intent3.putExtra("stop", stopData.stop)
-                                            intent3.putExtra("route", it.route!!)
-                                            instance.startActivity(intent3)
-                                        }
-                                    }
-                                } else if (filteredResult.size == 1) {
-                                    val intent2 = AppIntent(instance, AppScreen.LIST_STOPS)
-                                    intent2.putExtra("route", it)
-                                    instance.startActivity(intent2)
-                                }
-                            }
-                        }
                         instance.finishAffinity()
-                    } else {
-                        AndroidShared.restoreCurrentScreenOrRun(instance, true) {
-                            instance.startActivity(AppIntent(instance, AppScreen.TITLE))
-                            instance.finishAffinity()
-                        }
                     }
                 }
             }
