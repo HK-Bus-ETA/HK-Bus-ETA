@@ -107,17 +107,20 @@ struct ListStopsView: View {
                             .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
                         Text(resolvedDestName.get(language: Shared().language))
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                            .multilineTextAlignment(.center)
                             .lineLimit(2)
                             .autoResizing(maxSize: 12.scaled(appContext))
                         if !specialOrigs.isEmpty {
                             Text(Shared().language == "en" ? ("Special From " + specialOrigs.map { $0.en }.joined(separator: "/")) : ("特別班 從" + specialOrigs.map { $0.zh }.joined(separator: "/") + "開出"))
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                                .multilineTextAlignment(.center)
                                 .lineLimit(2)
                                 .autoResizing(maxSize: 12.scaled(appContext))
                         }
                         if !specialDests.isEmpty {
                             Text(Shared().language == "en" ? ("Special To " + specialDests.map { $0.en }.joined(separator: "/")) : ("特別班 往" + specialDests.map { $0.zh }.joined(separator: "/")))
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                                .multilineTextAlignment(.center)
                                 .lineLimit(2)
                                 .autoResizing(maxSize: 12.scaled(appContext))
                         }
