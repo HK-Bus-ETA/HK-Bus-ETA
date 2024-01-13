@@ -57,6 +57,7 @@ import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
+import com.loohp.hkbuseta.common.utils.IOSerializable
 import com.loohp.hkbuseta.services.AlightReminderService
 import com.loohp.hkbuseta.tiles.EtaTileConfigureActivity
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
@@ -362,6 +363,7 @@ fun AppBundle.toAndroidBundle(): Bundle? {
     return Bundle().apply {
         for ((key, value) in data) {
             when (value) {
+                is IOSerializable -> putByteArray(key, value.toByteArray())
                 is Boolean -> putBoolean(key, value)
                 is Byte -> putByte(key, value)
                 is Char -> putChar(key, value)

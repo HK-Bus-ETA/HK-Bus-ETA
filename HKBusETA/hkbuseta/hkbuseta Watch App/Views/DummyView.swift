@@ -10,15 +10,16 @@ import shared
 
 struct DummyView: View {
     
-    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
-        
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.appContext = appContext
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            appContext.finish()
+        }
     }
     
     var body: some View {
         Text("")
     }
-}
-
-#Preview {
-    DummyView(data: [:], storage: KotlinMutableDictionary())
 }

@@ -30,39 +30,41 @@ struct FavView: View {
     @State private var favRouteStops: [Int: FavouriteRouteStop] = [:]
     @State private var deleteStates: [Int: Double] = [:]
     
-    init(data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
-
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
+        self.appContext = appContext
     }
     
     var body: some View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
-                VStack(alignment: .center, spacing: 1.scaled()) {
-                    Spacer(minLength: 10.scaled())
+                VStack(alignment: .center, spacing: 1.scaled(appContext)) {
+                    Spacer(minLength: 10.scaled(appContext))
                     VStack(alignment: .center) {
                         Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
-                            .autoResizing(maxSize: 23.scaled(), weight: .bold)
+                            .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
                     }
-                    Spacer(minLength: 10.scaled())
+                    Spacer(minLength: 10.scaled(appContext))
                     if showRouteListViewButton {
                         Button(action: {
                             let data = newAppDataConatiner()
                             data["usingGps"] = !locationManager.authorizationDenied
-                            appContext().appendStack(screen: AppScreen.favRouteListView, mutableData: data)
+                            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.favRouteListView, data))
                         }) {
                             Text(Shared().language == "en" ? "Route List View" : "路線一覽列表")
-                                .font(.system(size: 17.scaled(), weight: .bold))
+                                .font(.system(size: 17.scaled(appContext), weight: .bold))
                         }
-                        .frame(width: 160.scaled(), height: 35.scaled())
+                        .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
                         .clipShape(RoundedRectangle(cornerRadius: 25))
                         .edgesIgnoringSafeArea(.all)
-                        Spacer(minLength: 10.scaled())
+                        Spacer(minLength: 10.scaled(appContext))
                     }
                     ForEach(1..<(Int(truncating: maxFavItems.state) + 1), id: \.self) { index in
                         FavButton(favIndex: index).id(index)
-                        Spacer(minLength: 5.scaled())
+                        Spacer(minLength: 5.scaled(appContext))
                     }
                 }
             }
@@ -83,7 +85,7 @@ struct FavView: View {
                     return s
                 }()
                 if currentFavRouteStop != nil {
-                    fetchEta(stopId: currentFavRouteStop!.stopId, stopIndex: currentFavRouteStop!.index, co: currentFavRouteStop!.co, route: currentFavRouteStop!.route) { etaResults.set(key: favIndex.asKt(), result: $0) }
+                    fetchEta(appContext: appContext, stopId: currentFavRouteStop!.stopId, stopIndex: currentFavRouteStop!.index, co: currentFavRouteStop!.co, route: currentFavRouteStop!.route) { etaResults.set(key: favIndex.asKt(), result: $0) }
                 }
             }
         }
@@ -133,13 +135,13 @@ struct FavView: View {
                     ZStack {
                         Circle()
                             .fill(currentFavRouteStop != nil ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
-                            .frame(width: 30.scaled(), height: 30.scaled())
+                            .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                             .overlay {
                                 if deleteState > 0.0 {
                                     Circle()
                                         .trim(from: 0.0, to: deleteState / 5.0)
                                         .rotation(.degrees(-90))
-                                        .stroke(colorInt(0xFFFF0000).asColor(), style: StrokeStyle(lineWidth: 2.scaled(), lineCap: .butt))
+                                        .stroke(colorInt(0xFFFF0000).asColor(), style: StrokeStyle(lineWidth: 2.scaled(appContext), lineCap: .butt))
                                         .animation(.linear, value: deleteState)
                                 }
                             }
@@ -147,12 +149,12 @@ struct FavView: View {
                             Image(systemName: "xmark")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(width: 13.scaled(), height: 13.scaled())
+                                .frame(width: 13.scaled(appContext), height: 13.scaled(appContext))
                                 .foregroundColor(colorInt(0xFFFF0000).asColor())
                         } else {
                             Text("\(favIndex)")
-                                .font(.system(size: 17.scaled(), weight: .bold))
-                                .frame(width: 17.scaled(), height: 17.scaled())
+                                .font(.system(size: 17.scaled(appContext), weight: .bold))
+                                .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                                 .foregroundColor(currentFavRouteStop != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor())
                         }
                     }
@@ -160,15 +162,15 @@ struct FavView: View {
                 .overlay(alignment: .leading) {
                     if currentFavRouteStop != nil {
                         ETAElement(favIndex: favIndex, currentFavRouteStop: currentFavRouteStop!)
-                            .offset(y: (Shared().language == "en" ? 34.5 : 32.5).scaled())
+                            .offset(y: (Shared().language == "en" ? 34.5 : 32.5).scaled(appContext))
                     }
                 }
                 .padding(10)
-                VStack(alignment: .leading, spacing: 1.scaled()) {
+                VStack(alignment: .leading, spacing: 1.scaled(appContext)) {
                     if currentFavRouteStop == nil {
                         HStack(alignment: .center) {
                             Text(Shared().language == "en" ? "No Route Selected" : "未有設置路線")
-                                .font(.system(size: 16.scaled(), weight: .bold))
+                                .font(.system(size: 16.scaled(appContext), weight: .bold))
                                 .foregroundColor(colorInt(0xFF505050).asColor())
                                 .lineLimit(2)
                                 .lineSpacing(0)
@@ -177,14 +179,14 @@ struct FavView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }.frame(maxHeight: .infinity)
                     } else {
-                        let resolvedStop = currentFavRouteStop!.resolveStop(context: appContext()) { origin?.location }
+                        let resolvedStop = currentFavRouteStop!.resolveStop(context: appContext) { origin?.location }
                         let stopName = resolvedStop.stop.name
                         let index = resolvedStop.index
                         let route = resolvedStop.route
                         let co = currentFavRouteStop!.co
                         let routeNumber = route.routeNumber
                         let gpsStop = currentFavRouteStop!.favouriteStopMode.isRequiresLocation
-                        let destName = registry().getStopSpecialDestinations(stopId: currentFavRouteStop!.stopId, co: currentFavRouteStop!.co, route: route, prependTo: true)
+                        let destName = registry(appContext).getStopSpecialDestinations(stopId: currentFavRouteStop!.stopId, co: currentFavRouteStop!.co, route: route, prependTo: true)
                         let color = currentFavRouteStop!.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64)
                         let operatorName = currentFavRouteStop!.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, language: Shared().language, elseName: "???")
                         let mainText = "\(operatorName) \(currentFavRouteStop!.co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))"
@@ -201,9 +203,9 @@ struct FavView: View {
                         VStack(alignment: .leading, spacing: 0) {
                             MarqueeText(
                                 text: mainText,
-                                font: UIFont.systemFont(ofSize: 19.scaled(), weight: .bold),
-                                leftFade: 8.scaled(),
-                                rightFade: 8.scaled(),
+                                font: UIFont.systemFont(ofSize: 19.scaled(appContext), weight: .bold),
+                                leftFade: 8.scaled(appContext),
+                                rightFade: 8.scaled(appContext),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )
@@ -211,20 +213,20 @@ struct FavView: View {
                             .lineLimit(1)
                             MarqueeText(
                                 text: routeText,
-                                font: UIFont.systemFont(ofSize: 17.scaled()),
-                                leftFade: 8.scaled(),
-                                rightFade: 8.scaled(),
+                                font: UIFont.systemFont(ofSize: 17.scaled(appContext)),
+                                leftFade: 8.scaled(appContext),
+                                rightFade: 8.scaled(appContext),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )
                             .foregroundColor(.white)
                             .lineLimit(1)
-                            Spacer(minLength: 3.scaled())
+                            Spacer(minLength: 3.scaled(appContext))
                             MarqueeText(
                                 text: subText,
-                                font: UIFont.systemFont(ofSize: 14.scaled()),
-                                leftFade: 8.scaled(),
-                                rightFade: 8.scaled(),
+                                font: UIFont.systemFont(ofSize: 14.scaled(appContext)),
+                                leftFade: 8.scaled(appContext),
+                                rightFade: 8.scaled(appContext),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )
@@ -238,7 +240,7 @@ struct FavView: View {
         .buttonStyle(PlainButtonStyle())
         .background { deleteState > 0.0 ? colorInt(0xFF633A3A).asColor() : colorInt(0xFF1A1A1A).asColor() }
         .animation(.linear(duration: 0.25), value: deleteState)
-        .frame(minWidth: 178.0.scaled(), maxWidth: 178.0.scaled(), minHeight: 47.0.scaled())
+        .frame(minWidth: 178.0.scaled(appContext), maxWidth: 178.0.scaled(appContext), minHeight: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .simultaneousGesture(
             LongPressGesture()
@@ -253,8 +255,9 @@ struct FavView: View {
             TapGesture()
                 .onEnded { _ in
                     if deleteState > 0.0 {
-                        if (registry().hasFavouriteRouteStop(favoriteIndex: favIndex.asInt32())) {
-                            registry().clearFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), context: appContext())
+                        if (registry(appContext).hasFavouriteRouteStop(favoriteIndex: favIndex.asInt32())) {
+                            registry(appContext).clearFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), context: appContext)
+                            appContext.showToastText(text: Shared().language == "en" ? "Cleared Favourite Route \(favIndex)" : "已清除最喜愛路線\(favIndex)", duration: ToastDuration.short_)
                         }
                         DispatchQueue.main.async {
                             deleteStates.removeValue(forKey: favIndex)
@@ -263,12 +266,12 @@ struct FavView: View {
                     } else {
                         if currentFavRouteStop != nil {
                             let co = currentFavRouteStop!.co
-                            let resolvedStop = currentFavRouteStop!.resolveStop(context: appContext()) { origin?.location }
+                            let resolvedStop = currentFavRouteStop!.resolveStop(context: appContext) { origin?.location }
                             let index = resolvedStop.index
                             let stopId = resolvedStop.stopId
                             let stop = resolvedStop.stop
                             let route = resolvedStop.route
-                            let entry = registry().findRoutes(input: route.routeNumber, exact: true, predicate: {
+                            let entry = registry(appContext).findRoutes(input: route.routeNumber, exact: true, predicate: {
                                 let bound = $0.bound
                                 if !bound.keys.contains(where: { $0 == co }) || bound[co] != route.bound[co] {
                                     return false.asKt()
@@ -283,7 +286,7 @@ struct FavView: View {
                                 let data = newAppDataConatiner()
                                 data["route"] = entry[0]
                                 data["scrollToStop"] = stopId
-                                appContext().appendStack(screen: AppScreen.listStops, mutableData: data)
+                                appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listStops, data))
                             }
                             
                             let data = newAppDataConatiner()
@@ -292,7 +295,7 @@ struct FavView: View {
                             data["index"] = index
                             data["stop"] = stop
                             data["route"] = route
-                            appContext().appendStack(screen: AppScreen.eta, mutableData: data)
+                            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.eta, data))
                         }
                     }
                 }
@@ -301,12 +304,12 @@ struct FavView: View {
     
     func ETAElement(favIndex: Int, currentFavRouteStop: FavouriteRouteStop) -> some View {
         Group {
-            FavEtaView(etaState: etaResults.getState(key: favIndex.asKt()))
+            FavEtaView(appContext: appContext, etaState: etaResults.getState(key: favIndex.asKt()))
             Text("")
         }
         .onAppear {
             etaActive.append(favIndex)
-            fetchEta(stopId: currentFavRouteStop.stopId, stopIndex: currentFavRouteStop.index, co: currentFavRouteStop.co, route: currentFavRouteStop.route) { etaResults.set(key: favIndex.asKt(), result: $0) }
+            fetchEta(appContext: appContext, stopId: currentFavRouteStop.stopId, stopIndex: currentFavRouteStop.index, co: currentFavRouteStop.co, route: currentFavRouteStop.route) { etaResults.set(key: favIndex.asKt(), result: $0) }
         }
         .onDisappear {
             etaActive.removeAll(where: { $0 == favIndex })
@@ -319,7 +322,10 @@ struct FavEtaView: View {
     
     @StateObject private var etaState: FlowStateObservable<Registry.ETAQueryResult?>
     
-    init(etaState: ETAResultsState) {
+    private let appContext: AppActiveContextWatchOS
+    
+    init(appContext: AppActiveContextWatchOS, etaState: ETAResultsState) {
+        self.appContext = appContext
         self._etaState = StateObject(wrappedValue: FlowStateObservable(defaultValue: etaState.state, nativeFlow: etaState.stateFlow))
     }
     
@@ -331,22 +337,22 @@ struct FavEtaView: View {
                 if !(0..<60).contains(eta.nextScheduledBus) {
                     if eta.isMtrEndOfLine {
                         Image(systemName: "arrow.forward.to.line.circle")
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(appContext)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else if (eta.isTyphoonSchedule) {
                         Image(systemName: "hurricane")
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(appContext)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else {
                         Image(systemName: "clock")
-                            .font(.system(size: 17.scaled()))
+                            .font(.system(size: 17.scaled(appContext)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     }
                 } else {
                     let shortText = eta.firstLine.shortText
                     let text1 = shortText.first
                     let text2 = shortText.second
-                    let text = text1.asAttributedString(fontSize: 17.scaled()) + text2.asAttributedString(fontSize: 8.scaled())
+                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext)) + text2.asAttributedString(fontSize: 8.scaled(appContext))
                     Text(text)
                         .multilineTextAlignment(.leading)
                         .lineSpacing(0)
@@ -358,8 +364,4 @@ struct FavEtaView: View {
         }
     }
     
-}
-
-#Preview {
-    FavView(data: [:], storage: KotlinMutableDictionary())
 }
