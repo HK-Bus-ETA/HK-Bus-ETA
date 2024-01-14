@@ -26,8 +26,11 @@ import co.touchlab.stately.concurrency.AtomicReference
 import co.touchlab.stately.concurrency.Lock
 import co.touchlab.stately.concurrency.value
 import co.touchlab.stately.concurrency.withLock
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.Platform
 import com.loohp.hkbuseta.common.appcontext.platform
+import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.resolveStop
 
 
 enum class TileUseState {
@@ -53,11 +56,15 @@ object Tiles {
         }
     }
 
-    fun getEtaTileConfigurationsIds(): List<Int> {
+    fun getSortedEtaTileConfigurationsIds(context: AppContext, originGetter: () -> Coordinates?): List<Int> {
         return etaTileConfigurations.keys.toMutableList().apply {
             if (platform() == Platform.WEAROS) {
                 (0..8).forEach { add(it or Int.MIN_VALUE) }
             }
+        }.apply {
+            val origin = originGetter.invoke()?: return@apply
+            val distances = associateWith { id -> getEtaTileConfiguration(id).minBy { Shared.favoriteRouteStops[it]?.resolveStop(context) { origin }?.stop?.location?.distance(origin)?: Double.MAX_VALUE } }
+            sortBy { distances[it] }
         }
     }
 

@@ -107,13 +107,13 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.TileUseState
 import com.loohp.hkbuseta.common.shared.Tiles
+import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
-import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asImmutableState

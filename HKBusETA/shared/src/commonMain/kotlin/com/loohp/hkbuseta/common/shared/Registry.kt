@@ -820,12 +820,12 @@ class Registry {
         val date = hongKongTime.date
         val isHoliday = weekday == DayOfWeek.SATURDAY || weekday == DayOfWeek.SUNDAY || DATA!!.dataSheet.holidays.contains(date)
         return NearbyRoutesResult(nearbyRoutes.values.asSequence().sortedWith(compareBy({ a ->
-            val route: Route = a.route!!
+            val route = a.route!!
             val routeNumber = route.routeNumber
             val bound = route.bound
             val pa = routeNumber[0].toString()
             val sa = routeNumber[routeNumber.length - 1].toString()
-            var na: Int = IntUtils.parseOrZero(routeNumber.replace(Regex("[^0-9]"), ""))
+            var na = IntUtils.parseOrZero(routeNumber.replace(Regex("[^0-9]"), ""))
             if (bound.containsKey(Operator.GMB)) {
                 na += 1000
             } else if (bound.containsKey(Operator.MTR)) {
@@ -846,7 +846,7 @@ class Registry {
         { a -> IntUtils.parseOrZero(a.route!!.serviceType) },
         { a -> a.co },
         { a ->
-            val route: Route = a.route!!
+            val route = a.route!!
             val bound = route.bound
             if (bound.containsKey(Operator.MTR)) {
                 return@compareBy -Shared.getMtrLineSortingIndex(route.routeNumber)

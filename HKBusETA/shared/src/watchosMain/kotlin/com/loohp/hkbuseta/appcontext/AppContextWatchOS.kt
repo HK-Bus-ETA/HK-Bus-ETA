@@ -69,7 +69,7 @@ import platform.darwin.dispatch_get_main_queue
 object HistoryStack {
 
     @NativeCoroutinesState
-    val historyStack: MutableStateFlow<List<AppActiveContextWatchOS>> = MutableStateFlow(listOf(AppActiveContextWatchOS.DEFAULT_ENTRY))
+    val historyStack: MutableStateFlow<List<AppActiveContextWatchOS>> = MutableStateFlow(listOf(AppActiveContextWatchOS.INIT_ENTRY))
 
     fun popHistoryStack() {
         val stack = historyStack.value.toMutableList()
@@ -238,6 +238,8 @@ class AppActiveContextWatchOS internal constructor(
 ) : AppContextWatchOS(), AppActiveContext {
 
     companion object {
+
+        val INIT_ENTRY get() = AppActiveContextWatchOS(AppScreen.DUMMY, emptyMap())
 
         val DEFAULT_ENTRY get() = AppActiveContextWatchOS(AppScreen.MAIN, emptyMap())
 
