@@ -109,6 +109,7 @@ struct hkbuseta_Watch_AppApp: App {
                         .background(Color.clear)
                         .edgesIgnoringSafeArea(.all)
                         .transition(.opacity.animation(.linear(duration: 0.4)))
+                        .allowsHitTesting(false)
                         .zIndex(1)
                 }
             }
@@ -123,8 +124,9 @@ struct hkbuseta_Watch_AppApp: App {
             }
             .onOpenURL(perform: { url in
                 if url.absoluteString == "hkbuseta://tileswidget" {
-                    registryNoUpdate(context)
-                    context.startActivity(appIntent: newAppIntent(context, AppScreen.etaTileList))
+                    let data = newAppDataConatiner()
+                    data["launch"] = "etaTile"
+                    context.startActivity(appIntent: newAppIntent(context, AppScreen.main, data))
                     context.finishAffinity()
                 }
             })
@@ -141,7 +143,7 @@ func BackButton(_ appContext: AppContext, scrollingScreen: Bool) -> some View {
                 .font(.system(size: 17.scaled(appContext), weight: .bold))
                 .foregroundColor(.white)
         }
-        .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
+        .frame(width: 40.scaled(appContext), height: 40.scaled(appContext))
         .buttonStyle(PlainButtonStyle())
         .position(x: 23.scaled(appContext), y: 23.scaled(appContext))
     }
@@ -173,7 +175,7 @@ extension AppScreen {
     
     func needBackButton() -> Bool {
         switch self {
-        case AppScreen.main, AppScreen.title:
+        case AppScreen.main, AppScreen.title, AppScreen.dummy:
             return false
         default:
             return true

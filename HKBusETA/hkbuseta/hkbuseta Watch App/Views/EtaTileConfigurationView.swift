@@ -151,7 +151,6 @@ struct EtaTileConfigurationView: View {
                         } else {
                             Text("\(favIndex)")
                                 .font(.system(size: 17.scaled(appContext), weight: .bold))
-                                .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                                 .foregroundColor((favouriteStopRoute != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor()).adjustBrightness(percentage: enabled ? 1.0 : 0.5))
                         }
                     }

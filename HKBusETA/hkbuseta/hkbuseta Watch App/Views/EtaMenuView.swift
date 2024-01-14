@@ -276,7 +276,6 @@ struct EtaMenuView: View {
                         .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                     Text("\(favIndex)")
                         .font(.system(size: 17.scaled(appContext), weight: .bold))
-                        .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                         .foregroundColor({
                             switch state {
                             case FavouriteRouteState.usedOther:

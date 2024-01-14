@@ -15,7 +15,7 @@ import RxSwift
 
 struct FavView: View {
     
-    @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().suggestedMaxFavouriteRouteStopState), nativeFlow: Shared().suggestedMaxFavouriteRouteStopStateFlow)
+    @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().currentMaxFavouriteRouteStopState), nativeFlow: Shared().currentMaxFavouriteRouteStopStateFlow)
     @State private var showRouteListViewButton = false
     
     let etaTimer = Timer.publish(every: Double(Shared().ETA_UPDATE_INTERVAL) / 1000, on: .main, in: .common).autoconnect()
@@ -61,7 +61,7 @@ struct FavView: View {
                         .edgesIgnoringSafeArea(.all)
                         Spacer(minLength: 10.scaled(appContext))
                     }
-                    ForEach(1..<(Int(truncating: maxFavItems.state) + 1), id: \.self) { index in
+                    ForEach(1...Int(truncating: maxFavItems.state), id: \.self) { index in
                         FavButton(favIndex: index).id(index)
                         Spacer(minLength: 5.scaled(appContext))
                     }
@@ -153,7 +153,6 @@ struct FavView: View {
                         } else {
                             Text("\(favIndex)")
                                 .font(.system(size: 17.scaled(appContext), weight: .bold))
-                                .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                                 .foregroundColor(currentFavRouteStop != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor())
                         }
                     }

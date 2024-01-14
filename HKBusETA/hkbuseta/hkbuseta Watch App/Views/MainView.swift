@@ -20,13 +20,16 @@ struct MainView: View {
     @StateObject private var updateProgressState: FlowStateObservable<KotlinFloat>
     
     @State private var updateScreen = false
+    @State private var launch: String
     
     private let appContext: AppActiveContextWatchOS
     
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
+        self.launch = data["launch"] as? String ?? ""
         self._registryState = StateObject(wrappedValue: FlowStateObservable(defaultValue: registry(appContext).state, nativeFlow: registry(appContext).stateFlow))
         self._updateProgressState = StateObject(wrappedValue: FlowStateObservable(defaultValue: KotlinFloat(value: registry(appContext).updatePercentageState), nativeFlow: registry(appContext).updatePercentageStateFlow))
+        print(self.launch)
     }
     
     var body: some View {
@@ -61,8 +64,14 @@ struct MainView: View {
         }.onChange(of: registryState.state) { _ in
             if registryState.state == Registry.State.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
-                    appContext.finishAffinity()
+                    switch launch {
+                    case "etaTile":
+                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
+                        appContext.finishAffinity()
+                    default:
+                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
+                        appContext.finishAffinity()
+                    }
                 }
             } else if registryState.state == Registry.State.updating {
                 updateScreen = true
@@ -70,8 +79,14 @@ struct MainView: View {
         }.onAppear {
             if registryState.state == Registry.State.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
-                    appContext.finishAffinity()
+                    switch launch {
+                    case "etaTile":
+                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
+                        appContext.finishAffinity()
+                    default:
+                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
+                        appContext.finishAffinity()
+                    }
                 }
             } else if registryState.state == Registry.State.updating {
                 updateScreen = true
