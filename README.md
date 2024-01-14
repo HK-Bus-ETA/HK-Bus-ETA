@@ -1,6 +1,6 @@
 # HK Bus ETA 香港巴士到站預報 (WearOS / WatchOS)
-WearOS & WatchOS app for checking Hong Kong Bus Estimated Time of Arrival. With Tiles support for WearOS smartwatches.<br>
-WearOS 及 WatchOS 手錶平台上的香港巴士到站預報應用程式 而WearOS版本更支援使用資訊方塊
+WearOS & WatchOS app for checking Hong Kong Bus Estimated Time of Arrival with Tiles support.<br>
+WearOS 及 WatchOS 手錶平台上的香港巴士到站預報應用程式 更支援使用資訊方塊
 
 For more info, check out the app listing on Google Play / *App Store (Coming Soon)* with the link below.<br>
 欲了解更多資訊，請查閱以下 Google Play / App Store 應用程式連結
