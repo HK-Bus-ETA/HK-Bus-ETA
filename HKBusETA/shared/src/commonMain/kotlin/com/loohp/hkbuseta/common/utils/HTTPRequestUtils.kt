@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.common.utils
 
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.api.Send
 import io.ktor.client.plugins.api.createClientPlugin
@@ -48,6 +49,15 @@ expect val httpClient: HttpClient
 
 fun HttpClientConfig<*>.installPlugins() {
     install(HttpTimeout)
+    install(HttpRequestRetry) {
+        retryIf(2) { httpRequest, httpResponse ->
+            if (httpRequest.url.toString() != "https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule") {
+                return@retryIf false
+            }
+            val data = runBlocking { Json.decodeFromString<JsonObject>(httpResponse.bodyAsText(Charsets.UTF_8)) }
+            return@retryIf data.optJsonArray("busStop") == null
+        }
+    }
     install(createClientPlugin("remove-utf-8") {
         on(Send) { request ->
             request.headers.remove("Accept-Charset")
@@ -160,7 +170,7 @@ fun postJSONResponse(link: String, body: JsonObject): JsonObject? {
                     append(HttpHeaders.Pragma, "no-cache")
                 }
                 contentType(ContentType.Application.Json)
-                setBody(body)
+                setBody(body.toString())
                 timeout {
                     requestTimeoutMillis = 120000
                     connectTimeoutMillis = 20000

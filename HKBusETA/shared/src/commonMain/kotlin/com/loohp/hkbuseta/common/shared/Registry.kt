@@ -1808,93 +1808,99 @@ class Registry {
                             put("routeName", routeNumber)
                         }
                         val data: JsonObject? = postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body)
-                        val busStops = data!!.optJsonArray("busStop")!!
-                        for (k in 0 until busStops.size) {
-                            val busStop = busStops.optJsonObject(k)!!
-                            val buses = busStop.optJsonArray("bus")!!
-                            val busStopId = busStop.optString("busStopId")
-                            for (u in 0 until buses.size) {
-                                val bus = buses.optJsonObject(u)!!
-                                val seq = u + 1
-                                var eta = bus.optDouble("arrivalTimeInSecond")
-                                if (eta >= 108000) {
-                                    eta = bus.optDouble("departureTimeInSecond")
-                                }
-                                var remark = bus.optString("busRemark")
-                                if (remark.isEmpty() || remark.equals("null", ignoreCase = true)) {
-                                    remark = ""
-                                }
-                                val isScheduled = bus.optString("isScheduled") == "1"
-                                if (isScheduled) {
-                                    if (remark.isNotEmpty()) {
-                                        remark += "/"
+                        val status = data!!.optString("routeStatusRemarkTitle")
+                        if (status.isNotBlank()) {
+                            lines[1] = ETALineEntry.textEntry(status)
+                        }
+                        val busStops = data.optJsonArray("busStop")
+                        if (busStops != null) {
+                            for (k in 0 until busStops.size) {
+                                val busStop = busStops.optJsonObject(k)!!
+                                val buses = busStop.optJsonArray("bus")!!
+                                val busStopId = busStop.optString("busStopId")
+                                for (u in 0 until buses.size) {
+                                    val bus = buses.optJsonObject(u)!!
+                                    val seq = u + 1
+                                    var eta = bus.optDouble("arrivalTimeInSecond")
+                                    if (eta >= 108000) {
+                                        eta = bus.optDouble("departureTimeInSecond")
                                     }
-                                    remark += if (language == "en") "Scheduled Bus" else "預定班次"
-                                }
-                                val isDelayed = bus.optString("isDelayed") == "1"
-                                if (isDelayed) {
-                                    if (remark.isNotEmpty()) {
-                                        remark += "/"
+                                    var remark = bus.optString("busRemark")
+                                    if (remark.isEmpty() || remark.equals("null", ignoreCase = true)) {
+                                        remark = ""
                                     }
-                                    remark += if (language == "en") "Bus Delayed" else "行車緩慢"
-                                }
-                                val mins = eta / 60.0
-                                val minsRounded = floor(mins).toLong()
-                                if (DATA!!.mtrBusStopAlias[stopId]!!.contains(busStopId)) {
-                                    var message = "".asFormattedText()
-                                    if (language == "en") {
-                                        if (minsRounded > 0) {
-                                            message = buildFormattedString {
-                                                append(minsRounded.toString(), BoldStyle)
-                                                append(" Min.", SmallSize)
-                                            }
-                                        } else if (minsRounded > -60) {
-                                            message = buildFormattedString {
-                                                append("-", BoldStyle)
-                                                append(" Min.", SmallSize)
-                                            }
+                                    val isScheduled = bus.optString("isScheduled") == "1"
+                                    if (isScheduled) {
+                                        if (remark.isNotEmpty()) {
+                                            remark += "/"
                                         }
-                                    } else {
-                                        if (minsRounded > 0) {
-                                            message = buildFormattedString {
-                                                append(minsRounded.toString(), BoldStyle)
-                                                append(" 分鐘", SmallSize)
-                                            }
-                                        } else if (minsRounded > -60) {
-                                            message = buildFormattedString {
-                                                append("-", BoldStyle)
-                                                append(" 分鐘", SmallSize)
-                                            }
-                                        }
+                                        remark += if (language == "en") "Scheduled Bus" else "預定班次"
                                     }
-                                    if (remark.isNotEmpty()) {
-                                        message += buildFormattedString {
-                                            if (message.isEmpty()) {
-                                                append(remark
-                                                    .replace("原定", "預定")
-                                                    .replace("最後班次", "尾班車")
-                                                    .replace("尾班車已過", "尾班車已過本站"))
-                                            } else {
-                                                append(" (${remark
-                                                    .replace("原定", "預定")
-                                                    .replace("最後班次", "尾班車")
-                                                    .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
-                                            }
+                                    val isDelayed = bus.optString("isDelayed") == "1"
+                                    if (isDelayed) {
+                                        if (remark.isNotEmpty()) {
+                                            remark += "/"
                                         }
+                                        remark += if (language == "en") "Bus Delayed" else "行車緩慢"
                                     }
-                                    message = if (message.isEmpty()) {
-                                        if (seq == 1) {
-                                            getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                    val mins = eta / 60.0
+                                    val minsRounded = floor(mins).toLong()
+                                    if (DATA!!.mtrBusStopAlias[stopId]!!.contains(busStopId)) {
+                                        var message = "".asFormattedText()
+                                        if (language == "en") {
+                                            if (minsRounded > 0) {
+                                                message = buildFormattedString {
+                                                    append(minsRounded.toString(), BoldStyle)
+                                                    append(" Min.", SmallSize)
+                                                }
+                                            } else if (minsRounded > -60) {
+                                                message = buildFormattedString {
+                                                    append("-", BoldStyle)
+                                                    append(" Min.", SmallSize)
+                                                }
+                                            }
                                         } else {
-                                            buildFormattedString {
-                                                append("", BoldStyle)
-                                                append("-")
+                                            if (minsRounded > 0) {
+                                                message = buildFormattedString {
+                                                    append(minsRounded.toString(), BoldStyle)
+                                                    append(" 分鐘", SmallSize)
+                                                }
+                                            } else if (minsRounded > -60) {
+                                                message = buildFormattedString {
+                                                    append("-", BoldStyle)
+                                                    append(" 分鐘", SmallSize)
+                                                }
                                             }
                                         }
-                                    } else {
-                                        "".asFormattedText(BoldStyle) + message
+                                        if (remark.isNotEmpty()) {
+                                            message += buildFormattedString {
+                                                if (message.isEmpty()) {
+                                                    append(remark
+                                                        .replace("原定", "預定")
+                                                        .replace("最後班次", "尾班車")
+                                                        .replace("尾班車已過", "尾班車已過本站"))
+                                                } else {
+                                                    append(" (${remark
+                                                        .replace("原定", "預定")
+                                                        .replace("最後班次", "尾班車")
+                                                        .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
+                                                }
+                                            }
+                                        }
+                                        message = if (message.isEmpty()) {
+                                            if (seq == 1) {
+                                                getNoScheduledDepartureMessage(message, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                            } else {
+                                                buildFormattedString {
+                                                    append("", BoldStyle)
+                                                    append("-")
+                                                }
+                                            }
+                                        } else {
+                                            "".asFormattedText(BoldStyle) + message
+                                        }
+                                        lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded)
                                     }
-                                    lines[seq] = ETALineEntry.etaEntry(message, toShortText(minsRounded, 0), mins, minsRounded)
                                 }
                             }
                         }

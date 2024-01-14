@@ -22,6 +22,6 @@
 package com.loohp.hkbuseta.common.utils
 
 
-actual fun debugLog(message: String) {
+actual fun debugLog(message: Any?) {
     println(message)
 }

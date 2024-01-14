@@ -23,6 +23,6 @@ package com.loohp.hkbuseta.common.utils
 
 import android.util.Log
 
-actual fun debugLog(message: String) {
-    Log.d("Debug", message)
+actual fun debugLog(message: Any?) {
+    Log.d("Debug", message.toString())
 }
