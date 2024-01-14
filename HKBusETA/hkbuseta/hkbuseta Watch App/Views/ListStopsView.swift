@@ -13,7 +13,7 @@ import KMPNativeCoroutinesAsync
 import KMPNativeCoroutinesCombine
 import RxSwift
 
-struct ListStopsView: View {
+struct ListStopsView: AppScreenView {
     
     @ObservedObject private var locationManager = SingleLocationManager()
     @State private var scrollTarget: Int? = nil

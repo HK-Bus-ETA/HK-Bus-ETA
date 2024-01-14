@@ -13,7 +13,7 @@ import KMPNativeCoroutinesAsync
 import KMPNativeCoroutinesCombine
 import RxSwift
 
-struct ListRoutesView: View {
+struct ListRoutesView: AppScreenView {
     
     @State private var animationTick = 0
     

@@ -9,7 +9,7 @@ import SwiftUI
 import shared
 import Combine
 
-struct EtaTileListView: View {
+struct EtaTileListView: AppScreenView {
     
     private let appContext: AppActiveContextWatchOS
     

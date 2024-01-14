@@ -8,7 +8,7 @@
 import SwiftUI
 import shared
 
-struct NearbyView: View {
+struct NearbyView: AppScreenView {
     
     @ObservedObject private var locationManager = SingleLocationManager()
     

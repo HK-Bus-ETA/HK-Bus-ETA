@@ -75,6 +75,25 @@ func openMaps(lat: Double, lng: Double, label: String) {
 
 extension View {
     
+    @ViewBuilder func tileStateBorder(_ state: TileUseState, _ cornerRadius: CGFloat) -> some View {
+        switch state {
+        case .primary:
+            self.overlay {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(colorInt(0x5437FF00).asColor(), lineWidth: 2)
+                    .padding(1)
+            }
+        case .secondary:
+            self.overlay {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(colorInt(0x54FFB700).asColor(), lineWidth: 2)
+                    .padding(1)
+            }
+        default:
+            self
+        }
+    }
+    
     func CrossfadeText(textList: [AttributedString], state: Int) -> some View {
         Text(textList[state % textList.count])
             .id(textList[state % textList.count])

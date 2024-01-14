@@ -13,7 +13,7 @@ import KMPNativeCoroutinesAsync
 import KMPNativeCoroutinesCombine
 import RxSwift
 
-struct EtaView: View {
+struct EtaView: AppScreenView {
     
     @State private var eta: Registry.ETAQueryResult? = nil
     let etaTimer = Timer.publish(every: Double(Shared().ETA_UPDATE_INTERVAL) / 1000, on: .main, in: .common).autoconnect()

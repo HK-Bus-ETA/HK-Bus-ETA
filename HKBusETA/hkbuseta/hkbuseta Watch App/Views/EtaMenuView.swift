@@ -13,7 +13,7 @@ import KMPNativeCoroutinesAsync
 import KMPNativeCoroutinesCombine
 import RxSwift
 
-struct EtaMenuView: View {
+struct EtaMenuView: AppScreenView {
     
     @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().suggestedMaxFavouriteRouteStopState), nativeFlow: Shared().suggestedMaxFavouriteRouteStopStateFlow)
     
@@ -86,6 +86,11 @@ struct EtaMenuView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
                     Text(Shared().language == "en" ? "Section to set/clear this route stop from the corresponding indexed favourite route" : "以下可設置/清除對應的最喜愛路線")
+                        .font(.system(size: 10.scaled(appContext)))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20.scaled(appContext))
+                    Text(Shared().language == "en" ? "Route stops can be used in Tiles" : "最喜愛路線可在資訊方塊中顯示")
                         .font(.system(size: 10.scaled(appContext)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
@@ -258,6 +263,7 @@ struct EtaMenuView: View {
             }
             return s
         }()
+        let anyTileUses = Tiles().getTileUseState(index: favIndex.asInt32())
         let handleClick: (FavouriteStopMode) -> Void = {
             if state == FavouriteRouteState.usedSelf {
                 registry(appContext).clearFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), context: appContext)
@@ -362,6 +368,7 @@ struct EtaMenuView: View {
         .background { colorInt(0xFF1A1A1A).asColor() }
         .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 50))
+        .tileStateBorder(anyTileUses, 50)
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in

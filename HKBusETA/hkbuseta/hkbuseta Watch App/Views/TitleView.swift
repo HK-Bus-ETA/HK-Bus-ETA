@@ -8,7 +8,7 @@
 import SwiftUI
 import shared
 
-struct TitleView: View {
+struct TitleView: AppScreenView {
     
     private let appContext: AppActiveContextWatchOS
     

@@ -14,6 +14,7 @@
 		8171F0272B52EC4F005B8F6A /* tileswidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8171F01A2B52EC4E005B8F6A /* tileswidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8171F02D2B53155F005B8F6A /* EtaTileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F02C2B53155F005B8F6A /* EtaTileListView.swift */; };
 		8171F02F2B531D5D005B8F6A /* EtaTileConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */; };
+		8171F0312B53C732005B8F6A /* AppScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F0302B53C732005B8F6A /* AppScreenView.swift */; };
 		81812AB32B48CA000060A30B /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB22B48CA000060A30B /* FirebaseAnalytics */; };
 		81812AB52B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB42B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion */; };
 		81812AB72B48CA000060A30B /* FirebaseAnalyticsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB62B48CA000060A30B /* FirebaseAnalyticsSwift */; };
@@ -100,6 +101,7 @@
 		8171F02B2B52F2F7005B8F6A /* hkbuseta-Watch-App-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "hkbuseta-Watch-App-Info.plist"; sourceTree = SOURCE_ROOT; };
 		8171F02C2B53155F005B8F6A /* EtaTileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtaTileListView.swift; sourceTree = "<group>"; };
 		8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtaTileConfigurationView.swift; sourceTree = "<group>"; };
+		8171F0302B53C732005B8F6A /* AppScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScreenView.swift; sourceTree = "<group>"; };
 		81812AC02B48D0400060A30B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		818FD0162B44C403008EE8AB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		818FD0182B44C403008EE8AB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -237,6 +239,7 @@
 		81D16B0C2B34CF98003D9817 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				8171F0302B53C732005B8F6A /* AppScreenView.swift */,
 				81D16B3E2B37A609003D9817 /* FavView.swift */,
 				81D16B3A2B379FC0003D9817 /* FavRouteListViewView.swift */,
 				81D16B382B37738D003D9817 /* EtaMenuView.swift */,
@@ -459,6 +462,7 @@
 				81D16B2F2B367178003D9817 /* DummyView.swift in Sources */,
 				81D16B192B360050003D9817 /* StringUtils.swift in Sources */,
 				81D16B1B2B360AD8003D9817 /* MathUtils.swift in Sources */,
+				8171F0312B53C732005B8F6A /* AppScreenView.swift in Sources */,
 				81D16B142B35109F003D9817 /* ListRoutesView.swift in Sources */,
 				81D16B392B37738D003D9817 /* EtaMenuView.swift in Sources */,
 				81D16B062B34BC96003D9817 /* FlowStateObservable.swift in Sources */,
@@ -488,7 +492,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 30;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
@@ -518,7 +522,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 30;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
@@ -673,7 +677,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 30;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -713,7 +717,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 30;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;

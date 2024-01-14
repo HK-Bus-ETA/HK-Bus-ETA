@@ -8,7 +8,7 @@
 import SwiftUI
 import shared
 
-struct DummyView: View {
+struct DummyView: AppScreenView {
     
     private let appContext: AppActiveContextWatchOS
     

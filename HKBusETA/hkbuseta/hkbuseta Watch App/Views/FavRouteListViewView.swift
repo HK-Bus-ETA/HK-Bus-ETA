@@ -8,7 +8,7 @@
 import SwiftUI
 import shared
 
-struct FavRouteListViewView: View {
+struct FavRouteListViewView: AppScreenView {
     
     @ObservedObject private var locationManager = SingleLocationManager()
     @State private var location: LocationResult?

@@ -13,7 +13,7 @@ import KMPNativeCoroutinesAsync
 import KMPNativeCoroutinesCombine
 import RxSwift
 
-struct EtaTileConfigurationView: View {
+struct EtaTileConfigurationView: AppScreenView {
     
     @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().suggestedMaxFavouriteRouteStopState), nativeFlow: Shared().suggestedMaxFavouriteRouteStopStateFlow)
     

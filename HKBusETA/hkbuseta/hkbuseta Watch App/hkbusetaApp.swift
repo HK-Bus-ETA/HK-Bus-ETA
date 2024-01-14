@@ -65,36 +65,7 @@ struct hkbuseta_Watch_AppApp: App {
         WindowGroup {
             let context = historyStackState.state.last!
             ZStack {
-                switch context.screen {
-                case AppScreen.dummy:
-                    DummyView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.main:
-                    MainView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.title:
-                    TitleView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.search:
-                    SearchView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.nearby:
-                    NearbyView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.listRoutes:
-                    ListRoutesView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.listStops:
-                    ListStopsView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.eta:
-                    EtaView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.etaMenu:
-                    EtaMenuView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.fav:
-                    FavView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.favRouteListView:
-                    FavRouteListViewView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.etaTileList:
-                    EtaTileListView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                case AppScreen.etaTileConfigure:
-                    EtaTileConfigurationView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                default:
-                    MainView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
-                }
+                context.screen.newView(context: context)
                 if context.screen.needBackButton() {
                     BackButton(context, scrollingScreen: context.screen.isScrollingScreen())
                 }
@@ -172,6 +143,39 @@ extension View {
 }
 
 extension AppScreen {
+    
+    @ViewBuilder func newView(context: AppActiveContextWatchOS) -> some View {
+        switch self {
+        case AppScreen.dummy:
+            DummyView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.main:
+            MainView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.title:
+            TitleView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.search:
+            SearchView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.nearby:
+            NearbyView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.listRoutes:
+            ListRoutesView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.listStops:
+            ListStopsView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.eta:
+            EtaView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.etaMenu:
+            EtaMenuView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.fav:
+            FavView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.favRouteListView:
+            FavRouteListViewView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.etaTileList:
+            EtaTileListView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.etaTileConfigure:
+            EtaTileConfigurationView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        default:
+            MainView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        }
+    }
     
     func needBackButton() -> Bool {
         switch self {

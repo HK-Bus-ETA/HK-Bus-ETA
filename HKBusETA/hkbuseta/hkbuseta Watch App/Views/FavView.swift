@@ -13,7 +13,7 @@ import KMPNativeCoroutinesAsync
 import KMPNativeCoroutinesCombine
 import RxSwift
 
-struct FavView: View {
+struct FavView: AppScreenView {
     
     @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().currentMaxFavouriteRouteStopState), nativeFlow: Shared().currentMaxFavouriteRouteStopStateFlow)
     @State private var showRouteListViewButton = false
@@ -46,6 +46,12 @@ struct FavView: View {
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(2)
                         .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
+                    Spacer().frame(height: 5.scaled(appContext))
+                    Text(Shared().language == "en" ? "Routes can be displayed in Tiles" : "路線可在資訊方塊中顯示")
+                        .font(.system(size: 10.scaled(appContext)))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20.scaled(appContext))
                     Spacer(minLength: 10.scaled(appContext))
                     if showRouteListViewButton {
                         Button(action: {
@@ -125,6 +131,7 @@ struct FavView: View {
             }
             return s
         }()
+        let anyTileUses = Tiles().getTileUseState(index: favIndex.asInt32())
         let deleteState = deleteStates[favIndex] ?? 0.0
         return Button(action: {}) {
             HStack(alignment: .top, spacing: 0) {
@@ -240,11 +247,13 @@ struct FavView: View {
         .animation(.linear(duration: 0.25), value: deleteState)
         .frame(minWidth: 178.0.scaled(appContext), maxWidth: 178.0.scaled(appContext), minHeight: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+        .tileStateBorder(anyTileUses, 10)
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in
                     if deleteState <= 0.0 {
                         playHaptics()
+                        appContext.showToastText(text: Shared().language == "en" ? "Click again to confirm delete" : "再次點擊確認刪除", duration: ToastDuration.short_)
                         deleteStates[favIndex] = 5.0
                     }
                 }

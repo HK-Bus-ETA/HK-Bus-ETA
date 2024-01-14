@@ -13,7 +13,7 @@ import KMPNativeCoroutinesAsync
 import KMPNativeCoroutinesCombine
 import RxSwift
 
-struct SearchView: View {
+struct SearchView: AppScreenView {
     
     @State var state: RouteKeyboardState
     @State var hasHistory = Shared().hasFavoriteAndLookupRoute()

@@ -13,7 +13,7 @@ import KMPNativeCoroutinesAsync
 import KMPNativeCoroutinesCombine
 import RxSwift
 
-struct MainView: View {
+struct MainView: AppScreenView {
     
     @StateObject private var registryState: FlowStateObservable<Registry.State>
     
