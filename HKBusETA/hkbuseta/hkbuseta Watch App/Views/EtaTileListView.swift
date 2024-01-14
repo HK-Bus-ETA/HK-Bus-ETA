@@ -17,19 +17,19 @@ struct EtaTileListView: AppScreenView {
     @ObservedObject private var locationManager = SingleLocationManager()
     @State private var origin: LocationResult? = nil
     
-    @State private var etaTileIds: [Int32] = []
+    @State private var etaTileIds: [Int32]
     
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
-        self.etaTileIds = Tiles().getSortedEtaTileConfigurationsIds(context: appContext) { nil }.map { Int32(truncating: $0) }
+        self.etaTileIds = Tiles().getEtaTileConfigurationsIds().map { Int32(truncating: $0) }.sorted()
     }
     
     var body: some View {
         ScrollView(.vertical) {
-            LazyVStack(alignment: .center) {
+            VStack(alignment: .center) {
                 Spacer(minLength: 20.scaled(appContext))
-                ForEach(etaTileIds, id: \.self) { id in
-                    EtaTileView(appContext: appContext, origin: _origin, tileId: id, etaTimer: etaTimer)
+                ForEach(etaTileIds.indices, id: \.self) { index in
+                    EtaTileView(appContext: appContext, origin: _origin, tileId: etaTileIds[index], etaTimer: etaTimer)
                     Spacer(minLength: 10.scaled(appContext))
                 }
                 if etaTileIds.count < 15 {
@@ -55,7 +55,7 @@ struct EtaTileListView: AppScreenView {
             }
         }
         .onAppear {
-            self.etaTileIds = Tiles().getSortedEtaTileConfigurationsIds(context: appContext) { origin?.location }.map { Int32(truncating: $0) }
+            self.etaTileIds = Tiles().getEtaTileConfigurationsIds().map { Int32(truncating: $0) }.sorted()
         }
         .onChange(of: locationManager.readyForRequest) { _ in
             locationManager.requestLocation()
@@ -69,11 +69,7 @@ struct EtaTileListView: AppScreenView {
         }
         .onChange(of: locationManager.isLocationFetched) { _ in
             if locationManager.location != nil {
-                let origin = locationManager.location!.coordinate.toLocationResult()
-                self.origin = origin
-                withAnimation() { () -> () in
-                    self.etaTileIds = Tiles().getSortedEtaTileConfigurationsIds(context: appContext) { origin.location }.map { Int32(truncating: $0) }
-                }
+                origin = locationManager.location!.coordinate.toLocationResult()
             }
         }
         .onReceive(etaTimer) { _ in
@@ -186,10 +182,24 @@ struct EtaTileView: View {
                     ETALine(lines: eta, seq: 2, mainResolvedStop: mainResolvedStop)
                     ETALine(lines: eta, seq: 3, mainResolvedStop: mainResolvedStop)
                     Spacer(minLength: 2.scaled(appContext))
-                    Text((Shared().language == "en" ? "Updated: " : "更新時間: ") + appContext.formatTime(localDateTime: lastUpdated))
-                        .foregroundColor(colorInt(0xFFFFFFFF).asColor())
-                        .lineLimit(1)
-                        .autoResizing(maxSize: 12.scaled(appContext))
+                    HStack(spacing: 10.scaled(appContext)) {
+                        Text((Shared().language == "en" ? "Updated: " : "更新時間: ") + appContext.formatTime(localDateTime: lastUpdated))
+                            .foregroundColor(colorInt(0xFFFFFFFF).asColor())
+                            .lineLimit(1)
+                            .autoResizing(maxSize: 12.scaled(appContext))
+                        Text(Shared().language == "en" ? "Edit" : "編輯")
+                            .foregroundColor(colorInt(0xFFFFFF00).asColor())
+                            .lineLimit(1)
+                            .autoResizing(maxSize: 12.scaled(appContext))
+                            .highPriorityGesture(
+                                TapGesture()
+                                    .onEnded { _ in
+                                        let data = newAppDataConatiner()
+                                        data["tileId"] = Int(tileId)
+                                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileConfigure, data))
+                                    }
+                            )
+                    }
                     Spacer(minLength: 2.scaled(appContext))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -199,24 +209,6 @@ struct EtaTileView: View {
         .buttonStyle(PlainButtonStyle())
         .background { colorInt(0xFF1A1A1A).asColor() }
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .simultaneousGesture(
-            TapGesture()
-                .onEnded { _ in
-                    let data = newAppDataConatiner()
-                    data["stopId"] = stopId
-                    data["co"] = co
-                    data["index"] = index
-                    data["stop"] = stop
-                    data["route"] = route
-                    appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.eta, data))
-                }.exclusively(before: LongPressGesture()
-                    .onEnded { _ in
-                        playHaptics()
-                        let data = newAppDataConatiner()
-                        data["tileId"] = Int(tileId)
-                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileConfigure, data))
-                    })
-        )
         .onReceive(etaTimer) { _ in
             let resolved = RouteExtensionsKt.resolveStops(favouriteRouteStops, context: appContext) { origin?.location }.filter { $0.second != nil }
             mergedEtaCombiner.reset(size: resolved.count.asInt32())

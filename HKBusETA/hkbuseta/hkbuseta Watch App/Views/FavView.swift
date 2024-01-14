@@ -39,7 +39,7 @@ struct FavView: AppScreenView {
     var body: some View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
-                LazyVStack(alignment: .center, spacing: 1.scaled(appContext)) {
+                VStack(alignment: .center, spacing: 1.scaled(appContext)) {
                     Spacer(minLength: 10.scaled(appContext))
                     Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
                         .multilineTextAlignment(.center)
