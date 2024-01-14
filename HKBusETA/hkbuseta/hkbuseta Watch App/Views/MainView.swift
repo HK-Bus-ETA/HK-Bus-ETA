@@ -29,7 +29,6 @@ struct MainView: AppScreenView {
         self.launch = data["launch"] as? String ?? ""
         self._registryState = StateObject(wrappedValue: FlowStateObservable(defaultValue: registry(appContext).state, nativeFlow: registry(appContext).stateFlow))
         self._updateProgressState = StateObject(wrappedValue: FlowStateObservable(defaultValue: KotlinFloat(value: registry(appContext).updatePercentageState), nativeFlow: registry(appContext).updatePercentageStateFlow))
-        print(self.launch)
     }
     
     var body: some View {
