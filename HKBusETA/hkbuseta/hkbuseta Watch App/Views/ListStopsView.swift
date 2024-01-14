@@ -218,7 +218,7 @@ struct ListStopsView: View {
                         .foregroundColor(color)
                 }
                 MarqueeText(
-                    text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled(appContext)),
+                    text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled(appContext), defaultWeight: isClosest ? .bold : .regular),
                     font: UIFont.systemFont(ofSize: 18.scaled(appContext), weight: isClosest ? .bold : .regular),
                     leftFade: 8.scaled(appContext),
                     rightFade: 8.scaled(appContext),
