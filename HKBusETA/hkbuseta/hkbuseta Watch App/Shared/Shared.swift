@@ -11,6 +11,9 @@ import SwiftUI
 import shared
 import AuthenticationServices
 
+let watchOSVersion = WKInterfaceDevice.current().systemVersion
+let belowWidgetVersion = watchOSVersion.compare("9.0", options: .numeric) == .orderedAscending
+
 func applicationContext() -> AppContextWatchOS {
     return AppContextWatchOSKt.applicationContext
 }

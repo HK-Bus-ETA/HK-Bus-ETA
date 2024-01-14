@@ -60,8 +60,12 @@ struct tileswidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            tileswidgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+            if #available(watchOSApplicationExtension 10.0, *) {
+                tileswidgetEntryView(entry: entry)
+                    .containerBackground(.fill.tertiary, for: .widget)
+            } else {
+                tileswidgetEntryView(entry: entry)
+            }
         }
     }
 }

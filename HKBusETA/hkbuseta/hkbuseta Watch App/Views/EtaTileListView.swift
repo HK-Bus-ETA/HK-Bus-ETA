@@ -27,6 +27,7 @@ struct EtaTileListView: View {
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .center) {
+                Spacer(minLength: 20.scaled(appContext))
                 ForEach(etaTileIds.indices, id: \.self) { index in
                     EtaTileView(appContext: appContext, origin: _origin, tileId: etaTileIds[index], etaTimer: etaTimer)
                     Spacer(minLength: 10.scaled(appContext))

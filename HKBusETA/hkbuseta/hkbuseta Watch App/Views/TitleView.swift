@@ -56,11 +56,11 @@ struct TitleView: View {
                     registry(appContext).setLanguage(language: Shared().language == "en" ? "zh" : "en", context: appContext)
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.main))
                 }) {
-                    Text(Shared().language == "en" ? "中文" : "English")
+                    Text(Shared().language == "en" ? "中文" : (belowWidgetVersion ? "EN" : "English"))
                         .font(.system(size: 20.scaled(appContext), weight: .bold))
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 50))
-                .frame(width: 115.scaled(appContext))
+                .frame(maxWidth: /*@START_MENU_TOKEN@*/.infinity/*@END_MENU_TOKEN@*/)
                 Button(action: {
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.fav))
                 }) {
@@ -68,6 +68,16 @@ struct TitleView: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 50))
                 .frame(width: 55.scaled(appContext))
+                if belowWidgetVersion {
+                    Button(action: {
+                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
+                        appContext.finishAffinity()
+                    }) {
+                        Image(systemName: "info.circle.fill").font(.system(size: 21.scaled(appContext))).foregroundColor(.red)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 50))
+                    .frame(width: 55.scaled(appContext))
+                }
             }
             Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報").font(.system(size: 12.scaled(appContext)))
             Text("v\(appContext.versionName) (\(appContext.versionCode.description)) @loohpjames").font(.system(size: 12.scaled(appContext))).padding(.bottom)
