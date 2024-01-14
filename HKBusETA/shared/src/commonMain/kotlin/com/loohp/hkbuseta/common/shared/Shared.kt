@@ -29,6 +29,7 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
@@ -39,6 +40,7 @@ import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteSortMode
 import com.loohp.hkbuseta.common.objects.StopInfo
+import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getRouteKey
 import com.loohp.hkbuseta.common.objects.gmbRegion
 import com.loohp.hkbuseta.common.objects.resolveStop
@@ -46,6 +48,7 @@ import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.utils.Colored
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.toJsonArray
@@ -99,6 +102,21 @@ object Shared {
 
     fun Registry.ETAQueryResult?.getResolvedText(seq: Int, clockTimeMode: Boolean, context: AppContext): FormattedText {
         return (this?.getLine(seq)?.let { if (clockTimeMode && it.etaRounded >= 0) "${context.formatTime(currentLocalDateTime(it.etaRounded.toDuration(DurationUnit.MINUTES)))} ".asFormattedText(Colored(0xFFFFFF00)) + it.text else it.text }?: if (seq == 1) (if (language == "en") "Updating" else "更新中").asFormattedText() else "".asFormattedText())
+    }
+
+    fun Registry.MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?.getResolvedText(seq: Int, clockTimeMode: Boolean, context: AppContext): Pair<Pair<FavouriteResolvedStop, FavouriteRouteStop>?, FormattedText> {
+        if (this == null) {
+            return null to if (seq == 1) (if (language == "en") "Updating" else "更新中").asFormattedText() else "".asFormattedText()
+        }
+        val line = this[seq]
+        val lineRoute = line.first?.let { it.second.co.getDisplayRouteNumber(it.second.route.routeNumber, true) }
+        val noRouteNumber = lineRoute == null ||
+                (1..3).all { this[it].first?.second?.route?.routeNumber.let { route -> route == null || route == line.first?.second?.route?.routeNumber } } ||
+                this.allKeys.all { it.second.co == Operator.MTR } ||
+                this.mergedCount <= 1
+        return line.first to (if (noRouteNumber) "".asFormattedText() else "$lineRoute > ".asFormattedText(SmallSize))
+            .plus(if (clockTimeMode && line.second.etaRounded >= 0) "${context.formatTime(currentLocalDateTime(line.second.etaRounded.toDuration(DurationUnit.MINUTES)))} ".asFormattedText(Colored(0xFFFFFF00)) else "".asFormattedText())
+            .plus(line.second.text)
     }
 
     fun getMtrLineSortingIndex(lineName: String): Int {

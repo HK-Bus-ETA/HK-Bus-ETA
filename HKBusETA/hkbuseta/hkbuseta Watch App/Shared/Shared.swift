@@ -19,6 +19,10 @@ func registry(_ appContext: AppContext) -> Registry {
     return Registry.Companion().getInstance(context: appContext)
 }
 
+func registryNoUpdate(_ appContext: AppContext) -> Registry {
+    return Registry.Companion().getInstanceNoUpdateCheck(context: appContext)
+}
+
 func fetchEta(appContext: AppContext, stopId: String, stopIndex: Int, co: Operator, route: Route, callback: @escaping (Registry.ETAQueryResult) -> Void) {
     fetchEta(appContext: appContext, stopId: stopId, stopIndex: stopIndex.asInt32(), co: co, route: route, callback: callback)
 }

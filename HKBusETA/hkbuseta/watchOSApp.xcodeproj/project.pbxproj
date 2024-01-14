@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8171F01B2B52EC4E005B8F6A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0162B44C403008EE8AB /* WidgetKit.framework */; };
+		8171F01C2B52EC4E005B8F6A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0182B44C403008EE8AB /* SwiftUI.framework */; };
+		8171F01F2B52EC4E005B8F6A /* tileswidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F01E2B52EC4E005B8F6A /* tileswidget.swift */; };
+		8171F0232B52EC4F005B8F6A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8171F0222B52EC4F005B8F6A /* Assets.xcassets */; };
+		8171F0272B52EC4F005B8F6A /* tileswidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8171F01A2B52EC4E005B8F6A /* tileswidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8171F02D2B53155F005B8F6A /* EtaTileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F02C2B53155F005B8F6A /* EtaTileListView.swift */; };
+		8171F02F2B531D5D005B8F6A /* EtaTileConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */; };
 		81812AB32B48CA000060A30B /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB22B48CA000060A30B /* FirebaseAnalytics */; };
 		81812AB52B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB42B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion */; };
 		81812AB72B48CA000060A30B /* FirebaseAnalyticsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB62B48CA000060A30B /* FirebaseAnalyticsSwift */; };
@@ -44,6 +51,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		8171F0252B52EC4F005B8F6A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 81D16AA82B33C21D003D9817 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8171F0192B52EC4E005B8F6A;
+			remoteInfo = tileswidgetExtension;
+		};
 		81D16AB62B33C21E003D9817 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 81D16AA82B33C21D003D9817 /* Project object */;
@@ -60,6 +74,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				8171F0272B52EC4F005B8F6A /* tileswidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -78,6 +93,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8171F01A2B52EC4E005B8F6A /* tileswidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = tileswidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8171F01E2B52EC4E005B8F6A /* tileswidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = tileswidget.swift; sourceTree = "<group>"; };
+		8171F0222B52EC4F005B8F6A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		8171F0242B52EC4F005B8F6A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8171F02B2B52F2F7005B8F6A /* hkbuseta-Watch-App-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "hkbuseta-Watch-App-Info.plist"; sourceTree = SOURCE_ROOT; };
+		8171F02C2B53155F005B8F6A /* EtaTileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtaTileListView.swift; sourceTree = "<group>"; };
+		8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtaTileConfigurationView.swift; sourceTree = "<group>"; };
 		81812AC02B48D0400060A30B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		818FD0162B44C403008EE8AB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		818FD0182B44C403008EE8AB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -108,6 +130,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		8171F0172B52EC4E005B8F6A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8171F01C2B52EC4E005B8F6A /* SwiftUI.framework in Frameworks */,
+				8171F01B2B52EC4E005B8F6A /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81D16AB12B33C21E003D9817 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -128,10 +159,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8171F01D2B52EC4E005B8F6A /* tileswidget */ = {
+			isa = PBXGroup;
+			children = (
+				8171F01E2B52EC4E005B8F6A /* tileswidget.swift */,
+				8171F0222B52EC4F005B8F6A /* Assets.xcassets */,
+				8171F0242B52EC4F005B8F6A /* Info.plist */,
+			);
+			path = tileswidget;
+			sourceTree = "<group>";
+		};
 		81D16AA72B33C21D003D9817 = {
 			isa = PBXGroup;
 			children = (
 				81D16AB82B33C21E003D9817 /* hkbuseta Watch App */,
+				8171F01D2B52EC4E005B8F6A /* tileswidget */,
 				81D16AAF2B33C21E003D9817 /* Products */,
 				81D16B202B363B01003D9817 /* Frameworks */,
 			);
@@ -142,6 +184,7 @@
 			children = (
 				81D16AAE2B33C21E003D9817 /* hkbuseta.app */,
 				81D16AB42B33C21E003D9817 /* HKBusETA.app */,
+				8171F01A2B52EC4E005B8F6A /* tileswidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -149,6 +192,7 @@
 		81D16AB82B33C21E003D9817 /* hkbuseta Watch App */ = {
 			isa = PBXGroup;
 			children = (
+				8171F02B2B52F2F7005B8F6A /* hkbuseta-Watch-App-Info.plist */,
 				81812AC02B48D0400060A30B /* GoogleService-Info.plist */,
 				81D16B322B36729B003D9817 /* hkbusetaApp.swift */,
 				81D16B0C2B34CF98003D9817 /* Views */,
@@ -204,6 +248,8 @@
 				81D16B282B36559B003D9817 /* EtaView.swift */,
 				81D16B2E2B367178003D9817 /* DummyView.swift */,
 				81D16B342B373E74003D9817 /* NearbyView.swift */,
+				8171F02C2B53155F005B8F6A /* EtaTileListView.swift */,
+				8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -220,6 +266,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8171F0192B52EC4E005B8F6A /* tileswidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8171F0282B52EC4F005B8F6A /* Build configuration list for PBXNativeTarget "tileswidgetExtension" */;
+			buildPhases = (
+				8171F0162B52EC4E005B8F6A /* Sources */,
+				8171F0172B52EC4E005B8F6A /* Frameworks */,
+				8171F0182B52EC4E005B8F6A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = tileswidgetExtension;
+			productName = tileswidgetExtension;
+			productReference = 8171F01A2B52EC4E005B8F6A /* tileswidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		81D16AAD2B33C21E003D9817 /* hkbuseta */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 81D16AC82B33C21F003D9817 /* Build configuration list for PBXNativeTarget "hkbuseta" */;
@@ -241,7 +304,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 81D16AC42B33C21F003D9817 /* Build configuration list for PBXNativeTarget "hkbuseta Watch App" */;
 			buildPhases = (
-				81D16AD22B33CC85003D9817 /* ShellScript */,
+				81D16AD22B33CC85003D9817 /* Run Script */,
 				81D16AB02B33C21E003D9817 /* Sources */,
 				81D16AB12B33C21E003D9817 /* Frameworks */,
 				81D16AB22B33C21E003D9817 /* Resources */,
@@ -250,6 +313,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				8171F0262B52EC4F005B8F6A /* PBXTargetDependency */,
 			);
 			name = "hkbuseta Watch App";
 			packageProductDependencies = (
@@ -278,6 +342,9 @@
 				LastSwiftUpdateCheck = 1510;
 				LastUpgradeCheck = 1510;
 				TargetAttributes = {
+					8171F0192B52EC4E005B8F6A = {
+						CreatedOnToolsVersion = 15.1;
+					};
 					81D16AAD2B33C21E003D9817 = {
 						CreatedOnToolsVersion = 15.1;
 					};
@@ -306,11 +373,20 @@
 			targets = (
 				81D16AAD2B33C21E003D9817 /* hkbuseta */,
 				81D16AB32B33C21E003D9817 /* hkbuseta Watch App */,
+				8171F0192B52EC4E005B8F6A /* tileswidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		8171F0182B52EC4E005B8F6A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8171F0232B52EC4F005B8F6A /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81D16AAC2B33C21E003D9817 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -331,7 +407,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		81D16AD22B33CC85003D9817 /* ShellScript */ = {
+		81D16AD22B33CC85003D9817 /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -340,6 +416,7 @@
 			);
 			inputPaths = (
 			);
+			name = "Run Script";
 			outputFileListPaths = (
 			);
 			outputPaths = (
@@ -351,12 +428,21 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8171F0162B52EC4E005B8F6A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8171F01F2B52EC4E005B8F6A /* tileswidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81D16AB02B33C21E003D9817 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				81D16B122B34D44C003D9817 /* ColorUtils.swift in Sources */,
 				81D16B352B373E74003D9817 /* NearbyView.swift in Sources */,
+				8171F02F2B531D5D005B8F6A /* EtaTileConfigurationView.swift in Sources */,
 				81D16B082B34C12C003D9817 /* Shared.swift in Sources */,
 				81D16B432B3A32EE003D9817 /* WatchOSMTRRouteMapUtils.swift in Sources */,
 				81D16B3F2B37A609003D9817 /* FavView.swift in Sources */,
@@ -366,6 +452,7 @@
 				81D16B272B364071003D9817 /* MarqueeText.swift in Sources */,
 				81D16B332B36729B003D9817 /* hkbusetaApp.swift in Sources */,
 				81D16B102B34D07A003D9817 /* SearchView.swift in Sources */,
+				8171F02D2B53155F005B8F6A /* EtaTileListView.swift in Sources */,
 				81D16B1D2B36214F003D9817 /* ListStopsView.swift in Sources */,
 				81D16B292B36559B003D9817 /* EtaView.swift in Sources */,
 				81D16AF82B33E1D8003D9817 /* MainView.swift in Sources */,
@@ -381,6 +468,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		8171F0262B52EC4F005B8F6A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8171F0192B52EC4E005B8F6A /* tileswidgetExtension */;
+			targetProxy = 8171F0252B52EC4F005B8F6A /* PBXContainerItemProxy */;
+		};
 		81D16AB72B33C21E003D9817 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 81D16AB32B33C21E003D9817 /* hkbuseta Watch App */;
@@ -389,6 +481,65 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		8171F0292B52EC4F005B8F6A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 26;
+				DEVELOPMENT_TEAM = 5Z2275W445;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = tileswidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = tileswidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.tileswidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		8171F02A2B52EC4F005B8F6A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 26;
+				DEVELOPMENT_TEAM = 5Z2275W445;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = tileswidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = tileswidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.tileswidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		81D16AC22B33C21F003D9817 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -514,6 +665,7 @@
 		81D16AC52B33C21F003D9817 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -527,6 +679,7 @@
 				EXCLUDED_ARCHS = "";
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "hkbuseta-Watch-App-Info.plist";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to locate nearby bus stops";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
@@ -535,7 +688,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp;
 				PRODUCT_NAME = HKBusETA;
@@ -552,6 +705,7 @@
 		81D16AC62B33C21F003D9817 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -565,6 +719,7 @@
 				EXCLUDED_ARCHS = arm64;
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "hkbuseta-Watch-App-Info.plist";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location is used to locate nearby bus stops";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
@@ -573,7 +728,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp;
 				PRODUCT_NAME = HKBusETA;
@@ -594,12 +749,12 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				EXCLUDED_ARCHS = "";
 				INFOPLIST_KEY_CFBundleDisplayName = hkbuseta;
 				LD_MAP_FILE_PATH = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = "\"$(inherited) -framework shared\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -615,12 +770,12 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				EXCLUDED_ARCHS = "";
 				INFOPLIST_KEY_CFBundleDisplayName = hkbuseta;
 				LD_MAP_FILE_PATH = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.2.0;
 				OTHER_LDFLAGS = "\"$(inherited) -framework shared\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -634,6 +789,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8171F0282B52EC4F005B8F6A /* Build configuration list for PBXNativeTarget "tileswidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8171F0292B52EC4F005B8F6A /* Debug */,
+				8171F02A2B52EC4F005B8F6A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		81D16AAB2B33C21D003D9817 /* Build configuration list for PBXProject "watchOSApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

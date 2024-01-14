@@ -41,12 +41,11 @@ struct FavView: View {
             ScrollView(.vertical) {
                 VStack(alignment: .center, spacing: 1.scaled(appContext)) {
                     Spacer(minLength: 10.scaled(appContext))
-                    VStack(alignment: .center) {
-                        Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
-                            .foregroundColor(colorInt(0xFFFFFFFF).asColor())
-                            .lineLimit(2)
-                            .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
-                    }
+                    Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(colorInt(0xFFFFFFFF).asColor())
+                        .lineLimit(2)
+                        .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
                     Spacer(minLength: 10.scaled(appContext))
                     if showRouteListViewButton {
                         Button(action: {

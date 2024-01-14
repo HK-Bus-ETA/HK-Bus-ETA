@@ -26,6 +26,8 @@ import co.touchlab.stately.concurrency.AtomicReference
 import co.touchlab.stately.concurrency.Lock
 import co.touchlab.stately.concurrency.value
 import co.touchlab.stately.concurrency.withLock
+import com.loohp.hkbuseta.common.appcontext.Platform
+import com.loohp.hkbuseta.common.appcontext.platform
 
 
 enum class TileUseState {
@@ -47,7 +49,15 @@ object Tiles {
 
     fun updateEtaTileConfigurations(mutation: (MutableMap<Int, List<Int>>) -> Unit) {
         lock.withLock {
-            mutation.invoke(etaTileConfigurations as MutableMap<Int, List<Int>>)
+            mutation.invoke(etaTileConfigurations as MutableMap)
+        }
+    }
+
+    fun getEtaTileConfigurationsIds(): List<Int> {
+        return etaTileConfigurations.keys.toMutableList().apply {
+            if (platform() == Platform.WEAROS) {
+                (0..8).forEach { add(it or Int.MIN_VALUE) }
+            }
         }
     }
 

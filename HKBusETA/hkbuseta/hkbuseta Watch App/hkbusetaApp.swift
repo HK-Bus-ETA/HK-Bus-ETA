@@ -13,9 +13,9 @@ import WatchKit
 
 class ApplicationDelegate: NSObject, WKApplicationDelegate {
     
-  func applicationDidFinishLaunching() {
-      FirebaseApp.configure()
-  }
+    func applicationDidFinishLaunching() {
+        FirebaseApp.configure()
+    }
     
 }
 
@@ -88,6 +88,10 @@ struct hkbuseta_Watch_AppApp: App {
                     FavView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 case AppScreen.favRouteListView:
                     FavRouteListViewView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+                case AppScreen.etaTileList:
+                    EtaTileListView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+                case AppScreen.etaTileConfigure:
+                    EtaTileConfigurationView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 default:
                     MainView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
                 }
@@ -117,6 +121,13 @@ struct hkbuseta_Watch_AppApp: App {
                     self.toastShowTimeLeft -= 0.1
                 }
             }
+            .onOpenURL(perform: { url in
+                if url.absoluteString == "hkbuseta://tileswidget" {
+                    registryNoUpdate(context)
+                    context.startActivity(appIntent: newAppIntent(context, AppScreen.etaTileList))
+                    context.finishAffinity()
+                }
+            })
         }
     }
 }
@@ -171,7 +182,7 @@ extension AppScreen {
     
     func isScrollingScreen() -> Bool {
         switch self {
-        case AppScreen.listStops, AppScreen.listRoutes, AppScreen.fav, AppScreen.etaMenu:
+        case AppScreen.listStops, AppScreen.listRoutes, AppScreen.fav, AppScreen.etaMenu, AppScreen.etaTileList, AppScreen.etaTileConfigure:
             return true
         default:
             return false

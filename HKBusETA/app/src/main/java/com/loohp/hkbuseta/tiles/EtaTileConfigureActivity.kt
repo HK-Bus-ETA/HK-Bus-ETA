@@ -444,11 +444,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                     val operator = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)
                     val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
                     val routeText = destName[Shared.language]
-                    val subText = if (Shared.language == "en") {
-                        (if (co.isTrain || currentFavouriteStopRoute.favouriteStopMode == FavouriteStopMode.CLOSEST) "" else index.toString().plus(". ")).plus(stopName.en)
-                    } else {
-                        (if (co.isTrain || currentFavouriteStopRoute.favouriteStopMode == FavouriteStopMode.CLOSEST) "" else index.toString().plus(". ")).plus(stopName.zh)
-                    }
+                    val subText = (if (co.isTrain || currentFavouriteStopRoute.favouriteStopMode == FavouriteStopMode.CLOSEST) "" else index.toString().plus(". ")).plus(stopName[Shared.language])
                     Spacer(modifier = Modifier.size(5.dp))
                     Column (
                         modifier = Modifier

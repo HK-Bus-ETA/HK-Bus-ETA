@@ -1,8 +1,8 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2023. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2023. Contributors
+ * Copyright (C) 2024. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2024. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,26 +19,16 @@
  *
  */
 
-package com.loohp.hkbuseta.common.appcontext
+package com.loohp.hkbuseta.utils
 
-enum class AppScreen {
+import co.touchlab.stately.concurrency.Lock
 
-    DISMISSIBLE_TEXT_DISPLAY,
-    FATAL_ERROR,
-    ETA,
-    ETA_MENU,
-    FAV,
-    FAV_ROUTE_LIST_VIEW,
-    LIST_ROUTES,
-    LIST_STOPS,
-    MAIN,
-    NEARBY,
-    SEARCH,
-    TITLE,
-    URL_IMAGE,
-    ALIGHT_REMINDER_SERVICE,
-    ETA_TILE_CONFIGURE,
-    ETA_TILE_LIST,
-    DUMMY;
 
+inline fun Lock.withLock(block: () -> Unit) {
+    try {
+        this.lock()
+        block.invoke()
+    } finally {
+        this.unlock()
+    }
 }

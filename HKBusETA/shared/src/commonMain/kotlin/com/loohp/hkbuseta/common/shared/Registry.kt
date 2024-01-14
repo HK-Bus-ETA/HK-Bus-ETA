@@ -219,6 +219,7 @@ class Registry {
         Shared.clockTimeMode = clockTimeMode
         PREFERENCES!!.clockTimeMode = clockTimeMode
         savePreferences(context)
+        Tiles.requestTileUpdate()
     }
 
     fun hasFavouriteRouteStop(favoriteIndex: Int): Boolean {
@@ -2459,6 +2460,103 @@ class Registry {
             result = 31 * result + rawLines.hashCode()
             result = 31 * result + nextScheduledBus.hashCode()
             return result
+        }
+
+    }
+
+    @Immutable
+    class MergedETAQueryResult<T> private constructor(
+        val isConnectionError: Boolean,
+        val isMtrEndOfLine: Boolean,
+        val isTyphoonSchedule: Boolean,
+        val nextCo: Operator,
+        private val lines: Map<Int, Pair<T, ETALineEntry>>,
+        val mergedCount: Int
+    ) {
+
+        val nextScheduledBus: Long = lines[1]?.second?.etaRounded?: -1
+        val firstKey: T? = lines.minByOrNull { it.key }?.value?.first
+        val allKeys: Set<T> = lines.entries.asSequence().map { it.value.first }.toSet()
+
+        fun getLine(index: Int): Pair<T?, ETALineEntry> {
+            return lines[index]?: (null to ETALineEntry.EMPTY)
+        }
+
+        operator fun get(index: Int): Pair<T?, ETALineEntry> {
+            return getLine(index)
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is MergedETAQueryResult<*>) return false
+
+            if (isConnectionError != other.isConnectionError) return false
+            if (isMtrEndOfLine != other.isMtrEndOfLine) return false
+            if (isTyphoonSchedule != other.isTyphoonSchedule) return false
+            if (nextCo != other.nextCo) return false
+            if (lines != other.lines) return false
+            if (mergedCount != other.mergedCount) return false
+            if (nextScheduledBus != other.nextScheduledBus) return false
+            if (firstKey != other.firstKey) return false
+            return allKeys == other.allKeys
+        }
+
+        override fun hashCode(): Int {
+            var result = isConnectionError.hashCode()
+            result = 31 * result + isMtrEndOfLine.hashCode()
+            result = 31 * result + isTyphoonSchedule.hashCode()
+            result = 31 * result + nextCo.hashCode()
+            result = 31 * result + lines.hashCode()
+            result = 31 * result + mergedCount
+            result = 31 * result + nextScheduledBus.hashCode()
+            result = 31 * result + (firstKey?.hashCode() ?: 0)
+            result = 31 * result + allKeys.hashCode()
+            return result
+        }
+
+        companion object {
+
+            fun <T> loading(nextCo: Operator): MergedETAQueryResult<T> {
+                return MergedETAQueryResult(
+                    isConnectionError = false,
+                    isMtrEndOfLine = false,
+                    isTyphoonSchedule = false,
+                    nextCo = nextCo,
+                    lines = emptyMap(),
+                    mergedCount = 1
+                )
+            }
+
+            fun <T> merge(etaQueryResult: List<Pair<T, ETAQueryResult>>): MergedETAQueryResult<T> {
+                if (etaQueryResult.size == 1) {
+                    val (key, value) = etaQueryResult[0]
+                    val lines = value.rawLines.mapValues { key to it.value }
+                    return MergedETAQueryResult(value.isConnectionError, value.isMtrEndOfLine, value.isTyphoonSchedule, value.nextCo, lines, 1)
+                }
+                val isConnectionError = etaQueryResult.all { it.second.isConnectionError }
+                val isMtrEndOfLine = etaQueryResult.all { it.second.isMtrEndOfLine }
+                val isTyphoonSchedule = etaQueryResult.any { it.second.isTyphoonSchedule }
+                if (isConnectionError) {
+                    val (key, value) = etaQueryResult[0]
+                    val lines = value.rawLines.mapValues { key to it.value }
+                    return MergedETAQueryResult(true, isMtrEndOfLine, isTyphoonSchedule, value.nextCo, lines, etaQueryResult.size)
+                }
+                val linesSorted: MutableList<Triple<T, ETALineEntry, Operator>> = etaQueryResult.asSequence()
+                    .flatMap { it.second.rawLines.values.asSequence().map { line -> Triple(it.first, line, it.second.nextCo) } }
+                    .sortedWith(
+                        compareBy<Triple<T, ETALineEntry, Operator>> { it.second.eta.let { v -> if (v < 0) Double.MAX_VALUE else v } }
+                            .thenBy { etaQueryResult.indexOfFirst { i -> i.first == it.first } }
+                    )
+                    .toMutableList()
+                if (linesSorted.any { it.second.eta >= 0 }) {
+                    linesSorted.removeAll { it.second.eta < 0 }
+                }
+                val nextCo = if (linesSorted.isEmpty()) etaQueryResult[0].second.nextCo else linesSorted[0].third
+                val lines: MutableMap<Int, Pair<T, ETALineEntry>> = HashMap()
+                linesSorted.withIndex().forEach { lines[it.index + 1] = it.value.first to it.value.second }
+                return MergedETAQueryResult(false, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines, etaQueryResult.size)
+            }
+
         }
 
     }

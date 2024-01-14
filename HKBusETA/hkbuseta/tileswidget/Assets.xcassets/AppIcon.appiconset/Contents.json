@@ -1,13 +1,6 @@
 {
   "images" : [
     {
-      "filename" : "icon.png",
-      "idiom" : "universal",
-      "platform" : "watchos",
-      "size" : "1024x1024"
-    },
-    {
-      "filename" : "icon.png",
       "idiom" : "universal",
       "platform" : "watchos",
       "size" : "1024x1024"

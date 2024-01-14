@@ -1,8 +1,8 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2023. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2023. Contributors
+ * Copyright (C) 2024. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2024. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,24 +21,11 @@
 
 package com.loohp.hkbuseta.common.appcontext
 
-enum class AppScreen {
 
-    DISMISSIBLE_TEXT_DISPLAY,
-    FATAL_ERROR,
-    ETA,
-    ETA_MENU,
-    FAV,
-    FAV_ROUTE_LIST_VIEW,
-    LIST_ROUTES,
-    LIST_STOPS,
-    MAIN,
-    NEARBY,
-    SEARCH,
-    TITLE,
-    URL_IMAGE,
-    ALIGHT_REMINDER_SERVICE,
-    ETA_TILE_CONFIGURE,
-    ETA_TILE_LIST,
-    DUMMY;
+enum class Platform {
+
+    WEAROS, WATCHOS;
 
 }
+
+expect fun platform(): Platform

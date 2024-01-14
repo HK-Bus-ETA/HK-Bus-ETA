@@ -22,11 +22,8 @@ package com.loohp.hkbuseta.tiles
 
 import android.os.Build
 import android.text.format.DateFormat
-import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.unit.TextUnit
 import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.ColorProp
 import androidx.wear.protolayout.DimensionBuilders
@@ -62,14 +59,12 @@ import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolveStop
 import com.loohp.hkbuseta.common.objects.resolveStops
 import com.loohp.hkbuseta.common.shared.Registry
-import com.loohp.hkbuseta.common.shared.Registry.ETALineEntry
-import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.getAndNegate
 import com.loohp.hkbuseta.common.utils.parallelMapNotNull
 import com.loohp.hkbuseta.shared.AndroidShared
-import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
@@ -95,84 +90,13 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.collections.set
 import kotlin.math.roundToInt
-
-
-@Immutable
-class MergedETAQueryResult<T> private constructor(
-    val isConnectionError: Boolean,
-    val isMtrEndOfLine: Boolean,
-    val isTyphoonSchedule: Boolean,
-    val nextCo: Operator,
-    private val lines: Map<Int, Pair<T, ETALineEntry>>,
-    val mergedCount: Int
-) {
-
-    val nextScheduledBus: Long = lines[1]?.second?.etaRounded?: -1
-    val firstKey: T? = lines.minByOrNull { it.key }?.value?.first
-    val allKeys: Set<T> = lines.entries.asSequence().map { it.value.first }.toSet()
-
-    fun getLine(index: Int): Pair<T?, ETALineEntry> {
-        return lines[index]?: (null to ETALineEntry.EMPTY)
-    }
-
-    operator fun get(index: Int): Pair<T?, ETALineEntry> {
-        return getLine(index)
-    }
-
-    companion object {
-
-        fun <T> loading(nextCo: Operator): MergedETAQueryResult<T> {
-            return MergedETAQueryResult(
-                isConnectionError = false,
-                isMtrEndOfLine = false,
-                isTyphoonSchedule = false,
-                nextCo = nextCo,
-                lines = emptyMap(),
-                mergedCount = 1
-            )
-        }
-
-        fun <T> merge(etaQueryResult: List<Pair<T, ETAQueryResult>>): MergedETAQueryResult<T> {
-            if (etaQueryResult.size == 1) {
-                val (key, value) = etaQueryResult[0]
-                val lines = value.rawLines.mapValues { key to it.value }
-                return MergedETAQueryResult(value.isConnectionError, value.isMtrEndOfLine, value.isTyphoonSchedule, value.nextCo, lines, 1)
-            }
-            val isConnectionError = etaQueryResult.all { it.second.isConnectionError }
-            val isMtrEndOfLine = etaQueryResult.all { it.second.isMtrEndOfLine }
-            val isTyphoonSchedule = etaQueryResult.any { it.second.isTyphoonSchedule }
-            if (isConnectionError) {
-                val (key, value) = etaQueryResult[0]
-                val lines = value.rawLines.mapValues { key to it.value }
-                return MergedETAQueryResult(true, isMtrEndOfLine, isTyphoonSchedule, value.nextCo, lines, etaQueryResult.size)
-            }
-            val linesSorted: MutableList<Triple<T, ETALineEntry, Operator>> = etaQueryResult.asSequence()
-                .flatMap { it.second.rawLines.values.asSequence().map { line -> Triple(it.first, line, it.second.nextCo) } }
-                .sortedWith(Comparator
-                    .comparing<Triple<T, ETALineEntry, Operator>, Double> { it.second.eta.let { v -> if (v < 0) Double.MAX_VALUE else v } }
-                    .thenComparing(Comparator.comparing { etaQueryResult.indexOfFirst { i -> i.first == it.first } })
-                )
-                .toMutableList()
-            if (linesSorted.any { it.second.eta >= 0 }) {
-                linesSorted.removeIf { it.second.eta < 0 }
-            }
-            val nextCo = if (linesSorted.isEmpty()) etaQueryResult[0].second.nextCo else linesSorted[0].third
-            val lines: MutableMap<Int, Pair<T, ETALineEntry>> = HashMap()
-            linesSorted.withIndex().forEach { lines[it.index + 1] = it.value.first to it.value.second }
-            return MergedETAQueryResult(false, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines, etaQueryResult.size)
-        }
-
-    }
-
-}
 
 class TileState {
 
     private val updateTask: AtomicReference<ScheduledFuture<*>?> = AtomicReference(null)
     private val lastUpdated: AtomicLong = AtomicLong(0)
-    private val cachedETAQueryResult: AtomicReference<Pair<MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?, Long>> = AtomicReference(null to 0)
+    private val cachedETAQueryResult: AtomicReference<Pair<Registry.MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?, Long>> = AtomicReference(null to 0)
     private val tileLayoutState: AtomicBoolean = AtomicBoolean(false)
     private val lastTileArcColor: AtomicInt = AtomicInt(Int.MIN_VALUE)
     private val lastUpdateSuccessful: AtomicBoolean = AtomicBoolean(false)
@@ -199,11 +123,11 @@ class TileState {
         return !isCurrentlyUpdating() && (System.currentTimeMillis() - lastUpdated.get() > Shared.ETA_UPDATE_INTERVAL)
     }
 
-    fun cacheETAQueryResult(eta: MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?) {
+    fun cacheETAQueryResult(eta: Registry.MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?) {
         cachedETAQueryResult.set(eta to System.currentTimeMillis())
     }
 
-    fun getETAQueryResult(orElse: (TileState) -> MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?): MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>? {
+    fun getETAQueryResult(orElse: (TileState) -> Registry.MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?): Registry.MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>? {
         val (cache, time) = cachedETAQueryResult.getAndUpdate { null to 0 }
         return if (cache == null || System.currentTimeMillis() - time > 10000) orElse.invoke(this) else cache
     }
@@ -545,15 +469,9 @@ class EtaTileServiceCommon {
         }
 
         @androidx.annotation.OptIn(androidx.wear.protolayout.expression.ProtoLayoutExperimental::class)
-        private fun etaText(eta: MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?, seq: Int, mainResolvedStop: Pair<FavouriteResolvedStop, FavouriteRouteStop>, packageName: String, context: AppContext): LayoutElementBuilders.Spannable {
-            val line = eta?.getLine(seq)
-            val lineRoute = line?.first?.let { it.second.co.getDisplayRouteNumber(it.second.route.routeNumber, true) }
-            val appendRouteNumber = lineRoute == null ||
-                    (1..3).all { eta[it].first?.second?.route?.routeNumber.let { route -> route == null || route == line.first?.second?.route?.routeNumber } } ||
-                    eta.allKeys.all { it.second.co == Operator.MTR } ||
-                    eta.mergedCount <= 1
-            val text = (if (appendRouteNumber) "".asContentAnnotatedString() else "$lineRoute > ".asContentAnnotatedString(SpanStyle(fontSize = TextUnit.Small)))
-                .plus(line?.second?.text?.asContentAnnotatedString()?: if (seq == 1) (if (Shared.language == "en") "Updating" else "更新中").asContentAnnotatedString() else "ㅤ".asContentAnnotatedString())
+        private fun etaText(eta: Registry.MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?, seq: Int, mainResolvedStop: Pair<FavouriteResolvedStop, FavouriteRouteStop>, packageName: String, context: AppContext): LayoutElementBuilders.Spannable {
+            val line = eta.getResolvedText(seq, Shared.clockTimeMode, context)
+            val text = line.second.asContentAnnotatedString()
             val measure = text.annotatedString.text
             val color = Color.White.adjustBrightness(if (eta == null) 0.7F else 1F).toArgb()
             val maxTextSize = if (seq == 1) 15F else if (Shared.language == "en") 11F else 13F
@@ -565,7 +483,7 @@ class EtaTileServiceCommon {
             }
             val imageHeight = textSize.spToDp(context)
 
-            val (resolvedStop, favouriteStopRoute) = line?.first?: mainResolvedStop
+            val (resolvedStop, favouriteStopRoute) = line.first?: mainResolvedStop
 
             val (index, stopId, stop, route) = resolvedStop
             val co = favouriteStopRoute.co
@@ -623,7 +541,7 @@ class EtaTileServiceCommon {
 
             val eta = tileState.getETAQueryResult {
                 val favouriteRouteStops = favouriteStopRoutes.resolveStops(context) { it.setLastLocationOrGetLast(getGPSLocation(context).asCompletableFuture().getOr(7, TimeUnit.SECONDS) { null }?.location) }
-                val eta = MergedETAQueryResult.merge(
+                val eta = Registry.MergedETAQueryResult.merge(
                     favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
                         val (favStop, resolved) = pair
                         val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
@@ -849,7 +767,7 @@ class EtaTileServiceCommon {
                             val favouriteRouteStops = favouriteRoutes
                                 .mapNotNull { favouriteRoute -> Shared.favoriteRouteStops[favouriteRoute] }
                                 .resolveStops(context) { it.setLastLocationOrGetLast(getGPSLocation(context).asCompletableFuture().getOr(7, TimeUnit.SECONDS) { null }?.location) }
-                            it.cacheETAQueryResult(MergedETAQueryResult.merge(
+                            it.cacheETAQueryResult(Registry.MergedETAQueryResult.merge(
                                 favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
                                     val (favStop, resolved) = pair
                                     val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null

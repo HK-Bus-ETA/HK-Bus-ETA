@@ -32,6 +32,10 @@ fun currentTimeMillis(): Long {
     return Clock.System.now().toEpochMilliseconds()
 }
 
-fun currentLocalDateTime(plusDuration: Duration = Duration.ZERO): LocalDateTime {
+fun currentLocalDateTime(): LocalDateTime {
+    return Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Hong_Kong"))
+}
+
+fun currentLocalDateTime(plusDuration: Duration): LocalDateTime {
     return Clock.System.now().plus(plusDuration).toLocalDateTime(TimeZone.of("Asia/Hong_Kong"))
 }

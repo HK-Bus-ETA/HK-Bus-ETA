@@ -343,7 +343,7 @@ val AppScreen.activityClass: Class<*> get() = when (this) {
     AppScreen.URL_IMAGE -> URLImageActivity::class.java
     AppScreen.ALIGHT_REMINDER_SERVICE -> AlightReminderService::class.java
     AppScreen.ETA_TILE_CONFIGURE -> EtaTileConfigureActivity::class.java
-    AppScreen.DUMMY -> MainActivity::class.java
+    else -> MainActivity::class.java
 }
 
 val AppIntentFlag.androidFlag: Int @SuppressLint("WearRecents") get() = when (this) {
