@@ -93,11 +93,13 @@ import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.FavouriteRouteState
 import com.loohp.hkbuseta.common.objects.FavouriteStopMode
+import com.loohp.hkbuseta.common.objects.HKBusAppStopInfo
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getHKBusAppLink
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.TileUseState
@@ -188,6 +190,10 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             }
             item {
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
+                OpenOnHKBusAppButton(route, stopId, index, instance)
+            }
+            item {
+                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
             }
             item {
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
@@ -216,6 +222,66 @@ fun MoreInfoHeader(instance: AppActiveContext) {
         color = MaterialTheme.colors.primary,
         fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
         text = if (Shared.language == "en") "More Info & Actions" else "更多資訊及功能"
+    )
+}
+
+@Composable
+fun OpenOnHKBusAppButton(route: Route, stopId: String, index: Int, instance: AppActiveContext) {
+    val haptics = LocalHapticFeedback.current
+    AdvanceButton (
+        modifier = Modifier
+            .padding(20.dp, 0.dp)
+            .width(220.scaledSize(instance).dp)
+            .heightIn(min = 50.scaledSize(instance).sp.dp),
+        shape = RoundedCornerShape(25.scaledSize(instance).dp),
+        onClick = instance.handleWebpages(route.getHKBusAppLink(instance, HKBusAppStopInfo(stopId, index)), false, haptics.common),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.secondary,
+            contentColor = MaterialTheme.colors.primary
+        ),
+        content = {
+            Image(
+                modifier = Modifier.matchParentSize(),
+                painter = painterResource(R.mipmap.interchange_background),
+                contentScale = ContentScale.FillWidth,
+                colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),
+                contentDescription = null
+            )
+            Row (
+                modifier = Modifier.padding(5.dp, 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Box (
+                    modifier = Modifier
+                        .padding(5.dp, 5.dp)
+                        .width(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
+                        .height(30.scaledSize(instance).sp.clamp(max = 30.dp).dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF3D3D3D))
+                        .align(Alignment.Top),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .padding(3.dp, 3.dp)
+                            .size(17F.scaledSize(instance).sp.dp),
+                        painter = painterResource(R.drawable.baseline_phone_android_24),
+                        tint = Color(0xFFFFE15E),
+                        contentDescription = if (Shared.language == "en") "Open on hkbus.app" else "在hkbus.app上開啟"
+                    )
+                }
+                Text(
+                    modifier = Modifier
+                        .padding(0.dp, 0.dp, 5.dp, 0.dp)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                    color = MaterialTheme.colors.primary,
+                    fontSize = 14F.scaledSize(instance).sp,
+                    text = if (Shared.language == "en") "Open on hkbus.app" else "在hkbus.app上開啟"
+                )
+            }
+        }
     )
 }
 

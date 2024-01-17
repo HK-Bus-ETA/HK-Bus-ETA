@@ -142,6 +142,18 @@ fun Route.getRouteKey(context: AppContext): String? {
     return Registry.getInstance(context).getRouteKey(this)
 }
 
+data class HKBusAppStopInfo(val stopId: String, val index: Int)
+
+fun Route.getHKBusAppLink(context: AppContext, stop: HKBusAppStopInfo? = null): String {
+    var url = "https://hkbus.app/${Shared.language}/"
+    val routeKey = getRouteKey(context)?.replace("+", "-")?.replace(" ", "-")?.lowercase()?: return url
+    url += "route/$routeKey/"
+    if (stop == null) {
+        return url
+    }
+    return url + "${stop.stopId}%2C${stop.index + 1}/"
+}
+
 fun String.asStop(context: AppContext): Stop? {
     return Registry.getInstance(context).getStopById(this)
 }
