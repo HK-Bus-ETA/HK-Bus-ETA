@@ -49,7 +49,7 @@ const val START_ACTIVITY_PATH = "/HKBusETA/Launch"
 const val KMB_URL_STARTS_WITH = "https://app1933.page.link"
 const val KMB_DIRECT_URL_STARTS_WITH = "https://m4.kmb.hk/kmb-ws/share.php?parameter="
 val CTB_URL_PATTERN: Pattern = Pattern.compile("(?:城巴|Citybus) ?App: ?([0-9A-Za-z]+) ?(?:往|To) ?(.*)?http")
-val HKBUSAPP_URL_PATTERN: Pattern = Pattern.compile("https://hkbus\\.app/.+/route/([^/]*)(?:/([^/]*)(?:%2C|,)([^/]*))?")
+val HKBUSAPP_URL_PATTERN: Pattern = Pattern.compile("https://(?:hkbus\\.app|loohpjames\\.com)/.+/route/([^/]*)(?:/([^/]*)(?:%2C|,)([^/]*))?")
 
 
 class SendToWatchActivity : ComponentActivity() {
@@ -61,7 +61,7 @@ class SendToWatchActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF1A1A1A)
                 ) {
-                    DisplayElements(intent.asImmutableState(), this)
+                    DisplayElements(intent.extractUrl(), this)
                 }
             }
         }
@@ -72,32 +72,35 @@ fun sendPayload(instance: SendToWatchActivity, payload: JSONObject) {
     RemoteActivityUtils.dataToWatch(instance, START_ACTIVITY_PATH, payload, {
         instance.runOnUiThread {
             Toast.makeText(instance, R.string.send_no_watch, Toast.LENGTH_LONG).show()
-            instance.finish()
+            instance.finishAffinity()
         }
     }, {
         instance.runOnUiThread {
             Toast.makeText(instance, R.string.send_failed, Toast.LENGTH_LONG).show()
-            instance.finish()
+            instance.finishAffinity()
         }
     }, {
         instance.runOnUiThread {
             Toast.makeText(instance, R.string.send_success, Toast.LENGTH_LONG).show()
-            instance.finish()
+            instance.finishAffinity()
         }
     })
 }
 
+fun Intent.extractUrl(): String? {
+    return when (action) {
+        Intent.ACTION_SEND -> if (type == "text/plain") getStringExtra(Intent.EXTRA_TEXT)?.replace("\n", "") else null
+        Intent.ACTION_VIEW -> data.toString()
+        else -> null
+    }
+}
+
 @Composable
-fun DisplayElements(intentState: ImmutableState<Intent>, instance: SendToWatchActivity) {
+fun DisplayElements(url: String?, instance: SendToWatchActivity) {
     LaunchedEffect (Unit) {
         ForkJoinPool.commonPool().execute {
-            val intent = intentState.value
-            val action = intent.action
-            val type = intent.type
-
             var matcher: Matcher
-            if (action == "android.intent.action.SEND" && type != null && type == "text/plain") {
-                val url = intent.getStringExtra("android.intent.extra.TEXT")!!.replace("\n", "")
+            if (url != null) {
                 if (url.startsWith(KMB_URL_STARTS_WITH) || url.startsWith(KMB_DIRECT_URL_STARTS_WITH)) {
                     val realUrl = if (url.startsWith(KMB_URL_STARTS_WITH)) HTTPRequestUtils.getMovedRedirect(url) else url
                     val urlDecoded = URLDecoder.decode(realUrl, StandardCharsets.UTF_8.name())
@@ -140,13 +143,13 @@ fun DisplayElements(intentState: ImmutableState<Intent>, instance: SendToWatchAc
                 } else {
                     instance.runOnUiThread {
                         Toast.makeText(instance, R.string.send_malformed, Toast.LENGTH_LONG).show()
-                        instance.finish()
+                        instance.finishAffinity()
                     }
                 }
             } else {
                 instance.runOnUiThread {
                     Toast.makeText(instance, R.string.send_malformed, Toast.LENGTH_LONG).show()
-                    instance.finish()
+                    instance.finishAffinity()
                 }
             }
         }
