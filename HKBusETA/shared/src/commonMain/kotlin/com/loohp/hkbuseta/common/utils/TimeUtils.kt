@@ -24,12 +24,24 @@ package com.loohp.hkbuseta.common.utils
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration
 
 
 fun currentTimeMillis(): Long {
     return Clock.System.now().toEpochMilliseconds()
+}
+
+fun nextScheduledDataUpdateMillis(): Long {
+    val hongKongZone = TimeZone.of("Asia/Hong_Kong")
+    val currentTime = Clock.System.now().toLocalDateTime(hongKongZone)
+    val next430 = if (currentTime.hour > 4 || (currentTime.hour == 4 && currentTime.minute >= 30)) {
+        LocalDateTime(currentTime.year, currentTime.month, currentTime.dayOfMonth + 1, 4, 30)
+    } else {
+        LocalDateTime(currentTime.year, currentTime.month, currentTime.dayOfMonth, 4, 30)
+    }
+    return next430.toInstant(hongKongZone).toEpochMilliseconds()
 }
 
 fun currentLocalDateTime(): LocalDateTime {

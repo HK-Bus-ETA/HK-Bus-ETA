@@ -31,16 +31,24 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.TimeTextDefaults
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.background.DailyUpdateWorker
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.nextScheduledDataUpdateMillis
 import com.loohp.hkbuseta.utils.HongKongTimeSource
 import com.loohp.hkbuseta.utils.isEqualTo
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?, val shouldRelaunch: Boolean = extras?.getBoolean("shouldRelaunch", true)?: true) {
@@ -57,6 +65,8 @@ data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?, va
 
 @Immutable
 object AndroidShared {
+
+    private const val BACKGROUND_SERVICE_REQUEST_TAG: String = "HK_BUS_ETA_BG_SERVICE"
 
     val RESOURCE_RATIO: Map<Int, Float> = mapOf(
         R.mipmap.lrv to 128F / 95F,
@@ -137,6 +147,14 @@ object AndroidShared {
             context.context.startActivity(intent2)
             context.context.finishAffinity()
         }
+    }
+
+    fun startBackgroundService(context: Context) {
+        val updateRequest = PeriodicWorkRequestBuilder<DailyUpdateWorker>(24, TimeUnit.HOURS, 60, TimeUnit.MINUTES)
+            .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED))
+            .setNextScheduleTimeOverride(nextScheduledDataUpdateMillis() + 60 * 60 * 1000)
+            .build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(BACKGROUND_SERVICE_REQUEST_TAG, ExistingPeriodicWorkPolicy.UPDATE, updateRequest)
     }
 
 }

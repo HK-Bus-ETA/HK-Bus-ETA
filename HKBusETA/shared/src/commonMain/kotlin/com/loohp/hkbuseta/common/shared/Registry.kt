@@ -32,6 +32,7 @@ import co.touchlab.stately.concurrency.withLock
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.platform
 import com.loohp.hkbuseta.common.branchedlist.BranchedList
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
@@ -115,9 +116,25 @@ class Registry {
 
     companion object {
 
-        private const val PREFERENCES_FILE_NAME = "preferences.json"
-        private const val CHECKSUM_FILE_NAME = "checksum.json"
-        private const val DATA_FILE_NAME = "data.json"
+        const val PREFERENCES_FILE_NAME = "preferences.json"
+        const val CHECKSUM_FILE_NAME = "checksum.json"
+        const val DATA_FILE_NAME = "data.json"
+
+        fun platformDomainDataUrl(): String {
+            return "https://${platform().subdomain}.hkbus.app/data"
+        }
+
+        fun checksumUrl(): String {
+            return "${platformDomainDataUrl()}/checksum.md5"
+        }
+
+        fun dataLengthUrl(gzip: Boolean = gzipSupported()): String {
+            return "${platformDomainDataUrl()}/size${if (gzip) ".gz" else ""}.dat"
+        }
+
+        fun dataUrl(gzip: Boolean = gzipSupported()): String {
+            return "${platformDomainDataUrl()}/data.json${if (gzip) ".gz" else ""}"
+        }
 
         private val INSTANCE: AtomicReference<Registry?> = AtomicReference(null)
         private val INSTANCE_LOCK: Lock = Lock()
@@ -348,7 +365,7 @@ class Registry {
     }
 
     fun setRouteSortModePreference(context: AppContext, listType: RouteListType, sortMode: RouteSortMode) {
-        (Shared.routeSortModePreference as MutableMap<RouteListType, RouteSortMode>)[listType] = sortMode
+        (Shared.routeSortModePreference as MutableMap)[listType] = sortMode
         PREFERENCES!!.routeSortModePreference.clear()
         PREFERENCES!!.routeSortModePreference.putAll(Shared.routeSortModePreference)
         savePreferences(context)
@@ -400,7 +417,7 @@ class Registry {
                 itr.remove()
             }
         }
-        Shared.routeSortModePreference as MutableMap<RouteListType, RouteSortMode>
+        Shared.routeSortModePreference as MutableMap
         Shared.routeSortModePreference.clear()
         Shared.routeSortModePreference.putAll(PREFERENCES!!.routeSortModePreference)
         checkUpdate(context, suppressUpdateCheck)
@@ -419,7 +436,7 @@ class Registry {
                 val checksumFetcher: suspend (Boolean) -> String? = { forced ->
                     val future = async { withTimeout(10000) {
                         val version = context.versionCode
-                        getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/checksum.md5") + "_" + version
+                        getTextResponse(checksumUrl()) + "_" + version
                     } }
                     currentChecksumTask.set(future)
                     if (!forced && files.contains(CHECKSUM_FILE_NAME) && files.contains(
@@ -476,21 +493,19 @@ class Registry {
                     } else {
                         stateFlow.value = State.UPDATING
                         updatePercentageStateFlow.value = 0f
-                        val percentageOffset =
-                            if (Shared.favoriteRouteStops.isEmpty()) 0.15f else 0f
+                        val percentageOffset = if (Shared.favoriteRouteStops.isEmpty()) 0.15f else 0f
                         if (!updateChecked.value) {
                             checksum = checksumFetcher.invoke(true)
                         }
                         val gzip = gzipSupported()
-                        val gzLabel = if (gzip) ".gz" else ""
-                        val length: Long = LongUtils.parseOr(getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/size$gzLabel.dat"), -1)
-                        val textResponse: String = getTextResponseWithPercentageCallback("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/data.json$gzLabel", length, gzip) { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
+                        val length: Long = LongUtils.parseOr(getTextResponse(dataLengthUrl(gzip)), -1)
+                        val textResponse: String = getTextResponseWithPercentageCallback(dataUrl(gzip), length, gzip) { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
                         DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(textResponse))
                         Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
                         updatePercentageStateFlow.value = 0.75f + percentageOffset
                         context.writeTextFile(DATA_FILE_NAME) { textResponse }
                         updatePercentageStateFlow.value = 0.825f + percentageOffset
-                        context.writeTextFile(CHECKSUM_FILE_NAME) { checksum ?: "" }
+                        context.writeTextFile(CHECKSUM_FILE_NAME) { checksum?: "" }
                         updatePercentageStateFlow.value = 0.85f + percentageOffset
                         var localUpdatePercentage = updatePercentageStateFlow.value
                         val percentagePerFav = 0.15f / Shared.favoriteRouteStops.size

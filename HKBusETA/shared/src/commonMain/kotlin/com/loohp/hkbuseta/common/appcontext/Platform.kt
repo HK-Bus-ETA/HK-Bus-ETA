@@ -22,9 +22,10 @@
 package com.loohp.hkbuseta.common.appcontext
 
 
-enum class Platform {
+enum class Platform(val subdomain: String) {
 
-    WEAROS, WATCHOS;
+    WEAROS("wear"),
+    WATCHOS("watch");
 
 }
 

@@ -43,6 +43,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         AndroidShared.setDefaultExceptionHandler(this)
+        AndroidShared.startBackgroundService(this)
         Tiles.providePlatformUpdate { EtaTileServiceCommon.requestTileUpdate(it) }
 
         setShowWhenLocked(true)

@@ -31,6 +31,7 @@ import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.getTextResponse
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
@@ -188,7 +189,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override fun hasConnection(): Boolean {
-        return getTextResponse("https://raw.githubusercontent.com/LOOHP/HK-Bus-ETA-WearOS-WatchOS/data/checksum.md5") != null
+        return getTextResponse(Registry.checksumUrl()) != null
     }
 
     override fun currentBackgroundRestrictions(): BackgroundRestrictionType {

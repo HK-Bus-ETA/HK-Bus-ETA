@@ -32,7 +32,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 33
-        versionCode = 401
+        versionCode = 408
         versionName = "1.8.1"
         vectorDrawables {
             useSupportLibrary = true
@@ -109,6 +109,7 @@ dependencies {
     implementation(libs.androidx.protolayout.expression)
     implementation(libs.androidx.protolayout)
     implementation(libs.androidx.protolayout.material)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
     implementation(libs.zoomable)

@@ -142,6 +142,14 @@
             android:taskAffinity="com.loohp.hkbuseta">
         </activity>
 
+        <receiver android:name="com.loohp.hkbuseta.background.WorkManagerStartReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name="com.loohp.hkbuseta.services.AlightReminderService"
             android:foregroundServiceType="location"

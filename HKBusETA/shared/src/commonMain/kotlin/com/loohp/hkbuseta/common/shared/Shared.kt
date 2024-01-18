@@ -196,7 +196,7 @@ object Shared {
 
     fun updateFavoriteRouteStops(mutation: (MutableMap<Int, FavouriteRouteStop>) -> Unit) {
         favouriteRouteStopLock.withLock {
-            mutation.invoke(favoriteRouteStops as MutableMap<Int, FavouriteRouteStop>)
+            mutation.invoke(favoriteRouteStops as MutableMap)
             val max = favoriteRouteStops.maxOfOrNull { it.key }?: 0
             currentMaxFavouriteRouteStop.value = max.coerceAtLeast(8)
             suggestedMaxFavouriteRouteStop.value = (max + 1).coerceIn(8, 30)
