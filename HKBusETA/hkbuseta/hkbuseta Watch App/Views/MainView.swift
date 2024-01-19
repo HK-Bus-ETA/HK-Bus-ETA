@@ -74,6 +74,12 @@ struct MainView: AppScreenView {
                 }
             } else if registryState.state == Registry.State.updating {
                 updateScreen = true
+            } else if registryState.state == Registry.State.error {
+                let data = newAppDataConatiner()
+                data["zh"] = "發生錯誤\n請檢查您的網絡連接"
+                data["en"] = "Fatal Error\nPlease check your internet connection"
+                appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.fatalError, data))
+                appContext.finishAffinity()
             }
         }.onAppear {
             if registryState.state == Registry.State.ready {
@@ -89,6 +95,12 @@ struct MainView: AppScreenView {
                 }
             } else if registryState.state == Registry.State.updating {
                 updateScreen = true
+            } else if registryState.state == Registry.State.error {
+                let data = newAppDataConatiner()
+                data["zh"] = "發生錯誤\n請檢查您的網絡連接"
+                data["en"] = "Fatal Error\nPlease check your internet connection"
+                appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.fatalError, data))
+                appContext.finishAffinity()
             }
         }
     }

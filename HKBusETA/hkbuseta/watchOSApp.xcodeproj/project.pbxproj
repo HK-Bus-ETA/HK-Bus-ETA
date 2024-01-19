@@ -15,6 +15,7 @@
 		8171F02D2B53155F005B8F6A /* EtaTileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F02C2B53155F005B8F6A /* EtaTileListView.swift */; };
 		8171F02F2B531D5D005B8F6A /* EtaTileConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */; };
 		8171F0312B53C732005B8F6A /* AppScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F0302B53C732005B8F6A /* AppScreenView.swift */; };
+		8171F0332B59E5D8005B8F6A /* FatalErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F0322B59E5D8005B8F6A /* FatalErrorView.swift */; };
 		81812AB32B48CA000060A30B /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB22B48CA000060A30B /* FirebaseAnalytics */; };
 		81812AB52B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB42B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion */; };
 		81812AB72B48CA000060A30B /* FirebaseAnalyticsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB62B48CA000060A30B /* FirebaseAnalyticsSwift */; };
@@ -102,6 +103,7 @@
 		8171F02C2B53155F005B8F6A /* EtaTileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtaTileListView.swift; sourceTree = "<group>"; };
 		8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtaTileConfigurationView.swift; sourceTree = "<group>"; };
 		8171F0302B53C732005B8F6A /* AppScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScreenView.swift; sourceTree = "<group>"; };
+		8171F0322B59E5D8005B8F6A /* FatalErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FatalErrorView.swift; sourceTree = "<group>"; };
 		81812AC02B48D0400060A30B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		818FD0162B44C403008EE8AB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		818FD0182B44C403008EE8AB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -253,6 +255,7 @@
 				81D16B342B373E74003D9817 /* NearbyView.swift */,
 				8171F02C2B53155F005B8F6A /* EtaTileListView.swift */,
 				8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */,
+				8171F0322B59E5D8005B8F6A /* FatalErrorView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -447,6 +450,7 @@
 				81D16B352B373E74003D9817 /* NearbyView.swift in Sources */,
 				8171F02F2B531D5D005B8F6A /* EtaTileConfigurationView.swift in Sources */,
 				81D16B082B34C12C003D9817 /* Shared.swift in Sources */,
+				8171F0332B59E5D8005B8F6A /* FatalErrorView.swift in Sources */,
 				81D16B432B3A32EE003D9817 /* WatchOSMTRRouteMapUtils.swift in Sources */,
 				81D16B3F2B37A609003D9817 /* FavView.swift in Sources */,
 				81D16B0E2B34CFEC003D9817 /* TitleView.swift in Sources */,

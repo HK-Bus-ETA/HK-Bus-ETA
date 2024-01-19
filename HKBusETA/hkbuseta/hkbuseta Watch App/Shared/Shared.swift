@@ -26,6 +26,10 @@ func registryNoUpdate(_ appContext: AppContext) -> Registry {
     return Registry.Companion().getInstanceNoUpdateCheck(context: appContext)
 }
 
+func registryClear() {
+    Registry.Companion().clearInstance()
+}
+
 func fetchEta(appContext: AppContext, stopId: String, stopIndex: Int, co: Operator, route: Route, callback: @escaping (Registry.ETAQueryResult) -> Void) {
     fetchEta(appContext: appContext, stopId: stopId, stopIndex: stopIndex.asInt32(), co: co, route: route, callback: callback)
 }
@@ -71,6 +75,14 @@ func openMaps(lat: Double, lng: Double, label: String) {
     mapItem.name = label
     mapItem.timeZone = TimeZone(identifier: "Asia/Hong_Kong")
     mapItem.openInMaps()
+}
+
+extension Array where Element: NSObject {
+    
+    func asKt() -> KotlinArray<Element> {
+        return KotlinArray(size: count.asInt32()) { index in self[Int(truncating: index)] }
+    }
+    
 }
 
 extension View {

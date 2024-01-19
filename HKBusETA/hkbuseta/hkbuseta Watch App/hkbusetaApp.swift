@@ -148,6 +148,8 @@ extension AppScreen {
         switch self {
         case AppScreen.dummy:
             DummyView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.fatalError:
+            FatalErrorView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
         case AppScreen.main:
             MainView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
         case AppScreen.title:
@@ -179,7 +181,7 @@ extension AppScreen {
     
     func needBackButton() -> Bool {
         switch self {
-        case AppScreen.main, AppScreen.title, AppScreen.dummy:
+        case AppScreen.main, AppScreen.title, AppScreen.dummy, AppScreen.fatalError:
             return false
         default:
             return true
