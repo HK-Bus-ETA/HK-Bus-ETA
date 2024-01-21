@@ -38,9 +38,12 @@ let HKBUSAPP_URL_PATTERN = regex("https://(?:(?:watch|wear)\\.)?hkbus\\.app/(?:.
 @main
 struct hkbusetaApp: App {
     
+    let refreshTimer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+    
     @UIApplicationDelegateAdaptor(ApplicationDelegate.self) var delegate
     
     @State var lastSharePayload: [String: Any]? = nil
+    @State var watchAppInstalled = WCSession.default.isWatchAppInstalled
     
     var body: some Scene {
         WindowGroup {
@@ -88,7 +91,7 @@ struct hkbusetaApp: App {
                         .font(.title3)
                 }
                 .frame(maxWidth: .infinity)
-                if WCSession.default.isWatchAppInstalled {
+                if watchAppInstalled {
                     Button(action: {
                         do {
                             if lastSharePayload != nil {
@@ -117,6 +120,9 @@ struct hkbusetaApp: App {
             }
             .frame(maxWidth: .infinity)
             .padding()
+            .onReceive(refreshTimer) { _ in
+                watchAppInstalled = WCSession.default.isWatchAppInstalled
+            }
             .onOpenURL { url in
                 do {
                     if let matcher = try HKBUSAPP_URL_PATTERN.firstMatch(in: url.absoluteString) {
