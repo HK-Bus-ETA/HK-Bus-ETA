@@ -93,16 +93,8 @@ struct hkbusetaApp: App {
                 .frame(maxWidth: .infinity)
                 if watchAppInstalled {
                     Button(action: {
-                        do {
-                            if lastSharePayload != nil {
-                                if WCSession.default.isReachable {
-                                    WCSession.default.sendMessage(lastSharePayload!) { _ in }
-                                } else {
-                                    try WCSession.default.updateApplicationContext(lastSharePayload!)
-                                }
-                            }
-                        } catch {
-                            
+                        if lastSharePayload != nil {
+                            WCSession.default.sendMessage(lastSharePayload!) { _ in }
                         }
                     }) {
                         Text("重新開啟上一條路線 Relaunch Last Route")
@@ -143,11 +135,7 @@ struct hkbusetaApp: App {
                         }
                         
                         lastSharePayload = payload
-                        if WCSession.default.isReachable {
-                            WCSession.default.sendMessage(payload) { _ in }
-                        } else {
-                            try WCSession.default.updateApplicationContext(payload)
-                        }
+                        WCSession.default.sendMessage(lastSharePayload!) { _ in }
                     }
                 } catch {
                     
