@@ -50,6 +50,7 @@ const val KMB_URL_STARTS_WITH = "https://app1933.page.link"
 const val KMB_DIRECT_URL_STARTS_WITH = "https://m4.kmb.hk/kmb-ws/share.php?parameter="
 val CTB_URL_PATTERN: Pattern = Pattern.compile("(?:城巴|Citybus) ?App: ?([0-9A-Za-z]+) ?(?:往|To) ?(.*)?http")
 val HKBUSAPP_URL_PATTERN: Pattern = Pattern.compile("https://(?:(?:watch|wear)\\.)?hkbus\\.app/(?:.+/)?route/([^/]*)(?:/([^/]*)(?:%2C|,)([^/]*))?")
+val HKBUSAPP_LAUNCH_PATTERN: Pattern = Pattern.compile("https://(?:(?:watch|wear)\\.)?hkbus\\.app")
 
 
 class SendToWatchActivity : ComponentActivity() {
@@ -130,16 +131,21 @@ fun DisplayElements(url: String?, instance: SendToWatchActivity) {
                     payload.put("d", dest.trim())
 
                     sendPayload(instance, payload)
-                } else if (HKBUSAPP_URL_PATTERN.matcher(url).also { matcher = it }.find()) {
-                    val key = matcher.group(1)!!
+                } else if (HKBUSAPP_LAUNCH_PATTERN.matcher(url).find()) {
+                    if (HKBUSAPP_URL_PATTERN.matcher(url).also { matcher = it }.find()) {
+                        val key = matcher.group(1)!!
 
-                    val payload = JSONObject()
-                    payload.put("k", key)
+                        val payload = JSONObject()
+                        payload.put("k", key)
 
-                    matcher.group(2)?.let { if (it.isNotBlank()) payload.put("s", it) }
-                    matcher.group(3)?.let { if (it.isNotBlank()) it.toIntOrNull()?.let { i -> payload.put("si", i) } }
+                        matcher.group(2)?.let { if (it.isNotBlank()) payload.put("s", it) }
+                        matcher.group(3)?.let { if (it.isNotBlank()) it.toIntOrNull()?.let { i -> payload.put("si", i) } }
 
-                    sendPayload(instance, payload)
+                        sendPayload(instance, payload)
+                    } else {
+                        instance.startActivity(Intent(instance, MainActivity::class.java))
+                        instance.finishAffinity()
+                    }
                 } else {
                     instance.runOnUiThread {
                         Toast.makeText(instance, R.string.send_malformed, Toast.LENGTH_LONG).show()
