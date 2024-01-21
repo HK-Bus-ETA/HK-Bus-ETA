@@ -18,6 +18,7 @@ jobs:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY_WEAR }}
         with:
           source-directory: './'
+          target-directory: 'privacy-policy'
           destination-github-username: 'hkbus'
           destination-repository-name: 'wear.hkbus.app'
           user-email: jamesloohp@gmail.com
@@ -28,6 +29,7 @@ jobs:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY_WATCH }}
         with:
           source-directory: './'
+          target-directory: 'privacy-policy'
           destination-github-username: 'hkbus'
           destination-repository-name: 'watch.hkbus.app'
           user-email: jamesloohp@gmail.com
