@@ -376,11 +376,11 @@ object Shared {
                                 stops.withIndex().filter { it.value.stopId == queryStop }.minByOrNull { (queryStopIndex - it.index).absoluteValue }?.let { r ->
                                     val (i, stopData) = r
                                     val intent3 = AppIntent(instance, AppScreen.ETA)
-                                    intent3.putExtra("stopId", stopId)
-                                    intent3.putExtra("co", it.co.name)
+                                    intent3.putExtra("stopId", stopData.stopId)
+                                    intent3.putExtra("co", queryCo)
                                     intent3.putExtra("index", i + 1)
                                     intent3.putExtra("stop", stopData.stop)
-                                    intent3.putExtra("route", it.route!!)
+                                    intent3.putExtra("route", stopData.route)
                                     instance.startActivity(intent3)
                                 }
                             }

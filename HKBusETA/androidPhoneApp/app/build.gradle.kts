@@ -31,7 +31,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 24
         targetSdk = 33
-        versionCode = 410
+        versionCode = 411
         versionName = "1.8.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

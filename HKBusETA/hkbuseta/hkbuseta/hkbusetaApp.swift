@@ -190,19 +190,20 @@ struct hkbusetaApp: App {
                         invalidLink = false
                         return
                     } else if let matcher = try HKBUSAPP_URL_PATTERN.firstMatch(in: shareUrl) {
-                        let key = String(matcher[1].value as! Substring)
+                        let key = String(matcher[1].substring!)
 
                         var payload: Dictionary<String, Any> = [:]
                         payload["k"] = key
                         
-                        if matcher.count >= 3 {
-                            let group2 = String(matcher[2].value as! Substring)
+                        if matcher.count >= 3 && matcher[2].substring != nil {
+                            let group2 = String(matcher[2].substring!)
                             if !group2.isEmpty {
                                 payload["s"] = group2
+                                payload["sd"] = true
                             }
                         }
-                        if matcher.count >= 4 {
-                            let group3 = Int(String(matcher[3].value as! Substring))
+                        if matcher.count >= 4 && matcher[3].substring != nil {
+                            let group3 = Int(String(matcher[3].substring!))
                             payload["si"] = group3
                         }
                         

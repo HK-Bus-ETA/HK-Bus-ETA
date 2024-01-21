@@ -23,6 +23,9 @@ package com.loohp.hkbuseta.common.objects
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.concurrency.AtomicInt
 import co.touchlab.stately.concurrency.synchronize
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.Platform
+import com.loohp.hkbuseta.common.appcontext.platform
 import com.loohp.hkbuseta.common.utils.Immutable
 
 @Immutable
@@ -88,4 +91,12 @@ class Operator private constructor(
         return ordinal - other.ordinal
     }
 
+}
+
+fun AppIntent.putExtra(name: String, value: Operator): AppIntent {
+    when (platform()) {
+        Platform.WEAROS -> extras.putString(name, value.name)
+        Platform.WATCHOS -> extras.data[name] = value
+    }
+    return this
 }

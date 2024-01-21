@@ -138,7 +138,10 @@ fun DisplayElements(url: String?, instance: SendToWatchActivity) {
                         val payload = JSONObject()
                         payload.put("k", key)
 
-                        matcher.group(2)?.let { if (it.isNotBlank()) payload.put("s", it) }
+                        matcher.group(2)?.let { if (it.isNotBlank()) {
+                            payload.put("s", it)
+                            payload.put("sd", true)
+                        } }
                         matcher.group(3)?.let { if (it.isNotBlank()) it.toIntOrNull()?.let { i -> payload.put("si", i) } }
 
                         sendPayload(instance, payload)
