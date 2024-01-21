@@ -1,34 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "1510"
-   version = "2.2">
+   version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES">
       <BuildActionEntries>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "NO"
-            buildForProfiling = "NO"
-            buildForArchiving = "NO"
-            buildForAnalyzing = "NO">
-            <AutocreatedTestPlanReference>
-            </AutocreatedTestPlanReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "81D16AB32B33C21E003D9817"
-               BuildableName = "HKBusETA.app"
-               BlueprintName = "HKBusETA Watch App"
-               ReferencedContainer = "container:watchOSApp.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
          <BuildActionEntry
             buildForTesting = "YES"
             buildForRunning = "YES"
@@ -66,9 +43,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "81D16AB32B33C21E003D9817"
-            BuildableName = "HKBusETA.app"
-            BlueprintName = "HKBusETA Watch App"
+            BlueprintIdentifier = "8171F0602B5C81F4005B8F6A"
+            BuildableName = "HKBusETA Phone Companion App.app"
+            BlueprintName = "HKBusETA Phone Companion App"
             ReferencedContainer = "container:watchOSApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -83,9 +60,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "81D16AB32B33C21E003D9817"
-            BuildableName = "HKBusETA.app"
-            BlueprintName = "HKBusETA Watch App"
+            BlueprintIdentifier = "8171F0602B5C81F4005B8F6A"
+            BuildableName = "HKBusETA Phone Companion App.app"
+            BlueprintName = "HKBusETA Phone Companion App"
             ReferencedContainer = "container:watchOSApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -95,7 +72,6 @@
    </AnalyzeAction>
    <ArchiveAction
       buildConfiguration = "Release"
-      customArchiveName = "HKBusETA_WatchOS"
       revealArchiveInOrganizer = "YES">
    </ArchiveAction>
 </Scheme>

@@ -10,11 +10,33 @@ import shared
 import Gzip
 import FirebaseCore
 import WatchKit
+import WatchConnectivity
 
-class ApplicationDelegate: NSObject, WKApplicationDelegate {
+class ApplicationDelegate: NSObject, WKApplicationDelegate, WCSessionDelegate {
+    
+    override init() {
+        super.init()
+        if WCSession.isSupported() {
+            let session = WCSession.default
+            session.delegate = self
+            session.activate()
+        }
+    }
+    
+    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        
+    }
     
     func applicationDidFinishLaunching() {
         FirebaseApp.configure()
+    }
+    
+    func session(_ session: WCSession, didReceiveMessage payload: [String: Any]) {
+        handleLaunchOptions(payload: payload)
+    }
+    
+    func session(_ session: WCSession, didReceiveMessage payload: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
+        handleLaunchOptions(payload: payload)
     }
     
 }
@@ -45,19 +67,19 @@ struct hkbuseta_Watch_AppApp: App {
             if Bool(truncating: longClick) {
                 haptics.performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
             }
-            openMaps(lat: Double(truncating: lat), lng: Double(truncating: lng), label: label)
+            openMaps(lat: Double(truncating: lat), lng: Double(truncating: lng), label: label, longClick: Bool(truncating: longClick))
         })
         AppContextWatchOSKt.setOpenWebpagesImpl(handler: { url, longClick, haptics in
             if Bool(truncating: longClick) {
                 haptics.performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
             }
-            openUrl(link: url)
+            openUrl(link: url, longClick: Bool(truncating: longClick))
         })
         AppContextWatchOSKt.setOpenImagesImpl(handler: { url, longClick, haptics in
             if Bool(truncating: longClick) {
                 haptics.performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
             }
-            openUrl(link: url)
+            openUrl(link: url, longClick: Bool(truncating: longClick))
         })
     }
     
@@ -130,6 +152,21 @@ func BackButton(_ appContext: AppContext, scrollingScreen: Bool) -> some View {
         alignment: .top
     )
     .edgesIgnoringSafeArea(.all)
+}
+
+func handleLaunchOptions(payload: [String: Any]) {
+    let queryKey = payload["k"] as? String
+    let queryRouteNumber = payload["r"] as? String
+    let queryBound = payload["b"] as? String
+    let queryCoRaw = payload["c"] as? String
+    let queryCo = queryCoRaw == nil ? nil as Operator? : Operator.Companion().valueOf(name: queryCoRaw!)
+    let queryDest = payload["d"] as? String
+    let queryGMBRegionRaw = payload["g"] as? String
+    let queryGMBRegion = queryGMBRegionRaw == nil ? nil as GMBRegion? : GMBRegion.Companion().valueOfOrNull(name: queryGMBRegionRaw!)
+    let queryStop = payload["s"] as? String
+    let queryStopIndex = (payload["si"] as? Int ?? 0).asInt32()
+    let queryStopDirectLaunch = payload["sd"] as? Bool ?? false
+    Shared().handleLaunchOptions(instance: HistoryStack().historyStack.first!, stopId: nil, co: nil, index: nil, stop: nil, route: nil, listStopRoute: nil, listStopScrollToStop: nil, listStopShowEta: nil, listStopIsAlightReminder: nil, queryKey: queryKey, queryRouteNumber: queryRouteNumber, queryBound: queryBound, queryCo: queryCo, queryDest: queryDest, queryGMBRegion: queryGMBRegion, queryStop: queryStop, queryStopIndex: queryStopIndex, queryStopDirectLaunch: queryStopDirectLaunch, orElse: { })
 }
 
 extension View {

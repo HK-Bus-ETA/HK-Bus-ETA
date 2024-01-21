@@ -16,8 +16,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8171F0192B52EC4E005B8F6A"
-               BuildableName = "tileswidgetExtension.appex"
-               BlueprintName = "tileswidgetExtension"
+               BuildableName = "TilesWidgetExtension.appex"
+               BlueprintName = "TilesWidgetExtension"
                ReferencedContainer = "container:watchOSApp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -31,7 +31,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "81D16AB32B33C21E003D9817"
                BuildableName = "HKBusETA.app"
-               BlueprintName = "hkbuseta Watch App"
+               BlueprintName = "HKBusETA Watch App"
                ReferencedContainer = "container:watchOSApp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -43,9 +43,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "81D16AAD2B33C21E003D9817"
-               BuildableName = "hkbuseta.app"
-               BlueprintName = "hkbuseta"
+               BlueprintIdentifier = "8171F0602B5C81F4005B8F6A"
+               BuildableName = "HKBusETA Phone Companion App.app"
+               BlueprintName = "HKBusETA Phone Companion App"
                ReferencedContainer = "container:watchOSApp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -74,12 +74,21 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "81D16AB32B33C21E003D9817"
-            BuildableName = "HKBusETA.app"
-            BlueprintName = "hkbuseta Watch App"
+            BlueprintIdentifier = "8171F0192B52EC4E005B8F6A"
+            BuildableName = "TilesWidgetExtension.appex"
+            BlueprintName = "TilesWidgetExtension"
             ReferencedContainer = "container:watchOSApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "81D16AB32B33C21E003D9817"
+            BuildableName = "HKBusETA.app"
+            BlueprintName = "HKBusETA Watch App"
+            ReferencedContainer = "container:watchOSApp.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "_XCWidgetKind"
@@ -109,8 +118,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8171F0192B52EC4E005B8F6A"
-            BuildableName = "tileswidgetExtension.appex"
-            BlueprintName = "tileswidgetExtension"
+            BuildableName = "TilesWidgetExtension.appex"
+            BlueprintName = "TilesWidgetExtension"
             ReferencedContainer = "container:watchOSApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

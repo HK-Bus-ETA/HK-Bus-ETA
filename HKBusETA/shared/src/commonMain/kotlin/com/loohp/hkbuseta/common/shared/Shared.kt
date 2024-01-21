@@ -43,6 +43,7 @@ import com.loohp.hkbuseta.common.objects.StopInfo
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getRouteKey
 import com.loohp.hkbuseta.common.objects.gmbRegion
+import com.loohp.hkbuseta.common.objects.putExtra
 import com.loohp.hkbuseta.common.objects.resolveStop
 import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.utils.Colored
@@ -51,7 +52,6 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
-import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.CoroutineScope
@@ -350,19 +350,11 @@ object Shared {
                     }
                     if (filteredResult.isEmpty()) {
                         val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
-                        intent.putExtra("result", result.asSequence().map {
-                            val clone = it.deepClone()
-                            clone.strip()
-                            clone.serialize()
-                        }.toJsonArray().toString())
+                        intent.putExtra("result", result.asSequence().map { it.deepClone() })
                         instance.startActivity(intent)
                     } else {
                         val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
-                        intent.putExtra("result", filteredResult.asSequence().map {
-                            val clone = it.deepClone()
-                            clone.strip()
-                            clone.serialize()
-                        }.toJsonArray().toString())
+                        intent.putExtra("result", filteredResult.asSequence().map { it.deepClone() })
                         instance.startActivity(intent)
 
                         val it = filteredResult[0]

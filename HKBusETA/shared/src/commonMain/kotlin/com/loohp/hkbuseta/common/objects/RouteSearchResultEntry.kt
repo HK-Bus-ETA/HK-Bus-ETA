@@ -20,15 +20,20 @@
  */
 package com.loohp.hkbuseta.common.objects
 
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.Platform
+import com.loohp.hkbuseta.common.appcontext.platform
 import com.loohp.hkbuseta.common.utils.IOSerializable
 import com.loohp.hkbuseta.common.utils.JSONSerializable
 import com.loohp.hkbuseta.common.utils.Stable
+import com.loohp.hkbuseta.common.utils.Strippable
 import com.loohp.hkbuseta.common.utils.optBoolean
 import com.loohp.hkbuseta.common.utils.optDouble
 import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.common.utils.readNullable
 import com.loohp.hkbuseta.common.utils.readString
+import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.loohp.hkbuseta.common.utils.writeNullable
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
@@ -41,7 +46,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 @Stable
-open class RouteSearchResultEntry : JSONSerializable, IOSerializable {
+open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable {
 
     companion object {
 
@@ -93,7 +98,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable {
         return runBlocking { deserialize(ByteReadChannel(toByteArray())) }
     }
 
-    fun strip() {
+    override fun strip() {
         route = null
         stopInfo?.strip()
     }
@@ -150,7 +155,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable {
 
 @Stable
 class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co: Operator) : JSONSerializable,
-    IOSerializable {
+    IOSerializable, Strippable {
 
     companion object {
 
@@ -171,7 +176,7 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
         }
     }
 
-    fun strip() {
+    override fun strip() {
         data = null
     }
 
@@ -211,4 +216,14 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
         return result
     }
 
+}
+
+fun AppIntent.putExtra(key: String, value: Sequence<RouteSearchResultEntry>) {
+    when (platform()) {
+        Platform.WEAROS -> putExtra(key, value.map {
+            it.strip()
+            it.serialize()
+        }.toJsonArray().toString())
+        Platform.WATCHOS -> extras.data[key] = value.toList()
+    }
 }

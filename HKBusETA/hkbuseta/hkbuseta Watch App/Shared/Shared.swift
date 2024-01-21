@@ -10,6 +10,7 @@ import WatchKit
 import SwiftUI
 import shared
 import AuthenticationServices
+import WatchConnectivity
 
 let watchOSVersion = WKInterfaceDevice.current().systemVersion
 let belowWidgetVersion = watchOSVersion.compare("9.0", options: .numeric) == .orderedAscending
@@ -44,7 +45,11 @@ func fetchEta(appContext: AppContext, stopId: String, stopIndex: Int32, co: Oper
 }
 
 func playHaptics() {
-    AppContextWatchOSKt.hapticFeedback.performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
+    hapticsFeedback().performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
+}
+
+func hapticsFeedback() -> HapticFeedback {
+    return AppContextWatchOSKt.hapticFeedback
 }
 
 func newAppDataConatiner() -> KotlinMutableDictionary<NSString, AnyObject> {
@@ -59,16 +64,22 @@ func dispatcherIO(task: @escaping () -> Void) {
     AppContextWatchOSKt.dispatcherIO(task: task)
 }
 
-func openUrl(link: String) {
+func openUrl(link: String, longClick: Bool) {
     guard let url = URL(string: link) else {
         return
     }
-    let session = ASWebAuthenticationSession(url: url,callbackURLScheme: nil) { _, _ in }
+    if longClick {
+        playHaptics()
+    }
+    let session = ASWebAuthenticationSession(url: url, callbackURLScheme: nil) { _, _ in }
     session.prefersEphemeralWebBrowserSession = true
     session.start()
 }
 
-func openMaps(lat: Double, lng: Double, label: String) {
+func openMaps(lat: Double, lng: Double, label: String, longClick: Bool) {
+    if longClick {
+        playHaptics()
+    }
     let coordinate = CLLocationCoordinate2DMake(lat, lng)
     let placemark = MKPlacemark(coordinate: coordinate)
     let mapItem = MKMapItem(placemark: placemark)

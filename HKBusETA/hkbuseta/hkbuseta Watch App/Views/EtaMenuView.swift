@@ -129,9 +129,7 @@ struct EtaMenuView: AppScreenView {
     }
     
     func OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double) -> some View {
-        Button(action: {
-            openMaps(lat: lat, lng: lng, label: stopName.get(language: Shared().language))
-        }) {
+        Button(action: {}) {
             HStack(spacing: 2.scaled(appContext)) {
                 ZStack {
                     Circle()
@@ -164,13 +162,22 @@ struct EtaMenuView: AppScreenView {
         .buttonStyle(PlainButtonStyle())
         .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 50))
+        .simultaneousGesture(
+            LongPressGesture()
+                .onEnded { _ in
+                    appContext.handleOpenMaps(lat: lat, lng: lng, label: stopName.get(language: Shared().language), longClick: true, haptics: hapticsFeedback())()
+                }
+        )
+        .highPriorityGesture(
+            TapGesture()
+                .onEnded { _ in
+                    appContext.handleOpenMaps(lat: lat, lng: lng, label: stopName.get(language: Shared().language), longClick: true, haptics: hapticsFeedback())()
+                }
+        )
     }
     
     func KmbBbiButton(kmbBbiId: String) -> some View {
-        Button(action: {
-            let url = "https://app.kmb.hk/app1933/BBI/map/\(kmbBbiId).jpg"
-            openUrl(link: url)
-        }) {
+        Button(action: {}) {
             HStack(spacing: 2.scaled(appContext)) {
                 ZStack {
                     Circle()
@@ -203,17 +210,24 @@ struct EtaMenuView: AppScreenView {
         .buttonStyle(PlainButtonStyle())
         .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 50))
+        .simultaneousGesture(
+            LongPressGesture()
+                .onEnded { _ in
+                    let url = "https://app.kmb.hk/app1933/BBI/map/\(kmbBbiId).jpg"
+                    appContext.handleWebImages(url: url, longClick: true, haptics: hapticsFeedback())()
+                }
+        )
+        .highPriorityGesture(
+            TapGesture()
+                .onEnded { _ in
+                    let url = "https://app.kmb.hk/app1933/BBI/map/\(kmbBbiId).jpg"
+                    appContext.handleWebImages(url: url, longClick: false, haptics: hapticsFeedback())()
+                }
+        )
     }
     
     func SearchNearbyButton() -> some View {
-        Button(action: {
-            let data = newAppDataConatiner()
-            data["interchangeSearch"] = true
-            data["lat"] = stop.location.lat
-            data["lng"] = stop.location.lng
-            data["exclude"] = [route.routeNumber]
-            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.nearby, data))
-        }) {
+        Button(action: {}) {
             HStack(spacing: 2.scaled(appContext)) {
                 ZStack {
                     Circle()
@@ -246,6 +260,29 @@ struct EtaMenuView: AppScreenView {
         .buttonStyle(PlainButtonStyle())
         .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
         .clipShape(RoundedRectangle(cornerRadius: 50))
+        .simultaneousGesture(
+            LongPressGesture()
+                .onEnded { _ in
+                    playHaptics()
+                    let data = newAppDataConatiner()
+                    data["interchangeSearch"] = true
+                    data["lat"] = stop.location.lat
+                    data["lng"] = stop.location.lng
+                    data["exclude"] = [route.routeNumber]
+                    appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.nearby, data))
+                }
+        )
+        .highPriorityGesture(
+            TapGesture()
+                .onEnded { _ in
+                    let data = newAppDataConatiner()
+                    data["interchangeSearch"] = true
+                    data["lat"] = stop.location.lat
+                    data["lng"] = stop.location.lng
+                    data["exclude"] = [route.routeNumber]
+                    appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.nearby, data))
+                }
+        )
     }
     
     func getFavState(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route) -> FavouriteRouteState {
