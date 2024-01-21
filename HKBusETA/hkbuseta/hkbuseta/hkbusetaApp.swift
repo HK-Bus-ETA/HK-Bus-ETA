@@ -55,7 +55,8 @@ struct hkbusetaApp: App {
             VStack(alignment: .leading, spacing: 40) {
                 VStack(alignment: .center) {
                     Image("icon_full")
-                        .imageScale(.large)
+                        .resizable()
+                        .frame(width: 150, height: 150)
                         .foregroundStyle(.tint)
                 }
                 .frame(maxWidth: .infinity)
@@ -88,10 +89,16 @@ struct hkbusetaApp: App {
                 )
                 .frame(maxWidth: .infinity)
                 VStack(alignment: .leading) {
-                    Text("本手機配套應用程式用於直接讓你在手錶上開啟巴士路線連結。\n使用此功能時，手錶應用程式必須位於前台。")
+                    Text("本手機配套應用程式用於直接讓你在手錶上開啟巴士路線連結。")
                         .multilineTextAlignment(.leading)
                         .font(.title3)
-                    Text("This phone companion app is used for directly launching into bus routes and stops onto the watch app.\nThe watch app must be in the foreground while this feature is used.")
+                    Text("使用此功能時，手錶應用程式必須位於前台。")
+                        .multilineTextAlignment(.leading)
+                        .font(.title3)
+                    Text("This phone companion app is used for directly launching into bus routes and stops onto the watch app.")
+                        .multilineTextAlignment(.leading)
+                        .font(.title3)
+                    Text("The watch app must be in the foreground while this feature is used.")
                         .multilineTextAlignment(.leading)
                         .font(.title3)
                 }

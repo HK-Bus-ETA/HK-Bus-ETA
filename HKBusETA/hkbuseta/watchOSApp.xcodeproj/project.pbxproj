@@ -484,9 +484,9 @@
 			projectRoot = "";
 			targets = (
 				8171F0602B5C81F4005B8F6A /* HKBusETA Phone Companion App */,
+				8171F07F2B5D4F11005B8F6A /* ShareExtension */,
 				81D16AB32B33C21E003D9817 /* HKBusETA Watch App */,
 				8171F0192B52EC4E005B8F6A /* TilesWidgetExtension */,
-				8171F07F2B5D4F11005B8F6A /* ShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -635,7 +635,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
@@ -665,7 +665,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
@@ -697,7 +697,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = hkbuseta/hkbuseta.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -736,7 +736,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = hkbuseta/hkbuseta.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -773,7 +773,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = shareextension/Info.plist;
@@ -803,7 +803,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				EXCLUDED_ARCHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -963,7 +963,7 @@
 				CODE_SIGN_ENTITLEMENTS = "hkbuseta Watch App/hkbuseta Watch App.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -1005,7 +1005,7 @@
 				CODE_SIGN_ENTITLEMENTS = "hkbuseta Watch App/hkbuseta Watch App.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
