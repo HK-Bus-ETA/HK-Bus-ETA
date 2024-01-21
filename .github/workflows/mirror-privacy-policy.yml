@@ -1,18 +1,17 @@
-name: Mirror Pages
+name: Mirror Privacy Policy
 on:
   schedule:
     - cron: "0 20 * * *"
   workflow_dispatch:
 
 jobs:
-  Mirror-Pages:
+  Mirror-Privacy-Policy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v2
-        with:
-          ref: pages
+      - name: Fetch Privacy Policy
+        run: |
+          wget https://loohp.github.io/HK-Bus-ETA-WearOS-WatchOS/PRIVACY_POLICY.html
       - name: Push to wear.hkbus.app
         uses: cpina/github-action-push-to-another-repository@main
         env:
