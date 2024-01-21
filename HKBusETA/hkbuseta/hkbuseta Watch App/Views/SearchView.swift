@@ -42,21 +42,21 @@ struct SearchView: AppScreenView {
                 .padding()
             HStack {
                 VStack {
-                    KeyboardKey(content: "7")
-                    KeyboardKey(content: "4")
                     KeyboardKey(content: "1")
+                    KeyboardKey(content: "4")
+                    KeyboardKey(content: "7")
                     KeyboardKey(content: "<", longContent: "-")
                 }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
                 VStack {
-                    KeyboardKey(content: "8")
-                    KeyboardKey(content: "5")
                     KeyboardKey(content: "2")
+                    KeyboardKey(content: "5")
+                    KeyboardKey(content: "8")
                     KeyboardKey(content: "0")
                 }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
                 VStack {
-                    KeyboardKey(content: "9")
-                    KeyboardKey(content: "6")
                     KeyboardKey(content: "3")
+                    KeyboardKey(content: "6")
+                    KeyboardKey(content: "9")
                     KeyboardKey(content: "/")
                 }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
                 ScrollView(.vertical) {

@@ -27,8 +27,8 @@ import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.SearchPage
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.common.utils.ifFalse
+import com.loohp.hkbuseta.shared.AndroidShared
 
 
 @Stable

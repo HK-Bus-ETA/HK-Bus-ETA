@@ -162,21 +162,21 @@ fun SearchMainElement(instance: AppActiveContext) {
             horizontalArrangement = Arrangement.Center
         ) {
             Column {
-                KeyboardButton(instance, '7', state)
-                KeyboardButton(instance, '4', state)
                 KeyboardButton(instance, '1', state)
+                KeyboardButton(instance, '4', state)
+                KeyboardButton(instance, '7', state)
                 KeyboardButton(instance, '<', '-', state, Color.Red, persistentListOf(Icons.Outlined.Delete.asImmutableState(), R.drawable.baseline_history_24.asImmutableState()))
             }
             Column {
-                KeyboardButton(instance, '8', state)
-                KeyboardButton(instance, '5', state)
                 KeyboardButton(instance, '2', state)
+                KeyboardButton(instance, '5', state)
+                KeyboardButton(instance, '8', state)
                 KeyboardButton(instance, '0', state)
             }
             Column {
-                KeyboardButton(instance, '9', state)
-                KeyboardButton(instance, '6', state)
                 KeyboardButton(instance, '3', state)
+                KeyboardButton(instance, '6', state)
+                KeyboardButton(instance, '9', state)
                 KeyboardButton(instance, '/', null, state, Color.Green, persistentListOf(Icons.Outlined.Done.asImmutableState()))
             }
             Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
