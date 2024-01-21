@@ -29,15 +29,15 @@ import androidx.compose.ui.Modifier
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.loohp.hkbuseta.app.EtaElement
 import com.loohp.hkbuseta.appcontext.appContext
-import com.loohp.hkbuseta.compose.ambientMode
-import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.operator
-import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.utils.MutableHolder
 import com.loohp.hkbuseta.common.utils.ifFalse
+import com.loohp.hkbuseta.compose.ambientMode
+import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
+import com.loohp.hkbuseta.shared.AndroidShared
+import com.loohp.hkbuseta.utils.MutableHolder
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -58,7 +58,7 @@ class EtaActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AndroidShared.ensureRegistryDataAvailable(this).ifFalse { return }
+        Shared.ensureRegistryDataAvailable(appContext).ifFalse { return }
         AndroidShared.setDefaultExceptionHandler(this)
 
         val stopId = intent.extras!!.getString("stopId")

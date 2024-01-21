@@ -70,6 +70,7 @@ import kotlinx.datetime.toJavaLocalDateTime
 import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
+import java.util.WeakHashMap
 import kotlin.math.abs
 
 
@@ -323,9 +324,23 @@ class AppActiveContextAndroid internal constructor(
 
 }
 
-val ComponentActivity.appContext: AppActiveContext get() = AppActiveContextAndroid(this)
+private val appContextHolder: MutableMap<Context, AppContextAndroid> = WeakHashMap()
 
-val Context.appContext: AppContext get() = AppContextAndroid(this)
+val ComponentActivity.appContext: AppActiveContextAndroid get() {
+    synchronized(appContextHolder) {
+        return appContextHolder.compute(this) { _, context ->
+            context?.takeIf { it is AppActiveContextAndroid }?: AppActiveContextAndroid(this)
+        }!! as AppActiveContextAndroid
+    }
+}
+
+val Context.appContext: AppContextAndroid get()  {
+    synchronized(appContextHolder) {
+        return appContextHolder.getOrPut(this) {
+            if (this is ComponentActivity) AppActiveContextAndroid(this) else AppContextAndroid(this)
+        }
+    }
+}
 
 val AppScreen.activityClass: Class<*> get() = when (this) {
     AppScreen.DISMISSIBLE_TEXT_DISPLAY -> DismissibleTextDisplayActivity::class.java

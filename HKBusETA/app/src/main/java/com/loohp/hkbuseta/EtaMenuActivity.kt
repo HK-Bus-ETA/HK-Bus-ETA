@@ -29,6 +29,7 @@ import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.operator
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.common.utils.ifFalse
 import io.ktor.utils.io.ByteReadChannel
@@ -40,7 +41,7 @@ class EtaMenuActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AndroidShared.ensureRegistryDataAvailable(this).ifFalse { return }
+        Shared.ensureRegistryDataAvailable(appContext).ifFalse { return }
         AndroidShared.setDefaultExceptionHandler(this)
 
         val stopId = intent.extras!!.getString("stopId")

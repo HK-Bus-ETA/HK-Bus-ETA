@@ -110,6 +110,12 @@ struct hkbuseta_Watch_AppApp: App {
                 self.toastText = state.text
                 self.toastShowTimeLeft = state.duration.seconds()
             }
+            .onChange(of: historyStackState.state) { historyStack in
+                let context = historyStack.last!
+                if context.screen.needEnsureRegistryDataAvailable() {
+                    Shared().ensureRegistryDataAvailable(context: context)
+                }
+            }
             .onReceive(toastTimer) { _ in
                 if self.toastShowTimeLeft > 0 {
                     self.toastShowTimeLeft -= 0.1
@@ -228,6 +234,15 @@ extension AppScreen {
     func isScrollingScreen() -> Bool {
         switch self {
         case AppScreen.listStops, AppScreen.listRoutes, AppScreen.fav, AppScreen.etaMenu, AppScreen.etaTileList, AppScreen.etaTileConfigure:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    func needEnsureRegistryDataAvailable() -> Bool {
+        switch self {
+        case AppScreen.eta, AppScreen.etaMenu, AppScreen.fav, AppScreen.favRouteListView, AppScreen.listRoutes, AppScreen.listStops, AppScreen.nearby, AppScreen.search, AppScreen.title:
             return true
         default:
             return false

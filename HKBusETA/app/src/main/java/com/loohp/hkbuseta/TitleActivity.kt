@@ -26,6 +26,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.HKBusETAApp
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.common.utils.ifFalse
 
@@ -35,7 +36,7 @@ class TitleActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AndroidShared.ensureRegistryDataAvailable(this).ifFalse { return }
+        Shared.ensureRegistryDataAvailable(appContext).ifFalse { return }
         AndroidShared.setDefaultExceptionHandler(this)
 
         setContent {

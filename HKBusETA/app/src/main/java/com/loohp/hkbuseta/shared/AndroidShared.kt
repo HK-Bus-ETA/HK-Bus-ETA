@@ -37,13 +37,11 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.loohp.hkbuseta.FatalErrorActivity
-import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.background.DailyUpdateWorker
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
-import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.nextScheduledDataUpdateMillis
 import com.loohp.hkbuseta.utils.HongKongTimeSource
@@ -117,19 +115,6 @@ object AndroidShared {
     fun removeSelfFromCurrentActivity(activity: Activity) {
         val data = CurrentActivityData(activity.javaClass, activity.intent.extras)
         currentActivity.updateAndGet { if (it != null && it.isEqualTo(data)) null else it }
-    }
-
-    @SuppressLint("WearRecents")
-    fun ensureRegistryDataAvailable(activity: Activity): Boolean {
-        return if (!Registry.hasInstanceCreated() || Registry.getInstanceNoUpdateCheck(activity.appContext).state.value.isProcessing) {
-            val intent = Intent(activity, MainActivity::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            activity.startActivity(intent)
-            activity.finishAffinity()
-            false
-        } else {
-            true
-        }
     }
 
     fun restoreCurrentScreenOrRun(context: AppActiveContext, runBehindAnyway: Boolean, orElse: () -> Unit) {

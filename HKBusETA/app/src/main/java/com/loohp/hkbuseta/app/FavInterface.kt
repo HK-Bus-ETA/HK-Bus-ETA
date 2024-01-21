@@ -115,6 +115,7 @@ import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.Small
+import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.checkLocationPermission
@@ -136,7 +137,7 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalWearFoundationApi::class)
 @Composable
-fun FavElements(scrollToIndex: Int, instance: AppActiveContext, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun FavElements(ambientMode: Boolean, scrollToIndex: Int, instance: AppActiveContext, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = rememberActiveFocusRequester()
         val scope = rememberCoroutineScope()
@@ -189,14 +190,14 @@ fun FavElements(scrollToIndex: Int, instance: AppActiveContext, schedule: (Boole
                 Spacer(modifier = Modifier.size(20.scaledSize(instance).dp))
             }
             item {
-                FavTitle(instance)
+                FavTitle(ambientMode, instance)
                 Spacer(modifier = Modifier.size(5.scaledSize(instance).dp))
-                FavDescription(instance)
+                FavDescription(ambientMode, instance)
             }
             if (showRouteListViewButton) {
                 item {
                     Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
-                    RouteListViewButton(instance)
+                    RouteListViewButton(ambientMode, instance)
                 }
             } else {
                 item {
@@ -215,33 +216,33 @@ fun FavElements(scrollToIndex: Int, instance: AppActiveContext, schedule: (Boole
 }
 
 @Composable
-fun FavTitle(instance: AppActiveContext) {
+fun FavTitle(ambientMode: Boolean, instance: AppActiveContext) {
     Text(
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp, 0.dp),
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
+        color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
         fontSize = 17F.scaledSize(instance).sp.clamp(max = 17.dp),
         text = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"
     )
 }
 
 @Composable
-fun FavDescription(instance: AppActiveContext) {
+fun FavDescription(ambientMode: Boolean, instance: AppActiveContext) {
     Text(
         modifier = Modifier
             .fillMaxWidth()
             .padding(30.dp, 0.dp),
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
+        color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
         fontSize = 11F.scaledSize(instance).sp.clamp(max = 11.dp),
         text = if (Shared.language == "en") "Routes can be displayed in Tiles" else "路線可在資訊方塊中顯示"
     )
 }
 
 @Composable
-fun RouteListViewButton(instance: AppActiveContext) {
+fun RouteListViewButton(ambientMode: Boolean, instance: AppActiveContext) {
     Button(
         onClick = {
             checkLocationPermission(instance) {
@@ -256,13 +257,13 @@ fun RouteListViewButton(instance: AppActiveContext) {
             .height(35.scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = MaterialTheme.colors.secondary,
-            contentColor = Color(0xFFFFFFFF)
+            contentColor = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
         ),
         content = {
             Text(
                 modifier = Modifier.fillMaxWidth(0.9F),
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colors.primary,
+                color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
                 fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
                 text = if (Shared.language == "en") "Route List View" else "路線一覽列表"
             )

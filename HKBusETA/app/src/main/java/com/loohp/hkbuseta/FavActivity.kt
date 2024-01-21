@@ -23,12 +23,17 @@ package com.loohp.hkbuseta
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.Modifier
+import com.google.android.horologist.compose.ambient.AmbientAware
 import com.loohp.hkbuseta.app.FavElements
 import com.loohp.hkbuseta.appcontext.appContext
-import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ifFalse
+import com.loohp.hkbuseta.compose.ambientMode
+import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
+import com.loohp.hkbuseta.shared.AndroidShared
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -45,18 +50,25 @@ class FavActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AndroidShared.ensureRegistryDataAvailable(this).ifFalse { return }
+        Shared.ensureRegistryDataAvailable(appContext).ifFalse { return }
         AndroidShared.setDefaultExceptionHandler(this)
 
         val scrollToIndex = intent.extras?.getInt("scrollToIndex")?: 0
 
         setContent {
-            FavElements(scrollToIndex, appContext) { isAdd, index, task ->
-                sync.execute {
-                    if (isAdd) {
-                        etaUpdatesMap.compute(index) { _, v -> v?.apply { executor.execute(task) }?: (executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!!) }
-                    } else {
-                        etaUpdatesMap.remove(index)?.first?.cancel(true)
+            AmbientAware {
+                val ambientMode = rememberIsInAmbientMode(it)
+                Box (
+                    modifier = Modifier.ambientMode(it)
+                ) {
+                    FavElements(ambientMode, scrollToIndex, appContext) { isAdd, index, task ->
+                        sync.execute {
+                            if (isAdd) {
+                                etaUpdatesMap.compute(index) { _, v -> v?.apply { executor.execute(task) }?: (executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!!) }
+                            } else {
+                                etaUpdatesMap.remove(index)?.first?.cancel(true)
+                            }
+                        }
                     }
                 }
             }

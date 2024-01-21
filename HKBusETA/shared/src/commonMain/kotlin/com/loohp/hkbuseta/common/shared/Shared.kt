@@ -27,6 +27,7 @@ import co.touchlab.stately.concurrency.withLock
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
@@ -86,6 +87,18 @@ object Shared {
         try {
             Registry.invalidateCache(context)
         } catch (_: Throwable) {}
+    }
+
+    fun ensureRegistryDataAvailable(context: AppActiveContext): Boolean {
+        return if (!Registry.hasInstanceCreated() || Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
+            val intent = AppIntent(context, AppScreen.MAIN)
+            intent.addFlags(AppIntentFlag.NEW_TASK, AppIntentFlag.CLEAR_TASK)
+            context.startActivity(intent)
+            context.finishAffinity()
+            false
+        } else {
+            true
+        }
     }
 
     internal val kmbSubsidiary: Map<String, KMBSubsidiary> = HashMap()
@@ -272,9 +285,7 @@ object Shared {
             var queryGMBRegion = queryGMBRegion
 
             if (stopId != null && co != null && (stop is String || stop is ByteArray) && (route is String || route is ByteArray)) {
-                val routeParsed = if (route is String) Route.deserialize(Json.decodeFromString<JsonObject>(route)) else runBlocking { Route.deserialize(
-                    ByteReadChannel(route as ByteArray)
-                ) }
+                val routeParsed = if (route is String) Route.deserialize(Json.decodeFromString<JsonObject>(route)) else runBlocking { Route.deserialize(ByteReadChannel(route as ByteArray)) }
                 Registry.getInstance(instance).findRoutes(routeParsed.routeNumber, true) { it ->
                     val bound = it.bound
                     if (!bound.containsKey(co) || bound[co] != routeParsed.bound[co]) {
@@ -331,10 +342,10 @@ object Shared {
                 if (result.isNotEmpty()) {
                     var filteredResult = result.asSequence().filter {
                         return@filter when (queryCo) {
-                            Operator.NLB -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route!!.nlbId == queryBound)
+                            Operator.NLB -> it.co == queryCo && (queryBound == null || it.route!!.nlbId == queryBound)
                             Operator.GMB -> {
                                 val r = it.route!!
-                                (queryCo == null || it.co == queryCo) && (queryBound == null || r.bound[queryCo] == queryBound) && r.gmbRegion == queryGMBRegion
+                                it.co == queryCo && (queryBound == null || r.bound[queryCo] == queryBound) && r.gmbRegion == queryGMBRegion
                             }
                             else -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route!!.bound[queryCo] == queryBound)
                         }
@@ -373,8 +384,7 @@ object Shared {
 
                             if (queryStopDirectLaunch) {
                                 val stops = Registry.getInstance(instance).getAllStops(queryRouteNumber!!, queryBound!!, queryCo!!, queryGMBRegion)
-                                stops.withIndex().filter { it.value.stopId == queryStop }.minByOrNull { (queryStopIndex - it.index).absoluteValue }?.let { r ->
-                                    val (i, stopData) = r
+                                stops.withIndex().filter { it.value.stopId == queryStop }.minByOrNull { (queryStopIndex - it.index).absoluteValue }?.let { (i, stopData) ->
                                     val intent3 = AppIntent(instance, AppScreen.ETA)
                                     intent3.putExtra("stopId", stopData.stopId)
                                     intent3.putExtra("co", queryCo)

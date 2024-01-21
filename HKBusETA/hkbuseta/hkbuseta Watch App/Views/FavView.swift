@@ -18,6 +18,8 @@ struct FavView: AppScreenView {
     @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().currentMaxFavouriteRouteStopState), nativeFlow: Shared().currentMaxFavouriteRouteStopStateFlow)
     @State private var showRouteListViewButton = false
     
+    @Environment(\.isLuminanceReduced) var ambientMode
+    
     let etaTimer = Timer.publish(every: Double(Shared().ETA_UPDATE_INTERVAL) / 1000, on: .main, in: .common).autoconnect()
     @State private var etaActive: [Int] = []
     @State private var etaResults: ETAResultsContainer<KotlinInt> = ETAResultsContainer()
@@ -43,13 +45,13 @@ struct FavView: AppScreenView {
                     Spacer(minLength: 10.scaled(appContext))
                     Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
                         .multilineTextAlignment(.center)
-                        .foregroundColor(colorInt(0xFFFFFFFF).asColor())
+                        .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                         .lineLimit(2)
                         .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
                     Spacer().frame(height: 5.scaled(appContext))
                     Text(Shared().language == "en" ? "Routes can be displayed in Tiles" : "路線可在資訊方塊中顯示")
                         .font(.system(size: 10.scaled(appContext)))
-                        .foregroundColor(.white)
+                        .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
                     Spacer(minLength: 10.scaled(appContext))
@@ -60,6 +62,7 @@ struct FavView: AppScreenView {
                             appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.favRouteListView, data))
                         }) {
                             Text(Shared().language == "en" ? "Route List View" : "路線一覽列表")
+                                .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                                 .font(.system(size: 17.scaled(appContext), weight: .bold))
                         }
                         .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
