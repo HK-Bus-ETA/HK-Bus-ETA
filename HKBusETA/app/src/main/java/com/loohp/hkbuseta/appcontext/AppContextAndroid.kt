@@ -30,6 +30,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Stable
 import androidx.core.util.AtomicFile
+import com.google.common.cache.Cache
+import com.google.common.cache.CacheBuilder
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.DismissibleTextDisplayActivity
@@ -70,7 +72,6 @@ import kotlinx.datetime.toJavaLocalDateTime
 import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
-import java.util.WeakHashMap
 import kotlin.math.abs
 
 
@@ -324,23 +325,11 @@ class AppActiveContextAndroid internal constructor(
 
 }
 
-private val appContextHolder: MutableMap<Context, AppContextAndroid> = WeakHashMap()
+private val appContextHolder: Cache<Context, AppContextAndroid> = CacheBuilder.newBuilder().weakKeys().build()
 
-val ComponentActivity.appContext: AppActiveContextAndroid get() {
-    synchronized(appContextHolder) {
-        return appContextHolder.compute(this) { _, context ->
-            context?.takeIf { it is AppActiveContextAndroid }?: AppActiveContextAndroid(this)
-        }!! as AppActiveContextAndroid
-    }
-}
+val ComponentActivity.appContext: AppActiveContextAndroid get() = (this as Context).appContext as AppActiveContextAndroid
 
-val Context.appContext: AppContextAndroid get()  {
-    synchronized(appContextHolder) {
-        return appContextHolder.getOrPut(this) {
-            if (this is ComponentActivity) AppActiveContextAndroid(this) else AppContextAndroid(this)
-        }
-    }
-}
+val Context.appContext: AppContextAndroid get() = appContextHolder.get(this) { if (this is ComponentActivity) AppActiveContextAndroid(this) else AppContextAndroid(this) }
 
 val AppScreen.activityClass: Class<*> get() = when (this) {
     AppScreen.DISMISSIBLE_TEXT_DISPLAY -> DismissibleTextDisplayActivity::class.java
