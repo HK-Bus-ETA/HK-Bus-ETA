@@ -23,6 +23,10 @@ In addition, it also supports **English**.<br>
 - [HK Bus Crawling@2021](https://github.com/hkbus/hk-bus-crawling)
 - [HK Bus Crawling@2021 (Fork)](https://github.com/LOOHP/hk-bus-crawling)
 
+## Domain Data Repositories 網域資訊儲存庫
+- [wear.hkbus.app](https://github.com/hkbus/wear.hkbus.app)
+- [watch.hkbus.app](https://github.com/hkbus/watch.hkbus.app)
+
 ## Privacy Policy 隱私政策 (只供英文版本)
 I hereby state, to the best of my knowledge and belief, that I have **not programmed this app to collect any personally identifiable information**.<br>
 **Anonymous analytics data may be collected** for the purpose of improving the app, for example, identifying which function is particularly popular.<br>
