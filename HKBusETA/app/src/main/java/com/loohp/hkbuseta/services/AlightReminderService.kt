@@ -195,7 +195,7 @@ class AlightReminderService : Service() {
             val allStops = Registry.getInstance(appContext).getAllStops(newRoute.routeNumber, newRoute.bound[newOperator]!!, newOperator, newRoute.gmbRegion)
             updateCurrentValue(AlightReminderData(true, newStop, newIndex, newRoute, newOperator, allStops))
             Firebase.analytics.logEvent("alight_reminder", Bundle().apply {
-                putString("value", "${newRoute.routeNumber},${newOperator.name},${newRoute.bound[newOperator]},${newRoute.stops[newOperator]?.get(newIndex)?: "???"}")
+                putString("value", "${newRoute.routeNumber},${newOperator.name},${newRoute.bound[newOperator]},${newRoute.stops[newOperator]?.getOrNull(newIndex)?: "Unknown Stop $newIndex"}")
             })
         }
         val stopListIntentBuilder = getCurrentValue()!!.let { currentValue ->
