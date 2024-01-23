@@ -21,17 +21,35 @@
 package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.utils.FormattedText
+import com.loohp.hkbuseta.common.utils.IOSerializable
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.JSONSerializable
 import com.loohp.hkbuseta.common.utils.asFormattedText
+import com.loohp.hkbuseta.common.utils.optJsonObject
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.ByteWriteChannel
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 
 
 @Immutable
-class BilingualFormattedText(val zh: FormattedText, val en: FormattedText) {
+class BilingualFormattedText(val zh: FormattedText, val en: FormattedText) : JSONSerializable, IOSerializable {
 
     companion object {
 
         val EMPTY = BilingualFormattedText("".asFormattedText(), "".asFormattedText())
 
+        fun deserialize(json: JsonObject): BilingualFormattedText {
+            val zh = FormattedText.deserialize(json.optJsonObject("zh")!!)
+            val en = FormattedText.deserialize(json.optJsonObject("en")!!)
+            return BilingualFormattedText(zh, en)
+        }
+
+        suspend fun deserialize(input: ByteReadChannel): BilingualFormattedText {
+            val zh = FormattedText.deserialize(input)
+            val en = FormattedText.deserialize(input)
+            return BilingualFormattedText(zh, en)
+        }
     }
 
     operator fun get(language: String): FormattedText {
@@ -44,6 +62,31 @@ class BilingualFormattedText(val zh: FormattedText, val en: FormattedText) {
 
     operator fun component2(): FormattedText {
         return this.en
+    }
+
+    operator fun plus(other: BilingualFormattedText): BilingualFormattedText {
+        return BilingualFormattedText(this.zh + other.zh, this.en + other.en)
+    }
+
+    operator fun plus(other: String): BilingualFormattedText {
+        val formattedOther = other.asFormattedText()
+        return BilingualFormattedText(this.zh + formattedOther, this.en + formattedOther)
+    }
+
+    override fun toString(): String {
+        return "${zh.string} ${en.string}"
+    }
+
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("zh", zh.serialize())
+            put("en", en.serialize())
+        }
+    }
+
+    override suspend fun serialize(out: ByteWriteChannel) {
+        zh.serialize(out)
+        en.serialize(out)
     }
 
     override fun equals(other: Any?): Boolean {

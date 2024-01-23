@@ -63,11 +63,8 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.objects.BilingualFormattedText
 import com.loohp.hkbuseta.common.objects.BilingualText
-import com.loohp.hkbuseta.common.objects.asFormattedText
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.common.utils.BoldStyle
-import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.compose.fullPageVerticalScrollWithScrollbar
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
@@ -80,30 +77,9 @@ import kotlinx.coroutines.sync.withLock
 
 private val defaultDismissText = "確認" withEn "OK"
 
-private val specialText = listOf(
-    BilingualFormattedText(
-        buildFormattedString {
-            append("你可能需要「")
-            append("允許背景活動", BoldStyle)
-            append("」讓此功能在螢幕關閉時繼續正常運作\n\n此功能目前在")
-            append("測試階段", BoldStyle)
-            append(", 運作可能不穩定")
-
-        },
-        buildFormattedString {
-            append("You might need to \"")
-            append("Allow Background Activity", BoldStyle)
-            append("\" for this feature to continue working while the screen is off.\n\nThis feature is currently in ")
-            append("beta", BoldStyle)
-            append(", which might be unstable.")
-        }
-    )
-)
-
 @OptIn(ExperimentalWearFoundationApi::class)
 @Composable
-fun TextElement(specialTextIndex: Int, inputText: BilingualText, optDismissText: BilingualText?, instance: AppActiveContext) {
-    val text = specialText.getOrElse(specialTextIndex) { inputText.asFormattedText() }
+fun TextElement(text: BilingualFormattedText, optDismissText: BilingualText?, instance: AppActiveContext) {
     val dismissText = optDismissText?: defaultDismissText
     HKBusETATheme {
         val focusRequester = rememberActiveFocusRequester()

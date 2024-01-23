@@ -21,9 +21,51 @@
 
 package com.loohp.hkbuseta.common.utils
 
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.charsets.Charsets.UTF_8
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
+
 data class FormattedText(
-    val content: MutableList<FormattedTextContent>
-) : CharSequence {
+    val content: List<FormattedTextContent>
+) : CharSequence, JSONSerializable, IOSerializable {
+
+    companion object {
+
+        fun deserialize(json: JsonObject): FormattedText {
+            val contentArray = json.optJsonArray("content")!!
+            val content: MutableList<FormattedTextContent> = mutableListOf()
+            for (formattedTextContentObj in contentArray) {
+                val string = formattedTextContentObj.jsonObject.optString("string")
+                val styleArray = formattedTextContentObj.jsonObject.optJsonArray("style")!!
+                val style: MutableList<FormattingTextContentStyle> = mutableListOf()
+                for (styleObj in styleArray) {
+                    style.add(FormattingTextContentStyle.deserialize(styleObj.jsonObject))
+                }
+                content.add(FormattedTextContent(string, style))
+            }
+            return FormattedText(content)
+        }
+
+        suspend fun deserialize(input: ByteReadChannel): FormattedText {
+            val contentSize = input.readInt()
+            val content: MutableList<FormattedTextContent> = mutableListOf()
+            (0 until contentSize).forEach { _ ->
+                val string = input.readString(UTF_8)
+                val styleSize = input.readInt()
+                val style: MutableList<FormattingTextContentStyle> = mutableListOf()
+                (0 until styleSize).forEach { _ ->
+                    style.add(FormattingTextContentStyle.deserialize(input))
+                }
+                content.add(FormattedTextContent(string, style))
+            }
+            return FormattedText(content)
+        }
+    }
 
     val string: String = content.joinToString("") { it.string }
 
@@ -43,6 +85,34 @@ data class FormattedText(
 
     fun contains(compare: String): Boolean {
         return string.contains(compare)
+    }
+
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("content", buildJsonArray {
+                for (formattedTextContent in content) {
+                    add(buildJsonObject {
+                        put("string", formattedTextContent.string)
+                        put("style", buildJsonArray {
+                            for (style in formattedTextContent.style) {
+                                add(style.serialize())
+                            }
+                        })
+                    })
+                }
+            })
+        }
+    }
+
+    override suspend fun serialize(out: ByteWriteChannel) {
+        out.writeInt(content.size)
+        for (formattedTextContent in content) {
+            out.writeString(formattedTextContent.string, UTF_8)
+            out.writeInt(formattedTextContent.style.size)
+            for (style in formattedTextContent.style) {
+                style.serialize(out)
+            }
+        }
     }
 
 }
@@ -83,6 +153,10 @@ class FormattedTextBuilder {
         content.add(FormattedTextContent(string, style))
     }
 
+    fun appendLineBreak(count: Int = 1) {
+        append("\n".repeat(count))
+    }
+
     fun appendInlineContent(image: InlineImage, alternativeText: String) {
         append(alternativeText, InlineImageStyle(image))
     }
@@ -100,13 +174,92 @@ data class FormattedTextContent(
     val style: List<FormattingTextContentStyle> = emptyList()
 )
 
-interface FormattingTextContentStyle
+abstract class FormattingTextContentStyle(
+    private val identifier: String
+) : JSONSerializable, IOSerializable {
 
-object SmallContentStyle : FormattingTextContentStyle
-object BigContentStyle : FormattingTextContentStyle
-object BoldContentStyle : FormattingTextContentStyle
-data class ColorContentStyle(val color: Long) : FormattingTextContentStyle
-data class InlineImageStyle(val image: InlineImage): FormattingTextContentStyle
+    companion object {
+
+        fun deserialize(json: JsonObject): FormattingTextContentStyle {
+            return when (val type = json.optString("type")) {
+                "small" -> SmallContentStyle
+                "big" -> BigContentStyle
+                "bold" -> BoldContentStyle
+                "color" -> ColorContentStyle.deserializeValues(json.optJsonObject("values")!!)
+                "inlineImage" -> InlineImageStyle.deserializeValues(json.optJsonObject("values")!!)
+                else -> throw RuntimeException("Unknown style type $type")
+            }
+        }
+
+        suspend fun deserialize(input: ByteReadChannel): FormattingTextContentStyle {
+            return when (val type = input.readString(UTF_8)) {
+                "small" -> SmallContentStyle
+                "big" -> BigContentStyle
+                "bold" -> BoldContentStyle
+                "color" -> ColorContentStyle.deserializeValues(input)
+                "inlineImage" -> InlineImageStyle.deserializeValues(input)
+                else -> throw RuntimeException("Unknown style type $type")
+            }
+        }
+    }
+
+    internal open fun serializeValues(): JsonObject? = null
+
+    internal open suspend fun serializeValues(out: ByteWriteChannel) { }
+
+    override fun serialize(): JsonObject {
+        return buildJsonObject {
+            put("type", identifier)
+            serializeValues()?.let { put("values", it) }
+        }
+    }
+
+    override suspend fun serialize(out: ByteWriteChannel) {
+        out.writeString(identifier, UTF_8)
+        serializeValues(out)
+    }
+
+}
+
+object SmallContentStyle : FormattingTextContentStyle("small")
+object BigContentStyle : FormattingTextContentStyle("big")
+object BoldContentStyle : FormattingTextContentStyle("bold")
+data class ColorContentStyle(val color: Long) : FormattingTextContentStyle("color") {
+
+    companion object {
+
+        fun deserializeValues(json: JsonObject): ColorContentStyle {
+            return ColorContentStyle(json.optLong("color"))
+        }
+
+        suspend fun deserializeValues(input: ByteReadChannel): ColorContentStyle {
+            return ColorContentStyle(input.readLong())
+        }
+    }
+
+    override fun serializeValues(): JsonObject = buildJsonObject { put("color", color) }
+
+    override suspend fun serializeValues(out: ByteWriteChannel) = out.writeLong(color)
+
+}
+data class InlineImageStyle(val image: InlineImage): FormattingTextContentStyle("inlineImage") {
+
+    companion object {
+
+        fun deserializeValues(json: JsonObject): InlineImageStyle {
+            return InlineImageStyle(InlineImage.valueOf(json.optString("image")))
+        }
+
+        suspend fun deserializeValues(input: ByteReadChannel): InlineImageStyle {
+            return InlineImageStyle(InlineImage.valueOf(input.readString(UTF_8)))
+        }
+    }
+
+    override fun serializeValues(): JsonObject = buildJsonObject { put("image", image.name) }
+
+    override suspend fun serializeValues(out: ByteWriteChannel) = out.writeString(image.name, UTF_8)
+
+}
 
 enum class InlineImage {
 

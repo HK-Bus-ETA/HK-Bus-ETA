@@ -26,10 +26,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.TextElement
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.common.objects.BilingualFormattedText
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.common.utils.ifFalse
+import com.loohp.hkbuseta.shared.AndroidShared
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
 
@@ -42,12 +43,11 @@ class DismissibleTextDisplayActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(appContext).ifFalse { return }
         AndroidShared.setDefaultExceptionHandler(this)
 
-        val specialTextIndex = intent.extras!!.getInt("specialTextIndex", -1)
-        val text = intent.extras!!.getByteArray("text")?.let { runBlocking { BilingualText.deserialize(ByteReadChannel(it)) } }?: BilingualText.EMPTY
+        val text = intent.extras!!.getByteArray("text")?.let { runBlocking { BilingualFormattedText.deserialize(ByteReadChannel(it)) } }?: BilingualFormattedText.EMPTY
         val dismissText = intent.extras!!.getByteArray("dismissText")?.let { runBlocking { BilingualText.deserialize(ByteReadChannel(it)) } }
 
         setContent {
-            TextElement(specialTextIndex, text, dismissText, appContext)
+            TextElement(text, dismissText, appContext)
         }
     }
 

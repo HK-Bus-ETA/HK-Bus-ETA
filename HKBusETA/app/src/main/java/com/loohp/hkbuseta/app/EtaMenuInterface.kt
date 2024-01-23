@@ -90,6 +90,7 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.BilingualFormattedText
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.FavouriteRouteState
 import com.loohp.hkbuseta.common.objects.FavouriteStopMode
@@ -104,6 +105,8 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.TileUseState
 import com.loohp.hkbuseta.common.shared.Tiles
+import com.loohp.hkbuseta.common.utils.BoldStyle
+import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
@@ -386,7 +389,27 @@ fun AlightReminderButton(stopId: String, index: Int, stop: Stop, route: Route, c
                                 stopListIntent.putExtra("isAlightReminder", true)
 
                                 val noticeIntent = AppIntent(instance, AppScreen.DISMISSIBLE_TEXT_DISPLAY)
-                                noticeIntent.putExtra("specialTextIndex", 0)
+                                val text = BilingualFormattedText(
+                                    buildFormattedString {
+                                        append("你可能需要「")
+                                        append("允許背景活動", BoldStyle)
+                                        append("」讓此功能在螢幕關閉時繼續正常運作")
+                                        appendLineBreak(2)
+                                        append("此功能目前在")
+                                        append("測試階段", BoldStyle)
+                                        append(", 運作可能不穩定")
+                                    },
+                                    buildFormattedString {
+                                        append("You might need to \"")
+                                        append("Allow Background Activity", BoldStyle)
+                                        append("\" for this feature to continue working while the screen is off.")
+                                        appendLineBreak(2)
+                                        append("This feature is currently in ")
+                                        append("beta", BoldStyle)
+                                        append(", which might be unstable.")
+                                    }
+                                )
+                                noticeIntent.putExtra("text", text)
                                 instance.startActivity(noticeIntent) { result ->
                                     if (result.resultCode == 1) {
                                         AlightReminderService.terminate()
@@ -758,20 +781,44 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
     val handleClick: (FavouriteStopMode) -> Unit = {
         if (it.isRequiresLocation && state != FavouriteRouteState.USED_SELF && !checkBackgroundLocationPermission(instance, false)) {
             val noticeIntent = AppIntent(instance, AppScreen.DISMISSIBLE_TEXT_DISPLAY)
-            val notice = BilingualText(
-                "<b>設置路線任何站為最喜愛路線</b>需要在<b>背景存取定位位置的權限</b><br>" +
-                        "以搜尋你<b>目前所在的地點最近的巴士站</b><br>" +
-                        "<br>" +
-                        "包括在程式未被打開時(用於資訊方塊中)<br>" +
-                        "程式不會儲存或發送位置數據<br>" +
-                        "<br>" +
-                        "如出現權限請求 請分別選擇「<b>僅限使用應用程式時</b>」和「<b>一律允許</b>」",
-                "<b>Setting any stop on route as favourite route</b> requires the <b>background location permission</b>.<br>" +
-                        "It is used to <b>search for the closest stop to you</b>, even when the app is closed or not in use (when you look up ETA using Tiles), no location data are stored or sent.<br>" +
-                        "<br>" +
-                        "If prompted, please choose \"<b>While using this app</b>\" and then \"<b>All the time</b>\"."
+            val text = BilingualFormattedText(
+                buildFormattedString {
+                    append("設置路線任何站為最喜愛路線", BoldStyle)
+                    append("需要在")
+                    append("背景存取定位位置的權限", BoldStyle)
+                    appendLineBreak()
+                    append("以搜尋你")
+                    append("目前所在的地點最近的巴士站", BoldStyle)
+                    appendLineBreak(2)
+                    append("包括在程式未被打開時(用於資訊方塊中)")
+                    appendLineBreak()
+                    append("程式不會儲存或發送位置數據")
+                    appendLineBreak(2)
+                    append("如出現權限請求 請分別選擇「")
+                    append("僅限使用應用程式時", BoldStyle)
+                    append("」和「")
+                    append("一律允許", BoldStyle)
+                    append("」")
+                },
+                buildFormattedString {
+                    append("Setting any stop on route as favourite route", BoldStyle)
+                    append(" requires the ")
+                    append("background location permission", BoldStyle)
+                    append(".")
+                    appendLineBreak()
+                    append("It is used to ")
+                    append("search for the closest stop to you", BoldStyle)
+                    appendLineBreak(2)
+                    append(", even when the app is closed or not in use (when you look up ETA using Tiles), no location data are stored or sent.")
+                    appendLineBreak(2)
+                    append("If prompted, please choose \"")
+                    append("While using this app", BoldStyle)
+                    append("\" and then \"")
+                    append("All the time", BoldStyle)
+                    append("\".")
+                }
             )
-            noticeIntent.putExtra("text", notice)
+            noticeIntent.putExtra("text", text)
             instance.startActivity(noticeIntent) { confirm ->
                 if (confirm.resultCode == 1) {
                     checkBackgroundLocationPermission(instance) { result ->
