@@ -66,7 +66,7 @@ fun Int.getCircledNumber(): String {
         return this.toString()
     }
     if (this == 0) {
-        return "⓿"
+        return "🄌"
     }
     return if (this > 10) {
         (9451 + (this - 11)).toChar().toString()
