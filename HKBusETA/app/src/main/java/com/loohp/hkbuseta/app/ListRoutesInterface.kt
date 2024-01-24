@@ -227,7 +227,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                                 instance.finish()
                             },
                             modifier = Modifier
-                                .padding(20.dp, 15.dp, 20.dp, 0.dp)
+                                .padding(20.dp, 25.dp, 20.dp, 0.dp)
                                 .width(35.scaledSize(instance).dp)
                                 .height(35.scaledSize(instance).dp),
                             colors = ButtonDefaults.buttonColors(
@@ -252,7 +252,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                                 )
                             },
                             modifier = Modifier
-                                .padding(20.dp, 15.dp, 20.dp, 0.dp)
+                                .padding(20.dp, 25.dp, 20.dp, 0.dp)
                                 .fillMaxWidth(0.8F)
                                 .height(35.scaledSize(instance).dp),
                             colors = ButtonDefaults.buttonColors(
