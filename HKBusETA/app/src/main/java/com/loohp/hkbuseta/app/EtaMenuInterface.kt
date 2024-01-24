@@ -245,7 +245,7 @@ fun OpenOnHKBusAppButton(route: Route, stopId: String, index: Int, instance: App
         content = {
             Image(
                 modifier = Modifier.matchParentSize(),
-                painter = painterResource(R.mipmap.interchange_background),
+                painter = painterResource(R.mipmap.hkbusapp_background),
                 contentScale = ContentScale.FillWidth,
                 colorFilter = ColorFilter.tint(Color(0xC1000000), BlendMode.Multiply),
                 contentDescription = null
