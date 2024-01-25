@@ -35,7 +35,7 @@ struct EtaTileListView: AppScreenView {
                 if etaTileIds.count < 15 {
                     Button(action: {}) {
                         Text("+")
-                            .font(.system(size: 23.scaled(appContext), weight: .bold))
+                            .font(.system(size: 23.scaled(appContext, true), weight: .bold))
                             .foregroundColor(.gray)
                             .frame(width: 178.0.scaled(appContext), height: 67.0.scaled(appContext))
                     }
@@ -152,7 +152,7 @@ struct EtaTileView: View {
                         .multilineTextAlignment(.leading)
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(2)
-                        .autoResizing(maxSize: 21.scaled(appContext), weight: .bold)
+                        .autoResizing(maxSize: 21.scaled(appContext, true), weight: .bold)
                         .highPriorityGesture(
                             TapGesture()
                                 .onEnded { _ in
@@ -168,7 +168,7 @@ struct EtaTileView: View {
                     Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + destName.get(language: Shared().language) + (gpsStop ? (Shared().language == "en" ? " - Closest" : " - 最近") : ""))
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(1)
-                        .autoResizing(maxSize: 12.scaled(appContext))
+                        .autoResizing(maxSize: 12.scaled(appContext, true))
                         .highPriorityGesture(
                             TapGesture()
                                 .onEnded { _ in
@@ -189,7 +189,7 @@ struct EtaTileView: View {
                     Text((Shared().language == "en" ? "Updated: " : "更新時間: ") + appContext.formatTime(localDateTime: lastUpdated))
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(1)
-                        .autoResizing(maxSize: 12.scaled(appContext))
+                        .autoResizing(maxSize: 12.scaled(appContext, true))
                     Spacer(minLength: 2.scaled(appContext))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -270,7 +270,7 @@ struct EtaTileView: View {
     
     func ETALine(lines: RegistryMergedETAQueryResult<KotlinPair<FavouriteResolvedStop, FavouriteRouteStop>>?, seq: Int, mainResolvedStop: KotlinPair<FavouriteResolvedStop, FavouriteRouteStop>) -> some View {
         let line = Shared().getResolvedText(lines, seq: seq.asInt32(), clockTimeMode: Shared().clockTimeMode, context_: appContext)
-        let text = line.second!.asAttributedString(defaultFontSize: 17.scaled(appContext))
+        let text = line.second!.asAttributedString(defaultFontSize: 17.scaled(appContext, true))
         
         let pair = line.first ?? mainResolvedStop
         let resolvedStop = pair.first!
@@ -283,7 +283,7 @@ struct EtaTileView: View {
         
         return MarqueeText(
             text: text,
-            font: UIFont.systemFont(ofSize: 17.scaled(appContext)),
+            font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
             leftFade: 8.scaled(appContext),
             rightFade: 8.scaled(appContext),
             startDelay: 2,

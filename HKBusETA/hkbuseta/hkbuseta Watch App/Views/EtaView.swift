@@ -53,12 +53,12 @@ struct EtaView: AppScreenView {
                 .multilineTextAlignment(.center)
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(2)
-                .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
+                .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
             let destName = registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
             Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + destName.get(language: Shared().language))
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(1)
-                .autoResizing(maxSize: 12.scaled(appContext))
+                .autoResizing(maxSize: 12.scaled(appContext, true))
             Spacer(minLength: 7.scaled(appContext))
             ETALine(lines: eta, seq: 1)
             ETALine(lines: eta, seq: 2)
@@ -83,7 +83,7 @@ struct EtaView: AppScreenView {
                         }
                     }) {
                         Image(systemName: "arrow.left")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(index > 1 ? colorInt(0xFFFFFFFF).asColor() : colorInt(0xFF494949).asColor())
                     }
                     .frame(width: 25.scaled(appContext), height: 25.scaled(appContext))
@@ -101,7 +101,7 @@ struct EtaView: AppScreenView {
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaMenu, data))
                     }) {
                         Text(Shared().language == "en" ? "More" : "更多")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                     }
                     .frame(width: 65.scaled(appContext), height: 25.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
@@ -122,7 +122,7 @@ struct EtaView: AppScreenView {
                         }
                     }) {
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(index < stopList.count ? colorInt(0xFFFFFFFF).asColor() : colorInt(0xFF494949).asColor())
                     }
                     .frame(width: 25.scaled(appContext), height: 25.scaled(appContext))
@@ -132,7 +132,7 @@ struct EtaView: AppScreenView {
                 }
             }
         }
-        .frame(height: CGFloat(appContext.screenHeight) * 0.8)
+        .frame(height: Double(appContext.screenHeight) * 0.8)
         .onReceive(etaTimer) { _ in
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route) { eta = $0 }
         }
@@ -149,10 +149,10 @@ struct EtaView: AppScreenView {
     }
     
     func ETALine(lines: Registry.ETAQueryResult?, seq: Int) -> some View {
-        let text = Shared().getResolvedText(lines, seq: seq.asInt32(), clockTimeMode: clockTimeMode, context: appContext).asAttributedString(defaultFontSize: 20.scaled(appContext))
+        let text = Shared().getResolvedText(lines, seq: seq.asInt32(), clockTimeMode: clockTimeMode, context: appContext).asAttributedString(defaultFontSize: max(20.scaled(appContext), 20.scaled(appContext, seq == 1)))
         return MarqueeText(
             text: text,
-            font: UIFont.systemFont(ofSize: 20.scaled(appContext)),
+            font: UIFont.systemFont(ofSize: 20.scaled(appContext, true)),
             leftFade: 8.scaled(appContext),
             rightFade: 8.scaled(appContext),
             startDelay: 2,

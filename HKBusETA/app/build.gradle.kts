@@ -32,8 +32,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 33
-        versionCode = 421
-        versionName = "1.8.1"
+        versionCode = 425
+        versionName = "1.8.2"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -117,7 +117,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     //noinspection UseTomlInstead
     implementation("com.google.firebase:firebase-analytics")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2023.10.01"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.01.00"))
     //noinspection UseTomlInstead
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     //noinspection UseTomlInstead

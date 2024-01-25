@@ -158,8 +158,17 @@ extension Int {
         return numberFormatter.string(from: NSNumber(value: self)) ?? "\(self)"
     }
     
-    func scaled(_ appContext: AppContext) -> Int {
-        return Int(appContext.screenScale.rounded()) * self
+    func scaled(_ appContext: AppContext, _ dynamic: Bool = false) -> Int {
+        if dynamic {
+            return Int((Double(appContext.screenScale) * Double(self)).dynamicSize().rounded())
+        } else {
+            return Int(appContext.screenScale.rounded()) * self
+        }
+    }
+    
+    func dynamicSize() -> Int {
+        @Environment(\.sizeCategory) var sizeCategory
+        return Swift.min(Int((Double(self) * 1.2).rounded()), Int(UIFontMetrics.default.scaledValue(for: Double(self)).rounded()))
     }
     
 }
@@ -174,16 +183,34 @@ extension Bool {
 
 extension Float {
     
-    func scaled(_ appContext: AppContext) -> Float {
-        return appContext.screenScale * self
+    func scaled(_ appContext: AppContext, _ dynamic: Bool = false) -> Float {
+        if dynamic {
+            return (appContext.screenScale * self).dynamicSize()
+        } else {
+            return appContext.screenScale * self
+        }
+    }
+    
+    func dynamicSize() -> Float {
+        @Environment(\.sizeCategory) var sizeCategory
+        return Swift.min(self * 1.2, Float(UIFontMetrics.default.scaledValue(for: Double(self))))
     }
     
 }
 
 extension Double {
     
-    func scaled(_ appContext: AppContext) -> Double {
-        return Double(appContext.screenScale) * self
+    func scaled(_ appContext: AppContext, _ dynamic: Bool = false) -> Double {
+        if dynamic {
+            return (Double(appContext.screenScale) * self).dynamicSize()
+        } else {
+            return Double(appContext.screenScale) * self
+        }
+    }
+    
+    func dynamicSize() -> Double {
+        @Environment(\.sizeCategory) var sizeCategory
+        return Swift.min(self * 1.2, UIFontMetrics.default.scaledValue(for: self))
     }
     
 }

@@ -48,13 +48,14 @@ import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
-import com.loohp.hkbuseta.utils.getGPSLocation
-import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.loohp.hkbuseta.shared.AndroidShared
+import com.loohp.hkbuseta.theme.HKBusETATheme
+import com.loohp.hkbuseta.utils.clamp
+import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.collections.immutable.ImmutableSet
 import kotlin.math.roundToInt
 
@@ -88,7 +89,7 @@ fun WaitingText(usingGps: Boolean, instance: AppActiveContext) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = 17F.scaledSize(instance).sp,
+        fontSize = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp),
         text = if (usingGps) {
             if (Shared.language == "en") "Locating..." else "正在讀取你的位置..."
         } else {

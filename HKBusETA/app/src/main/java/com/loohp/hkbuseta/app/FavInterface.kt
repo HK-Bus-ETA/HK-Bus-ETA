@@ -120,7 +120,6 @@ import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.clamp
-import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
@@ -187,7 +186,7 @@ fun FavElements(ambientMode: Boolean, scrollToIndex: Int, instance: AppActiveCon
             state = state
         ) {
             item {
-                Spacer(modifier = Modifier.size(20.scaledSize(instance).dp))
+                Spacer(modifier = Modifier.size(30.scaledSize(instance).dp))
             }
             item {
                 FavTitle(ambientMode, instance)
@@ -223,7 +222,7 @@ fun FavTitle(ambientMode: Boolean, instance: AppActiveContext) {
             .padding(20.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
-        fontSize = 17F.scaledSize(instance).sp.clamp(max = 17.dp),
+        fontSize = 17F.scaledSize(instance).sp,
         text = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"
     )
 }
@@ -236,7 +235,7 @@ fun FavDescription(ambientMode: Boolean, instance: AppActiveContext) {
             .padding(30.dp, 0.dp),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
-        fontSize = 11F.scaledSize(instance).sp.clamp(max = 11.dp),
+        fontSize = 11F.scaledSize(instance).sp,
         text = if (Shared.language == "en") "Routes can be displayed in Tiles" else "路線可在資訊方塊中顯示"
     )
 }
@@ -418,7 +417,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                 ) {
                     if (deleteState) {
                         Icon(
-                            modifier = Modifier.size(21.scaledSize(instance).dp),
+                            modifier = Modifier.size(21.scaledSize(instance).sp.dp),
                             imageVector = Icons.Filled.Clear,
                             tint = Color(0xFFFF0000),
                             contentDescription = if (Shared.language == "en") "Clear Route Stop ETA ".plus(favoriteIndex).plus(" Tile") else "清除資訊方塊最喜愛路線預計到達時間".plus(favoriteIndex)
@@ -543,8 +542,7 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
             delay(etaUpdateTimes.value[favoriteIndex]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, favoriteIndex) {
-            val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(
-                Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             etaStateFlow.value = result
             etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
             etaResults.value[favoriteIndex] = result
@@ -553,8 +551,7 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
     LaunchedEffect (stopId) {
         if (Shared.favoriteRouteStops[favoriteIndex]?.favouriteStopMode?.isRequiresLocation == true) {
             schedule.invoke(true, favoriteIndex) {
-                val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(
-                    Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                val result = Registry.getInstance(instance).getEta(stopId, stopIndex, co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                 etaStateFlow.value = result
                 etaUpdateTimes.value[favoriteIndex] = System.currentTimeMillis()
                 etaResults.value[favoriteIndex] = result
@@ -599,8 +596,8 @@ fun ETAElement(favoriteIndex: Int, stopId: String, stopIndex: Int, co: Operator,
             } else {
                 val (text1, text2) = eta.firstLine.shortText
                 val text = buildAnnotatedString {
-                    append(text1, SpanStyle(fontSize = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).sp))
-                    append(text2, SpanStyle(fontSize = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).sp))
+                    append(text1, SpanStyle(fontSize = 14F.scaledSize(instance).sp))
+                    append(text2, SpanStyle(fontSize = 7F.scaledSize(instance).sp))
                 }
                 Text(
                     modifier = Modifier.fillMaxWidth(),

@@ -94,7 +94,7 @@ struct hkbuseta_Watch_AppApp: App {
                 if toastShowTimeLeft > 0 {
                     Text(toastText)
                         .multilineTextAlignment(.center)
-                        .autoResizing(maxSize: 17.scaled(applicationContext()))
+                        .autoResizing(maxSize: 17.scaled(applicationContext(), true))
                         .padding(10.scaled(applicationContext()))
                         .background(colorInt(0xFF333333).asColor())
                         .cornerRadius(10.scaled(applicationContext()))
@@ -103,12 +103,15 @@ struct hkbuseta_Watch_AppApp: App {
                         .edgesIgnoringSafeArea(.all)
                         .transition(.opacity.animation(.linear(duration: 0.4)))
                         .allowsHitTesting(false)
+                        .offset(y: Double(applicationContext().screenHeight) * 0.25)
                         .zIndex(1)
                 }
             }
             .onChange(of: toastState.state) { state in
-                self.toastText = state.text
-                self.toastShowTimeLeft = state.duration.seconds()
+                if !state.text.isEmpty {
+                    self.toastText = state.text
+                    self.toastShowTimeLeft = state.duration.seconds()
+                }
             }
             .onChange(of: historyStackState.state) { historyStack in
                 let context = historyStack.last!
@@ -119,6 +122,8 @@ struct hkbuseta_Watch_AppApp: App {
             .onReceive(toastTimer) { _ in
                 if self.toastShowTimeLeft > 0 {
                     self.toastShowTimeLeft -= 0.1
+                } else if !self.toastText.isEmpty {
+                    ToastTextState().resetToastState()
                 }
             }
             .onOpenURL(perform: { url in
@@ -139,7 +144,7 @@ func BackButton(_ appContext: AppContext, scrollingScreen: Bool) -> some View {
             HistoryStack().popHistoryStack()
         }) {
             Image(systemName: "arrow.left")
-                .font(.system(size: 17.scaled(appContext), weight: .bold))
+                .font(.system(size: 17.scaled(appContext, true), weight: .bold))
                 .foregroundColor(.white)
         }
         .frame(width: 40.scaled(appContext), height: 40.scaled(appContext))

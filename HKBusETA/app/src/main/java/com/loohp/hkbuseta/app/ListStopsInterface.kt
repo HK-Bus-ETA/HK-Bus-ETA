@@ -126,13 +126,13 @@ import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.asImmutableState
 import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.clamp
-import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.findTextLengthDp
 import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
+import com.loohp.hkbuseta.utils.spToDp
 import com.loohp.hkbuseta.utils.spToPixels
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -567,7 +567,7 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
             fontWeight = FontWeight.Bold,
             fontSizeRange = FontSizeRange(
                 min = 1F.scaledSize(instance).dp.sp,
-                max = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp)
+                max = 17F.scaledSize(instance).sp
             ),
             lineHeight = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp),
             color = color.adjustBrightness(if (ambientMode) 0.7F else 1F),
@@ -581,7 +581,7 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
             textAlign = TextAlign.Center,
             fontSizeRange = FontSizeRange(
                 min = 1F.scaledSize(instance).dp.sp,
-                max = 11F.scaledSize(instance).sp.clamp(max = 14F.scaledSize(instance).dp)
+                max = 11F.scaledSize(instance).sp
             ),
             color = Color(0xFFFFFFFF).adjustBrightness(if (ambientMode) 0.7F else 1F),
             maxLines = 2,
@@ -595,7 +595,7 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
                 textAlign = TextAlign.Center,
                 fontSizeRange = FontSizeRange(
                     min = 1F.scaledSize(instance).dp.sp,
-                    max = 11F.scaledSize(instance).sp.clamp(max = 14F.scaledSize(instance).dp)
+                    max = 11F.scaledSize(instance).sp
                 ),
                 color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),
                 maxLines = 2,
@@ -614,7 +614,7 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
                 textAlign = TextAlign.Center,
                 fontSizeRange = FontSizeRange(
                     min = 1F.scaledSize(instance).dp.sp,
-                    max = 11F.scaledSize(instance).sp.clamp(max = 14F.scaledSize(instance).dp)
+                    max = 11F.scaledSize(instance).sp
                 ),
                 color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),
                 maxLines = 2,
@@ -666,10 +666,10 @@ fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Op
         verticalAlignment = Alignment.Bottom
     ) {
         if (co.isTrain && mtrLineSectionData != null) {
-            val width = remember { (if (stopList.map { it.serviceType }.distinct().size > 1 || mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }) 50 else 35).sp }
+            val width = remember { (if (stopList.map { it.serviceType }.distinct().size > 1 || mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }) 50 else 35).scaledSize(instance) }
             Box(
                 modifier = Modifier
-                    .requiredWidth(width.dp)
+                    .requiredWidth(width.spToDp(instance).dp)
                     .fillMaxHeight()
             ) {
                 MTRLineSection(mtrLineSectionData, ambientMode)
@@ -788,7 +788,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             if (eta.nextScheduledBus !in 0..59) {
                 if (eta.isMtrEndOfLine) {
                     Icon(
-                        modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
+                        modifier = Modifier.size(16F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
                         tint = Color(0xFF798996),
@@ -796,13 +796,13 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
                 } else if (eta.isTyphoonSchedule) {
                     val typhoonInfo by remember { Registry.getInstance(instance).cachedTyphoonDataState }.collectAsStateWithLifecycle()
                     Image(
-                        modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
+                        modifier = Modifier.size(16F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = typhoonInfo.typhoonWarningTitle
                     )
                 } else {
                     Icon(
-                        modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp),
+                        modifier = Modifier.size(16F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = Color(0xFF798996),
@@ -811,9 +811,9 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             } else {
                 val (text1, text2) = eta.firstLine.shortText
                 val text = buildAnnotatedString {
-                    append(text1, SpanStyle(fontSize = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).sp))
+                    append(text1, SpanStyle(fontSize = 14F.scaledSize(instance).sp))
                     append("\n")
-                    append(text2, SpanStyle(fontSize = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).sp))
+                    append(text2, SpanStyle(fontSize = 7F.scaledSize(instance).sp))
                 }
                 Text(
                     modifier = Modifier.fillMaxWidth(),

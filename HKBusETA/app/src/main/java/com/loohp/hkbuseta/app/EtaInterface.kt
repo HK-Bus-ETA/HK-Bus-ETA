@@ -412,7 +412,7 @@ fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double
         fontWeight = FontWeight.Bold,
         fontSizeRange = FontSizeRange(
             min = 1F.scaledSize(instance).dp.sp,
-            max = 17F.scaledSize(instance).sp.clamp(max = 17F.scaledSize(instance).dp)
+            max = 17F.scaledSize(instance).sp
         )
     )
 }
@@ -436,17 +436,16 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
         maxLines = 1,
         fontSizeRange = FontSizeRange(
             min = 1F.scaledSize(instance).dp.sp,
-            max = 11F.scaledSize(instance).sp.clamp(max = 11F.scaledSize(instance).dp)
+            max = 11F.scaledSize(instance).sp
         )
     )
 }
-
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, clockTimeMode: Boolean, instance: AppActiveContext) {
     val content = lines.getResolvedText(seq, clockTimeMode, instance).asContentAnnotatedString()
-    val textSize = 16F.scaledSize(instance).sp.clamp(max = 16F.scaledSize(instance).dp)
+    val textSize = 16F.scaledSize(instance).sp.let { if (seq > 1) it.clamp(max = 16F.scaledSize(instance).dp) else it }
     Box (
         modifier = Modifier
             .fillMaxWidth()

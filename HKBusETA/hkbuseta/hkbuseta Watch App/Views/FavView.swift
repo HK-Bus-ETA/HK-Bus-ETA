@@ -47,10 +47,10 @@ struct FavView: AppScreenView {
                         .multilineTextAlignment(.center)
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                         .lineLimit(2)
-                        .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
+                        .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
                     Spacer().frame(height: 5.scaled(appContext))
                     Text(Shared().language == "en" ? "Routes can be displayed in Tiles" : "路線可在資訊方塊中顯示")
-                        .font(.system(size: 10.scaled(appContext)))
+                        .font(.system(size: 10.scaled(appContext, true)))
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
@@ -63,7 +63,7 @@ struct FavView: AppScreenView {
                         }) {
                             Text(Shared().language == "en" ? "Route List View" : "路線一覽列表")
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
-                                .font(.system(size: 17.scaled(appContext), weight: .bold))
+                                .font(.system(size: 17.scaled(appContext, true), weight: .bold))
                         }
                         .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
                         .clipShape(RoundedRectangle(cornerRadius: 25))
@@ -139,8 +139,7 @@ struct FavView: AppScreenView {
         return Button(action: {}) {
             HStack(alignment: .top, spacing: 0) {
                 ZStack(alignment: .leading) {
-                    Text("")
-                        .frame(width: 38)
+                    Text("").frame(width: 32.scaled(appContext, true))
                     ZStack {
                         Circle()
                             .fill(currentFavRouteStop != nil ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
@@ -158,19 +157,13 @@ struct FavView: AppScreenView {
                             Image(systemName: "xmark")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(width: 13.scaled(appContext), height: 13.scaled(appContext))
+                                .frame(width: 13.scaled(appContext, true), height: 13.scaled(appContext, true))
                                 .foregroundColor(colorInt(0xFFFF0000).asColor())
                         } else {
                             Text("\(favIndex)")
-                                .font(.system(size: 17.scaled(appContext), weight: .bold))
+                                .font(.system(size: 17.scaled(appContext, true), weight: .bold))
                                 .foregroundColor(currentFavRouteStop != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor())
                         }
-                    }
-                }
-                .overlay(alignment: .leading) {
-                    if currentFavRouteStop != nil {
-                        ETAElement(favIndex: favIndex, currentFavRouteStop: currentFavRouteStop!)
-                            .offset(y: (Shared().language == "en" ? 34.5 : 32.5).scaled(appContext))
                     }
                 }
                 .padding(10)
@@ -178,7 +171,7 @@ struct FavView: AppScreenView {
                     if currentFavRouteStop == nil {
                         HStack(alignment: .center) {
                             Text(Shared().language == "en" ? "No Route Selected" : "未有設置路線")
-                                .font(.system(size: 16.scaled(appContext), weight: .bold))
+                                .font(.system(size: 16.scaled(appContext, true), weight: .bold))
                                 .foregroundColor(colorInt(0xFF505050).asColor())
                                 .lineLimit(2)
                                 .lineSpacing(0)
@@ -211,7 +204,7 @@ struct FavView: AppScreenView {
                         VStack(alignment: .leading, spacing: 0) {
                             MarqueeText(
                                 text: mainText,
-                                font: UIFont.systemFont(ofSize: 19.scaled(appContext), weight: .bold),
+                                font: UIFont.systemFont(ofSize: 19.scaled(appContext, true), weight: .bold),
                                 leftFade: 8.scaled(appContext),
                                 rightFade: 8.scaled(appContext),
                                 startDelay: 2,
@@ -221,7 +214,7 @@ struct FavView: AppScreenView {
                             .lineLimit(1)
                             MarqueeText(
                                 text: routeText,
-                                font: UIFont.systemFont(ofSize: 17.scaled(appContext)),
+                                font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
                                 leftFade: 8.scaled(appContext),
                                 rightFade: 8.scaled(appContext),
                                 startDelay: 2,
@@ -232,7 +225,7 @@ struct FavView: AppScreenView {
                             Spacer(minLength: 3.scaled(appContext))
                             MarqueeText(
                                 text: subText,
-                                font: UIFont.systemFont(ofSize: 14.scaled(appContext)),
+                                font: UIFont.systemFont(ofSize: 14.scaled(appContext, true)),
                                 leftFade: 8.scaled(appContext),
                                 rightFade: 8.scaled(appContext),
                                 startDelay: 2,
@@ -243,6 +236,17 @@ struct FavView: AppScreenView {
                         }
                     }
                 }.padding(.vertical, 5)
+            }
+            .overlay(alignment: .leading) {
+                ZStack(alignment: .bottomLeading) {
+                    Text("").frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if currentFavRouteStop != nil {
+                        ETAElement(favIndex: favIndex, currentFavRouteStop: currentFavRouteStop!)
+                            .padding(.bottom, 5.scaled(appContext))
+                            .padding(.leading, 10)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .buttonStyle(PlainButtonStyle())
@@ -347,22 +351,22 @@ struct FavEtaView: View {
                 if !(0..<60).contains(eta.nextScheduledBus) {
                     if eta.isMtrEndOfLine {
                         Image(systemName: "arrow.forward.to.line.circle")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else if (eta.isTyphoonSchedule) {
                         Image(systemName: "hurricane")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else {
                         Image(systemName: "clock")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     }
                 } else {
                     let shortText = eta.firstLine.shortText
                     let text1 = shortText.first
                     let text2 = shortText.second
-                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext)) + text2.asAttributedString(fontSize: 8.scaled(appContext))
+                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext, true)) + text2.asAttributedString(fontSize: 8.scaled(appContext, true))
                     Text(text)
                         .multilineTextAlignment(.leading)
                         .lineSpacing(0)

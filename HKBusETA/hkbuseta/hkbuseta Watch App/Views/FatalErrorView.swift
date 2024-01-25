@@ -27,18 +27,18 @@ struct FatalErrorView: AppScreenView {
         VStack(alignment: .center) {
             Text(zh ?? "發生錯誤")
                 .multilineTextAlignment(.center)
-                .font(.system(size: 16.scaled(appContext), weight: .bold))
+                .font(.system(size: 16.scaled(appContext, true), weight: .bold))
             Text(en ?? "Fatal Error Occurred")
                 .multilineTextAlignment(.center)
-                .font(.system(size: 16.scaled(appContext), weight: .bold))
+                .font(.system(size: 16.scaled(appContext, true), weight: .bold))
             if zh == nil && en == nil {
                 Spacer(minLength: 2)
                 Text("巴士路線資料可能不完整\n點選重新載入刷新")
                     .multilineTextAlignment(.center)
-                    .font(.system(size: 12.scaled(appContext)))
+                    .font(.system(size: 12.scaled(appContext, true)))
                 Text("Bus route data might be corrupted\nClick reload to refresh")
                     .multilineTextAlignment(.center)
-                    .font(.system(size: 11.scaled(appContext)))
+                    .font(.system(size: 11.scaled(appContext, true)))
             }
             Spacer(minLength: 10)
             Button(action: {
@@ -48,7 +48,7 @@ struct FatalErrorView: AppScreenView {
                 appContext.startActivity(appIntent: intent)
                 appContext.finishAffinity()
             }) {
-                Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 21.scaled(appContext))).foregroundColor(.yellow)
+                Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 21.scaled(appContext, true))).foregroundColor(.yellow)
             }
             .clipShape(RoundedRectangle(cornerRadius: 50))
             .frame(width: 155.scaled(appContext), height: 55.scaled(appContext))

@@ -53,24 +53,24 @@ struct EtaMenuView: AppScreenView {
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
-                            .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
+                            .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
                         if (stop.remark != nil) {
                             Text(stop.remark!.get(language: Shared().language))
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                                 .lineLimit(1)
-                                .autoResizing(maxSize: 13.scaled(appContext))
+                                .autoResizing(maxSize: 13.scaled(appContext, true))
                         }
                         let destName = registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
                         Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + destName.get(language: Shared().language))
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(1)
-                            .autoResizing(maxSize: 12.scaled(appContext))
+                            .autoResizing(maxSize: 12.scaled(appContext, true))
                     }
                     Spacer(minLength: 10.scaled(appContext))
                     Text(Shared().language == "en" ? "More Info & Actions" : "更多資訊及功能")
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(1)
-                        .autoResizing(maxSize: 14.scaled(appContext))
+                        .autoResizing(maxSize: 14.scaled(appContext, true))
                     Spacer(minLength: 5.scaled(appContext))
                     if stop.kmbBbiId != nil {
                         KmbBbiButton(kmbBbiId: stop.kmbBbiId!)
@@ -81,23 +81,23 @@ struct EtaMenuView: AppScreenView {
                     OpenOnMapsButton(stopName: stop.name, lat: stop.location.lat, lng: stop.location.lng)
                     Spacer(minLength: 10.scaled(appContext))
                     Text(Shared().language == "en" ? "Set Favourite Routes" : "設置最喜愛路線")
-                        .font(.system(size: 14.scaled(appContext)))
+                        .font(.system(size: 14.scaled(appContext, true)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
                     Text(Shared().language == "en" ? "Section to set/clear this route stop from the corresponding indexed favourite route" : "以下可設置/清除對應的最喜愛路線")
-                        .font(.system(size: 10.scaled(appContext)))
+                        .font(.system(size: 10.scaled(appContext, true)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
                     Text(Shared().language == "en" ? "Route stops can be used in Tiles" : "最喜愛路線可在資訊方塊中顯示")
-                        .font(.system(size: 10.scaled(appContext)))
+                        .font(.system(size: 10.scaled(appContext, true)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
                     Spacer().frame(height: 5.scaled(appContext))
                     Text(Shared().language == "en" ? "Tap to set this stop\nLong press to set to display any closes stop of the route" : "點擊設置此站 長按設置顯示路線最近的任何站")
-                        .font(.system(size: 10.scaled(appContext), weight: .bold))
+                        .font(.system(size: 10.scaled(appContext, true), weight: .bold))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
@@ -130,7 +130,7 @@ struct EtaMenuView: AppScreenView {
     
     func OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double) -> some View {
         Button(action: {}) {
-            HStack(spacing: 2.scaled(appContext)) {
+            HStack(alignment: .top, spacing: 2.scaled(appContext)) {
                 ZStack {
                     Circle()
                         .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
@@ -138,11 +138,11 @@ struct EtaMenuView: AppScreenView {
                     Image(systemName: "map")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
+                        .frame(width: 17.scaled(appContext, true), height: 17.scaled(appContext, true))
                         .foregroundColor(colorInt(0xFF4CFF00).asColor())
-                }
+                }.padding(.top, 2.scaled(appContext))
                 Text(Shared().language == "en" ? "Open Stop Location on Maps" : "在地圖上顯示巴士站位置")
-                    .font(.system(size: 14.5.scaled(appContext), weight: .bold))
+                    .font(.system(size: 14.5.scaled(appContext, true), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -155,13 +155,13 @@ struct EtaMenuView: AppScreenView {
             Image("open_map_background")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
+                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
                 .brightness(-0.4)
-                .clipShape(RoundedRectangle(cornerRadius: 50))
+                .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
         )
         .buttonStyle(PlainButtonStyle())
-        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
-        .clipShape(RoundedRectangle(cornerRadius: 50))
+        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
+        .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in
@@ -178,7 +178,7 @@ struct EtaMenuView: AppScreenView {
     
     func KmbBbiButton(kmbBbiId: String) -> some View {
         Button(action: {}) {
-            HStack(spacing: 2.scaled(appContext)) {
+            HStack(alignment: .top, spacing: 2.scaled(appContext)) {
                 ZStack {
                     Circle()
                         .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
@@ -186,11 +186,11 @@ struct EtaMenuView: AppScreenView {
                     Image(systemName: "figure.walk")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
+                        .frame(width: 17.scaled(appContext, true), height: 17.scaled(appContext, true))
                         .foregroundColor(colorInt(0xFFFF0000).asColor())
-                }
+                }.padding(.top, 2.scaled(appContext))
                 Text(Shared().language == "en" ? "Open KMB BBI Layout Map" : "顯示九巴轉車站位置圖")
-                    .font(.system(size: 14.5.scaled(appContext), weight: .bold))
+                    .font(.system(size: 14.5.scaled(appContext, true), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -203,13 +203,13 @@ struct EtaMenuView: AppScreenView {
             Image("kmb_bbi_background")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
+                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
                 .brightness(-0.4)
-                .clipShape(RoundedRectangle(cornerRadius: 50))
+                .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
         )
         .buttonStyle(PlainButtonStyle())
-        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
-        .clipShape(RoundedRectangle(cornerRadius: 50))
+        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
+        .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in
@@ -228,7 +228,7 @@ struct EtaMenuView: AppScreenView {
     
     func SearchNearbyButton() -> some View {
         Button(action: {}) {
-            HStack(spacing: 2.scaled(appContext)) {
+            HStack(alignment: .top, spacing: 2.scaled(appContext)) {
                 ZStack {
                     Circle()
                         .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
@@ -236,11 +236,11 @@ struct EtaMenuView: AppScreenView {
                     Image(systemName: "bus.doubledecker")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
+                        .frame(width: 17.scaled(appContext, true), height: 17.scaled(appContext, true))
                         .foregroundColor(colorInt(0xFFFFE15E).asColor())
-                }
+                }.padding(.top, 2.scaled(appContext))
                 Text(Shared().language == "en" ? "Find Nearby Interchanges" : "尋找附近轉乘路線")
-                    .font(.system(size: 14.5.scaled(appContext), weight: .bold))
+                    .font(.system(size: 14.5.scaled(appContext, true), weight: .bold))
                     .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     .lineLimit(2)
                     .lineSpacing(0)
@@ -253,13 +253,13 @@ struct EtaMenuView: AppScreenView {
             Image("interchange_background")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
+                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
                 .brightness(-0.4)
-                .clipShape(RoundedRectangle(cornerRadius: 50))
+                .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
         )
         .buttonStyle(PlainButtonStyle())
-        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
-        .clipShape(RoundedRectangle(cornerRadius: 50))
+        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
+        .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in
@@ -312,13 +312,13 @@ struct EtaMenuView: AppScreenView {
             favStates[favIndex] = getFavState(favoriteIndex: favIndex, stopId: stopId, co: co, index: index, stop: stop, route: route)
         }
         return Button(action: {}) {
-            HStack(spacing: 2.scaled(appContext)) {
+            HStack(alignment: .top, spacing: 2.scaled(appContext)) {
                 ZStack() {
                     Circle()
                         .fill(state == FavouriteRouteState.usedSelf ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
                         .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                     Text("\(favIndex)")
-                        .font(.system(size: 17.scaled(appContext), weight: .bold))
+                        .font(.system(size: 17.scaled(appContext, true), weight: .bold))
                         .foregroundColor({
                             switch state {
                             case FavouriteRouteState.usedOther:
@@ -329,12 +329,12 @@ struct EtaMenuView: AppScreenView {
                                 return colorInt(0xFF444444)
                             }
                         }().asColor())
-                }
+                }.padding(.top, 2.scaled(appContext))
                 VStack(alignment: .leading, spacing: 0) {
                     switch state {
                     case FavouriteRouteState.notUsed:
                         Text(Shared().language == "en" ? "No Route Stop Selected" : "未有設置路線巴士站")
-                            .font(.system(size: 15.scaled(appContext), weight: .bold))
+                            .font(.system(size: 15.scaled(appContext, true), weight: .bold))
                             .foregroundColor(colorInt(0xFFB9B9B9).asColor())
                             .lineLimit(2)
                             .lineSpacing(0)
@@ -360,7 +360,7 @@ struct EtaMenuView: AppScreenView {
                         let color = currentRoute.co.getColor(routeNumber: currentRoute.route.routeNumber, elseColor: 0xFFFFFFFF as Int64).asColor()
                         MarqueeText(
                             text: "\(coDisplay) \(routeNumberDisplay)",
-                            font: UIFont.systemFont(ofSize: 15.scaled(appContext), weight: .bold),
+                            font: UIFont.systemFont(ofSize: 15.scaled(appContext, true), weight: .bold),
                             leftFade: 8.scaled(appContext),
                             rightFade: 8.scaled(appContext),
                             startDelay: 2,
@@ -373,7 +373,7 @@ struct EtaMenuView: AppScreenView {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         MarqueeText(
                             text: stopName,
-                            font: UIFont.systemFont(ofSize: 15.scaled(appContext)),
+                            font: UIFont.systemFont(ofSize: 15.scaled(appContext, true)),
                             leftFade: 8.scaled(appContext),
                             rightFade: 8.scaled(appContext),
                             startDelay: 2,
@@ -387,7 +387,7 @@ struct EtaMenuView: AppScreenView {
                     case FavouriteRouteState.usedSelf:
                         let isClosestStopMode = Shared().favoriteRouteStops[KotlinInt(int: favIndex.asInt32())]?.favouriteStopMode == FavouriteStopMode.closest
                         Text(isClosestStopMode ? (Shared().language == "en" ? "Selected as Any Closes Stop on This Route" : "已設置為本路線最近的任何巴士站") : (Shared().language == "en" ? "Selected as This Route Stop" : "已設置為本路線巴士站"))
-                            .font(.system(size: 15.scaled(appContext), weight: .bold))
+                            .font(.system(size: 15.scaled(appContext, true), weight: .bold))
                             .foregroundColor((isClosestStopMode ? colorInt(0xFFFFE496) : colorInt(0xFFFFFFFF)).asColor())
                             .lineLimit(2)
                             .lineSpacing(0)
@@ -403,9 +403,9 @@ struct EtaMenuView: AppScreenView {
         }
         .buttonStyle(PlainButtonStyle())
         .background { colorInt(0xFF1A1A1A).asColor() }
-        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext))
-        .clipShape(RoundedRectangle(cornerRadius: 50))
-        .tileStateBorder(anyTileUses, 50)
+        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
+        .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
+        .tileStateBorder(anyTileUses, 23.5.scaled(appContext))
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in

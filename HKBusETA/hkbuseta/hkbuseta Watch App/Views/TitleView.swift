@@ -24,14 +24,14 @@ struct TitleView: AppScreenView {
                 appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.search))
             }) {
                 Text(Shared().language == "en" ? "Input Route" : "輸入巴士路線")
-                    .font(.system(size: 20.scaled(appContext), weight: .bold))
+                    .font(.system(size: min(20.scaled(appContext, true), 23.scaled(appContext)), weight: .bold))
             }
             .background(
                 Image("bus_background")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
-                    .brightness(/*@START_MENU_TOKEN@*/-0.2/*@END_MENU_TOKEN@*/)
+                    .brightness(-0.2)
                     .clipShape(RoundedRectangle(cornerRadius: 50))
             )
             .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
@@ -40,13 +40,13 @@ struct TitleView: AppScreenView {
                 appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.nearby))
             }) {
                 Text(Shared().language == "en" ? "Search Nearby" : "附近巴士路線")
-                    .font(.system(size: 20.scaled(appContext), weight: .bold))
+                    .font(.system(size: min(20.scaled(appContext, true), 23.scaled(appContext)), weight: .bold))
             }.background(
                 Image("nearby_background")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
-                    .brightness(/*@START_MENU_TOKEN@*/-0.4/*@END_MENU_TOKEN@*/)
+                    .brightness(-0.4)
                     .clipShape(RoundedRectangle(cornerRadius: 50))
             )
             .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
@@ -57,14 +57,16 @@ struct TitleView: AppScreenView {
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.main))
                 }) {
                     Text(Shared().language == "en" ? "中文" : (belowWidgetVersion ? "EN" : "English"))
-                        .font(.system(size: 20.scaled(appContext), weight: .bold))
+                        .font(.system(size: min(20.scaled(appContext, true), 23.scaled(appContext)), weight: .bold))
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 50))
-                .frame(maxWidth: /*@START_MENU_TOKEN@*/.infinity/*@END_MENU_TOKEN@*/)
+                .frame(maxWidth: .infinity)
                 Button(action: {
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.fav))
                 }) {
-                    Image(systemName: "star.fill").font(.system(size: 21.scaled(appContext))).foregroundColor(.yellow)
+                    Image(systemName: "star.fill")
+                        .font(.system(size: min(21.scaled(appContext, true), 24.scaled(appContext))))
+                        .foregroundColor(.yellow)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 50))
                 .frame(width: 55.scaled(appContext))
@@ -73,7 +75,9 @@ struct TitleView: AppScreenView {
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
                         appContext.finishAffinity()
                     }) {
-                        Image(systemName: "info.circle.fill").font(.system(size: 21.scaled(appContext))).foregroundColor(.red)
+                        Image(systemName: "info.circle.fill")
+                            .font(.system(size: min(21.scaled(appContext, true), 24.scaled(appContext))))
+                            .foregroundColor(.red)
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 50))
                     .frame(width: 55.scaled(appContext))

@@ -119,7 +119,7 @@ struct ListRoutesView: AppScreenView {
                                 appContext.finish()
                             }) {
                                 Image(systemName: "trash")
-                                    .font(.system(size: 17.scaled(appContext)))
+                                    .font(.system(size: 17.scaled(appContext, true)))
                                     .foregroundColor(.red)
                             }
                             .frame(width: 45.scaled(appContext), height: 45.scaled(appContext))
@@ -222,13 +222,13 @@ struct ListRoutesView: AppScreenView {
         }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
                 Text(routeNumber)
-                    .frame(width: altSize ? 67.scaled(appContext) : 50.scaled(appContext), alignment: .leading)
-                    .font(.system(size: altSize ? 18.scaled(appContext) : 21.scaled(appContext)))
+                    .frame(width: altSize ? 67.5.scaled(appContext, true) : 50.scaled(appContext, true), alignment: .leading)
+                    .font(.system(size: altSize ? 18.scaled(appContext, true) : 21.scaled(appContext, true)))
                     .foregroundColor(color)
                 if secondLine.isEmpty {
                     MarqueeText(
                         text: dest,
-                        font: UIFont.systemFont(ofSize: 17.scaled(appContext)),
+                        font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
                         leftFade: 8.scaled(appContext),
                         rightFade: 8.scaled(appContext),
                         startDelay: 2,
@@ -240,7 +240,7 @@ struct ListRoutesView: AppScreenView {
                     VStack(spacing: 0) {
                         MarqueeText(
                             text: dest,
-                            font: UIFont.systemFont(ofSize: 17.scaled(appContext)),
+                            font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
                             leftFade: 8.scaled(appContext),
                             rightFade: 8.scaled(appContext),
                             startDelay: 2,
@@ -251,7 +251,7 @@ struct ListRoutesView: AppScreenView {
                         CrossfadeMarqueeText(
                             textList: secondLine,
                             state: isLuminanceReduced ? 0 : animationTick,
-                            font: UIFont.systemFont(ofSize: altSize ? 11.scaled(appContext) : 12.scaled(appContext)),
+                            font: UIFont.systemFont(ofSize: altSize ? 11.scaled(appContext, true) : 12.scaled(appContext, true)),
                             leftFade: 8.scaled(appContext),
                             rightFade: 8.scaled(appContext),
                             startDelay: 2,
@@ -267,7 +267,7 @@ struct ListRoutesView: AppScreenView {
                 }
             }.contentShape(Rectangle())
         }
-        .frame(width: 170.scaled(appContext), height: 35.scaled(appContext))
+        .frame(width: 170.scaled(appContext), height: 35.scaled(appContext, true))
         .buttonStyle(PlainButtonStyle())
         .transition(AnyTransition.scale)
         .onAppear {
@@ -301,22 +301,22 @@ struct ListRoutesEtaView: View {
                 if !(0..<60).contains(eta.nextScheduledBus) {
                     if eta.isMtrEndOfLine {
                         Image(systemName: "arrow.forward.to.line.circle")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else if (eta.isTyphoonSchedule) {
                         Image(systemName: "hurricane")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else {
                         Image(systemName: "clock")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     }
                 } else {
                     let shortText = eta.firstLine.shortText
                     let text1 = shortText.first
                     let text2 = "\n" + shortText.second
-                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext)) + text2.asAttributedString(fontSize: 8.scaled(appContext))
+                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext, true)) + text2.asAttributedString(fontSize: 8.scaled(appContext, true))
                     Text(text)
                         .multilineTextAlignment(.trailing)
                         .lineSpacing(0)

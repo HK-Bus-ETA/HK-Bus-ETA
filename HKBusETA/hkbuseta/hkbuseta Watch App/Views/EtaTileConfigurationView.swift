@@ -38,25 +38,25 @@ struct EtaTileConfigurationView: AppScreenView {
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
-                            .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
+                            .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
                         Spacer(minLength: 5.scaled(appContext))
                         Text(Shared().language == "en" ? "Selected Favourite Routes will display in the Tile" : "所選最喜愛路線將顯示在資訊方塊中")
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
-                            .autoResizing(maxSize: 12.scaled(appContext))
+                            .autoResizing(maxSize: 12.scaled(appContext, true))
                         Text(Shared().language == "en" ? "Multiple routes may be selected if their respective stop is close by" : "可選多條巴士站相近的路線")
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
-                            .autoResizing(maxSize: 12.scaled(appContext))
+                            .autoResizing(maxSize: 12.scaled(appContext, true))
                         Spacer(minLength: 10.scaled(appContext))
                         if Shared().favoriteRouteStops.isEmpty {
                             Text(Shared().language == "en" ? "No favourite routes" : "沒有最喜愛路線")
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                                 .lineLimit(2)
-                                .autoResizing(maxSize: 23.scaled(appContext))
+                                .autoResizing(maxSize: 23.scaled(appContext, true))
                         } else {
                             ForEach(1..<(Int(truncating: maxFavItems.state) + 1), id: \.self) { index in
                                 if Shared().favoriteRouteStops[index.asKt()] != nil {
@@ -78,7 +78,7 @@ struct EtaTileConfigurationView: AppScreenView {
                         appContext.finish()
                     }) {
                         Text(Shared().language == "en" ? "Confirm" : "確認選擇")
-                            .font(.system(size: 17.scaled(appContext), weight: .bold))
+                            .font(.system(size: 17.scaled(appContext, true), weight: .bold))
                             .foregroundColor(colorInt(!selectStates.isEmpty ? 0xFF62FF00 : 0xFF444444).asColor())
                     }
                     .disabled(selectStates.isEmpty)
@@ -145,12 +145,12 @@ struct EtaTileConfigurationView: AppScreenView {
                             }
                         if selectState.selected {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 17.scaled(appContext), weight: .bold))
+                                .font(.system(size: 17.scaled(appContext, true), weight: .bold))
                                 .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                                 .foregroundColor((selectState == SelectMode.primary ? colorInt(0xFF4CFF00).asColor() : colorInt(0xFFFF8400).asColor()).adjustBrightness(percentage: enabled ? 1.0 : 0.5))
                         } else {
                             Text("\(favIndex)")
-                                .font(.system(size: 17.scaled(appContext), weight: .bold))
+                                .font(.system(size: 17.scaled(appContext, true), weight: .bold))
                                 .foregroundColor((favouriteStopRoute != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor()).adjustBrightness(percentage: enabled ? 1.0 : 0.5))
                         }
                     }
@@ -160,7 +160,7 @@ struct EtaTileConfigurationView: AppScreenView {
                     if favouriteStopRoute == nil {
                         HStack(alignment: .center) {
                             Text(Shared().language == "en" ? "No Route Selected" : "未有設置路線")
-                                .font(.system(size: 16.scaled(appContext), weight: .bold))
+                                .font(.system(size: 16.scaled(appContext, true), weight: .bold))
                                 .foregroundColor(colorInt(0xFF505050).asColor())
                                 .lineLimit(2)
                                 .lineSpacing(0)
@@ -194,7 +194,7 @@ struct EtaTileConfigurationView: AppScreenView {
                         VStack(alignment: .leading, spacing: 0) {
                             MarqueeText(
                                 text: mainText,
-                                font: UIFont.systemFont(ofSize: 19.scaled(appContext), weight: .bold),
+                                font: UIFont.systemFont(ofSize: 19.scaled(appContext, true), weight: .bold),
                                 leftFade: 8.scaled(appContext),
                                 rightFade: 8.scaled(appContext),
                                 startDelay: 2,
@@ -204,7 +204,7 @@ struct EtaTileConfigurationView: AppScreenView {
                             .lineLimit(1)
                             MarqueeText(
                                 text: routeText,
-                                font: UIFont.systemFont(ofSize: 17.scaled(appContext)),
+                                font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
                                 leftFade: 8.scaled(appContext),
                                 rightFade: 8.scaled(appContext),
                                 startDelay: 2,
@@ -215,7 +215,7 @@ struct EtaTileConfigurationView: AppScreenView {
                             Spacer(minLength: 3.scaled(appContext))
                             MarqueeText(
                                 text: subText,
-                                font: UIFont.systemFont(ofSize: 14.scaled(appContext)),
+                                font: UIFont.systemFont(ofSize: 14.scaled(appContext, true)),
                                 leftFade: 8.scaled(appContext),
                                 rightFade: 8.scaled(appContext),
                                 startDelay: 2,

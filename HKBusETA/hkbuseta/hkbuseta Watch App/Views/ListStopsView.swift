@@ -104,25 +104,25 @@ struct ListStopsView: AppScreenView {
                         Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
                             .foregroundColor(coColor.adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .lineLimit(1)
-                            .autoResizing(maxSize: 23.scaled(appContext), weight: .bold)
+                            .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
                         Text(resolvedDestName.get(language: Shared().language))
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
-                            .autoResizing(maxSize: 12.scaled(appContext))
+                            .autoResizing(maxSize: 12.scaled(appContext, true))
                         if !specialOrigs.isEmpty {
                             Text(Shared().language == "en" ? ("Special From " + specialOrigs.map { $0.en }.joined(separator: "/")) : ("特別班 從" + specialOrigs.map { $0.zh }.joined(separator: "/") + "開出"))
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
-                                .autoResizing(maxSize: 12.scaled(appContext))
+                                .autoResizing(maxSize: 12.scaled(appContext, true))
                         }
                         if !specialDests.isEmpty {
                             Text(Shared().language == "en" ? ("Special To " + specialDests.map { $0.en }.joined(separator: "/")) : ("特別班 往" + specialDests.map { $0.zh }.joined(separator: "/")))
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
-                                .autoResizing(maxSize: 12.scaled(appContext))
+                                .autoResizing(maxSize: 12.scaled(appContext, true))
                         }
                     }
                     ForEach(stopList.indices, id: \.self) { index in
@@ -208,18 +208,18 @@ struct ListStopsView: AppScreenView {
         }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
                 if co.isTrain && !mtrLineSectionData.isEmpty {
-                    let width: CGFloat = Set(stopList.map { $0.serviceType }).count > 1 || mtrStopsInterchange.contains(where: { !$0.outOfStationLines.isEmpty }) ? 64 : 47
+                    let width: CGFloat = (Set(stopList.map { $0.serviceType }).count > 1 || mtrStopsInterchange.contains(where: { !$0.outOfStationLines.isEmpty }) ? 64 : 47).dynamicSize()
                     MTRLineSection(appContext: appContext, sectionData: mtrLineSectionData[index], ambientMode: ambientMode)
                         .frame(minWidth: width, maxWidth: width, maxHeight: .infinity)
                 } else {
                     Text("\(stopNumber).")
                         .frame(width: 37.scaled(appContext), alignment: .leading)
-                        .font(.system(size: 18.scaled(appContext), weight: isClosest ? .bold : .regular))
+                        .font(.system(size: 18.scaled(appContext, true), weight: isClosest ? .bold : .regular))
                         .foregroundColor(color)
                 }
                 MarqueeText(
-                    text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled(appContext), defaultWeight: isClosest ? .bold : .regular),
-                    font: UIFont.systemFont(ofSize: 18.scaled(appContext), weight: isClosest ? .bold : .regular),
+                    text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled(appContext, true), defaultWeight: isClosest ? .bold : .regular),
+                    font: UIFont.systemFont(ofSize: 18.scaled(appContext, true), weight: isClosest ? .bold : .regular),
                     leftFade: 8.scaled(appContext),
                     rightFade: 8.scaled(appContext),
                     startDelay: 2,
@@ -232,7 +232,7 @@ struct ListStopsView: AppScreenView {
                 }
             }.contentShape(Rectangle())
         }
-        .frame(width: 170.scaled(appContext), height: 40.scaled(appContext))
+        .frame(width: 170.scaled(appContext), height: 40.scaled(appContext, true))
         .buttonStyle(PlainButtonStyle())
         .onAppear {
             if showEta {
@@ -265,22 +265,22 @@ struct ListStopETAView: View {
                 if !(0..<60).contains(eta.nextScheduledBus) {
                     if eta.isMtrEndOfLine {
                         Image(systemName: "arrow.forward.to.line.circle")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else if (eta.isTyphoonSchedule) {
                         Image(systemName: "hurricane")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     } else {
                         Image(systemName: "clock")
-                            .font(.system(size: 17.scaled(appContext)))
+                            .font(.system(size: 17.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
                     }
                 } else {
                     let shortText = eta.firstLine.shortText
                     let text1 = shortText.first
                     let text2 = "\n" + shortText.second
-                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext)) + text2.asAttributedString(fontSize: 8.scaled(appContext))
+                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext, true)) + text2.asAttributedString(fontSize: 8.scaled(appContext, true))
                     Text(text)
                         .multilineTextAlignment(.trailing)
                         .lineSpacing(0)

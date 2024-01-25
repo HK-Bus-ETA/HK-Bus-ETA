@@ -30,7 +30,7 @@ struct FavRouteListViewView: AppScreenView {
     var body: some View {
         ZStack {
             Text(Shared().language == "en" ? "Locating..." : "正在讀取你的位置...")
-                .font(.system(size: 20.scaled(appContext)))
+                .font(.system(size: min(20.scaled(appContext, true), 23.scaled(appContext))))
                 .frame(alignment: .center)
                 .multilineTextAlignment(.center)
             if showingSkip {
@@ -38,7 +38,7 @@ struct FavRouteListViewView: AppScreenView {
                     failed = true
                 }) {
                     Text(Shared().language == "en" ? "Skip sort by distance" : "略過按距離排序")
-                        .font(.system(size: 17.scaled(appContext), weight: .bold))
+                        .font(.system(size: 15.scaled(appContext, true), weight: .bold))
                 }
                 .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
                 .clipShape(RoundedRectangle(cornerRadius: 25))

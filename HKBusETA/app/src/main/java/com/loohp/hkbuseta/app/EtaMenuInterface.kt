@@ -620,7 +620,7 @@ fun Title(index: Int, stopName: BilingualText, stopRemark: BilingualText?, route
         fontWeight = FontWeight.Bold,
         fontSizeRange = FontSizeRange(
             min = 1F.scaledSize(instance).dp.sp,
-            max = 17F.scaledSize(instance).sp.clamp(max = 17F.scaledSize(instance).dp)
+            max = 17F.scaledSize(instance).sp
         )
     )
     if (stopRemark != null) {
@@ -634,7 +634,7 @@ fun Title(index: Int, stopName: BilingualText, stopRemark: BilingualText?, route
             maxLines = 1,
             fontSizeRange = FontSizeRange(
                 min = 1F.scaledSize(instance).dp.sp,
-                max = 12F.scaledSize(instance).sp.clamp(max = 12F.scaledSize(instance).dp)
+                max = 12F.scaledSize(instance).sp
             )
         )
     }
@@ -653,7 +653,7 @@ fun SubTitle(destName: BilingualText, routeNumber: String, co: Operator, instanc
         maxLines = 1,
         fontSizeRange = FontSizeRange(
             min = 1F.scaledSize(instance).dp.sp,
-            max = 11F.scaledSize(instance).sp.clamp(max = 11F.scaledSize(instance).dp)
+            max = 11F.scaledSize(instance).sp
         )
     )
 }
@@ -666,7 +666,7 @@ fun FavHeader(instance: AppActiveContext) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+        fontSize = 14F.scaledSize(instance).sp,
         text = if (Shared.language == "en") "Set Favourite Routes" else "設置最喜愛路線"
     )
     Text(
@@ -675,7 +675,7 @@ fun FavHeader(instance: AppActiveContext) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = 10F.scaledSize(instance).sp.clamp(max = 10.dp),
+        fontSize = 10F.scaledSize(instance).sp,
         text = if (Shared.language == "en") {
             "Section to set/clear this route stop from the corresponding indexed favourite route"
         } else {
@@ -688,7 +688,7 @@ fun FavHeader(instance: AppActiveContext) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = 10F.scaledSize(instance).sp.clamp(max = 10.dp),
+        fontSize = 10F.scaledSize(instance).sp,
         text = if (Shared.language == "en") {
             "Route stops can be used in Tiles"
         } else {
@@ -702,7 +702,7 @@ fun FavHeader(instance: AppActiveContext) {
             .fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
-        fontSize = 10F.scaledSize(instance).sp.clamp(max = 10.dp),
+        fontSize = 10F.scaledSize(instance).sp,
         fontWeight = FontWeight.Bold,
         text = if (Shared.language == "en") {
             "Tap to set this stop\nLong press to set to display any closes stop of the route"

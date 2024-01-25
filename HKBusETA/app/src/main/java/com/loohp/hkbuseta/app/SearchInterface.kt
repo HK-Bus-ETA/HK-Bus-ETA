@@ -72,6 +72,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.ButtonDefaults
@@ -95,6 +96,7 @@ import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.asImmutableState
+import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -353,7 +355,7 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, longContent: Char?
         content = {
             if (isLookupButton) {
                 Icon(
-                    modifier = Modifier.size(17.dp),
+                    modifier = Modifier.size(17F.sp.dp),
                     painter = painterResource(icons[1].value as Int),
                     contentDescription = content.toString(),
                     tint = Color(0xFF03A9F4),
@@ -364,13 +366,14 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, longContent: Char?
                         Text(
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
+                            fontSize = 17F.sp,
                             color = actualColor,
                             text = content.toString()
                         )
                     }
                     is ImageVector -> {
                         Icon(
-                            modifier = Modifier.size(17.dp),
+                            modifier = Modifier.size(17F.sp.dp),
                             imageVector = icon,
                             contentDescription = content.toString(),
                             tint = actualColor,
@@ -378,7 +381,7 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, longContent: Char?
                     }
                     is Int -> {
                         Image(
-                            modifier = Modifier.size(17.dp),
+                            modifier = Modifier.size(17F.sp.dp),
                             painter = painterResource(icon),
                             contentDescription = content.toString()
                         )

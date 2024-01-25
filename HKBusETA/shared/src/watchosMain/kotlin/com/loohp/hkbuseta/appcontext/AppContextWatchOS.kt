@@ -84,12 +84,24 @@ object HistoryStack {
 
 }
 
-data class ToastTextData(val text: String, val duration: ToastDuration)
+data class ToastTextData(val text: String, val duration: ToastDuration) {
+
+    companion object {
+
+        val RESET: ToastTextData = ToastTextData("", ToastDuration.SHORT)
+
+    }
+
+}
 
 object ToastTextState {
 
     @NativeCoroutinesState
-    val toastState: MutableStateFlow<ToastTextData> = MutableStateFlow(ToastTextData("", ToastDuration.SHORT))
+    val toastState: MutableStateFlow<ToastTextData> = MutableStateFlow(ToastTextData.RESET)
+
+    fun resetToastState() {
+        toastState.value = ToastTextData.RESET
+    }
 
 }
 

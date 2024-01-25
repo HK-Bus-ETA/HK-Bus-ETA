@@ -32,7 +32,7 @@ struct SearchView: AppScreenView {
     var body: some View {
         VStack {
             Text(Shared().getMtrLineName(lineName: state.text))
-                .font(.system(size: 22.scaled(appContext)))
+                .font(.system(size: 22.scaled(appContext, true)))
                 .frame(width: 150.0.scaled(appContext), height: 40.0.scaled(appContext))
                 .background { colorInt(0xFF1A1A1A).asColor() }
                 .overlay(
@@ -100,25 +100,25 @@ struct SearchView: AppScreenView {
             case "<":
                 if hasHistory && state.text.isEmpty || state.text == defaultText() {
                     Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 17.scaled(appContext)))
+                        .font(.system(size: 17.scaled(appContext, true)))
                         .foregroundColor(colorInt(0xFF03A9F4).asColor())
                 } else {
                     Image(systemName: "trash")
-                        .font(.system(size: 17.scaled(appContext)))
+                        .font(.system(size: 17.scaled(appContext, true)))
                         .foregroundColor(.red)
                 }
             case "/":
                 Image(systemName: "checkmark")
-                    .font(.system(size: 17.scaled(appContext)))
+                    .font(.system(size: 17.scaled(appContext, true)))
                     .foregroundColor(state.nextCharResult.hasExactMatch ? .green : colorInt(0xFF444444).asColor())
             case "!":
                 Image("mtr")
                     .resizable()
-                    .frame(width: 20.0.scaled(appContext), height: 20.0.scaled(appContext))
+                    .frame(width: 20.0.scaled(appContext, true), height: 20.0.scaled(appContext, true))
                     .foregroundColor(.red)
             default:
                 Text(content.description)
-                    .font(.system(size: 20.scaled(appContext), weight: .bold))
+                    .font(.system(size: 20.scaled(appContext, true), weight: .bold))
                     .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : colorInt(0xFF444444).asColor())
             }
         }

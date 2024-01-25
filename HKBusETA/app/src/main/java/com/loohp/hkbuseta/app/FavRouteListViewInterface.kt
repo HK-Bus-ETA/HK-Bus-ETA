@@ -56,19 +56,14 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.RouteListType
-import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
-import com.loohp.hkbuseta.common.objects.StopInfo
-import com.loohp.hkbuseta.common.objects.getRouteKey
-import com.loohp.hkbuseta.common.objects.resolveStop
-import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.toJsonArray
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.common.utils.toJsonArray
-import com.loohp.hkbuseta.shared.AndroidShared
 import kotlinx.coroutines.delay
 
 
@@ -119,7 +114,7 @@ fun WaitingElement(state: MutableState<Boolean>, instance: AppActiveContext) {
                 .fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
-            fontSize = 17F.scaledSize(instance).sp,
+            fontSize = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp),
             text = if (Shared.language == "en") "Locating..." else "正在讀取你的位置..."
         )
         Button(
@@ -142,7 +137,7 @@ fun WaitingElement(state: MutableState<Boolean>, instance: AppActiveContext) {
                     modifier = Modifier.fillMaxWidth(0.9F),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                    fontSize = 12F.scaledSize(instance).sp.clamp(max = 12.dp),
                     text = if (Shared.language == "en") "Skip sort by distance" else "略過按距離排序"
                 )
             }

@@ -540,7 +540,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
                 if (eta.isMtrEndOfLine) {
                     Icon(
                         modifier = Modifier
-                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp)
+                            .size(16F.scaledSize(instance).sp.dp)
                             .offset(0.dp, -2.5F.scaledSize(instance).sp.clamp(max = 3.5F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
                         contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
@@ -550,7 +550,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
                     val typhoonInfo by remember { Registry.getInstance(instance).cachedTyphoonDataState }.collectAsStateWithLifecycle()
                     Image(
                         modifier = Modifier
-                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp)
+                            .size(16F.scaledSize(instance).sp.dp)
                             .offset(0.dp, -2.5F.scaledSize(instance).sp.clamp(max = 3.5F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.mipmap.cyclone),
                         contentDescription = typhoonInfo.typhoonWarningTitle
@@ -558,7 +558,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
                 } else {
                     Icon(
                         modifier = Modifier
-                            .size(16F.scaledSize(instance).sp.clamp(max = 18F.scaledSize(instance).dp).dp)
+                            .size(16F.scaledSize(instance).sp.dp)
                             .offset(0.dp, -2.5F.scaledSize(instance).sp.clamp(max = 3.5F.scaledSize(instance).dp).dp),
                         painter = painterResource(R.drawable.baseline_schedule_24),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
@@ -568,16 +568,16 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaTextWid
             } else {
                 val (text1, text2) = eta.firstLine.shortText
                 val text = buildAnnotatedString {
-                    append(text1, SpanStyle(fontSize = 14F.scaledSize(instance).clampSp(instance, dpMax = 15F.scaledSize(instance)).sp))
+                    append(text1, SpanStyle(fontSize = 14F.scaledSize(instance).sp))
                     append("\n")
-                    append(text2, SpanStyle(fontSize = 7F.scaledSize(instance).clampSp(instance, dpMax = 8F.scaledSize(instance)).sp))
+                    append(text2, SpanStyle(fontSize = 7F.scaledSize(instance).sp))
                 }
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
                         .offset(0.dp, 1F.scaledSize(instance).sp.clamp(max = 2F.scaledSize(instance).dp).dp),
                     textAlign = TextAlign.End,
-                    fontSize = 14F.sp.clamp(max = 15.dp),
+                    fontSize = 14F.sp,
                     color = Color(0xFFAAC3D5),
                     lineHeight = 7F.sp.clamp(max = 9.dp),
                     maxLines = 2,
