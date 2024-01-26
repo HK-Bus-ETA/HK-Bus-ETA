@@ -189,12 +189,27 @@ def download_and_process_gmb_route():
             BUS_ROUTE.add(route)
 
 
+def strip_data_sheet(data):
+    route_list = data["routeList"]
+    route_keys = list(route_list.keys())
+    for key in route_keys:
+        route_data = route_list[key]
+        del route_data["fares"]
+        del route_data["faresHoliday"]
+        del route_data["freq"]
+        del route_data["jt"]
+        del route_data["seq"]
+    if "serviceDayMap" in data:
+        del data["serviceDayMap"]
+
+
 def download_and_process_data_sheet():
     global DATA_SHEET
     global BUS_ROUTE
-    url = "https://raw.githubusercontent.com/LOOHP/hk-bus-crawling/gh-pages/routeFareList.strip.json"
+    url = "https://raw.githubusercontent.com/hkbus/hk-bus-crawling/gh-pages/routeFareList.min.json"
     response = requests.get(url)
     DATA_SHEET = response.json()
+    strip_data_sheet(DATA_SHEET)
 
     DATA_SHEET["stopList"]["AC1FD9BDD09D1DD6"]["remark"] = {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}
     DATA_SHEET["stopList"]["20001477"]["remark"] = {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}
