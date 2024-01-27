@@ -43,6 +43,7 @@ jobs:
               size.dat
               data.json.gz
               size.gz.dat
+              last_updated.txt
             commit-msg: Update resources
             github-token: ${{ secrets.GITHUB_TOKEN }}
             branch: data
@@ -55,6 +56,7 @@ jobs:
           mv size.dat data/
           mv data.json.gz data/
           mv size.gz.dat data/
+          mv last_updated.txt data/
       - name: Push to wear.hkbus.app
         uses: cpina/github-action-push-to-another-repository@main
         env:
