@@ -15,6 +15,8 @@ import RxSwift
 
 struct ListRoutesView: AppScreenView {
     
+    @StateObject private var jointOperatedColorFraction = FlowStateObservable(defaultValue: KotlinFloat(float: Shared().jointOperatedColorFractionState), nativeFlow: Shared().jointOperatedColorFractionStateFlow)
+    
     @State private var animationTick = 0
     
     let timer = Timer.publish(every: 5.5, on: .main, in: .common).autoconnect()
@@ -179,8 +181,8 @@ struct ListRoutesView: AppScreenView {
     }
     
     func RouteRow(route: StopIndexedRouteSearchResultEntry) -> some View {
-        let color = route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF as Int64).asColor()
         let kmbCtbJoint = route.route!.isKmbCtbJoint
+        let color = operatorColor(route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
         let dest = route.route!.resolvedDest(prependTo: true).get(language: Shared().language)
         let altSize = route.co == Operator.Companion().MTR && Shared().language != "en"
         let routeNumber = altSize ? Shared().getMtrLineName(lineName: route.route!.routeNumber) : route.route!.routeNumber
@@ -189,13 +191,6 @@ struct ListRoutesView: AppScreenView {
             if route.stopInfo != nil {
                 let stop = route.stopInfo!.data!
                 list.append((stop.name.get(language: Shared().language)).asAttributedString())
-            }
-            if (kmbCtbJoint) {
-                if Shared().language == "en" {
-                    list.append((routeNumber.getKMBSubsidiary() == KMBSubsidiary.lwb ? "LWB" : "KMB").asAttributedString(color: color) + " CTB Joint Operated".asAttributedString(color: colorInt(0xFFFFE15E).asColor()))
-                } else {
-                    list.append((routeNumber.getKMBSubsidiary() == KMBSubsidiary.lwb ? "龍運" : "九巴").asAttributedString(color: color) + "城巴聯營線".asAttributedString(color: colorInt(0xFFFFE15E).asColor()))
-                }
             }
             if route.co == Operator.Companion().NLB {
                 list.append((Shared().language == "en" ? ("From " + route.route!.orig.en) : ("從" + route.route!.orig.zh + "開出")).asAttributedString(color: color.adjustBrightness(percentage: 0.75)))

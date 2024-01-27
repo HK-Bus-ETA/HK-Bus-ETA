@@ -22,10 +22,8 @@ package com.loohp.hkbuseta.app
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -124,6 +122,7 @@ import com.loohp.hkbuseta.utils.clampSp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.findTextLengthDp
 import com.loohp.hkbuseta.utils.getColor
+import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToDp
@@ -385,22 +384,7 @@ fun RouteRow(key: String, kmbCtbJoint: Boolean, rawColor: Color, padding: Float,
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
     ) {
-        val color = if (kmbCtbJoint) {
-            val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
-            val animatedColor by infiniteTransition.animateColor(
-                initialValue = rawColor,
-                targetValue = Color(0xFFFFE15E),
-                animationSpec = infiniteRepeatable(
-                    animation = tween(5000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse,
-                    initialStartOffset = StartOffset(1500)
-                ),
-                label = "JointColor"
-            )
-            animatedColor
-        } else {
-            rawColor
-        }
+        val color = AndroidShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { kmbCtbJoint })
 
         Text(
             modifier = Modifier

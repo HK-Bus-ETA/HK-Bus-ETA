@@ -56,7 +56,7 @@ class ListStopsActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(appContext).ifFalse { return }
         AndroidShared.setDefaultExceptionHandler(this)
 
-        val route = intent.extras!!.getByteArray("route")?.let { runBlocking { RouteSearchResultEntry.deserialize(ByteReadChannel(it)) } }!!
+        val route = intent.extras!!.getByteArray("route")?.let { runBlocking(AndroidShared.CACHED_DISPATCHER) { RouteSearchResultEntry.deserialize(ByteReadChannel(it)) } }!!
         val scrollToStop = intent.extras!!.getString("scrollToStop")
         val showEta = intent.extras!!.getBoolean("showEta", true)
         val isAlightReminder = intent.extras!!.getBoolean("isAlightReminder", false)

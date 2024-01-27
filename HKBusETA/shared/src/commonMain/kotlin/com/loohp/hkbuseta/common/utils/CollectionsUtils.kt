@@ -56,11 +56,11 @@ fun <T> Collection<T>.commonElementPercentage(other: Collection<T>): Float {
 }
 
 inline fun <T, R> List<T>.parallelMap(dispatcher: CoroutineDispatcher = Dispatchers.IO, crossinline transform: (T) -> R): List<R> {
-    return map { CoroutineScope(dispatcher).async { transform.invoke(it) } }.map { runBlocking { it.await() } }
+    return map { CoroutineScope(dispatcher).async { transform.invoke(it) } }.map { runBlocking(Dispatchers.IO) { it.await() } }
 }
 
 inline fun <T, R> List<T>.parallelMapNotNull(dispatcher: CoroutineDispatcher = Dispatchers.IO, crossinline transform: (T) -> R?): List<R> {
-    return map { CoroutineScope(dispatcher).async { transform.invoke(it) } }.mapNotNull { runBlocking { it.await() } }
+    return map { CoroutineScope(dispatcher).async { transform.invoke(it) } }.mapNotNull { runBlocking(Dispatchers.IO) { it.await() } }
 }
 
 fun <T> Sequence<T>.toImmutableList(): ImmutableList<T> {

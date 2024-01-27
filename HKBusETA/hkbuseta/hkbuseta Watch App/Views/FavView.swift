@@ -15,6 +15,8 @@ import RxSwift
 
 struct FavView: AppScreenView {
     
+    @StateObject private var jointOperatedColorFraction = FlowStateObservable(defaultValue: KotlinFloat(float: Shared().jointOperatedColorFractionState), nativeFlow: Shared().jointOperatedColorFractionStateFlow)
+    
     @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().currentMaxFavouriteRouteStopState), nativeFlow: Shared().currentMaxFavouriteRouteStopStateFlow)
     @State private var showRouteListViewButton = false
     
@@ -184,11 +186,12 @@ struct FavView: AppScreenView {
                         let stopName = resolvedStop.stop.name
                         let index = resolvedStop.index
                         let route = resolvedStop.route
+                        let kmbCtbJoint = route.isKmbCtbJoint
                         let co = currentFavRouteStop!.co
                         let routeNumber = route.routeNumber
                         let gpsStop = currentFavRouteStop!.favouriteStopMode.isRequiresLocation
                         let destName = registry(appContext).getStopSpecialDestinations(stopId: currentFavRouteStop!.stopId, co: currentFavRouteStop!.co, route: route, prependTo: true)
-                        let color = currentFavRouteStop!.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64)
+                        let color = operatorColor(currentFavRouteStop!.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }
                         let operatorName = currentFavRouteStop!.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, language: Shared().language, elseName: "???")
                         let mainText = "\(operatorName) \(currentFavRouteStop!.co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))"
                         let routeText = destName.get(language: Shared().language)

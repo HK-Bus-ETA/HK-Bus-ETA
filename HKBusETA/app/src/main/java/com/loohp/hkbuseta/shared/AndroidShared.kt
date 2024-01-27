@@ -28,7 +28,13 @@ import android.os.Bundle
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.TimeTextDefaults
 import androidx.work.Constraints
@@ -43,9 +49,13 @@ import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.background.DailyUpdateWorker
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.interpolateColor
 import com.loohp.hkbuseta.common.utils.nextScheduledDataUpdateMillis
 import com.loohp.hkbuseta.utils.HongKongTimeSource
 import com.loohp.hkbuseta.utils.isEqualTo
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -65,6 +75,8 @@ data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?, va
 object AndroidShared {
 
     private const val BACKGROUND_SERVICE_REQUEST_TAG: String = "HK_BUS_ETA_BG_SERVICE"
+
+    val CACHED_DISPATCHER: CoroutineDispatcher = Executors.newCachedThreadPool().asCoroutineDispatcher()
 
     val RESOURCE_RATIO: Map<Int, Float> = mapOf(
         R.mipmap.lrv to 128F / 95F,
@@ -100,6 +112,15 @@ object AndroidShared {
                 throw throwable
             }
         }
+    }
+
+    @Composable
+    fun rememberOperatorColor(primaryColor: Color, secondaryColor: Color? = null): Color {
+        return secondaryColor?.let {
+            val fraction by Shared.jointOperatedColorFractionState.collectAsStateWithLifecycle()
+            val color by remember { derivedStateOf { Color(interpolateColor(primaryColor.toArgb().toLong(), it.toArgb().toLong(), fraction)) } }
+            return color
+        }?: primaryColor
     }
 
     private var currentActivity: AtomicReference<CurrentActivityData?> = AtomicReference(null)

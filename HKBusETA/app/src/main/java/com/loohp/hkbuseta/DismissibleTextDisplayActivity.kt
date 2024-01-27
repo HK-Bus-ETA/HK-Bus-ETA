@@ -43,8 +43,8 @@ class DismissibleTextDisplayActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(appContext).ifFalse { return }
         AndroidShared.setDefaultExceptionHandler(this)
 
-        val text = intent.extras!!.getByteArray("text")?.let { runBlocking { BilingualFormattedText.deserialize(ByteReadChannel(it)) } }?: BilingualFormattedText.EMPTY
-        val dismissText = intent.extras!!.getByteArray("dismissText")?.let { runBlocking { BilingualText.deserialize(ByteReadChannel(it)) } }
+        val text = intent.extras!!.getByteArray("text")?.let { runBlocking(AndroidShared.CACHED_DISPATCHER) { BilingualFormattedText.deserialize(ByteReadChannel(it)) } }?: BilingualFormattedText.EMPTY
+        val dismissText = intent.extras!!.getByteArray("dismissText")?.let { runBlocking(AndroidShared.CACHED_DISPATCHER) { BilingualText.deserialize(ByteReadChannel(it)) } }
 
         setContent {
             TextElement(text, dismissText, appContext)

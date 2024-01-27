@@ -20,13 +20,6 @@
 
 package com.loohp.hkbuseta.app
 
-import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.StartOffset
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -130,6 +123,7 @@ import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.findTextLengthDp
 import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.spToDp
@@ -541,22 +535,7 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        val color = if (kmbCtbJoint) {
-            val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
-            val animatedColor by infiniteTransition.animateColor(
-                initialValue = coColor,
-                targetValue = Color(0xFFFFE15E),
-                animationSpec = infiniteRepeatable(
-                    animation = tween(5000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse,
-                    initialStartOffset = StartOffset(1500)
-                ),
-                label = "JointColor"
-            )
-            animatedColor
-        } else {
-            coColor
-        }
+        val color = AndroidShared.rememberOperatorColor(coColor, Operator.CTB.getOperatorColor(Color.White).takeIf { kmbCtbJoint })
 
         AutoResizeText(
             modifier = Modifier
@@ -639,23 +618,8 @@ fun StopRowElement(ambientMode: Boolean, stopNumber: Int, stopId: String, co: Op
             rawColor
         }
     } else {
-        if (isClosest && kmbCtbJoint) {
-            val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
-            val animatedColor by infiniteTransition.animateColor(
-                initialValue = rawColor,
-                targetValue = Color(0xFFFFE15E).adjustBrightness(brightness),
-                animationSpec = infiniteRepeatable(
-                    animation = tween(5000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse,
-                    initialStartOffset = StartOffset(1500)
-                ),
-                label = "JointColor"
-            )
-            animatedColor
-        } else {
-            rawColor
-        }
-    }
+        AndroidShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { isClosest && kmbCtbJoint })
+    }.adjustBrightness(brightness)
     Row (
         modifier = Modifier
             .padding(25.dp, 0.dp)

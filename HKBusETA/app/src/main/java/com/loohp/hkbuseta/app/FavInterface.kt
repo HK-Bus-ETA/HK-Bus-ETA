@@ -20,17 +20,12 @@
 
 package com.loohp.hkbuseta.app
 
-import androidx.compose.animation.animateColor
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -112,6 +107,7 @@ import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.ImmutableState
 import com.loohp.hkbuseta.utils.Small
@@ -123,6 +119,7 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToPixels
 import kotlinx.coroutines.delay
@@ -161,7 +158,7 @@ fun FavElements(ambientMode: Boolean, scrollToIndex: Int, instance: AppActiveCon
                 checkLocationPermission(instance) {
                     if (it) {
                         schedule.invoke(true, -1) {
-                            originState.value = runBlocking { getGPSLocation(instance).await() }
+                            originState.value = runBlocking(AndroidShared.CACHED_DISPATCHER) { getGPSLocation(instance).await() }
                         }
                     }
                 }
@@ -452,22 +449,7 @@ fun FavButton(favoriteIndex: Int, etaResults: ImmutableState<out MutableMap<Int,
                     val gpsStop = currentFavouriteStopRoute.favouriteStopMode.isRequiresLocation
                     val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true)
                     val rawColor = co.getColor(routeNumber, Color.White)
-                    val color = if (kmbCtbJoint) {
-                        val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
-                        val animatedColor by infiniteTransition.animateColor(
-                            initialValue = rawColor,
-                            targetValue = Color(0xFFFFE15E),
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(5000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Reverse,
-                                initialStartOffset = StartOffset(1500)
-                            ),
-                            label = "JointColor"
-                        )
-                        animatedColor
-                    } else {
-                        rawColor
-                    }
+                    val color = AndroidShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { kmbCtbJoint })
 
                     val operator = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)
                     val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))

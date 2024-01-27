@@ -32,6 +32,10 @@ private val bilingualToPrefix = "往" withEn "To "
 
 inline val Operator.isTrain: Boolean get() = this == Operator.MTR || this == Operator.LRT
 
+fun Operator.getOperatorColor(elseColor: Long): Long {
+    return getColor("", elseColor)
+}
+
 fun Operator.getColor(routeNumber: String, elseColor: Long): Long {
     return when (this) {
         Operator.KMB -> if (routeNumber.getKMBSubsidiary() == KMBSubsidiary.LWB) 0xFFF26C33 else 0xFFFF4747
@@ -51,7 +55,7 @@ fun Operator.getColor(routeNumber: String, elseColor: Long): Long {
             "ISL" -> 0xFF0075C2
             "KTL" -> 0xFF00A040
             "DRL" -> 0xFFEB6EA5
-            else -> elseColor
+            else -> 0xFFAAD4FF
         }
         else -> elseColor
     }

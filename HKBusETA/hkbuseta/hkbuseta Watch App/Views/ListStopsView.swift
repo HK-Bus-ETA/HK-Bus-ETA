@@ -15,6 +15,8 @@ import RxSwift
 
 struct ListStopsView: AppScreenView {
     
+    @StateObject private var jointOperatedColorFraction = FlowStateObservable(defaultValue: KotlinFloat(float: Shared().jointOperatedColorFractionState), nativeFlow: Shared().jointOperatedColorFractionStateFlow)
+    
     @ObservedObject private var locationManager = SingleLocationManager()
     @State private var scrollTarget: Int? = nil
     @State private var scrolled = false
@@ -45,7 +47,6 @@ struct ListStopsView: AppScreenView {
     @State private var resolvedDestName: BilingualText
     @State private var specialOrigs: [BilingualText]
     @State private var specialDests: [BilingualText]
-    @State private var coColor: Color
     @State private var stopList: [Registry.StopData]
     @State private var lowestServiceType: Int32
     @State private var mtrStopsInterchange: [Registry.MTRInterchangeData]
@@ -80,7 +81,6 @@ struct ListStopsView: AppScreenView {
         let specialOrigsDests = registry(appContext).getAllOriginsAndDestinations(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         self.specialOrigs = specialOrigsDests.first!.map { $0 as! BilingualText }.filter { !$0.zh.eitherContains(other: origName.zh) }
         self.specialDests = specialOrigsDests.second!.map { $0 as! BilingualText }.filter { !$0.zh.eitherContains(other: destName.zh) }
-        self.coColor = co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64).asColor()
         let stopList = registry(appContext).getAllStops(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         self.stopList = stopList
         self.lowestServiceType = stopList.min { $0.serviceType < $1.serviceType }!.serviceType
@@ -99,6 +99,7 @@ struct ListStopsView: AppScreenView {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
+                    let coColor = operatorColor(co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
                     Spacer(minLength: 10.scaled(appContext))
                     VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2.scaled(appContext)) {
                         Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
@@ -196,6 +197,7 @@ struct ListStopsView: AppScreenView {
         let stopNumber = index + 1
         let isClosest = closestIndex == stopNumber
         let brightness = stopData.serviceType == lowestServiceType ? 1 : 0.65
+        let coColor = operatorColor(co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
         let color = (isClosest ? coColor : Color.white).adjustBrightness(percentage: brightness)
         return Button(action: {
             let data = newAppDataConatiner()

@@ -53,11 +53,13 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
+import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -109,6 +111,30 @@ object Shared {
         for ((type, list) in values) {
             for (route in list) {
                 kmbSubsidiary.put(route, type)
+            }
+        }
+    }
+
+    private val jointOperatedColorFraction: MutableStateFlow<Float> = MutableStateFlow(0F)
+    private const val jointOperatorColorTransitionTime: Long = 5000
+    @NativeCoroutinesState
+    val jointOperatedColorFractionState: StateFlow<Float> = jointOperatedColorFraction
+
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            while (true) {
+                val startTime = currentTimeMillis()
+                while (currentTimeMillis() - startTime < jointOperatorColorTransitionTime) {
+                    val progress = (currentTimeMillis() - startTime).toFloat() / jointOperatorColorTransitionTime
+                    jointOperatedColorFraction.value = progress
+                    delay(10)
+                }
+                val yellowToRedStartTime = currentTimeMillis()
+                while (currentTimeMillis() - yellowToRedStartTime < jointOperatorColorTransitionTime) {
+                    val progress = (currentTimeMillis() - yellowToRedStartTime).toFloat() / jointOperatorColorTransitionTime
+                    jointOperatedColorFraction.value = 1F - progress
+                    delay(10)
+                }
             }
         }
     }

@@ -20,13 +20,6 @@
 
 package com.loohp.hkbuseta.app
 
-import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.StartOffset
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -114,6 +107,7 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.services.AlightReminderService
+import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -124,6 +118,7 @@ import com.loohp.hkbuseta.utils.checkNotificationPermission
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.getColor
+import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 
@@ -920,22 +915,7 @@ fun FavButton(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop
                             if (Shared.language == "en") "Any" else "任何站"
                         }
                         val rawColor = currentRoute.co.getColor(currentRoute.route.routeNumber, Color.White)
-                        val color = if (kmbCtbJoint) {
-                            val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
-                            val animatedColor by infiniteTransition.animateColor(
-                                initialValue = rawColor,
-                                targetValue = Color(0xFFFFE15E),
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(5000, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Reverse,
-                                    initialStartOffset = StartOffset(1500)
-                                ),
-                                label = "JointColor"
-                            )
-                            animatedColor
-                        } else {
-                            rawColor
-                        }
+                        val color = AndroidShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { kmbCtbJoint })
                         Column(
                             modifier = Modifier
                                 .padding(0.dp, 0.dp, 5.dp, 0.dp)

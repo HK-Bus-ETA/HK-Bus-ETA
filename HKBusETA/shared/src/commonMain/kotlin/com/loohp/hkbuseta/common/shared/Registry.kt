@@ -64,7 +64,6 @@ import com.loohp.hkbuseta.common.utils.IntUtils
 import com.loohp.hkbuseta.common.utils.LongUtils
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
-import com.loohp.hkbuseta.common.utils.asMutableStateFlow
 import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.commonElementPercentage
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
@@ -184,10 +183,10 @@ class Registry {
     private var PREFERENCES: Preferences? = null
     private var DATA: DataContainer? = null
 
-    private val typhoonInfo: MutableStateFlow<TyphoonInfo> = TyphoonInfo.NO_DATA.asMutableStateFlow()
+    private val typhoonInfo: MutableStateFlow<TyphoonInfo> = MutableStateFlow(TyphoonInfo.NO_DATA)
     private val typhoonInfoDeferred: AtomicReference<Deferred<TyphoonInfo>> = AtomicReference(CompletableDeferred(TyphoonInfo.NO_DATA))
-    private val stateFlow: MutableStateFlow<State> = State.LOADING.asMutableStateFlow()
-    private val updatePercentageStateFlow: MutableStateFlow<Float> = 0f.asMutableStateFlow()
+    private val stateFlow: MutableStateFlow<State> = MutableStateFlow(State.LOADING)
+    private val updatePercentageStateFlow: MutableStateFlow<Float> = MutableStateFlow(0F)
     private val preferenceWriteLock = Lock()
     private val lastUpdateCheckHolder = AtomicLong(0)
     private val currentChecksumTask = AtomicReference<Job?>(null)
@@ -2249,7 +2248,7 @@ class Registry {
 
         fun get(): ETAQueryResult {
             return try {
-                runBlocking { deferred.await() }
+                runBlocking(Dispatchers.IO) { deferred.await() }
             } catch (e: Exception) {
                 e.printStackTrace()
                 try { deferred.cancel() } catch (ignore: Throwable) { }
@@ -2259,7 +2258,7 @@ class Registry {
 
         fun get(timeout: Int, unit: DateTimeUnit.TimeBased): ETAQueryResult {
             return try {
-                runBlocking { withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() } }
+                runBlocking(Dispatchers.IO) { withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() } }
             } catch (e: Exception) {
                 e.printStackTrace()
                 try { deferred.cancel() } catch (ignore: Throwable) { }

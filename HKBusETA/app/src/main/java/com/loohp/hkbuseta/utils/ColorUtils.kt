@@ -26,6 +26,7 @@ import androidx.core.graphics.alpha
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.getColor
 import com.loohp.hkbuseta.common.objects.getLineColor
+import com.loohp.hkbuseta.common.objects.getOperatorColor
 
 
 fun Color.adjustBrightness(percentage: Float): Color {
@@ -51,6 +52,10 @@ fun Color.withAlpha(alpha: Int): Color {
 
 fun Color.toHexString(): String {
     return "#${(this.toArgb() and 0xFFFFFF).toString(16).padStart(6, '0')}"
+}
+
+fun Operator.getOperatorColor(elseColor: Color): Color {
+    return Color(getOperatorColor(elseColor.toArgb().toLong()))
 }
 
 fun Operator.getColor(routeNumber: String, elseColor: Color): Color {

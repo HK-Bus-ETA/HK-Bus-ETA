@@ -23,6 +23,8 @@ package com.loohp.hkbuseta.common.utils
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.core.readBytes
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.runBlocking
 
 interface IOSerializable {
@@ -30,7 +32,7 @@ interface IOSerializable {
     suspend fun serialize(out: ByteWriteChannel)
 
     fun toByteArray(): ByteArray {
-        return runBlocking {
+        return runBlocking(Dispatchers.IO) {
             ByteChannel(autoFlush = true)
                 .apply { serialize(this) }
                 .let { it.readRemaining(it.availableForRead.toLong()).readBytes() }

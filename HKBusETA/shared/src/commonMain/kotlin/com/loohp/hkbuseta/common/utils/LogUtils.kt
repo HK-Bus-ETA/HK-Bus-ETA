@@ -22,4 +22,4 @@
 package com.loohp.hkbuseta.common.utils
 
 
-expect fun debugLog(message: Any?)
+expect fun debugLog(vararg message: Any?)

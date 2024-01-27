@@ -54,7 +54,7 @@ fun HttpClientConfig<*>.installPlugins() {
             if (httpRequest.url.toString() != "https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule") {
                 return@retryIf false
             }
-            val data = runBlocking { Json.decodeFromString<JsonObject>(httpResponse.bodyAsText(Charsets.UTF_8)) }
+            val data = runBlocking(Dispatchers.IO) { Json.decodeFromString<JsonObject>(httpResponse.bodyAsText(Charsets.UTF_8)) }
             return@retryIf data.optJsonArray("busStop") == null
         }
     }

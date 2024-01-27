@@ -22,6 +22,6 @@
 package com.loohp.hkbuseta.common.utils
 
 
-actual fun debugLog(message: Any?) {
-    println(message)
+actual fun debugLog(vararg message: Any?) {
+    println(message.joinToString(", ") { it.toString() })
 }

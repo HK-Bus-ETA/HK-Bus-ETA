@@ -64,6 +64,13 @@ func dispatcherIO(task: @escaping () -> Void) {
     AppContextWatchOSKt.dispatcherIO(task: task)
 }
 
+func operatorColor(_ primaryColor: Int64, _ secondaryColor: Int64? = nil, _ fraction: Float = 0, _ takeIf: (Int64) -> Bool = { _ in true }) -> Int64 {
+    if secondaryColor == nil || !takeIf(secondaryColor!) {
+        return primaryColor
+    }
+    return ColorValueUtilsKt.interpolateColor(startColor: primaryColor, endColor: secondaryColor!, fraction: fraction)
+}
+
 func openUrl(link: String, longClick: Bool) {
     guard let url = URL(string: link) else {
         return

@@ -64,9 +64,9 @@ class EtaActivity : ComponentActivity() {
         val stopId = intent.extras!!.getString("stopId")
         val co = intent.extras!!.getString("co")?.operator
         val index = intent.extras!!.getInt("index")
-        val stop = intent.extras!!.getByteArray("stop")?.let { runBlocking { Stop.deserialize(ByteReadChannel(it)) } }?:
+        val stop = intent.extras!!.getByteArray("stop")?.let { runBlocking(AndroidShared.CACHED_DISPATCHER) { Stop.deserialize(ByteReadChannel(it)) } }?:
             intent.extras!!.getString("stopStr")?.let { Stop.deserialize(Json.decodeFromString<JsonObject>(it)) }
-        val route = intent.extras!!.getByteArray("route")?.let { runBlocking { Route.deserialize(ByteReadChannel(it)) } }?:
+        val route = intent.extras!!.getByteArray("route")?.let { runBlocking(AndroidShared.CACHED_DISPATCHER) { Route.deserialize(ByteReadChannel(it)) } }?:
             intent.extras!!.getString("routeStr")?.let { Route.deserialize(Json.decodeFromString<JsonObject>(it)) }
         if (stopId == null || co == null || stop == null || route == null) {
             throw RuntimeException()

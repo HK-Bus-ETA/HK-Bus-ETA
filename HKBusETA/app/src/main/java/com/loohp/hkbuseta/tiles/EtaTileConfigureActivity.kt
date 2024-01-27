@@ -23,17 +23,11 @@ package com.loohp.hkbuseta.tiles
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.animateColor
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -90,6 +84,7 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.objects.FavouriteStopMode
+import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.isTrain
@@ -107,6 +102,7 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.dpToPixels
 import com.loohp.hkbuseta.utils.getColor
+import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.scaledSize
 
 
@@ -424,22 +420,7 @@ fun SelectButton(favoriteIndex: Int, selectStates: SnapshotStateList<Int>, insta
                     val stopId = currentFavouriteStopRoute.stopId
                     val destName = Registry.getInstanceNoUpdateCheck(instance).getStopSpecialDestinations(stopId, co, route, true)
                     val rawColor = co.getColor(routeNumber, Color.White)
-                    val color = if (kmbCtbJoint) {
-                        val infiniteTransition = rememberInfiniteTransition(label = "JointColor")
-                        val animatedColor by infiniteTransition.animateColor(
-                            initialValue = rawColor,
-                            targetValue = Color(0xFFFFE15E),
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(5000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Reverse,
-                                initialStartOffset = StartOffset(1500)
-                            ),
-                            label = "JointColor"
-                        )
-                        animatedColor
-                    } else {
-                        rawColor
-                    }
+                    val color = AndroidShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { kmbCtbJoint })
 
                     val operator = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)
                     val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))

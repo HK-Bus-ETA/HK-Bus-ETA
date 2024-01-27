@@ -15,6 +15,8 @@ import RxSwift
 
 struct EtaTileConfigurationView: AppScreenView {
     
+    @StateObject private var jointOperatedColorFraction = FlowStateObservable(defaultValue: KotlinFloat(float: Shared().jointOperatedColorFractionState), nativeFlow: Shared().jointOperatedColorFractionStateFlow)
+    
     @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().suggestedMaxFavouriteRouteStopState), nativeFlow: Shared().suggestedMaxFavouriteRouteStopStateFlow)
     
     private let tileId: Int
@@ -182,10 +184,11 @@ struct EtaTileConfigurationView: AppScreenView {
                         }()
                         let index = favouriteStopRoute!.index
                         let route = favouriteStopRoute!.route
+                        let kmbCtbJoint = route.isKmbCtbJoint
                         let co = favouriteStopRoute!.co
                         let routeNumber = route.routeNumber
                         let destName = registry(appContext).getStopSpecialDestinations(stopId: favouriteStopRoute!.stopId, co: favouriteStopRoute!.co, route: route, prependTo: true)
-                        let color = favouriteStopRoute!.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64)
+                        let color = operatorColor(favouriteStopRoute!.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }
                         let operatorName = favouriteStopRoute!.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, language: Shared().language, elseName: "???")
                         let mainText = "\(operatorName) \(favouriteStopRoute!.co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))"
                         let routeText = destName.get(language: Shared().language)
