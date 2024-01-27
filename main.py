@@ -16,6 +16,7 @@ KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
 DATA_SHEET_FILE_NAME = "data.json"
 DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
 CHECKSUM_FILE_NAME = "checksum.md5"
+LAST_UPDATED_FILE = "last_updated.txt"
 
 RECAPITALIZE_KEYWORDS = [
     "BBI",
@@ -556,7 +557,6 @@ print("Searching & Injecting GMB Region")
 inject_gmb_region()
 
 output = {
-    "updated": int(time.time() * 1000),
     "dataSheet": DATA_SHEET,
     "mtrBusStopAlias": MTR_BUS_STOP_ALIAS,
     "busRoute": sorted(BUS_ROUTE),
@@ -568,3 +568,6 @@ with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
 
 with open(DATA_SHEET_FORMATTED_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'), indent=4)
+
+with open(LAST_UPDATED_FILE, 'w') as f:
+    f.write(str(int(time.time() * 1000)))
