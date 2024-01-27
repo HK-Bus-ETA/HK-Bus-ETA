@@ -1,5 +1,6 @@
 import json
 import re
+import time
 import urllib.request
 import concurrent.futures
 import zlib
@@ -555,6 +556,7 @@ print("Searching & Injecting GMB Region")
 inject_gmb_region()
 
 output = {
+    "updated": int(time.time() * 1000),
     "dataSheet": DATA_SHEET,
     "mtrBusStopAlias": MTR_BUS_STOP_ALIAS,
     "busRoute": sorted(BUS_ROUTE),
