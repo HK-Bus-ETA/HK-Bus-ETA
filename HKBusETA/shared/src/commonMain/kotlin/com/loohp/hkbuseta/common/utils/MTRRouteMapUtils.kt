@@ -30,8 +30,7 @@ fun createMTRLineSectionData(co: Operator, color: Long, stopList: List<Registry.
     val stopByBranchId: MutableMap<Int, MutableList<Registry.StopData>> = HashMap()
     stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.getOrPut(it) { ArrayList() }.add(stop) } }
     val hasOutOfStation = mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }
-    return stopList.withIndex().map {
-        val (index, stop) = it
+    return stopList.withIndex().map { (index, stop) ->
         MTRStopSectionData.build(stop.serviceType == 1, stopByBranchId, index, stop, stopList, co, color, isLrtCircular, mtrStopsInterchange[index], hasOutOfStation, context)
     }
 }

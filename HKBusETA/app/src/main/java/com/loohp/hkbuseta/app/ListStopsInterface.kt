@@ -212,8 +212,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                         }
                     }
                 } else if (origin != null) {
-                    stopsList.withIndex().map {
-                        val (index, entry) = it
+                    stopsList.withIndex().map { (index, entry) ->
                         val stop = entry.stop
                         val location = stop.location
                         val stopStr = stop.name[Shared.language]

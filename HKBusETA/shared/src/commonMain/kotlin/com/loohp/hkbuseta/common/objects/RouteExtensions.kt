@@ -203,8 +203,7 @@ inline fun List<FavouriteRouteStop>.resolveStops(context: AppContext, originGett
     val origin = originGetter.invoke()?: this[0].stop.location
     val eachAllStop = map { Registry.getInstanceNoUpdateCheck(context).getAllStops(it.route.routeNumber, it.route.bound[it.co]!!, it.co, it.route.gmbRegion) }
     val closestStop = eachAllStop.flatten().minBy { it.stop.location.distance(origin) }
-    return eachAllStop.withIndex().map { indexed ->
-        val (index, allStops) = indexed
+    return eachAllStop.withIndex().map { (index, allStops) ->
         allStops.withIndex()
             .map { it.value.stop.location.distance(closestStop.stop.location) to it }
             .minBy { it.first }

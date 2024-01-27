@@ -34,63 +34,67 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 
 
-fun JsonObject.optJsonObject(key: String, default: JsonObject? = null): JsonObject? {
-    return this[key]?.let { if (it is JsonObject) it else default }?: default
+inline fun JsonObject.optJsonObject(key: String, default: JsonObject? = null): JsonObject? {
+    return this[key]?.let { it as? JsonObject }?: default
 }
 
-fun JsonObject.optJsonArray(key: String, default: JsonArray? = null): JsonArray? {
-    return this[key]?.let { if (it is JsonArray) it else default }?: default
+inline fun JsonObject.optJsonArray(key: String, default: JsonArray? = null): JsonArray? {
+    return this[key]?.let { it as? JsonArray }?: default
 }
 
-fun JsonObject.optString(key: String, default: String = ""): String {
-    return this[key]?.let { if (it is JsonPrimitive) it.content else default }?: default
+inline fun JsonObject.optString(key: String, default: String = ""): String {
+    return this[key]?.let { it as? JsonPrimitive }?.content?: default
 }
 
-fun JsonObject.optBoolean(key: String, default: Boolean = false): Boolean {
-    return this[key]?.let { if (it is JsonPrimitive) it.booleanOrNull?: default else default }?: default
+inline fun JsonObject.optBoolean(key: String, default: Boolean = false): Boolean {
+    return this[key]?.let { it as? JsonPrimitive }?.booleanOrNull?: default
 }
 
-fun JsonObject.optInt(key: String, default: Int = 0): Int {
-    return this[key]?.let { if (it is JsonPrimitive) it.intOrNull?: default else default }?: default
+inline fun JsonObject.optInt(key: String, default: Int = 0): Int {
+    return this[key]?.let { it as? JsonPrimitive }?.intOrNull?: default
 }
 
-fun JsonObject.optLong(key: String, default: Long = 0): Long {
-    return this[key]?.let { if (it is JsonPrimitive) it.longOrNull?: default else default }?: default
+inline fun JsonObject.optLong(key: String, default: Long = 0): Long {
+    return this[key]?.let { it as? JsonPrimitive }?.longOrNull?: default
 }
 
-fun JsonObject.optDouble(key: String, default: Double = Double.NaN): Double {
-    return this[key]?.let { if (it is JsonPrimitive) it.doubleOrNull?: default else default }?: default
+inline fun JsonObject.optDouble(key: String, default: Double = Double.NaN): Double {
+    return this[key]?.let { it as? JsonPrimitive }?.doubleOrNull?: default
 }
 
-fun JsonArray.optJsonObject(index: Int, default: JsonObject? = null): JsonObject? {
-    return this.getOrNull(index)?.let { if (it is JsonObject) it else default }?: default
+inline fun JsonArray.optJsonObject(index: Int, default: JsonObject? = null): JsonObject? {
+    return this.getOrNull(index)?.let { it as? JsonObject }?: default
 }
 
-fun JsonArray.optJsonArray(index: Int, default: JsonArray? = null): JsonArray? {
-    return this.getOrNull(index)?.let { if (it is JsonArray) it else default }?: default
+inline fun JsonArray.optJsonArray(index: Int, default: JsonArray? = null): JsonArray? {
+    return this.getOrNull(index)?.let { it as? JsonArray }?: default
 }
 
-fun JsonArray.optString(index: Int, default: String = ""): String {
-    return this.getOrNull(index)?.let { if (it is JsonPrimitive) it.content else default }?: default
+inline fun JsonArray.optString(index: Int, default: String = ""): String {
+    return this.getOrNull(index)?.let { it as? JsonPrimitive }?.content?: default
 }
 
-fun JsonArray.optBoolean(index: Int, default: Boolean = false): Boolean {
-    return this.getOrNull(index)?.let { if (it is JsonPrimitive) it.booleanOrNull?: default else default }?: default
+inline fun JsonArray.optBoolean(index: Int, default: Boolean = false): Boolean {
+    return this.getOrNull(index)?.let { it as? JsonPrimitive }?.booleanOrNull?: default
 }
 
-fun JsonArray.optInt(index: Int, default: Int = 0): Int {
-    return this.getOrNull(index)?.let { if (it is JsonPrimitive) it.intOrNull?: default else default }?: default
+inline fun JsonArray.optInt(index: Int, default: Int = 0): Int {
+    return this.getOrNull(index)?.let { it as? JsonPrimitive }?.intOrNull?: default
 }
 
-fun JsonArray.optDouble(index: Int, default: Double = Double.NaN): Double {
-    return this.getOrNull(index)?.let { if (it is JsonPrimitive) it.doubleOrNull?: default else default }?: default
+inline fun JsonArray.optLong(index: Int, default: Long = 0): Long {
+    return this.getOrNull(index)?.let { it as? JsonPrimitive }?.longOrNull?: default
 }
 
-fun <T> JsonArray.mapToMutableList(deserializer: (JsonElement) -> T): MutableList<T> {
+inline fun JsonArray.optDouble(index: Int, default: Double = Double.NaN): Double {
+    return this.getOrNull(index)?.let { it as? JsonPrimitive }?.doubleOrNull?: default
+}
+
+inline fun <T> JsonArray.mapToMutableList(deserializer: (JsonElement) -> T): MutableList<T> {
     return ArrayList<T>(size).apply { this@mapToMutableList.forEach { this.add(deserializer.invoke(it)) } }
 }
 
-fun <T> JsonArray.mapToMutableSet(deserializer: (JsonElement) -> T): MutableSet<T> {
+inline fun <T> JsonArray.mapToMutableSet(deserializer: (JsonElement) -> T): MutableSet<T> {
     return LinkedHashSet<T>().apply { this@mapToMutableSet.forEach { this.add(deserializer.invoke(it)) } }
 }
 
@@ -102,7 +106,7 @@ inline fun <V> JsonObject.mapToMutableMap(valueDeserializer: (JsonElement) -> V)
     return mapToMutableMap({ it }, valueDeserializer)
 }
 
-fun <T> Collection<T>.toJsonArray(): JsonArray {
+inline fun <T> Collection<T>.toJsonArray(): JsonArray {
     return buildJsonArray { this@toJsonArray.forEach {
         when (it) {
             is JsonElement -> add(it)
@@ -114,7 +118,7 @@ fun <T> Collection<T>.toJsonArray(): JsonArray {
     } }
 }
 
-fun <T> Sequence<T>.toJsonArray(): JsonArray {
+inline fun <T> Sequence<T>.toJsonArray(): JsonArray {
     return buildJsonArray { this@toJsonArray.forEach {
         when (it) {
             is JsonElement -> add(it)

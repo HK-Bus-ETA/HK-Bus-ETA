@@ -542,11 +542,9 @@ class EtaTileServiceCommon {
             val eta = tileState.getETAQueryResult {
                 val favouriteRouteStops = favouriteStopRoutes.resolveStops(context) { it.setLastLocationOrGetLast(getGPSLocation(context).asCompletableFuture().getOr(7, TimeUnit.SECONDS) { null }?.location) }
                 val eta = Registry.MergedETAQueryResult.merge(
-                    favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
-                        val (favStop, resolved) = pair
+                    favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { (favStop, resolved) ->
                         val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                        (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(
-                            Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                        (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                     }
                 )
                 it.markLastUpdated()
@@ -768,11 +766,9 @@ class EtaTileServiceCommon {
                                 .mapNotNull { favouriteRoute -> Shared.favoriteRouteStops[favouriteRoute] }
                                 .resolveStops(context) { it.setLastLocationOrGetLast(getGPSLocation(context).asCompletableFuture().getOr(7, TimeUnit.SECONDS) { null }?.location) }
                             it.cacheETAQueryResult(Registry.MergedETAQueryResult.merge(
-                                favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { pair ->
-                                    val (favStop, resolved) = pair
+                                favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { (favStop, resolved) ->
                                     val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                                    (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(
-                                        Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                                    (resolved to favStop) to Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                                 }
                             ))
                             it.markLastUpdated()
