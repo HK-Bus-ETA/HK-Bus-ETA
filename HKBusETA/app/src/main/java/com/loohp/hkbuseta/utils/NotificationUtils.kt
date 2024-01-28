@@ -32,6 +32,7 @@ import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
+import com.loohp.hkbuseta.appcontext.context
 
 fun checkNotificationPermission(appContext: AppContext, askIfNotGranted: Boolean): Boolean {
     return checkNotificationPermission(appContext, askIfNotGranted) { }
@@ -46,7 +47,7 @@ private fun checkNotificationPermission(appContext: AppContext, askIfNotGranted:
         callback.invoke(true)
         return true
     }
-    val context = (appContext as AppContextAndroid).context
+    val context = appContext.context
     if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
         callback.invoke(true)
         return true

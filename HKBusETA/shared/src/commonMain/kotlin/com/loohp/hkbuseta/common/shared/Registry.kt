@@ -135,6 +135,10 @@ class Registry {
             return "${platformDomainDataUrl()}/data.json${if (gzip) ".gz" else ""}"
         }
 
+        fun lastUpdatedUrl(): String {
+            return "${platformDomainDataUrl()}/last_updated.txt"
+        }
+
         private val INSTANCE: AtomicReference<Registry?> = AtomicReference(null)
         private val INSTANCE_LOCK: Lock = Lock()
 
@@ -438,9 +442,7 @@ class Registry {
                         getTextResponse(checksumUrl()) + "_" + version
                     } }
                     currentChecksumTask.set(future)
-                    if (!forced && files.contains(CHECKSUM_FILE_NAME) && files.contains(
-                            DATA_FILE_NAME
-                        )) {
+                    if (!forced && files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_FILE_NAME)) {
                         stateFlow.value = State.UPDATE_CHECKING
                     }
                     try {
@@ -497,10 +499,11 @@ class Registry {
                             checksum = checksumFetcher.invoke(true)
                         }
                         val gzip = gzipSupported()
-                        val length: Long = LongUtils.parseOr(getTextResponse(dataLengthUrl(gzip)), -1)
-                        val textResponse: String = getTextResponseWithPercentageCallback(dataUrl(gzip), length, gzip) { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
+                        val length = LongUtils.parseOr(getTextResponse(dataLengthUrl(gzip)), -1)
+                        val textResponse = getTextResponseWithPercentageCallback(dataUrl(gzip), length, gzip) { p -> updatePercentageStateFlow.value = p * 0.75f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
                         DATA = DataContainer.deserialize(Json.decodeFromString<JsonObject>(textResponse))
                         Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
+                        getTextResponse(lastUpdatedUrl())?.toLong()?.apply { Shared.scheduleBackgroundUpdateService(context, this) }
                         updatePercentageStateFlow.value = 0.75f + percentageOffset
                         context.writeTextFile(DATA_FILE_NAME) { textResponse }
                         updatePercentageStateFlow.value = 0.825f + percentageOffset

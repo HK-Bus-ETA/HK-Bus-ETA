@@ -48,7 +48,7 @@ struct hkbuseta_Watch_AppApp: App {
     
     @StateObject private var historyStackState = FlowStateObservable(defaultValue: HistoryStack().historyStack, nativeFlow: HistoryStack().historyStackFlow)
     
-    let toastTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    let toastTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
     @State private var toastText = ""
     @State private var toastShowTimeLeft = 0.0
     
@@ -121,7 +121,7 @@ struct hkbuseta_Watch_AppApp: App {
             }
             .onReceive(toastTimer) { _ in
                 if self.toastShowTimeLeft > 0 {
-                    self.toastShowTimeLeft -= 0.1
+                    self.toastShowTimeLeft -= 0.5
                 } else if !self.toastText.isEmpty {
                     ToastTextState().resetToastState()
                 }

@@ -224,8 +224,6 @@ struct ListRoutesView: AppScreenView {
                     MarqueeText(
                         text: dest,
                         font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
-                        leftFade: 8.scaled(appContext),
-                        rightFade: 8.scaled(appContext),
                         startDelay: 2,
                         alignment: .bottomLeading
                     )
@@ -236,8 +234,6 @@ struct ListRoutesView: AppScreenView {
                         MarqueeText(
                             text: dest,
                             font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
-                            leftFade: 8.scaled(appContext),
-                            rightFade: 8.scaled(appContext),
                             startDelay: 2,
                             alignment: .bottomLeading
                         )
@@ -247,8 +243,6 @@ struct ListRoutesView: AppScreenView {
                             textList: secondLine,
                             state: isLuminanceReduced ? 0 : animationTick,
                             font: UIFont.systemFont(ofSize: altSize ? 11.scaled(appContext, true) : 12.scaled(appContext, true)),
-                            leftFade: 8.scaled(appContext),
-                            rightFade: 8.scaled(appContext),
                             startDelay: 2,
                             alignment: .bottomLeading
                         )

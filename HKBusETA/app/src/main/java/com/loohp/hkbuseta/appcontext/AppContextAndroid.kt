@@ -161,14 +161,14 @@ open class AppContextAndroid internal constructor(
     }
 
     override fun startActivity(appIntent: AppIntent) {
-        val intent = Intent((appIntent.context as AppContextAndroid).context, appIntent.screen.activityClass)
+        val intent = Intent(appIntent.context.context, appIntent.screen.activityClass)
         appIntent.intentFlags.toAndroidFlags()?.let { intent.addFlags(it) }
         appIntent.extras.toAndroidBundle()?.let { intent.putExtras(it) }
         context.startActivity(intent)
     }
 
     override fun startForegroundService(appIntent: AppIntent) {
-        val intent = Intent((appIntent.context as AppContextAndroid).context, appIntent.screen.activityClass)
+        val intent = Intent(appIntent.context.context, appIntent.screen.activityClass)
         appIntent.intentFlags.toAndroidFlags()?.let { intent.addFlags(it) }
         appIntent.extras.toAndroidBundle()?.let { intent.putExtras(it) }
         context.startForegroundService(intent)
@@ -208,7 +208,7 @@ class AppActiveContextAndroid internal constructor(
     }
 
     override fun startActivity(appIntent: AppIntent, callback: (AppIntentResult) -> Unit) {
-        val intent = Intent((appIntent.context as AppContextAndroid).context, appIntent.screen.activityClass)
+        val intent = Intent(appIntent.context.context, appIntent.screen.activityClass)
         appIntent.intentFlags.toAndroidFlags()?.let { intent.addFlags(it) }
         appIntent.extras.toAndroidBundle()?.let { intent.putExtras(it) }
         context.startActivity(intent) { callback.invoke(AppIntentResult(it.resultCode)) }
@@ -324,6 +324,9 @@ class AppActiveContextAndroid internal constructor(
     }
 
 }
+
+inline val AppContext.context: Context get() = (this as AppContextAndroid).context
+inline val AppActiveContext.context: ComponentActivity get() = (this as AppActiveContextAndroid).context
 
 private val appContextHolder: Cache<Context, AppContextAndroid> = CacheBuilder.newBuilder().weakKeys().build()
 

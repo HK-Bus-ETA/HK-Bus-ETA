@@ -30,8 +30,8 @@ class WorkManagerStartReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
-            "android.intent.action.BOOT_COMPLETED" -> AndroidShared.startBackgroundService(context)
-            "android.intent.action.QUICKBOOT_POWERON" -> AndroidShared.startBackgroundService(context)
+            "android.intent.action.BOOT_COMPLETED" -> AndroidShared.scheduleBackgroundUpdateService(context)
+            "android.intent.action.QUICKBOOT_POWERON" -> AndroidShared.scheduleBackgroundUpdateService(context)
         }
     }
 

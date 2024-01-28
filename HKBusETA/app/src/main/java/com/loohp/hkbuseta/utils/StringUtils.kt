@@ -49,6 +49,7 @@ import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
+import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.utils.BigContentStyle
 import com.loohp.hkbuseta.common.utils.BoldContentStyle
@@ -238,7 +239,7 @@ fun Float.scaledSize(context: AppContext): Float {
 
 fun String.findOptimalSp(context: AppContext, targetWidth: Int, maxLines: Int, minSp: Float, maxSp: Float): Float {
     val paint = TextPaint()
-    paint.density = (context as AppContextAndroid).context.resources.displayMetrics.density
+    paint.density = context.context.resources.displayMetrics.density
     var sp = maxSp
     while (sp >= minSp) {
         paint.textSize = sp.spToPixels(context)
@@ -256,7 +257,7 @@ fun String.findOptimalSp(context: AppContext, targetWidth: Int, maxLines: Int, m
 }
 
 fun String.findTextLengthDp(context: AppContext, sp: Float): Float {
-    val textView = TextView((context as AppContextAndroid).context)
+    val textView = TextView(context.context)
     textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
     return textView.paint.measureText(this).pixelsToDp(context)
 }

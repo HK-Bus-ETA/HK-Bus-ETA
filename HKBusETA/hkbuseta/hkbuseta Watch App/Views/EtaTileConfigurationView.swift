@@ -198,8 +198,6 @@ struct EtaTileConfigurationView: AppScreenView {
                             MarqueeText(
                                 text: mainText,
                                 font: UIFont.systemFont(ofSize: 19.scaled(appContext, true), weight: .bold),
-                                leftFade: 8.scaled(appContext),
-                                rightFade: 8.scaled(appContext),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )
@@ -208,8 +206,6 @@ struct EtaTileConfigurationView: AppScreenView {
                             MarqueeText(
                                 text: routeText,
                                 font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
-                                leftFade: 8.scaled(appContext),
-                                rightFade: 8.scaled(appContext),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )
@@ -219,8 +215,6 @@ struct EtaTileConfigurationView: AppScreenView {
                             MarqueeText(
                                 text: subText,
                                 font: UIFont.systemFont(ofSize: 14.scaled(appContext, true)),
-                                leftFade: 8.scaled(appContext),
-                                rightFade: 8.scaled(appContext),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )

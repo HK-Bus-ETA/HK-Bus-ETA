@@ -284,8 +284,6 @@ struct EtaTileView: View {
         return MarqueeText(
             text: text,
             font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
-            leftFade: 8.scaled(appContext),
-            rightFade: 8.scaled(appContext),
             startDelay: 2,
             alignment: .leading
         )

@@ -101,7 +101,7 @@ struct ListStopsView: AppScreenView {
                 LazyVStack(spacing: 0) {
                     let coColor = operatorColor(co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
                     Spacer(minLength: 10.scaled(appContext))
-                    VStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 2.scaled(appContext)) {
+                    VStack(alignment: .center, spacing: 2.scaled(appContext)) {
                         Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
                             .foregroundColor(coColor.adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                             .lineLimit(1)
@@ -222,8 +222,6 @@ struct ListStopsView: AppScreenView {
                 MarqueeText(
                     text: stopData.stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled(appContext, true), defaultWeight: isClosest ? .bold : .regular),
                     font: UIFont.systemFont(ofSize: 18.scaled(appContext, true), weight: isClosest ? .bold : .regular),
-                    leftFade: 8.scaled(appContext),
-                    rightFade: 8.scaled(appContext),
                     startDelay: 2,
                     alignment: .bottomLeading
                 )

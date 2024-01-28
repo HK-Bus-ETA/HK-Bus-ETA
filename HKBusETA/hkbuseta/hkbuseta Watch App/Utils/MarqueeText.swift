@@ -13,28 +13,22 @@ struct MarqueeText : View {
     
     var oas: OptionalAttributedString
     var font: UIFont
-    var leftFade: CGFloat
-    var rightFade: CGFloat
     var startDelay: Double
     var alignment: Alignment
     
     @State private var animate = false
     var isCompact = false
     
-    init(text: String, font: UIFont, leftFade: CGFloat, rightFade: CGFloat, startDelay: Double, alignment: Alignment? = nil) {
+    init(text: String, font: UIFont, startDelay: Double, alignment: Alignment? = nil) {
         self.oas = OptionalAttributedString(string: text)
         self.font = font
-        self.leftFade = leftFade
-        self.rightFade = rightFade
         self.startDelay = startDelay
         self.alignment = alignment != nil ? alignment! : .topLeading
     }
     
-    init(text: AttributedString, font: UIFont, leftFade: CGFloat, rightFade: CGFloat, startDelay: Double, alignment: Alignment? = nil) {
+    init(text: AttributedString, font: UIFont, startDelay: Double, alignment: Alignment? = nil) {
         self.oas = OptionalAttributedString(attributedString: text, string: String(text.characters[...]))
         self.font = font
-        self.leftFade = leftFade
-        self.rightFade = rightFade
         self.startDelay = startDelay
         self.alignment = alignment != nil ? alignment! : .topLeading
     }
@@ -70,7 +64,6 @@ struct MarqueeText : View {
                                 }
                                 .fixedSize(horizontal: true, vertical: false)
                                 .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
-                            
                             text()
                                 .lineLimit(1)
                                 .font(.init(font))
@@ -82,23 +75,17 @@ struct MarqueeText : View {
                                 .fixedSize(horizontal: true, vertical: false)
                                 .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
                         }
-                        .offset(x: leftFade)
                         .mask(
                             HStack(spacing:0) {
                                 Rectangle()
-                                    .frame(width:2)
+                                    .frame(width:0)
                                     .opacity(0)
-                                LinearGradient(gradient: Gradient(colors: [Color.black.opacity(0), Color.black]), startPoint: /*@START_MENU_TOKEN@*/.leading/*@END_MENU_TOKEN@*/, endPoint: /*@START_MENU_TOKEN@*/.trailing/*@END_MENU_TOKEN@*/)
-                                    .frame(width:leftFade)
-                                LinearGradient(gradient: Gradient(colors: [Color.black, Color.black]), startPoint: /*@START_MENU_TOKEN@*/.leading/*@END_MENU_TOKEN@*/, endPoint: /*@START_MENU_TOKEN@*/.trailing/*@END_MENU_TOKEN@*/)
-                                LinearGradient(gradient: Gradient(colors: [Color.black, Color.black.opacity(0)]), startPoint: /*@START_MENU_TOKEN@*/.leading/*@END_MENU_TOKEN@*/, endPoint: /*@START_MENU_TOKEN@*/.trailing/*@END_MENU_TOKEN@*/)
-                                    .frame(width:rightFade)
+                                LinearGradient(gradient: Gradient(colors: [Color.black, Color.black]), startPoint: .leading, endPoint: .trailing)
                                 Rectangle()
-                                    .frame(width:2)
+                                    .frame(width:0)
                                     .opacity(0)
                             })
-                        .frame(width: geo.size.width + leftFade)
-                        .offset(x: leftFade * -1)
+                        .frame(width: geo.size.width)
                     } else {
                         text()
                             .font(.init(font))

@@ -28,8 +28,10 @@ import androidx.compose.runtime.Stable
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.loohp.hkbuseta.app.MainLoading
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.objects.gmbRegion
 import com.loohp.hkbuseta.common.objects.operator
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.tiles.EtaTileServiceCommon
@@ -43,7 +45,8 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         AndroidShared.setDefaultExceptionHandler(this)
-        AndroidShared.startBackgroundService(this)
+        AndroidShared.scheduleBackgroundUpdateService(this)
+        Shared.provideBackgroundUpdateScheduler { c, t -> AndroidShared.scheduleBackgroundUpdateService(c.context, t) }
         Tiles.providePlatformUpdate { EtaTileServiceCommon.requestTileUpdate(it) }
 
         setShowWhenLocked(true)

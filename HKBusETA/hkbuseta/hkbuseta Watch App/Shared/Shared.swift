@@ -130,12 +130,10 @@ extension View {
             .transition(.opacity.animation(.linear(duration: 0.5)))
     }
     
-    func CrossfadeMarqueeText(textList: [AttributedString], state: Int, font: UIFont, leftFade: CGFloat, rightFade: CGFloat, startDelay: Double, alignment: Alignment? = nil) -> some View {
+    func CrossfadeMarqueeText(textList: [AttributedString], state: Int, font: UIFont, startDelay: Double, alignment: Alignment? = nil) -> some View {
         MarqueeText(
             text: textList[state % textList.count],
             font: font,
-            leftFade: leftFade,
-            rightFade: rightFade,
             startDelay: startDelay,
             alignment: alignment
         )

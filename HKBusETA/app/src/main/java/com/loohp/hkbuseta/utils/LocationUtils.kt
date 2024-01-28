@@ -41,13 +41,17 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.appcontext.AppContextAndroid
+import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.utils.LocationResult
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.future.asDeferred
+import kotlinx.coroutines.launch
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
 
 
@@ -60,7 +64,7 @@ fun checkLocationPermission(appContext: AppContext, callback: (Boolean) -> Unit)
 }
 
 private fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit): Boolean {
-    val context = (appContext as AppContextAndroid).context
+    val context = appContext.context
     if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(context,Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
         callback.invoke(true)
         return true
@@ -91,7 +95,7 @@ fun checkBackgroundLocationPermission(appContext: AppContext, callback: (Boolean
 }
 
 private fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit): Boolean {
-    val context = (appContext as AppContextAndroid).context
+    val context = appContext.context
     if ((ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
         callback.invoke(true)
         return true
@@ -147,7 +151,7 @@ private fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGr
 }
 
 private fun checkLocationPermission(appActiveContext: AppActiveContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit): Boolean {
-    val activity = (appActiveContext as AppActiveContextAndroid).context
+    val activity = appActiveContext.context
     if ((ActivityCompat.checkSelfPermission(activity,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) && ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
         callback.invoke(true)
         return true
@@ -203,21 +207,21 @@ fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
     if (!checkLocationPermission(appContext, false)) {
         return CompletableDeferred(null)
     }
-    val context = (appContext as AppContextAndroid).context
+    val context = appContext.context
     val future = CompletableFuture<LocationResult?>()
     val client = LocationServices.getFusedLocationProviderClient(context)
-    ForkJoinPool.commonPool().execute {
-        client.locationAvailability.addOnCompleteListener { task: Task<LocationAvailability> ->
+    CoroutineScope(Dispatchers.IO).launch {
+        client.locationAvailability.addOnCompleteListener { task ->
             if (task.isSuccessful && task.result.isLocationAvailable) {
                 client.getCurrentLocation(CurrentLocationRequest.Builder().setMaxUpdateAgeMillis(2000).setDurationMillis(60000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), null).addOnCompleteListener { future.complete(
                     LocationResult.fromTask(it)) }
             } else {
                 val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, ForkJoinPool.commonPool()) { future.complete(
+                    locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, Dispatchers.IO.asExecutor()) { future.complete(
                         LocationResult.fromLocationNullable(it)) }
                 } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                    locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, ForkJoinPool.commonPool()) { future.complete(
+                    locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, Dispatchers.IO.asExecutor()) { future.complete(
                         LocationResult.fromLocationNullable(it)) }
                 } else {
                     future.complete(LocationResult.FAILED_RESULT)

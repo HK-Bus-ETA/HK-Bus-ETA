@@ -36,12 +36,9 @@ fun currentTimeMillis(): Long {
 fun nextScheduledDataUpdateMillis(): Long {
     val hongKongZone = TimeZone.of("Asia/Hong_Kong")
     val currentTime = Clock.System.now().toLocalDateTime(hongKongZone)
-    val next430 = if (currentTime.hour > 4 || (currentTime.hour == 4 && currentTime.minute >= 30)) {
-        LocalDateTime(currentTime.year, currentTime.month, currentTime.dayOfMonth + 1, 4, 30)
-    } else {
-        LocalDateTime(currentTime.year, currentTime.month, currentTime.dayOfMonth, 4, 30)
-    }
-    return next430.toInstant(hongKongZone).toEpochMilliseconds()
+    val today430 = LocalDateTime(currentTime.year, currentTime.month, currentTime.dayOfMonth, 4, 30)
+    val today430Milli = today430.toInstant(hongKongZone).toEpochMilliseconds()
+    return if (today430 > currentTime) today430Milli else today430Milli + 86400000
 }
 
 fun currentLocalDateTime(): LocalDateTime {

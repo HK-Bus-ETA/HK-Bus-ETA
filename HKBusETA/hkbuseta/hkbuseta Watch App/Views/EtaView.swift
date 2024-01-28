@@ -153,8 +153,6 @@ struct EtaView: AppScreenView {
         return MarqueeText(
             text: text,
             font: UIFont.systemFont(ofSize: 20.scaled(appContext, true)),
-            leftFade: 8.scaled(appContext),
-            rightFade: 8.scaled(appContext),
             startDelay: 2,
             alignment: .center
         )

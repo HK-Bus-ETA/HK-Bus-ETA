@@ -375,8 +375,6 @@ struct EtaMenuView: AppScreenView {
                         MarqueeText(
                             text: "\(coDisplay) \(routeNumberDisplay)",
                             font: UIFont.systemFont(ofSize: 15.scaled(appContext, true), weight: .bold),
-                            leftFade: 8.scaled(appContext),
-                            rightFade: 8.scaled(appContext),
                             startDelay: 2,
                             alignment: .bottomLeading
                         )
@@ -388,8 +386,6 @@ struct EtaMenuView: AppScreenView {
                         MarqueeText(
                             text: stopName,
                             font: UIFont.systemFont(ofSize: 15.scaled(appContext, true)),
-                            leftFade: 8.scaled(appContext),
-                            rightFade: 8.scaled(appContext),
                             startDelay: 2,
                             alignment: .bottomLeading
                         )

@@ -47,7 +47,7 @@ import com.benasher44.uuid.Uuid
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
-import com.loohp.hkbuseta.appcontext.AppContextAndroid
+import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
@@ -527,7 +527,7 @@ class EtaTileServiceCommon {
             return LayoutElementBuilders.Text.Builder()
                 .setMaxLines(1)
                 .setText((if (Shared.language == "en") "Updated: " else "更新時間: ")
-                    .plus(DateFormat.getTimeFormat((context as AppContextAndroid).context).timeZone(TimeZone.getTimeZone(ZoneId.of("Asia/Hong_Kong"))).format(Date())))
+                    .plus(DateFormat.getTimeFormat(context.context).timeZone(TimeZone.getTimeZone(ZoneId.of("Asia/Hong_Kong"))).format(Date())))
                 .setFontStyle(
                     FontStyle.Builder()
                         .setSize(
@@ -751,6 +751,7 @@ class EtaTileServiceCommon {
 
         fun handleTileEnterEvent(tileId: Int, context: AppContext) {
             Tiles.providePlatformUpdate { requestTileUpdate(it) }
+            Shared.provideBackgroundUpdateScheduler { c, t -> AndroidShared.scheduleBackgroundUpdateService(c.context, t) }
             tileState(tileId).let {
                 if (!it.getLastUpdateSuccessful()) {
                     it.markShouldUpdate()
@@ -772,7 +773,7 @@ class EtaTileServiceCommon {
                                 }
                             ))
                             it.markLastUpdated()
-                            TileService.getUpdater((context as AppContextAndroid).context).requestUpdate((context.context as TileService).javaClass)
+                            TileService.getUpdater(context.context).requestUpdate((context.context as TileService).javaClass)
                         }
                     }
                 }, 0, 1000, TimeUnit.MILLISECONDS))

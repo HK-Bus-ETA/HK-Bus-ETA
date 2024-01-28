@@ -26,7 +26,7 @@ struct FavView: AppScreenView {
     @State private var etaActive: [Int] = []
     @State private var etaResults: ETAResultsContainer<KotlinInt> = ETAResultsContainer()
     
-    let deleteTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    let deleteTimer = Timer.publish(every: 0.2, on: .main, in: .common).autoconnect()
     
     @ObservedObject private var locationManager = SingleLocationManager()
     @State private var origin: LocationResult? = nil
@@ -101,7 +101,7 @@ struct FavView: AppScreenView {
         }
         .onReceive(deleteTimer) { _ in
             for (favIndex, time) in deleteStates {
-                let newTime = time - 0.1
+                let newTime = time - 0.2
                 DispatchQueue.main.async {
                     if newTime > 0 {
                         deleteStates[favIndex] = newTime
@@ -208,8 +208,6 @@ struct FavView: AppScreenView {
                             MarqueeText(
                                 text: mainText,
                                 font: UIFont.systemFont(ofSize: 19.scaled(appContext, true), weight: .bold),
-                                leftFade: 8.scaled(appContext),
-                                rightFade: 8.scaled(appContext),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )
@@ -218,8 +216,6 @@ struct FavView: AppScreenView {
                             MarqueeText(
                                 text: routeText,
                                 font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
-                                leftFade: 8.scaled(appContext),
-                                rightFade: 8.scaled(appContext),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )
@@ -229,8 +225,6 @@ struct FavView: AppScreenView {
                             MarqueeText(
                                 text: subText,
                                 font: UIFont.systemFont(ofSize: 14.scaled(appContext, true)),
-                                leftFade: 8.scaled(appContext),
-                                rightFade: 8.scaled(appContext),
                                 startDelay: 2,
                                 alignment: .bottomLeading
                             )

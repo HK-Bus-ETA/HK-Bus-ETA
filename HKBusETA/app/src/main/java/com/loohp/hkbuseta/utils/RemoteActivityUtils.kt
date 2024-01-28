@@ -25,22 +25,25 @@ import android.content.Intent
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.wearable.Wearable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ForkJoinPool
 
 class RemoteActivityUtils {
 
     companion object {
 
         fun intentToPhone(instance: Context, intent: Intent, noPhone: () -> Unit = {}, failed: () -> Unit = {}, success: () -> Unit = {}) {
-            val remoteActivityHelper = RemoteActivityHelper(instance, ForkJoinPool.commonPool())
+            val remoteActivityHelper = RemoteActivityHelper(instance, Dispatchers.IO.asExecutor())
             Wearable.getNodeClient(instance).connectedNodes.addOnCompleteListener { nodes ->
                 if (nodes.result.isEmpty()) {
                     noPhone.invoke()
                 } else {
                     val futures = nodes.result.map { node -> remoteActivityHelper.startRemoteActivity(intent, node.id) }
-                    ForkJoinPool.commonPool().execute {
+                    CoroutineScope(Dispatchers.IO).launch {
                         var isSuccess = false
                         for (future in futures) {
                             try {
@@ -77,7 +80,7 @@ class RemoteActivityUtils {
                             null
                         }
                     }
-                    ForkJoinPool.commonPool().execute {
+                    CoroutineScope(Dispatchers.IO).launch {
                         var isSuccess = false
                         for (future in futures) {
                             try {

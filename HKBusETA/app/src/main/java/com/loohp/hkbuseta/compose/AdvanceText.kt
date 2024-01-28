@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
 
+
 @Composable
 fun AutoResizeText(
     text: String,

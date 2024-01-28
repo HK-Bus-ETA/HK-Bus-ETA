@@ -22,7 +22,9 @@
 package com.loohp.hkbuseta.common.shared
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import co.touchlab.stately.concurrency.AtomicReference
 import co.touchlab.stately.concurrency.Lock
+import co.touchlab.stately.concurrency.value
 import co.touchlab.stately.concurrency.withLock
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
@@ -58,7 +60,6 @@ import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,6 +71,8 @@ import kotlin.math.absoluteValue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
+
+expect val JOINT_OPERATED_COLOR_REFRESH_RATE: Long
 
 @Immutable
 object Shared {
@@ -89,6 +92,16 @@ object Shared {
         try {
             Registry.invalidateCache(context)
         } catch (_: Throwable) {}
+    }
+
+    private val backgroundUpdateScheduler: AtomicReference<(AppContext, Long) -> Unit> = AtomicReference { _, _ -> }
+
+    fun provideBackgroundUpdateScheduler(runnable: (AppContext, Long) -> Unit) {
+        backgroundUpdateScheduler.value = runnable
+    }
+
+    fun scheduleBackgroundUpdateService(context: AppContext, time: Long) {
+        backgroundUpdateScheduler.value.invoke(context, time)
     }
 
     fun ensureRegistryDataAvailable(context: AppActiveContext): Boolean {
@@ -121,19 +134,19 @@ object Shared {
     val jointOperatedColorFractionState: StateFlow<Float> = jointOperatedColorFraction
 
     init {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.Default).launch {
             while (true) {
                 val startTime = currentTimeMillis()
                 while (currentTimeMillis() - startTime < jointOperatorColorTransitionTime) {
                     val progress = (currentTimeMillis() - startTime).toFloat() / jointOperatorColorTransitionTime
                     jointOperatedColorFraction.value = progress
-                    delay(10)
+                    delay(JOINT_OPERATED_COLOR_REFRESH_RATE)
                 }
                 val yellowToRedStartTime = currentTimeMillis()
                 while (currentTimeMillis() - yellowToRedStartTime < jointOperatorColorTransitionTime) {
                     val progress = (currentTimeMillis() - yellowToRedStartTime).toFloat() / jointOperatorColorTransitionTime
                     jointOperatedColorFraction.value = 1F - progress
-                    delay(10)
+                    delay(JOINT_OPERATED_COLOR_REFRESH_RATE)
                 }
             }
         }
@@ -301,7 +314,7 @@ object Shared {
 
     @Suppress("NAME_SHADOWING")
     fun handleLaunchOptions(instance: AppActiveContext, stopId: String?, co: Operator?, index: Int?, stop: Any?, route: Any?, listStopRoute: ByteArray?, listStopScrollToStop: String?, listStopShowEta: Boolean?, listStopIsAlightReminder: Boolean?, queryKey: String?, queryRouteNumber: String?, queryBound: String?, queryCo: Operator?, queryDest: String?, queryGMBRegion: GMBRegion?, queryStop: String?, queryStopIndex: Int, queryStopDirectLaunch: Boolean, orElse: () -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.Default).launch {
             val stop = stop
             val route = route
             val listStopRoute = listStopRoute

@@ -44,11 +44,12 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.R
-import com.loohp.hkbuseta.appcontext.AppActiveContextAndroid
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.background.DailyUpdateWorker
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.interpolateColor
 import com.loohp.hkbuseta.common.utils.nextScheduledDataUpdateMillis
 import com.loohp.hkbuseta.utils.HongKongTimeSource
@@ -73,8 +74,6 @@ data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?, va
 
 @Immutable
 object AndroidShared {
-
-    private const val BACKGROUND_SERVICE_REQUEST_TAG: String = "HK_BUS_ETA_BG_SERVICE"
 
     val CACHED_DISPATCHER: CoroutineDispatcher = Executors.newCachedThreadPool().asCoroutineDispatcher()
 
@@ -140,7 +139,7 @@ object AndroidShared {
 
     fun restoreCurrentScreenOrRun(context: AppActiveContext, runBehindAnyway: Boolean, orElse: () -> Unit) {
         val currentActivity = getCurrentActivity()
-        if (currentActivity == null || context !is AppActiveContextAndroid || !currentActivity.shouldRelaunch) {
+        if (currentActivity == null || !currentActivity.shouldRelaunch) {
             orElse.invoke()
         } else {
             val intent2 = Intent(context.context, currentActivity.cls)
@@ -155,12 +154,15 @@ object AndroidShared {
         }
     }
 
-    fun startBackgroundService(context: Context) {
-        val updateRequest = PeriodicWorkRequestBuilder<DailyUpdateWorker>(24, TimeUnit.HOURS, 60, TimeUnit.MINUTES)
+    private const val BACKGROUND_SERVICE_REQUEST_TAG: String = "HK_BUS_ETA_BG_SERVICE"
+
+    fun scheduleBackgroundUpdateService(context: Context, time: Long? = null) {
+        val updateRequest = PeriodicWorkRequestBuilder<DailyUpdateWorker>(1, TimeUnit.DAYS, 60, TimeUnit.MINUTES)
             .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED))
-            .setNextScheduleTimeOverride(nextScheduledDataUpdateMillis() + 60 * 60 * 1000)
+            .setInitialDelay((time?: nextScheduledDataUpdateMillis()) + 3600000 - currentTimeMillis(), TimeUnit.MILLISECONDS)
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(BACKGROUND_SERVICE_REQUEST_TAG, ExistingPeriodicWorkPolicy.UPDATE, updateRequest)
+        val existingPolicy = time?.let { ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE }?: ExistingPeriodicWorkPolicy.KEEP
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(BACKGROUND_SERVICE_REQUEST_TAG, existingPolicy, updateRequest)
     }
 
 }
