@@ -128,6 +128,13 @@ struct EtaMenuView: AppScreenView {
                 }
             }
         }
+        .onAppear {
+            maxFavItems.subscribe()
+        }
+        .onDisappear {
+            jointOperatedColorFraction.unsubscribe()
+            maxFavItems.unsubscribe()
+        }
     }
     
     func OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double) -> some View {
@@ -383,6 +390,11 @@ struct EtaMenuView: AppScreenView {
                             .lineSpacing(0)
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .onAppear {
+                                if kmbCtbJoint {
+                                    jointOperatedColorFraction.subscribe()
+                                }
+                            }
                         MarqueeText(
                             text: stopName,
                             font: UIFont.systemFont(ofSize: 15.scaled(appContext, true)),

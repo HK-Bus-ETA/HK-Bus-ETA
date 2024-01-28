@@ -54,7 +54,7 @@ func MTRLineSection(appContext: AppContext, sectionData: MTRStopSectionData, amb
                         },
                         with: .linearGradient(
                             Gradient(stops: [
-                                .init(color: color.withAlpha(alpha: 0), location: 0),
+                                .init(color: color.withAlpha(alpha: 0), location: 0.2),
                                 .init(color: color, location: 1)
                             ]),
                             startPoint: CGPoint(x: horizontalCenterPrimary, y: -verticalCenter / 2),
@@ -84,7 +84,10 @@ func MTRLineSection(appContext: AppContext, sectionData: MTRStopSectionData, amb
                             path.addLine(to: CGPoint(x: horizontalCenterPrimary, y: height + verticalCenter / 2))
                         },
                         with: .linearGradient(
-                            Gradient(colors: [color, color.withAlpha(alpha: 0)]),
+                            Gradient(stops: [
+                                .init(color: color, location: 0),
+                                .init(color: color.withAlpha(alpha: 0), location: 0.8)
+                            ]),
                             startPoint: CGPoint(x: horizontalCenterPrimary, y: verticalCenter),
                             endPoint: CGPoint(x: horizontalCenterPrimary, y: height + verticalCenter / 2)
                         ),

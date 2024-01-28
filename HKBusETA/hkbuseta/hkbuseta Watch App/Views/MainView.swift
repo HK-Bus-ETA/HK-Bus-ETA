@@ -60,7 +60,16 @@ struct MainView: AppScreenView {
                     .font(.system(size: min(23.scaled(appContext, true), 26.scaled(appContext))))
                     .padding(.bottom)
             }
-        }.onChange(of: registryState.state) { _ in
+        }
+        .onAppear {
+            registryState.subscribe()
+            updateProgressState.subscribe()
+        }
+        .onDisappear {
+            registryState.unsubscribe()
+            updateProgressState.unsubscribe()
+        }
+        .onChange(of: registryState.state) { _ in
             if registryState.state == Registry.State.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     switch launch {
@@ -81,7 +90,8 @@ struct MainView: AppScreenView {
                 appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.fatalError, data))
                 appContext.finishAffinity()
             }
-        }.onAppear {
+        }
+        .onAppear {
             if registryState.state == Registry.State.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     switch launch {

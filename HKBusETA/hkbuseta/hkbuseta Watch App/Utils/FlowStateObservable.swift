@@ -11,21 +11,33 @@ import KMPNativeCoroutinesRxSwift
 import KMPNativeCoroutinesAsync
 import KMPNativeCoroutinesCombine
 import RxSwift
+import shared
 
 class FlowStateObservable<T>: ObservableObject {
     
     @Published var state: T
     
+    private let nativeFlow: NativeFlow<T, Error, KotlinUnit>
     private var disposable: Disposable?
     
-    init<Failure: Error, Unit>(defaultValue: T, nativeFlow: @escaping NativeFlow<T, Failure, Unit>) {
+    private var subscribed = false
+    private let lock = NSLock()
+    
+    init(defaultValue: T, nativeFlow: @escaping NativeFlow<T, Error, KotlinUnit>, initSubscribe: Bool = false) {
         self.state = defaultValue
-        self.setup(nativeFlow: nativeFlow)
+        self.nativeFlow = nativeFlow
+        if initSubscribe {
+            subscribe()
+        }
     }
     
-    func setup<Failure: Error, Unit>(nativeFlow: @escaping NativeFlow<T, Failure, Unit>) {
+    func subscribe() {
+        lock.lock()
+        defer { lock.unlock() }
+        if subscribed {
+            return
+        }
         let observable = createObservable(for: nativeFlow)
-
         disposable = observable.subscribe(onNext: { value in
             DispatchQueue.main.async {
                 self.state = value
@@ -38,10 +50,22 @@ class FlowStateObservable<T>: ObservableObject {
         }, onDisposed: {
             // print("Observable disposed")
         })
+        subscribed = true
+    }
+    
+    func unsubscribe() {
+        lock.lock()
+        defer { lock.unlock() }
+        disposable?.dispose()
+        subscribed = false
+    }
+    
+    func isSubscribed() -> Bool {
+        return subscribed
     }
     
     deinit {
-        disposable?.dispose()
+        unsubscribe()
     }
     
 }

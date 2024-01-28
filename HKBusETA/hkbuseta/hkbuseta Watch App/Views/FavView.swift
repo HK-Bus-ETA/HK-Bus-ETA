@@ -79,6 +79,13 @@ struct FavView: AppScreenView {
                 }
             }
         }
+        .onAppear {
+            maxFavItems.subscribe()
+        }
+        .onDisappear {
+            jointOperatedColorFraction.unsubscribe()
+            maxFavItems.unsubscribe()
+        }
         .onChange(of: maxFavItems.state) { _ in
             showRouteListViewButton = Shared().shouldShowFavListRouteView
         }
@@ -213,6 +220,11 @@ struct FavView: AppScreenView {
                             )
                             .foregroundColor(color.asColor())
                             .lineLimit(1)
+                            .onAppear {
+                                if kmbCtbJoint {
+                                    jointOperatedColorFraction.subscribe()
+                                }
+                            }
                             MarqueeText(
                                 text: routeText,
                                 font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
@@ -314,9 +326,8 @@ struct FavView: AppScreenView {
     }
     
     func ETAElement(favIndex: Int, currentFavRouteStop: FavouriteRouteStop) -> some View {
-        Group {
+        ZStack {
             FavEtaView(appContext: appContext, etaState: etaResults.getState(key: favIndex.asKt()))
-            Text("")
         }
         .onAppear {
             etaActive.append(favIndex)
@@ -341,37 +352,45 @@ struct FavEtaView: View {
     }
     
     var body: some View {
-        let optEta = etaState.state
-        if optEta != nil {
-            let eta = optEta!
-            if !eta.isConnectionError {
-                if !(0..<60).contains(eta.nextScheduledBus) {
-                    if eta.isMtrEndOfLine {
-                        Image(systemName: "arrow.forward.to.line.circle")
-                            .font(.system(size: 17.scaled(appContext, true)))
-                            .foregroundColor(colorInt(0xFF92C6F0).asColor())
-                    } else if (eta.isTyphoonSchedule) {
-                        Image(systemName: "hurricane")
-                            .font(.system(size: 17.scaled(appContext, true)))
-                            .foregroundColor(colorInt(0xFF92C6F0).asColor())
+        ZStack {
+            let optEta = etaState.state
+            if optEta != nil {
+                let eta = optEta!
+                if !eta.isConnectionError {
+                    if !(0..<60).contains(eta.nextScheduledBus) {
+                        if eta.isMtrEndOfLine {
+                            Image(systemName: "arrow.forward.to.line.circle")
+                                .font(.system(size: 17.scaled(appContext, true)))
+                                .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                        } else if (eta.isTyphoonSchedule) {
+                            Image(systemName: "hurricane")
+                                .font(.system(size: 17.scaled(appContext, true)))
+                                .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                        } else {
+                            Image(systemName: "clock")
+                                .font(.system(size: 17.scaled(appContext, true)))
+                                .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                        }
                     } else {
-                        Image(systemName: "clock")
-                            .font(.system(size: 17.scaled(appContext, true)))
+                        let shortText = eta.firstLine.shortText
+                        let text1 = shortText.first
+                        let text2 = shortText.second
+                        let text = text1.asAttributedString(fontSize: 17.scaled(appContext, true)) + text2.asAttributedString(fontSize: 8.scaled(appContext, true))
+                        Text(text)
+                            .multilineTextAlignment(.leading)
+                            .lineSpacing(0)
+                            .frame(alignment: .leading)
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                            .lineLimit(1)
                     }
-                } else {
-                    let shortText = eta.firstLine.shortText
-                    let text1 = shortText.first
-                    let text2 = shortText.second
-                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext, true)) + text2.asAttributedString(fontSize: 8.scaled(appContext, true))
-                    Text(text)
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(0)
-                        .frame(alignment: .leading)
-                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
-                        .lineLimit(1)
                 }
             }
+        }
+        .onAppear {
+            etaState.subscribe()
+        }
+        .onDisappear {
+            etaState.unsubscribe()
         }
     }
     

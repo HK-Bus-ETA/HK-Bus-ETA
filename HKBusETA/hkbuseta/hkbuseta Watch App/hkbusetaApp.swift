@@ -46,13 +46,13 @@ struct hkbuseta_Watch_AppApp: App {
     
     @WKApplicationDelegateAdaptor(ApplicationDelegate.self) var delegate
     
-    @StateObject private var historyStackState = FlowStateObservable(defaultValue: HistoryStack().historyStack, nativeFlow: HistoryStack().historyStackFlow)
+    @StateObject private var historyStackState = FlowStateObservable(defaultValue: HistoryStack().historyStack, nativeFlow: HistoryStack().historyStackFlow, initSubscribe: true)
     
     let toastTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
     @State private var toastText = ""
     @State private var toastShowTimeLeft = 0.0
     
-    @StateObject private var toastState = FlowStateObservable(defaultValue: ToastTextState().toastState, nativeFlow: ToastTextState().toastStateFlow)
+    @StateObject private var toastState = FlowStateObservable(defaultValue: ToastTextState().toastState, nativeFlow: ToastTextState().toastStateFlow, initSubscribe: true)
     
     init() {
         initImplementations()

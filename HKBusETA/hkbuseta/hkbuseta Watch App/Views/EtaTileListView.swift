@@ -217,6 +217,12 @@ struct EtaTileView: View {
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileConfigure, data))
                     })
         )
+        .onAppear {
+            mergedState.subscribe()
+        }
+        .onDisappear {
+            mergedState.unsubscribe()
+        }
         .onReceive(etaTimer) { _ in
             let resolved = RouteExtensionsKt.resolveStops(favouriteRouteStops, context: appContext) { origin?.location }.filter { $0.second != nil }
             mergedEtaCombiner.reset(size: resolved.count.asInt32())

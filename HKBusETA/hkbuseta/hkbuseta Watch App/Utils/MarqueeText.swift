@@ -42,7 +42,7 @@ struct MarqueeText : View {
         let stringHeight = oas.attributedString == nil ? oas.string.heightOfString(usingFont: font) : oas.attributedString!.heightOfString(usingFont: font)
         
         let animation = Animation
-            .linear(duration: Double(stringWidth) / 30)
+            .linear(duration: Double(stringWidth) / 25)
             .delay(startDelay)
             .repeatForever(autoreverses: false)
         

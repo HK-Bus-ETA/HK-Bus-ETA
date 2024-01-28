@@ -104,6 +104,13 @@ struct EtaTileConfigurationView: AppScreenView {
         }
         .frame(maxHeight: /*@START_MENU_TOKEN@*/.infinity/*@END_MENU_TOKEN@*/)
         .ignoresSafeArea(.all, edges: .bottom)
+        .onAppear {
+            maxFavItems.subscribe()
+        }
+        .onDisappear {
+            jointOperatedColorFraction.unsubscribe()
+            maxFavItems.unsubscribe()
+        }
     }
     
     func SelectButton(favIndex: Int) -> some View {
@@ -132,8 +139,7 @@ struct EtaTileConfigurationView: AppScreenView {
         return Button(action: {}) {
             HStack(alignment: .top, spacing: 0) {
                 ZStack(alignment: .leading) {
-                    Text("")
-                        .frame(width: 38)
+                    Text("").frame(width: 38)
                     ZStack {
                         Circle()
                             .fill(enabled ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
@@ -203,6 +209,11 @@ struct EtaTileConfigurationView: AppScreenView {
                             )
                             .foregroundColor(color.asColor().adjustBrightness(percentage: enabled ? 1.0 : 0.5))
                             .lineLimit(1)
+                            .onAppear {
+                                if kmbCtbJoint {
+                                    jointOperatedColorFraction.subscribe()
+                                }
+                            }
                             MarqueeText(
                                 text: routeText,
                                 font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),

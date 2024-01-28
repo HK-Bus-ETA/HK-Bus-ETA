@@ -139,6 +139,14 @@ struct ListStopsView: AppScreenView {
                 }
             }
         }
+        .onAppear {
+            if kmbCtbJoint {
+                jointOperatedColorFraction.subscribe()
+            }
+        }
+        .onDisappear {
+            jointOperatedColorFraction.unsubscribe()
+        }
         .onReceive(timer) { _ in
             self.animationTick += 1
         }
@@ -258,37 +266,45 @@ struct ListStopETAView: View {
     }
     
     var body: some View {
-        let optEta = etaState.state
-        if optEta != nil {
-            let eta = optEta!
-            if !eta.isConnectionError {
-                if !(0..<60).contains(eta.nextScheduledBus) {
-                    if eta.isMtrEndOfLine {
-                        Image(systemName: "arrow.forward.to.line.circle")
-                            .font(.system(size: 17.scaled(appContext, true)))
-                            .foregroundColor(colorInt(0xFF92C6F0).asColor())
-                    } else if (eta.isTyphoonSchedule) {
-                        Image(systemName: "hurricane")
-                            .font(.system(size: 17.scaled(appContext, true)))
-                            .foregroundColor(colorInt(0xFF92C6F0).asColor())
+        ZStack {
+            let optEta = etaState.state
+            if optEta != nil {
+                let eta = optEta!
+                if !eta.isConnectionError {
+                    if !(0..<60).contains(eta.nextScheduledBus) {
+                        if eta.isMtrEndOfLine {
+                            Image(systemName: "arrow.forward.to.line.circle")
+                                .font(.system(size: 17.scaled(appContext, true)))
+                                .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                        } else if (eta.isTyphoonSchedule) {
+                            Image(systemName: "hurricane")
+                                .font(.system(size: 17.scaled(appContext, true)))
+                                .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                        } else {
+                            Image(systemName: "clock")
+                                .font(.system(size: 17.scaled(appContext, true)))
+                                .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                        }
                     } else {
-                        Image(systemName: "clock")
-                            .font(.system(size: 17.scaled(appContext, true)))
+                        let shortText = eta.firstLine.shortText
+                        let text1 = shortText.first
+                        let text2 = "\n" + shortText.second
+                        let text = text1.asAttributedString(fontSize: 17.scaled(appContext, true)) + text2.asAttributedString(fontSize: 8.scaled(appContext, true))
+                        Text(text)
+                            .multilineTextAlignment(.trailing)
+                            .lineSpacing(0)
+                            .frame(alignment: .trailing)
                             .foregroundColor(colorInt(0xFF92C6F0).asColor())
+                            .lineLimit(2)
                     }
-                } else {
-                    let shortText = eta.firstLine.shortText
-                    let text1 = shortText.first
-                    let text2 = "\n" + shortText.second
-                    let text = text1.asAttributedString(fontSize: 17.scaled(appContext, true)) + text2.asAttributedString(fontSize: 8.scaled(appContext, true))
-                    Text(text)
-                        .multilineTextAlignment(.trailing)
-                        .lineSpacing(0)
-                        .frame(alignment: .trailing)
-                        .foregroundColor(colorInt(0xFF92C6F0).asColor())
-                        .lineLimit(2)
                 }
             }
+        }
+        .onAppear {
+            etaState.subscribe()
+        }
+        .onDisappear {
+            etaState.unsubscribe()
         }
     }
     
