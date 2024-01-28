@@ -48,7 +48,6 @@ import androidx.wear.protolayout.ColorBuilders
 import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
 import com.loohp.hkbuseta.R
-import com.loohp.hkbuseta.appcontext.AppContextAndroid
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.utils.BigContentStyle
@@ -279,8 +278,7 @@ fun FormattedText.asContentAnnotatedString(): ContentAnnotatedString {
     val inlineContents: MutableMap<String, Int> = mutableMapOf()
     return buildAnnotatedString {
         content.forEach { (string, style) ->
-            style.firstOrNull { it is InlineImageStyle }?.let {
-                it as InlineImageStyle
+            style.firstNotNullOfOrNull { it as? InlineImageStyle }?.let {
                 inlineContents[it.image.name] = it.image.androidRes
                 appendInlineContent(it.image.name, string)
             }?: append(string, style.toSpanStyles())

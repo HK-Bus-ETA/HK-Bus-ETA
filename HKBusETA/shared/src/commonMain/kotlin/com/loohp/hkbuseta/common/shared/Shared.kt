@@ -221,6 +221,7 @@ object Shared {
 
     var language = "zh"
     var clockTimeMode = false
+    var lrtDirectionMode = false
 
     private val suggestedMaxFavouriteRouteStop = MutableStateFlow(0)
     private val currentMaxFavouriteRouteStop = MutableStateFlow(0)

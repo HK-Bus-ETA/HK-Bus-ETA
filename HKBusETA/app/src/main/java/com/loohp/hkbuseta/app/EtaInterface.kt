@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -77,6 +78,7 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.rememberSwipeableState
 import androidx.wear.compose.material.swipeable
+import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
@@ -105,11 +107,13 @@ import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
+import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
@@ -244,6 +248,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 var active by remember { mutableStateOf(true) }
                 val etaStateFlow = remember { MutableStateFlow(null as ETAQueryResult?) }
                 val eta by etaStateFlow.collectAsStateWithLifecycle()
+                var options by remember { mutableStateOf(Registry.EtaQueryOptions(lrtDirectionMode = Shared.lrtDirectionMode)) }
 
                 PauseEffect {
                     active = false
@@ -253,12 +258,24 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 }
 
                 LaunchedEffect (Unit) {
+                    schedule.invoke(false, null)
                     schedule.invoke(true) {
-                        val result = Registry.getInstance(instance).getEta(stopId, index, co, route, instance).get(
-                            Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                        val result = Registry.getInstance(instance).getEta(stopId, index, co, route, instance, options).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                         if (active) {
                             etaStateFlow.value = result
                         }
+                    }
+                    while (true) {
+                        val newOptions = Registry.EtaQueryOptions(lrtDirectionMode = Shared.lrtDirectionMode)
+                        if (newOptions != options) {
+                            options = newOptions
+                            Registry.getInstance(instance).getEta(stopId, index, co, route, instance, options).onComplete(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) {
+                                if (active) {
+                                    etaStateFlow.value = it
+                                }
+                            }
+                        }
+                        delay(50)
                     }
                 }
                 DisposableEffect (Unit) {
@@ -306,6 +323,12 @@ fun launchOtherStop(newIndex: Int, co: Operator, stopList: List<Registry.StopDat
 @Composable
 fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route, stopList: ImmutableList<Registry.StopData>, instance: AppActiveContext) {
     val haptic = LocalHapticFeedback.current
+    var lrtDirectionMode by remember { mutableStateOf(Shared.lrtDirectionMode) }
+
+    RestartEffect {
+        lrtDirectionMode = Shared.lrtDirectionMode
+    }
+
     Row (
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
@@ -335,6 +358,35 @@ fun ActionBar(stopId: String, co: Operator, index: Int, stop: Stop, route: Route
                 )
             }
         )
+        if (co == Operator.LRT) {
+            Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
+            AdvanceButton(
+                onClick = {
+                    Registry.getInstance(instance).setLrtDirectionMode(!lrtDirectionMode, instance)
+                    lrtDirectionMode = Shared.lrtDirectionMode
+                    instance.showToastText(if (lrtDirectionMode) {
+                        if (Shared.language == "en") "Display all Light Rail routes in the same direction" else "顯示所有相同方向輕鐵路線"
+                    } else {
+                        if (Shared.language == "en") "Display only the select Light Rail route" else "只顯示該輕鐵路線"
+                    }, ToastDuration.SHORT)
+                },
+                modifier = Modifier
+                    .width(24.scaledSize(instance).dp)
+                    .height(24.scaledSize(instance).dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.secondary,
+                    contentColor = MaterialTheme.colors.primary
+                ),
+                content = {
+                    Icon(
+                        modifier = Modifier.size(16F.scaledSize(instance).sp.clamp(max = 16F.scaledSize(instance).dp).dp),
+                        painter = painterResource(R.drawable.baseline_swipe_right_alt_24),
+                        tint = Operator.LRT.getOperatorColor(Color.White).adjustBrightness(if (lrtDirectionMode) 1F else 0.4F),
+                        contentDescription = if (Shared.language == "en") "Light Rail Display Mode" else "輕鐵路線顯示格式"
+                    )
+                }
+            )
+        }
         Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
         AdvanceButton(
             onClick = {
@@ -445,7 +497,8 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
 @Composable
 fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, clockTimeMode: Boolean, instance: AppActiveContext) {
     val content = lines.getResolvedText(seq, clockTimeMode, instance).asContentAnnotatedString()
-    val textSize = 16F.scaledSize(instance).sp.let { if (seq > 1) it.clamp(max = 16F.scaledSize(instance).dp) else it }
+    val baseSize = if (lines?.nextCo == Operator.LRT && Shared.lrtDirectionMode) 14F else 16F
+    val textSize = baseSize.scaledSize(instance).sp.let { if (seq > 1) it.clamp(max = baseSize.scaledSize(instance).dp) else it }
     Box (
         modifier = Modifier
             .fillMaxWidth()

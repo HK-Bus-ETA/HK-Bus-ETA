@@ -29,6 +29,7 @@ struct EtaView: AppScreenView {
     
     @State private var stopList: [Registry.StopData]
     @State private var clockTimeMode: Bool
+    @State private var lrtDirectionMode: Bool
     
     private let appContext: AppActiveContextWatchOS
     
@@ -45,6 +46,7 @@ struct EtaView: AppScreenView {
         
         self.stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: co == Operator.Companion().NLB ? route.nlbId : route.bound[co]!, co: co, gmbRegion: route.gmbRegion)
         self.clockTimeMode = Shared().clockTimeMode
+        self.lrtDirectionMode = Shared().lrtDirectionMode
     }
     
     var body: some View {
@@ -91,6 +93,23 @@ struct EtaView: AppScreenView {
                     .edgesIgnoringSafeArea(.all)
                     .disabled(index <= 1)
                     
+                    if co == Operator.Companion().LRT {
+                        Button(action: {
+                            registry(appContext).setLrtDirectionMode(lrtDirectionMode: !lrtDirectionMode, context: appContext)
+                            lrtDirectionMode = Shared().lrtDirectionMode
+                            appContext.showToastText(text: lrtDirectionMode ? (Shared().language == "en" ? "Display all Light Rail routes in the same direction" : "顯示所有相同方向輕鐵路線") : (Shared().language == "en" ? "Display only the select Light Rail route" : "只顯示該輕鐵路線"), duration: ToastDuration.short_)
+                            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode)
+                            fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
+                        }) {
+                            Image(systemName: "arrow.forward.circle")
+                                .font(.system(size: 17.scaled(appContext, true)))
+                                .foregroundColor(Operator.Companion().LRT.getOperatorColor(elseColor: 0xFFFFFFFF as Int64).asColor().adjustBrightness(percentage: lrtDirectionMode ? 1 : 0.4))
+                        }
+                        .frame(width: 25.scaled(appContext), height: 25.scaled(appContext))
+                        .clipShape(RoundedRectangle(cornerRadius: 25))
+                        .edgesIgnoringSafeArea(.all)
+                    }
+                    
                     Button(action: {
                         let data = newAppDataConatiner()
                         data["stopId"] = stopId
@@ -134,10 +153,12 @@ struct EtaView: AppScreenView {
         }
         .frame(height: Double(appContext.screenHeight) * 0.8)
         .onReceive(etaTimer) { _ in
-            fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route) { eta = $0 }
+            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode)
+            fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
         }
         .onAppear {
-            fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route) { eta = $0 }
+            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode)
+            fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
         }
         .gesture(
             TapGesture()
@@ -149,10 +170,11 @@ struct EtaView: AppScreenView {
     }
     
     func ETALine(lines: Registry.ETAQueryResult?, seq: Int) -> some View {
-        let text = Shared().getResolvedText(lines, seq: seq.asInt32(), clockTimeMode: clockTimeMode, context: appContext).asAttributedString(defaultFontSize: max(20.scaled(appContext), 20.scaled(appContext, seq == 1)))
+        let baseSize = lines?.nextCo == Operator.Companion().LRT && Shared().lrtDirectionMode ? 17.5 : 20.0
+        let text = Shared().getResolvedText(lines, seq: seq.asInt32(), clockTimeMode: clockTimeMode, context: appContext).asAttributedString(defaultFontSize: max(baseSize.scaled(appContext), baseSize.scaled(appContext, seq == 1)))
         return MarqueeText(
             text: text,
-            font: UIFont.systemFont(ofSize: 20.scaled(appContext, true)),
+            font: UIFont.systemFont(ofSize: baseSize.scaled(appContext, true)),
             startDelay: 2,
             alignment: .center
         )

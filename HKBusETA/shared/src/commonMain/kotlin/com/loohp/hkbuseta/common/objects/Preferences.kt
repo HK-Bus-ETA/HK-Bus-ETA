@@ -40,6 +40,7 @@ import kotlinx.serialization.json.put
 class Preferences(
     var language: String,
     var clockTimeMode: Boolean,
+    var lrtDirectionMode: Boolean,
     val favouriteRouteStops: MutableMap<Int, FavouriteRouteStop>,
     val lastLookupRoutes: MutableList<LastLookupRoute>,
     val etaTileConfigurations: MutableMap<Int, List<Int>>,
@@ -51,15 +52,24 @@ class Preferences(
         fun deserialize(json: JsonObject): Preferences {
             val language = json.optString("language")
             val clockTimeMode = json.optBoolean("clockTimeMode", false)
+            val lrtDirectionMode = json.optBoolean("lrtDirectionMode", false)
             val favouriteRouteStops = json.optJsonObject("favouriteRouteStops")!!.mapToMutableMap({ it.toInt() }) { FavouriteRouteStop.deserialize(it.jsonObject) }
             val lastLookupRoutes = json.optJsonArray("lastLookupRoutes")!!.mapToMutableList { LastLookupRoute.deserialize(it.jsonObject) }
             val etaTileConfigurations = if (json.contains("etaTileConfigurations")) json.optJsonObject("etaTileConfigurations")!!.mapToMutableMap<Int, List<Int>>({ it.toInt() }) { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.int } } else HashMap()
             val routeSortModePreference = if (json.contains("routeSortModePreference")) json.optJsonObject("routeSortModePreference")!!.mapToMutableMap({ RouteListType.valueOf(it) }, { RouteSortMode.valueOf(it.jsonPrimitive.content) }) else HashMap()
-            return Preferences(language, clockTimeMode, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
+            return Preferences(language, clockTimeMode, lrtDirectionMode, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
         }
 
         fun createDefault(): Preferences {
-            return Preferences("zh", false, HashMap(), ArrayList(), HashMap(), HashMap())
+            return Preferences(
+                language = "zh",
+                clockTimeMode = false,
+                lrtDirectionMode = false,
+                favouriteRouteStops = HashMap(),
+                lastLookupRoutes = ArrayList(),
+                etaTileConfigurations = HashMap(),
+                routeSortModePreference = HashMap()
+            )
         }
 
     }
@@ -73,6 +83,7 @@ class Preferences(
         return buildJsonObject {
             put("language", language)
             put("clockTimeMode", clockTimeMode)
+            put("lrtDirectionMode", lrtDirectionMode)
             put("favouriteRouteStops", favouriteRouteStops.toJsonObject { it.serialize() })
             put("lastLookupRoutes", lastLookupRoutes.asSequence().map { it.serialize() }.toJsonArray())
             put("etaTileConfigurations", etaTileConfigurations.toJsonObject { it.toJsonArray() })

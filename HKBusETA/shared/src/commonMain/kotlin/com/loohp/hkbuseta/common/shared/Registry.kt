@@ -74,6 +74,7 @@ import com.loohp.hkbuseta.common.utils.getTextResponse
 import com.loohp.hkbuseta.common.utils.getTextResponseWithPercentageCallback
 import com.loohp.hkbuseta.common.utils.gzipSupported
 import com.loohp.hkbuseta.common.utils.indexOf
+import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.common.utils.optDouble
 import com.loohp.hkbuseta.common.utils.optInt
 import com.loohp.hkbuseta.common.utils.optJsonArray
@@ -242,6 +243,13 @@ class Registry {
         Tiles.requestTileUpdate()
     }
 
+    fun setLrtDirectionMode(lrtDirectionMode: Boolean, context: AppContext) {
+        Shared.lrtDirectionMode = lrtDirectionMode
+        PREFERENCES!!.lrtDirectionMode = lrtDirectionMode
+        savePreferences(context)
+        Tiles.requestTileUpdate()
+    }
+
     fun hasFavouriteRouteStop(favoriteIndex: Int): Boolean {
         return Shared.favoriteRouteStops[favoriteIndex] != null
     }
@@ -401,6 +409,7 @@ class Registry {
         }
         Shared.language = PREFERENCES!!.language
         Shared.clockTimeMode = PREFERENCES!!.clockTimeMode
+        Shared.lrtDirectionMode = PREFERENCES!!.lrtDirectionMode
         Shared.updateFavoriteRouteStops {
             it.clear()
             it.putAll(PREFERENCES!!.favouriteRouteStops)
@@ -1126,6 +1135,28 @@ class Registry {
         )
     }
 
+    fun getLrtSameDirectionRoutes(stopId: String, stopIndex: Int, route: Route): Set<Route> {
+        val stops = route.stops[Operator.LRT]!!
+        val thisStopIndex = stops.indexesOf(stopId).takeIf { it.first() >= 0 }?.minByOrNull { (it - stopIndex).absoluteValue }
+        if (thisStopIndex == null || thisStopIndex + 1 >= stops.size) {
+            return emptySet()
+        }
+        val nextStopId = stops[thisStopIndex + 1]
+        val results: MutableSet<Route> = mutableSetOf()
+        results.add(route)
+        for (data in DATA!!.dataSheet.routeList.values) {
+            if (data.co.contains(Operator.LRT) && !results.contains(data)) {
+                val dataStops = data.stops[Operator.LRT]!!
+                val indexes = dataStops.indexesOf(stopId).takeIf { it.first() >= 0 }?: continue
+                val nextStopIds = indexes.mapNotNull { i -> i.takeIf { it + 1 < dataStops.size }?.let { dataStops[it + 1] } }
+                if (nextStopIds.contains(nextStopId)) {
+                    results.add(data)
+                }
+            }
+        }
+        return results
+    }
+
     @Immutable
     data class MTRInterchangeData(val lines: List<String>, val isOutOfStationPaid: Boolean, val outOfStationLines: List<String>, val isHasLightRail: Boolean)
 
@@ -1153,7 +1184,7 @@ class Registry {
             return CompletableDeferred(cache)
         }
         return typhoonInfoDeferred.value.takeIf { it.isActive }?: CoroutineScope(Dispatchers.IO).async {
-            val data: JsonObject? = getJSONResponse("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=" + if (Shared.language == "en") "en" else "tc")
+            val data = getJSONResponse("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=" + if (Shared.language == "en") "en" else "tc")
             if (data != null && data.contains("WTCSGNL")) {
                 val matchingGroups = Regex("TC([0-9]+)(.*)").find(data.optJsonObject("WTCSGNL")!!.optString("code"))?.groupValues
                 if (matchingGroups?.getOrNull(1) != null) {
@@ -1233,7 +1264,11 @@ class Registry {
 
     }
 
-    fun getEta(stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext): PendingETAQueryResult {
+    data class EtaQueryOptions(
+        val lrtDirectionMode: Boolean = false
+    )
+
+    fun getEta(stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext, options: EtaQueryOptions? = null): PendingETAQueryResult {
         context.logFirebaseEvent("eta_query", AppBundle().apply {
             putString("by_stop", stopId + "," + stopIndex + "," + route.routeNumber + "," + co.name + "," + route.bound[co])
             putString("by_bound", route.routeNumber + "," + co.name + "," + route.bound[co])
@@ -1255,7 +1290,7 @@ class Registry {
                         var kmbSpecialMessage: FormattedText? = null
                         var kmbFirstScheduledBus = Long.MAX_VALUE
                         val kmbFuture = launch {
-                            val data: JsonObject? = getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
+                            val data = getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
                             val buses = data!!.optJsonArray("data")!!
                             val stopSequences: MutableSet<Int> = HashSet()
                             for (u in 0 until buses.size) {
@@ -1554,7 +1589,7 @@ class Registry {
                     }
                     co === Operator.KMB -> {
                         isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                        val data: JsonObject? = getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
+                        val data = getJSONResponse("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
                         val buses = data!!.optJsonArray("data")!!
                         val stopSequences: MutableSet<Int> = HashSet()
                         for (u in 0 until buses.size) {
@@ -1654,7 +1689,7 @@ class Registry {
                         isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
                         val routeNumber = route.routeNumber
                         val routeBound = route.bound[Operator.CTB]
-                        val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$stopId/$routeNumber")
+                        val data = getJSONResponse("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$stopId/$routeNumber")
                         val buses = data!!.optJsonArray("data")!!
                         val stopSequences: MutableSet<Int> = HashSet()
                         for (u in 0 until buses.size) {
@@ -1750,7 +1785,7 @@ class Registry {
                     }
                     co === Operator.NLB -> {
                         isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                        val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=${route.nlbId}&stopId=$stopId&language=${Shared.language}")
+                        val data = getJSONResponse("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=${route.nlbId}&stopId=$stopId&language=${Shared.language}")
                         if (!data.isNullOrEmpty() && data.contains("estimatedArrivals")) {
                             val buses = data.optJsonArray("estimatedArrivals")!!
                             for (u in 0 until buses.size) {
@@ -1824,7 +1859,7 @@ class Registry {
                             put("language", Shared.language)
                             put("routeName", routeNumber)
                         }
-                        val data: JsonObject? = postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body)
+                        val data = postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body)
                         val status = data!!.optString("routeStatusRemarkTitle")
                         if (status.isNotBlank()) {
                             lines[1] = ETALineEntry.textEntry(status)
@@ -1924,7 +1959,7 @@ class Registry {
                     }
                     co === Operator.GMB -> {
                         isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-                        val data: JsonObject? = getJSONResponse("https://data.etagmb.gov.hk/eta/stop/$stopId")
+                        val data = getJSONResponse("https://data.etagmb.gov.hk/eta/stop/$stopId")
                         val stopSequences: MutableSet<Int> = HashSet()
                         val busList: MutableList<Triple<Int, Double, JsonObject>> = ArrayList()
                         for (i in 0 until data!!.optJsonArray("data")!!.size) {
@@ -2016,6 +2051,7 @@ class Registry {
                     }
                     co === Operator.LRT -> {
                         isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalNine
+                        val lrtDirectionMode = options?.lrtDirectionMode == true
                         val stopsList = route.stops[Operator.LRT]!!
                         if (stopsList.indexOf(stopId) + 1 >= stopsList.size) {
                             isMtrEndOfLine = true
@@ -2024,9 +2060,10 @@ class Registry {
                             val hongKongTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Hong_Kong"))
                             val hour = hongKongTime.hour
                             val results: MutableList<LrtETAData> = ArrayList()
-                            val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=${stopId.substring(2)}")
+                            val data = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=${stopId.substring(2)}")
                             if (data!!.optInt("status") != 0) {
                                 val platformList = data.optJsonArray("platform_list")!!
+                                val matchRoutes = if (lrtDirectionMode) getLrtSameDirectionRoutes(stopId, stopIndex, route) else setOf(route)
                                 for (i in 0 until platformList.size) {
                                     val platform = platformList.optJsonObject(i)!!
                                     val platformNumber = platform.optInt("platform_id")
@@ -2036,7 +2073,7 @@ class Registry {
                                             val routeData = routeList.optJsonObject(u)!!
                                             val routeNumber = routeData.optString("route_no")
                                             val destCh = routeData.optString("dest_ch")
-                                            if (routeNumber == route.routeNumber && isLrtStopOnOrAfter(stopId, destCh, route)) {
+                                            if (matchRoutes.any { routeNumber == it.routeNumber && isLrtStopOnOrAfter(stopId, destCh, it) }) {
                                                 val mins = Regex("([0-9]+) *min").find(routeData.optString("time_en"))?.groupValues?.getOrNull(1)?.toLong()?: 0
                                                 val minsMsg = routeData.optString(if (Shared.language == "en") "time_en" else "time_ch")
                                                 val dest = routeData.optString(if (Shared.language == "en") "dest_en" else "dest_ch")
@@ -2082,14 +2119,18 @@ class Registry {
                                     val message = buildFormattedString {
                                         append("", BoldStyle)
                                         append(lrt.platformNumber.getCircledNumber(), Colored(lineColor))
-                                        append(" ")
+                                        if (lrtDirectionMode) {
+                                            append(" ${lrt.routeNumber} ${lrt.dest}  ", SmallSize)
+                                        } else {
+                                            append(" ")
+                                        }
                                         for (u in 0 until lrt.trainLength) {
                                             appendInlineContent(InlineImage.LRV, "\uD83D\uDE83")
                                         }
                                         if (lrt.trainLength == 1) {
                                             appendInlineContent(InlineImage.LRV_EMPTY, " ")
                                         }
-                                        append(" ")
+                                        append(if (lrtDirectionMode) "  " else " ")
                                         append(annotatedMinsMessage)
                                     }
                                     lines[seq] = ETALineEntry.etaEntry(message, toShortText(mins, 1), mins.toDouble(), mins)
@@ -2110,7 +2151,7 @@ class Registry {
                             val hongKongTime = Clock.System.now().toLocalDateTime(hongKongTimeZone)
                             val hour = hongKongTime.hour
                             val dayOfWeek = hongKongTime.dayOfWeek
-                            val data: JsonObject? = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=$lineName&sta=$stopId")
+                            val data = getJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=$lineName&sta=$stopId")
                             if (data!!.optInt("status") == 0) {
                                 lines[1] = ETALineEntry.textEntry(if (Shared.language == "en") "Server unable to provide data" else "系統未能提供資訊")
                             } else {
