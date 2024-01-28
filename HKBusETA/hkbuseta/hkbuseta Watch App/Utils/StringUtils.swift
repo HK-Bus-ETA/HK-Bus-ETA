@@ -41,7 +41,7 @@ extension FormattedText {
         attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: defaultFontSize, weight: defaultWeight), range: NSRange(location: 0, length: attributedString.string.unicodeScalars.map { $0.value > 0xFFFF ? 2 : 1 }.reduce(0, +)))
         var index = 0
         for obj in self.content {
-            let textContent = obj as! FormattedTextContent
+            let textContent = obj
             let length = textContent.string.unicodeScalars.map { $0.value > 0xFFFF ? 2 : 1 }.reduce(0, +)
             let range = NSMakeRange(index, length)
             index += length
