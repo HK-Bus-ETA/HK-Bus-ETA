@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.TimeTextDefaults
@@ -54,6 +55,7 @@ import com.loohp.hkbuseta.common.utils.interpolateColor
 import com.loohp.hkbuseta.common.utils.nextScheduledDataUpdateMillis
 import com.loohp.hkbuseta.utils.HongKongTimeSource
 import com.loohp.hkbuseta.utils.isEqualTo
+import com.loohp.hkbuseta.utils.sp
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import java.util.concurrent.Executors
@@ -86,7 +88,8 @@ object AndroidShared {
     fun MainTime() {
         TimeText(
             modifier = Modifier.fillMaxWidth(),
-            timeSource = HongKongTimeSource(TimeTextDefaults.timeFormat())
+            timeSource = HongKongTimeSource(TimeTextDefaults.timeFormat()),
+            timeTextStyle = TimeTextDefaults.timeTextStyle().merge(fontSize = 15.dp.sp)
         )
     }
 
