@@ -20,6 +20,7 @@
 package com.loohp.hkbuseta.utils
 
 import android.content.Intent
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -33,4 +34,16 @@ fun ComponentActivity.startActivity(intent: Intent, callback: (ActivityResult) -
         callback.invoke(it)
         ref?.unregister()
     }.apply { ref = this }.launch(intent)
+}
+
+fun Bundle.optString(key: String): String? {
+    return get(key)?.toString()
+}
+
+fun Bundle.optInt(key: String): Int? {
+    return get(key)?.toString()?.toIntOrNull()
+}
+
+fun Bundle.optBoolean(key: String): Boolean? {
+    return get(key)?.toString()?.toBooleanStrictOrNull()
 }

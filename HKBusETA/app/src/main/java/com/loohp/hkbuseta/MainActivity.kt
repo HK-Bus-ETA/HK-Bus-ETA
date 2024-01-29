@@ -36,6 +36,9 @@ import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.tiles.EtaTileServiceCommon
 import com.loohp.hkbuseta.utils.asImmutableState
+import com.loohp.hkbuseta.utils.optBoolean
+import com.loohp.hkbuseta.utils.optInt
+import com.loohp.hkbuseta.utils.optString
 
 
 @Stable
@@ -64,15 +67,15 @@ class MainActivity : ComponentActivity() {
         val listStopShowEta = intent.extras?.getBoolean("showEta")
         val listStopIsAlightReminder = intent.extras?.getBoolean("isAlightReminder")
 
-        val queryKey = intent.extras?.getString("k")
-        val queryRouteNumber = intent.extras?.getString("r")
-        val queryBound = intent.extras?.getString("b")
-        val queryCo = intent.extras?.getString("c")?.operator
-        val queryDest = intent.extras?.getString("d")
-        val queryGMBRegion = intent.extras?.getString("g")?.gmbRegion
-        val queryStop = intent.extras?.getString("s")
-        val queryStopIndex = intent.extras?.getInt("si")?: 0
-        val queryStopDirectLaunch = intent.extras?.getBoolean("sd", false)?: false
+        val queryKey = intent.extras?.optString("k")
+        val queryRouteNumber = intent.extras?.optString("r")
+        val queryBound = intent.extras?.optString("b")
+        val queryCo = intent.extras?.optString("c")?.operator
+        val queryDest = intent.extras?.optString("d")
+        val queryGMBRegion = intent.extras?.optString("g")?.gmbRegion
+        val queryStop = intent.extras?.optString("s")
+        val queryStopIndex = intent.extras?.optInt("si")?: 0
+        val queryStopDirectLaunch = intent.extras?.optBoolean("sd") == true
 
         setContent {
             MainLoading(appContext, stopId, co, index, stop.asImmutableState(), route.asImmutableState(), listStopRoute.asImmutableState(), listStopScrollToStop, listStopShowEta, listStopIsAlightReminder, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch)

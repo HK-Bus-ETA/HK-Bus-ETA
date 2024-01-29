@@ -33,12 +33,7 @@ import com.loohp.hkbuseta.utils.RemoteActivityUtils.Companion.dataToPhone
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.longOrNull
 
 class WearDataLayerListenerService : WearableListenerService() {
 
@@ -58,14 +53,7 @@ class WearDataLayerListenerService : WearableListenerService() {
                     val intent = Intent(this, MainActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     for ((key, value) in data) {
-                        value.jsonPrimitive.apply {
-                            booleanOrNull?.apply { intent.putExtra(key, this) }?:
-                            intOrNull?.apply { intent.putExtra(key, this) }?:
-                            longOrNull?.apply { intent.putExtra(key, this) }?:
-                            floatOrNull?.apply { intent.putExtra(key, this) }?:
-                            doubleOrNull?.apply { intent.putExtra(key, this) }?:
-                            intent.putExtra(key, content)
-                        }
+                        intent.putExtra(key, value.jsonPrimitive.content)
                     }
                     Firebase.analytics.logEvent("remote_launch", Bundle().apply {
                         putString("value", "1")
