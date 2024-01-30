@@ -85,10 +85,10 @@ struct SearchView: AppScreenView {
     }
     
     func KeyboardKey(content: Character) -> some View {
-        KeyboardKey(content: content, longContent: content)
+        KeyboardKey(content: content, longContent: nil)
     }
     
-    func KeyboardKey(content: Character, longContent: Character) -> some View {
+    func KeyboardKey(content: Character, longContent: Character?) -> some View {
         let enabled: Bool
         switch content {
         case "/":
@@ -98,10 +98,11 @@ struct SearchView: AppScreenView {
         default:
             enabled = !state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty
         }
+        let isLookupButton = content == "<" && hasHistory && (state.text.isEmpty || state.text == defaultText())
         return Button(action: {}) {
             switch content {
             case "<":
-                if hasHistory && state.text.isEmpty || state.text == defaultText() {
+                if isLookupButton {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 17.scaled(appContext, true)))
                         .foregroundColor(colorInt(0xFF03A9F4).asColor())
@@ -130,8 +131,10 @@ struct SearchView: AppScreenView {
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in
-                    playHaptics()
-                    handleInput(input: longContent)
+                    if longContent != nil && !isLookupButton {
+                        playHaptics()
+                        handleInput(input: longContent!)
+                    }
                 }
         )
         .highPriorityGesture(
