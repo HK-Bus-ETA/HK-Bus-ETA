@@ -76,7 +76,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.loohp.hkbuseta"
+    namespace = "com.loohp.hkbuseta.common"
     compileSdk = 34
     defaultConfig {
         minSdk = 30

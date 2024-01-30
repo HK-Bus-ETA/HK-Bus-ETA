@@ -125,7 +125,6 @@ import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.scaledSize
-import com.loohp.hkbuseta.utils.sp
 import com.loohp.hkbuseta.utils.spToDp
 import com.loohp.hkbuseta.utils.spToPixels
 import kotlinx.collections.immutable.ImmutableList
@@ -511,13 +510,16 @@ fun TerminateAlightReminderButton(instance: AppActiveContext) {
                         contentDescription = if (Shared.language == "en") "Disable Reminder" else "關閉落車提示"
                     )
                 }
-                Text(
+                AutoResizeText(
                     modifier = Modifier
                         .padding(0.dp, 0.dp, 5.dp, 0.dp)
                         .fillMaxWidth(),
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colors.primary,
-                    fontSize = 14F.scaledSize(instance).sp,
+                    fontWeight = FontWeight.Bold,
+                    fontSizeRange = FontSizeRange(
+                        max = 14F.scaledSize(instance).sp
+                    ),
                     text = if (Shared.language == "en") "Disable Reminder" else "關閉落車提示"
                 )
             }
