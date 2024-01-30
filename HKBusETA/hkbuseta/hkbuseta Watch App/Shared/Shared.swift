@@ -145,6 +145,10 @@ extension View {
         self.font(.system(size: maxSize, weight: weight)).minimumScaleFactor(minSize / maxSize)
     }
     
+    func frame(fixedSize: CGFloat) -> some View {
+        self.frame(width: fixedSize, height: fixedSize)
+    }
+    
 }
 
 extension Int {

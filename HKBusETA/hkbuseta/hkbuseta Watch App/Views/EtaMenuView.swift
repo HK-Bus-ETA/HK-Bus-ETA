@@ -49,7 +49,7 @@ struct EtaMenuView: AppScreenView {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 VStack(alignment: .center, spacing: 1.scaled(appContext)) {
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                     VStack(alignment: .center) {
                         Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
                             .multilineTextAlignment(.center)
@@ -68,20 +68,20 @@ struct EtaMenuView: AppScreenView {
                             .lineLimit(1)
                             .autoResizing(maxSize: 12.scaled(appContext, true))
                     }
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                     Text(Shared().language == "en" ? "More Info & Actions" : "更多資訊及功能")
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(1)
                         .autoResizing(maxSize: 14.scaled(appContext, true))
-                    Spacer(minLength: 5.scaled(appContext))
+                    Spacer().frame(fixedSize: 5.scaled(appContext))
                     if stop.kmbBbiId != nil {
                         KmbBbiButton(kmbBbiId: stop.kmbBbiId!)
                     }
-                    Spacer(minLength: 5.scaled(appContext))
+                    Spacer().frame(fixedSize: 5.scaled(appContext))
                     SearchNearbyButton()
-                    Spacer(minLength: 5.scaled(appContext))
+                    Spacer().frame(fixedSize: 5.scaled(appContext))
                     OpenOnMapsButton(stopName: stop.name, lat: stop.location.lat, lng: stop.location.lng)
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                     Text(Shared().language == "en" ? "Set Favourite Routes" : "設置最喜愛路線")
                         .font(.system(size: 14.scaled(appContext, true)))
                         .foregroundColor(.white)
@@ -103,7 +103,7 @@ struct EtaMenuView: AppScreenView {
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                     Button(action: {
                         let target = (1...30).first {
                             let favState = getFavState(favoriteIndex: $0, stopId: stopId, co: co, index: index, stop: stop, route: route)
@@ -120,10 +120,10 @@ struct EtaMenuView: AppScreenView {
                     }
                     .frame(width: 50.scaled(appContext), height: 30.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                     ForEach(1..<(Int(truncating: maxFavItems.state) + 1), id: \.self) { index in
                         FavButton(favIndex: index).id(index)
-                        Spacer(minLength: 5.scaled(appContext))
+                        Spacer().frame(fixedSize: 5.scaled(appContext))
                     }
                 }
             }

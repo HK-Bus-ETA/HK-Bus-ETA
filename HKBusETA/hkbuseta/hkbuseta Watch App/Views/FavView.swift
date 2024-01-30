@@ -44,7 +44,7 @@ struct FavView: AppScreenView {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 LazyVStack(alignment: .center, spacing: 1.scaled(appContext)) {
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                     Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
                         .multilineTextAlignment(.center)
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
@@ -56,7 +56,7 @@ struct FavView: AppScreenView {
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                     if showRouteListViewButton {
                         Button(action: {
                             let data = newAppDataConatiner()
@@ -70,11 +70,11 @@ struct FavView: AppScreenView {
                         .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
                         .clipShape(RoundedRectangle(cornerRadius: 25))
                         .edgesIgnoringSafeArea(.all)
-                        Spacer(minLength: 10.scaled(appContext))
+                        Spacer().frame(fixedSize: 10.scaled(appContext))
                     }
                     ForEach(1...Int(truncating: maxFavItems.state), id: \.self) { index in
                         FavButton(favIndex: index).id(index)
-                        Spacer(minLength: 5.scaled(appContext))
+                        Spacer().frame(fixedSize: 5.scaled(appContext))
                     }
                 }
             }
@@ -233,7 +233,7 @@ struct FavView: AppScreenView {
                             )
                             .foregroundColor(.white)
                             .lineLimit(1)
-                            Spacer(minLength: 3.scaled(appContext))
+                            Spacer().frame(fixedSize: 3.scaled(appContext))
                             MarqueeText(
                                 text: subText,
                                 font: UIFont.systemFont(ofSize: 14.scaled(appContext, true)),

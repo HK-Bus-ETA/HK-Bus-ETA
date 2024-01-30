@@ -100,7 +100,7 @@ struct ListStopsView: AppScreenView {
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
                     let coColor = operatorColor(co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                     VStack(alignment: .center, spacing: 2.scaled(appContext)) {
                         Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
                             .foregroundColor(coColor.adjustBrightness(percentage: ambientMode ? 0.7 : 1))

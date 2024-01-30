@@ -27,10 +27,10 @@ struct EtaTileListView: AppScreenView {
     var body: some View {
         ScrollView(.vertical) {
             LazyVStack(alignment: .center) {
-                Spacer(minLength: 20.scaled(appContext))
+                Spacer().frame(fixedSize: 20.scaled(appContext))
                 ForEach(etaTileIds, id: \.self) { id in
                     EtaTileView(appContext: appContext, origin: _origin, tileId: id, etaTimer: etaTimer)
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                 }
                 if etaTileIds.count < 15 {
                     Button(action: {}) {
@@ -147,7 +147,7 @@ struct EtaTileView: View {
                     .foregroundColor(color)
                     .animation(.linear(duration: 1.0), value: color)
                 VStack(alignment: .leading, spacing: 0) {
-                    Spacer(minLength: 2.scaled(appContext))
+                    Spacer().frame(fixedSize: 2.scaled(appContext))
                     Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
                         .multilineTextAlignment(.leading)
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
@@ -181,16 +181,16 @@ struct EtaTileView: View {
                                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.eta, data))
                                 }
                         )
-                    Spacer(minLength: 2.scaled(appContext))
+                    Spacer().frame(fixedSize: 2.scaled(appContext))
                     ETALine(lines: eta, seq: 1, mainResolvedStop: mainResolvedStop)
                     ETALine(lines: eta, seq: 2, mainResolvedStop: mainResolvedStop)
                     ETALine(lines: eta, seq: 3, mainResolvedStop: mainResolvedStop)
-                    Spacer(minLength: 2.scaled(appContext))
+                    Spacer().frame(fixedSize: 2.scaled(appContext))
                     Text((Shared().language == "en" ? "Updated: " : "更新時間: ") + appContext.formatTime(localDateTime: lastUpdated))
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(1)
                         .autoResizing(maxSize: 12.scaled(appContext, true))
-                    Spacer(minLength: 2.scaled(appContext))
+                    Spacer().frame(fixedSize: 2.scaled(appContext))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }

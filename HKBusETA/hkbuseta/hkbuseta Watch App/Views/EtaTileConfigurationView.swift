@@ -35,13 +35,13 @@ struct EtaTileConfigurationView: AppScreenView {
             ScrollViewReader { value in
                 ScrollView(.vertical) {
                     VStack(alignment: .center, spacing: 1.scaled(appContext)) {
-                        Spacer(minLength: 10.scaled(appContext))
+                        Spacer().frame(fixedSize: 10.scaled(appContext))
                         Text(Shared().language == "en" ? "Select Routes" : "請選擇路線")
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
                             .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
-                        Spacer(minLength: 5.scaled(appContext))
+                        Spacer().frame(fixedSize: 5.scaled(appContext))
                         Text(Shared().language == "en" ? "Selected Favourite Routes will display in the Tile" : "所選最喜愛路線將顯示在資訊方塊中")
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
@@ -52,7 +52,7 @@ struct EtaTileConfigurationView: AppScreenView {
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
                             .autoResizing(maxSize: 12.scaled(appContext, true))
-                        Spacer(minLength: 10.scaled(appContext))
+                        Spacer().frame(fixedSize: 10.scaled(appContext))
                         if Shared().favoriteRouteStops.isEmpty {
                             Text(Shared().language == "en" ? "No favourite routes" : "沒有最喜愛路線")
                                 .multilineTextAlignment(.center)
@@ -63,11 +63,11 @@ struct EtaTileConfigurationView: AppScreenView {
                             ForEach(1..<(Int(truncating: maxFavItems.state) + 1), id: \.self) { index in
                                 if Shared().favoriteRouteStops[index.asKt()] != nil {
                                     SelectButton(favIndex: index)
-                                    Spacer(minLength: 5.scaled(appContext))
+                                    Spacer().frame(fixedSize: 5.scaled(appContext))
                                 }
                             }
                         }
-                        Spacer(minLength: 60.scaled(appContext))
+                        Spacer().frame(fixedSize: 60.scaled(appContext))
                     }
                 }
             }
@@ -222,7 +222,7 @@ struct EtaTileConfigurationView: AppScreenView {
                             )
                             .foregroundColor(.white.adjustBrightness(percentage: enabled ? 1.0 : 0.5))
                             .lineLimit(1)
-                            Spacer(minLength: 3.scaled(appContext))
+                            Spacer().frame(fixedSize: 3.scaled(appContext))
                             MarqueeText(
                                 text: subText,
                                 font: UIFont.systemFont(ofSize: 14.scaled(appContext, true)),

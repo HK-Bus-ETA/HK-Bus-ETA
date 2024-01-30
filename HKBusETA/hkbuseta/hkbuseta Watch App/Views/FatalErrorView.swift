@@ -32,7 +32,7 @@ struct FatalErrorView: AppScreenView {
                 .multilineTextAlignment(.center)
                 .font(.system(size: 16.scaled(appContext, true), weight: .bold))
             if zh == nil && en == nil {
-                Spacer(minLength: 2)
+                Spacer().frame(fixedSize: 2.scaled(appContext))
                 Text("巴士路線資料可能不完整\n點選重新載入刷新")
                     .multilineTextAlignment(.center)
                     .font(.system(size: 12.scaled(appContext, true)))
@@ -40,7 +40,7 @@ struct FatalErrorView: AppScreenView {
                     .multilineTextAlignment(.center)
                     .font(.system(size: 11.scaled(appContext, true)))
             }
-            Spacer(minLength: 10)
+            Spacer().frame(fixedSize: 10.scaled(appContext))
             Button(action: {
                 Shared().invalidateCache(context: appContext)
                 let intent = newAppIntent(appContext, AppScreen.main)

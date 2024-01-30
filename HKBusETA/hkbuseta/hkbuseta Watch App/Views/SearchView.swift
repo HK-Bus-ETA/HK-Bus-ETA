@@ -30,7 +30,7 @@ struct SearchView: AppScreenView {
     }
     
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             Text(Shared().getMtrLineName(lineName: state.text))
                 .font(.system(size: 22.scaled(appContext, true)))
                 .frame(width: 150.0.scaled(appContext), height: 40.0.scaled(appContext))
@@ -40,37 +40,40 @@ struct SearchView: AppScreenView {
                         .stroke(colorInt(0xFF252525).asColor(), lineWidth: 4.scaled(appContext))
                 )
                 .padding()
-            HStack {
-                VStack {
+            HStack(spacing: 0) {
+                VStack(spacing: 0) {
                     KeyboardKey(content: "1")
                     KeyboardKey(content: "4")
                     KeyboardKey(content: "7")
                     KeyboardKey(content: "<", longContent: "-")
                 }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
-                VStack {
+                VStack(spacing: 0) {
                     KeyboardKey(content: "2")
                     KeyboardKey(content: "5")
                     KeyboardKey(content: "8")
                     KeyboardKey(content: "0")
                 }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
-                VStack {
+                VStack(spacing: 0) {
                     KeyboardKey(content: "3")
                     KeyboardKey(content: "6")
                     KeyboardKey(content: "9")
                     KeyboardKey(content: "/")
                 }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
+                Spacer().frame(fixedSize: 7.5.scaled(appContext))
                 ScrollView(.vertical) {
-                    let currentText = state.text
-                    if currentText.isEmpty || currentText == defaultText() {
-                        KeyboardKey(content: "!")
-                    }
-                    ForEach(65..<91) { codePoint in
-                        let alphabet = Character(UnicodeScalar(codePoint)!)
-                        if (!state.nextCharResult.characters.filter { $0.description == alphabet.description }.isEmpty) {
-                            KeyboardKey(content: alphabet)
+                    VStack(spacing: 0) {
+                        let currentText = state.text
+                        if currentText.isEmpty || currentText == defaultText() {
+                            KeyboardKey(content: "!")
                         }
-                    }
-                }.frame(width: 35.scaled(appContext), height: 155.scaled(appContext))
+                        ForEach(65..<91) { codePoint in
+                            let alphabet = Character(UnicodeScalar(codePoint)!)
+                            if (!state.nextCharResult.characters.filter { $0.description == alphabet.description }.isEmpty) {
+                                KeyboardKey(content: alphabet)
+                            }
+                        }
+                    }.frame(width: 35.scaled(appContext))
+                }.frame(height: 155.scaled(appContext))
             }
         }
         .onAppear {
@@ -122,7 +125,7 @@ struct SearchView: AppScreenView {
                     .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : colorInt(0xFF444444).asColor())
             }
         }
-        .frame(width: 35.0.scaled(appContext), height: (content.isLetter || content == "!" ? 30.0 : 35.0).scaled(appContext))
+        .frame(width: 35.scaled(appContext), height: (content.isLetter || content == "!" ? 35 : 40).scaled(appContext))
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(
             LongPressGesture()

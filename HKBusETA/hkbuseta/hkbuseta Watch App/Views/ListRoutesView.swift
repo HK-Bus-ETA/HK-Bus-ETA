@@ -113,7 +113,7 @@ struct ListRoutesView: AppScreenView {
         ScrollViewReader { value in
             ScrollView(.vertical) {
                 LazyVStack {
-                    Spacer(minLength: 10.scaled(appContext))
+                    Spacer().frame(fixedSize: 10.scaled(appContext))
                     if !ambientMode {
                         if recentSort == RecentSortMode.forced {
                             Button(action: {
@@ -220,7 +220,7 @@ struct ListRoutesView: AppScreenView {
         }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
                 Text(routeNumber)
-                    .frame(width: altSize ? 67.5.scaled(appContext, true) : 50.scaled(appContext, true), alignment: .leading)
+                    .frame(width: altSize ? 67.5.scaled(appContext, true) : 51.scaled(appContext, true), alignment: .leading)
                     .font(.system(size: altSize ? 18.scaled(appContext, true) : 21.scaled(appContext, true)))
                     .foregroundColor(color)
                 if secondLine.isEmpty {

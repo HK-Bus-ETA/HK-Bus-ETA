@@ -258,7 +258,7 @@ class AppActiveContextWatchOS internal constructor(
 
     }
 
-    private val id = uuid4()
+    val activeContextId = uuid4()
     internal var result: AppIntentResult = AppIntentResult.NORMAL
 
     override fun runOnUiThread(runnable: () -> Unit) {
@@ -315,11 +315,11 @@ class AppActiveContextWatchOS internal constructor(
         if (this === other) return true
         if (other !is AppActiveContextWatchOS) return false
 
-        return id == other.id
+        return activeContextId == other.activeContextId
     }
 
     override fun hashCode(): Int {
-        return id.hashCode()
+        return activeContextId.hashCode()
     }
 
 }

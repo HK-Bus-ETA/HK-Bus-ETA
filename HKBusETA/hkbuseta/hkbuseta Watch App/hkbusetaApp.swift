@@ -147,9 +147,16 @@ func BackButton(_ appContext: AppContext, scrollingScreen: Bool) -> some View {
                 .font(.system(size: 17.scaled(appContext, true), weight: .bold))
                 .foregroundColor(.white)
         }
-        .frame(width: 40.scaled(appContext), height: 40.scaled(appContext))
+        .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
+        .contentShape(Rectangle())
         .buttonStyle(PlainButtonStyle())
         .position(x: 23.scaled(appContext), y: 23.scaled(appContext))
+        .highPriorityGesture(
+            TapGesture()
+                .onEnded { _ in
+                    HistoryStack().popHistoryStack()
+                }
+        )
     }
     .background(alignment: .top) {
         if scrollingScreen {

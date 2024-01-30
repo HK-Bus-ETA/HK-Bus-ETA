@@ -51,6 +51,7 @@ struct EtaView: AppScreenView {
     
     var body: some View {
         VStack(alignment: .center, spacing: 3.scaled(appContext)) {
+            Spacer().frame(fixedSize: 3.scaled(appContext))
             Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
                 .multilineTextAlignment(.center)
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
@@ -61,13 +62,13 @@ struct EtaView: AppScreenView {
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(1)
                 .autoResizing(maxSize: 12.scaled(appContext, true))
-            Spacer(minLength: 7.scaled(appContext))
+            Spacer().frame(fixedSize: 3.scaled(appContext))
             ETALine(lines: eta, seq: 1)
             ETALine(lines: eta, seq: 2)
             ETALine(lines: eta, seq: 3)
-            Spacer(minLength: 7.scaled(appContext))
+            Spacer().frame(fixedSize: 3.scaled(appContext))
             if ambientMode {
-                Spacer(minLength: 25.scaled(appContext))
+                Spacer().frame(fixedSize: 25.scaled(appContext))
             } else {
                 HStack(alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/, spacing: 3.scaled(appContext)) {
                     Button(action: {
@@ -180,6 +181,7 @@ struct EtaView: AppScreenView {
         )
         .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: lines == nil || (ambientMode && seq > 1) ? 0.7 : 1))
         .lineLimit(1)
+        .frame(minHeight: baseSize.scaled(appContext, true))
     }
 
 }
