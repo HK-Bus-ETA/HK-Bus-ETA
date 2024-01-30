@@ -21,7 +21,6 @@ In addition, it also supports **English**.<br>
 - [New Lantao Bus Co. (1973) Ltd 新大嶼山巴士(一九七三)有限公司](https://www.nlb.com.hk/)
 - [MTR Corporation Limited 香港鐵路有限公司](https://www.mtr.com.hk/)
 - [HK Bus Crawling@2021](https://github.com/hkbus/hk-bus-crawling)
-- [HK Bus Crawling@2021 (Fork)](https://github.com/LOOHP/hk-bus-crawling)
 
 ## Domain Data Repositories 網域資訊儲存庫
 - [wear.hkbus.app](https://github.com/hkbus/wear.hkbus.app)
