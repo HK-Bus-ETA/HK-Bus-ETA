@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +59,8 @@ import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.toJsonArray
+import com.loohp.hkbuseta.compose.AutoResizeText
+import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.shared.AndroidShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.clamp
@@ -133,11 +136,14 @@ fun WaitingElement(state: MutableState<Boolean>, instance: AppActiveContext) {
             ),
             enabled = enableSkip,
             content = {
-                Text(
+                AutoResizeText(
                     modifier = Modifier.fillMaxWidth(0.9F),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.primary,
-                    fontSize = 12F.scaledSize(instance).sp.clamp(max = 12.dp),
+                    fontWeight = FontWeight.Bold,
+                    fontSizeRange = FontSizeRange(
+                        max = 12F.scaledSize(instance).sp.clamp(max = 12.dp)
+                    ),
                     text = if (Shared.language == "en") "Skip sort by distance" else "略過按距離排序"
                 )
             }

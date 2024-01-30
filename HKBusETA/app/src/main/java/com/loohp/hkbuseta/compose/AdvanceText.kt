@@ -109,7 +109,7 @@ fun AutoResizeText(
 }
 
 data class FontSizeRange(
-    val min: TextUnit,
+    val min: TextUnit = 1.sp,
     val max: TextUnit,
     val step: TextUnit = DEFAULT_TEXT_STEP,
     val resetToMaxIfTextUpdated: Boolean = true

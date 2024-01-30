@@ -463,7 +463,6 @@ fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double
         maxLines = 2,
         fontWeight = FontWeight.Bold,
         fontSizeRange = FontSizeRange(
-            min = 1F.scaledSize(instance).dp.sp,
             max = 17F.scaledSize(instance).sp
         )
     )
@@ -487,7 +486,6 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
         text = name,
         maxLines = 1,
         fontSizeRange = FontSizeRange(
-            min = 1F.scaledSize(instance).dp.sp,
             max = 11F.scaledSize(instance).sp
         )
     )

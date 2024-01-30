@@ -544,7 +544,6 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
             fontSizeRange = FontSizeRange(
-                min = 1F.scaledSize(instance).dp.sp,
                 max = 17F.scaledSize(instance).sp
             ),
             lineHeight = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp),
@@ -558,7 +557,6 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
                 .padding(10.dp, 0.dp),
             textAlign = TextAlign.Center,
             fontSizeRange = FontSizeRange(
-                min = 1F.scaledSize(instance).dp.sp,
                 max = 11F.scaledSize(instance).sp
             ),
             color = Color(0xFFFFFFFF).adjustBrightness(if (ambientMode) 0.7F else 1F),
@@ -572,7 +570,6 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
                     .fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 fontSizeRange = FontSizeRange(
-                    min = 1F.scaledSize(instance).dp.sp,
                     max = 11F.scaledSize(instance).sp
                 ),
                 color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),
@@ -591,7 +588,6 @@ fun HeaderElement(ambientMode: Boolean, routeNumber: String, kmbCtbJoint: Boolea
                     .fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 fontSizeRange = FontSizeRange(
-                    min = 1F.scaledSize(instance).dp.sp,
                     max = 11F.scaledSize(instance).sp
                 ),
                 color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),

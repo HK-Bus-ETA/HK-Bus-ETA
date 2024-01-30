@@ -614,7 +614,6 @@ fun Title(index: Int, stopName: BilingualText, stopRemark: BilingualText?, route
         maxLines = 2,
         fontWeight = FontWeight.Bold,
         fontSizeRange = FontSizeRange(
-            min = 1F.scaledSize(instance).dp.sp,
             max = 17F.scaledSize(instance).sp
         )
     )
@@ -628,7 +627,6 @@ fun Title(index: Int, stopName: BilingualText, stopRemark: BilingualText?, route
             text = stopRemark[Shared.language],
             maxLines = 1,
             fontSizeRange = FontSizeRange(
-                min = 1F.scaledSize(instance).dp.sp,
                 max = 12F.scaledSize(instance).sp
             )
         )
@@ -647,7 +645,6 @@ fun SubTitle(destName: BilingualText, routeNumber: String, co: Operator, instanc
         text = name,
         maxLines = 1,
         fontSizeRange = FontSizeRange(
-            min = 1F.scaledSize(instance).dp.sp,
             max = 11F.scaledSize(instance).sp
         )
     )
