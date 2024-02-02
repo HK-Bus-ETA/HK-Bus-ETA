@@ -15,6 +15,8 @@ KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
 
 DATA_SHEET_FILE_NAME = "data.json"
 DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
+DATA_SHEET_FULL_FILE_NAME = "data_full.json"
+DATA_SHEET_FULL_FORMATTED_FILE_NAME = "data_full_formatted.json"
 CHECKSUM_FILE_NAME = "checksum.md5"
 LAST_UPDATED_FILE = "last_updated.txt"
 
@@ -192,6 +194,15 @@ def download_and_process_gmb_route():
             BUS_ROUTE.add(route)
 
 
+def clean_data_sheet(data):
+    route_list = data["routeList"]
+    route_keys = list(route_list.keys())
+    for key in route_keys:
+        route_data = route_list[key]
+        del route_data["jt"]
+        del route_data["seq"]
+
+
 def strip_data_sheet(data):
     route_list = data["routeList"]
     route_keys = list(route_list.keys())
@@ -200,8 +211,6 @@ def strip_data_sheet(data):
         del route_data["fares"]
         del route_data["faresHoliday"]
         del route_data["freq"]
-        del route_data["jt"]
-        del route_data["seq"]
     if "serviceDayMap" in data:
         del data["serviceDayMap"]
 
@@ -212,7 +221,7 @@ def download_and_process_data_sheet():
     url = "https://data.hkbus.app/routeFareList.min.json"
     response = requests.get(url)
     DATA_SHEET = response.json()
-    strip_data_sheet(DATA_SHEET)
+    clean_data_sheet(DATA_SHEET)
 
     DATA_SHEET["stopList"]["AC1FD9BDD09D1DD6"]["remark"] = {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}
     DATA_SHEET["stopList"]["20001477"]["remark"] = {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}
@@ -563,6 +572,14 @@ output = {
     "busRoute": sorted(BUS_ROUTE),
     "kmbSubsidiary": {key: sorted(value) for key, value in KMB_SUBSIDIARY_ROUTES.items()}
 }
+
+with open(DATA_SHEET_FULL_FILE_NAME, "w", encoding="utf-8") as f:
+    json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
+
+with open(DATA_SHEET_FULL_FORMATTED_FILE_NAME, "w", encoding="utf-8") as f:
+    json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'), indent=4)
+
+strip_data_sheet(DATA_SHEET)
 
 with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
