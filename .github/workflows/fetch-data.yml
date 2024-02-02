@@ -26,13 +26,19 @@ jobs:
         run: |
           python ./main.py
       - name: Update MD5
-        run: md5sum data.json | cut -f1 -d ' ' | tr -d $'\n' > checksum.md5
+        run: md5sum data_full.json | cut -f1 -d ' ' | tr -d $'\n' > checksum.md5
       - name: Update Data Length
-        run: du -sb data.json | cut -f -1 > size.dat
+        run: |
+          du -sb data.json | cut -f -1 > size.dat
+          du -sb data_full.json | cut -f -1 > size_full.dat
       - name: GZip Data
-        run: gzip -k -f -9 data.json
+        run: |
+          gzip -k -f -9 data.json
+          gzip -k -f -9 data_full.json
       - name: Update GZip Data Length
-        run: du -sb data.json.gz | cut -f -1 > size.gz.dat
+        run: |
+          du -sb data.json.gz | cut -f -1 > size.gz.dat
+          du -sb data_full.json.gz | cut -f -1 > size_full.gz.dat
       - name: Update resources
         uses: test-room-7/action-update-file@v1
         with:
@@ -45,6 +51,9 @@ jobs:
               size.dat
               data.json.gz
               size.gz.dat
+              size_full.dat
+              data_full.json.gz
+              size_full.gz.dat
               last_updated.txt
             commit-msg: Update resources
             github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -60,6 +69,9 @@ jobs:
           mv size.dat data/
           mv data.json.gz data/
           mv size.gz.dat data/
+          mv size_full.dat data/
+          mv data_full.json.gz data/
+          mv size_full.gz.dat data/
           mv last_updated.txt data/
       - name: Push to wear.hkbus.app
         uses: cpina/github-action-push-to-another-repository@main
