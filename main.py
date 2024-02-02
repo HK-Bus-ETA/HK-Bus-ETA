@@ -199,8 +199,10 @@ def clean_data_sheet(data):
     route_keys = list(route_list.keys())
     for key in route_keys:
         route_data = route_list[key]
-        del route_data["jt"]
-        del route_data["seq"]
+        if "jt" in route_data:
+            del route_data["jt"]
+        if "seq" in route_data:
+            del route_data["seq"]
 
 
 def strip_data_sheet(data):
@@ -208,9 +210,12 @@ def strip_data_sheet(data):
     route_keys = list(route_list.keys())
     for key in route_keys:
         route_data = route_list[key]
-        del route_data["fares"]
-        del route_data["faresHoliday"]
-        del route_data["freq"]
+        if "fares" in route_data:
+            del route_data["fares"]
+        if "faresHoliday" in route_data:
+            del route_data["faresHoliday"]
+        if "freq" in route_data:
+            del route_data["freq"]
     if "serviceDayMap" in data:
         del data["serviceDayMap"]
 
