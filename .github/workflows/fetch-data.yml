@@ -39,6 +39,8 @@ jobs:
             file-path: |
               data.json
               data_formatted.json
+              data_full.json
+              data_full_formatted.json
               checksum.md5
               size.dat
               data.json.gz
@@ -52,6 +54,8 @@ jobs:
           mkdir data
           mv data.json data/
           mv data_formatted.json data/
+          mv data_full.json data/
+          mv data_full_formatted.json data/
           mv checksum.md5 data/
           mv size.dat data/
           mv data.json.gz data/
