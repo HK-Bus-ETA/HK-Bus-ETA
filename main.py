@@ -199,8 +199,6 @@ def clean_data_sheet(data):
     route_keys = list(route_list.keys())
     for key in route_keys:
         route_data = route_list[key]
-        if "jt" in route_data:
-            del route_data["jt"]
         if "seq" in route_data:
             del route_data["seq"]
 
