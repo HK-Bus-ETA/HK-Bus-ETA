@@ -34,3 +34,5 @@ GoogleService-Info.plist
 *.hprof
 .DS_Store
 *.xcuserstate
+
+*/secrets.*
