@@ -29,7 +29,8 @@ RECAPITALIZE_KEYWORDS = [
     "SL",
     "apm",
     "II",
-    "GTC"
+    "GTC",
+    "HK"
 ]
 
 SUN_BUS_ROUTES = {"331", "331S", "917", "918", "945"}
