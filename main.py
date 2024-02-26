@@ -623,12 +623,12 @@ def download_and_process_mtr_data():
                 }
     barrier_free_details = get_web_text("https://opendata.mtr.com.hk/data/barrier_free_facility_category.csv").splitlines()[1:]
     for line in barrier_free_details:
-        row = line.split(",")
+        row = line.replace("&#32171;", "綫").split(",")
         code = row[0].strip('"')
         category = row[1].strip('"')
         MTR_BARRIER_FREE_MAPPING["categories"][category] = {
             "name": {
-                "zh": row[3].strip('"').replace("&#32171;", "綫"),
+                "zh": row[3].strip('"'),
                 "en": row[2].strip('"')
             }
         }
