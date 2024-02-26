@@ -12,6 +12,9 @@ BUS_ROUTE = set()
 MTR_BUS_STOP_ALIAS = {}
 DATA_SHEET = {}
 KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
+MTR_DATA = {}
+MTR_BARRIER_FREE_MAPPING = {}
+LRT_DATA = {}
 
 DATA_SHEET_FILE_NAME = "data.json"
 DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
@@ -552,6 +555,114 @@ def list_kmb_subsidiary_routes():
                 KMB_SUBSIDIARY_ROUTES["LWB"].add(route_number)
 
 
+def download_and_process_mtr_data():
+    global MTR_DATA
+    global MTR_BARRIER_FREE_MAPPING
+    global LRT_DATA
+    MTR_BARRIER_FREE_MAPPING["categories"] = {}
+    MTR_BARRIER_FREE_MAPPING["items"] = {}
+    all_mtr_stations = get_web_text("https://opendata.mtr.com.hk/data/mtr_lines_and_stations.csv").splitlines()[1:]
+    station_id_to_code = {70: "RAC"}
+    MTR_DATA["RAC"] = {"fares": {}, "barrier_free": {}}
+    for line in all_mtr_stations:
+        try:
+            row = line.split(",")
+            station_id = int(row[3].strip('"'))
+            station_code = row[2].strip('"')
+            station_id_to_code[station_id] = station_code
+            MTR_DATA[station_code] = {
+                "fares": {},
+                "barrier_free": {}
+            }
+        except ValueError:
+            pass
+    mtr_fares = get_web_text("https://opendata.mtr.com.hk/data/mtr_lines_fares.csv").splitlines()[1:]
+    for line in mtr_fares:
+        row = line.split(",")
+        src_station = station_id_to_code[int(row[1].strip('"'))]
+        dst_station = station_id_to_code[int(row[3].strip('"'))]
+        if src_station != dst_station:
+            MTR_DATA[src_station]["fares"][dst_station] = {
+                "octo_adult": float(row[4].strip('"')),
+                "octo_student": float(row[5].strip('"')),
+                "octo_joyyou_sixty": float(row[6].strip('"')),
+                "single_adult": float(row[7].strip('"')),
+                "octo_child": float(row[8].strip('"')),
+                "octo_elderly": float(row[9].strip('"')),
+                "octo_pwd": float(row[10].strip('"')),
+                "single_child": float(row[11].strip('"')),
+                "single_elderly": float(row[12].strip('"'))
+            }
+    airport_express_fares = get_web_text("https://opendata.mtr.com.hk/data/airport_express_fares.csv").splitlines()[1:]
+    for line in airport_express_fares:
+        row = line.split(",")
+        src_station = station_id_to_code[int(row[1].strip('"'))]
+        dst_station = station_id_to_code[int(row[3].strip('"'))]
+        if src_station != dst_station:
+            MTR_DATA[src_station]["fares"][dst_station] = {
+                "octo_adult": float(row[4].strip('"')),
+                "octo_child": float(row[5].strip('"')),
+                "single_adult": float(row[6].strip('"')),
+                "single_child": float(row[7].strip('"'))
+            }
+    station_barrier_free_facilities = get_web_text("https://opendata.mtr.com.hk/data/barrier_free_facilities.csv").splitlines()[1:]
+    for line in station_barrier_free_facilities:
+        row = line.split(",")
+        if len(row) > 2 and row[2].strip('"') == "Y":
+            station = station_id_to_code[int(row[0].strip('"'))]
+            facility_key = row[1].strip('"')
+            facility_exit_zh = row[4].strip('"') if 4 < len(row) else ""
+            if facility_exit_zh == "":
+                MTR_DATA[station]["barrier_free"][facility_key] = {}
+            else:
+                MTR_DATA[station]["barrier_free"][facility_key] = {
+                    "location": {
+                        "zh": facility_exit_zh,
+                        "en": row[3].strip('"')
+                    }
+                }
+    barrier_free_details = get_web_text("https://opendata.mtr.com.hk/data/barrier_free_facility_category.csv").splitlines()[1:]
+    for line in barrier_free_details:
+        row = line.split(",")
+        code = row[0].strip('"')
+        category = row[1].strip('"')
+        MTR_BARRIER_FREE_MAPPING["categories"][category] = {
+            "name": {
+                "zh": row[3].strip('"'),
+                "en": row[2].strip('"')
+            }
+        }
+        MTR_BARRIER_FREE_MAPPING["items"][code] = {
+            "name": {
+                "zh": row[5].strip('"'),
+                "en": row[4].strip('"')
+            }
+        }
+    lrt_fares = get_web_text("https://opendata.mtr.com.hk/data/light_rail_fares.csv").splitlines()[1:]
+    for line in lrt_fares:
+        row = line.split(",")
+        src_id = int(row[0].strip('"'))
+        dst_id = int(row[1].strip('"'))
+        if src_id != dst_id:
+            src_station = f"LR{src_id:03}"
+            dst_station = f"LR{dst_id:03}"
+            if src_station not in LRT_DATA:
+                LRT_DATA[src_station] = {
+                    "fares": {}
+                }
+            LRT_DATA[src_station]["fares"][dst_station] = {
+                "octo_adult": float(row[2].strip('"')),
+                "octo_child": float(row[3].strip('"')),
+                "octo_elderly": float(row[4].strip('"')),
+                "octo_pwd": float(row[5].strip('"')),
+                "octo_student": float(row[6].strip('"')),
+                "octo_joyyou_sixty": float(row[7].strip('"')),
+                "single_adult": float(row[8].strip('"')),
+                "single_child": float(row[9].strip('"')),
+                "single_elderly": float(row[10].strip('"'))
+            }
+
+
 print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
 print("Downloading & Processing CTB Routes")
@@ -564,6 +675,8 @@ print("Downloading & Processing Data Sheet")
 download_and_process_data_sheet()
 print("Downloading & Processing MTR-Bus Data")
 download_and_process_mtr_bus_data()
+print("Downloading & Processing MTR & LRT Data")
+download_and_process_mtr_data()
 print("Capitalizing KMB English Names")
 capitalize_kmb_english_names()
 print("Listing KMB Subsidiary Routes")
@@ -575,7 +688,10 @@ output = {
     "dataSheet": DATA_SHEET,
     "mtrBusStopAlias": MTR_BUS_STOP_ALIAS,
     "busRoute": sorted(BUS_ROUTE),
-    "kmbSubsidiary": {key: sorted(value) for key, value in KMB_SUBSIDIARY_ROUTES.items()}
+    "kmbSubsidiary": {key: sorted(value) for key, value in KMB_SUBSIDIARY_ROUTES.items()},
+    "mtrData": MTR_DATA,
+    "mtrBarrierFreeMapping": MTR_BARRIER_FREE_MAPPING,
+    "lrtData": LRT_DATA
 }
 
 with open(DATA_SHEET_FULL_FILE_NAME, "w", encoding="utf-8") as f:
@@ -585,6 +701,9 @@ with open(DATA_SHEET_FULL_FORMATTED_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'), indent=4)
 
 strip_data_sheet(DATA_SHEET)
+del output["mtrData"]
+del output["mtrBarrierFreeMapping"]
+del output["lrtData"]
 
 with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
