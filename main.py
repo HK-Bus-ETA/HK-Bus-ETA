@@ -628,7 +628,7 @@ def download_and_process_mtr_data():
         category = row[1].strip('"')
         MTR_BARRIER_FREE_MAPPING["categories"][category] = {
             "name": {
-                "zh": row[3].strip('"'),
+                "zh": row[3].strip('"').replace("&#32171;", "綫"),
                 "en": row[2].strip('"')
             }
         }
