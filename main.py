@@ -633,6 +633,7 @@ def download_and_process_mtr_data():
             }
         }
         MTR_BARRIER_FREE_MAPPING["items"][code] = {
+            "category": category,
             "name": {
                 "zh": row[5].strip('"'),
                 "en": row[4].strip('"')
