@@ -46,6 +46,19 @@ LWB_AREA = Polygon([
 ])
 
 
+def merge(a, b, path=None):
+    if path is None:
+        path = []
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merge(a[key], b[key], path + [str(key)])
+            elif a[key] != b[key]:
+                raise Exception('Conflict at ' + '.'.join(path + [str(key)]))
+        else:
+            a[key] = b[key]
+
+
 def get_web_json(url):
     with urllib.request.urlopen(url) as data:
         return json.load(data)
@@ -694,6 +707,10 @@ output = {
     "mtrBarrierFreeMapping": MTR_BARRIER_FREE_MAPPING,
     "lrtData": LRT_DATA
 }
+
+with open('mtr_data.json', 'r') as file:
+    mtr_data = json.load(file)
+    merge(output, mtr_data)
 
 with open(DATA_SHEET_FULL_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
