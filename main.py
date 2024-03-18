@@ -331,7 +331,7 @@ def download_and_process_data_sheet():
             service_type = int(data["serviceType"])
             if len(bounds["ctb"]) > 1:
                 if route_number in ctb_circular:
-                    if abs(ctb_circular[route_number]) > service_type:
+                    if abs(ctb_circular[route_number]) >= service_type:
                         ctb_circular[route_number] = service_type
                 else:
                     ctb_circular[route_number] = service_type
