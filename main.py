@@ -415,7 +415,9 @@ def download_and_process_data_sheet():
                     data["dest"]["en"] += " (Circular)"
     for key in keys_to_remove:
         ctb_data = DATA_SHEET["routeList"][key]
-        ctb_stops = ctb_data["stops"]["ctb"]
+        ctb_stops = ctb_data["stops"].get("ctb")
+        if ctb_stops is None:
+            ctb_stops = []
         for kmb_data in kmb_ops[ctb_data["route"]]:
             kmb_stops = kmb_data["stops"]["kmb"]
             if len(ctb_stops) == len(kmb_stops):
