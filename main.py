@@ -425,7 +425,7 @@ def download_and_process_data_sheet():
                     ctb_stop_id = ctb_stops[i]
                     kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
                     ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
-                    stop_map = DATA_SHEET["stopMap"][kmb_stop_id]
+                    stop_map = DATA_SHEET["stopMap"].get(kmb_stop_id)
                     if stop_map is not None and any(x[1] == ctb_stop_id for x in stop_map):
                         continue
                     if haversine(kmb_stop_location["lat"], kmb_stop_location["lng"], ctb_stop_location["lat"], ctb_stop_location["lng"]) >= 0.1:
