@@ -413,6 +413,10 @@ def download_and_process_data_sheet():
                 else:
                     data["dest"]["zh"] += " (循環線)"
                     data["dest"]["en"] += " (Circular)"
+        elif "kmb" in bounds:
+            if route_number in kmb_ops and not data.get("kmbCtbJoint"):
+                data["kmbCtbJoint"] = True
+                kmb_ops[route_number].append(data)
     for key in keys_to_remove:
         ctb_data = DATA_SHEET["routeList"][key]
         ctb_stops = ctb_data["stops"].get("ctb")
@@ -424,11 +428,11 @@ def download_and_process_data_sheet():
                     for i in range(0, len(ctb_stops)):
                         kmb_stop_id = kmb_stops[i]
                         ctb_stop_id = ctb_stops[i]
-                        kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
-                        ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
                         stop_map = DATA_SHEET["stopMap"].get(kmb_stop_id)
                         if stop_map is not None and any(x[1] == ctb_stop_id for x in stop_map):
                             continue
+                        kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
+                        ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
                         if haversine(kmb_stop_location["lat"], kmb_stop_location["lng"], ctb_stop_location["lat"], ctb_stop_location["lng"]) >= 0.1:
                             match = False
                             break
