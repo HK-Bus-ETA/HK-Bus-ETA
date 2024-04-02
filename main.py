@@ -416,29 +416,28 @@ def download_and_process_data_sheet():
     for key in keys_to_remove:
         ctb_data = DATA_SHEET["routeList"][key]
         ctb_stops = ctb_data["stops"].get("ctb")
-        if ctb_stops is None:
-            ctb_stops = []
-        for kmb_data in kmb_ops[ctb_data["route"]]:
-            kmb_stops = kmb_data["stops"]["kmb"]
-            if len(ctb_stops) == len(kmb_stops):
-                match = True
-                for i in range(0, len(ctb_stops)):
-                    kmb_stop_id = kmb_stops[i]
-                    ctb_stop_id = ctb_stops[i]
-                    kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
-                    ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
-                    stop_map = DATA_SHEET["stopMap"].get(kmb_stop_id)
-                    if stop_map is not None and any(x[1] == ctb_stop_id for x in stop_map):
+        if ctb_stops is not None:
+            for kmb_data in kmb_ops[ctb_data["route"]]:
+                kmb_stops = kmb_data["stops"]["kmb"]
+                if len(ctb_stops) == len(kmb_stops):
+                    match = True
+                    for i in range(0, len(ctb_stops)):
+                        kmb_stop_id = kmb_stops[i]
+                        ctb_stop_id = ctb_stops[i]
+                        kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
+                        ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
+                        stop_map = DATA_SHEET["stopMap"].get(kmb_stop_id)
+                        if stop_map is not None and any(x[1] == ctb_stop_id for x in stop_map):
+                            continue
+                        if haversine(kmb_stop_location["lat"], kmb_stop_location["lng"], ctb_stop_location["lat"], ctb_stop_location["lng"]) >= 0.1:
+                            match = False
+                            break
+                    if not match:
                         continue
-                    if haversine(kmb_stop_location["lat"], kmb_stop_location["lng"], ctb_stop_location["lat"], ctb_stop_location["lng"]) >= 0.1:
-                        match = False
-                        break
-                if not match:
-                    continue
-                for data_key in ctb_data:
-                    if data_key not in kmb_data or kmb_data[data_key] is None:
-                        kmb_data[data_key] = ctb_data[data_key]
-                break
+                    for data_key in ctb_data:
+                        if data_key not in kmb_data or kmb_data[data_key] is None:
+                            kmb_data[data_key] = ctb_data[data_key]
+                    break
         del DATA_SHEET["routeList"][key]
 
     keys_to_remove = []
