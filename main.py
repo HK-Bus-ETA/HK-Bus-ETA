@@ -1,4 +1,5 @@
 import json
+import math
 import re
 import time
 import urllib.request
@@ -79,6 +80,18 @@ def get_web_text(url, gzip=True):
         return str(decompressed_data)
     else:
         return text.decode(encoding['encoding'])
+
+
+def haversine(lat1, lon1, lat2, lon2):
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return 6371.0 * c
 
 
 def download_and_process_kmb_route():
@@ -287,7 +300,7 @@ def download_and_process_data_sheet():
     del DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Wing"]
     del DATA_SHEET["routeList"]["706+1+Tin Wing+Tin Shui Wai"]
 
-    kmb_ops = set()
+    kmb_ops = {}
     ctb_circular = {}
     mtr_orig = {}
     mtr_dest = {}
@@ -325,7 +338,10 @@ def download_and_process_data_sheet():
         elif "kmb" in bounds:
             if "ctb" in data["co"]:
                 data["kmbCtbJoint"] = True
-                kmb_ops.add(data["route"])
+                if data["route"] not in kmb_ops:
+                    kmb_ops[data["route"]] = [data]
+                else:
+                    kmb_ops[data["route"]] += data
         elif "ctb" in bounds:
             route_number = data["route"]
             service_type = int(data["serviceType"])
@@ -398,6 +414,29 @@ def download_and_process_data_sheet():
                     data["dest"]["zh"] += " (循環線)"
                     data["dest"]["en"] += " (Circular)"
     for key in keys_to_remove:
+        ctb_data = DATA_SHEET["routeList"][key]
+        ctb_stops = ctb_data["stops"]["ctb"]
+        for kmb_data in kmb_ops[ctb_data["route"]]:
+            kmb_stops = kmb_data["stops"]["kmb"]
+            if len(ctb_stops) == len(kmb_stops):
+                match = True
+                for i in range(0, len(ctb_stops)):
+                    kmb_stop_id = kmb_stops[i]
+                    ctb_stop_id = ctb_stops[i]
+                    kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
+                    ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
+                    stop_map = DATA_SHEET["stopMap"][kmb_stop_id]
+                    if stop_map is not None and any(x[1] == ctb_stop_id for x in stop_map):
+                        continue
+                    if haversine(kmb_stop_location["lat"], kmb_stop_location["lng"], ctb_stop_location["lat"], ctb_stop_location["lng"]) >= 0.1:
+                        match = False
+                        break
+                if not match:
+                    continue
+                for data_key in ctb_data:
+                    if data_key not in kmb_data or kmb_data[data_key] is None:
+                        kmb_data[data_key] = ctb_data[data_key]
+                break
         del DATA_SHEET["routeList"][key]
 
     keys_to_remove = []
