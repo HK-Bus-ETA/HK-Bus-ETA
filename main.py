@@ -341,7 +341,7 @@ def download_and_process_data_sheet():
                 if data["route"] not in kmb_ops:
                     kmb_ops[data["route"]] = [data]
                 else:
-                    kmb_ops[data["route"]] += data
+                    kmb_ops[data["route"]].append(data)
         elif "ctb" in bounds:
             route_number = data["route"]
             service_type = int(data["serviceType"])
