@@ -320,12 +320,12 @@ def download_and_process_data_sheet():
             data["co"] = []
             cos = data["co"]
         if "hkkf" in bounds and "hkkf" not in cos:
-            cos.append("hkkf")
+            cos.insert(0, "hkkf")
         if "sunferry" in bounds and "sunferry" not in cos:
-            cos.append("sunferry")
+            cos.insert(0, "sunferry")
         if "fortuneferry" in bounds and "fortuneferry" not in cos:
-            cos.append("fortuneferry")
-            
+            cos.insert(0, "fortuneferry")
+
         if "lightRail" in bounds:
             BUS_ROUTE.add(data["route"])
         elif "mtr" in bounds:
