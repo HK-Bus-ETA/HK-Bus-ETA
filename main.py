@@ -315,7 +315,17 @@ def download_and_process_data_sheet():
     for key in DATA_SHEET["routeList"].keys():
         data = DATA_SHEET["routeList"][key]
         bounds = data.get("bound")
-
+        cos = data.get("co")
+        if cos is None:
+            data["co"] = []
+            cos = data["co"]
+        if "hkkf" in bounds and "hkkf" not in cos:
+            cos.append("hkkf")
+        if "sunferry" in bounds and "sunferry" not in cos:
+            cos.append("sunferry")
+        if "fortuneferry" in bounds and "fortuneferry" not in cos:
+            cos.append("fortuneferry")
+            
         if "lightRail" in bounds:
             BUS_ROUTE.add(data["route"])
         elif "mtr" in bounds:
@@ -532,10 +542,10 @@ def apply_recapitalize_keywords(input_str):
     return input_str
 
 
-def capitalize_kmb_english_names():
+def capitalize_english_names():
     global DATA_SHEET
     for route in DATA_SHEET["routeList"].values():
-        if "kmb" in route["bound"]:
+        if "kmb" in route["bound"] or "sunferry" in route["bound"] or "fortuneferry" in route["bound"]:
             route["dest"]["en"] = apply_recapitalize_keywords(capitalize(route["dest"]["en"]))
             route["orig"]["en"] = apply_recapitalize_keywords(capitalize(route["orig"]["en"]))
 
@@ -736,7 +746,7 @@ download_and_process_mtr_bus_data()
 print("Downloading & Processing MTR & LRT Data")
 download_and_process_mtr_data()
 print("Capitalizing KMB English Names")
-capitalize_kmb_english_names()
+capitalize_english_names()
 print("Listing KMB Subsidiary Routes")
 list_kmb_subsidiary_routes()
 print("Searching & Injecting GMB Region")
