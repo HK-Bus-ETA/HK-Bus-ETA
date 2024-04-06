@@ -316,15 +316,13 @@ def download_and_process_data_sheet():
         data = DATA_SHEET["routeList"][key]
         bounds = data.get("bound")
         cos = data.get("co")
-        if cos is None:
-            data["co"] = []
-            cos = data["co"]
+
         if "hkkf" in bounds and "hkkf" not in cos:
-            cos.insert(0, "hkkf")
+            data["co"] = ["hkkf"]
         if "sunferry" in bounds and "sunferry" not in cos:
-            cos.insert(0, "sunferry")
+            data["co"] = ["sunferry"]
         if "fortuneferry" in bounds and "fortuneferry" not in cos:
-            cos.insert(0, "fortuneferry")
+            data["co"] = ["fortuneferry"]
 
         if "lightRail" in bounds:
             BUS_ROUTE.add(data["route"])
