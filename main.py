@@ -315,22 +315,8 @@ def download_and_process_data_sheet():
     for key in DATA_SHEET["routeList"].keys():
         data = DATA_SHEET["routeList"][key]
         bounds = data.get("bound")
+
         cos = data.get("co")
-        dest = data["dest"]
-
-        if "(循環線)" in dest["zh"] and cos is not None and cos[0] == "ctb":
-            stops = data["stops"].get("ctb")
-            if stops is not None:
-                first_stop_id = stops[0]
-                last_stop_id = stops[-1]
-                if first_stop_id != last_stop_id:
-                    first_stop = DATA_SHEET["stopList"][first_stop_id]["location"]
-                    last_stop = DATA_SHEET["stopList"][last_stop_id]["location"]
-                    if haversine(first_stop["lat"], first_stop["lng"], last_stop["lat"], last_stop["lng"]) > 0.3:
-                        dest["zh"] = dest["zh"].replace("(循環線)", "").strip()
-                        dest["en"] = dest["en"].replace("(Circular)", "").strip()
-                        bounds["ctb"] = bounds["ctb"][-1]
-
         if "hkkf" in bounds and "hkkf" not in cos:
             data["co"] = ["hkkf"]
         if "sunferry" in bounds and "sunferry" not in cos:
@@ -368,6 +354,19 @@ def download_and_process_data_sheet():
             route_number = data["route"]
             service_type = int(data["serviceType"])
             if len(bounds["ctb"]) > 1:
+                stops = data["stops"].get("ctb")
+                if stops is not None:
+                    first_stop_id = stops[0]
+                    last_stop_id = stops[-1]
+                    if first_stop_id != last_stop_id:
+                        first_stop = DATA_SHEET["stopList"][first_stop_id]["location"]
+                        last_stop = DATA_SHEET["stopList"][last_stop_id]["location"]
+                        if haversine(first_stop["lat"], first_stop["lng"], last_stop["lat"],
+                                     last_stop["lng"]) > 0.3:
+                            data["dest"]["zh"] = data["dest"]["zh"].replace("(循環線)", "").strip()
+                            data["dest"]["en"] = data["dest"]["en"].replace("(Circular)", "").strip()
+                            bounds["ctb"] = bounds["ctb"][-1]
+                            continue
                 if route_number in ctb_circular:
                     if abs(ctb_circular[route_number]) >= service_type:
                         ctb_circular[route_number] = service_type
