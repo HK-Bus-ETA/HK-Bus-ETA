@@ -1,17 +1,14 @@
-# HK Bus ETA 香港巴士到站預報
-App for checking Hong Kong Bus Estimated Time of Arrival.<br>
-香港巴士到站預報應用程式
+# HK Bus ETA 香港巴士到站預報 (WearOS / WatchOS)
+WearOS & WatchOS app for checking Hong Kong Bus Estimated Time of Arrival with Tiles support.<br>
+WearOS 及 WatchOS 手錶平台上的香港巴士到站預報應用程式 更支援使用資訊方塊
 
-Smartwatch app available for WearOS & WatchOS with Tiles support.<br>
-手錶應用程式支援 WearOS 及 WatchOS 平台 更支援使用資訊方塊
-
-For more info, check out the app listing on Google Play / App Store with the link below.<br>
+For more info, check out the app listing on Google Play / *App Store (Coming Soon)* with the link below.<br>
 欲了解更多資訊，請查閱以下 Google Play / App Store 應用程式連結
 
 ## Language 語言
-This app is in the native language of Hong Kong: **Traditional Chinese**.<br>
+This WearOS (Android) / WatchOS (Apple Watch) app is in the native language of Hong Kong: **Traditional Chinese**.<br>
 In addition, it also supports **English**.<br>
-此應用程式支援 **繁體中文** 及 **英文**
+此 WearOS (Android) / WatchOS (Apple Watch) 手錶應用程式支援 **繁體中文** 及 **英文**
 
 ## Live Demonstration & Screenshots 下載連結及截圖
 <a href='https://play.google.com/store/apps/details?id=com.loohp.hkbuseta&utm_source=GitHub-Repo&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://loohpjames.com/assets/images/get-it-on-google-play.png' height="50"/></a>
@@ -37,6 +34,5 @@ The only data stored locally on your device are bus route caches, which can be *
 HTTPS Requests are made to the above data sources to retrieve bus routes, stops and ETA information. **No personally identifiable information** (apart from information essentially needed to perform a request, such as the IP address) is sent in such requests.
 
 ## Flaticon Attribution 圖標致謝 (只供英文版本)
-<a href="https://www.flaticon.com/free-icons/smartphone" title="smartphone icons">Smartphone icons created by Anatoly - Flaticon</a><br>
 <a href="https://www.flaticon.com/free-icons/hurricane" title="hurricane icons">Hurricane icons created by Mehwish - Flaticon</a> (WearOS only)<br>
 <a href="https://www.flaticon.com/free-icons/smartwatch-app" title="smartwatch app icons">Smartwatch app icons created by Freepik - Flaticon</a> (WatchOS only)
