@@ -26,6 +26,7 @@ In addition, it also supports **English**.<br>
 - [HK Bus Crawling@2021](https://github.com/hkbus/hk-bus-crawling)
 
 ## Domain Data Repositories 網域資訊儲存庫
+- [HK-Bus-ETA-AppLinks](https://github.com/LOOHP/HK-Bus-ETA-AppLinks)
 - [wear.hkbus.app](https://github.com/hkbus/wear.hkbus.app)
 - [watch.hkbus.app](https://github.com/hkbus/watch.hkbus.app)
 
