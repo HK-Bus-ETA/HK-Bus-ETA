@@ -37,6 +37,11 @@ RECAPITALIZE_KEYWORDS = [
     "HK"
 ]
 
+NORMALIZE_CHARS = {
+    "／": "/",
+    "∕": "/"
+}
+
 SUN_BUS_ROUTES = {"331", "331S", "917", "918", "945"}
 LWB_AREA = Polygon([
     (22.353035101615237, 114.04468147886547),
@@ -540,6 +545,13 @@ def download_and_process_data_sheet():
                     break
 
 
+def normalize(input_str):
+    global NORMALIZE_CHARS
+    for keyword, replacement in NORMALIZE_CHARS.items():
+        input_str = input_str.replace(keyword, replacement)
+    return input_str
+
+
 def capitalize(input_str, lower=True):
     if lower:
         input_str = input_str.lower()
@@ -563,6 +575,19 @@ def capitalize_english_names():
     for stopId, stop in DATA_SHEET["stopList"].items():
         if len(stopId) == 16:
             stop["name"]["en"] = apply_recapitalize_keywords(capitalize(stop["name"]["en"]))
+
+
+def normalize_names():
+    global DATA_SHEET
+    for route in DATA_SHEET["routeList"].values():
+        route["dest"]["zh"] = normalize(route["dest"]["zh"])
+        route["dest"]["en"] = normalize(route["dest"]["en"])
+        route["orig"]["zh"] = normalize(route["orig"]["zh"])
+        route["orig"]["en"] = normalize(route["orig"]["en"])
+
+    for stopId, stop in DATA_SHEET["stopList"].items():
+        stop["name"]["zh"] = normalize(stop["name"]["zh"])
+        stop["name"]["en"] = normalize(stop["name"]["en"])
 
 
 def inject_gmb_region():
@@ -760,6 +785,8 @@ print("Capitalizing KMB English Names")
 capitalize_english_names()
 print("Listing KMB Subsidiary Routes")
 list_kmb_subsidiary_routes()
+print("Normalizing Names")
+normalize_names()
 print("Searching & Injecting GMB Region")
 inject_gmb_region()
 
