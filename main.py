@@ -137,84 +137,26 @@ def download_and_process_mtr_bus_data():
     global DATA_SHEET
     global MTR_BUS_STOP_ALIAS
 
-    mtr_bus_route_list = get_web_text("https://opendata.mtr.com.hk/data/mtr_bus_routes.csv")
-    mtr_bus_stop_list = get_web_text("https://opendata.mtr.com.hk/data/mtr_bus_stops.csv")
+    stop_id_pattern = re.compile("^[A-Z]?[0-9]{1,3}[A-Z]?-[A-Z][0-9]{3}$")
 
-    routes_result = {}
-    stops_result = {}
-    stops_alias_result = {}
-    stop_entries = [[y[1:len(y) - 1] if y.startswith("\"") else y for y in x.split(",")] for x in mtr_bus_stop_list.splitlines()[1:]]
-    route_entries = [[y[1:len(y) - 1] if y.startswith("\"") else y for y in x.split(",")] for x in mtr_bus_route_list.splitlines()[1:]]
+    for stop_id in DATA_SHEET["stopList"].keys():
+        if stop_id_pattern.match(stop_id):
+            stops_alias_result[stop_id] = [stop_id]
 
-    stops_map = {}
-    stops_by_route_bound = {}
-    for stop_entry in stop_entries:
-        position = stop_entry[4] + " " + stop_entry[5]
-        if position not in stops_map:
-            stops_map[position] = [stop_entry[3], stop_entry]
-            stops_alias_result[stop_entry[3]] = [stop_entry[3]]
-        else:
-            stops_alias_result[stops_map[position][0]].append(stop_entry[3])
-        route_number = stop_entry[0]
-        bound = stop_entry[1]
-        key = route_number + "_" + bound
-        if key in stops_by_route_bound:
-            stops_by_route_bound[key].append(stop_entry)
-        else:
-            stops_by_route_bound[key] = [stop_entry]
-
-    for key, stop_details in stops_map.items():
-        position = [float(stop_details[1][4]), float(stop_details[1][5])]
-        result = {
-            "location": {
-                "lat": position[0],
-                "lng": position[1]
-            },
-            "name": {
-                "en": stop_details[1][7],
-                "zh": stop_details[1][6]
-            }
-        }
-        stops_result[stop_details[1][3]] = result
-
-    for route_entry in route_entries:
-        route_number = route_entry[0]
-        for bound in ["O", "I"]:
-            key = route_number + "_" + bound
-            if key in stops_by_route_bound:
-                stop_list = stops_by_route_bound[key]
-                stop_list.sort(key=lambda x: float(x[2]))
-                stop_ids = []
-                for stop in stop_list:
-                    position = stop[4] + " " + stop[5]
-                    stop_ids.append(stops_map[position][0])
-                result = {
-                    "bound": {"mtr-bus": bound},
-                    "co": ["mtr-bus"],
-                    "dest": {
-                        "en": route_entry[2].split(" to ")[1] if bound == "O" else stop_list[-1][7],
-                        "zh": route_entry[1].split("至")[1] if bound == "O" else stop_list[-1][6]
-                    },
-                    "gtfsId": None,
-                    "nlbId": None,
-                    "orig": {
-                        "en": stop_list[0][7],
-                        "zh": stop_list[0][6]
-                    },
-                    "route": route_number,
-                    "serviceType": 1,
-                    "stops": {"mtr-bus": stop_ids}
-                }
-                key = route_number + "+1+" + stop_list[0][7] + "+" + stop_list[-1][7]
-                routes_result[key] = result
-
-    for key, data in routes_result.items():
-        route = data.get("route", "")
-        DATA_SHEET["routeList"][key] = data
-        BUS_ROUTE.add(route)
-
-    for key, stop_result in stops_result.items():
-        DATA_SHEET["stopList"][key] = stop_result
+    for key, data in DATA_SHEET["routeList"].items():
+        bound = data["bound"]
+        if "lrtfeeder" in bound:
+            BUS_ROUTE.add(data["route"])
+            direction = bound["lrtfeeder"]
+            del bound["lrtfeeder"]
+            bound["mtr-bus"] = direction
+            if "lrtfeeder" in data["co"]:
+                data["co"].remove("lrtfeeder")
+                data["co"].append("mtr-bus")
+            if "lrtfeeder" in data["stops"]:
+                stops = data["stops"]["lrtfeeder"]
+                del data["stops"]["lrtfeeder"]
+                data["stops"]["mtr-bus"] = stops
 
     MTR_BUS_STOP_ALIAS = stops_alias_result
 
@@ -317,8 +259,7 @@ def download_and_process_data_sheet():
         except ValueError:
             return -1
 
-    for key in DATA_SHEET["routeList"].keys():
-        data = DATA_SHEET["routeList"][key]
+    for key, data in DATA_SHEET["routeList"].items():
         bounds = data.get("bound")
 
         cos = data.get("co")
