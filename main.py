@@ -354,9 +354,7 @@ def download_and_process_data_sheet():
         route_number = data["route"]
         bounds = data["bound"]
 
-        if "lrtfeeder" in bounds:
-            keys_to_remove.append(key)
-        elif "mtr" in bounds:
+        if "mtr" in bounds:
             line_name = route_number
             bound = bounds["mtr"]
 
@@ -718,10 +716,10 @@ download_and_process_nlb_route()
 print("Downloading & Processing GMB Routes")
 download_and_process_gmb_route()
 print("Downloading & Processing Data Sheet")
-download_and_process_data_sheet()
-print("Downloading & Processing MTR-Bus Data")
 download_and_process_mtr_bus_data()
 print("Downloading & Processing MTR & LRT Data")
+download_and_process_data_sheet()
+print("Downloading & Processing MTR-Bus Data")
 download_and_process_mtr_data()
 print("Capitalizing KMB English Names")
 capitalize_english_names()
