@@ -434,6 +434,20 @@ expect fun PlatformFloatingActionButton(
 )
 
 @Composable
+expect fun PlatformExtendedFloatingActionButton(
+    text: @Composable () -> Unit,
+    icon: @Composable () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    expanded: Boolean = true,
+    shape: Shape = FloatingActionButtonDefaults.extendedFabShape,
+    containerColor: Color = FloatingActionButtonDefaults.containerColor,
+    contentColor: Color = contentColorFor(containerColor),
+    elevation: FloatingActionButtonElevation = FloatingActionButtonDefaults.elevation(),
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+)
+
+@Composable
 expect fun PlatformFilledTonalIconToggleButton(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,

@@ -26,6 +26,21 @@ import nl.adaptivity.xmlutil.serialization.XmlElement
 import nl.adaptivity.xmlutil.serialization.XmlSerialName
 
 @Serializable
+data class MTRStatus(
+    @XmlSerialName("lastBuildDate", prefix = "ryg_status") @XmlElement val lastBuildDate: String,
+    @XmlSerialName("refreshInterval", prefix = "ryg_status") @XmlElement val refreshInterval: String,
+    @XmlSerialName("line", prefix = "ryg_status") val lines: List<MTRLineStatus>,
+)
+
+@Serializable
+data class MTRLineStatus(
+    @XmlSerialName("line_code") @XmlElement val line: String,
+    @XmlSerialName("url_tc") @XmlElement val urlZh: String,
+    @XmlSerialName("url_en") @XmlElement val urlEn: String,
+    @XmlSerialName("status") @XmlElement val status: String
+)
+
+@Serializable
 data class TrafficNews(
     @XmlSerialName("message") val messages: List<TrafficNewsEntry>
 )

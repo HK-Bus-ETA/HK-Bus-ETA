@@ -48,7 +48,7 @@ import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.MutableNullableStateFlow
 import com.loohp.hkbuseta.common.utils.StringReadChannel
-import com.loohp.hkbuseta.common.utils.getTextResponse
+import com.loohp.hkbuseta.common.utils.isReachable
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
@@ -246,7 +246,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override fun hasConnection(): Boolean {
-        return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { getTextResponse(Registry.checksumUrl()) != null }
+        return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { isReachable(Registry.checksumUrl()) }
     }
 
     override fun currentBackgroundRestrictions(): BackgroundRestrictionType {

@@ -246,7 +246,7 @@ private fun Modifier.handleTooltipGestures(
     var counter by remember { mutableIntStateOf(0) }
     LaunchedEffect (state.isVisible) {
         if (state.isVisible && !hovering) {
-            delay(2000)
+            delay(3000)
             state.dismiss()
             counter++
         }
@@ -280,7 +280,7 @@ private fun Modifier.handleTooltipGestures(
                             when (event.type) {
                                 PointerEventType.Enter -> launch {
                                     hovering = true
-                                    delay(2000)
+                                    delay(500)
                                     state.show(MutatePriority.UserInput)
                                 }
                                 PointerEventType.Exit -> {

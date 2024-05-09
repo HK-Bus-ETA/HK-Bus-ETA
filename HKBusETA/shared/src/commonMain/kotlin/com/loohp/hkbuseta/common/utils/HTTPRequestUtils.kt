@@ -67,6 +67,22 @@ expect fun PlatformHttpClient(block: HttpClientConfig<*>.() -> Unit = { /* do no
 
 expect fun HeadersBuilder.applyPlatformHeaders()
 
+suspend inline fun isReachable(link: String): Boolean {
+    return try {
+        httpClient.get(link) {
+            headers {
+                applyPlatformHeaders()
+            }
+            timeout {
+                requestTimeoutMillis = 120000
+                connectTimeoutMillis = 20000
+            }
+        }.status == HttpStatusCode.OK
+    } catch (_: Exception) {
+        false
+    }
+}
+
 suspend inline fun getTextResponse(link: String): StringReadChannel? {
     return try {
         httpClient.get(link) {

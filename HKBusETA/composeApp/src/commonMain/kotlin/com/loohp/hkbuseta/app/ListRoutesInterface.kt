@@ -24,6 +24,7 @@ package com.loohp.hkbuseta.app
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.VectorConverter
@@ -54,7 +55,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListItemInfo
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
@@ -78,6 +79,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.layout
@@ -136,12 +138,14 @@ import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.transformColors
+import com.loohp.hkbuseta.compose.ArrowUpward
 import com.loohp.hkbuseta.compose.Close
 import com.loohp.hkbuseta.compose.LineEndCircle
 import com.loohp.hkbuseta.compose.NoTransfer
 import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformDropdownMenu
 import com.loohp.hkbuseta.compose.PlatformDropdownMenuItem
+import com.loohp.hkbuseta.compose.PlatformFloatingActionButton
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformText
@@ -183,7 +187,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyColumnState
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -216,7 +220,7 @@ fun ListRoutesInterface(
     maintainScrollPosition: Boolean = true,
     bottomExtraSpace: Dp = 0.dp,
     extraActions: (@Composable RowScope.() -> Unit)? = null,
-    reorderable: ((LazyListItemInfo, LazyListItemInfo) -> Unit)? = null
+    reorderable: (suspend CoroutineScope.(LazyListItemInfo, LazyListItemInfo) -> Unit)? = null
 ) {
     val activeSortModeProvider by remember(listType, recentSort, proximitySortOrigin) { derivedStateOf { {
         if (recentSort.forcedMode) {
@@ -464,7 +468,7 @@ fun EmptyListRouteInterface(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ListRouteInterfaceInternal(
     instance: AppActiveContext,
@@ -475,7 +479,7 @@ fun ListRouteInterfaceInternal(
     proximitySortOrigin: Coordinates?,
     maintainScrollPosition: Boolean,
     bottomExtraSpace: Dp,
-    reorderable: ((LazyListItemInfo, LazyListItemInfo) -> Unit)?,
+    reorderable: (suspend CoroutineScope.(LazyListItemInfo, LazyListItemInfo) -> Unit)?,
     activeSortModeState: MutableState<RouteSortMode>
 ) {
     val haptics = LocalHapticFeedback.current
@@ -484,8 +488,9 @@ fun ListRouteInterfaceInternal(
         initialFirstVisibleItemIndex = initialScrollPosition?.itemIndex?: 0,
         initialFirstVisibleItemScrollOffset = initialScrollPosition?.itemOffset?: 0
     )
+    val scope = rememberCoroutineScope()
     val lastLookupRoutes by if (listType == RouteListType.RECENT) Shared.lastLookupRoutes.collectAsStateMultiplatform() else remember { mutableStateOf(emptyList()) }
-    val reorderableState = rememberReorderableLazyColumnState(scroll, onMove = reorderable?: { _, _ -> })
+    val reorderableState = rememberReorderableLazyListState(scroll, onMove = reorderable?: { _, _ -> })
 
     val activeSortMode by activeSortModeState
     val sortedByMode by remember(routes, lastLookupRoutes, listType, proximitySortOrigin) { derivedStateOf { routes.bySortModes(instance, recentSort, listType != RouteListType.RECENT, proximitySortOrigin).toImmutableMap() } }
@@ -526,44 +531,74 @@ fun ListRouteInterfaceInternal(
     val routeNumberWidth by if (Shared.language == "en") "249M".renderedSize(30F.sp) else "機場快線".renderedSize(22F.sp)
     val reorderEnabled by remember(reorderable, activeSortMode) { derivedStateOf { reorderable != null && activeSortMode == RouteSortMode.NORMAL } }
 
-    LazyColumn(
-        modifier = Modifier
-            .verticalScrollBar(
-                state = scroll,
-                scrollbarConfig = ScrollBarConfig(
-                    indicatorThickness = 6.dp,
-                    padding = PaddingValues(0.dp, 2.dp, 0.dp, 2.dp)
-                )
-            ),
-        state = scroll
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.TopCenter
     ) {
-        items(sortedResults, key = { it.uniqueKey }) { route ->
-            val uniqueKey = route.uniqueKey
-            val width = routeNumberWidth?.width?: 0
-            val deleteFunction = { Registry.getInstance(instance).removeLastLookupRoutes(route.routeKey, instance) }.takeIf { recentSort == RecentSortMode.FORCED }
-            if (reorderEnabled) {
-                ReorderableItem(
-                    reorderableLazyListState = reorderableState,
-                    enabled = reorderEnabled,
-                    key = uniqueKey
-                ) { isDragging ->
-                    val elevation by animateDpAsState(if (isDragging) 2.dp else 0.dp)
-                    RouteEntry(Modifier.longPressDraggableHandle(
+        LazyColumn(
+            modifier = Modifier
+                .verticalScrollBar(
+                    state = scroll,
+                    scrollbarConfig = ScrollBarConfig(
+                        indicatorThickness = 6.dp,
+                        padding = PaddingValues(0.dp, 2.dp, 0.dp, 2.dp)
+                    )
+                ),
+            state = scroll,
+            contentPadding = PaddingValues(vertical = 1.dp)
+        ) {
+            itemsIndexed(sortedResults, key = { _, route -> route.uniqueKey }) { index, route ->
+                val uniqueKey = route.uniqueKey
+                val width = routeNumberWidth?.width?: 0
+                val deleteFunction = { Registry.getInstance(instance).removeLastLookupRoutes(route.routeKey, instance) }.takeIf { recentSort == RecentSortMode.FORCED }
+                if (reorderEnabled) {
+                    ReorderableItem(
+                        state = reorderableState,
                         enabled = reorderEnabled,
-                        onDragStarted = { haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
-                    ).shadow(elevation), uniqueKey, listType, width, showEta, deleteFunction, route, etaResultsState, etaUpdateTimesState, instance)
+                        key = uniqueKey
+                    ) { isDragging ->
+                        val elevation by animateDpAsState(if (isDragging) 2.dp else 0.dp)
+                        RouteEntry(Modifier.longPressDraggableHandle(
+                            enabled = reorderEnabled,
+                            onDragStarted = { haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
+                        ).shadow(elevation), uniqueKey, listType, width, showEta, deleteFunction, route, etaResultsState, etaUpdateTimesState, instance)
+                    }
+                } else {
+                    RouteEntry(Modifier, uniqueKey, listType, width, showEta, deleteFunction, route, etaResultsState, etaUpdateTimesState, instance)
                 }
-            } else {
-                RouteEntry(Modifier, uniqueKey, listType, width, showEta, deleteFunction, route, etaResultsState, etaUpdateTimesState, instance)
+                HorizontalDivider(
+                    modifier = Modifier.graphicsLayer { translationY = if (index + 1 >= sortedResults.size) 1.dp.toPx() else 0F }
+                )
             }
-            HorizontalDivider()
+            if (bottomExtraSpace > 0.dp) {
+                item {
+                    Spacer(modifier = Modifier.size(bottomExtraSpace))
+                }
+            }
         }
-        if (bottomExtraSpace > 0.dp) {
-            item {
-                Spacer(modifier = Modifier.size(bottomExtraSpace))
+        val offset by animateDpAsState(
+            targetValue = if (scroll.firstVisibleItemIndex >= 10) 0.dp else (-100).dp,
+            animationSpec = tween(200, easing = FastOutSlowInEasing)
+        )
+        if (offset > (-100).dp) {
+            PlatformFloatingActionButton(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(10.dp)
+                    .size(45.dp)
+                    .graphicsLayer { translationY = offset.toPx() }
+                    .plainTooltip(if (Shared.language == "en") "Scroll to Top" else "返回頂部"),
+                onClick = { scope.launch { scroll.animateScrollToItem(0) } },
+            ) {
+                PlatformIcon(
+                    modifier = Modifier.size(27.dp),
+                    painter = PlatformIcons.Filled.ArrowUpward,
+                    contentDescription = if (Shared.language == "en") "Scroll to Top" else "返回頂部"
+                )
             }
         }
     }
+
 }
 
 @OptIn(ExperimentalFoundationApi::class)

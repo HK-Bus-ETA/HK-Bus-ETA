@@ -62,6 +62,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.key.Key
@@ -341,7 +342,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .padding(10.dp)
-                                .offset(x = trainButtonOffset)
+                                .graphicsLayer { translationX = trainButtonOffset.toPx() }
                                 .plainTooltip(if (Shared.language == "en") "MTR System Map & LRT Route Map" else "港鐵及輕鐵路綫圖"),
                             onClick = {
                                 instance.startActivity(AppIntent(instance, AppScreen.SEARCH_TRAIN))

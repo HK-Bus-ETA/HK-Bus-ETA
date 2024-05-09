@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -40,7 +39,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -213,46 +211,41 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
         }
         showNoticeText?.let {
             val sheetScroll = rememberScrollState()
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-            ) { padding ->
-                PlatformModalBottomSheet(
+            PlatformModalBottomSheet(
+                modifier = Modifier
+                    .fillMaxHeight(0.9F),
+                onDismissRequest = { showNoticeText = null },
+                sheetState = sheetState
+            ) {
+                Column (
                     modifier = Modifier
-                        .padding(padding)
-                        .fillMaxHeight(0.9F),
-                    onDismissRequest = { showNoticeText = null },
-                    sheetState = sheetState
+                        .verticalScrollWithScrollbar(
+                            state = sheetScroll,
+                            flingBehavior = ScrollableDefaults.flingBehavior(),
+                            scrollbarConfig = ScrollBarConfig(
+                                indicatorThickness = 4.dp
+                            )
+                        )
+                        .padding(30.dp)
+                        .padding(bottom = 30.dp),
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.Top
                 ) {
-                    Column (
-                        modifier = Modifier
-                            .verticalScrollWithScrollbar(
-                                state = sheetScroll,
-                                flingBehavior = ScrollableDefaults.flingBehavior(),
-                                scrollbarConfig = ScrollBarConfig(
-                                    indicatorThickness = 4.dp
-                                )
-                            )
-                            .padding(30.dp)
-                            .padding(bottom = 30.dp),
-                        horizontalAlignment = Alignment.Start,
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        val text = it.asContentAnnotatedString().annotatedString
-                        SelectionContainer {
-                            ClickableText(
-                                modifier = Modifier.fillMaxWidth(),
-                                style = LocalTextStyle.current.copy(
-                                    fontSize = 17.sp,
-                                    color = LocalContentColor.current
-                                ),
-                                text = text,
-                                onClick = {
-                                    text.getStringAnnotations("url", it, it).firstOrNull()?.apply {
-                                        instance.handleWebpages(item, false, haptic.common).invoke()
-                                    }
+                    val text = it.asContentAnnotatedString().annotatedString
+                    SelectionContainer {
+                        ClickableText(
+                            modifier = Modifier.fillMaxWidth(),
+                            style = LocalTextStyle.current.copy(
+                                fontSize = 17.sp,
+                                color = LocalContentColor.current
+                            ),
+                            text = text,
+                            onClick = {
+                                text.getStringAnnotations("url", it, it).firstOrNull()?.apply {
+                                    instance.handleWebpages(item, false, haptic.common).invoke()
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
                 }
             }

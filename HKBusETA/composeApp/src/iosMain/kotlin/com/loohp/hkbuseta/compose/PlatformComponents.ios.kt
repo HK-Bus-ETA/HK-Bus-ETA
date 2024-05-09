@@ -64,9 +64,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FilledTonalIconToggleButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.FloatingActionButtonElevation
 import androidx.compose.material3.IconButtonColors
@@ -78,6 +78,7 @@ import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -105,6 +106,9 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -993,7 +997,87 @@ actual fun PlatformFloatingActionButton(
         val animatedAlpha by animateFloatAsState(
             targetValue = if (pressed) 0.33F else 1f
         )
-        FloatingActionButton(
+        val borderColor = CupertinoDividerDefaults.color
+        Surface(
+            onClick = onClick,
+            modifier = modifier
+                .pointerHoverIcon(PointerIcon.Hand)
+                .semantics { role = Role.Button },
+            shape = shape,
+            color = containerColor,
+            contentColor = contentColor,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
+            border = BorderStroke(1.dp, borderColor),
+            interactionSource = interactionSource,
+            content = {
+                Box(
+                    modifier = Modifier
+                        .defaultMinSize(
+                            minWidth = 56.dp,
+                            minHeight = 56.dp,
+                        )
+                        .graphicsLayer {
+                            alpha = if (pressed) 0.33F else animatedAlpha
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CompositionLocalProvider(
+                        LocalRippleTheme provides ripple,
+                        androidx.compose.material3.LocalContentColor provides contentColor
+                    ) {
+                        content.invoke()
+                    }
+                }
+            }
+        )
+    }
+}
+
+@Composable
+actual fun PlatformExtendedFloatingActionButton(
+    text: @Composable () -> Unit,
+    icon: @Composable () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier,
+    expanded: Boolean,
+    shape: Shape,
+    containerColor: Color,
+    contentColor: Color,
+    elevation: FloatingActionButtonElevation,
+    interactionSource: MutableInteractionSource,
+) {
+    val ripple = LocalRippleTheme.current
+    CompositionLocalProvider(
+        LocalRippleTheme provides NoRippleTheme
+    ) {
+        val pressed by interactionSource.collectIsPressedAsState()
+        val animatedAlpha by animateFloatAsState(
+            targetValue = if (pressed) 0.33F else 1f
+        )
+        ExtendedFloatingActionButton(
+            text = {
+                Box(
+                    modifier = Modifier.graphicsLayer {
+                        alpha = if (pressed) 0.33F else animatedAlpha
+                    }
+                ) {
+                    CompositionLocalProvider(LocalRippleTheme provides ripple) {
+                        text.invoke()
+                    }
+                }
+            },
+            icon = {
+                Box(
+                    modifier = Modifier.graphicsLayer {
+                        alpha = if (pressed) 0.33F else animatedAlpha
+                    }
+                ) {
+                    CompositionLocalProvider(LocalRippleTheme provides ripple) {
+                        icon.invoke()
+                    }
+                }
+            },
             onClick = onClick,
             modifier = modifier
                 .border(
@@ -1001,21 +1085,11 @@ actual fun PlatformFloatingActionButton(
                     shape = shape
                 )
                 .pointerHoverIcon(PointerIcon.Hand),
+            expanded = expanded,
             shape = shape,
             containerColor = containerColor,
             elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-            interactionSource = interactionSource,
-            content = {
-                Box(
-                    modifier = Modifier.graphicsLayer {
-                        alpha = if (pressed) 0.33F else animatedAlpha
-                    }
-                ) {
-                    CompositionLocalProvider(LocalRippleTheme provides ripple) {
-                        content.invoke()
-                    }
-                }
-            }
+            interactionSource = interactionSource
         )
     }
 }

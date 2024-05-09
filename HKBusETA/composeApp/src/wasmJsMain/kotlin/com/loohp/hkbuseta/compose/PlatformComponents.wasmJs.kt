@@ -130,6 +130,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilledTonalIconToggleButton
@@ -836,6 +837,33 @@ actual fun PlatformFloatingActionButton(
         elevation = elevation,
         interactionSource = interactionSource,
         content = content
+    )
+}
+
+@Composable
+actual fun PlatformExtendedFloatingActionButton(
+    text: @Composable () -> Unit,
+    icon: @Composable () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier,
+    expanded: Boolean,
+    shape: Shape,
+    containerColor: Color,
+    contentColor: Color,
+    elevation: FloatingActionButtonElevation,
+    interactionSource: MutableInteractionSource,
+) {
+    ExtendedFloatingActionButton(
+        text = text,
+        icon = icon,
+        onClick = onClick,
+        modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
+        expanded = expanded,
+        shape = shape,
+        containerColor = containerColor,
+        contentColor = contentColor,
+        elevation = elevation,
+        interactionSource = interactionSource,
     )
 }
 

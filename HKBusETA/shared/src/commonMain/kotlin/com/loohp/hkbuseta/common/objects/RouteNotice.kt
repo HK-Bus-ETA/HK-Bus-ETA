@@ -86,6 +86,25 @@ class RouteNoticeText(
     } }
 }
 
+val mtrLineStatus: RouteNoticeExternal get() {
+    return RouteNoticeExternal(
+        title = if (Shared.language == "en") "Service Status" else "車務狀況",
+        co = Operator.MTR,
+        important = RouteNoticeImportance.NORMAL,
+        url = "https://tnews.mtr.com.hk/alert/service_status${if (Shared.language == "en") "" else "_tc"}_m.html"
+    )
+}
+
+val lrtLineStatus: RouteNoticeExternal get() {
+    val status = mtrLineStatus
+    return RouteNoticeExternal(
+        title = status.title,
+        co = Operator.LRT,
+        important = status.importance,
+        url = status.url
+    )
+}
+
 val mtrRouteMapNotice: RouteNoticeExternal get() {
     return RouteNoticeExternal(
         title = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖",
@@ -241,10 +260,12 @@ private val operatorNoticeDefaults: Map<Operator, Route.(MutableList<RouteNotice
         it.add(mtrBusRouteInfo(this))
     }
     this[Operator.MTR] = {
+        it.add(mtrLineStatus)
         it.add(mtrRouteMapNotice)
         it.add(mtrRouteInfo)
     }
     this[Operator.LRT] = {
+        it.add(lrtLineStatus)
         it.add(lrtRouteMapNotice)
         it.add(lrtRouteInfo)
     }

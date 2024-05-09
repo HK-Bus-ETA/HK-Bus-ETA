@@ -23,8 +23,10 @@ package com.loohp.hkbuseta.app
 
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -94,6 +96,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -131,6 +134,7 @@ import com.loohp.hkbuseta.common.objects.RouteNotice
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.TicketCategory
+import com.loohp.hkbuseta.common.objects.TrainServiceStatus
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.compareRouteNumber
 import com.loohp.hkbuseta.common.objects.findFare
@@ -147,6 +151,7 @@ import com.loohp.hkbuseta.common.objects.getMTRStationBarrierFree
 import com.loohp.hkbuseta.common.objects.getMTRStationLayoutUrl
 import com.loohp.hkbuseta.common.objects.getMTRStationStreetMapUrl
 import com.loohp.hkbuseta.common.objects.getStationBarrierFreeDetails
+import com.loohp.hkbuseta.common.objects.mtrLineStatus
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
@@ -165,9 +170,11 @@ import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.Accessible
 import com.loohp.hkbuseta.compose.ArrowBack
 import com.loohp.hkbuseta.compose.Bedtime
+import com.loohp.hkbuseta.compose.Info
 import com.loohp.hkbuseta.compose.Map
 import com.loohp.hkbuseta.compose.Paid
 import com.loohp.hkbuseta.compose.PlatformButton
+import com.loohp.hkbuseta.compose.PlatformExtendedFloatingActionButton
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformModalBottomSheet
@@ -312,10 +319,26 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
         }
     }
 
+    val mtrLineServiceDisruption: SnapshotStateMap<String, TrainServiceStatus> = remember { mutableStateMapOf() }
+    var mtrLineServiceDisruptionBlink by remember { mutableStateOf(false) }
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
 
     LaunchedEffect (Unit) {
         notices = Registry.getInstance(instance).getOperatorNotices(setOf(Operator.MTR, Operator.LRT), instance)
+    }
+    LaunchedEffect (Unit) {
+        while (true) {
+            val result = Registry.getInstance(instance).getMtrLineServiceDisruption()
+            mtrLineServiceDisruption.clear()
+            mtrLineServiceDisruption.putAll(result)
+            delay(180000)
+        }
+    }
+    LaunchedEffect (Unit) {
+        while (true) {
+            mtrLineServiceDisruptionBlink = !mtrLineServiceDisruptionBlink
+            delay(1000)
+        }
     }
 
     Column(
@@ -376,19 +399,55 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
                 }
             }
         }
-        HorizontalPager(
+        Box(
             modifier = Modifier.weight(1F),
-            state = pagerState,
-            userScrollEnabled = true,
-            verticalAlignment = Alignment.Top,
+            contentAlignment = Alignment.TopCenter,
         ) {
-            when (it) {
-                0 -> MTRRouteMapInterface(instance, location)
-                1 -> LRTRouteMapInterface(instance, location)
-                2 -> NoticeInterface(instance, notices?.toImmutableList())
-                else -> PlatformText(trainRouteMapItems[it].title[Shared.language])
+            HorizontalPager(
+                modifier = Modifier.fillMaxSize(),
+                state = pagerState,
+                userScrollEnabled = true,
+                verticalAlignment = Alignment.Top,
+            ) {
+                when (it) {
+                    0 -> MTRRouteMapInterface(instance, location)
+                    1 -> LRTRouteMapInterface(instance, location)
+                    2 -> NoticeInterface(instance, notices?.toImmutableList())
+                    else -> PlatformText(trainRouteMapItems[it].title[Shared.language])
+                }
+            }
+            val offset by animateDpAsState(
+                targetValue = if (pagerState.currentPage < 2) 0.dp else 100.dp,
+                animationSpec = tween(200, easing = FastOutSlowInEasing)
+            )
+            if (offset < 100.dp) {
+                val statusNotice = mtrLineStatus
+                val color = if (mtrLineServiceDisruption.values.any { it == TrainServiceStatus.DISRUPTION } && mtrLineServiceDisruptionBlink) Color.Red else null
+                PlatformExtendedFloatingActionButton(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(10.dp)
+                        .graphicsLayer { translationY = offset.toPx() },
+                    onClick = instance.handleWebpages(statusNotice.url, false, LocalHapticFeedback.current.common),
+                    icon = {
+                        PlatformIcon(
+                            modifier = Modifier.size(27.dp),
+                            painter = PlatformIcons.Filled.Info,
+                            tint = color,
+                            contentDescription = statusNotice.title
+                        )
+                    },
+                    text = {
+                        PlatformText(
+                            fontSize = 17.sp,
+                            color = color?: Color.Unspecified,
+                            text = statusNotice.title
+                        )
+                    }
+                )
             }
         }
+
     }
 }
 
@@ -489,6 +548,7 @@ fun MTRRouteMapInterface(
     }
 
     MTRRouteMapMapInterface(instance, state, sheetState, imageSizeState, closestStopState)
+
     selectedStopId?.let { stopId ->
         val stop by remember(stopId) { derivedStateOf { stopId.asStop(instance)!! } }
         if (showingSheet) {

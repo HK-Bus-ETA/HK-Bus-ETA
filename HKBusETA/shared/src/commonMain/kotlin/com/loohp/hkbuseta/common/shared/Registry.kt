@@ -47,6 +47,7 @@ import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
+import com.loohp.hkbuseta.common.objects.MTRStatus
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.objects.Route
@@ -64,6 +65,7 @@ import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.StopInfo
 import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.objects.TrafficNews
+import com.loohp.hkbuseta.common.objects.TrainServiceStatus
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.defaultOperatorNotices
 import com.loohp.hkbuseta.common.objects.fetchOperatorNotices
@@ -80,6 +82,8 @@ import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isNightRoute
 import com.loohp.hkbuseta.common.objects.isTrain
+import com.loohp.hkbuseta.common.objects.lrtLineStatus
+import com.loohp.hkbuseta.common.objects.mtrLineStatus
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.routeGroupKey
@@ -691,7 +695,7 @@ class Registry {
                 val checksumFetcher: suspend (Boolean) -> String? = { forced ->
                     val future = async { withTimeout(10000) {
                         val version = context.versionCode
-                        getTextResponse(checksumUrl())?.string() + "_" + version
+                        "${getTextResponse(checksumUrl())?.string()}_$version"
                     } }
                     currentChecksumTask.set(future)
                     if (!forced && files.contains(CHECKSUM_FILE_NAME) && files.contains(DATA_FILE_NAME)) {
@@ -1536,6 +1540,26 @@ class Registry {
         }
     }
 
+    suspend fun getMtrLineServiceDisruption(): Map<String, TrainServiceStatus> {
+        val now = currentTimeMillis()
+        return buildMap {
+            CoroutineScope(dispatcherIO).async {
+                try {
+                    val data = getXMLResponse<MTRStatus>("https://tnews.mtr.com.hk/alert/ryg_line_status.xml?_=$now")!!
+                    for (line in data.lines) {
+                        this@buildMap[line.line] = when (line.status) {
+                            "green" -> TrainServiceStatus.NORMAL
+                            "grey" -> TrainServiceStatus.NON_SERVICE_HOUR
+                            else -> TrainServiceStatus.DISRUPTION
+                        }
+                    }
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }.await()
+        }
+    }
+
     private val routeNoticeCache: MutableMap<Any, Triple<AutoSortedList<RouteNotice, SnapshotStateList<RouteNotice>>, Long, String>> = ConcurrentMutableMap()
 
     fun getOperatorNotices(co: Set<Operator>, context: AppContext): SnapshotStateList<RouteNotice> {
@@ -1543,6 +1567,10 @@ class Registry {
         return (routeNoticeCache[co]?.takeIf { now - it.second < 300000 && it.third == Shared.language }?.first?: run {
             mutableStateListOf<RouteNotice>().asAutoSortedList().apply {
                 routeNoticeCache[co] = Triple(this, now, Shared.language)
+                when {
+                    co.contains(Operator.MTR) -> add(mtrLineStatus)
+                    co.contains(Operator.LRT) -> add(lrtLineStatus)
+                }
                 CoroutineScope(dispatcherIO).launch {
                     try {
                         val data = getXMLResponse<TrafficNews>("https://td.gov.hk/tc/special_news/trafficnews.xml")!!
