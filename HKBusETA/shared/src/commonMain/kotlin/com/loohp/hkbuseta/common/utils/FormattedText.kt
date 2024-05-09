@@ -30,7 +30,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 
-data class FormattedText(
+
+@Immutable
+open class FormattedText(
     val content: List<FormattedTextContent>
 ) : CharSequence, JSONSerializable, IOSerializable {
 
@@ -67,11 +69,15 @@ data class FormattedText(
         }
     }
 
-    val string: String = content.joinToString("") { it.string }
+    val string: String by lazy { content.joinToString("") { it.string } }
 
-    override val length: Int = string.length
+    override val length: Int by lazy { content.sumOf { it.string.length } }
 
     operator fun plus(other: FormattedText): FormattedText {
+        return buildFormattedString { append(this@FormattedText); append(other) }
+    }
+
+    operator fun plus(other: String): FormattedText {
         return buildFormattedString { append(this@FormattedText); append(other) }
     }
 
@@ -85,6 +91,46 @@ data class FormattedText(
 
     fun contains(compare: String): Boolean {
         return string.contains(compare)
+    }
+
+    fun trim(): FormattedText {
+        return when (content.size) {
+            0 -> this
+            1 -> {
+                val first = content[0]
+                FormattedText(listOf(FormattedTextContent(first.string.trim(), first.style)))
+            }
+            else -> {
+                val newContent = content.toMutableList()
+                val first = newContent[0]
+                val end = newContent[newContent.lastIndex]
+                val firstFormatted = FormattedTextContent(first.string.trimStart(), first.style)
+                val lastFormatted = FormattedTextContent(end.string.trimEnd(), end.style)
+                newContent[0] = firstFormatted
+                newContent[newContent.lastIndex] = lastFormatted
+                FormattedText(newContent)
+            }
+        }
+    }
+
+    fun trim(predicate: (Char) -> Boolean): FormattedText {
+        return when (content.size) {
+            0 -> this
+            1 -> {
+                val first = content[0]
+                FormattedText(listOf(FormattedTextContent(first.string.trim(predicate), first.style)))
+            }
+            else -> {
+                val newContent = content.toMutableList()
+                val first = newContent[0]
+                val end = newContent[newContent.lastIndex]
+                val firstFormatted = FormattedTextContent(first.string.trimStart(predicate), first.style)
+                val lastFormatted = FormattedTextContent(end.string.trimEnd(predicate), end.style)
+                newContent[0] = firstFormatted
+                newContent[newContent.lastIndex] = lastFormatted
+                FormattedText(newContent)
+            }
+        }
     }
 
     override fun serialize(): JsonObject {
@@ -115,13 +161,28 @@ data class FormattedText(
         }
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is FormattedText) return false
+
+        return content == other.content
+    }
+
+    override fun hashCode(): Int {
+        return content.hashCode()
+    }
+
 }
 
 infix fun FormattedText.strEq(other: String): Boolean {
     return string == other
 }
 
-class FormattedTextBuilder {
+private val urlRegex: Regex = "<a +href=\\\"([^\\\"]*)\\\">([^>]*)<\\/a>|((?:https?:\\/\\/)?(?:www.)?[a-z0-9]+\\.[a-z]+[0-9a-zA-Z&=+\\-\$~`*@|?\\\\#_%/,.:;]*)".toRegex()
+
+class FormattedTextBuilder(
+    private val extractUrls: Boolean
+) {
 
     private val content: MutableList<FormattedTextContent> = mutableListOf()
 
@@ -142,15 +203,37 @@ class FormattedTextBuilder {
     }
 
     fun append(string: String) {
-        content.add(FormattedTextContent(string))
+        append(string, emptyList())
     }
 
     fun append(string: String, vararg style: FormattingTextContentStyle) {
-        append(string, style.toList())
+        append(string, style.asList())
     }
 
     fun append(string: String, style: List<FormattingTextContentStyle>) {
-        content.add(FormattedTextContent(string, style))
+        val styleImmutable = style.toList()
+        if (extractUrls) {
+            val matcher = urlRegex.findAll(string)
+            var lastPosition = 0
+            for (match in matcher) {
+                val start = match.range.first
+                val displayText = match.groupValues[2].takeIf { it.isNotEmpty() }?: match.groupValues[3]
+                val url = match.groupValues[1].takeIf { it.isNotEmpty() }?: displayText
+                content.add(FormattedTextContent(string.substring(lastPosition, start), styleImmutable))
+                lastPosition = match.range.last + 1
+                content.add(FormattedTextContent(displayText, styleImmutable.toMutableList().apply {
+                    add(URLContentStyle(url))
+                    if (style.none { it is ColorContentStyle }) {
+                        add(ColorContentStyle(0xFF009DFF))
+                    }
+                }))
+            }
+            if (lastPosition < string.length) {
+                content.add(FormattedTextContent(string.substring(lastPosition), styleImmutable))
+            }
+        } else {
+            content.add(FormattedTextContent(string, styleImmutable))
+        }
     }
 
     fun appendLineBreak(count: Int = 1) {
@@ -167,14 +250,17 @@ class FormattedTextBuilder {
 
 }
 
-inline fun buildFormattedString(builder: (FormattedTextBuilder).() -> Unit): FormattedText = FormattedTextBuilder().apply(builder).build()
+inline fun buildFormattedString(
+    extractUrls: Boolean = false,
+    builder: (FormattedTextBuilder).() -> Unit
+): FormattedText = FormattedTextBuilder(extractUrls).apply(builder).build()
 
 data class FormattedTextContent(
     val string: String,
     val style: List<FormattingTextContentStyle> = emptyList()
 )
 
-abstract class FormattingTextContentStyle(
+sealed class FormattingTextContentStyle(
     private val identifier: String
 ) : JSONSerializable, IOSerializable {
 
@@ -187,6 +273,7 @@ abstract class FormattingTextContentStyle(
                 "bold" -> BoldContentStyle
                 "color" -> ColorContentStyle.deserializeValues(json.optJsonObject("values")!!)
                 "inlineImage" -> InlineImageStyle.deserializeValues(json.optJsonObject("values")!!)
+                "url" -> URLContentStyle.deserializeValues(json.optJsonObject("values")!!)
                 else -> throw RuntimeException("Unknown style type $type")
             }
         }
@@ -198,6 +285,7 @@ abstract class FormattingTextContentStyle(
                 "bold" -> BoldContentStyle
                 "color" -> ColorContentStyle.deserializeValues(input)
                 "inlineImage" -> InlineImageStyle.deserializeValues(input)
+                "url" -> URLContentStyle.deserializeValues(input)
                 else -> throw RuntimeException("Unknown style type $type")
             }
         }
@@ -207,11 +295,9 @@ abstract class FormattingTextContentStyle(
 
     internal open suspend fun serializeValues(out: ByteWriteChannel) { }
 
-    override fun serialize(): JsonObject {
-        return buildJsonObject {
-            put("type", identifier)
-            serializeValues()?.let { put("values", it) }
-        }
+    override fun serialize(): JsonObject = buildJsonObject {
+        put("type", identifier)
+        serializeValues()?.let { put("values", it) }
     }
 
     override suspend fun serialize(out: ByteWriteChannel) {
@@ -224,25 +310,38 @@ abstract class FormattingTextContentStyle(
 object SmallContentStyle : FormattingTextContentStyle("small")
 object BigContentStyle : FormattingTextContentStyle("big")
 object BoldContentStyle : FormattingTextContentStyle("bold")
-data class ColorContentStyle(val color: Long) : FormattingTextContentStyle("color") {
+data class ColorContentStyle(
+    val color: Long,
+    val darkThemeColor: Long = color
+) : FormattingTextContentStyle("color") {
 
     companion object {
 
         fun deserializeValues(json: JsonObject): ColorContentStyle {
-            return ColorContentStyle(json.optLong("color"))
+            return ColorContentStyle(json.optLong("color"), json.optLong("darkThemeColor"))
         }
 
         suspend fun deserializeValues(input: ByteReadChannel): ColorContentStyle {
-            return ColorContentStyle(input.readLong())
+            return ColorContentStyle(input.readLong(), input.readLong())
         }
     }
 
-    override fun serializeValues(): JsonObject = buildJsonObject { put("color", color) }
+    fun color(isDarkTheme: Boolean): Long = if (isDarkTheme) darkThemeColor else color
 
-    override suspend fun serializeValues(out: ByteWriteChannel) = out.writeLong(color)
+    override fun serializeValues(): JsonObject = buildJsonObject {
+        put("color", color)
+        put("darkThemeColor", darkThemeColor)
+    }
+
+    override suspend fun serializeValues(out: ByteWriteChannel) {
+        out.writeLong(color)
+        out.writeLong(darkThemeColor)
+    }
 
 }
-data class InlineImageStyle(val image: InlineImage): FormattingTextContentStyle("inlineImage") {
+data class InlineImageStyle(
+    val image: InlineImage
+): FormattingTextContentStyle("inlineImage") {
 
     companion object {
 
@@ -255,9 +354,37 @@ data class InlineImageStyle(val image: InlineImage): FormattingTextContentStyle(
         }
     }
 
-    override fun serializeValues(): JsonObject = buildJsonObject { put("image", image.name) }
+    override fun serializeValues(): JsonObject = buildJsonObject {
+        put("image", image.name)
+    }
 
-    override suspend fun serializeValues(out: ByteWriteChannel) = out.writeString(image.name, UTF_8)
+    override suspend fun serializeValues(out: ByteWriteChannel) {
+        out.writeString(image.name, UTF_8)
+    }
+
+}
+data class URLContentStyle(
+    val url: String
+) : FormattingTextContentStyle("url") {
+
+    companion object {
+
+        fun deserializeValues(json: JsonObject): URLContentStyle {
+            return URLContentStyle(json.optString("url"))
+        }
+
+        suspend fun deserializeValues(input: ByteReadChannel): URLContentStyle {
+            return URLContentStyle(input.readString(UTF_8))
+        }
+    }
+
+    override fun serializeValues(): JsonObject = buildJsonObject {
+        put("url", url)
+    }
+
+    override suspend fun serializeValues(out: ByteWriteChannel) {
+        out.writeString(url, UTF_8)
+    }
 
 }
 
@@ -270,12 +397,24 @@ enum class InlineImage {
 val SmallSize: SmallContentStyle = SmallContentStyle
 val BigSize: BigContentStyle = BigContentStyle
 val BoldStyle: BoldContentStyle = BoldContentStyle
-fun Colored(color: Long): ColorContentStyle = ColorContentStyle(color)
+fun Colored(color: Long, darkThemeColor: Long = color): ColorContentStyle = ColorContentStyle(color, darkThemeColor)
+fun URLLinked(url: String): URLContentStyle = URLContentStyle(url)
+
+val EMPTY_FORMATTED_TEXT = buildFormattedString { append("") }
 
 fun String.asFormattedText(vararg style: FormattingTextContentStyle): FormattedText {
-    return asFormattedText(style.toList())
+    return asFormattedText(style.asList())
 }
 
 fun String.asFormattedText(style: List<FormattingTextContentStyle>): FormattedText {
+    if (isEmpty() && style.isEmpty()) return EMPTY_FORMATTED_TEXT
     return buildFormattedString { append(this@asFormattedText, style.toList()) }
+}
+
+fun FormattedText.transformColors(map: (String, ColorContentStyle) -> ColorContentStyle): FormattedText {
+    return buildFormattedString {
+        for (c in content) {
+            append(c.string, c.style.map { if (it is ColorContentStyle) map.invoke(c.string, it) else it })
+        }
+    }
 }

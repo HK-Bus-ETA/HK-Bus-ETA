@@ -27,12 +27,20 @@ import com.loohp.hkbuseta.common.utils.findDistance
 import com.loohp.hkbuseta.common.utils.optDouble
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
+@Serializable
 @Immutable
-open class Coordinates(val lat: Double, val lng: Double) : JSONSerializable, IOSerializable {
+open class Coordinates(
+    val lat: Double,
+    val lng: Double
+) : JSONSerializable, IOSerializable {
 
     companion object {
 
@@ -52,9 +60,17 @@ open class Coordinates(val lat: Double, val lng: Double) : JSONSerializable, IOS
             return Coordinates(array[0], array[1])
         }
 
+        fun fromJsonArray(array: JsonArray, flip: Boolean = false): Coordinates {
+            return if (flip) {
+                Coordinates(array[1].jsonPrimitive.double, array[0].jsonPrimitive.double)
+            } else {
+                Coordinates(array[0].jsonPrimitive.double, array[1].jsonPrimitive.double)
+            }
+        }
+
     }
 
-    fun distance(other: Coordinates): Double {
+    infix fun distance(other: Coordinates): Double {
         return findDistance(lat, lng, other.lat, other.lng)
     }
 

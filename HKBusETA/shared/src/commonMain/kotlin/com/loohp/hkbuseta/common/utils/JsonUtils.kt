@@ -20,9 +20,12 @@
  */
 package com.loohp.hkbuseta.common.utils
 
+import kotlinx.datetime.LocalTime
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.booleanOrNull
@@ -34,79 +37,110 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 
 
-inline fun JsonObject.optJsonObject(key: String, default: JsonObject? = null): JsonObject? {
+val JsonIgnoreKnownKeys: Json = Json { ignoreUnknownKeys = true }
+
+fun JsonObject.optJsonObject(key: String, default: JsonObject? = null): JsonObject? {
     return this[key]?.let { it as? JsonObject }?: default
 }
 
-inline fun JsonObject.optJsonArray(key: String, default: JsonArray? = null): JsonArray? {
+fun JsonObject.optJsonArray(key: String, default: JsonArray? = null): JsonArray? {
     return this[key]?.let { it as? JsonArray }?: default
 }
 
-inline fun JsonObject.optString(key: String, default: String = ""): String {
+fun JsonObject.optString(key: String, default: String = ""): String {
     return this[key]?.let { it as? JsonPrimitive }?.content?: default
 }
 
-inline fun JsonObject.optBoolean(key: String, default: Boolean = false): Boolean {
+fun JsonObject.optBoolean(key: String, default: Boolean = false): Boolean {
     return this[key]?.let { it as? JsonPrimitive }?.booleanOrNull?: default
 }
 
-inline fun JsonObject.optInt(key: String, default: Int = 0): Int {
+fun JsonObject.optInt(key: String, default: Int = 0): Int {
     return this[key]?.let { it as? JsonPrimitive }?.intOrNull?: default
 }
 
-inline fun JsonObject.optLong(key: String, default: Long = 0): Long {
+fun JsonObject.optLong(key: String, default: Long = 0): Long {
     return this[key]?.let { it as? JsonPrimitive }?.longOrNull?: default
 }
 
-inline fun JsonObject.optDouble(key: String, default: Double = Double.NaN): Double {
+fun JsonObject.optDouble(key: String, default: Double = Double.NaN): Double {
     return this[key]?.let { it as? JsonPrimitive }?.doubleOrNull?: default
 }
 
-inline fun JsonArray.optJsonObject(index: Int, default: JsonObject? = null): JsonObject? {
+fun JsonArray.optJsonObject(index: Int, default: JsonObject? = null): JsonObject? {
     return this.getOrNull(index)?.let { it as? JsonObject }?: default
 }
 
-inline fun JsonArray.optJsonArray(index: Int, default: JsonArray? = null): JsonArray? {
+fun JsonArray.optJsonArray(index: Int, default: JsonArray? = null): JsonArray? {
     return this.getOrNull(index)?.let { it as? JsonArray }?: default
 }
 
-inline fun JsonArray.optString(index: Int, default: String = ""): String {
+fun JsonArray.optString(index: Int, default: String = ""): String {
     return this.getOrNull(index)?.let { it as? JsonPrimitive }?.content?: default
 }
 
-inline fun JsonArray.optBoolean(index: Int, default: Boolean = false): Boolean {
+fun JsonArray.optBoolean(index: Int, default: Boolean = false): Boolean {
     return this.getOrNull(index)?.let { it as? JsonPrimitive }?.booleanOrNull?: default
 }
 
-inline fun JsonArray.optInt(index: Int, default: Int = 0): Int {
+fun JsonArray.optInt(index: Int, default: Int = 0): Int {
     return this.getOrNull(index)?.let { it as? JsonPrimitive }?.intOrNull?: default
 }
 
-inline fun JsonArray.optLong(index: Int, default: Long = 0): Long {
+fun JsonArray.optLong(index: Int, default: Long = 0): Long {
     return this.getOrNull(index)?.let { it as? JsonPrimitive }?.longOrNull?: default
 }
 
-inline fun JsonArray.optDouble(index: Int, default: Double = Double.NaN): Double {
+fun JsonArray.optDouble(index: Int, default: Double = Double.NaN): Double {
     return this.getOrNull(index)?.let { it as? JsonPrimitive }?.doubleOrNull?: default
 }
 
-inline fun <T> JsonArray.mapToMutableList(deserializer: (JsonElement) -> T): MutableList<T> {
+fun JsonObject.optLocalTime(key: String, default: LocalTime? = null): LocalTime? {
+    return optString(key).split(":").let {
+        if (it.size == 2) {
+            val hour = it[0].toIntOrNull()
+            val min = it[1].toIntOrNull()
+            if (hour != null && min != null && hour in 0..23 && min in 0..59) {
+                LocalTime(hour, min)
+            } else null
+        } else null
+    }
+}
+
+fun JsonObjectBuilder.put(key: String, value: LocalTime?): JsonElement? = put(key, JsonPrimitive(
+    value?.let { "${it.hour.pad(2)}:${it.minute.pad(2)}" }
+))
+
+fun <T> JsonArray.mapToMutableList(deserializer: (JsonElement) -> T): MutableList<T> {
     return ArrayList<T>(size).apply { this@mapToMutableList.forEach { this.add(deserializer.invoke(it)) } }
 }
 
-inline fun <T> JsonArray.mapToMutableSet(deserializer: (JsonElement) -> T): MutableSet<T> {
+fun <T> JsonArray.mapToMutableSet(deserializer: (JsonElement) -> T): MutableSet<T> {
     return LinkedHashSet<T>().apply { this@mapToMutableSet.forEach { this.add(deserializer.invoke(it)) } }
 }
 
-inline fun <K, V> JsonObject.mapToMutableMap(keyDeserializer: (String) -> K, valueDeserializer: (JsonElement) -> V): MutableMap<K, V> {
+fun <K, V> JsonObject.mapToMutableMap(keyDeserializer: (String) -> K, valueDeserializer: (JsonElement) -> V): MutableMap<K, V> {
     return LinkedHashMap<K, V>().apply { this@mapToMutableMap.forEach { (key, value) -> this[keyDeserializer.invoke(key)] = valueDeserializer.invoke(value) } }
 }
 
-inline fun <V> JsonObject.mapToMutableMap(valueDeserializer: (JsonElement) -> V): MutableMap<String, V> {
+fun <V> JsonObject.mapToMutableMap(valueDeserializer: (JsonElement) -> V): MutableMap<String, V> {
     return mapToMutableMap({ it }, valueDeserializer)
 }
 
-inline fun <T> Collection<T>.toJsonArray(): JsonArray {
+fun <T> Collection<T>.toJsonArray(): JsonArray {
+    return buildJsonArray { this@toJsonArray.forEach {
+        when (it) {
+            is JsonElement -> add(it)
+            is Number -> add(it)
+            is String -> add(it)
+            is Boolean -> add(it)
+            is JSONSerializable -> add(it.serialize())
+            else -> throw IllegalArgumentException()
+        }
+    } }
+}
+
+fun <T> Sequence<T>.toJsonArray(): JsonArray {
     return buildJsonArray { this@toJsonArray.forEach {
         when (it) {
             is JsonElement -> add(it)
@@ -118,19 +152,7 @@ inline fun <T> Collection<T>.toJsonArray(): JsonArray {
     } }
 }
 
-inline fun <T> Sequence<T>.toJsonArray(): JsonArray {
-    return buildJsonArray { this@toJsonArray.forEach {
-        when (it) {
-            is JsonElement -> add(it)
-            is Number -> add(it)
-            is String -> add(it)
-            is Boolean -> add(it)
-            else -> throw IllegalArgumentException()
-        }
-    } }
-}
-
-inline fun <V> Map<*, V>.toJsonObject(valueSerializer: (V) -> Any?): JsonObject {
+fun <V> Map<*, V>.toJsonObject(valueSerializer: (V) -> Any?): JsonObject {
     return buildJsonObject { this@toJsonObject.forEach { (rawKey, rawValue) ->
         val key = rawKey.toString()
         when (val value = valueSerializer.invoke(rawValue)) {

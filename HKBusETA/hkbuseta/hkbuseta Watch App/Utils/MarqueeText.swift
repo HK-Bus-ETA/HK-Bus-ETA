@@ -16,6 +16,7 @@ struct MarqueeText : View {
     var startDelay: Double
     var alignment: Alignment
     
+    @State private var loadState = false
     @State private var animate = false
     var isCompact = false
     
@@ -42,7 +43,7 @@ struct MarqueeText : View {
         let stringHeight = oas.attributedString == nil ? oas.string.heightOfString(usingFont: font) : oas.attributedString!.heightOfString(usingFont: font)
         
         let animation = Animation
-            .linear(duration: Double(stringWidth) / 25)
+            .linear(duration: stringWidth / 25)
             .delay(startDelay)
             .repeatForever(autoreverses: false)
         
@@ -52,7 +53,7 @@ struct MarqueeText : View {
         return ZStack {
             GeometryReader { geo in
                 Group {
-                    if stringWidth > geo.size.width {
+                    if stringWidth > geo.size.width && loadState {
                         Group {
                             text()
                                 .lineLimit(1)
@@ -92,10 +93,16 @@ struct MarqueeText : View {
                             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: alignment)
                     }
                 }
+                .onChange(of: geo.size) { size in
+                    self.loadState = false
+                    self.animate = size.width < stringWidth && !ambientMode
+                    self.loadState = true
+                }
                 .onChange(of: oas) { oas in
-                    self.animate = false
+                    self.loadState = false
                     let stringWidth = oas.attributedString == nil ? oas.string.widthOfString(usingFont: font) : oas.attributedString!.widthOfString(usingFont: font)
                     self.animate = geo.size.width < stringWidth && !ambientMode
+                    self.loadState = true
                 }
                 .onChange(of: ambientMode) { ambientMode in
                     self.animate = geo.size.width < stringWidth && !ambientMode
@@ -105,6 +112,7 @@ struct MarqueeText : View {
         .frame(height: stringHeight)
         .frame(maxWidth: isCompact ? stringWidth : nil)
         .onDisappear { self.animate = false }
+        .onAppear { self.loadState = true }
     }
 }
 

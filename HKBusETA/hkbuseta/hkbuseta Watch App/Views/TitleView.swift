@@ -14,7 +14,6 @@ struct TitleView: AppScreenView {
     
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
-        
     }
     
     var body: some View {
@@ -23,53 +22,62 @@ struct TitleView: AppScreenView {
             Button(action: {
                 appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.search))
             }) {
-                Text(Shared().language == "en" ? "Input Route" : "輸入巴士路線")
-                    .font(.system(size: min(20.scaled(appContext, true), 23.scaled(appContext)), weight: .bold))
+                Text(Shared().language == "en" ? "Search Routes" : "搜尋路線")
+                    .font(.system(size: min(22.scaled(appContext, true), 24.scaled(appContext)), weight: .bold))
+                    .background(
+                        Image("bus_background")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
+                            .brightness(-0.45)
+                            .clipShape(RoundedRectangle(cornerRadius: 50))
+                    )
             }
-            .background(
-                Image("bus_background")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
-                    .brightness(-0.2)
-                    .clipShape(RoundedRectangle(cornerRadius: 50))
-            )
             .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
             .clipShape(RoundedRectangle(cornerRadius: 50))
+            .buttonStyle(PlainButtonStyle())
             Button(action: {
                 appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.nearby))
             }) {
-                Text(Shared().language == "en" ? "Search Nearby" : "附近巴士路線")
-                    .font(.system(size: min(20.scaled(appContext, true), 23.scaled(appContext)), weight: .bold))
-            }.background(
-                Image("nearby_background")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
-                    .brightness(-0.4)
-                    .clipShape(RoundedRectangle(cornerRadius: 50))
-            )
+                Text(Shared().language == "en" ? "Nearby Routes" : "附近路線")
+                    .font(.system(size: min(22.scaled(appContext, true), 24.scaled(appContext)), weight: .bold))
+                    .background(
+                        Image("nearby_background")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
+                            .brightness(-0.45)
+                            .clipShape(RoundedRectangle(cornerRadius: 50))
+                    )
+            }
             .frame(width: 178.0.scaled(appContext), height: 53.0.scaled(appContext))
             .clipShape(RoundedRectangle(cornerRadius: 50))
+            .buttonStyle(PlainButtonStyle())
             HStack {
                 Button(action: {
-                    registry(appContext).setLanguage(language: Shared().language == "en" ? "zh" : "en", context: appContext)
-                    appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.main))
+                    appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.settings))
                 }) {
-                    Text(Shared().language == "en" ? "中文" : (belowWidgetVersion ? "EN" : "English"))
-                        .font(.system(size: min(20.scaled(appContext, true), 23.scaled(appContext)), weight: .bold))
+                    if belowWidgetVersion {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: min(22.scaled(appContext, true), 24.scaled(appContext))))
+                            .foregroundColor(.white)
+                    } else {
+                        Text(Shared().language == "en" ? "Settings" : "設定")
+                            .font(.system(size: min(22.scaled(appContext, true), 24.scaled(appContext)), weight: .bold))
+                    }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 50))
+                .frame(height: 53.0.scaled(appContext))
                 .frame(maxWidth: .infinity)
                 Button(action: {
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.fav))
                 }) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: min(21.scaled(appContext, true), 24.scaled(appContext))))
+                        .font(.system(size: min(22.scaled(appContext, true), 24.scaled(appContext))))
                         .foregroundColor(.yellow)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 50))
-                .frame(width: 55.scaled(appContext))
+                .frame(width: 55.0.scaled(appContext), height: 53.0.scaled(appContext))
                 if belowWidgetVersion {
                     Button(action: {
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
@@ -80,7 +88,7 @@ struct TitleView: AppScreenView {
                             .foregroundColor(.red)
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 50))
-                    .frame(width: 55.scaled(appContext))
+                    .frame(width: 55.0.scaled(appContext), height: 53.0.scaled(appContext))
                 }
             }
             Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報").font(.system(size: 12.scaled(appContext)))

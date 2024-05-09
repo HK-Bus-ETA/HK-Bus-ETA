@@ -29,13 +29,17 @@ import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-
+@Serializable
 @Immutable
-class BilingualText(val zh: String, val en: String) : JSONSerializable, IOSerializable {
+class BilingualText(
+    val zh: String,
+    val en: String
+) : JSONSerializable, IOSerializable {
 
     companion object {
 
@@ -75,6 +79,10 @@ class BilingualText(val zh: String, val en: String) : JSONSerializable, IOSerial
         return BilingualText(this.zh + other, this.en + other)
     }
 
+    infix fun anyEquals(other: BilingualText): Boolean {
+        return zh == other.zh || en == other.en
+    }
+
     override fun toString(): String {
         return "$zh $en"
     }
@@ -107,4 +115,50 @@ class BilingualText(val zh: String, val en: String) : JSONSerializable, IOSerial
         return result
     }
 
+}
+
+infix fun String.withEn(en: String): BilingualText {
+    return BilingualText(this, en)
+}
+
+infix fun String.withZh(zh: String): BilingualText {
+    return BilingualText(zh, this)
+}
+
+fun String.asBilingualText(): BilingualText {
+    return this withEn this
+}
+
+infix fun String.anyEquals(other: BilingualText): Boolean {
+    return this == other.zh || this == other.en
+}
+
+fun <T> Iterable<T>.joinToBilingualText(separator: BilingualText = ", ".asBilingualText(), prefix: BilingualText = "".asBilingualText(), postfix: BilingualText = "".asBilingualText(), limit: Int = -1, truncated: BilingualText = "...".asBilingualText(), transform: ((T) -> BilingualText)? = null): BilingualText {
+    return joinToString(separator.zh, prefix.zh, postfix.zh, limit, truncated.zh, transform?.let { f -> { f.invoke(it).zh } }) withEn joinToString(separator.en, prefix.en, postfix.en, limit, truncated.en, transform?.let { f -> { f.invoke(it).en } })
+}
+
+fun <T> Sequence<T>.joinToBilingualText(separator: BilingualText = ", ".asBilingualText(), prefix: BilingualText = "".asBilingualText(), postfix: BilingualText = "".asBilingualText(), limit: Int = -1, truncated: BilingualText = "...".asBilingualText(), transform: ((T) -> BilingualText)? = null): BilingualText {
+    return joinToString(separator.zh, prefix.zh, postfix.zh, limit, truncated.zh, transform?.let { f -> { f.invoke(it).zh } }) withEn joinToString(separator.en, prefix.en, postfix.en, limit, truncated.en, transform?.let { f -> { f.invoke(it).en } })
+}
+
+fun Iterable<BilingualText>.joinBilingualText(separator: BilingualText = ", ".asBilingualText(), prefix: BilingualText = "".asBilingualText(), postfix: BilingualText = "".asBilingualText(), limit: Int = -1, truncated: BilingualText = "...".asBilingualText(), transform: ((BilingualText) -> BilingualText)? = null): BilingualText {
+    val zh = mutableListOf<String>()
+    val en = mutableListOf<String>()
+    for ((index, text) in withIndex()) {
+        val transformed = transform?.takeIf { limit < 0 || index < limit }?.invoke(text)?: text
+        zh.add(transformed.zh)
+        en.add(transformed.en)
+    }
+    return zh.joinToString(separator.zh, prefix.zh, postfix.zh, limit, truncated.zh) withEn en.joinToString(separator.en, prefix.en, postfix.en, limit, truncated.en)
+}
+
+fun Sequence<BilingualText>.joinBilingualText(separator: BilingualText = ", ".asBilingualText(), prefix: BilingualText = "".asBilingualText(), postfix: BilingualText = "".asBilingualText(), limit: Int = -1, truncated: BilingualText = "...".asBilingualText(), transform: ((BilingualText) -> BilingualText)? = null): BilingualText {
+    val zh = mutableListOf<String>()
+    val en = mutableListOf<String>()
+    for ((index, text) in withIndex()) {
+        val transformed = transform?.takeIf { limit < 0 || index < limit }?.invoke(text)?: text
+        zh.add(transformed.zh)
+        en.add(transformed.en)
+    }
+    return zh.joinToString(separator.zh, prefix.zh, postfix.zh, limit, truncated.zh) withEn en.joinToString(separator.en, prefix.en, postfix.en, limit, truncated.en)
 }

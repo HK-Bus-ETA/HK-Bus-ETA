@@ -28,6 +28,7 @@ import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.readFully
 import io.ktor.utils.io.writeBoolean
 import io.ktor.utils.io.writeFully
+import io.ktor.utils.io.core.String
 
 
 suspend inline fun ByteReadChannel.read(size: Int): ByteArray {
@@ -44,7 +45,7 @@ suspend inline fun ByteWriteChannel.writeString(string: String, charset: Charset
 
 suspend inline fun ByteReadChannel.readString(charset: Charset): String {
     val bytes = read(readInt())
-    return io.ktor.utils.io.core.String(bytes, charset = charset)
+    return String(bytes, charset = charset)
 }
 
 suspend inline fun <T> ByteWriteChannel.writeNullable(value: T?, write: (ByteWriteChannel, T) -> Unit) {

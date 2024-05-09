@@ -25,20 +25,28 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
         maven("https://oss.sonatype.org/content/repositories/snapshots")
         maven("https://maven.pkg.jetbrains.space/kotlin/p/wasm/experimental")
+        maven("https://jogamp.org/deployment/maven")
+        maven("https://s01.oss.sonatype.org/content/repositories/releases/")
+        maven("https://androidx.dev/storage/compose-compiler/repository/")
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
+        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
         maven("https://oss.sonatype.org/content/repositories/snapshots")
         maven("https://maven.pkg.jetbrains.space/kotlin/p/wasm/experimental")
+        maven("https://jogamp.org/deployment/maven")
+        maven("https://s01.oss.sonatype.org/content/repositories/releases/")
+        maven("https://androidx.dev/storage/compose-compiler/repository/")
     }
 }
 
 rootProject.name = "HKBusETA"
-include(":app")
+include(":wearosApp")
 include(":shared")
+include(":composeApp")

@@ -63,10 +63,10 @@ class SingleLocationManager: NSObject, ObservableObject, CLLocationManagerDelega
     }
 }
 
-extension CLLocationCoordinate2D {
+extension CLLocation {
     
     func toLocationResult() -> LocationResult {
-        return LocationResult.Companion().fromLatLng(lat: latitude, lng: longitude)
+        return LocationResult.Companion().of(lat: coordinate.latitude, lng: coordinate.longitude, altitude: KotlinDouble(double: altitude), bearing: KotlinFloat(float: Float(course)))
     }
     
 }

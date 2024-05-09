@@ -56,7 +56,7 @@ extension FormattedText {
                     bold = true
                 } else if style is ColorContentStyle {
                     let colorStyle = style as! ColorContentStyle
-                    attributedString.addAttribute(.foregroundColor, value: colorStyle.color.asUIColor(), range: range)
+                    attributedString.addAttribute(.foregroundColor, value: colorStyle.darkThemeColor.asUIColor(), range: range)
                 }
             }
             attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: defaultFontSize * sizeMultiplier, weight: bold ? .bold : .regular), range: range)
@@ -68,20 +68,32 @@ extension FormattedText {
 
 extension String {
     
-    func asAttributedString(color: Color? = nil, fontSize: CGFloat? = nil) -> AttributedString {
+    func asAttributedString(color: Color? = nil, fontSize: CGFloat? = nil, weight: UIFont.Weight? = nil) -> AttributedString {
         let attributedString = NSMutableAttributedString(string: self)
         let range = NSMakeRange(0, self.count)
         if color != nil {
             attributedString.addAttribute(.foregroundColor, value: UIColor(color!), range: range)
         }
         if fontSize != nil {
-            attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: fontSize!), range: range)
+            let font: UIFont
+            if weight == nil {
+                font = UIFont.systemFont(ofSize: fontSize!)
+            } else {
+                font = UIFont.systemFont(ofSize: fontSize!, weight: weight!)
+            }
+            attributedString.addAttribute(.font, value: font, range: range)
         }
         return AttributedString(attributedString)
     }
     
     func eitherContains(other: String) -> Bool {
         return self.contains(other) || other.contains(self)
+    }
+    
+    func replace(_ regexPattern: String, _ with: String) -> String {
+        let regex = try! NSRegularExpression(pattern: regexPattern, options: [])
+        let range = NSRange(location: 0, length: self.utf16.count)
+        return regex.stringByReplacingMatches(in: self, options: [], range: range, withTemplate: with)
     }
     
 }

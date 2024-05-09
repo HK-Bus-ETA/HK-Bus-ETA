@@ -20,6 +20,7 @@
  */
 package com.loohp.hkbuseta.common.objects
 
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.JSONSerializable
 import com.loohp.hkbuseta.common.utils.optInt
@@ -28,6 +29,7 @@ import com.loohp.hkbuseta.common.utils.optString
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.random.Random
 
 @Immutable
 class FavouriteRouteStop(
@@ -36,8 +38,12 @@ class FavouriteRouteStop(
     val index: Int,
     val stop: Stop,
     val route: Route,
-    val favouriteStopMode: FavouriteStopMode
+    val favouriteStopMode: FavouriteStopMode,
+    val favouriteId: Int
 ) : JSONSerializable {
+
+    constructor(stopId: String, co: Operator, index: Int, stop: Stop, route: Route, favouriteStopMode: FavouriteStopMode):
+            this(stopId, co, index, stop, route, favouriteStopMode, Random.nextInt())
 
     companion object {
 
@@ -48,7 +54,8 @@ class FavouriteRouteStop(
             val stop = Stop.deserialize(json.optJsonObject("stop")!!)
             val route = Route.deserialize(json.optJsonObject("route")!!)
             val favouriteStopMode = FavouriteStopMode.valueOfOrDefault(json.optString("favouriteStopMode"))
-            return FavouriteRouteStop(stopId, co, index, stop, route, favouriteStopMode)
+            val favouriteId = json.optInt("favouriteId")
+            return FavouriteRouteStop(stopId, co, index, stop, route, favouriteStopMode, favouriteId)
         }
 
     }
@@ -61,6 +68,8 @@ class FavouriteRouteStop(
             put("stop", stop.serialize())
             put("route", route.serialize())
             put("favouriteStopMode", favouriteStopMode.name)
+            put("favouriteId", favouriteId)
+            platformDisplayInfo?.let { put("platformDisplayInfo", it) }
         }
     }
 
@@ -73,7 +82,8 @@ class FavouriteRouteStop(
         if (index != other.index) return false
         if (stop != other.stop) return false
         if (route != other.route) return false
-        return favouriteStopMode == other.favouriteStopMode
+        if (favouriteStopMode != other.favouriteStopMode) return false
+        return favouriteId == other.favouriteId
     }
 
     override fun hashCode(): Int {
@@ -83,7 +93,21 @@ class FavouriteRouteStop(
         result = 31 * result + stop.hashCode()
         result = 31 * result + route.hashCode()
         result = 31 * result + favouriteStopMode.hashCode()
+        result = 31 * result + favouriteId
         return result
     }
 
+}
+
+expect val FavouriteRouteStop.platformDisplayInfo: JsonObject?
+
+fun List<FavouriteRouteStop>.toRouteSearchResult(instance: AppContext, origin: Coordinates?): List<RouteSearchResultEntry> {
+    return asSequence()
+        .map { fav ->
+            val (_, stopId, stop, route) = fav.resolveStop(instance) { origin }
+            val favouriteStopMode = fav.favouriteStopMode
+            RouteSearchResultEntry(route.getRouteKey(instance)!!, route, fav.co, StopInfo(stopId, stop, 0.0, fav.co), null, false, favouriteStopMode)
+        }
+        .distinctBy { routeEntry -> routeEntry.uniqueKey }
+        .toList()
 }

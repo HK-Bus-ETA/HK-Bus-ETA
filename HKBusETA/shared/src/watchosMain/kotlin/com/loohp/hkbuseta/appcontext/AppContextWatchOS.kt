@@ -26,41 +26,68 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
 import com.loohp.hkbuseta.common.appcontext.AppIntentResult
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.appcontext.AppShortcutIcon
+import com.loohp.hkbuseta.common.appcontext.FormFactor
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.Preferences
+import com.loohp.hkbuseta.common.objects.Route
+import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.common.services.AlightReminderActiveState
+import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
 import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
+import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
+import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
+import com.loohp.hkbuseta.common.utils.MutableNullableStateFlow
+import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.getTextResponse
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
+import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
+import com.loohp.hkbuseta.common.utils.pad
+import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import com.loohp.hkbuseta.common.utils.wrap
+import com.loohp.hkbuseta.common.utils.wrapList
 import io.ktor.utils.io.charsets.Charset
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UnsafeNumber
 import kotlinx.cinterop.useContents
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toNSDateComponents
+import kotlinx.serialization.json.Json
 import platform.Foundation.NSBundle
 import platform.Foundation.NSCalendar
 import platform.Foundation.NSDateFormatter
+import platform.Foundation.NSDateFormatterMediumStyle
 import platform.Foundation.NSDateFormatterNoStyle
 import platform.Foundation.NSDateFormatterShortStyle
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSLocale
 import platform.Foundation.NSString
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.URLByAppendingPathComponent
 import platform.Foundation.create
 import platform.Foundation.lastPathComponent
+import platform.Foundation.preferredLanguages
 import platform.Foundation.writeToURL
+import platform.WatchConnectivity.WCSession
 import platform.WatchKit.WKHapticType
 import platform.WatchKit.WKInterfaceDevice
 import platform.darwin.dispatch_async
@@ -69,8 +96,7 @@ import platform.darwin.dispatch_get_main_queue
 
 object HistoryStack {
 
-    @NativeCoroutinesState
-    val historyStack: MutableStateFlow<List<AppActiveContextWatchOS>> = MutableStateFlow(listOf(AppActiveContextWatchOS.INIT_ENTRY))
+    val historyStack: MutableNonNullStateFlowList<AppActiveContextWatchOS> = MutableStateFlow(listOf(AppActiveContextWatchOS.INIT_ENTRY)).wrapList()
 
     fun popHistoryStack() {
         val stack = historyStack.value.toMutableList()
@@ -96,8 +122,7 @@ data class ToastTextData(val text: String, val duration: ToastDuration) {
 
 object ToastTextState {
 
-    @NativeCoroutinesState
-    val toastState: MutableStateFlow<ToastTextData> = MutableStateFlow(ToastTextData.RESET)
+    val toastState: MutableNonNullStateFlow<ToastTextData> = MutableStateFlow(ToastTextData.RESET).wrap()
 
     fun resetToastState() {
         toastState.value = ToastTextData.RESET
@@ -111,6 +136,7 @@ private var firebaseImpl: (String, AppBundle) -> Unit = { _, _ -> }
 private var openMapsImpl: (Double, Double, String, Boolean, HapticFeedback) -> Unit = { _, _, _, _, _ -> }
 private var openWebpagesImpl: (String, Boolean, HapticFeedback) -> Unit = { _, _, _ -> }
 private var openWebImagesImpl: (String, Boolean, HapticFeedback) -> Unit = { _, _, _ -> }
+private var syncPreferencesImpl: (String) -> Unit = { }
 
 fun setFirebaseLogImpl(handler: (String, AppBundle) -> Unit) {
     firebaseImpl = handler
@@ -126,6 +152,10 @@ fun setOpenWebpagesImpl(handler: (String, Boolean, HapticFeedback) -> Unit) {
 
 fun setOpenImagesImpl(handler: (String, Boolean, HapticFeedback) -> Unit) {
     openWebImagesImpl = handler
+}
+
+fun setSyncPreferencesImpl(handler: (String) -> Unit) {
+    syncPreferencesImpl = handler
 }
 
 @OptIn(ExperimentalForeignApi::class, UnsafeNumber::class, BetaInteropApi::class)
@@ -153,30 +183,32 @@ open class AppContextWatchOS internal constructor() : AppContext {
         get() = minScreenSize / 198F
 
     override val density: Float
-        get() = 0F
+        get() = 1F
 
     override val scaledDensity: Float
-        get() = 0F
+        get() = 1F
 
-    override fun readTextFileLines(fileName: String, charset: Charset): List<String> {
+    override val formFactor: FormFactor = FormFactor.WATCH
+
+    override suspend fun readTextFile(fileName: String, charset: Charset): StringReadChannel {
         return NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
             dir as NSURL
             val fileURL = dir.URLByAppendingPathComponent(fileName)!!
             val text = NSString.create(contentsOfURL = fileURL)
-            text.toString().split("\n").toList()
+            text.toString().toStringReadChannel(charset)
         }
     }
 
-    override fun writeTextFileList(fileName: String, charset: Charset, writeText: () -> List<String>) {
+    override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
         NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
             dir as NSURL
             val fileURL = dir.URLByAppendingPathComponent(fileName)!!
-            val text = NSString.create(string = writeText.invoke().joinToString("\n"))
+            val text = NSString.create(string = writeText.invoke().string())
             text.writeToURL(fileURL, atomically = false)
         }
     }
 
-    override fun listFiles(): List<String> {
+    override suspend fun listFiles(): List<String> {
         val fileManager = NSFileManager.defaultManager
         return fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
             dir as NSURL
@@ -187,7 +219,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
         }
     }
 
-    override fun deleteFile(fileName: String): Boolean {
+    override suspend fun deleteFile(fileName: String): Boolean {
         val fileManager = NSFileManager.defaultManager
         return fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
             dir as NSURL
@@ -200,8 +232,21 @@ open class AppContextWatchOS internal constructor() : AppContext {
         }
     }
 
+    override fun syncPreference(preferences: Preferences) {
+        syncPreferencesImpl.invoke(preferences.serialize().toString())
+    }
+
+    override fun requestPreferencesIfPossible(): Deferred<Boolean> {
+        return if (WCSession.defaultSession.isCompanionAppInstalled()) {
+            WCSession.defaultSession.sendMessage(mapOf("messageType" to Shared.REQUEST_PREFERENCES_ID), { /* do nothing */ }, { /* do nothing */ })
+            CompletableDeferred(true)
+        } else {
+            CompletableDeferred(false)
+        }
+    }
+
     override fun hasConnection(): Boolean {
-        return getTextResponse(Registry.checksumUrl()) != null
+        return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { getTextResponse(Registry.checksumUrl()) != null }
     }
 
     override fun currentBackgroundRestrictions(): BackgroundRestrictionType {
@@ -221,7 +266,12 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override fun startActivity(appIntent: AppIntent) {
-        HistoryStack.historyStack.value = HistoryStack.historyStack.value.toMutableList().apply { add(AppActiveContextWatchOS(appIntent.screen, appIntent.extras.data)) }
+        HistoryStack.historyStack.value = HistoryStack.historyStack.value.toMutableList().apply {
+            if (appIntent.hasFlags(AppIntentFlag.NEW_TASK) || appIntent.hasFlags(AppIntentFlag.CLEAR_TASK)) {
+                clear()
+            }
+            add(AppActiveContextWatchOS(appIntent.screen, appIntent.extras.data))
+        }
     }
 
     override fun startForegroundService(appIntent: AppIntent) {
@@ -235,10 +285,27 @@ open class AppContextWatchOS internal constructor() : AppContext {
     override fun formatTime(localDateTime: LocalDateTime): String {
         return NSCalendar.currentCalendar.dateFromComponents(localDateTime.toNSDateComponents())?.let {
             NSDateFormatter().apply {
+                locale = NSLocale((NSLocale.preferredLanguages.firstOrNull() as? String)?: "en")
                 dateStyle = NSDateFormatterNoStyle
                 timeStyle = NSDateFormatterShortStyle
             }.stringFromDate(it)
-        }?: localDateTime.let { "${it.hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')}" }
+        }?: localDateTime.let { "${it.hour.pad(2)}:${it.minute.pad(2)}" }
+    }
+
+    override fun formatDateTime(localDateTime: LocalDateTime, includeTime: Boolean): String {
+        return NSCalendar.currentCalendar.dateFromComponents(localDateTime.toNSDateComponents())?.let {
+            NSDateFormatter().apply {
+                locale = NSLocale((NSLocale.preferredLanguages.firstOrNull() as? String)?: "en")
+                dateStyle = NSDateFormatterMediumStyle
+                timeStyle = NSDateFormatterShortStyle
+            }.stringFromDate(it)
+        }?: localDateTime.let {
+            "${it.dayOfMonth.pad(2)}/${it.monthNumber.pad(2)}/${it.year} ${it.hour.pad(2)}:${it.minute.pad(2)}"
+        }
+    }
+
+    override fun setAppShortcut(id: String, shortLabel: String, longLabel: String, icon: AppShortcutIcon, tint: Long?, rank: Int, url: String) {
+        //do nothing
     }
 
 }
@@ -266,7 +333,12 @@ class AppActiveContextWatchOS internal constructor(
     }
 
     override fun startActivity(appIntent: AppIntent, callback: (AppIntentResult) -> Unit) {
-        HistoryStack.historyStack.value = HistoryStack.historyStack.value.toMutableList().apply { add(AppActiveContextWatchOS(appIntent.screen, appIntent.extras.data, finishCallback = callback)) }
+        HistoryStack.historyStack.value = HistoryStack.historyStack.value.toMutableList().apply {
+            if (appIntent.hasFlags(AppIntentFlag.NEW_TASK) || appIntent.hasFlags(AppIntentFlag.CLEAR_TASK)) {
+                clear()
+            }
+            add(AppActiveContextWatchOS(appIntent.screen, appIntent.extras.data, finishCallback = callback))
+        }
     }
 
     override fun handleOpenMaps(lat: Double, lng: Double, label: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
@@ -274,11 +346,11 @@ class AppActiveContextWatchOS internal constructor(
     }
 
     override fun handleWebpages(url: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
-        return { openWebpagesImpl.invoke(url, longClick, haptics) }
+        return { openWebpagesImpl.invoke(url.normalizeUrlScheme(), longClick, haptics) }
     }
 
     override fun handleWebImages(url: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
-        return { openWebImagesImpl.invoke(url, longClick, haptics) }
+        return { openWebImagesImpl.invoke(url.normalizeUrlScheme(), longClick, haptics) }
     }
 
     override fun setResult(result: AppIntentResult) {
@@ -325,7 +397,7 @@ class AppActiveContextWatchOS internal constructor(
 }
 
 fun createMutableAppDataContainer(): MutableMap<String, Any?> {
-    return HashMap()
+    return mutableMapOf()
 }
 
 fun createAppIntent(context: AppContext, screen: AppScreen, appDataContainer: MutableMap<String, Any?>): AppIntent {
@@ -333,7 +405,7 @@ fun createAppIntent(context: AppContext, screen: AppScreen, appDataContainer: Mu
 }
 
 fun dispatcherIO(task: () -> Unit) {
-    CoroutineScope(Dispatchers.IO).launch { task.invoke() }
+    CoroutineScope(com.loohp.hkbuseta.common.utils.dispatcherIO).launch { task.invoke() }
 }
 
 val HapticFeedbackType.native: WKHapticType get() = when (this) {
@@ -347,4 +419,102 @@ val hapticFeedback: HapticFeedback = object : HapticFeedback {
         WKInterfaceDevice.currentDevice().playHaptic(hapticFeedbackType.native)
     }
 
+}
+
+fun syncPreference(context: AppContext, preferenceJson: String, sync: Boolean) {
+    runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) {
+        if (Registry.isNewInstall(applicationContext)) {
+            Registry.writeRawPreference(preferenceJson, applicationContext)
+        } else {
+            val data = Preferences.deserialize(Json.decodeFromString(preferenceJson))
+            Registry.getInstance(context).syncPreference(context, data, sync)
+        }
+    }
+}
+
+fun getRawPreference(context: AppContext): String {
+    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { Registry.getRawPreferences(context).toString() }
+}
+
+fun isNewInstall(context: AppContext): Boolean {
+    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { Registry.isNewInstall(context) }
+}
+
+fun invalidateCache(context: AppContext) {
+    runBlocking { Shared.invalidateCache(context) }
+}
+
+val remoteAlightReminderService: MutableNullableStateFlow<AlightReminderRemoteData> = MutableNullableStateFlow(null)
+
+fun receiveAlightReminderRemoteData(launch: Boolean, json: String?) {
+    json?.let {
+        val remoteData = AlightReminderRemoteData.deserialize(Json.decodeFromString(it))
+        if (remoteData.active == AlightReminderActiveState.STOPPED) {
+            remoteAlightReminderService.valueNullable = null
+        } else {
+            remoteAlightReminderService.valueNullable = remoteData
+            if (launch) {
+                CoroutineScope(com.loohp.hkbuseta.common.utils.dispatcherIO).launch {
+                    while (Registry.getInstance(applicationContext).state.value.isProcessing) {
+                        delay(100)
+                    }
+                    delay(500)
+                    if (HistoryStack.historyStack.value.lastOrNull()?.screen != AppScreen.ALIGHT_REMINDER_SERVICE) {
+                        applicationContext.startActivity(AppIntent(applicationContext, AppScreen.ALIGHT_REMINDER_SERVICE))
+                    }
+                }
+            }
+        }
+    }?: run {
+        remoteAlightReminderService.valueNullable = null
+    }
+}
+
+fun Registry.findRoutesBlocking(input: String, exact: Boolean): List<RouteSearchResultEntry> {
+    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { findRoutes(input, exact) }
+}
+
+fun Registry.findRoutesBlocking(input: String, exact: Boolean, predicate: (Route) -> Boolean): List<RouteSearchResultEntry> {
+    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { findRoutes(input, exact, predicate) }
+}
+
+fun Registry.findRoutesBlocking(input: String, exact: Boolean, coPredicate: (String, Route, Operator) -> Boolean): List<RouteSearchResultEntry> {
+    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { findRoutes(input, exact, coPredicate) }
+}
+
+fun Registry.getNearbyRoutesBlocking(origin: Coordinates, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): Registry.NearbyRoutesResult {
+    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { getNearbyRoutes(origin, 0.3, excludedRouteNumbers, isInterchangeSearch) }
+}
+
+fun Registry.getNearbyRoutesBlocking(origin: Coordinates, radius: Double, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): Registry.NearbyRoutesResult {
+    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { getNearbyRoutes(origin, radius, excludedRouteNumbers, isInterchangeSearch) }
+}
+
+fun handleSearchInputLaunch(
+    context: AppContext,
+    input: Char,
+    text: String,
+    preRun: () -> Unit,
+    loadingIndicator: () -> Unit,
+    launch: (List<RouteSearchResultEntry>) -> Unit,
+    complete: () -> Unit
+) {
+    CoroutineScope(com.loohp.hkbuseta.common.utils.dispatcherIO).launch {
+        preRun.invoke()
+        val job = CoroutineScope(com.loohp.hkbuseta.common.utils.dispatcherIO).launch {
+            delay(500)
+            loadingIndicator.invoke()
+        }
+        val result = when (input) {
+            '!' -> Registry.getInstance(context).findRoutes("", false, Shared.MTR_ROUTE_FILTER)
+            '~' -> Registry.getInstance(context).findRoutes("", false, Shared.FERRY_ROUTE_FILTER)
+            '<' -> Registry.getInstance(context).findRoutes("", false, Shared.RECENT_ROUTE_FILTER)
+            else -> Registry.getInstance(context).findRoutes(text, true)
+        }
+        if (result.isNotEmpty()) {
+            launch.invoke(result)
+        }
+        job.cancelAndJoin()
+        complete.invoke()
+    }
 }

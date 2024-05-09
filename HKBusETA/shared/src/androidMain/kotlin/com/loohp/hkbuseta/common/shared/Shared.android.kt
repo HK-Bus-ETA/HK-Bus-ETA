@@ -22,3 +22,4 @@
 package com.loohp.hkbuseta.common.shared
 
 actual const val JOINT_OPERATED_COLOR_REFRESH_RATE: Long = 10
+actual const val BASE_URL: String = "https://app.hkbuseta.com"

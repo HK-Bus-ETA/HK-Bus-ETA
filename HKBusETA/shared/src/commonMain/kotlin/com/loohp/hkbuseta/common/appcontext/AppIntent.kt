@@ -136,8 +136,8 @@ class AppIntent(val context: AppContext, val screen: AppScreen) {
         return this
     }
 
-    fun putExtra(name: String, value: ArrayList<String>?): AppIntent {
-        extras.putStringArrayList(name, value)
+    fun putExtra(name: String, value: List<String>?): AppIntent {
+        extras.putStringList(name, value)
         return this
     }
 
@@ -297,7 +297,7 @@ class AppBundle {
         return this
     }
 
-    fun putStringArrayList(name: String, value: ArrayList<String>?): AppBundle {
+    fun putStringList(name: String, value: List<String>?): AppBundle {
         data[name] = value
         return this
     }

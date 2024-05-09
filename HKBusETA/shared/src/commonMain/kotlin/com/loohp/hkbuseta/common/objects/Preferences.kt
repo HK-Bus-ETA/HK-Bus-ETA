@@ -20,15 +20,23 @@
  */
 package com.loohp.hkbuseta.common.objects
 
+import co.touchlab.stately.collections.ConcurrentMutableList
+import co.touchlab.stately.collections.ConcurrentMutableMap
+import co.touchlab.stately.concurrency.synchronize
 import com.loohp.hkbuseta.common.utils.JSONSerializable
+import com.loohp.hkbuseta.common.utils.currentTimeMillis
+import com.loohp.hkbuseta.common.utils.isSystemLanguageChinese
 import com.loohp.hkbuseta.common.utils.mapToMutableList
 import com.loohp.hkbuseta.common.utils.mapToMutableMap
 import com.loohp.hkbuseta.common.utils.optBoolean
+import com.loohp.hkbuseta.common.utils.optInt
 import com.loohp.hkbuseta.common.utils.optJsonArray
 import com.loohp.hkbuseta.common.utils.optJsonObject
+import com.loohp.hkbuseta.common.utils.optLong
 import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.loohp.hkbuseta.common.utils.toJsonObject
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
@@ -38,57 +46,150 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 class Preferences(
+    var referenceChecksum: String,
+    var lastSaved: Long,
     var language: String,
-    var clockTimeMode: Boolean,
+    var etaDisplayMode: ETADisplayMode,
     var lrtDirectionMode: Boolean,
-    val favouriteRouteStops: MutableMap<Int, FavouriteRouteStop>,
-    val lastLookupRoutes: MutableList<LastLookupRoute>,
-    val etaTileConfigurations: MutableMap<Int, List<Int>>,
-    val routeSortModePreference: MutableMap<RouteListType, RouteSortMode>
+    var theme: Theme,
+    var viewFavTab: Int,
+    var disableMarquee: Boolean,
+    var historyEnabled: Boolean,
+    var showRouteMap: Boolean,
+    val favouriteStops: ConcurrentMutableList<String>,
+    val favouriteRouteStops: ConcurrentMutableList<FavouriteRouteGroup>,
+    val lastLookupRoutes: ConcurrentMutableList<LastLookupRoute>,
+    val etaTileConfigurations: ConcurrentMutableMap<Int, List<Int>>,
+    val routeSortModePreference: ConcurrentMutableMap<RouteListType, RouteSortMode>
 ) : JSONSerializable {
 
     companion object {
 
         fun deserialize(json: JsonObject): Preferences {
+            val referenceChecksum = json.optString("referenceChecksum")
+            val lastSaved = json.optLong("lastSaved")
             val language = json.optString("language")
-            val clockTimeMode = json.optBoolean("clockTimeMode", false)
+            val etaDisplayMode = if (json.containsKey("clockTimeMode")) json.optBoolean("clockTimeMode", false).etaDisplayMode else json.optString("etaDisplayMode").etaDisplayMode
             val lrtDirectionMode = json.optBoolean("lrtDirectionMode", false)
-            val favouriteRouteStops = json.optJsonObject("favouriteRouteStops")!!.mapToMutableMap({ it.toInt() }) { FavouriteRouteStop.deserialize(it.jsonObject) }
-            val lastLookupRoutes = json.optJsonArray("lastLookupRoutes")!!.mapToMutableList { LastLookupRoute.deserialize(it.jsonObject) }
-            val etaTileConfigurations = if (json.contains("etaTileConfigurations")) json.optJsonObject("etaTileConfigurations")!!.mapToMutableMap<Int, List<Int>>({ it.toInt() }) { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.int } } else HashMap()
-            val routeSortModePreference = if (json.contains("routeSortModePreference")) json.optJsonObject("routeSortModePreference")!!.mapToMutableMap({ RouteListType.valueOf(it) }, { RouteSortMode.valueOf(it.jsonPrimitive.content) }) else HashMap()
-            return Preferences(language, clockTimeMode, lrtDirectionMode, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
+            val theme = Theme.valueOf(json.optString("theme", Theme.SYSTEM.name))
+            val viewFavTab = json.optInt("viewFavTab", 0)
+            val disableMarquee = json.optBoolean("disableMarquee", false)
+            val historyEnabled = json.optBoolean("historyEnabled", true)
+            val showRouteMap = json.optBoolean("showRouteMap", true)
+            val favouriteStops = ConcurrentMutableList<String>().apply { addAll(json.optJsonArray("favouriteStops")?.mapToMutableList { it.jsonPrimitive.content }?: mutableListOf()) }
+            val favouriteRouteStops = if (json["favouriteRouteStops"] is JsonArray) {
+                ConcurrentMutableList<FavouriteRouteGroup>().apply { addAll(json.optJsonArray("favouriteRouteStops")!!.mapToMutableList { FavouriteRouteGroup.deserialize(it.jsonObject) }) }
+            } else {
+                val legacy = json.optJsonObject("favouriteRouteStops")!!.mapToMutableMap({ it.toInt() }) { FavouriteRouteStop.deserialize(it.jsonObject) }
+                ConcurrentMutableList<FavouriteRouteGroup>().apply { add(FavouriteRouteGroup.fromLegacy(legacy)) }
+            }
+            val lastLookupRoutes = ConcurrentMutableList<LastLookupRoute>().apply { addAll(json.optJsonArray("lastLookupRoutes")!!.mapToMutableList { if (it is JsonObject) (if (it.containsKey("routeKey")) LastLookupRoute.deserialize(it) else null) else LastLookupRoute.fromLegacy(it.jsonPrimitive.content) }.filterNotNull()) }
+            val etaTileConfigurations = ConcurrentMutableMap<Int, List<Int>>().apply { if (json.contains("etaTileConfigurations")) putAll(json.optJsonObject("etaTileConfigurations")!!.mapToMutableMap<Int, List<Int>>({ it.toInt() }) { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.int } }) }
+            val routeSortModePreference = ConcurrentMutableMap<RouteListType, RouteSortMode>().apply { if (json.contains("routeSortModePreference")) putAll(json.optJsonObject("routeSortModePreference")!!.mapToMutableMap({ RouteListType.valueOf(it) }, { RouteSortMode.valueOf(it.jsonPrimitive.content) })) }
+            return Preferences(referenceChecksum, lastSaved, language, etaDisplayMode, lrtDirectionMode, theme, viewFavTab, disableMarquee, historyEnabled, showRouteMap, favouriteStops, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
         }
 
         fun createDefault(): Preferences {
             return Preferences(
-                language = "zh",
-                clockTimeMode = false,
+                referenceChecksum = "",
+                lastSaved = currentTimeMillis(),
+                language = if (isSystemLanguageChinese()) "zh" else "en",
+                etaDisplayMode = ETADisplayMode.COUNTDOWN,
                 lrtDirectionMode = false,
-                favouriteRouteStops = HashMap(),
-                lastLookupRoutes = ArrayList(),
-                etaTileConfigurations = HashMap(),
-                routeSortModePreference = HashMap()
+                theme = Theme.SYSTEM,
+                viewFavTab = 0,
+                disableMarquee = false,
+                historyEnabled = true,
+                showRouteMap = true,
+                favouriteStops = ConcurrentMutableList(),
+                favouriteRouteStops = ConcurrentMutableList<FavouriteRouteGroup>().apply { add(FavouriteRouteGroup.DEFAULT_GROUP) },
+                lastLookupRoutes = ConcurrentMutableList(),
+                etaTileConfigurations = ConcurrentMutableMap(),
+                routeSortModePreference = ConcurrentMutableMap()
             )
         }
 
     }
 
-    fun cleanForImport(): Preferences {
-        etaTileConfigurations.clear()
-        return this
+    fun syncWith(preferences: Preferences): Boolean {
+        return if (lastSaved <= preferences.lastSaved) {
+            this.lastSaved = preferences.lastSaved
+            this.language = preferences.language
+            this.etaDisplayMode = preferences.etaDisplayMode
+            this.lrtDirectionMode = preferences.lrtDirectionMode
+            this.theme = preferences.theme
+            this.viewFavTab = preferences.viewFavTab
+            this.disableMarquee = preferences.disableMarquee
+            this.historyEnabled = preferences.historyEnabled
+            this.showRouteMap = preferences.showRouteMap
+            this.favouriteStops.apply { clear(); addAll(preferences.favouriteStops) }
+            this.favouriteRouteStops.apply { clear(); addAll(preferences.favouriteRouteStops) }
+            this.lastLookupRoutes.apply { clear(); addAll(preferences.lastLookupRoutes) }
+            this.routeSortModePreference.apply { clear(); putAll(preferences.routeSortModePreference) }
+            true
+        } else {
+            false
+        }
     }
 
     override fun serialize(): JsonObject {
         return buildJsonObject {
+            put("referenceChecksum", referenceChecksum)
+            put("lastSaved", lastSaved)
             put("language", language)
-            put("clockTimeMode", clockTimeMode)
+            put("etaDisplayMode", etaDisplayMode.name)
             put("lrtDirectionMode", lrtDirectionMode)
-            put("favouriteRouteStops", favouriteRouteStops.toJsonObject { it.serialize() })
-            put("lastLookupRoutes", lastLookupRoutes.asSequence().map { it.serialize() }.toJsonArray())
-            put("etaTileConfigurations", etaTileConfigurations.toJsonObject { it.toJsonArray() })
-            put("routeSortModePreference", routeSortModePreference.toJsonObject { it.name })
+            put("theme", theme.name)
+            put("viewFavTab", viewFavTab)
+            put("disableMarquee", disableMarquee)
+            put("historyEnabled", historyEnabled)
+            put("showRouteMap", showRouteMap)
+            favouriteStops.synchronize { put("favouriteStops", favouriteStops.toJsonArray()) }
+            favouriteRouteStops.synchronize { put("favouriteRouteStops", favouriteRouteStops.toJsonArray()) }
+            lastLookupRoutes.synchronize { put("lastLookupRoutes", lastLookupRoutes.toJsonArray()) }
+            etaTileConfigurations.synchronize { put("etaTileConfigurations", etaTileConfigurations.toJsonObject { it.toJsonArray() }) }
+            routeSortModePreference.synchronize { put("routeSortModePreference", routeSortModePreference.toJsonObject { it.name }) }
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Preferences) return false
+
+        if (referenceChecksum != other.referenceChecksum) return false
+        if (lastSaved != other.lastSaved) return false
+        if (language != other.language) return false
+        if (etaDisplayMode != other.etaDisplayMode) return false
+        if (lrtDirectionMode != other.lrtDirectionMode) return false
+        if (theme != other.theme) return false
+        if (viewFavTab != other.viewFavTab) return false
+        if (disableMarquee != other.disableMarquee) return false
+        if (historyEnabled != other.historyEnabled) return false
+        if (showRouteMap != other.showRouteMap) return false
+        if (favouriteStops != other.favouriteStops) return false
+        if (favouriteRouteStops != other.favouriteRouteStops) return false
+        if (lastLookupRoutes != other.lastLookupRoutes) return false
+        if (etaTileConfigurations != other.etaTileConfigurations) return false
+        return routeSortModePreference == other.routeSortModePreference
+    }
+
+    override fun hashCode(): Int {
+        var result = referenceChecksum.hashCode()
+        result = 31 * result + lastSaved.hashCode()
+        result = 31 * result + language.hashCode()
+        result = 31 * result + etaDisplayMode.hashCode()
+        result = 31 * result + lrtDirectionMode.hashCode()
+        result = 31 * result + theme.hashCode()
+        result = 31 * result + viewFavTab
+        result = 31 * result + disableMarquee.hashCode()
+        result = 31 * result + historyEnabled.hashCode()
+        result = 31 * result + showRouteMap.hashCode()
+        result = 31 * result + favouriteStops.hashCode()
+        result = 31 * result + favouriteRouteStops.hashCode()
+        result = 31 * result + lastLookupRoutes.hashCode()
+        result = 31 * result + etaTileConfigurations.hashCode()
+        result = 31 * result + routeSortModePreference.hashCode()
+        return result
     }
 
 }

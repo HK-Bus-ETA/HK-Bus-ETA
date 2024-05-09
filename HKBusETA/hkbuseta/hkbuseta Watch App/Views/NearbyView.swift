@@ -30,7 +30,7 @@ struct NearbyView: AppScreenView {
         let lat = data["lat"] as? Double
         let lng = data["lng"] as? Double
         if lat != nil && lng != nil {
-            self.location = LocationResult.Companion().fromLatLng(lat: lat!, lng: lng!)
+            self.location = LocationResult.Companion().of(lat: lat!, lng: lng!, altitude: nil, bearing: nil)
         } else {
             self.location = nil
         }
@@ -79,7 +79,7 @@ struct NearbyView: AppScreenView {
                 if locationManager.location == nil {
                     failed = true
                 } else {
-                    location = locationManager.location!.coordinate.toLocationResult()
+                    location = locationManager.location!.toLocationResult()
                     handleLocation()
                 }
             }
@@ -109,7 +109,7 @@ struct NearbyView: AppScreenView {
         dispatcherIO {
             if location != nil {
                 let loc = location!.location!
-                let result: Registry.NearbyRoutesResult? = registry(appContext).getNearbyRoutes(lat: loc.lat, lng: loc.lng, excludedRouteNumbers: Set(exclude.map { AnyHashable($0) }), isInterchangeSearch: interchangeSearch)
+                let result: Registry.NearbyRoutesResult? = registry(appContext).getNearbyRoutesBlocking(origin: loc, excludedRouteNumbers: Set(exclude.map { $0 }), isInterchangeSearch: interchangeSearch)
                 if result == nil {
                     failed = true
                 } else {
@@ -123,7 +123,7 @@ struct NearbyView: AppScreenView {
                         data["result"] = list
                         data["showEta"] = true
                         data["recentSort"] = RecentSortMode.choice
-                        data["proximitySortOrigin"] = Coordinates(lat: result!.lat, lng: result!.lng)
+                        data["proximitySortOrigin"] = Coordinates(lat: result!.origin.lat, lng: result!.origin.lng)
                         data["listType"] = RouteListType.Companion().NEARBY
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listRoutes, data))
                         appContext.finish()

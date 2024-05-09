@@ -21,8 +21,7 @@
 package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.appcontext.AppIntent
-import com.loohp.hkbuseta.common.appcontext.Platform
-import com.loohp.hkbuseta.common.appcontext.platform
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.IOSerializable
 import com.loohp.hkbuseta.common.utils.JSONSerializable
 import com.loohp.hkbuseta.common.utils.Stable
@@ -40,7 +39,6 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.writeBoolean
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -57,7 +55,8 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
             val stop = if (json.contains("stop")) StopInfo.deserialize(json.optJsonObject("stop")!!) else null
             val origin = if (json.contains("origin")) Coordinates.deserialize(json.optJsonObject("origin")!!) else null
             val isInterchangeSearch = json.optBoolean("isInterchangeSearch")
-            return RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch)
+            val favouriteStopMode = if (json.contains("favouriteStopMode")) FavouriteStopMode.valueOf(json.optString("favouriteStopMode")) else null
+            return RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch, favouriteStopMode)
         }
 
         suspend fun deserialize(input: ByteReadChannel): RouteSearchResultEntry {
@@ -67,7 +66,8 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
             val stop = input.readNullable { StopInfo.deserialize(it) }
             val origin = input.readNullable { Coordinates.deserialize(it) }
             val isInterchangeSearch = input.readBoolean()
-            return RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch)
+            val favouriteStopMode = input.readNullable { FavouriteStopMode.valueOf(it.readString(UTF_8)) }
+            return RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch, favouriteStopMode)
         }
 
     }
@@ -78,6 +78,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
     var stopInfo: StopInfo? = null
     var origin: Coordinates? = null
     var isInterchangeSearch = false
+    var favouriteStopMode: FavouriteStopMode? = null
 
     constructor(routeKey: String, route: Route?, co: Operator) {
         this.routeKey = routeKey
@@ -94,8 +95,18 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
         this.isInterchangeSearch = isInterchangeSearch
     }
 
+    constructor(routeKey: String, route: Route?, co: Operator, stopInfo: StopInfo?, origin: Coordinates?, isInterchangeSearch: Boolean, favouriteStopMode: FavouriteStopMode?) {
+        this.routeKey = routeKey
+        this.route = route
+        this.co = co
+        this.stopInfo = stopInfo
+        this.origin = origin
+        this.isInterchangeSearch = isInterchangeSearch
+        this.favouriteStopMode = favouriteStopMode
+    }
+
     fun deepClone(): RouteSearchResultEntry {
-        return runBlocking { deserialize(ByteReadChannel(toByteArray())) }
+        return deserialize(serialize())
     }
 
     override fun strip() {
@@ -117,6 +128,9 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
                 put("origin", origin!!.serialize())
             }
             put("interchangeSearch", isInterchangeSearch)
+            if (favouriteStopMode != null) {
+                put("favouriteStopMode", favouriteStopMode!!.name)
+            }
         }
     }
 
@@ -127,6 +141,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
         out.writeNullable(stopInfo) { o, v -> v.serialize(o) }
         out.writeNullable(origin) { o, v -> v.serialize(o) }
         out.writeBoolean(isInterchangeSearch)
+        out.writeNullable(favouriteStopMode) { o, v -> o.writeString(v.name, UTF_8) }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -138,7 +153,8 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
         if (co != other.co) return false
         if (stopInfo != other.stopInfo) return false
         if (origin != other.origin) return false
-        return isInterchangeSearch == other.isInterchangeSearch
+        if (isInterchangeSearch != other.isInterchangeSearch) return false
+        return favouriteStopMode == other.favouriteStopMode
     }
 
     override fun hashCode(): Int {
@@ -148,6 +164,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
         result = 31 * result + (stopInfo?.hashCode() ?: 0)
         result = 31 * result + (origin?.hashCode() ?: 0)
         result = 31 * result + isInterchangeSearch.hashCode()
+        result = 31 * result + (favouriteStopMode?.hashCode() ?: 0)
         return result
     }
 
@@ -219,11 +236,12 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
 }
 
 fun AppIntent.putExtra(key: String, value: Sequence<RouteSearchResultEntry>) {
-    when (platform()) {
-        Platform.WEAROS -> putExtra(key, value.map {
+    if (Shared.isWearOS) {
+        putExtra(key, value.map {
             it.strip()
             it.serialize()
         }.toJsonArray().toString())
-        Platform.WATCHOS -> extras.data[key] = value.toList()
+    } else {
+        extras.data[key] = value.toList()
     }
 }

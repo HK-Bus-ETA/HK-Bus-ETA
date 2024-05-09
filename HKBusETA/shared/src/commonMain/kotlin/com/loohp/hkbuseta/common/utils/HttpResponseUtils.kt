@@ -29,3 +29,7 @@ import io.ktor.utils.io.charsets.Charsets
 expect fun gzipSupported(): Boolean
 
 expect suspend fun HttpResponse.gzipBodyAsText(fallbackCharset: Charset = Charsets.UTF_8): String
+
+expect suspend fun HttpResponse.bodyAsStringReadChannel(fallbackCharset: Charset = Charsets.UTF_8): StringReadChannel
+
+expect suspend fun HttpResponse.gzipBodyAsStringReadChannel(fallbackCharset: Charset = Charsets.UTF_8): StringReadChannel

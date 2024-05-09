@@ -21,27 +21,23 @@
 
 package com.loohp.hkbuseta.common.utils
 
-import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.GPSLocation
 
 
 @Immutable
-class LocationResult(val location: Coordinates?) {
+class LocationResult(val location: GPSLocation?) {
 
     companion object {
 
         val FAILED_RESULT = LocationResult(null)
 
-        fun fromLatLng(lat: Double, lng: Double): LocationResult {
-            return LocationResult(Coordinates(lat, lng))
-        }
-
-        fun fromCoordinatesNullable(location: Coordinates?): LocationResult {
-            return LocationResult(location)
+        fun of(lat: Double, lng: Double, altitude: Double? = null, bearing: Float? = null): LocationResult {
+            return LocationResult(GPSLocation(lat, lng, altitude, bearing))
         }
 
     }
 
-    val isSuccess: Boolean get() = location != null
+    val isSuccess: Boolean = location != null
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

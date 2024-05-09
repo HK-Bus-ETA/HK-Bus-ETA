@@ -23,7 +23,8 @@ package com.loohp.hkbuseta
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.loohp.hkbuseta.common.shared.Registry
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
+import com.loohp.hkbuseta.common.utils.MutableNullableStateFlow
+import com.loohp.hkbuseta.common.utils.wrapNullable
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class ETAResultsContainer<K> {
@@ -38,20 +39,19 @@ class ETAResultsContainer<K> {
     fun set(key: K, result: Registry.ETAQueryResult?) {
         result?.let { r ->
             data[key] = r
-            states[key]?.let { it.state.value = r }
+            states[key]?.let { it.state.valueNullable = r }
         }?: run {
             data.remove(key)
-            states[key]?.let { it.state.value = null }
+            states[key]?.let { it.state.valueNullable = null }
         }
     }
 
     fun getState(key: K): ETAResultsState {
-        return states.getOrPut(key) { ETAResultsState(MutableStateFlow(get(key))) }
+        return states.getOrPut(key) { ETAResultsState(MutableStateFlow(get(key)).wrapNullable()) }
     }
 
 }
 
 class ETAResultsState(
-    @NativeCoroutinesState
-    val state: MutableStateFlow<Registry.ETAQueryResult?>
+    val state: MutableNullableStateFlow<Registry.ETAQueryResult>
 )

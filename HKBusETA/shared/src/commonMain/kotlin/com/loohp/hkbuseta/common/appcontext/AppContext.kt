@@ -21,12 +21,38 @@
 
 package com.loohp.hkbuseta.common.appcontext
 
+import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.StringReadChannel
+import com.loohp.hkbuseta.common.utils.toStringReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.charsets.Charsets
+import kotlinx.coroutines.Deferred
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.json.Json
 
+
+@RequiresOptIn(message = "Extra care should be taken as this might be not available on some platforms.")
+@Target(AnnotationTarget.FIELD, AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.BINARY)
+@MustBeDocumented
+annotation class ReduceDataOmitted
+
+enum class FormFactor(val reduceData: Boolean) {
+
+    NORMAL(false),
+    WATCH(true)
+
+}
+
+enum class AppShortcutIcon {
+    STAR, HISTORY, SEARCH, NEAR_ME
+}
+
+var primaryThemeColor: Long? = null
 
 @Immutable
 interface AppContext {
@@ -40,22 +66,26 @@ interface AppContext {
     val screenScale: Float
     val density: Float
     val scaledDensity: Float
+    val formFactor: FormFactor
 
-    fun readTextFile(fileName: String, charset: Charset = Charsets.UTF_8): String {
-        return readTextFileLines(fileName, charset).joinToString("")
+    suspend fun readTextFile(fileName: String, charset: Charset = Charsets.UTF_8): StringReadChannel
+
+    suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel)
+
+    suspend fun <T> writeTextFile(fileName: String, json: Json = Json, writeJson: () -> Pair<SerializationStrategy<T>, T>) {
+        writeTextFile(fileName) {
+            val (serializer, value) = writeJson.invoke()
+            json.encodeToString(serializer, value).toStringReadChannel(Charsets.UTF_8)
+        }
     }
 
-    fun readTextFileLines(fileName: String, charset: Charset = Charsets.UTF_8): List<String>
+    suspend fun listFiles(): List<String>
 
-    fun writeTextFile(fileName: String, charset: Charset = Charsets.UTF_8, writeText: () -> String) {
-        writeTextFileList(fileName, charset) { listOf(writeText.invoke()) }
-    }
+    suspend fun deleteFile(fileName: String): Boolean
 
-    fun writeTextFileList(fileName: String, charset: Charset = Charsets.UTF_8, writeText: () -> List<String>)
+    fun syncPreference(preferences: Preferences)
 
-    fun listFiles(): List<String>
-
-    fun deleteFile(fileName: String): Boolean
+    fun requestPreferencesIfPossible(): Deferred<Boolean>
 
     fun hasConnection(): Boolean
 
@@ -75,6 +105,10 @@ interface AppContext {
 
     fun formatTime(localDateTime: LocalDateTime): String
 
+    fun formatDateTime(localDateTime: LocalDateTime, includeTime: Boolean): String
+
+    fun setAppShortcut(id: String, shortLabel: String, longLabel: String, icon: AppShortcutIcon, tint: Long? = null, rank: Int, url: String)
+
 }
 
 @Immutable
@@ -85,6 +119,10 @@ interface AppActiveContext : AppContext {
     fun startActivity(appIntent: AppIntent, callback: (AppIntentResult) -> Unit)
 
     fun handleOpenMaps(lat: Double, lng: Double, label: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit
+
+    fun handleOpenMaps(coordinates: Coordinates, label: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
+        return handleOpenMaps(coordinates.lat, coordinates.lng, label, longClick, haptics)
+    }
 
     fun handleWebpages(url: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit
 

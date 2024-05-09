@@ -27,10 +27,8 @@ enum class FavouriteStopMode(val isRequiresLocation: Boolean) {
 
     companion object {
 
-        private val VALUES = entries.toTypedArray()
-
         fun valueOfOrDefault(name: String): FavouriteStopMode {
-            for (favouriteStopMode in VALUES) {
+            for (favouriteStopMode in entries) {
                 if (favouriteStopMode.name.equals(name, ignoreCase = true)) {
                     return favouriteStopMode
                 }

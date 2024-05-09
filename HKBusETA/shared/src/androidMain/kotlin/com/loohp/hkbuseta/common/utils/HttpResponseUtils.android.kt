@@ -26,12 +26,27 @@ import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.charset
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.jvm.javaio.toInputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.zip.GZIPInputStream
 
 
 actual suspend fun HttpResponse.gzipBodyAsText(fallbackCharset: Charset): String {
-    GZIPInputStream(bodyAsChannel().toInputStream()).bufferedReader(charset()?: fallbackCharset).use {
-        return it.lineSequence().joinToString("")
+    return withContext(dispatcherIO) {
+        GZIPInputStream(bodyAsChannel().toInputStream())
+            .bufferedReader(charset()?: fallbackCharset)
+            .useLines { it.joinToString("") }
+    }
+}
+
+actual suspend fun HttpResponse.bodyAsStringReadChannel(fallbackCharset: Charset): StringReadChannel {
+    return bodyAsChannel().toStringReadChannel(charset()?: fallbackCharset)
+}
+
+actual suspend fun HttpResponse.gzipBodyAsStringReadChannel(fallbackCharset: Charset): StringReadChannel {
+    return withContext(Dispatchers.IO) {
+        GZIPInputStream(bodyAsChannel().toInputStream())
+            .toStringReadChannel(charset()?: fallbackCharset)
     }
 }
 

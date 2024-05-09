@@ -27,3 +27,7 @@ class OriginData(
     lng: Double,
     val onlyInRange: Boolean = false
 ) : Coordinates(lat, lng)
+
+fun Coordinates.asOriginData(onlyInRange: Boolean): OriginData {
+    return OriginData(lat, lng, onlyInRange)
+}

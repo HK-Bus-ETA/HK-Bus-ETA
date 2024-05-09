@@ -42,7 +42,7 @@ struct FavRouteListViewView: AppScreenView {
                 }
                 .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
                 .clipShape(RoundedRectangle(cornerRadius: 25))
-                .edgesIgnoringSafeArea(.all)
+                .ignoresSafeArea(.all)
                 .offset(x: 0, y: 70.scaled(appContext))
             }
         }
@@ -53,7 +53,7 @@ struct FavRouteListViewView: AppScreenView {
                 if locationManager.location == nil {
                     failed = true
                 } else {
-                    location = locationManager.location!.coordinate.toLocationResult()
+                    location = locationManager.location!.toLocationResult()
                     handleLocation()
                 }
             }
@@ -89,7 +89,7 @@ struct FavRouteListViewView: AppScreenView {
     func handleLocation() {
         dispatcherIO {
             let loc: Coordinates? = usingGps && location != nil ? location!.location! : nil
-            let origin: Coordinates? = Shared().favoriteRouteStops.values.filter { $0.favouriteStopMode.isRequiresLocation }.isEmpty ? nil : loc
+            let origin: Coordinates? = typedValue(Shared().favoriteRouteStops).flatMap { $0.favouriteRouteStops }.filter { $0.favouriteStopMode.isRequiresLocation }.isEmpty ? nil : loc
             let data = newAppDataConatiner()
             data["result"] = Shared().sortedForListRouteView(instance: appContext, origin: origin)
             data["showEta"] = true

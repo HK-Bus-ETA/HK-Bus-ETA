@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="minimal-ui, width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#DA532C">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFDAD7">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#201A1A">
+    <meta name="apple-itunes-app" content="app-id=6475241017">
+    <meta name="description" content="從手機/手錶查看巴士預計到達時間 簡單方便 Check the ETA time of HK Buses right on your phone or from your wrist!">
+    <meta property="og:title" content="香港巴士到站預報 HK Bus ETA" />
+    <meta property="og:image" content="https://app.hkbuseta.com/icon-512.png" />
+
+    <title>香港巴士到站預報 HK Bus ETA</title>
+
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/wasm-feature-detect/dist/umd/index.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
+    <script type="application/javascript" src="Firebase.js"></script>
+    <script type="application/javascript" src="MapView.js" defer></script>
+    <script type="application/javascript" src="FileSaver.js"></script>
+    <script type="application/javascript" src="Main.js"></script>
+    <script type="application/javascript" src="Defer.js" defer></script>
+    <script type="application/javascript" src="skiko.js"></script>
+    <!--suppress HtmlUnknownTarget -->
+    <script type="application/javascript" src="composeApp.js"></script>
+
+    <link rel="preload" as="fetch" href="fonts/NotoSansHK-Regular.ttf">
+    <link rel="preload" as="fetch" href="fonts/NotoSansHK-Bold.ttf">
+</head>
+<body>
+    <div id="splash" class="splash">
+        <img src="icon_max.png" alt="HKBusETA">
+        <p>載入中...</p>
+        <p>Loading...</p>
+    </div>
+    <div id="download-app-backdrop" class="modal-backdrop" style="display: none;"></div>
+    <div id="download-app" class="modal-bottom-sheet" style="display: none;">
+        <div class="modal-content">
+            <p style="font-size: 21px;">
+                下載香港巴士到站預報應用程式！<br>Download the HK Bus ETA app!
+            </p>
+            <p style="font-size: 12px;">
+                Android / iOS / Apple Silicon Mac / WearOS / watchOS
+            </p>
+            <img src="icon_full_smaller.png" style="width: 150px; margin: 10px;" alt="HKBusETA">
+            <br>
+            <a href="https://play.google.com/store/apps/details?id=com.loohp.hkbuseta" target="_blank" id="store-url" style="margin: 15px;">
+                <img id="store-banner" class="hover-lighten" src="googleplay.png" style="height: 60px;" alt="在Google Play下載 Download on Google Play">
+            </a>
+            <br>
+            <p style="font-size: 12px; text-decoration: underline; margin-bottom: 20px;">
+                <a href="https://apps.apple.com/app/id6475241017" target="_blank" id="store-alt" class="hover-lighten">
+                    或在App Store下載 Or download on the App Store
+                </a>
+            </p>
+            <button id="continue-button" class="continue-button" onclick="setDownloadAppSheetVisible(isAppleDevice(), false);" style="margin-bottom: 10px;">
+                繼續使用瀏覽器<br>Continue in Browser
+            </button>
+        </div>
+    </div>
+    <canvas id="ComposeTarget"></canvas>
+</body>
+</html>

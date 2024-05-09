@@ -32,8 +32,11 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
+import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.common.objects.FavouriteStopMode
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.LastLookupRoute
@@ -43,28 +46,30 @@ import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteSortMode
 import com.loohp.hkbuseta.common.objects.StopInfo
+import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getRouteKey
-import com.loohp.hkbuseta.common.objects.gmbRegion
+import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.putExtra
 import com.loohp.hkbuseta.common.objects.resolveStop
 import com.loohp.hkbuseta.common.objects.uniqueKey
-import com.loohp.hkbuseta.common.utils.Colored
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
+import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
+import com.loohp.hkbuseta.common.utils.parseIntOr
+import com.loohp.hkbuseta.common.utils.wrap
+import com.loohp.hkbuseta.common.utils.wrapList
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlin.math.absoluteValue
@@ -72,6 +77,7 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 
+expect val BASE_URL: String
 expect val JOINT_OPERATED_COLOR_REFRESH_RATE: Long
 
 @Immutable
@@ -79,16 +85,20 @@ object Shared {
 
     const val ETA_UPDATE_INTERVAL: Int = 15000
 
-    val MTR_ROUTE_FILTER: (Route) -> Boolean = { r -> r.bound.containsKey(Operator.MTR) }
-    val RECENT_ROUTE_FILTER: (Route, Operator) -> Boolean = { r, c ->
-        getFavoriteAndLookupRouteIndex(r.routeNumber, c, when (c) {
-            Operator.GMB -> r.gmbRegion!!.name
-            Operator.NLB -> r.nlbId
-            else -> ""
-        }) < Int.MAX_VALUE
-    }
+    const val START_ACTIVITY_ID = "/HKBusETA/Launch"
+    const val SYNC_PREFERENCES_ID = "/HKBusETA/SyncPreference"
+    const val REQUEST_PREFERENCES_ID = "/HKBusETA/RequestPreference"
+    const val REQUEST_ALIGHT_REMINDER_ID = "/HKBusETA/RequestAlightReminder"
+    const val RESPONSE_ALIGHT_REMINDER_ID = "/HKBusETA/ResponseAlightReminder"
+    const val UPDATE_ALIGHT_REMINDER_ID = "/HKBusETA/UpdateAlightReminder"
+    const val TERMINATE_ALIGHT_REMINDER_ID = "/HKBusETA/TerminateAlightReminder"
+    const val INVALIDATE_CACHE_ID = "/HKBusETA/InvalidateCache"
 
-    fun invalidateCache(context: AppContext) {
+    val MTR_ROUTE_FILTER: (Route) -> Boolean = { r -> r.bound.containsKey(Operator.MTR) }
+    val FERRY_ROUTE_FILTER: (Route) -> Boolean = { r -> r.bound.keys.any { it.isFerry } }
+    val RECENT_ROUTE_FILTER: (String, Route, Operator) -> Boolean = { k, _, _ -> lastLookupRoutes.value.any { it.routeKey == k } }
+
+    suspend fun invalidateCache(context: AppContext) {
         try {
             Registry.invalidateCache(context)
         } catch (_: Throwable) {}
@@ -104,6 +114,13 @@ object Shared {
         backgroundUpdateScheduler.value.invoke(context, time)
     }
 
+    var isWearOS: Boolean = false
+        private set
+
+    fun setIsWearOS() {
+        isWearOS = true
+    }
+
     fun ensureRegistryDataAvailable(context: AppActiveContext): Boolean {
         return if (!Registry.hasInstanceCreated() || Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
             val intent = AppIntent(context, AppScreen.MAIN)
@@ -116,7 +133,7 @@ object Shared {
         }
     }
 
-    internal val kmbSubsidiary: Map<String, KMBSubsidiary> = HashMap()
+    internal val kmbSubsidiary: Map<String, KMBSubsidiary> = mutableMapOf()
 
     fun setKmbSubsidiary(values: Map<KMBSubsidiary, List<String>>) {
         kmbSubsidiary as MutableMap
@@ -128,10 +145,8 @@ object Shared {
         }
     }
 
-    private val jointOperatedColorFraction: MutableStateFlow<Float> = MutableStateFlow(0F)
     private const val jointOperatorColorTransitionTime: Long = 5000
-    @NativeCoroutinesState
-    val jointOperatedColorFractionState: StateFlow<Float> = jointOperatedColorFraction
+    val jointOperatedColorFractionState: MutableNonNullStateFlow<Float> = MutableStateFlow(0F).wrap()
 
     init {
         CoroutineScope(Dispatchers.Default).launch {
@@ -139,24 +154,48 @@ object Shared {
                 val startTime = currentTimeMillis()
                 while (currentTimeMillis() - startTime < jointOperatorColorTransitionTime) {
                     val progress = (currentTimeMillis() - startTime).toFloat() / jointOperatorColorTransitionTime
-                    jointOperatedColorFraction.value = progress
+                    jointOperatedColorFractionState.value = progress
                     delay(JOINT_OPERATED_COLOR_REFRESH_RATE)
                 }
                 val yellowToRedStartTime = currentTimeMillis()
                 while (currentTimeMillis() - yellowToRedStartTime < jointOperatorColorTransitionTime) {
                     val progress = (currentTimeMillis() - yellowToRedStartTime).toFloat() / jointOperatorColorTransitionTime
-                    jointOperatedColorFraction.value = 1F - progress
+                    jointOperatedColorFractionState.value = 1F - progress
                     delay(JOINT_OPERATED_COLOR_REFRESH_RATE)
                 }
             }
         }
     }
 
-    fun Registry.ETAQueryResult?.getResolvedText(seq: Int, clockTimeMode: Boolean, context: AppContext): FormattedText {
-        return (this?.getLine(seq)?.let { if (clockTimeMode && it.etaRounded >= 0) "${context.formatTime(currentLocalDateTime(it.etaRounded.toDuration(DurationUnit.MINUTES)))} ".asFormattedText(Colored(0xFFFFFF00)) + it.text else it.text }?: if (seq == 1) (if (language == "en") "Updating" else "更新中").asFormattedText() else "".asFormattedText())
+    fun Registry.ETAQueryResult?.getResolvedText(seq: Int, etaDisplayMode: ETADisplayMode, context: AppContext): Registry.ETALineEntryText {
+        return this?.getLine(seq)?.let {
+            if (etaDisplayMode.hasClockTime && it.etaRounded >= 0) {
+                it.text.withDisplayMode(context.formatTime(currentLocalDateTime(it.etaRounded.toDuration(DurationUnit.MINUTES))).asFormattedText(), etaDisplayMode)
+            } else {
+                it.text
+            }
+        }?: if (seq == 1) {
+            Registry.ETALineEntryText.remark(if (language == "en") "Updating" else "更新中")
+        } else {
+            Registry.ETALineEntryText.EMPTY_NOTHING
+        }
     }
 
-    fun Registry.MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?.getResolvedText(seq: Int, clockTimeMode: Boolean, context: AppContext): Pair<Pair<FavouriteResolvedStop, FavouriteRouteStop>?, FormattedText> {
+    fun List<Registry.ETALineEntry>.getResolvedText(seq: Int, etaDisplayMode: ETADisplayMode, context: AppContext): Registry.ETALineEntryText {
+        return this.getOrNull(seq - 1)?.let {
+            if (etaDisplayMode.hasClockTime && it.etaRounded >= 0) {
+                it.text.withDisplayMode(context.formatTime(currentLocalDateTime(it.etaRounded.toDuration(DurationUnit.MINUTES))).asFormattedText(), etaDisplayMode)
+            } else {
+                it.text
+            }
+        }?: if (seq == 1) {
+            Registry.ETALineEntryText.remark(if (language == "en") "Updating" else "更新中")
+        } else {
+            Registry.ETALineEntryText.EMPTY_NOTHING
+        }
+    }
+
+    fun Registry.MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?.getResolvedText(seq: Int, etaDisplayMode: ETADisplayMode, context: AppContext): Pair<Pair<FavouriteResolvedStop, FavouriteRouteStop>?, FormattedText> {
         if (this == null) {
             return null to if (seq == 1) (if (language == "en") "Updating" else "更新中").asFormattedText() else "".asFormattedText()
         }
@@ -167,8 +206,7 @@ object Shared {
                 this.allKeys.all { it.second.co == Operator.MTR } ||
                 this.mergedCount <= 1
         return line.first to (if (noRouteNumber) "".asFormattedText() else "$lineRoute > ".asFormattedText(SmallSize))
-            .plus(if (clockTimeMode && line.second.etaRounded >= 0) "${context.formatTime(currentLocalDateTime(line.second.etaRounded.toDuration(DurationUnit.MINUTES)))} ".asFormattedText(Colored(0xFFFFFF00)) else "".asFormattedText())
-            .plus(line.second.text)
+            .plus(line.second.text.let { if (etaDisplayMode.hasClockTime && line.second.etaRounded >= 0) it.withDisplayMode(context.formatTime(currentLocalDateTime(line.second.etaRounded.toDuration(DurationUnit.MINUTES))).asFormattedText(), etaDisplayMode) else it })
     }
 
     fun getMtrLineSortingIndex(lineName: String): Int {
@@ -183,7 +221,10 @@ object Shared {
             "ISL" -> 6
             "KTL" -> 7
             "DRL" -> 2
-            else -> 10
+            else -> {
+                val i = lineName.substring(0, 3).parseIntOr(Int.MAX_VALUE)
+                return i * 10 + lineName.length
+            }
         }
     }
 
@@ -220,102 +261,137 @@ object Shared {
     }
 
     var language = "zh"
-    var clockTimeMode = false
+    var etaDisplayMode = ETADisplayMode.COUNTDOWN
     var lrtDirectionMode = false
+    var theme = Theme.SYSTEM
+    var viewFavTab = 0
+    var disableMarquee = false
+    var historyEnabled = true
+    var showRouteMap = true
 
-    private val suggestedMaxFavouriteRouteStop = MutableStateFlow(0)
-    private val currentMaxFavouriteRouteStop = MutableStateFlow(0)
     private val favouriteRouteStopLock: Lock = Lock()
-    val favoriteRouteStops: Map<Int, FavouriteRouteStop> = ConcurrentMutableMap()
+    val favoriteRouteStops: MutableNonNullStateFlowList<FavouriteRouteGroup> = MutableStateFlow(emptyList<FavouriteRouteGroup>()).wrapList()
 
-    fun getFavouriteRouteStop(index: Int): FavouriteRouteStop? {
-        return favoriteRouteStops[index]
-    }
+    private val favouriteStopLock: Lock = Lock()
+    val favoriteStops: MutableNonNullStateFlowList<String> = MutableStateFlow(emptyList<String>()).wrapList()
 
-    val shouldShowFavListRouteView: Boolean get() = (favoriteRouteStops.keys.maxOrNull()?: 0) > 2
+    val shouldShowFavListRouteView: Boolean get() = favoriteRouteStops.value.flatMap { it.favouriteRouteStops }.count() > 2
 
     fun sortedForListRouteView(instance: AppContext, origin: Coordinates?): List<RouteSearchResultEntry> {
-        return favoriteRouteStops.entries.asSequence()
-            .sortedBy { it.key }
-            .map { (_, fav) ->
+        return favoriteRouteStops.value.asSequence().flatMap { it.favouriteRouteStops }
+            .map { fav ->
                 val (_, stopId, stop, route) = fav.resolveStop(instance) { origin }
-                val routeEntry = RouteSearchResultEntry(route.getRouteKey(instance)!!, route, fav.co, StopInfo(stopId, stop, 0.0, fav.co), null, false)
-                routeEntry.strip()
-                routeEntry
+                val favouriteStopMode = fav.favouriteStopMode
+                RouteSearchResultEntry(route.getRouteKey(instance)!!, route, fav.co, StopInfo(stopId, stop, 0.0, fav.co), null, false, favouriteStopMode)
             }
             .distinctBy { routeEntry -> routeEntry.uniqueKey }
             .toList()
     }
 
-    fun updateFavoriteRouteStops(mutation: (MutableMap<Int, FavouriteRouteStop>) -> Unit) {
+    fun updateFavoriteRouteStops(mutation: (MutableStateFlow<List<FavouriteRouteGroup>>) -> Unit) {
         favouriteRouteStopLock.withLock {
-            mutation.invoke(favoriteRouteStops as MutableMap)
-            val max = favoriteRouteStops.maxOfOrNull { it.key }?: 0
-            currentMaxFavouriteRouteStop.value = max.coerceAtLeast(8)
-            suggestedMaxFavouriteRouteStop.value = (max + 1).coerceIn(8, 30)
+            mutation.invoke(favoriteRouteStops)
         }
     }
 
-    @NativeCoroutinesState
-    val suggestedMaxFavouriteRouteStopState: StateFlow<Int> = suggestedMaxFavouriteRouteStop
-    @NativeCoroutinesState
-    val currentMaxFavouriteRouteStopState: StateFlow<Int> = currentMaxFavouriteRouteStop
+    fun updateFavoriteStops(mutation: (MutableStateFlow<List<String>>) -> Unit) {
+        favouriteStopLock.withLock {
+            mutation.invoke(favoriteStops)
+        }
+    }
+
+    fun getAllInterestedStops(): List<String> {
+        return buildList {
+            addAll(favoriteStops.value)
+            favoriteRouteStops.value.asSequence()
+                .flatMap { it.favouriteRouteStops }
+                .forEach { when (it.favouriteStopMode) {
+                    FavouriteStopMode.FIXED -> add(it.stopId)
+                    FavouriteStopMode.CLOSEST -> it.route.stops[it.co]?.let { l -> addAll(l) }
+                } }
+        }
+    }
 
     private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
     private val lastLookupRouteLock: Lock = Lock()
-    private val lastLookupRoutes: ArrayDeque<LastLookupRoute> = ArrayDeque(LAST_LOOKUP_ROUTES_MEM_SIZE)
+    val lastLookupRoutes: MutableNonNullStateFlowList<LastLookupRoute> = MutableStateFlow(emptyList<LastLookupRoute>()).wrapList()
 
-    fun addLookupRoute(routeNumber: String, co: Operator, meta: String) {
-        addLookupRoute(LastLookupRoute(routeNumber, co, meta))
+    fun addLookupRoute(routeKey: String, time: Long = currentTimeMillis()) {
+        addLookupRoute(LastLookupRoute(routeKey, time))
     }
 
-    fun addLookupRoute(data: LastLookupRoute) {
+    fun addLookupRoute(lastLookupRoute: LastLookupRoute) {
         lastLookupRouteLock.withLock {
-            lastLookupRoutes.removeAll { it == data }
-            lastLookupRoutes.add(data)
-            while (lastLookupRoutes.size > LAST_LOOKUP_ROUTES_MEM_SIZE) {
-                lastLookupRoutes.removeFirst()
+            lastLookupRoutes.value = lastLookupRoutes.value.toMutableList().apply {
+                removeAll { it.routeKey == lastLookupRoute.routeKey }
+                add(0, lastLookupRoute)
+                while (size > LAST_LOOKUP_ROUTES_MEM_SIZE) {
+                    removeLastOrNull()
+                }
+            }
+        }
+    }
+
+    fun removeLookupRoute(routeKey: String) {
+        lastLookupRouteLock.withLock {
+            lastLookupRoutes.value = lastLookupRoutes.value.toMutableList().apply {
+                removeAll { it.routeKey == routeKey }
             }
         }
     }
 
     fun clearLookupRoute() {
-        lastLookupRoutes.clear()
-    }
-
-    fun getLookupRoutes(): List<LastLookupRoute> {
         lastLookupRouteLock.withLock {
-            return ArrayList(lastLookupRoutes)
+            lastLookupRoutes.value = emptyList()
         }
     }
 
-    fun getFavoriteAndLookupRouteIndex(routeNumber: String, co: Operator, meta: String): Int {
-        for ((index, route) in favoriteRouteStops) {
-            val routeData = route.route
-            if (routeData.routeNumber == routeNumber && route.co == co && (co != Operator.GMB || routeData.gmbRegion == meta.gmbRegion) && (co != Operator.NLB || routeData.nlbId == meta)) {
-                return index
-            }
-        }
-        lastLookupRouteLock.withLock {
-            for ((index, data) in lastLookupRoutes.withIndex()) {
-                val (lookupRouteNumber, lookupCo, lookupMeta) = data
-                if (lookupRouteNumber == routeNumber && lookupCo == co && ((co != Operator.GMB && co != Operator.NLB) || meta == lookupMeta)) {
-                    return (lastLookupRoutes.size - index) + 8
-                }
-            }
-        }
-        return Int.MAX_VALUE
-    }
-
-    fun hasFavoriteAndLookupRoute(): Boolean {
-        return favoriteRouteStops.isNotEmpty() || lastLookupRoutes.isNotEmpty()
+    fun findLookupRouteTime(routeKey: String): Long? {
+        return lastLookupRoutes.value.asSequence().filter { it.routeKey == routeKey }.maxOfOrNull { it.time }
     }
 
     val routeSortModePreference: Map<RouteListType, RouteSortMode> = ConcurrentMutableMap()
 
     @Suppress("NAME_SHADOWING")
-    fun handleLaunchOptions(instance: AppActiveContext, stopId: String?, co: Operator?, index: Int?, stop: Any?, route: Any?, listStopRoute: ByteArray?, listStopScrollToStop: String?, listStopShowEta: Boolean?, listStopIsAlightReminder: Boolean?, queryKey: String?, queryRouteNumber: String?, queryBound: String?, queryCo: Operator?, queryDest: String?, queryGMBRegion: GMBRegion?, queryStop: String?, queryStopIndex: Int, queryStopDirectLaunch: Boolean, orElse: () -> Unit) {
+    fun handleLaunchOptions(
+        instance: AppActiveContext,
+        stopId: String?,
+        co: Operator?,
+        index: Int?,
+        stop: Any?,
+        route: Any?,
+        listStopRoute: ByteArray?,
+        listStopScrollToStop: String?,
+        listStopShowEta: Boolean?,
+        queryKey: String?,
+        queryRouteNumber: String?,
+        queryBound: String?,
+        queryCo: Operator?,
+        queryDest: String?,
+        queryGMBRegion: GMBRegion?,
+        queryStop: String?,
+        queryStopIndex: Int,
+        queryStopDirectLaunch: Boolean,
+        appScreen: AppScreen?,
+        noAnimation: Boolean,
+        orElse: () -> Unit
+    ) {
         CoroutineScope(Dispatchers.Default).launch {
+            while (Registry.getInstance(instance).state.value.isProcessing) {
+                delay(100)
+            }
+            if (appScreen != null) {
+                val flags = if (noAnimation) arrayOf(AppIntentFlag.NO_ANIMATION) else emptyArray()
+                instance.startActivity(AppIntent(instance, AppScreen.TITLE).apply { addFlags(*flags) })
+                when (appScreen) {
+                    AppScreen.SEARCH, AppScreen.FAV, AppScreen.NEARBY, AppScreen.SETTINGS -> {
+                        instance.startActivity(AppIntent(instance, appScreen).apply { addFlags(*flags) })
+                    }
+                    else -> { /* do nothing */ }
+                }
+                instance.finishAffinity()
+                return@launch
+            }
             val stop = stop
             val route = route
             val listStopRoute = listStopRoute
@@ -323,9 +399,8 @@ object Shared {
             var queryCo = queryCo
             var queryBound = queryBound
             var queryGMBRegion = queryGMBRegion
-
             if (stopId != null && co != null && (stop is String || stop is ByteArray) && (route is String || route is ByteArray)) {
-                val routeParsed = if (route is String) Route.deserialize(Json.decodeFromString<JsonObject>(route)) else runBlocking { Route.deserialize(ByteReadChannel(route as ByteArray)) }
+                val routeParsed = if (route is String) Route.deserialize(Json.decodeFromString<JsonObject>(route)) else Route.deserialize(ByteReadChannel(route as ByteArray))
                 Registry.getInstance(instance).findRoutes(routeParsed.routeNumber, true) { it ->
                     val bound = it.bound
                     if (!bound.containsKey(co) || bound[co] != routeParsed.bound[co]) {
@@ -358,17 +433,16 @@ object Shared {
                 }
                 instance.startActivity(intent)
                 instance.finish()
-            } else if (listStopRoute != null && listStopScrollToStop != null && listStopShowEta != null && listStopIsAlightReminder != null) {
+            } else if (listStopRoute != null && listStopScrollToStop != null && listStopShowEta != null) {
                 val intent = AppIntent(instance, AppScreen.LIST_STOPS)
                 intent.putExtra("route", listStopRoute)
                 intent.putExtra("scrollToStop", listStopScrollToStop)
                 intent.putExtra("showEta", listStopShowEta)
-                intent.putExtra("isAlightReminder", listStopIsAlightReminder)
                 instance.startActivity(intent)
                 instance.finish()
             } else if (queryRouteNumber != null || queryKey != null) {
                 if (queryKey != null) {
-                    val routeNumber = Regex("^([0-9a-zA-Z]+)").find(queryKey)?.groupValues?.getOrNull(1)
+                    val routeNumber = "^([0-9a-zA-Z]+)".toRegex().find(queryKey)?.groupValues?.getOrNull(1)
                     val nearestRoute = Registry.getInstance(instance).findRouteByKey(queryKey, routeNumber)
                     queryRouteNumber = nearestRoute!!.routeNumber
                     queryCo = if (nearestRoute.isKmbCtbJoint) Operator.KMB else nearestRoute.co[0]
@@ -385,7 +459,7 @@ object Shared {
                             Operator.NLB -> it.co == queryCo && (queryBound == null || it.route!!.nlbId == queryBound)
                             Operator.GMB -> {
                                 val r = it.route!!
-                                it.co == queryCo && (queryBound == null || r.bound[queryCo] == queryBound) && r.gmbRegion == queryGMBRegion
+                                it.co == queryCo && (queryBound == null || r.bound[queryCo] == queryBound) && (queryGMBRegion == null || r.gmbRegion == queryGMBRegion)
                             }
                             else -> (queryCo == null || it.co == queryCo) && (queryBound == null || it.route!!.bound[queryCo] == queryBound)
                         }
@@ -409,12 +483,7 @@ object Shared {
                         instance.startActivity(intent)
 
                         val it = filteredResult[0]
-                        val meta = when (it.co) {
-                            Operator.GMB -> it.route!!.gmbRegion!!.name
-                            Operator.NLB -> it.route!!.nlbId
-                            else -> ""
-                        }
-                        Registry.getInstance(instance).addLastLookupRoute(queryRouteNumber, it.co, meta, instance)
+                        Registry.getInstance(instance).addLastLookupRoute(it.routeKey, instance)
 
                         if (queryStop != null) {
                             val intent2 = AppIntent(instance, AppScreen.LIST_STOPS)

@@ -7,17 +7,12 @@
 
 import SwiftUI
 import shared
-import KMPNativeCoroutinesCore
-import KMPNativeCoroutinesRxSwift
-import KMPNativeCoroutinesAsync
-import KMPNativeCoroutinesCombine
-import RxSwift
 
 struct EtaMenuView: AppScreenView {
     
-    @StateObject private var jointOperatedColorFraction = FlowStateObservable(defaultValue: KotlinFloat(float: Shared().jointOperatedColorFractionState), nativeFlow: Shared().jointOperatedColorFractionStateFlow)
+    @StateObject private var jointOperatedColorFraction = StateFlowObservable(stateFlow: Shared().jointOperatedColorFractionState)
     
-    @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().suggestedMaxFavouriteRouteStopState), nativeFlow: Shared().suggestedMaxFavouriteRouteStopStateFlow)
+    @StateObject private var favouriteRouteStops = StateFlowListObservable(stateFlow: Shared().favoriteRouteStops)
     
     @State private var stopId: String
     @State private var co: Operator
@@ -27,7 +22,8 @@ struct EtaMenuView: AppScreenView {
     @State private var offsetStart: Int
     
     @State private var stopList: [Registry.StopData]
-    @State private var favStates: [Int: FavouriteRouteState] = [:]
+    
+    @State private var selectedGroup: BilingualText
     
     private let appContext: AppActiveContextWatchOS
     
@@ -43,6 +39,7 @@ struct EtaMenuView: AppScreenView {
         self.offsetStart = data["offsetStart"] as? Int ?? 0
         
         self.stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: co == Operator.Companion().NLB ? route.nlbId : route.bound[co]!, co: co, gmbRegion: route.gmbRegion)
+        self.selectedGroup = typedValue(Shared().favoriteRouteStops).first!.name
     }
     
     var body: some View {
@@ -87,58 +84,43 @@ struct EtaMenuView: AppScreenView {
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
-                    Text(Shared().language == "en" ? "Section to set/clear this route stop from the corresponding indexed favourite route" : "以下可設置/清除對應的最喜愛路線")
-                        .font(.system(size: 10.scaled(appContext, true)))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20.scaled(appContext))
                     Text(Shared().language == "en" ? "Route stops can be used in Tiles" : "最喜愛路線可在資訊方塊中顯示")
                         .font(.system(size: 10.scaled(appContext, true)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
                     Spacer().frame(height: 5.scaled(appContext))
-                    Text(Shared().language == "en" ? "Tap to set this stop\nLong press to set to display any closes stop of the route" : "點擊設置此站 長按設置顯示路線最近的任何站")
-                        .font(.system(size: 10.scaled(appContext, true), weight: .bold))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20.scaled(appContext))
                     Spacer().frame(fixedSize: 10.scaled(appContext))
                     Button(action: {
-                        let target = (1...30).first {
-                            let favState = getFavState(favoriteIndex: $0, stopId: stopId, co: co, index: index, stop: stop, route: route)
-                            return favState == .notUsed || favState == .usedSelf
-                        } ?? 30
-                        value.scrollTo(target, anchor: .center)
+                        let current = selectedGroup
+                        let index = favouriteRouteStops.state.firstIndex { $0.name == current }!
+                        selectedGroup = index + 1 >= favouriteRouteStops.state.count ? favouriteRouteStops.state.first!.name : favouriteRouteStops.state[index + 1].name
                     }) {
-                        Image(systemName: "chevron.down")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 15.scaled(appContext), height: 15.scaled(appContext))
-                            .padding(3.scaled(appContext))
-                            .foregroundColor(colorInt(0xFFFFB700).asColor())
+                        Text(selectedGroup.get(language: Shared().language))
+                            .font(.system(size: 17.scaled(appContext, true), weight: .bold))
+                            .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                     }
-                    .frame(width: 50.scaled(appContext), height: 30.scaled(appContext))
+                    .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
+                    Spacer().frame(fixedSize: 5.scaled(appContext))
+                    AddThisStopFavButton()
+                    Spacer().frame(fixedSize: 5.scaled(appContext))
+                    AddAnyStopFavButton()
                     Spacer().frame(fixedSize: 10.scaled(appContext))
-                    ForEach(1..<(Int(truncating: maxFavItems.state) + 1), id: \.self) { index in
-                        FavButton(favIndex: index).id(index)
-                        Spacer().frame(fixedSize: 5.scaled(appContext))
-                    }
                 }
             }
         }
         .onAppear {
-            maxFavItems.subscribe()
+            favouriteRouteStops.subscribe()
         }
         .onDisappear {
             jointOperatedColorFraction.unsubscribe()
-            maxFavItems.unsubscribe()
+            favouriteRouteStops.unsubscribe()
         }
     }
     
     func OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double) -> some View {
-        Button(action: {}) {
+        Button(action: { /* do nothing */ }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
                 ZStack(alignment: .topLeading) {
                     Text("").frame(maxHeight: .infinity)
@@ -163,14 +145,15 @@ struct EtaMenuView: AppScreenView {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(10.scaled(appContext))
-        }.background(
-            Image("open_map_background")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
-                .brightness(-0.4)
-                .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
-        )
+            .background(
+                Image("open_map_background")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
+                    .brightness(-0.4)
+                    .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
+            )
+        }
         .buttonStyle(PlainButtonStyle())
         .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
         .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
@@ -183,13 +166,13 @@ struct EtaMenuView: AppScreenView {
         .highPriorityGesture(
             TapGesture()
                 .onEnded { _ in
-                    appContext.handleOpenMaps(lat: lat, lng: lng, label: stopName.get(language: Shared().language), longClick: true, haptics: hapticsFeedback())()
+                    appContext.handleOpenMaps(lat: lat, lng: lng, label: stopName.get(language: Shared().language), longClick: false, haptics: hapticsFeedback())()
                 }
         )
     }
     
     func KmbBbiButton(kmbBbiId: String) -> some View {
-        Button(action: {}) {
+        Button(action: { /* do nothing */ }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
                 ZStack(alignment: .topLeading) {
                     Text("").frame(maxHeight: .infinity)
@@ -214,14 +197,15 @@ struct EtaMenuView: AppScreenView {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(10.scaled(appContext))
-        }.background(
-            Image("kmb_bbi_background")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
-                .brightness(-0.4)
-                .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
-        )
+            .background(
+                Image("kmb_bbi_background")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
+                    .brightness(-0.4)
+                    .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
+            )
+        }
         .buttonStyle(PlainButtonStyle())
         .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
         .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
@@ -242,7 +226,7 @@ struct EtaMenuView: AppScreenView {
     }
     
     func SearchNearbyButton() -> some View {
-        Button(action: {}) {
+        Button(action: { /* do nothing */ }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
                 ZStack(alignment: .topLeading) {
                     Text("").frame(maxHeight: .infinity)
@@ -267,14 +251,15 @@ struct EtaMenuView: AppScreenView {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(10.scaled(appContext))
-        }.background(
-            Image("interchange_background")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
-                .brightness(-0.4)
-                .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
-        )
+            .background(
+                Image("interchange_background")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
+                    .brightness(-0.4)
+                    .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
+            )
+        }
         .buttonStyle(PlainButtonStyle())
         .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
         .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
@@ -303,144 +288,100 @@ struct EtaMenuView: AppScreenView {
         )
     }
     
-    func getFavState(favoriteIndex: Int, stopId: String, co: Operator, index: Int, stop: Stop, route: Route) -> FavouriteRouteState {
-        if (registry(appContext).hasFavouriteRouteStop(favoriteIndex: favoriteIndex.asInt32())) {
-            return registry(appContext).isFavouriteRouteStop(favoriteIndex: favoriteIndex.asInt32(), stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route) ? FavouriteRouteState.usedSelf : FavouriteRouteState.usedOther
-        }
-        return FavouriteRouteState.notUsed
-    }
-    
-    func FavButton(favIndex: Int) -> some View {
-        let state = favStates[favIndex] ?? {
-            let s = getFavState(favoriteIndex: favIndex, stopId: stopId, co: co, index: index, stop: stop, route: route)
-            DispatchQueue.main.async {
-                favStates[favIndex] = s
-            }
-            return s
-        }()
-        let anyTileUses = Tiles().getTileUseState(index: favIndex.asInt32())
-        let handleClick: (FavouriteStopMode) -> Void = {
-            if state == FavouriteRouteState.usedSelf {
-                registry(appContext).clearFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), context: appContext)
-                appContext.showToastText(text: Shared().language == "en" ? "Cleared Favourite Route \(favIndex)" : "已清除最喜愛路線\(favIndex)", duration: ToastDuration.short_)
-            } else {
-                registry(appContext).setFavouriteRouteStop(favoriteIndex: favIndex.asInt32(), stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route, favouriteStopMode: $0, context: appContext)
-                appContext.showToastText(text: Shared().language == "en" ? "Set Favourite Route \(favIndex)" : "已設置最喜愛路線\(favIndex)", duration: ToastDuration.short_)
-            }
-            favStates[favIndex] = getFavState(favoriteIndex: favIndex, stopId: stopId, co: co, index: index, stop: stop, route: route)
-        }
-        return Button(action: {}) {
+    func AddThisStopFavButton() -> some View {
+        let same = FavouriteRouteGroupKt.getByName(favouriteRouteStops.state, name: selectedGroup)!.findSame(stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route)
+        let alreadySet = same.contains { $0.favouriteStopMode == FavouriteStopMode.fixed }
+        return Button(action: { /* do nothing */ }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
                 ZStack(alignment: .topLeading) {
                     Text("").frame(maxHeight: .infinity)
                     ZStack {
                         Circle()
-                            .fill(state == FavouriteRouteState.usedSelf ? colorInt(0xFF3D3D3D).asColor() : colorInt(0xFF131313).asColor())
+                            .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
                             .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
-                        Text("\(favIndex)")
-                            .font(.system(size: 17.scaled(appContext, true), weight: .bold))
-                            .foregroundColor({
-                                switch state {
-                                case FavouriteRouteState.usedOther:
-                                    return colorInt(0xFF4E4E00)
-                                case FavouriteRouteState.usedSelf:
-                                    return colorInt(0xFFFFFF00)
-                                default:
-                                    return colorInt(0xFF444444)
-                                }
-                            }().asColor())
+                        Image(systemName: "star.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 17.scaled(appContext, true), height: 17.scaled(appContext, true))
+                            .foregroundColor(colorInt(0xFFFFFF00).asColor())
                     }
                 }.frame(maxHeight: .infinity)
-                VStack(alignment: .leading, spacing: 0) {
-                    switch state {
-                    case FavouriteRouteState.notUsed:
-                        Text(Shared().language == "en" ? "No Route Stop Selected" : "未有設置路線巴士站")
-                            .font(.system(size: 15.scaled(appContext, true), weight: .bold))
-                            .foregroundColor(colorInt(0xFFB9B9B9).asColor())
-                            .lineLimit(2)
-                            .lineSpacing(0)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    case FavouriteRouteState.usedOther:
-                        let currentRoute = Shared().favoriteRouteStops[KotlinInt(int: favIndex.asInt32())]!
-                        let kmbCtbJoint = currentRoute.route.isKmbCtbJoint
-                        let coDisplay = currentRoute.co.getDisplayName(routeNumber: currentRoute.route.routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???")
-                        let routeNumberDisplay = currentRoute.co.getDisplayRouteNumber(routeNumber: currentRoute.route.routeNumber, shortened: false)
-                        let stopName = {
-                            if (currentRoute.favouriteStopMode == FavouriteStopMode.fixed) {
-                                if (Shared().language == "en") {
-                                    return (currentRoute.co == Operator.Companion().MTR || currentRoute.co == Operator.Companion().LRT ? "" : "\(index). ") + currentRoute.stop.name.en
-                                } else {
-                                    return (currentRoute.co == Operator.Companion().MTR || currentRoute.co == Operator.Companion().LRT ? "" : "\(index). ") + currentRoute.stop.name.zh
-                                }
-                            } else {
-                                return Shared().language == "en" ? "Any" : "任何站"
-                            }
-                        }()
-                        let color = operatorColor(currentRoute.co.getColor(routeNumber: currentRoute.route.routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
-                        MarqueeText(
-                            text: "\(coDisplay) \(routeNumberDisplay)",
-                            font: UIFont.systemFont(ofSize: 15.scaled(appContext, true), weight: .bold),
-                            startDelay: 2,
-                            alignment: .bottomLeading
-                        )
-                            .foregroundColor(color.adjustBrightness(percentage: 0.3))
-                            .lineLimit(1)
-                            .lineSpacing(0)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .onAppear {
-                                if kmbCtbJoint {
-                                    jointOperatedColorFraction.subscribe()
-                                }
-                            }
-                        MarqueeText(
-                            text: stopName,
-                            font: UIFont.systemFont(ofSize: 15.scaled(appContext, true)),
-                            startDelay: 2,
-                            alignment: .bottomLeading
-                        )
-                            .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.3))
-                            .lineLimit(1)
-                            .lineSpacing(0)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    case FavouriteRouteState.usedSelf:
-                        let isClosestStopMode = Shared().favoriteRouteStops[KotlinInt(int: favIndex.asInt32())]?.favouriteStopMode == FavouriteStopMode.closest
-                        Text(isClosestStopMode ? (Shared().language == "en" ? "Selected as Any Closes Stop on This Route" : "已設置為本路線最近的任何巴士站") : (Shared().language == "en" ? "Selected as This Route Stop" : "已設置為本路線巴士站"))
-                            .font(.system(size: 15.scaled(appContext, true), weight: .bold))
-                            .foregroundColor((isClosestStopMode ? colorInt(0xFFFFE496) : colorInt(0xFFFFFFFF)).asColor())
-                            .lineLimit(2)
-                            .lineSpacing(0)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    default:
-                        Text("")
-                    }
-                }
+                Text(alreadySet ? (Shared().language == "en" ? "Added This Route Stop" : "已設置本路線巴士站") : (Shared().language == "en" ? "Add This Route Stop" : "設置本路線巴士站"))
+                    .font(.system(size: 14.5.scaled(appContext, true), weight: .bold))
+                    .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: alreadySet ? 0.5 : 1))
+                    .lineLimit(2)
+                    .lineSpacing(0)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(10)
+            .padding(10.scaled(appContext))
         }
+        .disabled(alreadySet)
         .buttonStyle(PlainButtonStyle())
         .background { colorInt(0xFF1A1A1A).asColor() }
         .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
         .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
-        .tileStateBorder(anyTileUses, 23.5.scaled(appContext))
-        .simultaneousGesture(
-            LongPressGesture()
-                .onEnded { _ in
-                    playHaptics()
-                    handleClick(FavouriteStopMode.closest)
-                }
-        )
         .highPriorityGesture(
             TapGesture()
                 .onEnded { _ in
-                    handleClick(FavouriteStopMode.fixed)
+                    if (!alreadySet) {
+                        let fav = FavouriteRouteStop(stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route, favouriteStopMode: FavouriteStopMode.fixed)
+                        var updated = typedValue(Shared().favoriteRouteStops).map { $0 }
+                        let groupIndex = Int(FavouriteRouteGroupKt.indexOfName(updated, name: selectedGroup))
+                        updated[groupIndex] = updated[groupIndex].add(favouriteRouteStop: fav)
+                        registry(appContext).setFavouriteRouteGroups(favouriteRouteStops: updated, context: appContext)
+                    }
                 }
         )
     }
-
+    
+    func AddAnyStopFavButton() -> some View {
+        let same = FavouriteRouteGroupKt.getByName(favouriteRouteStops.state, name: selectedGroup)!.findSame(stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route)
+        let alreadySet = same.contains { $0.favouriteStopMode == FavouriteStopMode.closest }
+        return Button(action: { /* do nothing */ }) {
+            HStack(alignment: .center, spacing: 2.scaled(appContext)) {
+                ZStack(alignment: .topLeading) {
+                    Text("").frame(maxHeight: .infinity)
+                    ZStack {
+                        Circle()
+                            .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
+                            .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
+                        Image(systemName: "star.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 17.scaled(appContext, true), height: 17.scaled(appContext, true))
+                            .foregroundColor(colorInt(0xFFFFFF00).asColor())
+                    }
+                }.frame(maxHeight: .infinity)
+                Text(alreadySet ? (Shared().language == "en" ? "Added Any Closest Stop on This Route" : "已設置本路線最近的任何巴士站") : (Shared().language == "en" ? "Add Any Closes Stop on Route" : "設置本路線最近的任何巴士站"))
+                    .font(.system(size: 14.5.scaled(appContext, true), weight: .bold))
+                    .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: alreadySet ? 0.5 : 1))
+                    .lineLimit(2)
+                    .lineSpacing(0)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(10.scaled(appContext))
+        }
+        .disabled(alreadySet)
+        .buttonStyle(PlainButtonStyle())
+        .background { colorInt(0xFF1A1A1A).asColor() }
+        .frame(width: 178.0.scaled(appContext), height: 47.0.scaled(appContext, true))
+        .clipShape(RoundedRectangle(cornerRadius: 23.5.scaled(appContext)))
+        .highPriorityGesture(
+            TapGesture()
+                .onEnded { _ in
+                    if (!alreadySet) {
+                        let fav = FavouriteRouteStop(stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route, favouriteStopMode: FavouriteStopMode.closest)
+                        var updated = typedValue(Shared().favoriteRouteStops).map { $0 }
+                        let groupIndex = Int(FavouriteRouteGroupKt.indexOfName(updated, name: selectedGroup))
+                        updated[groupIndex] = updated[groupIndex].remove(favouriteRouteStop: fav).add(favouriteRouteStop: fav)
+                        registry(appContext).setFavouriteRouteGroups(favouriteRouteStops: updated, context: appContext)
+                    }
+                }
+        )
+    }
+    
 }

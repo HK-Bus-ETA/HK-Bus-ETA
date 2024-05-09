@@ -34,11 +34,20 @@ enum class AppScreen {
     MAIN,
     NEARBY,
     SEARCH,
+    SEARCH_TRAIN,
     TITLE,
     URL_IMAGE,
     ALIGHT_REMINDER_SERVICE,
     ETA_TILE_CONFIGURE,
     ETA_TILE_LIST,
+    RECENT,
+    SETTINGS,
     DUMMY;
+
+    companion object {
+        fun valueOfNullable(value: String): AppScreen? {
+            return entries.firstOrNull { it.name.equals(value, true) }
+        }
+    }
 
 }

@@ -22,20 +22,32 @@
 package com.loohp.hkbuseta.common.utils
 
 
-fun CharSequence.eitherContains(other: CharSequence): Boolean {
+inline fun CharSequence.remove(regex: Regex): String {
+    return replace(regex, "")
+}
+
+inline fun String.remove(value: String, ignoreCase: Boolean = false): String {
+    return replace(value, "", ignoreCase)
+}
+
+inline fun CharSequence.count(value: String): Int {
+    var count = 0
+    var index = indexOf(value)
+    while (index != -1) {
+        count++
+        index = indexOf(value, index + value.length)
+    }
+    return count
+}
+
+inline fun CharSequence.eitherContains(other: CharSequence): Boolean {
     return this.contains(other) || other.contains(this)
 }
 
 fun String.editDistance(other: String): Int {
-    if (this == other) {
-        return 0
-    }
-    val dp = Array(this.length + 1) {
-        IntArray(
-            other.length + 1
-        )
-    }
-    for (i in 0..this.length) {
+    if (this == other) return 0
+    val dp = Array(length + 1) { IntArray(other.length + 1) }
+    for (i in 0..length) {
         for (j in 0..other.length) {
             if (i == 0) {
                 dp[i][j] = j
@@ -50,34 +62,34 @@ fun String.editDistance(other: String): Int {
             }
         }
     }
-    return dp[this.length][other.length]
+    return dp[length][other.length]
 }
 
-private fun costOfSubstitution(a: Char, b: Char): Int {
+private inline fun costOfSubstitution(a: Char, b: Char): Int {
     return if (a == b) 0 else 1
 }
 
-private fun min(vararg numbers: Int): Int {
+private inline fun min(vararg numbers: Int): Int {
     return numbers.minOrNull()?: Int.MAX_VALUE
 }
 
 fun Int.getCircledNumber(): String {
-    if (this < 0 || this > 20) {
-        return this.toString()
+    return when (this) {
+        0 -> "🄌"
+        in 1..10 -> (10102 + (this - 1)).toChar().toString()
+        in 11..20 -> (9451 + (this - 11)).toChar().toString()
+        else -> toString()
     }
-    if (this == 0) {
-        return "🄌"
-    }
-    return if (this > 10) {
-        (9451 + (this - 11)).toChar().toString()
-    } else (10102 + (this - 1)).toChar().toString()
 }
 
 fun Int.getHollowCircledNumber(): String {
-    if (this < 0 || this > 10) {
-        return this.toString()
+    return when (this) {
+        0 -> "⓪"
+        in 1..10 -> (9312 + (this - 1)).toChar().toString()
+        else -> toString()
     }
-    return if (this == 0) {
-        "⓪"
-    } else (9312 + (this - 1)).toChar().toString()
+}
+
+inline fun Int.pad(characters: Int): String {
+    return toString().padStart(characters, '0')
 }

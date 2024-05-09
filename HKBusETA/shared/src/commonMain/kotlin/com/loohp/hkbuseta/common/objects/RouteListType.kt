@@ -43,6 +43,7 @@ class RouteListType private constructor(
         val NORMAL = createBuiltIn("normal")
         val NEARBY = createBuiltIn("nearby")
         val FAVOURITE = createBuiltIn("favourite")
+        val FAVOURITE_STOP = createBuiltIn("favourite_stop")
         val RECENT = createBuiltIn("recent")
 
         private fun createBuiltIn(name: String): RouteListType {

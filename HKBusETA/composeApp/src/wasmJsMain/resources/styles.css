@@ -1,0 +1,226 @@
+@font-face {
+    font-family: "Noto Sans HK";
+    src: url('fonts/NotoSansHK-Regular.ttf');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: "Noto Sans HK";
+    src: url('fonts/NotoSansHK-Bold.ttf');
+    font-weight: bold;
+}
+
+* {
+    font-family: "Noto Sans HK", "Roboto", sans-serif;
+}
+
+body {
+    background-color: #FFFBFF;
+}
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #201A1A;
+    }
+}
+
+#splash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1000;
+}
+
+.splash {
+    text-align: center;
+}
+
+.splash img {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 40px;
+}
+
+.splash p {
+    color: #201A1A;
+    font-size: 34px;
+    margin: 0px 0px 4px 0px;
+}
+@media (prefers-color-scheme: dark) {
+    .splash p {
+        color: #EDE0DE;
+    }
+}
+
+@keyframes modal-backdrop-show-animation {
+    from {
+        -khtml-opacity: 0;
+        -moz-opacity: 0;
+        opacity: 0;
+    }
+    to {
+        -khtml-opacity: 0.35;
+        -moz-opacity: 0.35;
+        opacity: 0.35;
+    }
+}
+
+@keyframes modal-backdrop-hide-animation {
+    from {
+        -khtml-opacity: 0.35;
+        -moz-opacity: 0.35;
+        opacity: 0.35;
+    }
+    to {
+        -khtml-opacity: 0;
+        -moz-opacity: 0;
+        opacity: 0;
+    }
+}
+
+.modal-backdrop {
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    background-color: black;
+    filter: alpha(opacity=0);
+    -khtml-opacity: 0;
+    -moz-opacity: 0;
+    opacity: 0;
+    animation-name: modal-backdrop-hide-animation;
+    animation-duration: 0.1s;
+    animation-timing-function: ease-out;
+}
+
+.modal-backdrop-shown {
+    -khtml-opacity: 0.35;
+    -moz-opacity: 0.35;
+    opacity: 0.35;
+    animation-name: modal-backdrop-show-animation;
+    animation-duration: 0.1s;
+    animation-timing-function: ease-out;
+}
+
+.modal-bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 100%);
+    z-index: 1050;
+    width: min(100%, 640px);
+    background-color: #FAF2F5;
+    border-top-left-radius: 26px;
+    border-top-right-radius: 26px;
+    overflow: hidden;
+    text-align: center;
+    animation-name: modal-bottom-sheet-hide-animation;
+    animation-duration: 0.1s;
+    animation-timing-function: ease-out;
+}
+
+.dark-modal-bottom-sheet {
+    background-color: #2B2222;
+}
+
+.modal-bottom-sheet-shown {
+    transform: translate(-50%, 0);
+    animation-name: modal-bottom-sheet-show-animation;
+    animation-duration: 0.1s;
+    animation-timing-function: ease-out;
+}
+
+@keyframes modal-bottom-sheet-show-animation {
+    from {
+        transform: translate(-50%, 100%);
+    }
+    to {
+        transform: translate(-50%, 0);
+    }
+}
+
+@keyframes modal-bottom-sheet-hide-animation {
+    from {
+        transform: translate(-50%, 0);
+    }
+    to {
+       transform: translate(-50%, 100%);
+    }
+}
+
+.modal-content {
+    padding: 20px;
+}
+
+.modal-content a {
+    color: #201A1A;
+}
+
+.modal-content a:hover {
+    color: #201A1A;
+}
+
+.modal-content p {
+    color: #201A1A;
+}
+
+.dark-modal-bottom-sheet .modal-content p {
+    color: #EDE0DE;
+}
+
+.dark-modal-bottom-sheet .modal-content a {
+    color: #EDE0DE;
+}
+
+.hover-lighten:hover {
+    filter: brightness(120%);
+}
+
+.dark-modal-bottom-sheet .hover-lighten:hover {
+    filter: brightness(85%);
+}
+
+.continue-button {
+    background-color: #9C413D;
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 17px;
+    padding: 2px 25px;
+    border-radius: 50vw;
+    cursor: pointer;
+}
+
+.continue-button:disabled, .continue-button[disabled] {
+    cursor: default;
+}
+
+.continue-button:hover {
+    background-color: #A4504C;
+}
+
+.continue-button:disabled:hover, .continue-button[disabled]:hover {
+    background-color: #9C413D;
+}
+
+.dark-modal-bottom-sheet .continue-button {
+    color: #5F1414;
+    background-color: #FFB3AE;
+}
+
+.dark-modal-bottom-sheet .continue-button:hover {
+    background-color: #F2A7A2;
+}
+
+.dark-modal-bottom-sheet .continue-button:disabled:hover, .dark-modal-bottom-sheet .continue-button[disabled]:hover {
+    background-color: #FFB3AE;
+}

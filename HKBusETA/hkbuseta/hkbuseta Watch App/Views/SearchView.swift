@@ -7,16 +7,12 @@
 
 import SwiftUI
 import shared
-import KMPNativeCoroutinesCore
-import KMPNativeCoroutinesRxSwift
-import KMPNativeCoroutinesAsync
-import KMPNativeCoroutinesCombine
-import RxSwift
 
 struct SearchView: AppScreenView {
     
+    @StateObject private var lastLookupRoutes = StateFlowListObservable(stateFlow: Shared().lastLookupRoutes)
+    
     @State var state: RouteKeyboardState
-    @State var hasHistory = Shared().hasFavoriteAndLookupRoute()
     
     private let storage: KotlinMutableDictionary<NSString, AnyObject>
     
@@ -26,19 +22,18 @@ struct SearchView: AppScreenView {
         self.appContext = appContext
         self.storage = storage
         let input = storage["input"] as? String ?? ""
-        self.state = RouteKeyboardState(text: input.isEmpty ? defaultText() : input, nextCharResult: registry(appContext).getPossibleNextChar(input: input))
+        self.state = RouteKeyboardState(text: input, nextCharResult: registry(appContext).getPossibleNextChar(input: input), isLoading: false, showLoadingIndicator: false)
     }
     
     var body: some View {
         VStack(spacing: 0) {
-            Text(Shared().getMtrLineName(lineName: state.text))
+            let shape = RoundedRectangle(cornerRadius: 13.scaled(appContext))
+            Text(state.text.isEmpty ? (Shared().language == "en" ? "Input Route" : "輸入路線") : Shared().getMtrLineName(lineName: state.text))
+                .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                 .font(.system(size: 22.scaled(appContext, true)))
                 .frame(width: 150.0.scaled(appContext), height: 40.0.scaled(appContext))
-                .background { colorInt(0xFF1A1A1A).asColor() }
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(colorInt(0xFF252525).asColor(), lineWidth: 4.scaled(appContext))
-                )
+                .background { colorInt(0xFF1A1A1A).asColor().clipShape(shape) }
+                .overlay(shape.stroke(colorInt(0xFF252525).asColor(), lineWidth: 4.scaled(appContext)))
                 .padding()
             HStack(spacing: 0) {
                 VStack(spacing: 0) {
@@ -63,24 +58,22 @@ struct SearchView: AppScreenView {
                 ScrollView(.vertical) {
                     VStack(spacing: 0) {
                         let currentText = state.text
-                        if currentText.isEmpty || currentText == defaultText() {
+                        if currentText.isEmpty {
                             KeyboardKey(content: "!")
+                            KeyboardKey(content: "~")
                         }
                         ForEach(65..<91) { codePoint in
                             let alphabet = Character(UnicodeScalar(codePoint)!)
                             if (!state.nextCharResult.characters.filter { $0.description == alphabet.description }.isEmpty) {
-                                KeyboardKey(content: alphabet)
+                                KeyboardKey(content: alphabet).id(alphabet)
                             }
                         }
                     }.frame(width: 35.scaled(appContext))
                 }.frame(height: 155.scaled(appContext))
             }
         }
-        .onAppear {
-            hasHistory = Shared().hasFavoriteAndLookupRoute()
-        }
         .onChange(of: state.text) { _ in
-            storage["input"] = state.text == defaultText() ? "" : state.text
+            storage["input"] = state.text
         }
     }
     
@@ -93,13 +86,13 @@ struct SearchView: AppScreenView {
         switch content {
         case "/":
             enabled = state.nextCharResult.hasExactMatch
-        case "<", "!":
+        case "<", "!", "~":
             enabled = true
         default:
             enabled = !state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty
         }
-        let isLookupButton = content == "<" && hasHistory && (state.text.isEmpty || state.text == defaultText())
-        return Button(action: {}) {
+        let isLookupButton = content == "<" && !lastLookupRoutes.state.isEmpty && state.text.isEmpty
+        return Button(action: { /* do nothing */ }) {
             switch content {
             case "<":
                 if isLookupButton {
@@ -112,14 +105,23 @@ struct SearchView: AppScreenView {
                         .foregroundColor(.red)
                 }
             case "/":
-                Image(systemName: "checkmark")
-                    .font(.system(size: 17.scaled(appContext, true)))
-                    .foregroundColor(state.nextCharResult.hasExactMatch ? .green : colorInt(0xFF444444).asColor())
+                if state.showLoadingIndicator {
+                    let color = colorInt(0xFFF9DE09).asColor()
+                    IndeterminateCircularProgressIndicator(tintColor: color, trackColor: color.adjustBrightness(percentage: 0.4), lineWidth: 3.0.scaled(appContext, true))
+                        .frame(width: 17.0.scaled(appContext, true), height: 17.0.scaled(appContext, true))
+                } else {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 17.scaled(appContext, true)))
+                        .foregroundColor(state.nextCharResult.hasExactMatch ? .green : colorInt(0xFF444444).asColor())
+                }
             case "!":
                 Image("mtr")
                     .resizable()
                     .frame(width: 20.0.scaled(appContext, true), height: 20.0.scaled(appContext, true))
-                    .foregroundColor(.red)
+            case "~":
+                Image(systemName: "ferry.fill")
+                    .font(.system(size: 16.scaled(appContext, true)))
+                    .foregroundColor(colorInt(0xFF66CCFF).asColor())
             default:
                 Text(content.description)
                     .font(.system(size: 20.scaled(appContext, true), weight: .bold))
@@ -131,7 +133,7 @@ struct SearchView: AppScreenView {
         .simultaneousGesture(
             LongPressGesture()
                 .onEnded { _ in
-                    if longContent != nil && !isLookupButton {
+                    if !state.isLoading && longContent != nil && !isLookupButton {
                         playHaptics()
                         handleInput(input: longContent!)
                     }
@@ -140,37 +142,34 @@ struct SearchView: AppScreenView {
         .highPriorityGesture(
             TapGesture()
                 .onEnded { _ in
-                    handleInput(input: content)
+                    if !state.isLoading {
+                        handleInput(input: content)
+                    }
                 }
         )
-        .disabled(!enabled)
+        .disabled(!enabled || (state.isLoading && content != "/"))
     }
     
     func handleInput(input: Character) {
-        var originalText = state.text
-        if originalText == defaultText() {
-            originalText = ""
-        }
-
-        if input == "/" || input == "!" || (input == "<" && Shared().hasFavoriteAndLookupRoute() && originalText.isEmpty) {
-            let result: [RouteSearchResultEntry]
-            switch input {
-            case "!":
-                result = registry(appContext).findRoutes(input: "", exact: false, predicate: Shared().MTR_ROUTE_FILTER)
-            case "<":
-                result = registry(appContext).findRoutes(input: "", exact: false, coPredicate: Shared().RECENT_ROUTE_FILTER)
-            default:
-                result = registry(appContext).findRoutes(input: originalText, exact: true)
-            }
-            if !result.isEmpty {
+        let originalText = state.text
+        if input == "/" || input == "!" || input == "~" || (input == "<" && !lastLookupRoutes.state.isEmpty && originalText.isEmpty) {
+            AppContextWatchOSKt.handleSearchInputLaunch(context: appContext, input: UInt16(input.unicodeScalars.first!.value), text: originalText, preRun: {
+                state = RouteKeyboardState(text: state.text, nextCharResult: state.nextCharResult, isLoading: true, showLoadingIndicator: state.showLoadingIndicator)
+            }, loadingIndicator: {
+                state = RouteKeyboardState(text: state.text, nextCharResult: state.nextCharResult, isLoading: state.isLoading, showLoadingIndicator: true)
+            }, launch: { result in
                 let data = newAppDataConatiner()
                 data["result"] = result
                 if input == "<" {
                     data["recentSort"] = RecentSortMode.forced
+                    data["listType"] = RouteListType.Companion().RECENT
+                } else {
+                    data["listType"] = RouteListType.Companion().NORMAL
                 }
-                data["listType"] = RouteListType.Companion().RECENT
                 appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listRoutes, data))
-            }
+            }, complete: {
+                state = RouteKeyboardState(text: state.text, nextCharResult: state.nextCharResult, isLoading: false, showLoadingIndicator: false)
+            })
         } else {
             let newText: String
             if input == "<" {
@@ -181,17 +180,14 @@ struct SearchView: AppScreenView {
                 newText = originalText + String(input)
             }
             let possibleNextChar = registry(appContext).getPossibleNextChar(input: newText)
-            let text = newText.isEmpty ? defaultText() : newText
-            state = RouteKeyboardState(text: text, nextCharResult: possibleNextChar)
+            state = RouteKeyboardState(text: newText, nextCharResult: possibleNextChar, isLoading: state.isLoading, showLoadingIndicator: state.showLoadingIndicator)
         }
     }
 }
 
 struct RouteKeyboardState {
-    var text: String
-    var nextCharResult: Registry.PossibleNextCharResult
-}
-
-func defaultText() -> String {
-    return Shared().language == "en" ? "Input Route" : "輸入路線"
+    let text: String
+    let nextCharResult: Registry.PossibleNextCharResult
+    let isLoading: Bool
+    let showLoadingIndicator: Bool
 }

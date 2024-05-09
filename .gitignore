@@ -35,4 +35,15 @@ GoogleService-Info.plist
 .DS_Store
 *.xcuserstate
 
+CURRENT
+HKBusETA/composeApp/cache/*
+HKBusETA/composeApp/checksum.json
+HKBusETA/composeApp/data.json
+HKBusETA/composeApp/kcef-bundle/*
+HKBusETA/composeApp/preferences.json
+
+
 */secrets.*
+*.lock
+
+*.aab

@@ -1,0 +1,11 @@
+/* 
+  InfoPlist.strings
+  iOSApp
+
+  Created by LOOHP on 13/2/2024.
+  
+*/
+"CFBundleName" = "香港巴士到站預報";
+"CFBundleDisplayName" = "香港巴士到站預報";
+"NSLocationWhenInUseUsageDescription" = "位置權限將用於搜尋你附近的巴士站";
+"NSLocationAlwaysUsageDescription" = "背景位置權限將用於搜尋你附近的巴士站 以提供落車提示";

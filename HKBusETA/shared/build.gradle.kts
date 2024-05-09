@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
+
 /*
  * This file is part of HKBusETA.
  *
@@ -22,8 +24,9 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
-    id("com.google.devtools.ksp") version "1.9.21-1.0.16"
-    id("com.rickclephas.kmp.nativecoroutines") version "1.0.0-ALPHA-23"
+    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.googleDevToolsKsp)
 }
 
 kotlin {
@@ -47,16 +50,42 @@ kotlin {
         }
     }
 
+    jvm("desktop")
+
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "shared"
+            isStatic = true
+        }
+    }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs { nodejs() }
+
     sourceSets {
+        val desktopMain by getting
+        val wasmJsMain by getting
+
         androidMain.dependencies {
-            implementation(libs.androidx.foundation)
             implementation(libs.ktor.client.android)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
         watchosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
+        desktopMain.dependencies {
+            implementation(libs.ktor.client.java)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+        }
         commonMain.dependencies {
-            //put your multiplatform dependencies here
             implementation(libs.kotlinx.collections.immutable)
             implementation(libs.uuid)
             implementation(libs.ktor.client.core)
@@ -65,6 +94,9 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.stately.concurrency)
             implementation(libs.stately.concurrent.collections)
+            implementation(libs.xmlCore)
+            implementation(libs.serialization.xml)
+            implementation(compose.runtime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -79,7 +111,7 @@ android {
     namespace = "com.loohp.hkbuseta.common"
     compileSdk = 34
     defaultConfig {
-        minSdk = 30
+        minSdk = 24
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

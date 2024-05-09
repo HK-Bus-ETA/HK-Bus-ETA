@@ -7,11 +7,6 @@
 
 import SwiftUI
 import shared
-import KMPNativeCoroutinesCore
-import KMPNativeCoroutinesRxSwift
-import KMPNativeCoroutinesAsync
-import KMPNativeCoroutinesCombine
-import RxSwift
 
 struct EtaView: AppScreenView {
     
@@ -28,7 +23,7 @@ struct EtaView: AppScreenView {
     @State private var offsetStart: Int
     
     @State private var stopList: [Registry.StopData]
-    @State private var clockTimeMode: Bool
+    @State private var etaDisplayMode: ETADisplayMode
     @State private var lrtDirectionMode: Bool
     
     private let appContext: AppActiveContextWatchOS
@@ -45,7 +40,7 @@ struct EtaView: AppScreenView {
         self.offsetStart = data["offsetStart"] as? Int ?? 0
         
         self.stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: co == Operator.Companion().NLB ? route.nlbId : route.bound[co]!, co: co, gmbRegion: route.gmbRegion)
-        self.clockTimeMode = Shared().clockTimeMode
+        self.etaDisplayMode = Shared().etaDisplayMode
         self.lrtDirectionMode = Shared().lrtDirectionMode
     }
     
@@ -91,7 +86,7 @@ struct EtaView: AppScreenView {
                     }
                     .frame(width: 25.scaled(appContext), height: 25.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
-                    .edgesIgnoringSafeArea(.all)
+                    .ignoresSafeArea(.all)
                     .disabled(index <= 1)
                     
                     if co == Operator.Companion().LRT {
@@ -99,7 +94,7 @@ struct EtaView: AppScreenView {
                             registry(appContext).setLrtDirectionMode(lrtDirectionMode: !lrtDirectionMode, context: appContext)
                             lrtDirectionMode = Shared().lrtDirectionMode
                             appContext.showToastText(text: lrtDirectionMode ? (Shared().language == "en" ? "Display all Light Rail routes in the same direction" : "顯示所有相同方向輕鐵路線") : (Shared().language == "en" ? "Display only the select Light Rail route" : "只顯示該輕鐵路線"), duration: ToastDuration.short_)
-                            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode)
+                            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
                             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
                         }) {
                             Image(systemName: "arrow.forward.circle")
@@ -108,7 +103,7 @@ struct EtaView: AppScreenView {
                         }
                         .frame(width: 25.scaled(appContext), height: 25.scaled(appContext))
                         .clipShape(RoundedRectangle(cornerRadius: 25))
-                        .edgesIgnoringSafeArea(.all)
+                        .ignoresSafeArea(.all)
                     }
                     
                     Button(action: {
@@ -125,7 +120,7 @@ struct EtaView: AppScreenView {
                     }
                     .frame(width: 65.scaled(appContext), height: 25.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
-                    .edgesIgnoringSafeArea(.all)
+                    .ignoresSafeArea(.all)
                     
                     Button(action: {
                         let data = newAppDataConatiner()
@@ -147,32 +142,32 @@ struct EtaView: AppScreenView {
                     }
                     .frame(width: 25.scaled(appContext), height: 25.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
-                    .edgesIgnoringSafeArea(.all)
+                    .ignoresSafeArea(.all)
                     .disabled(index >= stopList.count)
                 }
             }
         }
         .frame(height: Double(appContext.screenHeight) * 0.8)
         .onReceive(etaTimer) { _ in
-            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode)
+            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
         }
         .onAppear {
-            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode)
+            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
         }
         .gesture(
             TapGesture()
                 .onEnded { _ in
-                    clockTimeMode = !clockTimeMode
-                    registry(appContext).setClockTimeMode(clockTimeMode: clockTimeMode, context: appContext)
+                    etaDisplayMode = etaDisplayMode.next
+                    registry(appContext).setEtaDisplayMode(etaDisplayMode: etaDisplayMode, context: appContext)
                 }
         )
     }
     
     func ETALine(lines: Registry.ETAQueryResult?, seq: Int) -> some View {
         let baseSize = lines?.nextCo == Operator.Companion().LRT && Shared().lrtDirectionMode ? 17.5 : 20.0
-        let text = Shared().getResolvedText(lines, seq: seq.asInt32(), clockTimeMode: clockTimeMode, context: appContext).asAttributedString(defaultFontSize: max(baseSize.scaled(appContext), baseSize.scaled(appContext, seq == 1)))
+        let text = Shared().getResolvedText(lines, seq: seq.asInt32(), etaDisplayMode: etaDisplayMode, context: appContext).asAttributedString(defaultFontSize: max(baseSize.scaled(appContext), baseSize.scaled(appContext, seq == 1)))
         return MarqueeText(
             text: text,
             font: UIFont.systemFont(ofSize: baseSize.scaled(appContext, true)),

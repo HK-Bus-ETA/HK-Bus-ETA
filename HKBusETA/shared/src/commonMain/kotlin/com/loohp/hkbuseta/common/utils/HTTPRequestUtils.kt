@@ -22,7 +22,6 @@ package com.loohp.hkbuseta.common.utils
 
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
-import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.api.Send
 import io.ktor.client.plugins.api.createClientPlugin
@@ -34,157 +33,195 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HeadersBuilder
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.utils.io.KtorDsl
 import io.ktor.utils.io.charsets.Charsets
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonElement
+import nl.adaptivity.xmlutil.serialization.XML
 
 
-expect val httpClient: HttpClient
+val urlHasSchemeRegex: Regex = "^[0-9a-zA-Z]+://.*".toRegex()
 
-fun HttpClientConfig<*>.installPlugins() {
+fun String.normalizeUrlScheme(defaultScheme: String = "http"): String {
+    return if (matches(urlHasSchemeRegex)) this else "$defaultScheme://$this"
+}
+
+val httpClient: HttpClient = PlatformHttpClient {
     install(HttpTimeout)
-    install(HttpRequestRetry) {
-        retryIf(2) { httpRequest, httpResponse ->
-            if (httpRequest.url.toString() != "https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule") {
-                return@retryIf false
-            }
-            val data = runBlocking(Dispatchers.IO) { Json.decodeFromString<JsonObject>(httpResponse.bodyAsText(Charsets.UTF_8)) }
-            return@retryIf data.optJsonArray("busStop") == null
-        }
-    }
     install(createClientPlugin("remove-utf-8") {
         on(Send) { request ->
             request.headers.remove("Accept-Charset")
-            this.proceed(request)
+            proceed(request)
         }
     })
 }
 
-fun getTextResponse(link: String): String? {
-    return runBlocking(Dispatchers.IO) {
-        try {
-            httpClient.get(link) {
-                headers {
-                    append(HttpHeaders.UserAgent, "Mozilla/5.0")
-                    append(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
-                    append(HttpHeaders.Pragma, "no-cache")
-                }
-                timeout {
-                    requestTimeoutMillis = 120000
-                    connectTimeoutMillis = 20000
-                }
-            }.let {
-                if (it.status == HttpStatusCode.OK) {
-                    it.bodyAsText(Charsets.UTF_8)
-                } else {
-                    null
-                }
+@Suppress("FunctionName")
+@KtorDsl
+expect fun PlatformHttpClient(block: HttpClientConfig<*>.() -> Unit = { /* do nothing */ }): HttpClient
+
+expect fun HeadersBuilder.applyPlatformHeaders()
+
+suspend inline fun getTextResponse(link: String): StringReadChannel? {
+    return try {
+        httpClient.get(link) {
+            headers {
+                applyPlatformHeaders()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+            timeout {
+                requestTimeoutMillis = 120000
+                connectTimeoutMillis = 20000
+            }
+        }.let {
+            if (it.status == HttpStatusCode.OK) {
+                it.bodyAsStringReadChannel(Charsets.UTF_8)
+            } else {
+                null
+            }
         }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }
 
-fun getTextResponseWithPercentageCallback(link: String, customContentLength: Long, percentageCallback: (Float) -> Unit): String? {
+suspend inline fun getTextResponseWithPercentageCallback(link: String, customContentLength: Long, crossinline percentageCallback: (Float) -> Unit): StringReadChannel? {
     return getTextResponseWithPercentageCallback(link, customContentLength, false, percentageCallback)
 }
 
-fun getTextResponseWithPercentageCallback(link: String, customContentLength: Long, gzip: Boolean, percentageCallback: (Float) -> Unit): String? {
-    return runBlocking(Dispatchers.IO) {
-        try {
-            httpClient.get(link) {
-                headers {
-                    append(HttpHeaders.UserAgent, "Mozilla/5.0")
-                    append(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
-                    append(HttpHeaders.Pragma, "no-cache")
-                }
-                timeout {
-                    requestTimeoutMillis = 120000
-                    connectTimeoutMillis = 20000
-                }
-                onDownload { bytesSentTotal, rawContentLength ->
-                    (customContentLength.takeIf { l -> l >= 0 }?: rawContentLength)?.let {
-                        percentageCallback.invoke(0f.coerceAtLeast((bytesSentTotal.toFloat() / it).coerceAtMost(1f)))
-                    }
-                }
-            }.let {
-                if (it.status == HttpStatusCode.OK) {
-                    if (gzip) it.gzipBodyAsText(Charsets.UTF_8) else it.bodyAsText(Charsets.UTF_8)
-                } else {
-                    null
+suspend inline fun getTextResponseWithPercentageCallback(link: String, customContentLength: Long, gzip: Boolean, crossinline percentageCallback: (Float) -> Unit): StringReadChannel? {
+    return try {
+        httpClient.get(link) {
+            headers {
+                applyPlatformHeaders()
+            }
+            timeout {
+                requestTimeoutMillis = 120000
+                connectTimeoutMillis = 20000
+            }
+            onDownload { bytesSentTotal, rawContentLength ->
+                (customContentLength.takeIf { l -> l >= 0 }?: rawContentLength)?.let {
+                    percentageCallback.invoke(0f.coerceAtLeast((bytesSentTotal.toFloat() / it).coerceAtMost(1f)))
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+        }.let {
+            if (it.status == HttpStatusCode.OK) {
+                if (gzip) it.gzipBodyAsStringReadChannel(Charsets.UTF_8) else it.bodyAsStringReadChannel(Charsets.UTF_8)
+            } else {
+                null
+            }
         }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }
 
-fun getJSONResponse(link: String): JsonObject? {
+suspend inline fun <reified T> getJSONResponse(link: String): T? {
     return getJSONResponse(link, false)
 }
 
-fun getJSONResponse(link: String, gzip: Boolean): JsonObject? {
-    return runBlocking(Dispatchers.IO) {
-        try {
-            httpClient.get(link) {
-                headers {
-                    append(HttpHeaders.UserAgent, "Mozilla/5.0")
-                    append(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
-                    append(HttpHeaders.Pragma, "no-cache")
-                }
-                timeout {
-                    requestTimeoutMillis = 120000
-                    connectTimeoutMillis = 20000
-                }
-            }.let {
-                if (it.status == HttpStatusCode.OK) {
-                    Json.decodeFromString<JsonObject>(if (gzip) it.gzipBodyAsText(Charsets.UTF_8) else it.bodyAsText(Charsets.UTF_8))
-                } else {
-                    null
-                }
+suspend inline fun <reified T> getJSONResponse(link: String, gzip: Boolean): T? {
+    return try {
+        httpClient.get(link) {
+            headers {
+                applyPlatformHeaders()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+            timeout {
+                requestTimeoutMillis = 120000
+                connectTimeoutMillis = 20000
+            }
+        }.let {
+            if (it.status == HttpStatusCode.OK) {
+                Json.decodeFromStringReadChannel<T>(if (gzip) it.gzipBodyAsStringReadChannel(Charsets.UTF_8) else it.bodyAsStringReadChannel(Charsets.UTF_8))
+            } else {
+                null
+            }
         }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }
 
-fun postJSONResponse(link: String, body: JsonObject): JsonObject? {
-    return runBlocking(Dispatchers.IO) {
-        try {
-            httpClient.post(link) {
-                headers {
-                    append(HttpHeaders.UserAgent, "Mozilla/5.0")
-                    append(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
-                    append(HttpHeaders.Pragma, "no-cache")
-                }
-                contentType(ContentType.Application.Json)
-                setBody(body.toString())
-                timeout {
-                    requestTimeoutMillis = 120000
-                    connectTimeoutMillis = 20000
-                }
-            }.let {
-                if (it.status == HttpStatusCode.OK) {
-                    Json.decodeFromString<JsonObject>(it.bodyAsText(Charsets.UTF_8))
-                } else {
-                    null
-                }
+suspend inline fun <reified I, reified T> postJSONResponse(link: String, body: I): T? {
+    return try {
+        httpClient.post(link) {
+            headers {
+                applyPlatformHeaders()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+            contentType(ContentType.Application.Json)
+            setBody(if (body is JsonElement) body.toString() else Json.encodeToString(body))
+            timeout {
+                requestTimeoutMillis = 120000
+                connectTimeoutMillis = 20000
+            }
+        }.let {
+            if (it.status == HttpStatusCode.OK) {
+                Json.decodeFromStringReadChannel<T>(it.bodyAsStringReadChannel(Charsets.UTF_8))
+            } else {
+                null
+            }
         }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+suspend inline fun <reified T> getXMLResponse(link: String): T? {
+    return getXMLResponse(link, false)
+}
+
+suspend inline fun <reified T: Any> getXMLResponse(link: String, gzip: Boolean): T? {
+    return try {
+        httpClient.get(link) {
+            headers {
+                applyPlatformHeaders()
+            }
+            timeout {
+                requestTimeoutMillis = 120000
+                connectTimeoutMillis = 20000
+            }
+        }.let {
+            if (it.status == HttpStatusCode.OK) {
+                XML.decodeFromString<T>(if (gzip) it.gzipBodyAsText(Charsets.UTF_8) else it.bodyAsText(Charsets.UTF_8))
+            } else {
+                null
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+suspend inline fun getMovedRedirect(link: String): String? {
+    return try {
+        httpClient.config {
+            followRedirects = false
+        }.get(link) {
+            headers {
+                applyPlatformHeaders()
+            }
+            timeout {
+                requestTimeoutMillis = 120000
+                connectTimeoutMillis = 20000
+            }
+        }.let {
+            if (it.status == HttpStatusCode.MovedPermanently || it.status == HttpStatusCode.Found) {
+                it.headers[HttpHeaders.Location]
+            } else {
+                null
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }

@@ -20,62 +20,96 @@
  */
 package com.loohp.hkbuseta.common.objects
 
+import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
 import com.loohp.hkbuseta.common.utils.Immutable
-import com.loohp.hkbuseta.common.utils.JSONSerializable
-import com.loohp.hkbuseta.common.utils.mapToMutableList
-import com.loohp.hkbuseta.common.utils.mapToMutableMap
-import com.loohp.hkbuseta.common.utils.optJsonArray
-import com.loohp.hkbuseta.common.utils.optJsonObject
-import com.loohp.hkbuseta.common.utils.optString
-import com.loohp.hkbuseta.common.utils.toJsonArray
-import com.loohp.hkbuseta.common.utils.toJsonObject
+import com.loohp.hkbuseta.common.utils.dispatcherIO
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.datetime.LocalDate
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-@Immutable
-class DataSheet(
-    val holidays: List<LocalDate>,
-    val routeList: Map<String, Route>,
-    val stopList: Map<String, Stop>,
-    val stopMap: Map<String, List<Pair<Operator, String>>>
-) : JSONSerializable {
 
-    companion object {
+private fun String.formatHolidaysDate(): String {
+    return if (length == 8 && !contains('-')) {
+        "${substring(0, 4)}-${substring(4, 6)}-${substring(6, 8)}"
+    } else {
+        this
+    }
+}
 
-        fun deserialize(json: JsonObject): DataSheet {
-            val holidays = json.optJsonArray("holidays")!!.map { LocalDate.parse(formatHolidaysDate(it.jsonPrimitive.content)) }
-            val routeList = json.optJsonObject("routeList")!!.mapToMutableMap { Route.deserialize(it.jsonObject) }
-            val stopList = json.optJsonObject("stopList")!!.mapToMutableMap { Stop.deserialize(it.jsonObject) }
-            val stopMap = json.optJsonObject("stopMap")!!.mapToMutableMap { it.jsonArray.mapToMutableList { v ->
-                val array = v.jsonArray
-                Operator.valueOf(array.optString(0)) to array.optString(1)
-            } }
-            return DataSheet(holidays, routeList, stopList, stopMap)
-        }
+object HolidaySerializer : KSerializer<LocalDate> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Holiday", PrimitiveKind.STRING)
 
-        private fun formatHolidaysDate(date: String): String {
-            return if (date.length == 8 && !date.contains('-')) {
-                "${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}"
-            } else {
-                date
-            }
-        }
-
+    override fun deserialize(decoder: Decoder): LocalDate {
+        return LocalDate.parse(decoder.decodeString().formatHolidaysDate())
     }
 
-    override fun serialize(): JsonObject {
-        return buildJsonObject {
-            put("holidays", holidays.asSequence().map { it.toString() }.toJsonArray())
-            put("routeList", routeList.toJsonObject { it.serialize() })
-            put("stopList", stopList.toJsonObject { it.serialize() })
-            put("stopMap", stopMap.toJsonObject { v -> v.asSequence().map { (first, second) -> buildJsonArray { add(first.name); add(second) } }.toJsonArray() })
+    override fun serialize(encoder: Encoder, value: LocalDate) {
+        encoder.encodeSerializableValue(LocalDate.serializer(), value)
+    }
+}
+
+object OperatorStopIdPairSerializer : KSerializer<Pair<Operator, String>> {
+    @OptIn(ExperimentalSerializationApi::class)
+    override val descriptor: SerialDescriptor = SerialDescriptor("OperatorStopIdPair", JsonArray.serializer().descriptor)
+
+    override fun deserialize(decoder: Decoder): Pair<Operator, String> {
+        return decoder.decodeSerializableValue(JsonArray.serializer()).let {
+            Operator.valueOf(it[0].jsonPrimitive.content) to it[1].jsonPrimitive.content
         }
+    }
+
+    override fun serialize(encoder: Encoder, value: Pair<Operator, String>) {
+        encoder.encodeSerializableValue(JsonArray.serializer(), buildJsonArray {
+            add(value.first.name)
+            add(value.second)
+        })
+    }
+}
+
+@Serializable
+@Immutable
+class DataSheet(
+    val holidays: List<@Serializable(with = HolidaySerializer::class) LocalDate>,
+    val routeList: Map<String, Route>,
+    val stopList: Map<String, Stop>,
+    val stopMap: Map<String, List<@Serializable(with = OperatorStopIdPairSerializer::class) Pair<Operator, String>>>,
+    @ReduceDataOmitted val serviceDayMap: Map<String, List<String>>? = null
+) {
+
+    val routeNumberList: Set<String> by lazy { routeList.values.asSequence().map { it.routeNumber }.toSet() }
+    @Transient
+    val standardSortedRouteKeys: Deferred<List<String>> = CoroutineScope(dispatcherIO).async {
+        routeList.entries.asSequence().sortedWith(compareBy(routeComparator) { it.value }).map { it.key }.toList()
+    }
+    @Transient
+    val routeNumberFirstSortedRouteKeys: Deferred<List<String>> = CoroutineScope(dispatcherIO).async {
+        routeList.entries.asSequence().sortedWith(compareBy(routeComparatorRouteNumberFirst) { it.value }).map { it.key }.toList()
+    }
+    @Transient
+    val routeKeysByStopId: Deferred<Map<String, Set<String>>> = CoroutineScope(dispatcherIO).async {
+        val mapping: MutableMap<String, MutableSet<String>> = mutableMapOf()
+        for ((key, route) in routeList) {
+            for (stopIds in route.stops.values) {
+                for (stopId in stopIds) {
+                    mapping.getOrPut(stopId) { HashSet() }.add(key)
+                }
+            }
+        }
+        mapping
     }
 
     override fun equals(other: Any?): Boolean {
@@ -85,7 +119,8 @@ class DataSheet(
         if (holidays != other.holidays) return false
         if (routeList != other.routeList) return false
         if (stopList != other.stopList) return false
-        return stopMap == other.stopMap
+        if (stopMap != other.stopMap) return false
+        return serviceDayMap == other.serviceDayMap
     }
 
     override fun hashCode(): Int {
@@ -93,6 +128,7 @@ class DataSheet(
         result = 31 * result + routeList.hashCode()
         result = 31 * result + stopList.hashCode()
         result = 31 * result + stopMap.hashCode()
+        result = 31 * result + (serviceDayMap?.hashCode() ?: 0)
         return result
     }
 

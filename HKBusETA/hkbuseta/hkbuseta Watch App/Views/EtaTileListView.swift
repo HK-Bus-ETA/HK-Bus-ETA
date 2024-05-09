@@ -33,7 +33,7 @@ struct EtaTileListView: AppScreenView {
                     Spacer().frame(fixedSize: 10.scaled(appContext))
                 }
                 if etaTileIds.count < 15 {
-                    Button(action: {}) {
+                    Button(action: { /* do nothing */ }) {
                         Text("+")
                             .font(.system(size: 23.scaled(appContext, true), weight: .bold))
                             .foregroundColor(.gray)
@@ -69,7 +69,7 @@ struct EtaTileListView: AppScreenView {
         }
         .onChange(of: locationManager.isLocationFetched) { _ in
             if locationManager.location != nil {
-                let origin = locationManager.location!.coordinate.toLocationResult()
+                let origin = locationManager.location!.toLocationResult()
                 self.origin = origin
                 withAnimation() { () -> () in
                     self.etaTileIds = Tiles().getSortedEtaTileConfigurationsIds(context: appContext) { origin.location }.map { Int32(truncating: $0) }
@@ -96,7 +96,7 @@ struct EtaTileView: View {
     private let favouriteRouteStops: [FavouriteRouteStop]
     
     @State private var mergedEtaCombiner: MergedETACombiner
-    @StateObject private var mergedState: FlowStateObservable<MergedETAContainer>
+    @StateObject private var mergedState: StateFlowObservable<MergedETAContainer>
     @State private var lastUpdated: Kotlinx_datetimeLocalDateTime = TimeUtilsKt.currentLocalDateTime()
     
     init(appContext: AppActiveContextWatchOS, origin: State<LocationResult?>, tileId: Int32, etaTimer: Publishers.Autoconnect<Timer.TimerPublisher>) {
@@ -104,10 +104,10 @@ struct EtaTileView: View {
         self._origin = origin
         self.tileId = tileId
         self.etaTimer = etaTimer
-        self.favouriteRouteStops = Tiles().getEtaTileConfiguration(tileId: tileId).map { Shared().getFavouriteRouteStop(index: Int32(truncating: $0)) }.filter { $0 != nil }.map { $0! }
+        self.favouriteRouteStops = Tiles().getEtaTileConfiguration(tileId: tileId).map { FavouriteRouteGroupKt.getFavouriteRouteStop(typedValue(Shared().favoriteRouteStops), favouriteId: Int32(truncating: $0)) }.filter { $0 != nil }.map { $0! }
         let mergedEtaCombiner = MergedETACombiner(size: favouriteRouteStops.count.asInt32())
         self.mergedEtaCombiner = mergedEtaCombiner
-        self._mergedState = StateObject(wrappedValue: FlowStateObservable(defaultValue: mergedEtaCombiner.mergedState, nativeFlow: mergedEtaCombiner.mergedStateFlow))
+        self._mergedState = StateObject(wrappedValue: StateFlowObservable(stateFlow: mergedEtaCombiner.mergedState))
     }
     
     var body: some View {
@@ -140,14 +140,13 @@ struct EtaTileView: View {
             }
         }()
         
-        Button(action: {}) {
+        Button(action: { /* do nothing */ }) {
             HStack {
                 Rectangle()
                     .frame(width: 4)
                     .foregroundColor(color)
                     .animation(.linear(duration: 1.0), value: color)
                 VStack(alignment: .leading, spacing: 0) {
-                    Spacer().frame(fixedSize: 2.scaled(appContext))
                     Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
                         .multilineTextAlignment(.leading)
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
@@ -181,20 +180,21 @@ struct EtaTileView: View {
                                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.eta, data))
                                 }
                         )
-                    Spacer().frame(fixedSize: 2.scaled(appContext))
+                    Spacer(minLength: 2.scaled(appContext))
                     ETALine(lines: eta, seq: 1, mainResolvedStop: mainResolvedStop)
                     ETALine(lines: eta, seq: 2, mainResolvedStop: mainResolvedStop)
                     ETALine(lines: eta, seq: 3, mainResolvedStop: mainResolvedStop)
-                    Spacer().frame(fixedSize: 2.scaled(appContext))
+                    Spacer(minLength: 2.scaled(appContext))
                     Text((Shared().language == "en" ? "Updated: " : "更新時間: ") + appContext.formatTime(localDateTime: lastUpdated))
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(1)
                         .autoResizing(maxSize: 12.scaled(appContext, true))
-                    Spacer().frame(fixedSize: 2.scaled(appContext))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.vertical)
             }
-            .frame(width: 178.0.scaled(appContext), height: 160.0.scaled(appContext))
+            .frame(width: 178.0.scaled(appContext))
+            .frame(minHeight: 160.0.scaled(appContext))
         }
         .buttonStyle(PlainButtonStyle())
         .background { colorInt(0xFF1A1A1A).asColor() }
@@ -275,7 +275,7 @@ struct EtaTileView: View {
     }
     
     func ETALine(lines: RegistryMergedETAQueryResult<KotlinPair<FavouriteResolvedStop, FavouriteRouteStop>>?, seq: Int, mainResolvedStop: KotlinPair<FavouriteResolvedStop, FavouriteRouteStop>) -> some View {
-        let line = Shared().getResolvedText(lines, seq: seq.asInt32(), clockTimeMode: Shared().clockTimeMode, context_: appContext)
+        let line = Shared().getResolvedText(lines, seq: seq.asInt32(), etaDisplayMode: Shared().etaDisplayMode, context_: appContext)
         let text = line.second!.asAttributedString(defaultFontSize: 17.scaled(appContext, true))
         
         let pair = line.first ?? mainResolvedStop

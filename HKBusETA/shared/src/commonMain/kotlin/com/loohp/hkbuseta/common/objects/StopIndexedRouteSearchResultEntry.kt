@@ -21,8 +21,11 @@
 
 package com.loohp.hkbuseta.common.objects
 
+import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Stable
+import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.optBoolean
 import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
@@ -37,8 +40,9 @@ class StopIndexedRouteSearchResultEntry(
     stopInfo: StopInfo?,
     var stopInfoIndex: Int,
     origin: Coordinates?,
-    isInterchangeSearch: Boolean
-) : RouteSearchResultEntry(routeKey, route, co, stopInfo, origin, isInterchangeSearch) {
+    isInterchangeSearch: Boolean,
+    favouriteStopMode: FavouriteStopMode?
+) : RouteSearchResultEntry(routeKey, route, co, stopInfo, origin, isInterchangeSearch, favouriteStopMode) {
 
     companion object {
 
@@ -49,7 +53,8 @@ class StopIndexedRouteSearchResultEntry(
             val stop = if (json.contains("stop")) StopInfo.deserialize(json.optJsonObject("stop")!!) else null
             val origin = if (json.contains("origin")) Coordinates.deserialize(json.optJsonObject("origin")!!) else null
             val isInterchangeSearch = json.optBoolean("isInterchangeSearch")
-            return StopIndexedRouteSearchResultEntry(routeKey, route, co, stop, 0, origin, isInterchangeSearch)
+            val favouriteStopMode = if (json.contains("favouriteStopMode")) FavouriteStopMode.valueOf(json.optString("favouriteStopMode")) else null
+            return StopIndexedRouteSearchResultEntry(routeKey, route, co, stop, 0, origin, isInterchangeSearch, favouriteStopMode)
         }
 
         fun fromRouteSearchResultEntry(resultEntry: RouteSearchResultEntry): StopIndexedRouteSearchResultEntry {
@@ -60,7 +65,8 @@ class StopIndexedRouteSearchResultEntry(
                 stopInfo = resultEntry.stopInfo,
                 stopInfoIndex = 0,
                 origin = resultEntry.origin,
-                isInterchangeSearch = resultEntry.isInterchangeSearch
+                isInterchangeSearch = resultEntry.isInterchangeSearch,
+                favouriteStopMode = resultEntry.favouriteStopMode
             )
         }
 
@@ -82,43 +88,58 @@ class StopIndexedRouteSearchResultEntry(
 
 }
 
+fun RouteSearchResultEntry.toStopIndexed(instance: AppContext): StopIndexedRouteSearchResultEntry {
+    val stopIndexed = StopIndexedRouteSearchResultEntry.fromRouteSearchResultEntry(this)
+    val route = this.route
+    val co = this.co
+    val stopInfo = this.stopInfo
+    if (route != null && stopInfo != null) {
+        stopIndexed.stopInfoIndex = Registry.getInstance(instance).getAllStops(route.routeNumber, route.bound[co]!!, co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
+    }
+    return stopIndexed
+}
+
+fun List<RouteSearchResultEntry>.toStopIndexed(instance: AppContext): List<StopIndexedRouteSearchResultEntry> {
+    return map { it.toStopIndexed(instance) }
+}
+
 fun List<StopIndexedRouteSearchResultEntry>.bySortModes(
+    context: AppContext,
     recentSortMode: RecentSortMode,
+    includeFavouritesInRecent: Boolean,
     proximitySortOrigin: Coordinates? = null
-): Map<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> {
-    val map: MutableMap<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> = mutableMapOf()
-    map[RouteSortMode.NORMAL] = this
+): Map<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> = buildMap {
+    this[RouteSortMode.NORMAL] = this@bySortModes
     if (recentSortMode.enabled) {
-        map[RouteSortMode.RECENT] = sortedBy {
-            val co = it.co
-            val meta = when (co) {
-                Operator.GMB -> it.route!!.gmbRegion!!.name
-                Operator.NLB -> it.route!!.nlbId
-                else -> ""
+        this[RouteSortMode.RECENT] = if (includeFavouritesInRecent) {
+            val favouriteRoutes = Shared.favoriteRouteStops.value.flatMap { it.favouriteRouteStops }
+            val interestedStops = Shared.getAllInterestedStops()
+            sortedWith(compareBy<StopIndexedRouteSearchResultEntry> {
+                favouriteRoutes.indexOfFirst { f -> it.route similarAs f.route }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
+            }.thenBy {
+                interestedStops.indexOfFirst { s -> it.route!!.stops.values.any { l -> l.contains(s) } }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
+            }.thenBy {
+                Shared.lastLookupRoutes.value.indexOf { l -> l.routeKey.asRoute(context) similarAs it.route }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
+            })
+        } else {
+            sortedBy {
+                Shared.lastLookupRoutes.value.indexOf { l -> l.routeKey == it.routeKey }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
             }
-            Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
         }
     }
     if (proximitySortOrigin != null) {
-        if (recentSortMode.enabled) {
-            map[RouteSortMode.PROXIMITY] = sortedWith(compareBy({
+        this[RouteSortMode.PROXIMITY] = if (recentSortMode.enabled) {
+            sortedWith(compareBy({
                 val location = it.stopInfo!!.data!!.location
                 proximitySortOrigin.distance(location)
             }, {
-                val co = it.co
-                val meta = when (co) {
-                    Operator.GMB -> it.route!!.gmbRegion!!.name
-                    Operator.NLB -> it.route!!.nlbId
-                    else -> ""
-                }
-                Shared.getFavoriteAndLookupRouteIndex(it.route!!.routeNumber, co, meta)
+                Shared.lastLookupRoutes.value.indexOf { l -> l.routeKey == it.routeKey }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
             }))
         } else {
-            map[RouteSortMode.PROXIMITY] = sortedBy {
+            sortedBy {
                 val location = it.stopInfo!!.data!!.location
                 proximitySortOrigin.distance(location)
             }
         }
     }
-    return map
 }

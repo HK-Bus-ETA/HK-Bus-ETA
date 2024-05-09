@@ -1,0 +1,10 @@
+/* 
+  hkbuseta-Watch-App-InfoPlist.strings
+  iOSApp
+
+  Created by LOOHP on 13/2/2024.
+  
+*/
+"CFBundleName" = "HK Bus ETA";
+"CFBundleDisplayName" = "HK Bus ETA";
+"NSLocationWhenInUseUsageDescription" = "Location is used to locate nearby bus stops";

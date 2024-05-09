@@ -31,6 +31,10 @@ func registryClear() {
     Registry.Companion().clearInstance()
 }
 
+func registryInvalidateCache(_ appContext: AppContext) {
+    AppContextWatchOSKt.invalidateCache(context: appContext)
+}
+
 func fetchEta(appContext: AppContext, stopId: String, stopIndex: Int, co: Operator, route: Route, options: Registry.EtaQueryOptions? = nil, callback: @escaping (Registry.ETAQueryResult) -> Void) {
     fetchEta(appContext: appContext, stopId: stopId, stopIndex: stopIndex.asInt32(), co: co, route: route, options: options, callback: callback)
 }
@@ -72,7 +76,7 @@ func operatorColor(_ primaryColor: Int64, _ secondaryColor: Int64? = nil, _ frac
 }
 
 func openUrl(link: String, longClick: Bool) {
-    guard let url = URL(string: link) else {
+    guard let url = URL(string: HttpRequestUtilsKt.normalizeUrlScheme(link, defaultScheme: "http")) else {
         return
     }
     if longClick {
@@ -93,62 +97,6 @@ func openMaps(lat: Double, lng: Double, label: String, longClick: Bool) {
     mapItem.name = label
     mapItem.timeZone = TimeZone(identifier: "Asia/Hong_Kong")
     mapItem.openInMaps()
-}
-
-extension Array where Element: NSObject {
-    
-    func asKt() -> KotlinArray<Element> {
-        return KotlinArray(size: count.asInt32()) { index in self[Int(truncating: index)] }
-    }
-    
-}
-
-extension View {
-    
-    @ViewBuilder func tileStateBorder(_ state: TileUseState, _ cornerRadius: CGFloat) -> some View {
-        switch state {
-        case .primary:
-            self.overlay {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(colorInt(0x5437FF00).asColor(), lineWidth: 2)
-                    .padding(1)
-            }
-        case .secondary:
-            self.overlay {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(colorInt(0x54FFB700).asColor(), lineWidth: 2)
-                    .padding(1)
-            }
-        default:
-            self
-        }
-    }
-    
-    func CrossfadeText(textList: [AttributedString], state: Int) -> some View {
-        Text(textList[state % textList.count])
-            .id(textList[state % textList.count])
-            .transition(.opacity.animation(.linear(duration: 0.5)))
-    }
-    
-    func CrossfadeMarqueeText(textList: [AttributedString], state: Int, font: UIFont, startDelay: Double, alignment: Alignment? = nil) -> some View {
-        MarqueeText(
-            text: textList[state % textList.count],
-            font: font,
-            startDelay: startDelay,
-            alignment: alignment
-        )
-        .id(textList[state % textList.count])
-        .transition(.opacity.animation(.linear(duration: 0.5)))
-    }
-    
-    func autoResizing(maxSize: CGFloat = 200, minSize: CGFloat = 1, weight: Font.Weight = .regular) -> some View {
-        self.font(.system(size: maxSize, weight: weight)).minimumScaleFactor(minSize / maxSize)
-    }
-    
-    func frame(fixedSize: CGFloat) -> some View {
-        self.frame(width: fixedSize, height: fixedSize)
-    }
-    
 }
 
 extension Int {

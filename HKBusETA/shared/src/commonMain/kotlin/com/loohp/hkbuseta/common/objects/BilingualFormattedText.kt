@@ -106,3 +106,15 @@ class BilingualFormattedText(val zh: FormattedText, val en: FormattedText) : JSO
     }
 
 }
+
+infix fun FormattedText.withEn(en: FormattedText): BilingualFormattedText {
+    return BilingualFormattedText(this, en)
+}
+
+infix fun FormattedText.withZh(zh: FormattedText): BilingualFormattedText {
+    return BilingualFormattedText(zh, this)
+}
+
+fun FormattedText.asBilingualText(): BilingualFormattedText {
+    return this withEn this
+}

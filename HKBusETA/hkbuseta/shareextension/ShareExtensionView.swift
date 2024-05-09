@@ -19,10 +19,10 @@ struct ShareExtensionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 40) {
             VStack(alignment: .center) {
-                Text("香港巴士到站預報 (WatchOS)")
+                Text("香港巴士到站預報")
                     .multilineTextAlignment(.center)
                     .font(.title.bold())
-                Text("HK Bus ETA (WatchOS)")
+                Text("HK Bus ETA")
                     .multilineTextAlignment(.center)
                     .font(.title.bold())
                 Link(destination: URL(string: "https://loohpjames.com")!, label: {
@@ -33,22 +33,7 @@ struct ShareExtensionView: View {
                 })
             }
             .frame(maxWidth: .infinity)
-            VStack(alignment: .leading) {
-                Text("本手機配套應用程式用於直接讓你在手錶上開啟巴士路線連結。")
-                    .multilineTextAlignment(.leading)
-                    .font(.title3)
-                Text("使用此功能時，手錶應用程式必須位於前台。")
-                    .multilineTextAlignment(.leading)
-                    .font(.title3)
-                Text("This phone companion app is used for directly launching into bus routes and stops onto the watch app.")
-                    .multilineTextAlignment(.leading)
-                    .font(.title3)
-                Text("The watch app must be in the foreground while this feature is used.")
-                    .multilineTextAlignment(.leading)
-                    .font(.title3)
-            }
-            .frame(maxWidth: .infinity)
-            Link(destination: URL(string: "https://watch.hkbus.app/shared?url=\(url)")!, label: {
+            Link(destination: URL(string: "https://app.hkbuseta.com/shared?url=\(url)")!, label: {
                 Text("開啟路線 Launch Route")
                     .frame(maxWidth: .infinity)
             })

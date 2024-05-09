@@ -23,6 +23,7 @@ package com.loohp.hkbuseta.common.utils
 
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.charset
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.core.readBytes
@@ -51,6 +52,14 @@ actual suspend fun HttpResponse.gzipBodyAsText(fallbackCharset: Charset): String
             }
         }
     }?: throw RuntimeException("Unsupported Platform Operation")
+}
+
+actual suspend fun HttpResponse.bodyAsStringReadChannel(fallbackCharset: Charset): StringReadChannel {
+    return bodyAsText(fallbackCharset).toStringReadChannel(charset()?: fallbackCharset)
+}
+
+actual suspend fun HttpResponse.gzipBodyAsStringReadChannel(fallbackCharset: Charset): StringReadChannel {
+    return gzipBodyAsText(fallbackCharset).toStringReadChannel(charset()?: fallbackCharset)
 }
 
 actual fun gzipSupported(): Boolean {

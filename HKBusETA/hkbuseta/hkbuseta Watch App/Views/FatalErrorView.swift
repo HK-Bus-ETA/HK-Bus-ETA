@@ -42,7 +42,7 @@ struct FatalErrorView: AppScreenView {
             }
             Spacer().frame(fixedSize: 10.scaled(appContext))
             Button(action: {
-                Shared().invalidateCache(context: appContext)
+                registryInvalidateCache(appContext)
                 let intent = newAppIntent(appContext, AppScreen.main)
                 intent.addFlags(flags: [AppIntentFlag.theNewTask, AppIntentFlag.clearTask].asKt())
                 appContext.startActivity(appIntent: intent)

@@ -1,0 +1,31 @@
+<!--
+  ~ This file is part of HKBusETA Phone Companion.
+  ~
+  ~ Copyright (C) 2023. LoohpJames <jamesloohp@gmail.com>
+  ~ Copyright (C) 2023. Contributors
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program. If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="app_name">HK Bus ETA</string>
+    <string name="favourite_routes_widget_name">Favourite Route Stops</string>
+    <string name="favourite_routes_widget_description">Shows you your favourite route stops right on your home screen.</string>
+    <string name="alight_reminder_channel_name">Alight Reminder Notifications</string>
+    <string name="send_to_watch_label">Open on Watch</string>
+    <string name="send_no_watch">Unable to connect to watch</string>
+    <string name="send_failed">Failed to connect to watch</string>
+    <string name="send_success">Please check your watch</string>
+    <string name="send_malformed">This is not a support bus route link</string>
+</resources>

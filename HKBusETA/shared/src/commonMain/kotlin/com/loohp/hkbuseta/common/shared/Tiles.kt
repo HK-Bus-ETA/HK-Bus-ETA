@@ -22,14 +22,11 @@
 package com.loohp.hkbuseta.common.shared
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import co.touchlab.stately.concurrency.AtomicReference
 import co.touchlab.stately.concurrency.Lock
-import co.touchlab.stately.concurrency.value
 import co.touchlab.stately.concurrency.withLock
 import com.loohp.hkbuseta.common.appcontext.AppContext
-import com.loohp.hkbuseta.common.appcontext.Platform
-import com.loohp.hkbuseta.common.appcontext.platform
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.getFavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.resolveStop
 
 
@@ -44,10 +41,10 @@ object Tiles {
     private val etaTileConfigurations: Map<Int, List<Int>> = ConcurrentMutableMap()
     private val lock: Lock = Lock()
 
-    private val platformUpdate: AtomicReference<(Int) -> Unit> = AtomicReference { }
+    private var platformUpdate: () -> Unit = { /* do nothing */ }
 
-    fun providePlatformUpdate(runnable: (Int) -> Unit) {
-        platformUpdate.value = runnable
+    fun providePlatformUpdate(runnable: () -> Unit) {
+        platformUpdate = runnable
     }
 
     fun updateEtaTileConfigurations(mutation: (MutableMap<Int, List<Int>>) -> Unit) {
@@ -58,18 +55,18 @@ object Tiles {
 
     fun getSortedEtaTileConfigurationsIds(context: AppContext, originGetter: () -> Coordinates?): List<Int> {
         return etaTileConfigurations.keys.toMutableList().apply {
-            if (platform() == Platform.WEAROS) {
-                (0..8).forEach { add(it or Int.MIN_VALUE) }
-            }
-        }.apply {
             val origin = originGetter.invoke()?: return@apply
-            val distances = associateWith { id -> getEtaTileConfiguration(id).minBy { Shared.favoriteRouteStops[it]?.resolveStop(context) { origin }?.stop?.location?.distance(origin)?: Double.MAX_VALUE } }
+            val distances = associateWith {
+                id -> getEtaTileConfiguration(id).minBy {
+                    Shared.favoriteRouteStops.value.getFavouriteRouteStop(it)?.resolveStop(context) { origin }?.stop?.location?.distance(origin)?: Double.MAX_VALUE
+                }
+            }
             sortBy { distances[it] }
         }
     }
 
     fun getEtaTileConfiguration(tileId: Int): List<Int> {
-        return if (tileId in (1 or Int.MIN_VALUE)..(8 or Int.MIN_VALUE)) listOf(tileId and Int.MAX_VALUE) else etaTileConfigurations.getOrElse(tileId) { emptyList() }
+        return etaTileConfigurations.getOrElse(tileId) { emptyList() }
     }
 
     fun getRawEtaTileConfigurations(): Map<Int, List<Int>> {
@@ -85,11 +82,7 @@ object Tiles {
     }
 
     fun requestTileUpdate() {
-        (0..8).forEach { requestTileUpdate(it) }
-    }
-
-    fun requestTileUpdate(favoriteIndex: Int) {
-        platformUpdate.value.invoke(favoriteIndex)
+        platformUpdate.invoke()
     }
 
 }

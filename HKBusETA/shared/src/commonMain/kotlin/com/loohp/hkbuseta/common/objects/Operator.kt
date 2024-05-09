@@ -24,10 +24,17 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.concurrency.AtomicInt
 import co.touchlab.stately.concurrency.synchronize
 import com.loohp.hkbuseta.common.appcontext.AppIntent
-import com.loohp.hkbuseta.common.appcontext.Platform
-import com.loohp.hkbuseta.common.appcontext.platform
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Immutable
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
+@Serializable(with = OperatorSerializer::class)
 @Immutable
 class Operator private constructor(
     val name: String,
@@ -48,11 +55,14 @@ class Operator private constructor(
         val GMB = createBuiltIn("gmb", "^[0-9]{8}$")
         val LRT = createBuiltIn("lightRail", "^LR[0-9]+$")
         val MTR = createBuiltIn("mtr", "^[A-Z]{3}$")
+        val SUNFERRY = createBuiltIn("sunferry", "^[0-9]{6}$")
+        val HKKF = createBuiltIn("hkkf", "^KF[0-9]+$")
+        val FORTUNEFERRY = createBuiltIn("fortuneferry", "^[0-9]{6}$")
 
         private fun createBuiltIn(name: String, stopIdPattern: String): Operator {
             return VALUES.synchronize {
                 VALUES.getOrPut(name.lowercase()) {
-                    Operator(name, COUNTER.incrementAndGet(), Regex(stopIdPattern), true)
+                    Operator(name, COUNTER.incrementAndGet(), stopIdPattern.toRegex(), true)
                 }
             }
         }
@@ -93,10 +103,25 @@ class Operator private constructor(
 
 }
 
+object OperatorSerializer : KSerializer<Operator> {
+
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Operator", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): Operator {
+        return Operator.valueOf(decoder.decodeString())
+    }
+
+    override fun serialize(encoder: Encoder, value: Operator) {
+        encoder.encodeString(value.name)
+    }
+
+}
+
 fun AppIntent.putExtra(name: String, value: Operator): AppIntent {
-    when (platform()) {
-        Platform.WEAROS -> extras.putString(name, value.name)
-        Platform.WATCHOS -> extras.data[name] = value
+    if (Shared.isWearOS) {
+        extras.putString(name, value.name)
+    } else {
+        extras.data[name] = value
     }
     return this
 }

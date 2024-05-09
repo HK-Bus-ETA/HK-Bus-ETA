@@ -7,17 +7,12 @@
 
 import SwiftUI
 import shared
-import KMPNativeCoroutinesCore
-import KMPNativeCoroutinesRxSwift
-import KMPNativeCoroutinesAsync
-import KMPNativeCoroutinesCombine
-import RxSwift
 
 struct MainView: AppScreenView {
     
-    @StateObject private var registryState: FlowStateObservable<Registry.State>
+    @StateObject private var registryState: StateFlowObservable<Registry.State>
     
-    @StateObject private var updateProgressState: FlowStateObservable<KotlinFloat>
+    @StateObject private var updateProgressState: StateFlowObservable<KotlinFloat>
     
     @State private var updateScreen = false
     @State private var launch: String
@@ -27,8 +22,8 @@ struct MainView: AppScreenView {
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
         self.launch = data["launch"] as? String ?? ""
-        self._registryState = StateObject(wrappedValue: FlowStateObservable(defaultValue: registry(appContext).state, nativeFlow: registry(appContext).stateFlow))
-        self._updateProgressState = StateObject(wrappedValue: FlowStateObservable(defaultValue: KotlinFloat(value: registry(appContext).updatePercentageState), nativeFlow: registry(appContext).updatePercentageStateFlow))
+        self._registryState = StateObject(wrappedValue: StateFlowObservable(stateFlow: registry(appContext).state))
+        self._updateProgressState = StateObject(wrappedValue: StateFlowObservable(stateFlow: registry(appContext).updatePercentageState))
     }
     
     var body: some View {
@@ -45,6 +40,7 @@ struct MainView: AppScreenView {
                     .font(.system(size: min(14.scaled(appContext, true), 17.scaled(appContext))))
                     .padding(.bottom)
                 ProgressView(value: max(0.0, min(1.0, updateProgressState.state.floatValue)))
+                    .tint(colorInt(0xFFF9DE09).asColor())
                     .padding(.top)
                     .frame(width: 150.0.scaled(appContext))
                     .animation(.easeInOut(duration: 0.2), value: updateProgressState.state.floatValue)
@@ -72,13 +68,20 @@ struct MainView: AppScreenView {
         .onChange(of: registryState.state) { _ in
             if registryState.state == Registry.State.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    switch launch {
-                    case "etaTile":
-                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
-                        appContext.finishAffinity()
-                    default:
+                    let appScreen = appContext.data["relaunch"] as? AppScreen
+                    if appScreen != nil {
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
+                        appContext.startActivity(appIntent: newAppIntent(appContext, appScreen!))
                         appContext.finishAffinity()
+                    } else {
+                        switch launch {
+                        case "etaTile":
+                            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
+                            appContext.finishAffinity()
+                        default:
+                            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
+                            appContext.finishAffinity()
+                        }
                     }
                 }
             } else if registryState.state == Registry.State.updating {
@@ -94,13 +97,20 @@ struct MainView: AppScreenView {
         .onAppear {
             if registryState.state == Registry.State.ready {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    switch launch {
-                    case "etaTile":
-                        appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
-                        appContext.finishAffinity()
-                    default:
+                    let appScreen = appContext.data["relaunch"] as? AppScreen
+                    if appScreen != nil {
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
+                        appContext.startActivity(appIntent: newAppIntent(appContext, appScreen!))
                         appContext.finishAffinity()
+                    } else {
+                        switch launch {
+                        case "etaTile":
+                            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
+                            appContext.finishAffinity()
+                        default:
+                            appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.title))
+                            appContext.finishAffinity()
+                        }
                     }
                 }
             } else if registryState.state == Registry.State.updating {

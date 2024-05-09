@@ -23,12 +23,13 @@ package com.loohp.hkbuseta.common.utils
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.shared.Registry
 import kotlin.math.absoluteValue
 
 fun createMTRLineSectionData(co: Operator, color: Long, stopList: List<Registry.StopData>, mtrStopsInterchange: List<Registry.MTRInterchangeData>, isLrtCircular: Boolean, context: AppContext): List<MTRStopSectionData> {
-    val stopByBranchId: MutableMap<Int, MutableList<Registry.StopData>> = HashMap()
-    stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.getOrPut(it) { ArrayList() }.add(stop) } }
+    val stopByBranchId: MutableMap<Route, MutableList<Registry.StopData>> = mutableMapOf()
+    stopList.forEach { stop -> stop.branchIds.forEach { stopByBranchId.getOrPut(it) { mutableListOf() }.add(stop) } }
     val hasOutOfStation = mtrStopsInterchange.any { it.outOfStationLines.isNotEmpty() }
     return stopList.withIndex().map { (index, stop) ->
         MTRStopSectionData.build(stop.serviceType == 1, stopByBranchId, index, stop, stopList, co, color, isLrtCircular, mtrStopsInterchange[index], hasOutOfStation, context)
@@ -46,12 +47,12 @@ data class MTRStopSectionData(
     val isLrtCircular: Boolean,
     val interchangeData: Registry.MTRInterchangeData,
     val hasOutOfStation: Boolean,
-    val stopByBranchId: MutableMap<Int, MutableList<Registry.StopData>>,
+    val stopByBranchId: MutableMap<Route, MutableList<Registry.StopData>>,
     val requireExtension: Boolean,
     val context: AppContext
 ) {
     companion object {
-        fun build(isMainLine: Boolean, stopByBranchId: MutableMap<Int, MutableList<Registry.StopData>>, index: Int, stop: Registry.StopData, stopList: List<Registry.StopData>, co: Operator, color: Long, isLrtCircular: Boolean, interchangeData: Registry.MTRInterchangeData, hasOutOfStation: Boolean, context: AppContext): MTRStopSectionData {
+        fun build(isMainLine: Boolean, stopByBranchId: MutableMap<Route, MutableList<Registry.StopData>>, index: Int, stop: Registry.StopData, stopList: List<Registry.StopData>, co: Operator, color: Long, isLrtCircular: Boolean, interchangeData: Registry.MTRInterchangeData, hasOutOfStation: Boolean, context: AppContext): MTRStopSectionData {
             val requireExtension = index + 1 < stopList.size
             return if (isMainLine) MTRStopSectionData(MTRStopSectionMainLineData(
                 isFirstStation = stopByBranchId.values.all { it.indexesOf(stop).minBy { i -> (i - index).absoluteValue } <= 0 },
@@ -84,7 +85,7 @@ data class MTRStopSectionSpurLineData(
     val isLastStation: Boolean
 )
 
-private fun hasOtherParallelBranches(stopList: List<Registry.StopData>, stopByBranchId: MutableMap<Int, MutableList<Registry.StopData>>, stop: Registry.StopData): Boolean {
+private fun hasOtherParallelBranches(stopList: List<Registry.StopData>, stopByBranchId: MutableMap<Route, MutableList<Registry.StopData>>, stop: Registry.StopData): Boolean {
     if (stopByBranchId.size == stopByBranchId.filter { it.value.contains(stop) }.size) {
         return false
     }
@@ -142,7 +143,7 @@ enum class SideSpurLineType {
 
 }
 
-private fun getSideSpurLineType(stopList: List<Registry.StopData>, stopByBranchId: MutableMap<Int, MutableList<Registry.StopData>>, stop: Registry.StopData): SideSpurLineType {
+private fun getSideSpurLineType(stopList: List<Registry.StopData>, stopByBranchId: MutableMap<Route, MutableList<Registry.StopData>>, stop: Registry.StopData): SideSpurLineType {
     val mainIndex = stopList.indexOf(stop)
     val branchIds = stop.branchIds
     if (mainIndex > 0) {

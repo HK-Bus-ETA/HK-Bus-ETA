@@ -20,16 +20,21 @@
  */
 package com.loohp.hkbuseta.common.branchedlist
 
+import com.loohp.hkbuseta.common.utils.Immutable
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
 
-class BranchedListEntry<K, V>(val key: K, val value: V, branchIds: Collection<Int>) {
 
-    constructor(key: K, value: V, vararg branchIds: Int) : this(key, value, branchIds.toList())
+@Immutable
+class BranchedListEntry<K, V, B> private constructor(
+    val key: K,
+    val value: V,
+    val branchIds: Set<B>
+) {
+    constructor(key: K, value: V, vararg branchIds: B) : this(key, value, persistentSetOf(*branchIds))
+    constructor(key: K, value: V, branchIds: Collection<B>) : this(key, value, branchIds.toImmutableSet())
 
-    val branchIds: Set<Int> = branchIds.toImmutableSet()
-
-    fun merge(value: V, vararg branchIds: Int): BranchedListEntry<K, V> {
-        val ids: MutableSet<Int> = HashSet(this.branchIds).apply { branchIds.forEach { this.add(it) } }
-        return BranchedListEntry(key, value, ids)
+    fun merge(value: V, vararg branchIds: B): BranchedListEntry<K, V, B> {
+        return BranchedListEntry(key, value, this.branchIds + branchIds)
     }
 }

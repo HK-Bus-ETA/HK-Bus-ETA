@@ -7,20 +7,16 @@
 
 import SwiftUI
 import shared
-import KMPNativeCoroutinesCore
-import KMPNativeCoroutinesRxSwift
-import KMPNativeCoroutinesAsync
-import KMPNativeCoroutinesCombine
-import RxSwift
 
 struct EtaTileConfigurationView: AppScreenView {
     
-    @StateObject private var jointOperatedColorFraction = FlowStateObservable(defaultValue: KotlinFloat(float: Shared().jointOperatedColorFractionState), nativeFlow: Shared().jointOperatedColorFractionStateFlow)
+    @StateObject private var jointOperatedColorFraction = StateFlowObservable(stateFlow: Shared().jointOperatedColorFractionState)
     
-    @StateObject private var maxFavItems = FlowStateObservable(defaultValue: KotlinInt(int: Shared().suggestedMaxFavouriteRouteStopState), nativeFlow: Shared().suggestedMaxFavouriteRouteStopStateFlow)
+    @StateObject private var favouriteRouteStops = StateFlowListObservable(stateFlow: Shared().favoriteRouteStops)
     
     private let tileId: Int
     @State private var selectStates: [Int]
+    @State private var selectedGroup: BilingualText
     
     private let appContext: AppActiveContextWatchOS
     
@@ -28,6 +24,7 @@ struct EtaTileConfigurationView: AppScreenView {
         self.appContext = appContext
         self.tileId = data["tileId"] as! Int
         self.selectStates = Tiles().getEtaTileConfiguration(tileId: tileId.asInt32()).map { Int(truncating: $0) }
+        self.selectedGroup = typedValue(Shared().favoriteRouteStops).first!.name
     }
     
     var body: some View {
@@ -53,19 +50,32 @@ struct EtaTileConfigurationView: AppScreenView {
                             .lineLimit(2)
                             .autoResizing(maxSize: 12.scaled(appContext, true))
                         Spacer().frame(fixedSize: 10.scaled(appContext))
-                        if Shared().favoriteRouteStops.isEmpty {
+                        Button(action: {
+                            let current = selectedGroup
+                            let index = favouriteRouteStops.state.firstIndex { $0.name == current }!
+                            selectedGroup = index + 1 >= favouriteRouteStops.state.count ? favouriteRouteStops.state.first!.name : favouriteRouteStops.state[index + 1].name
+                        }) {
+                            Text(selectedGroup.get(language: Shared().language))
+                                .font(.system(size: 17.scaled(appContext, true), weight: .bold))
+                                .foregroundColor(colorInt(0xFFFFFFFF).asColor())
+                        }
+                        .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
+                        .clipShape(RoundedRectangle(cornerRadius: 25))
+                        Spacer().frame(fixedSize: 10.scaled(appContext))
+                        let routeStops = FavouriteRouteGroupKt.getByName(favouriteRouteStops.state, name: selectedGroup)!.favouriteRouteStops
+                        if routeStops.isEmpty {
                             Text(Shared().language == "en" ? "No favourite routes" : "沒有最喜愛路線")
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                                 .lineLimit(2)
                                 .autoResizing(maxSize: 23.scaled(appContext, true))
                         } else {
-                            ForEach(1..<(Int(truncating: maxFavItems.state) + 1), id: \.self) { index in
-                                if Shared().favoriteRouteStops[index.asKt()] != nil {
-                                    SelectButton(favIndex: index)
-                                    Spacer().frame(fixedSize: 5.scaled(appContext))
-                                }
+                            ForEach(routeStops.withIndex(), id: \.1.favouriteId) { (index, routeStop) in
+                                SelectButton(numIndex: index + 1, favouriteRouteStop: routeStop)
+                                    .id(routeStop.favouriteId)
+                                Spacer().frame(fixedSize: 5.scaled(appContext))
                             }
+                            .animation(.default, value: favouriteRouteStops.state)
                         }
                         Spacer().frame(fixedSize: 60.scaled(appContext))
                     }
@@ -105,27 +115,27 @@ struct EtaTileConfigurationView: AppScreenView {
         .frame(maxHeight: /*@START_MENU_TOKEN@*/.infinity/*@END_MENU_TOKEN@*/)
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {
-            maxFavItems.subscribe()
+            favouriteRouteStops.subscribe()
         }
         .onDisappear {
             jointOperatedColorFraction.unsubscribe()
-            maxFavItems.unsubscribe()
+            favouriteRouteStops.unsubscribe()
         }
     }
     
-    func SelectButton(favIndex: Int) -> some View {
-        let favouriteStopRoute = Shared().favoriteRouteStops[favIndex.asKt()]
+    func SelectButton(numIndex: Int, favouriteRouteStop: FavouriteRouteStop) -> some View {
+        let favIndex = favouriteRouteStop.favouriteId
         let selectState: SelectMode
         if (!selectStates.isEmpty && selectStates[0] == favIndex) {
             selectState = SelectMode.primary
-        } else if (selectStates.contains(favIndex)) {
+        } else if (selectStates.contains(Int(favIndex))) {
             selectState = SelectMode.secondary
         } else {
             selectState = SelectMode.none
         }
-        let enabled = (!selectStates.isEmpty && selectStates[0] == favIndex) || (favouriteStopRoute != nil && (selectStates.isEmpty || Shared().favoriteRouteStops[selectStates[0].asKt()].map { it in
-            (it.favouriteStopMode.isRequiresLocation && it.favouriteStopMode == favouriteStopRoute!.favouriteStopMode || it.stop.location.distance(other: favouriteStopRoute!.stop.location) <= 0.3) && !(it.route.routeNumber == favouriteStopRoute!.route.routeNumber && it.co == favouriteStopRoute!.co)
-        } == true))
+        let enabled = (!selectStates.isEmpty && selectStates[0].asInt32() == favIndex) || (selectStates.isEmpty || FavouriteRouteGroupKt.getFavouriteRouteStop(typedValue(Shared().favoriteRouteStops), favouriteId: selectStates[0].asInt32()).map { it in
+            (it.favouriteStopMode.isRequiresLocation && it.favouriteStopMode == favouriteRouteStop.favouriteStopMode || it.stop.location.distance(other: favouriteRouteStop.stop.location) <= 0.3) && !(it.route.routeNumber == favouriteRouteStop.route.routeNumber && it.co == favouriteRouteStop.co)
+        } == true)
         let backgroundColor: Color
         switch selectState {
         case SelectMode.primary:
@@ -136,7 +146,7 @@ struct EtaTileConfigurationView: AppScreenView {
             backgroundColor = colorInt(0xFF1A1A1A).asColor()
         }
         
-        return Button(action: {}) {
+        return Button(action: { /* do nothing */ }) {
             HStack(alignment: .top, spacing: 0) {
                 ZStack(alignment: .leading) {
                     Text("").frame(width: 38)
@@ -157,82 +167,70 @@ struct EtaTileConfigurationView: AppScreenView {
                                 .frame(width: 17.scaled(appContext), height: 17.scaled(appContext))
                                 .foregroundColor((selectState == SelectMode.primary ? colorInt(0xFF4CFF00).asColor() : colorInt(0xFFFF8400).asColor()).adjustBrightness(percentage: enabled ? 1.0 : 0.5))
                         } else {
-                            Text("\(favIndex)")
+                            Text("\(numIndex)")
                                 .font(.system(size: 17.scaled(appContext, true), weight: .bold))
-                                .foregroundColor((favouriteStopRoute != nil ? colorInt(0xFFFFFF00).asColor() : colorInt(0xFF444444).asColor()).adjustBrightness(percentage: enabled ? 1.0 : 0.5))
+                                .foregroundColor(colorInt(0xFFFFFF00).asColor().adjustBrightness(percentage: enabled ? 1.0 : 0.5))
                         }
                     }
                 }
                 .padding(10)
                 VStack(alignment: .leading, spacing: 1.scaled(appContext)) {
-                    if favouriteStopRoute == nil {
-                        HStack(alignment: .center) {
-                            Text(Shared().language == "en" ? "No Route Selected" : "未有設置路線")
-                                .font(.system(size: 16.scaled(appContext, true), weight: .bold))
-                                .foregroundColor(colorInt(0xFF505050).asColor())
-                                .lineLimit(2)
-                                .lineSpacing(0)
-                                .multilineTextAlignment(.leading)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }.frame(maxHeight: .infinity)
-                    } else {
-                        let stopName = {
-                            if (favouriteStopRoute!.favouriteStopMode == FavouriteStopMode.fixed) {
-                                return favouriteStopRoute!.stop.name
+                    let stopName = {
+                        if (favouriteRouteStop.favouriteStopMode == FavouriteStopMode.fixed) {
+                            return favouriteRouteStop.stop.name
+                        } else {
+                            if (!selectStates.isEmpty && (selectStates.count > 1 || selectState != SelectMode.primary) && FavouriteRouteGroupKt.getFavouriteRouteStop(typedValue(Shared().favoriteRouteStops), favouriteId: selectStates[0].asInt32())?.favouriteStopMode.isRequiresLocation == true) {
+                                return BilingualText(zh: "共同最近的任何站", en: "Any Common Closest")
                             } else {
-                                if (!selectStates.isEmpty && (selectStates.count > 1 || selectState != SelectMode.primary) && Shared().favoriteRouteStops[selectStates[0].asKt()]?.favouriteStopMode.isRequiresLocation == true) {
-                                    return BilingualText(zh: "共同最近的任何站", en: "Any Common Closes")
-                                } else {
-                                    return BilingualText(zh: "最近的任何站", en: "Any Closes")
-                                }
+                                return BilingualText(zh: "最近的任何站", en: "Any Closest")
                             }
-                        }()
-                        let index = favouriteStopRoute!.index
-                        let route = favouriteStopRoute!.route
-                        let kmbCtbJoint = route.isKmbCtbJoint
-                        let co = favouriteStopRoute!.co
-                        let routeNumber = route.routeNumber
-                        let destName = registry(appContext).getStopSpecialDestinations(stopId: favouriteStopRoute!.stopId, co: favouriteStopRoute!.co, route: route, prependTo: true)
-                        let color = operatorColor(favouriteStopRoute!.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }
-                        let operatorName = favouriteStopRoute!.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, language: Shared().language, elseName: "???")
-                        let mainText = "\(operatorName) \(favouriteStopRoute!.co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))"
-                        let routeText = destName.get(language: Shared().language)
-                        let subText = ((co.isTrain || favouriteStopRoute!.favouriteStopMode == FavouriteStopMode.closest ? "" : "\(index). ") + stopName.get(language: Shared().language)).asAttributedString()
-                        
-                        VStack(alignment: .leading, spacing: 0) {
-                            MarqueeText(
-                                text: mainText,
-                                font: UIFont.systemFont(ofSize: 19.scaled(appContext, true), weight: .bold),
-                                startDelay: 2,
-                                alignment: .bottomLeading
-                            )
-                            .foregroundColor(color.asColor().adjustBrightness(percentage: enabled ? 1.0 : 0.5))
-                            .lineLimit(1)
-                            .onAppear {
-                                if kmbCtbJoint {
-                                    jointOperatedColorFraction.subscribe()
-                                }
-                            }
-                            MarqueeText(
-                                text: routeText,
-                                font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
-                                startDelay: 2,
-                                alignment: .bottomLeading
-                            )
-                            .foregroundColor(.white.adjustBrightness(percentage: enabled ? 1.0 : 0.5))
-                            .lineLimit(1)
-                            Spacer().frame(fixedSize: 3.scaled(appContext))
-                            MarqueeText(
-                                text: subText,
-                                font: UIFont.systemFont(ofSize: 14.scaled(appContext, true)),
-                                startDelay: 2,
-                                alignment: .bottomLeading
-                            )
-                            .foregroundColor(.white.adjustBrightness(percentage: enabled ? 1.0 : 0.5))
-                            .lineLimit(1)
                         }
+                    }()
+                    let index = favouriteRouteStop.index
+                    let route = favouriteRouteStop.route
+                    let kmbCtbJoint = route.isKmbCtbJoint
+                    let co = favouriteRouteStop.co
+                    let routeNumber = route.routeNumber
+                    let destName = registry(appContext).getStopSpecialDestinations(stopId: favouriteRouteStop.stopId, co: favouriteRouteStop.co, route: route, prependTo: true)
+                    let color = operatorColor(favouriteRouteStop.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }
+                    let operatorName = favouriteRouteStop.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, language: Shared().language, elseName: "???")
+                    let mainText = "\(operatorName) \(favouriteRouteStop.co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))"
+                    let routeText = destName.get(language: Shared().language)
+                    let subText = ((co.isTrain || favouriteRouteStop.favouriteStopMode == FavouriteStopMode.closest ? "" : "\(index). ") + stopName.get(language: Shared().language)).asAttributedString()
+                    
+                    VStack(alignment: .leading, spacing: 0) {
+                        UserMarqueeText(
+                            text: mainText,
+                            font: UIFont.systemFont(ofSize: 19.scaled(appContext, true), weight: .bold),
+                            marqueeStartDelay: 2,
+                            marqueeAlignment: .bottomLeading
+                        )
+                        .foregroundColor(color.asColor().adjustBrightness(percentage: enabled ? 1.0 : 0.5))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .onAppear {
+                            if kmbCtbJoint {
+                                jointOperatedColorFraction.subscribe()
+                            }
+                        }
+                        UserMarqueeText(
+                            text: routeText,
+                            font: UIFont.systemFont(ofSize: 17.scaled(appContext, true)),
+                            marqueeStartDelay: 2,
+                            marqueeAlignment: .bottomLeading
+                        )
+                        .foregroundColor(.white.adjustBrightness(percentage: enabled ? 1.0 : 0.5))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        Spacer().frame(fixedSize: 3.scaled(appContext))
+                        UserMarqueeText(
+                            text: subText,
+                            font: UIFont.systemFont(ofSize: 14.scaled(appContext, true)),
+                            marqueeStartDelay: 2,
+                            marqueeAlignment: .bottomLeading
+                        )
+                        .foregroundColor(.white.adjustBrightness(percentage: enabled ? 1.0 : 0.5))
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }.padding(.vertical, 5)
             }
         }
@@ -250,7 +248,7 @@ struct EtaTileConfigurationView: AppScreenView {
                             selectStates.removeAll { $0 == favIndex }
                         } else {
                             selectStates.removeAll { $0 == favIndex }
-                            selectStates.insert(favIndex, at: 0)
+                            selectStates.insert(Int(favIndex), at: 0)
                         }
                     }
                 }
@@ -262,7 +260,7 @@ struct EtaTileConfigurationView: AppScreenView {
                         if selectState.selected {
                             selectStates.removeAll { $0 == favIndex }
                         } else {
-                            selectStates.append(favIndex)
+                            selectStates.append(Int(favIndex))
                         }
                     }
                 }

@@ -22,15 +22,30 @@
 package com.loohp.hkbuseta.common.utils
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.darwin.Darwin
+import io.ktor.http.HeadersBuilder
+import io.ktor.http.HttpHeaders
+import io.ktor.utils.io.KtorDsl
 
-actual val httpClient: HttpClient = HttpClient(Darwin) {
-    engine {
-        configureRequest {
-            setAllowsCellularAccess(true)
-            setAllowsConstrainedNetworkAccess(true)
-            setAllowsExpensiveNetworkAccess(true)
+
+@Suppress("FunctionName")
+@KtorDsl
+actual fun PlatformHttpClient(block: HttpClientConfig<*>.() -> Unit): HttpClient {
+    return HttpClient(Darwin) {
+        engine {
+            configureRequest {
+                setAllowsCellularAccess(true)
+                setAllowsConstrainedNetworkAccess(true)
+                setAllowsExpensiveNetworkAccess(true)
+            }
         }
+        block.invoke(this)
     }
-    installPlugins()
+}
+
+actual fun HeadersBuilder.applyPlatformHeaders() {
+    append(HttpHeaders.UserAgent, "Mozilla/5.0")
+    append(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
+    append(HttpHeaders.Pragma, "no-cache")
 }

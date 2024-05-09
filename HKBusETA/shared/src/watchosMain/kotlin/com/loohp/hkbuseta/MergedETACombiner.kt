@@ -25,9 +25,10 @@ import co.touchlab.stately.concurrency.Lock
 import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
+import com.loohp.hkbuseta.common.utils.wrap
 import com.loohp.hkbuseta.utils.withLock
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class MergedETACombiner(
@@ -37,8 +38,7 @@ class MergedETACombiner(
     private val lock: Lock = Lock()
     private val results: MutableList<Pair<Pair<FavouriteResolvedStop, FavouriteRouteStop>, Registry.ETAQueryResult>> = mutableListOf()
 
-    @NativeCoroutinesState
-    val mergedState: MutableStateFlow<MergedETAContainer> = MutableStateFlow(MergedETAContainer.EMPTY)
+    val mergedState: MutableNonNullStateFlow<MergedETAContainer> = MutableStateFlow(MergedETAContainer.EMPTY).wrap()
 
     fun reset(size: Int = this.size) {
         lock.withLock {

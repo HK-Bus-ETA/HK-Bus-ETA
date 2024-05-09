@@ -34,16 +34,18 @@ import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
+@Serializable
 @Immutable
 class Stop(
     val location: Coordinates,
     val name: BilingualText,
-    val remark: BilingualText?,
-    val kmbBbiId: String?
+    val remark: BilingualText? = null,
+    val kmbBbiId: String? = null
 ) : JSONSerializable, IOSerializable {
 
     companion object {
@@ -66,18 +68,24 @@ class Stop(
 
     }
 
-    val remarkedName: BilingualFormattedText get() {
-        return remark?.let { BilingualFormattedText(
+    val remarkedName: BilingualFormattedText by lazy { remark?.let {
+        BilingualFormattedText(
             buildFormattedString {
                 append(name.zh)
+                if (!it.zh.startsWith(" ")) {
+                    append(" ")
+                }
                 append(it.zh, SmallSize)
             },
             buildFormattedString {
                 append(name.en)
+                if (!it.en.startsWith(" ")) {
+                    append(" ")
+                }
                 append(it.en, SmallSize)
             }
-        ) }?: name.asFormattedText()
-    }
+        )
+    }?: name.asFormattedText() }
 
     override fun serialize(): JsonObject {
         return buildJsonObject {
