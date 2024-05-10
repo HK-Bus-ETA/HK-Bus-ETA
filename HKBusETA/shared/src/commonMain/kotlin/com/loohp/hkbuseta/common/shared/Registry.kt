@@ -86,6 +86,8 @@ import com.loohp.hkbuseta.common.objects.lrtLineStatus
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.routeComparator
+import com.loohp.hkbuseta.common.objects.routeComparatorRouteNumberFirst
 import com.loohp.hkbuseta.common.objects.routeGroupKey
 import com.loohp.hkbuseta.common.objects.waypointsId
 import com.loohp.hkbuseta.common.objects.withEn
@@ -113,6 +115,7 @@ import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.epochSeconds
 import com.loohp.hkbuseta.common.utils.getCircledNumber
+import com.loohp.hkbuseta.common.utils.getCompletedOrNull
 import com.loohp.hkbuseta.common.utils.getJSONResponse
 import com.loohp.hkbuseta.common.utils.getTextResponse
 import com.loohp.hkbuseta.common.utils.getTextResponseWithPercentageCallback
@@ -938,27 +941,27 @@ class Registry {
 
     data class NearbyStopSearchResult(val stopId: String, val stop: Stop, val distance: Double)
 
-    suspend fun findRoutes(input: String, exact: Boolean): List<RouteSearchResultEntry> {
+    fun findRoutes(input: String, exact: Boolean): List<RouteSearchResultEntry> {
         return findRoutes(input, exact, true, { true }, { _, _, _ -> true })
     }
 
-    suspend fun findRoutes(input: String, exact: Boolean, predicate: (Route) -> Boolean): List<RouteSearchResultEntry> {
+    fun findRoutes(input: String, exact: Boolean, predicate: (Route) -> Boolean): List<RouteSearchResultEntry> {
         return findRoutes(input, exact, true, predicate) { _, _, _ -> true }
     }
 
-    suspend fun findRoutes(input: String, exact: Boolean, coPredicate: (String, Route, Operator) -> Boolean): List<RouteSearchResultEntry> {
+    fun findRoutes(input: String, exact: Boolean, coPredicate: (String, Route, Operator) -> Boolean): List<RouteSearchResultEntry> {
         return findRoutes(input, exact, true, { true }, coPredicate)
     }
 
-    private suspend fun findRoutes(input: String, exact: Boolean, sorted: Boolean = true, predicate: (Route) -> Boolean = { true }, coPredicate: (String, Route, Operator) -> Boolean = { _, _, _ -> true }): List<RouteSearchResultEntry> {
-        val routeKeys = DATA!!.dataSheet.let { when {
-            !sorted -> it.routeList.keys
-            !exact || input.isEmpty() -> it.routeNumberFirstSortedRouteKeys.await()
-            else -> it.standardSortedRouteKeys.await()
+    private fun findRoutes(input: String, exact: Boolean, sorted: Boolean = true, predicate: (Route) -> Boolean = { true }, coPredicate: (String, Route, Operator) -> Boolean = { _, _, _ -> true }): List<RouteSearchResultEntry> {
+        val (routeKeys, comparator) = DATA!!.dataSheet.let { when {
+            !sorted -> it.routeList.keys to null
+            !exact || input.isEmpty() -> it.routeNumberFirstSortedRouteKeys.getCompletedOrNull() to routeComparatorRouteNumberFirst
+            else -> it.standardSortedRouteKeys.getCompletedOrNull() to routeComparator
         } }
         val routeMatcher: (String) -> Boolean = if (exact) ({ it == input }) else ({ it.startsWith(input) })
         val matchingRoutes: MutableMap<String, RouteSearchResultEntry> = linkedMapOf()
-        for (key in routeKeys) {
+        for (key in routeKeys?: DATA!!.dataSheet.routeList.keys) {
             val data = DATA!!.dataSheet.routeList[key]!!
             if (data.isCtbIsCircular) continue
             if (routeMatcher.invoke(data.routeNumber) && predicate.invoke(data)) {
@@ -991,7 +994,11 @@ class Registry {
                 }
             }
         }
-        return matchingRoutes.values.toList()
+        return if (routeKeys != null || comparator == null) {
+            matchingRoutes.values.toList()
+        } else {
+            matchingRoutes.values.sortedWith(compareBy(comparator) { it.route!! })
+        }
     }
 
     suspend fun getNearbyRoutes(origin: Coordinates, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): NearbyRoutesResult {
