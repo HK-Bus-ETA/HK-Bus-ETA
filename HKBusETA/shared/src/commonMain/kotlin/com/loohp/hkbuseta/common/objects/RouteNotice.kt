@@ -404,6 +404,29 @@ private val operatorNoticeFetchers: Map<Operator, suspend Route.(MutableList<Rou
             ))
         }
     }
+    this[Operator.LRT] = { list ->
+        val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
+        data.optString("red_alert_message_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.let { title ->
+            data.optString("red_alert_url_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.also { url ->
+                list.add(RouteNoticeExternal(
+                    title = title,
+                    co = Operator.LRT,
+                    important = RouteNoticeImportance.IMPORTANT,
+                    url = url.prependPdfViewerToUrl(),
+                    sort = 0
+                ))
+            }?: run {
+                list.add(RouteNoticeText(
+                    title = title,
+                    co = Operator.LRT,
+                    important = RouteNoticeImportance.IMPORTANT,
+                    content = "",
+                    isRealTitle = true,
+                    sort = 0
+                ))
+            }
+        }
+    }
 }
 
 suspend fun Route.fetchOperatorNotices(scope: CoroutineScope, addTo: MutableList<RouteNotice>) {

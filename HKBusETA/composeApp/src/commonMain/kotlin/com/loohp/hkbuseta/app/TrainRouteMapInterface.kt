@@ -22,6 +22,7 @@
 package com.loohp.hkbuseta.app
 
 import androidx.compose.animation.Animatable
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -31,6 +32,8 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -104,6 +107,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -188,8 +192,10 @@ import com.loohp.hkbuseta.compose.Start
 import com.loohp.hkbuseta.compose.Streetview
 import com.loohp.hkbuseta.compose.Train
 import com.loohp.hkbuseta.compose.applyIf
+import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
@@ -299,6 +305,7 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
         pageCount = { trainRouteMapItems.size }
     )
     val scope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
 
     LaunchedEffect (pagerState.currentPage, pagerState.isScrollInProgress) {
         val index = pagerState.currentPage
@@ -322,6 +329,7 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
     val mtrLineServiceDisruption: SnapshotStateMap<String, TrainServiceStatus> = remember { mutableStateMapOf() }
     var mtrLineServiceDisruptionBlink by remember { mutableStateOf(false) }
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
+    var lrtRedAlert: Pair<String, String?>? by remember { mutableStateOf(null) }
 
     LaunchedEffect (Unit) {
         notices = Registry.getInstance(instance).getOperatorNotices(setOf(Operator.MTR, Operator.LRT), instance)
@@ -336,6 +344,12 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
     }
     LaunchedEffect (Unit) {
         while (true) {
+            lrtRedAlert = Registry.getInstance(instance).getLrtLineRedAlert()
+            delay(180000)
+        }
+    }
+    LaunchedEffect (Unit) {
+        while (true) {
             mtrLineServiceDisruptionBlink = !mtrLineServiceDisruptionBlink
             delay(1000)
         }
@@ -345,13 +359,20 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
+            modifier = Modifier.zIndex(2F),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val thickness = DividerDefaults.Thickness
             val color = DividerDefaults.color
+            val backgroundColor = platformBackgroundColor
             Box(
-                modifier = Modifier.applyIf(!composePlatform.applePlatform) {
-                    drawWithContent {
+                modifier = Modifier
+                    .applyIf(!composePlatform.applePlatform, { drawWithContent {
+                        drawRect(
+                            color = backgroundColor,
+                            topLeft = Offset.Zero,
+                            size = Size(size.width, size.height - thickness.toPx() * 1.4F)
+                        )
                         drawContent()
                         drawLine(
                             color = color,
@@ -359,8 +380,7 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
                             start = Offset(0F, size.height - thickness.toPx() * 1.4F),
                             end = Offset(size.width, size.height - thickness.toPx() * 1.4F),
                         )
-                    }
-                },
+                    } }, { background(backgroundColor) }),
                 contentAlignment = Alignment.BottomCenter
             ) {
                 PlatformButton(
@@ -397,6 +417,35 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
                         }
                     )
                 }
+            }
+        }
+        AnimatedVisibility(
+            modifier = Modifier.zIndex(1F),
+            visible = lrtRedAlert != null,
+            enter = slideInVertically(
+                initialOffsetY = { -it },
+                animationSpec = tween(durationMillis = 300)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { -it },
+                animationSpec = tween(durationMillis = 300)
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .applyIfNotNull(lrtRedAlert?.second) { clickable(
+                        onClick = instance.handleWebpages(it, false, haptics.common),
+                        role = Role.Button
+                    ) }
+                    .background(Color(0xFFEB4034))
+                    .padding(10.dp)
+            ) {
+                PlatformText(
+                    fontSize = 16.sp,
+                    color = Color.White,
+                    text = lrtRedAlert?.first?: ""
+                )
             }
         }
         Box(

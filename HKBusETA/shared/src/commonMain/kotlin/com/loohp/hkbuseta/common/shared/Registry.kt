@@ -53,6 +53,7 @@ import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteNotice
+import com.loohp.hkbuseta.common.objects.RouteNoticeExternal
 import com.loohp.hkbuseta.common.objects.RouteNoticeImportance
 import com.loohp.hkbuseta.common.objects.RouteNoticeText
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
@@ -84,6 +85,7 @@ import com.loohp.hkbuseta.common.objects.isNightRoute
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.lrtLineStatus
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
+import com.loohp.hkbuseta.common.objects.prependPdfViewerToUrl
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.routeComparator
@@ -1567,6 +1569,20 @@ class Registry {
         }
     }
 
+    suspend fun getLrtLineRedAlert(): Pair<String, String?>? {
+        return CoroutineScope(dispatcherIO).async {
+            try {
+                val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
+                data.optString("red_alert_message_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.let {
+                    it to data.optString("red_alert_url_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                null
+            }
+        }.await()
+    }
+
     private val routeNoticeCache: MutableMap<Any, Triple<AutoSortedList<RouteNotice, SnapshotStateList<RouteNotice>>, Long, String>> = ConcurrentMutableMap()
 
     fun getOperatorNotices(co: Set<Operator>, context: AppContext): SnapshotStateList<RouteNotice> {
@@ -1579,6 +1595,31 @@ class Registry {
                     co.contains(Operator.LRT) -> add(lrtLineStatus)
                 }
                 CoroutineScope(dispatcherIO).launch {
+                    when {
+                        co.contains(Operator.LRT) -> {
+                            val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
+                            data.optString("red_alert_message_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.let { title ->
+                                data.optString("red_alert_url_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.also { url ->
+                                    add(RouteNoticeExternal(
+                                        title = title,
+                                        co = Operator.LRT,
+                                        important = RouteNoticeImportance.IMPORTANT,
+                                        url = url.prependPdfViewerToUrl(),
+                                        sort = 0
+                                    ))
+                                }?: run {
+                                    add(RouteNoticeText(
+                                        title = title,
+                                        co = Operator.LRT,
+                                        important = RouteNoticeImportance.IMPORTANT,
+                                        content = "",
+                                        isRealTitle = true,
+                                        sort = 0
+                                    ))
+                                }
+                            }
+                        }
+                    }
                     try {
                         val data = getXMLResponse<TrafficNews>("https://td.gov.hk/tc/special_news/trafficnews.xml")!!
                         for (news in data.messages) {
@@ -2602,13 +2643,18 @@ class Registry {
                             for (u in 0 until routeList.size) {
                                 val routeData = routeList.optJsonObject(u)!!
                                 val routeNumber = routeData.optString("route_no")
-                                val destCh = routeData.optString("dest_ch")
-                                if (matchRoutes.any { routeNumber == it.routeNumber && isLrtStopOnOrAfter(stopId, destCh, it) }) {
-                                    val mins = "([0-9]+) *min".toRegex().find(routeData.optString("time_en"))?.groupValues?.getOrNull(1)?.toLong()?: 0
-                                    val minsMsg = routeData.optString(if (language == "en") "time_en" else "time_ch")
-                                    val dest = routeData.optString(if (language == "en") "dest_en" else "dest_ch")
-                                    val trainLength = routeData.optInt("train_length")
-                                    results.add(LrtETAData(routeNumber, dest, trainLength, platformNumber, mins, minsMsg))
+                                if (routeData.contains("time_ch")) {
+                                    val destCh = routeData.optString("dest_ch")
+                                    if (matchRoutes.any { routeNumber == it.routeNumber && isLrtStopOnOrAfter(stopId, destCh, it) }) {
+                                        val mins = "([0-9]+) *min".toRegex().find(routeData.optString("time_en"))?.groupValues?.getOrNull(1)?.toLong()?: 0
+                                        val minsMsg = routeData.optString(if (language == "en") "time_en" else "time_ch")
+                                        val dest = routeData.optString(if (language == "en") "dest_en" else "dest_ch")
+                                        val trainLength = routeData.optInt("train_length")
+                                        results.add(LrtETAData(routeNumber, dest, trainLength, platformNumber, mins, minsMsg))
+                                    }
+                                } else if (results.none { it.routeNumber == routeNumber } && matchRoutes.any { routeNumber == it.routeNumber }) {
+                                    val message = if (language == "en") "Server unable to provide data" else "系統未能提供資訊"
+                                    results.add(LrtETAData(routeNumber, "", 0, platformNumber, Long.MAX_VALUE, message))
                                 }
                             }
                         }
@@ -2622,11 +2668,16 @@ class Registry {
                             for (u in 0 until routeList.size) {
                                 val routeData = routeList.optJsonObject(u)!!
                                 val routeNumber = routeData.optString("route_no")
-                                val mins = "([0-9]+) *min".toRegex().find(routeData.optString("time_en"))?.groupValues?.getOrNull(1)?.toLong()?: 0
-                                val minsMsg = routeData.optString(if (language == "en") "time_en" else "time_ch")
-                                val dest = routeData.optString(if (language == "en") "dest_en" else "dest_ch")
-                                val trainLength = routeData.optInt("train_length")
-                                results.add(LrtETAData(routeNumber, dest, trainLength, platformNumber, mins, minsMsg))
+                                if (routeData.contains("time_ch")) {
+                                    val mins = "([0-9]+) *min".toRegex().find(routeData.optString("time_en"))?.groupValues?.getOrNull(1)?.toLong()?: 0
+                                    val minsMsg = routeData.optString(if (language == "en") "time_en" else "time_ch")
+                                    val dest = routeData.optString(if (language == "en") "dest_en" else "dest_ch")
+                                    val trainLength = routeData.optInt("train_length")
+                                    results.add(LrtETAData(routeNumber, dest, trainLength, platformNumber, mins, minsMsg))
+                                } else if (results.none { it.routeNumber == routeNumber }) {
+                                    val message = if (language == "en") "Server unable to provide data" else "系統未能提供資訊"
+                                    results.add(LrtETAData(routeNumber, "", 0, platformNumber, Long.MAX_VALUE, message))
+                                }
                             }
                         }
                     }
@@ -2650,7 +2701,9 @@ class Registry {
                     if (minsMessage == "-") {
                         minsMessage = if (language == "en") "Departing" else "正在離開"
                     }
-                    val annotatedMinsMessage = if (minsMessage == "即將抵達" || minsMessage == "Arriving" || minsMessage == "正在離開" || minsMessage == "Departing") {
+                    val annotatedMinsMessage = if (lrt.eta == Long.MAX_VALUE) {
+                        minsMessage.asFormattedText()
+                    } else if (minsMessage == "即將抵達" || minsMessage == "Arriving" || minsMessage == "正在離開" || minsMessage == "Departing") {
                         minsMessage.asFormattedText(BoldStyle)
                     } else {
                         val mins = "^([0-9]+)".toRegex().find(minsMessage)?.groupValues?.getOrNull(1)?.toLong()
