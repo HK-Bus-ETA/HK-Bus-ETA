@@ -24,7 +24,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateValue
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -510,6 +509,11 @@ fun LazyItemScope.StopRowElement(
                     modifier = Modifier
                         .requiredWidth(width.spToDp(instance).dp)
                         .fillMaxHeight()
+                        .applyIf(co.isTrain) { clickable {
+                            val intent = AppIntent(instance, AppScreen.SEARCH_TRAIN)
+                            intent.putExtra("type", co.name)
+                            instance.startActivity(intent)
+                        } }
                 ) {
                     MTRLineSection(mtrLineSectionData, ambientMode)
                 }

@@ -41,10 +41,7 @@ class TrainRouteMapActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val type = TrainRouteMapType.of(intent.extras!!.getString("type")!!)?: run {
-            finish()
-            return
-        }
+        val type = TrainRouteMapType.of(intent.extras!!.getString("type")!!)?: TrainRouteMapType.MTR
 
         setContent {
             AmbientAware {

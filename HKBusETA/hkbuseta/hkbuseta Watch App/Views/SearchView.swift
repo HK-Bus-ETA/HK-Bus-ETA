@@ -128,7 +128,7 @@ struct SearchView: AppScreenView {
                     .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : colorInt(0xFF444444).asColor())
             }
         }
-        .frame(width: 35.scaled(appContext), height: (content.isLetter || content == "!" ? 35 : 40).scaled(appContext))
+        .frame(width: 35.scaled(appContext), height: (content.isLetter || content == "!" || content == "~" ? 35 : 40).scaled(appContext))
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(
             LongPressGesture()

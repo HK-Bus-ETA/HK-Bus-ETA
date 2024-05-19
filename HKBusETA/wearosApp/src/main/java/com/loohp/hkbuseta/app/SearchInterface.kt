@@ -371,7 +371,7 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, longContent: Char?
         },
         modifier = Modifier
             .width(35.scaledSize(instance).dp)
-            .height((if (content.isLetter() || content == '!') 30 else 35).scaledSize(instance).dp),
+            .height((if (content.isLetter() || content == '!' || content == '~') 30 else 35).scaledSize(instance).dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = Color.Transparent,
             contentColor = actualColor?: LocalContentColor.current

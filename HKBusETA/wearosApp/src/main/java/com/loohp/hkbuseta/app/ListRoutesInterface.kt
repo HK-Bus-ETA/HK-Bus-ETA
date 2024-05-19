@@ -104,11 +104,14 @@ import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSortMode
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
 import com.loohp.hkbuseta.common.objects.bySortModes
+import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.getDisplayFormattedName
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
@@ -302,56 +305,81 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                         Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
                     }
                 }
-                if (mtrSearch?.isEmpty() == true) {
-                    item {
-                        Button(
-                            onClick = {
-                                val intent = AppIntent(instance, AppScreen.SEARCH_TRAIN)
-                                intent.putExtra("type", "mtr")
-                                instance.startActivity(intent)
-                            },
-                            modifier = Modifier
-                                .padding(20.dp, 10.dp, 20.dp, 5.dp)
-                                .fillMaxWidth(0.8F)
-                                .height(35.scaledSize(instance).dp),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = Color(0xFF001F50),
-                                contentColor = Color(0xFFFFFFFF)
-                            ),
-                            content = {
-                                Text(
-                                    modifier = Modifier.fillMaxWidth(0.9F),
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colors.primary,
-                                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
-                                    text = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖"
-                                )
+                if (mtrSearch != null) {
+                    if (mtrSearch.isEmpty()) {
+                        item {
+                            Button(
+                                onClick = {
+                                    val intent = AppIntent(instance, AppScreen.SEARCH_TRAIN)
+                                    intent.putExtra("type", "MTR")
+                                    instance.startActivity(intent)
+                                },
+                                modifier = Modifier
+                                    .padding(20.dp, 10.dp, 20.dp, 5.dp)
+                                    .fillMaxWidth(0.8F)
+                                    .height(35.scaledSize(instance).dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = Color(0xFF001F50),
+                                    contentColor = Color(0xFFFFFFFF)
+                                ),
+                                content = {
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(0.9F),
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colors.primary,
+                                        fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                        text = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖"
+                                    )
+                                }
+                            )
+                            Button(
+                                onClick = {
+                                    val intent = AppIntent(instance, AppScreen.SEARCH_TRAIN)
+                                    intent.putExtra("type", "LRT")
+                                    instance.startActivity(intent)
+                                },
+                                modifier = Modifier
+                                    .padding(20.dp, 5.dp, 20.dp, 10.dp)
+                                    .fillMaxWidth(0.8F)
+                                    .height(35.scaledSize(instance).dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = Operator.LRT.getOperatorColor(Color.White).adjustBrightness(0.7F),
+                                    contentColor = Color(0xFFFFFFFF)
+                                ),
+                                content = {
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(0.9F),
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colors.primary,
+                                        fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                        text = if (Shared.language == "en") "LRT Route Map" else "輕鐵路綫圖"
+                                    )
+                                }
+                            )
+                        }
+                    } else {
+                        mtrSearch.asStop(instance)?.apply {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(bottom = 10.dp)
+                                        .fillMaxWidth()
+                                        .background(if (mtrSearch.identifyStopCo().firstCo() == Operator.LRT) Operator.LRT.getOperatorColor(Color.White) else Color(0xFF001F50))
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 5.dp),
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colors.primary,
+                                        fontSize = 17F.scaledSize(instance).sp.clamp(max = 17.dp),
+                                        text = remarkedName[Shared.language].asContentAnnotatedString().annotatedString
+                                    )
+                                }
                             }
-                        )
-                        Button(
-                            onClick = {
-                                val intent = AppIntent(instance, AppScreen.SEARCH_TRAIN)
-                                intent.putExtra("type", "lrt")
-                                instance.startActivity(intent)
-                            },
-                            modifier = Modifier
-                                .padding(20.dp, 5.dp, 20.dp, 10.dp)
-                                .fillMaxWidth(0.8F)
-                                .height(35.scaledSize(instance).dp),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = Color(0xFFAD8907),
-                                contentColor = Color(0xFFFFFFFF)
-                            ),
-                            content = {
-                                Text(
-                                    modifier = Modifier.fillMaxWidth(0.9F),
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colors.primary,
-                                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
-                                    text = if (Shared.language == "en") "LRT Route Map" else "輕鐵路綫圖"
-                                )
-                            }
-                        )
+                        }
                     }
                 }
                 items(items = sortedResults, key = { route -> route.uniqueKey }) { route ->
