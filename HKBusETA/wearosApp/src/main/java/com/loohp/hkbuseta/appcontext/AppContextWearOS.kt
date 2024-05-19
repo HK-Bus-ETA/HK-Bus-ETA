@@ -52,6 +52,7 @@ import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.SearchActivity
 import com.loohp.hkbuseta.SettingsActivity
 import com.loohp.hkbuseta.TitleActivity
+import com.loohp.hkbuseta.TrainRouteMapActivity
 import com.loohp.hkbuseta.URLImageActivity
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppBundle
@@ -421,6 +422,7 @@ val AppScreen.activityClass: Class<*> get() = when (this) {
     AppScreen.SETTINGS -> SettingsActivity::class.java
     AppScreen.ALIGHT_REMINDER_SERVICE -> AlightReminderActivity::class.java
     AppScreen.ETA_TILE_CONFIGURE -> EtaTileConfigureActivity::class.java
+    AppScreen.SEARCH_TRAIN -> TrainRouteMapActivity::class.java
     else -> MainActivity::class.java
 }
 

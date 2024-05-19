@@ -45,7 +45,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
-import coil3.annotation.ExperimentalCoilApi
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import com.loohp.hkbuseta.appcontext.context
@@ -57,7 +56,7 @@ import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable
 
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class, ExperimentalCoilApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable
 fun ImageElement(url: String, instance: AppActiveContext) {
     HKBusETATheme {

@@ -158,7 +158,7 @@ import kotlin.collections.set
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
 @Composable
-fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, mtrSearch: String?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = rememberActiveFocusRequester()
         val hapticsController = remember { HapticsController() }
@@ -302,6 +302,58 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                         Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
                     }
                 }
+                if (mtrSearch?.isEmpty() == true) {
+                    item {
+                        Button(
+                            onClick = {
+                                val intent = AppIntent(instance, AppScreen.SEARCH_TRAIN)
+                                intent.putExtra("type", "mtr")
+                                instance.startActivity(intent)
+                            },
+                            modifier = Modifier
+                                .padding(20.dp, 10.dp, 20.dp, 5.dp)
+                                .fillMaxWidth(0.8F)
+                                .height(35.scaledSize(instance).dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color(0xFF001F50),
+                                contentColor = Color(0xFFFFFFFF)
+                            ),
+                            content = {
+                                Text(
+                                    modifier = Modifier.fillMaxWidth(0.9F),
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colors.primary,
+                                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                    text = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖"
+                                )
+                            }
+                        )
+                        Button(
+                            onClick = {
+                                val intent = AppIntent(instance, AppScreen.SEARCH_TRAIN)
+                                intent.putExtra("type", "lrt")
+                                instance.startActivity(intent)
+                            },
+                            modifier = Modifier
+                                .padding(20.dp, 5.dp, 20.dp, 10.dp)
+                                .fillMaxWidth(0.8F)
+                                .height(35.scaledSize(instance).dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color(0xFFAD8907),
+                                contentColor = Color(0xFFFFFFFF)
+                            ),
+                            content = {
+                                Text(
+                                    modifier = Modifier.fillMaxWidth(0.9F),
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colors.primary,
+                                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                    text = if (Shared.language == "en") "LRT Route Map" else "輕鐵路綫圖"
+                                )
+                            }
+                        )
+                    }
+                }
                 items(items = sortedResults, key = { route -> route.uniqueKey }) { route ->
                     RouteRow(
                         key = route.uniqueKey,
@@ -310,6 +362,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                         defaultTextWidth = defaultTextWidth,
                         mtrTextWidth = mtrTextWidth,
                         route = route,
+                        mtrSearch = mtrSearch,
                         etaTextWidth = etaTextWidth,
                         etaResults = etaResults,
                         etaUpdateTimes = etaUpdateTimes,
@@ -364,6 +417,7 @@ fun LazyItemScope.RouteRow(
     mtrTextWidth: Float,
     route: StopIndexedRouteSearchResultEntry,
     etaTextWidth: Float,
+    mtrSearch: String?,
     etaResults: ImmutableState<out MutableMap<String, ETAQueryResult>>,
     etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>,
     instance: AppActiveContext,
@@ -399,9 +453,22 @@ fun LazyItemScope.RouteRow(
             .animateItemPlacement()
             .clickable {
                 Registry.getInstance(instance).addLastLookupRoute(route.routeKey, instance)
-                val intent = AppIntent(instance, AppScreen.LIST_STOPS)
-                intent.putExtra("route", route)
-                instance.startActivity(intent)
+                if (mtrSearch.isNullOrEmpty()) {
+                    val intent = AppIntent(instance, AppScreen.LIST_STOPS)
+                    intent.putExtra("route", route)
+                    instance.startActivity(intent)
+                } else {
+                    val stops = Registry.getInstance(instance).getAllStops(route.route!!.routeNumber, route.route!!.bound[co]!!, co, null)
+                    val i = stops.indexOfFirst { it.stopId == mtrSearch }
+                    val stopData = stops[i]
+                    val intent = AppIntent(instance, AppScreen.ETA)
+                    intent.putExtra("stopId", stopData.stopId)
+                    intent.putExtra("co", co.name)
+                    intent.putExtra("index", i + 1)
+                    intent.putExtra("stop", stopData.stop)
+                    intent.putExtra("route", stopData.route)
+                    instance.startActivity(intent)
+                }
             },
         contentAlignment = Alignment.Center
     ) {

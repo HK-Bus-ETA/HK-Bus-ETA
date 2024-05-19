@@ -312,6 +312,9 @@ suspend fun handleInput(instance: AppActiveContext, state: MutableState<RouteKey
             } else {
                 intent.putExtra("listType", RouteListType.NORMAL.name)
             }
+            if (input == '!') {
+                intent.putExtra("mtrSearch", "")
+            }
             instance.startActivity(intent)
         }
         job.cancelAndJoin()

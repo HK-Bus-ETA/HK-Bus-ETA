@@ -96,6 +96,7 @@ class ListRoutesActivity : ComponentActivity() {
         val recentSort = RecentSortMode.entries[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
         val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")?.toCoordinates()
         val allowAmbient = intent.extras!!.getBoolean("allowAmbient", false)
+        val mtrSearch = intent.extras!!.getString("mtrSearch", null)
 
         setContent {
             AmbientAware (
@@ -105,7 +106,7 @@ class ListRoutesActivity : ComponentActivity() {
                 Box (
                     modifier = Modifier.ambientMode(it)
                 ) {
-                    ListRouteMainElement(ambientMode, appContext, result, listType, showEta, recentSort, proximitySortOrigin) { isAdd, key, task ->
+                    ListRouteMainElement(ambientMode, appContext, result, listType, showEta, recentSort, proximitySortOrigin, mtrSearch) { isAdd, key, task ->
                         sync.execute {
                             if (isAdd) {
                                 etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
