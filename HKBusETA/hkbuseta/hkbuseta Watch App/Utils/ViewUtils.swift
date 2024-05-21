@@ -36,6 +36,10 @@ struct IndeterminateCircularProgressIndicator: View {
 
 extension View {
     
+    @ViewBuilder func apply<Content: View>(@ViewBuilder _ apply: @escaping (Self) -> Content) -> some View {
+        apply(self)
+    }
+    
     @ViewBuilder func onSizeChange(_ perform: @escaping (CGSize) -> Void) -> some View {
         self.background {
             GeometryReader { geo in

@@ -166,6 +166,9 @@ struct SearchView: AppScreenView {
                 } else {
                     data["listType"] = RouteListType.Companion().NORMAL
                 }
+                if input == "!" {
+                    data["mtrSearch"] = ""
+                }
                 appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listRoutes, data))
             }, complete: {
                 state = RouteKeyboardState(text: state.text, nextCharResult: state.nextCharResult, isLoading: false, showLoadingIndicator: false)

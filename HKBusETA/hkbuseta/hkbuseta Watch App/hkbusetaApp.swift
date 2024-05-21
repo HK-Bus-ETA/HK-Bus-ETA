@@ -323,6 +323,8 @@ extension AppScreen {
             EtaTileConfigurationView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
         case AppScreen.alightReminderService:
             AlightReminderView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
+        case AppScreen.searchTrain:
+            TrainRouteMapView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
         default:
             MainView(appContext: context, data: context.data, storage: context.storage).defaultStyle()
         }

@@ -19,7 +19,6 @@ func readJSONFile(forName name: String) -> [String: Any] {
         }
     } catch {
         print(error)
-       
     }
     return [:]
 }

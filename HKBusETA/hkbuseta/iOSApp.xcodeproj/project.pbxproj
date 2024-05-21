@@ -45,6 +45,10 @@
 		81812ABB2B48CA000060A30B /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 81812ABA2B48CA000060A30B /* FirebaseAppCheck */; };
 		81812AC12B48D0400060A30B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 81812AC02B48D0400060A30B /* GoogleService-Info.plist */; };
 		818FD02B2B45C917008EE8AB /* Gzip in Frameworks */ = {isa = PBXBuildFile; productRef = 818FD02A2B45C917008EE8AB /* Gzip */; };
+		81AB3D882BFA923E00DB74C6 /* TrainRouteMapImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81AB3D872BFA923E00DB74C6 /* TrainRouteMapImage.swift */; };
+		81AB3D8A2BFA96BD00DB74C6 /* TrainRouteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81AB3D892BFA96BC00DB74C6 /* TrainRouteMapView.swift */; };
+		81AB3D8D2BFAB3EB00DB74C6 /* mtr_system_map.json in Resources */ = {isa = PBXBuildFile; fileRef = 81AB3D8B2BFAB3EB00DB74C6 /* mtr_system_map.json */; };
+		81AB3D8E2BFAB3EB00DB74C6 /* light_rail_system_map.json in Resources */ = {isa = PBXBuildFile; fileRef = 81AB3D8C2BFAB3EB00DB74C6 /* light_rail_system_map.json */; };
 		81CA25E72BCB2BA90081A5C5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CA25E62BCB2BA90081A5C5 /* SettingsView.swift */; };
 		81D16ABE2B33C21F003D9817 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16ABD2B33C21F003D9817 /* Assets.xcassets */; };
 		81D16AC12B33C21F003D9817 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16AC02B33C21F003D9817 /* Preview Assets.xcassets */; };
@@ -204,6 +208,10 @@
 		81812AC02B48D0400060A30B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		818FD0162B44C403008EE8AB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		818FD0182B44C403008EE8AB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		81AB3D872BFA923E00DB74C6 /* TrainRouteMapImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainRouteMapImage.swift; sourceTree = "<group>"; };
+		81AB3D892BFA96BC00DB74C6 /* TrainRouteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainRouteMapView.swift; sourceTree = "<group>"; };
+		81AB3D8B2BFAB3EB00DB74C6 /* mtr_system_map.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = mtr_system_map.json; sourceTree = "<group>"; };
+		81AB3D8C2BFAB3EB00DB74C6 /* light_rail_system_map.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = light_rail_system_map.json; sourceTree = "<group>"; };
 		81CA25E62BCB2BA90081A5C5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		81D16AB42B33C21E003D9817 /* HKBusETA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HKBusETA.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		81D16ABD2B33C21F003D9817 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -402,6 +410,8 @@
 		81D16AB82B33C21E003D9817 /* hkbuseta Watch App */ = {
 			isa = PBXGroup;
 			children = (
+				81AB3D8C2BFAB3EB00DB74C6 /* light_rail_system_map.json */,
+				81AB3D8B2BFAB3EB00DB74C6 /* mtr_system_map.json */,
 				81498CFE2B7B0A9C005F0961 /* Info.plist */,
 				8171F04C2B5C414E005B8F6A /* hkbuseta Watch App.entitlements */,
 				81498CF82B7B088A005F0961 /* InfoPlist.strings */,
@@ -436,6 +446,7 @@
 				81D16B422B3A32EE003D9817 /* WatchOSMTRRouteMapUtils.swift */,
 				81F9F1772BCF25D600BCA6E2 /* ArrayUtils.swift */,
 				81F9F1792BCF39B200BCA6E2 /* ViewUtils.swift */,
+				81AB3D872BFA923E00DB74C6 /* TrainRouteMapImage.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -467,6 +478,7 @@
 				8171F02C2B53155F005B8F6A /* EtaTileListView.swift */,
 				8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */,
 				81CA25E62BCB2BA90081A5C5 /* SettingsView.swift */,
+				81AB3D892BFA96BC00DB74C6 /* TrainRouteMapView.swift */,
 				8171F0322B59E5D8005B8F6A /* FatalErrorView.swift */,
 			);
 			path = Views;
@@ -732,7 +744,9 @@
 			files = (
 				81D16AC12B33C21F003D9817 /* Preview Assets.xcassets in Resources */,
 				81498D002B7B0BE4005F0961 /* InfoPlist.strings in Resources */,
+				81AB3D8D2BFAB3EB00DB74C6 /* mtr_system_map.json in Resources */,
 				81D16ABE2B33C21F003D9817 /* Assets.xcassets in Resources */,
+				81AB3D8E2BFAB3EB00DB74C6 /* light_rail_system_map.json in Resources */,
 				81812AC12B48D0400060A30B /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -838,10 +852,12 @@
 				81D16B432B3A32EE003D9817 /* WatchOSMTRRouteMapUtils.swift in Sources */,
 				81D16B3F2B37A609003D9817 /* FavView.swift in Sources */,
 				81D16B0E2B34CFEC003D9817 /* TitleView.swift in Sources */,
+				81AB3D882BFA923E00DB74C6 /* TrainRouteMapImage.swift in Sources */,
 				81D16B372B374DBF003D9817 /* LocationManager.swift in Sources */,
 				81D16B3B2B379FC0003D9817 /* FavRouteListViewView.swift in Sources */,
 				81D16B272B364071003D9817 /* MarqueeText.swift in Sources */,
 				81D16B332B36729B003D9817 /* hkbusetaApp.swift in Sources */,
+				81AB3D8A2BFA96BD00DB74C6 /* TrainRouteMapView.swift in Sources */,
 				81F9F17A2BCF39B200BCA6E2 /* ViewUtils.swift in Sources */,
 				81498D062B7C336E005F0961 /* StateFlowObservable.swift in Sources */,
 				81D16B102B34D07A003D9817 /* SearchView.swift in Sources */,
@@ -948,7 +964,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = AlightReminderLiveActivityExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = alightreminderliveactivity/Info.plist;
@@ -960,7 +976,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.alightreminderliveactivity;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -980,7 +996,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = AlightReminderLiveActivityExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				EXCLUDED_ARCHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -993,7 +1009,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.alightreminderliveactivity;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1014,7 +1030,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
@@ -1026,7 +1042,7 @@
 					"@executable_path/../../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.tileswidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1044,7 +1060,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
@@ -1056,7 +1072,7 @@
 					"@executable_path/../../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.tileswidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1076,7 +1092,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = hkbuseta/hkbuseta.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
@@ -1106,7 +1122,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
@@ -1133,7 +1149,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = hkbuseta/hkbuseta.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
@@ -1164,7 +1180,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
@@ -1189,7 +1205,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = shareextension/Info.plist;
@@ -1201,7 +1217,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.shareextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1220,7 +1236,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				EXCLUDED_ARCHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1233,7 +1249,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.shareextension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1380,7 +1396,7 @@
 				CODE_SIGN_ENTITLEMENTS = "hkbuseta Watch App/hkbuseta Watch App.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -1398,7 +1414,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp;
 				PRODUCT_NAME = HKBusETA;
@@ -1422,7 +1438,7 @@
 				CODE_SIGN_ENTITLEMENTS = "hkbuseta Watch App/hkbuseta Watch App.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_ASSET_PATHS = "\"hkbuseta Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
@@ -1440,7 +1456,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp;
 				PRODUCT_NAME = HKBusETA;
@@ -1462,7 +1478,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = FavouriteRoutesWidgetExtensionExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FavouriteRoutesWidgetExtension/Info.plist;
@@ -1474,7 +1490,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.FavouriteRoutesWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1492,7 +1508,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = FavouriteRoutesWidgetExtensionExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 140;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				EXCLUDED_ARCHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1505,7 +1521,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.FavouriteRoutesWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

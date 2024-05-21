@@ -262,7 +262,7 @@ fun MTRRouteMapMapInterface(
             .onRotaryScrollEvent {
                 scope.launch {
                     scope.launch {
-                        val scale = state.scale + if (it.verticalScrollPixels > 0) 1 else -1
+                        val scale = state.scale + it.verticalScrollPixels / 192
                         if (scale in state.minScale..state.maxScale) {
                             state.animateScaleTo(scale)
                         }
@@ -485,7 +485,7 @@ fun LRTRouteMapMapInterface(
             .clipToBounds()
             .onRotaryScrollEvent {
                 scope.launch {
-                    val scale = state.scale + if (it.verticalScrollPixels > 0) 1 else -1
+                    val scale = state.scale + it.verticalScrollPixels / 192
                     if (scale in state.minScale..state.maxScale) {
                         state.animateScaleTo(scale)
                     }

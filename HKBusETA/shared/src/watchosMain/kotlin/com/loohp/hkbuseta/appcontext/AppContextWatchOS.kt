@@ -44,12 +44,17 @@ import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
+import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.MutableNullableStateFlow
 import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.isReachable
+import com.loohp.hkbuseta.common.utils.mapToMutableMap
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
+import com.loohp.hkbuseta.common.utils.optDouble
+import com.loohp.hkbuseta.common.utils.optJsonArray
+import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
 import com.loohp.hkbuseta.common.utils.wrap
@@ -70,6 +75,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toNSDateComponents
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
 import platform.Foundation.NSBundle
 import platform.Foundation.NSCalendar
 import platform.Foundation.NSDateFormatter
@@ -518,3 +525,32 @@ fun handleSearchInputLaunch(
         complete.invoke()
     }
 }
+
+@Immutable
+data class RouteMapData(
+    val width: Float,
+    val height: Float,
+    val stations: Map<String, Pair<Float, Float>>
+) {
+    companion object {
+        fun fromString(input: String): RouteMapData {
+            val json = Json.decodeFromString<JsonObject>(input)
+            val dimension = json.optJsonObject("properties")!!.optJsonArray("dimension")!!
+            val width = dimension.optDouble(0).toFloat()
+            val height = dimension.optDouble(1).toFloat()
+            val stops = json.optJsonObject("stops")!!.mapToMutableMap { it.jsonArray.let { a -> a.optDouble(0).toFloat() to a.optDouble(1).toFloat() } }
+            return RouteMapData(width, height, stops)
+        }
+    }
+
+    fun findClickedStations(x: Float, y: Float): String? {
+        return stations.entries
+            .asSequence()
+            .map { it to ((it.value.first - x).sq() + (it.value.second - y).sq()) }
+            .minByOrNull { it.second }
+            ?.takeIf { it.second <= 40000 }
+            ?.first?.key
+    }
+}
+
+private fun Float.sq(): Float = this * this

@@ -30,6 +30,7 @@ struct ListRoutesView: AppScreenView {
     @State var recentSort: RecentSortMode
     @State var proximitySortOrigin: Coordinates?
     @State var allowAmbient: Bool
+    @State var mtrSearch: String?
     
     @State var activeSortMode: RouteSortMode
     @State var sortedByMode: [RouteSortMode: [StopIndexedRouteSearchResultEntry]]
@@ -102,6 +103,7 @@ struct ListRoutesView: AppScreenView {
             }
         }()
         self.activeSortMode = activeSortMode
+        self.mtrSearch = data["mtrSearch"] as? String
         let sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(casedResult, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, proximitySortOrigin: proximitySortOrigin)
         self.sortedByMode = sortedByMode
         self.sortedResults = sortedByMode[activeSortMode]!
@@ -144,6 +146,60 @@ struct ListRoutesView: AppScreenView {
                             .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
                             .clipShape(RoundedRectangle(cornerRadius: 25))
                             .ignoresSafeArea(.all)
+                        }
+                    }
+                    if let stopId = mtrSearch {
+                        if stopId.isEmpty {
+                            Button(action: {
+                                let data = newAppDataConatiner()
+                                data["type"] = "MTR"
+                                appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.searchTrain, data))
+                            }) {
+                                Text(Shared().language == "en" ? "MTR System Map" : "港鐵路綫圖")
+                            }
+                            .font(.system(size: 17.scaled(appContext), weight: .bold))
+                            .frame(width: 140.scaled(appContext), height: 35.scaled(appContext))
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .background {
+                                colorInt(0xFF001F50)
+                                    .asColor()
+                                    .clipShape(RoundedRectangle(cornerRadius: 25))
+                            }
+                            .ignoresSafeArea(.all)
+                            Button(action: {
+                                let data = newAppDataConatiner()
+                                data["type"] = "LRT"
+                                appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.searchTrain, data))
+                            }) {
+                                Text(Shared().language == "en" ? "LRT Route Map" : "輕鐵路綫圖")
+                            }
+                            .font(.system(size: 17.scaled(appContext), weight: .bold))
+                            .frame(width: 140.scaled(appContext), height: 35.scaled(appContext))
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .background {
+                                Operator.Companion().LRT.getOperatorColor(elseColor: 0xFFFFFFFF as Int64)
+                                    .asColor()
+                                    .adjustBrightness(percentage: 0.7)
+                                    .clipShape(RoundedRectangle(cornerRadius: 25))
+                            }
+                            .ignoresSafeArea(.all)
+                            .padding(.vertical, 5)
+                        } else {
+                            if let stop = RouteExtensionsKt.asStop(stopId, context: appContext) {
+                                ZStack {
+                                    Text(stop.remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 20.scaled(appContext, true)))
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .padding(5)
+                                }
+                                .background {
+                                    if RouteExtensionsKt.firstCo(RouteExtensionsKt.identifyStopCo(stopId)) == Operator.Companion().LRT {
+                                        Operator.Companion().LRT.getOperatorColor(elseColor: 0xFFFFFFFF as Int64).asColor()
+                                    } else {
+                                        colorInt(0xFF001F50).asColor()
+                                    }
+                                }
+                                .ignoresSafeArea(.all)
+                            }
                         }
                     }
                     ForEach(sortedResults, id: \.uniqueKey) { route in
@@ -216,6 +272,21 @@ struct ListRoutesView: AppScreenView {
         
         return Button(action: {
             registry(appContext).addLastLookupRoute(routeKey: route.routeKey, context: appContext)
+            if let stopId = mtrSearch {
+                if !stopId.isEmpty {
+                    let stops = registry(appContext).getAllStops(routeNumber: route.route!.routeNumber, bound: route.route!.bound[route.co]!, co: route.co, gmbRegion: nil)
+                    let i = stops.firstIndex { $0.stopId == stopId }!
+                    let stopData = stops[i]
+                    let data = newAppDataConatiner()
+                    data["stopId"] = stopData.stopId
+                    data["co"] = route.co
+                    data["index"] = i + 1
+                    data["stop"] = stopData.stop
+                    data["route"] = stopData.route
+                    appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.eta, data))
+                    return
+                }
+            }
             let data = newAppDataConatiner()
             data["route"] = route
             appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listStops, data))
