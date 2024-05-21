@@ -18,7 +18,9 @@ struct TrainRouteMapImage: View {
     let onTap: (CGPoint) -> Void
     let onPan: (CGPoint) -> Void
     let onScale: (CGFloat) -> Void
+    let onLocationJumped: () -> Void
     let highlightPosition: CGPoint?
+    let locationJumped: Bool
     
     @State var scale: CGFloat
     @State var targetScale: CGFloat
@@ -31,17 +33,17 @@ struct TrainRouteMapImage: View {
     @State var animateHighlightSign: CGFloat = 1
     @State var animateHighlightSize: CGFloat = 70
     
-    @State var locationJumped: Bool = false
-    
-    init(imageSize: CGSize, image: Image, highlightPosition: CGPoint? = nil, minScale: CGFloat, maxScale: CGFloat, initalScale: CGFloat? = nil, initalOffset: CGPoint? = nil, onTap: @escaping (CGPoint) -> Void, onPan: @escaping (CGPoint) -> Void, onScale: @escaping (CGFloat) -> Void) {
+    init(imageSize: CGSize, image: Image, highlightPosition: CGPoint? = nil, locationJumped: Bool, minScale: CGFloat, maxScale: CGFloat, initalScale: CGFloat? = nil, initalOffset: CGPoint? = nil, onTap: @escaping (CGPoint) -> Void, onPan: @escaping (CGPoint) -> Void, onScale: @escaping (CGFloat) -> Void, onLocationJumped: @escaping () -> Void) {
         self.imageSize = imageSize
         self.image = image
         self.highlightPosition = highlightPosition
+        self.locationJumped = locationJumped
         self.minScale = minScale
         self.maxScale = maxScale
         self.onTap = onTap
         self.onPan = onPan
         self.onScale = onScale
+        self.onLocationJumped = onLocationJumped
         if let value = initalScale {
             self._scale = State(initialValue: value)
             self._targetScale = State(initialValue: value)
@@ -146,7 +148,7 @@ struct TrainRouteMapImage: View {
                                 let y = -pos.y * scale + midY
                                 self.offset.x = -max(0, min(scaledSize.width - geo.size.width, -x))
                                 self.offset.y = -max(0, min(scaledSize.height - geo.size.height, -y))
-                                locationJumped = true
+                                onLocationJumped()
                             }
                         }
                     }
@@ -161,7 +163,7 @@ struct TrainRouteMapImage: View {
                                 let y = -pos.y * scale + midY
                                 self.offset.x = -max(0, min(scaledSize.width - geo.size.width, -x))
                                 self.offset.y = -max(0, min(scaledSize.height - geo.size.height, -y))
-                                locationJumped = true
+                                onLocationJumped()
                             }
                         }
                     }

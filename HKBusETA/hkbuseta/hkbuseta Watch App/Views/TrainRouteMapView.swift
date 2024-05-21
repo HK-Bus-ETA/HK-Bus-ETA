@@ -52,14 +52,18 @@ struct TrainRouteMapView: AppScreenView {
     @ObservedObject private var locationManager = SingleLocationManager()
     
     private let appContext: AppActiveContextWatchOS
+    private let storage: KotlinMutableDictionary<NSString, AnyObject>
     
     @State var type: String
     @State var highlightPosition: CGPoint?
+    @State var locationJumped: Bool
     
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
+        self.storage = storage
         self.type = data["type"] as? String ?? "MTR"
         self._typhoonInfoState = StateObject(wrappedValue: StateFlowObservable(stateFlow: registry(appContext).typhoonInfo, initSubscribe: true))
+        self._locationJumped = State(initialValue: storage["locationJumped"] as? Bool ?? false)
     }
     
     var body: some View {
@@ -72,15 +76,20 @@ struct TrainRouteMapView: AppScreenView {
                         return ambientMode ? "mtr_system_map_watch_ambient" : "mtr_system_map_watch"
                     }
                 }()
-                TrainRouteMapImage(imageSize: CGSize(width: mtrRouteMapData.cgWidth(), height: mtrRouteMapData.cgHeight()), image: Image(imageName), highlightPosition: highlightPosition, minScale: 0.05, maxScale: 0.25, initalScale: mtrScale, initalOffset: mtrOffset, onTap: { position in
+                TrainRouteMapImage(imageSize: CGSize(width: mtrRouteMapData.cgWidth(), height: mtrRouteMapData.cgHeight()), image: Image(imageName), highlightPosition: highlightPosition, locationJumped: locationJumped, minScale: 0.05, maxScale: 0.25, initalScale: mtrScale, initalOffset: mtrOffset, onTap: { position in
                     let stopId = mtrRouteMapData.findClickedStations(x: Float(position.x), y: Float(position.y))
                     if stopId != nil {
+                        let stop = RouteExtensionsKt.asStop(stopId!, context: appContext)
                         let data = newAppDataConatiner()
                         let result = registry(appContext).findRoutesBlocking(input: "", exact: false) { r in
                             (Shared().MTR_ROUTE_FILTER(r).boolValue && r.stops[Operator.Companion().MTR]?.contains(stopId!) == true).asKt()
                         }
-                        data["result"] = result
+                        result.forEach {
+                            $0.stopInfo = StopInfo(stopId: stopId!, data: stop, distance: 0, co: Operator.Companion().MTR)
+                        }
+                        data["result"] = StopIndexedRouteSearchResultEntryKt.toStopIndexed(result, instance: appContext)
                         data["listType"] = RouteListType.Companion().NORMAL
+                        data["showEta"] = true
                         data["mtrSearch"] = stopId
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listRoutes, data))
                     }
@@ -88,6 +97,9 @@ struct TrainRouteMapView: AppScreenView {
                     mtrOffset = position
                 }, onScale: { scale in
                     mtrScale = scale
+                }, onLocationJumped: {
+                    locationJumped = true
+                    storage["locationJumped"] = true
                 })
                     .ignoresSafeArea(.all)
                     .onChange(of: locationManager.isLocationFetched) { _ in
@@ -105,15 +117,20 @@ struct TrainRouteMapView: AppScreenView {
                         }
                     }
             } else {
-                TrainRouteMapImage(imageSize: CGSize(width: lightRailRouteMapData.cgWidth(), height: lightRailRouteMapData.cgHeight()), image: Image(ambientMode ? "light_rail_system_map_watch_ambient" : "light_rail_system_map_watch"), highlightPosition: highlightPosition, minScale: 0.04, maxScale: 0.11, initalScale: lrtScale, initalOffset: lrtOffset, onTap: { position in
+                TrainRouteMapImage(imageSize: CGSize(width: lightRailRouteMapData.cgWidth(), height: lightRailRouteMapData.cgHeight()), image: Image(ambientMode ? "light_rail_system_map_watch_ambient" : "light_rail_system_map_watch"), highlightPosition: highlightPosition, locationJumped: locationJumped, minScale: 0.04, maxScale: 0.11, initalScale: lrtScale, initalOffset: lrtOffset, onTap: { position in
                     let stopId = lightRailRouteMapData.findClickedStations(x: Float(position.x), y: Float(position.y))
                     if stopId != nil {
+                        let stop = RouteExtensionsKt.asStop(stopId!, context: appContext)
                         let data = newAppDataConatiner()
                         let result = registry(appContext).findRoutesBlocking(input: "", exact: false) { r in
                             (RouteExtensionsKt.firstCo(r.co) == Operator.Companion().LRT && r.stops[Operator.Companion().LRT]?.contains(stopId!) == true).asKt()
                         }
-                        data["result"] = result
+                        result.forEach {
+                            $0.stopInfo = StopInfo(stopId: stopId!, data: stop, distance: 0, co: Operator.Companion().LRT)
+                        }
+                        data["result"] = StopIndexedRouteSearchResultEntryKt.toStopIndexed(result, instance: appContext)
                         data["listType"] = RouteListType.Companion().NORMAL
+                        data["showEta"] = true
                         data["mtrSearch"] = stopId
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listRoutes, data))
                     }
@@ -121,6 +138,9 @@ struct TrainRouteMapView: AppScreenView {
                     lrtOffset = position
                 }, onScale: { scale in
                     lrtScale = scale
+                }, onLocationJumped: {
+                    locationJumped = true
+                    storage["locationJumped"] = true
                 })
                     .ignoresSafeArea(.all)
                     .onChange(of: locationManager.isLocationFetched) { _ in

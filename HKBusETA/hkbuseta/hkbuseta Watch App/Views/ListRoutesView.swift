@@ -150,6 +150,7 @@ struct ListRoutesView: AppScreenView {
                     }
                     if let stopId = mtrSearch {
                         if stopId.isEmpty {
+                            Spacer().frame(fixedSize: 7.scaled(appContext))
                             Button(action: {
                                 let data = newAppDataConatiner()
                                 data["type"] = "MTR"
@@ -258,7 +259,7 @@ struct ListRoutesView: AppScreenView {
             if listType == RouteListType.Companion().RECENT {
                 list.append(appContext.formatDateTime(localDateTime: TimeUtilsKt.toLocalDateTime(Shared().findLookupRouteTime(routeKey: route.routeKey)?.int64Value ?? 0), includeTime: true).asAttributedString())
             }
-            if route.stopInfo != nil {
+            if route.stopInfo != nil && (mtrSearch == nil || mtrSearch!.isEmpty) {
                 let stop = route.stopInfo!.data!
                 list.append((stop.name.get(language: Shared().language)).asAttributedString())
             }
@@ -312,7 +313,7 @@ struct ListRoutesView: AppScreenView {
                             text: dest,
                             font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: .bold),
                             marqueeStartDelay: 2,
-                            marqueeAlignment: .bottomLeading
+                            marqueeAlignment: .leadingFirstTextBaseline
                         )
                         .foregroundColor(color)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -329,7 +330,7 @@ struct ListRoutesView: AppScreenView {
                                 text: dest,
                                 font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: .bold),
                                 marqueeStartDelay: 2,
-                                marqueeAlignment: .bottomLeading
+                                marqueeAlignment: .leadingFirstTextBaseline
                             )
                             .foregroundColor(color)
                             .frame(maxWidth: .infinity, alignment: .leading)

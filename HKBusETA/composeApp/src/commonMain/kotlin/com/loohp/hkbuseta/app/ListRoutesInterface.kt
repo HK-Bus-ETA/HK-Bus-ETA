@@ -163,6 +163,7 @@ import com.loohp.hkbuseta.compose.platformTopBarColor
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
 import com.loohp.hkbuseta.compose.verticalScrollBar
+import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.adjustBrightness

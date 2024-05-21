@@ -199,6 +199,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.isAppleDevice
 import com.loohp.hkbuseta.isWasmSupported
 import com.loohp.hkbuseta.setDownloadAppSheetVisible
+import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.equivalentDp
 import kotlinx.coroutines.CoroutineScope
@@ -287,7 +288,6 @@ actual inline val PlatformIcons.Outlined.UTurnRight: Painter @Composable get() =
 actual inline val PlatformIcons.Outlined.Update: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Update)
 actual inline val PlatformIcons.Outlined.Upload: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Upload)
 actual inline val PlatformIcons.Outlined.Watch: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Watch)
-@OptIn(ExperimentalResourceApi::class)
 actual inline val PlatformIcons.Outlined.LineEndCircle: Painter @Composable get() = painterResource(DrawableResource("baseline_line_end_circle_24.xml"))
 actual inline val PlatformIcons.Outlined.MobileFriendly: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MobileFriendly)
 

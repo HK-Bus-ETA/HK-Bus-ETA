@@ -230,6 +230,7 @@ import com.loohp.hkbuseta.utils.Big
 import com.loohp.hkbuseta.utils.BusLineSection
 import com.loohp.hkbuseta.utils.BusLineSectionExtension
 import com.loohp.hkbuseta.utils.BusRouteLineData
+import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.MTRLineSection
 import com.loohp.hkbuseta.utils.MTRLineSectionExtension
 import com.loohp.hkbuseta.utils.RouteHighlightType

@@ -183,6 +183,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import com.loohp.hkbuseta.utils.DrawableResource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
@@ -266,7 +267,6 @@ actual inline val PlatformIcons.Outlined.UTurnRight: Painter @Composable get() =
 actual inline val PlatformIcons.Outlined.Update: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Update)
 actual inline val PlatformIcons.Outlined.Upload: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Upload)
 actual inline val PlatformIcons.Outlined.Watch: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Watch)
-@OptIn(ExperimentalResourceApi::class)
 actual inline val PlatformIcons.Outlined.LineEndCircle: Painter @Composable get() = painterResource(DrawableResource("baseline_line_end_circle_24.xml"))
 actual inline val PlatformIcons.Outlined.MobileFriendly: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MobileFriendly)
 

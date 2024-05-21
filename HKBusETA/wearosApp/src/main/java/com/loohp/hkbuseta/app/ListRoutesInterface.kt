@@ -463,7 +463,7 @@ fun LazyItemScope.RouteRow(
         if (listType == RouteListType.RECENT) {
             add(instance.formatDateTime((Shared.findLookupRouteTime(route.routeKey)?: 0).toLocalDateTime(), true).asAnnotatedString())
         }
-        if (route.stopInfo != null) {
+        if (route.stopInfo != null && mtrSearch.isNullOrEmpty()) {
             val stop = route.stopInfo!!.data!!
             add(stop.name[Shared.language].asAnnotatedString())
         }

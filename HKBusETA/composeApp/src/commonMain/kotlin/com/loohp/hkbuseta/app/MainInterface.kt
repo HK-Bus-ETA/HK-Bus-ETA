@@ -78,6 +78,7 @@ import com.loohp.hkbuseta.compose.PlatformLinearProgressIndicator
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.platformSurfaceColor
+import com.loohp.hkbuseta.utils.DrawableResource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

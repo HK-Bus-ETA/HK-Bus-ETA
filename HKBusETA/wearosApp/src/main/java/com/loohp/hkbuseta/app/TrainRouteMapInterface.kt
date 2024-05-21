@@ -77,8 +77,10 @@ import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.Stop
+import com.loohp.hkbuseta.common.objects.StopInfo
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.firstCo
+import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Immutable
@@ -337,12 +339,16 @@ fun MTRRouteMapMapInterface(
                                         if (stopId != null) {
                                             change.consume()
                                             scope.launch {
+                                                val stop = stopId.asStop(instance)
                                                 val result = Registry.getInstance(instance).findRoutes("", false) { r ->
                                                     Shared.MTR_ROUTE_FILTER.invoke(r) && r.stops[Operator.MTR]?.contains(stopId) == true
-                                                }
+                                                }.onEach {
+                                                    it.stopInfo = StopInfo(stopId, stop, 0.0, Operator.MTR)
+                                                }.toStopIndexed(instance)
                                                 val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
                                                 intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJsonArray().toString())
                                                 intent.putExtra("listType", RouteListType.NORMAL.name)
+                                                intent.putExtra("showEta", true)
                                                 intent.putExtra("mtrSearch", stopId)
                                                 instance.startActivity(intent)
                                             }
@@ -555,12 +561,16 @@ fun LRTRouteMapMapInterface(
                                         if (stopId != null) {
                                             change.consume()
                                             scope.launch {
+                                                val stop = stopId.asStop(instance)
                                                 val result = Registry.getInstance(instance).findRoutes("", false) { r ->
                                                     r.co.firstCo() == Operator.LRT && r.stops[Operator.LRT]?.contains(stopId) == true
-                                                }
+                                                }.onEach {
+                                                    it.stopInfo = StopInfo(stopId, stop, 0.0, Operator.LRT)
+                                                }.toStopIndexed(instance)
                                                 val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
                                                 intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJsonArray().toString())
                                                 intent.putExtra("listType", RouteListType.NORMAL.name)
+                                                intent.putExtra("showEta", true)
                                                 intent.putExtra("mtrSearch", stopId)
                                                 instance.startActivity(intent)
                                             }

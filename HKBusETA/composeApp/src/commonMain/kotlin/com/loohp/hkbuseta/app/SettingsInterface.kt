@@ -99,6 +99,7 @@ import com.loohp.hkbuseta.compose.platformShowDownloadAppBottomSheet
 import com.loohp.hkbuseta.compose.platformTopBarColor
 import com.loohp.hkbuseta.compose.shouldBeTintedForIcons
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
+import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.dp

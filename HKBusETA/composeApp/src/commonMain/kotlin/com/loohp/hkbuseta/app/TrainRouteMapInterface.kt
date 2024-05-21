@@ -208,6 +208,7 @@ import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.compose.zoomable.Zoomable
 import com.loohp.hkbuseta.compose.zoomable.ZoomableState
 import com.loohp.hkbuseta.compose.zoomable.rememberZoomableState
+import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.coordinatesNullableStateSaver
@@ -233,7 +234,6 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 

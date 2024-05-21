@@ -83,6 +83,7 @@ kotlin {
             implementation(libs.androidx.glance.appwidget)
             implementation(libs.androidx.glance.material3)
             implementation(libs.androidx.work.runtime.ktx)
+            implementation(libs.androidx.concurrent.futures.ktx)
             implementation(libs.androidx.browser)
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.analytics)
@@ -142,7 +143,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 670
+        versionCode = 673
         versionName = "2.1.1"
     }
     packaging {
@@ -188,8 +189,4 @@ compose.desktop {
             jvmArgs("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
         }
     }
-}
-
-compose.experimental {
-    web.application { /* do nothing */ }
 }

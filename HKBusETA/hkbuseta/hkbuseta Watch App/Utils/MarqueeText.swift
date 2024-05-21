@@ -64,7 +64,7 @@ struct MarqueeText : View {
                                     self.animate = geo.size.width < stringWidth && !ambientMode
                                 }
                                 .fixedSize(horizontal: true, vertical: false)
-                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
+                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: alignment)
                             text()
                                 .lineLimit(1)
                                 .font(.init(font))
@@ -74,18 +74,11 @@ struct MarqueeText : View {
                                     self.animate = geo.size.width < stringWidth && !ambientMode
                                 }
                                 .fixedSize(horizontal: true, vertical: false)
-                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
+                                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: alignment)
                         }
-                        .mask(
-                            HStack(spacing:0) {
-                                Rectangle()
-                                    .frame(width:0)
-                                    .opacity(0)
-                                LinearGradient(gradient: Gradient(colors: [Color.black, Color.black]), startPoint: .leading, endPoint: .trailing)
-                                Rectangle()
-                                    .frame(width:0)
-                                    .opacity(0)
-                            })
+                        .mask(alignment: .center) {
+                            Rectangle().frame(width: geo.size.width, height: stringHeight * 2)
+                        }
                         .frame(width: geo.size.width)
                     } else {
                         text()
