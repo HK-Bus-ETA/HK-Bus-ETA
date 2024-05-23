@@ -106,10 +106,26 @@ class WebMap {
         var stopNames = stopNamesJsArray.split('\0');
 
         stops.forEach((point, index) => {
-            L.marker(point, {icon: stopIcon})
-               .addTo(this.layer)
-               .bindPopup("<div style='text-align: center;'>" + stopNames[index] + "<div>", { offset: L.point(0, -22), closeButton: false })
-               .on('click', () => selectStopCallback(index));
+            var clicked = false;
+            var marker = L.marker(point, {icon: stopIcon})
+                .addTo(this.layer)
+                .bindPopup("<div style='text-align: center;'>" + stopNames[index] + "<div>", { offset: L.point(0, -22), closeButton: false })
+                .on('click', () => {
+                    selectStopCallback(index);
+                    clicked = true;
+                    marker.openPopup();
+                });
+                marker.on('mouseover', () => {
+                    if (!marker.getPopup().isOpen()) {
+                        clicked = false;
+                        marker.openPopup();
+                    }
+                });
+                marker.on('mouseout', () => {
+                    if (!clicked) {
+                        marker.closePopup();
+                    }
+                });
         });
 
         var paths = splitLatLngPaths(pathsJsArray);
