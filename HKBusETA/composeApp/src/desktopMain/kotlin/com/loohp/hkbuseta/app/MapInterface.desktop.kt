@@ -65,6 +65,7 @@ import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.dispatcherIO
+import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.closenessTo
@@ -194,10 +195,9 @@ const val baseHtml: String = """
     <div id="map"></div>
     <script>
         var map = L.map('map').setView([22.32267, 144.17504], 13)
-        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        }).addTo(map);
+
+        var tileLayers = L.layerGroup();
+        map.addLayer(tileLayers);
 
         var layer = L.layerGroup();
         map.addLayer(layer);
@@ -316,8 +316,8 @@ actual fun MapRouteInterface(
             if (webViewState.loadingState == LoadingState.Finished) {
                 val location = stops[selectedStop - 1].stop.location
                 webViewNavigator.evaluateJavaScript("""
-                map.flyTo([${location.lat},${location.lng}], 15, {animate: true, duration: 0.5});
-            """.trimIndent())
+                    map.flyTo([${location.lat},${location.lng}], 15, {animate: true, duration: 0.5});
+                """.trimIndent())
             }
         }
         LaunchedEffect (Unit) {
@@ -327,6 +327,20 @@ actual fun MapRouteInterface(
                     message.params.toIntOrNull()?.apply { selectedStop = indexMap[this] + 1 }
                 }
             })
+        }
+        LanguageDarkModeChangeEffect (webViewState.loadingState) { language, darkMode ->
+            if (webViewState.loadingState == LoadingState.Finished) {
+                webViewNavigator.evaluateJavaScript("""
+                    tileLayers.clearLayers();
+                    L.tileLayer('$darkMode' === 'true' ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
+                    }).addTo(tileLayers);
+                    L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", "$language" === "en" ? "en" : "tc"), {
+                        maxZoom: 19,
+                    }).addTo(tileLayers);
+                """.trimIndent())
+            }
         }
 
         if (!shouldHide) {
@@ -401,6 +415,20 @@ actual fun MapSelectInterface(
                     radius: radius
                 }).addTo(layer);
             """.trimIndent())
+            }
+        }
+        LanguageDarkModeChangeEffect (webViewState.loadingState) { language, darkMode ->
+            if (webViewState.loadingState == LoadingState.Finished) {
+                webViewNavigator.evaluateJavaScript("""
+                    tileLayers.clearLayers();
+                    L.tileLayer('$darkMode' === 'true' ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
+                    }).addTo(tileLayers);
+                    L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", "$language" === "en" ? "en" : "tc"), {
+                        maxZoom: 19,
+                    }).addTo(tileLayers);
+                """.trimIndent())
             }
         }
 

@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import com.loohp.hkbuseta.appcontext.ScreenState
+import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
@@ -52,6 +53,7 @@ import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Stable
+import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.closenessTo
@@ -93,7 +95,7 @@ actual fun MapRouteInterface(
     var selectedStop by selectedStopState
     val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
 
-    val webMap = rememberWebMap()
+    val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode)
 
     LaunchedEffect (waypoints) {
         webMap.show()
@@ -129,6 +131,9 @@ actual fun MapRouteInterface(
             webMap.show()
         }
     }
+    LanguageDarkModeChangeEffect { language, darkMode ->
+        webMap.reloadTiles(language, darkMode)
+    }
 
     WebMapContainer(webMap)
 }
@@ -144,7 +149,7 @@ actual fun MapSelectInterface(
     var position by remember { mutableStateOf(initialPosition) }
     var init by remember { mutableStateOf(false) }
 
-    val webMap = rememberWebMap()
+    val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode)
 
     LaunchedEffect (Unit) {
         webMap.show()
@@ -174,13 +179,16 @@ actual fun MapSelectInterface(
             webMap.show()
         }
     }
+    LanguageDarkModeChangeEffect { language, darkMode ->
+        webMap.reloadTiles(language, darkMode)
+    }
 
     WebMapContainer(webMap)
 }
 
 @Suppress("NOTHING_TO_INLINE")
 @Composable
-inline fun rememberWebMap(): WebMap = remember { WebMap() }
+inline fun rememberWebMap(language: String, darkMode: Boolean): WebMap = remember { WebMap(language, darkMode) }
 
 @Suppress("NOTHING_TO_INLINE")
 @Composable
@@ -205,8 +213,9 @@ inline fun WebMapContainer(webMap: WebMap) {
 }
 
 @Stable
-external class WebMap: JsAny {
+external class WebMap(language: String, darkMode: Boolean): JsAny {
     val valid: Boolean
+    fun reloadTiles(language: String, darkMode: Boolean)
     fun remove()
     fun setMapPosition(x: Float, y: Float, width: Float, height: Float)
     fun show()

@@ -26,13 +26,20 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntSize
 import com.loohp.hkbuseta.appcontext.composePlatform
+import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.shared.Shared
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
@@ -71,6 +78,21 @@ fun rememberPlatformModalBottomSheetState(
         skipPartiallyExpanded = composePlatform.hasLargeScreen || skipPartiallyExpanded,
         confirmValueChange = confirmValueChange
     )
+}
+
+@Composable
+fun LanguageDarkModeChangeEffect(vararg key: Any?, block: CoroutineScope.(String, Boolean) -> Unit) {
+    var language by remember { mutableStateOf(Shared.language) }
+    val darkMode = Shared.theme.isDarkMode
+    LaunchedEffect (Unit) {
+        while (true) {
+            language = Shared.language
+            delay(100)
+        }
+    }
+    LaunchedEffect (language, darkMode, *key) {
+        block.invoke(this, language, darkMode)
+    }
 }
 
 @Composable
