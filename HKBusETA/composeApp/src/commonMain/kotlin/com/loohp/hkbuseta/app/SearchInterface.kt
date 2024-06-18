@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -71,6 +72,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
@@ -80,6 +83,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.loohp.hkbuseta.appcontext.compose
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
@@ -111,6 +115,7 @@ import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.applyIf
+import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.isNarrow
 import com.loohp.hkbuseta.compose.plainTooltip
@@ -276,7 +281,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                                     if (it.type == KeyEventType.KeyDown) {
                                         val key = it.key
                                         return@onKeyEvent when {
-                                            key == Key.Backspace -> {
+                                            key == Key.Backspace || (key == Key.Back && composePlatform.isMobileAppRunningOnDesktop && composePlatform.applePlatform) -> {
                                                 CoroutineScope(dispatcherIO).launch {
                                                     handleInput(instance, '<')
                                                 }
@@ -374,6 +379,12 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
             val spacing = 8.dp
             val onClick: () -> Unit = { scope.launch { keyPressFocus.requestFocus() } }
             var keyHeight by remember { mutableIntStateOf(0) }
+            Spacer(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable { /* do nothing */ }
+                    .pointerHoverIcon(PointerIcon.Default)
+            )
             Column(
                 modifier = Modifier
                     .platformHorizontalDividerShadow(5.dp)
