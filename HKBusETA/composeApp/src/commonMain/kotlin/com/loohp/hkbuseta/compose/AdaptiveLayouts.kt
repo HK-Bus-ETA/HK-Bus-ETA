@@ -23,6 +23,9 @@ package com.loohp.hkbuseta.compose
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -31,10 +34,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
@@ -46,22 +54,30 @@ import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.utils.DrawableResource
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -125,13 +141,23 @@ inline val WindowSizeClass.isNarrow: Boolean get() {
     }
 }
 
+sealed class AdaptiveTopBottomMode {
+    data object BottomToLeft: AdaptiveTopBottomMode()
+    data object BottomToRight: AdaptiveTopBottomMode()
+    data class BottomToFloating(
+        val alignment: Alignment,
+        val aspectRatio: Float,
+        val offsetState: MutableState<Offset>
+    ): AdaptiveTopBottomMode()
+}
+
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun AdaptiveTopBottomLayout(
     modifier: Modifier = Modifier,
     context: AppContext,
     bottomSize: @Composable (WindowSizeClass) -> Dp,
-    landscapeFlip: Boolean = false,
+    mode: AdaptiveTopBottomMode = AdaptiveTopBottomMode.BottomToLeft,
     animateSize: Boolean = false,
     top: @Composable BoxScope.(WindowSizeClass) -> Unit,
     bottom: @Composable BoxScope.(WindowSizeClass) -> Unit
@@ -172,39 +198,97 @@ fun AdaptiveTopBottomLayout(
             }
             else -> {
                 val bottomSizeValue = bottomSize.invoke(windowSizeClass)
-                Row(
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    if (landscapeFlip) {
+                when (mode) {
+                    is AdaptiveTopBottomMode.BottomToLeft -> {
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .applyIf(animateSize) { animateContentSize() }
+                                    .width(bottomSizeValue)
+                            ) {
+                                bottom.invoke(this, windowSizeClass)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .applyIf(animateSize) { animateContentSize() }
+                                    .weight(1F)
+                            ) {
+                                top.invoke(this, windowSizeClass)
+                            }
+                        }
+                    }
+                    is AdaptiveTopBottomMode.BottomToRight -> {
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .applyIf(animateSize) { animateContentSize() }
+                                    .weight(1F)
+                            ) {
+                                top.invoke(this, windowSizeClass)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .applyIf(animateSize) { animateContentSize() }
+                                    .width(bottomSizeValue)
+                            ) {
+                                bottom.invoke(this, windowSizeClass)
+                            }
+                        }
+                    }
+                    is AdaptiveTopBottomMode.BottomToFloating -> {
+                        var offset by mode.offsetState
+                        var maxSize by remember { mutableStateOf(IntSize.Zero) }
+                        var size by remember { mutableStateOf(IntSize.Zero) }
+                        val updateOffset: (Offset) -> Unit = remember { { offsetChange ->
+                            var (x, y) = offset + offsetChange
+                            x = x.coerceIn(0F - size.width / 4F * 3F, maxSize.width - size.width / 4F)
+                            y = y.coerceIn(-(maxSize.height - size.height).toFloat(), 0F + size.height / 4F * 3F)
+                            offset = Offset(x, y)
+                        } }
+                        val transformableState = rememberTransformableState { _, offsetChange, _ -> updateOffset.invoke(offsetChange) }
+                        LaunchedEffect (width) {
+                            updateOffset.invoke(Offset.Zero)
+                        }
                         Box(
-                            modifier = Modifier
-                                .applyIf(animateSize) { animateContentSize() }
-                                .weight(1F)
+                            modifier = Modifier.onSizeChanged { maxSize = it },
+                            contentAlignment = mode.alignment
                         ) {
                             top.invoke(this, windowSizeClass)
-                        }
-                        Box(
-                            modifier = Modifier
-                                .applyIf(animateSize) { animateContentSize() }
-                                .width(bottomSizeValue)
-                        ) {
-                            bottom.invoke(this, windowSizeClass)
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .applyIf(animateSize) { animateContentSize() }
-                                .width(bottomSizeValue)
-                        ) {
-                            bottom.invoke(this, windowSizeClass)
-                        }
-                        Box(
-                            modifier = Modifier
-                                .applyIf(animateSize) { animateContentSize() }
-                                .weight(1F)
-                        ) {
-                            top.invoke(this, windowSizeClass)
+                            Column(
+                                modifier = Modifier
+                                    .size(bottomSizeValue, bottomSizeValue * (1F / mode.aspectRatio))
+                                    .onSizeChanged { size = it }
+                                    .graphicsLayer {
+                                        translationX = offset.x
+                                        translationY = offset.y
+                                    }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .platformHorizontalDividerShadow(5.dp)
+                                        .fillMaxWidth()
+                                        .height(20.dp)
+                                        .background(Color.Gray)
+                                        .transformable(transformableState),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(20.dp),
+                                        tint = Color.DarkGray,
+                                        imageVector = Icons.Outlined.Menu,
+                                        contentDescription = if (Shared.language == "en") "Drag Handle" else "拖曳手柄"
+                                    )
+                                }
+                                Box {
+                                    bottom.invoke(this, windowSizeClass)
+                                }
+                            }
                         }
                     }
                 }

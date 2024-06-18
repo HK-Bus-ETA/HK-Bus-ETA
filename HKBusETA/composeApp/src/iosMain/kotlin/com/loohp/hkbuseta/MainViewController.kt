@@ -67,7 +67,7 @@ fun WindowInsets.detectKeepSafeAreaSides(): WindowInsets {
         WindowInsets(0, 0, 0, 0)
     } else {
         val windowSize = calculateWindowSizeClass()
-        if (windowSize.heightSizeClass == WindowHeightSizeClass.Compact || windowSize.widthSizeClass != WindowWidthSizeClass.Compact) {
+        if (windowSize.heightSizeClass == WindowHeightSizeClass.Compact || windowSize.widthSizeClass == WindowWidthSizeClass.Expanded) {
             only(WindowInsetsSides.Top + WindowInsetsSides.Left + WindowInsetsSides.Right)
         } else {
             this

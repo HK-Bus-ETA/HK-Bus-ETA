@@ -53,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
@@ -97,6 +99,7 @@ import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.AdaptiveTopBottomLayout
+import com.loohp.hkbuseta.compose.AdaptiveTopBottomMode
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.Backspace
 import com.loohp.hkbuseta.compose.Delete
@@ -130,7 +133,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.min
 
@@ -199,9 +201,13 @@ private suspend fun updateSearchState(text: String = searchState.value.text, cat
     searchState.value = RouteKeyboardState(text, possibleNextChar, categories, result.toImmutableList())
 }
 
-@OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class)
+private val floatingKeyboardState: MutableStateFlow<Offset> = MutableStateFlow(Offset.Zero)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
+    val scope = rememberCoroutineScope()
+
     val listType = instance.compose.data["listType"] as? RouteListType ?: RouteListType.NORMAL
     val showEta = instance.compose.data["showEta"] as? Boolean?: false
     val recentSort = instance.compose.data["recentSort"] as? RecentSortMode ?: RecentSortMode.DISABLED
@@ -212,6 +218,8 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
     val state by searchState.collectAsStateMultiplatform()
     val keyPressFocus = remember { FocusRequester() }
     var size by remember { mutableStateOf(IntSize(instance.screenWidth, instance.screenHeight)) }
+
+    val keyboardOffsetState = floatingKeyboardState.collectAsStateMultiplatform()
 
     LaunchedEffect (visible, state.categories) {
         if (visible) {
@@ -237,6 +245,11 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
     AdaptiveTopBottomLayout(
         modifier = Modifier.onSizeChanged { size = it },
         context = instance,
+        mode = AdaptiveTopBottomMode.BottomToFloating(
+            alignment = Alignment.BottomStart,
+            aspectRatio = 4F / 3F,
+            offsetState = keyboardOffsetState
+        ),
         bottomSize = { if (it.isNarrow) (size.height / 11F * 4F).pixelsToDp(instance).dp.coerceIn(178.dp, 248.dp) else min(412F, (size.width / 2F).pixelsToDp(instance)).dp },
         top = {  _ ->
             Column {
@@ -359,6 +372,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
         },
         bottom = { _ ->
             val spacing = 8.dp
+            val onClick: () -> Unit = { scope.launch { keyPressFocus.requestFocus() } }
             var keyHeight by remember { mutableIntStateOf(0) }
             Column(
                 modifier = Modifier
@@ -375,28 +389,28 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                         modifier = Modifier.weight(1F),
                         verticalArrangement = Arrangement.spacedBy(spacing)
                     ) {
-                        Box(modifier = Modifier.weight(1F).onSizeChanged { keyHeight = it.height }) { KeyboardButton(instance, '1') }
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '4') }
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '7') }
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '-', Color.Red, persistentListOf(PlatformIcons.Outlined.Delete.asImmutableState())) }
+                        Box(modifier = Modifier.weight(1F).onSizeChanged { keyHeight = it.height }) { KeyboardButton(instance, '1', onClick) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '4', onClick) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '7', onClick) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '-', Color.Red, persistentListOf(PlatformIcons.Outlined.Delete.asImmutableState()), onClick) }
                     }
                     Column(
                         modifier = Modifier.weight(1F),
                         verticalArrangement = Arrangement.spacedBy(spacing)
                     ) {
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '2') }
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '5') }
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '8') }
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '0') }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '2', onClick) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '5', onClick) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '8', onClick) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '0', onClick) }
                     }
                     Column(
                         modifier = Modifier.weight(1F),
                         verticalArrangement = Arrangement.spacedBy(spacing)
                     ) {
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '3') }
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '6') }
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '9') }
-                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '<', Color.Red, persistentListOf(PlatformIcons.AutoMirrored.Outlined.Backspace.asImmutableState())) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '3', onClick) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '6', onClick) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '9', onClick) }
+                        Box(modifier = Modifier.weight(1F)) { KeyboardButton(instance, '<', Color.Red, persistentListOf(PlatformIcons.AutoMirrored.Outlined.Backspace.asImmutableState()), onClick) }
                     }
                     Box (
                         modifier = Modifier.weight(1.2F),
@@ -420,7 +434,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                             for (alphabet in 'A'..'Z') {
                                 if (possibleValues.contains(alphabet)) {
                                     Box(modifier = Modifier.heightIn(max = keyHeight.equivalentDp * 0.95F)) {
-                                        KeyboardButton(instance, alphabet)
+                                        KeyboardButton(instance, alphabet, onClick)
                                     }
                                 }
                             }
@@ -432,7 +446,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
     )
 }
 
-suspend fun handleInput(instance: AppActiveContext, input: Char) {
+fun handleInput(instance: AppActiveContext, input: Char) {
     val originalText = searchState.value.text
     val categories = searchState.value.categories
     val (newText, newCategories) = if (input == '<') {
@@ -456,13 +470,12 @@ suspend fun handleInput(instance: AppActiveContext, input: Char) {
 }
 
 @Composable
-fun KeyboardButton(instance: AppActiveContext, content: Char) {
-    KeyboardButton(instance, content, Color.Unspecified, persistentListOf())
+fun KeyboardButton(instance: AppActiveContext, content: Char, onClick: () -> Unit = { /* do nothing */ }) {
+    KeyboardButton(instance, content, Color.Unspecified, persistentListOf(), onClick)
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
-fun KeyboardButton(instance: AppActiveContext, content: Char, color: Color, icons: ImmutableList<ImmutableState<Any>>) {
+fun KeyboardButton(instance: AppActiveContext, content: Char, color: Color, icons: ImmutableList<ImmutableState<Any>>, onClick: () -> Unit = { /* do nothing */ }) {
     val state by searchState.collectAsStateMultiplatform()
     val icon = if (icons.isEmpty()) null else icons[0].value
     val enabled = when (content) {
@@ -475,6 +488,7 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, color: Color, icon
         onClick = {
             CoroutineScope(dispatcherIO).launch {
                 handleInput(instance, content)
+                onClick.invoke()
             }
         },
         modifier = Modifier
