@@ -744,6 +744,10 @@ with open('mtr_data.json', 'r') as file:
     mtr_data = json.load(file)
     merge(output, mtr_data)
 
+with open('splash.json', 'r') as file:
+    splash_data = json.load(file)
+    merge(output, splash_data)
+
 with open(DATA_SHEET_FULL_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
 

@@ -1,0 +1,15 @@
+{
+	"splashEntries": [
+		{
+			"imageName": "tsim_sha_tsui_station.png",
+			"description": {
+				"zh": "尖沙咀站",
+				"en": "Tsim Sha Tsui Station"
+			},
+			"location": {
+				"lat": "22.2972206",
+				"lng": "114.1715747"
+			}
+		}
+	]
+}
