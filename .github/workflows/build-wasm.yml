@@ -27,7 +27,7 @@ jobs:
         with:
           source-directory: 'HKBusETA/composeApp/build/dist/wasmJs/productionExecutable'
           target-directory: 'web-app'
-          destination-github-username: 'LOOHP'
+          destination-github-username: 'HK-Bus-ETA'
           destination-repository-name: 'HK-Bus-ETA-AppLinks'
           user-email: jamesloohp@gmail.com
           target-branch: main
