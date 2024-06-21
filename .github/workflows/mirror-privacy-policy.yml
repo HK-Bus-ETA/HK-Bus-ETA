@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Fetch Privacy Policy
         run: |
-          wget https://loohp.github.io/HK-Bus-ETA/PRIVACY_POLICY.html
+          wget https://data.hkbuseta.com/PRIVACY_POLICY.html
       - name: Push to wear.hkbus.app
         uses: cpina/github-action-push-to-another-repository@main
         env:
