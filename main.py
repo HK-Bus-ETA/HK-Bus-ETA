@@ -758,6 +758,7 @@ strip_data_sheet(DATA_SHEET)
 del output["mtrData"]
 del output["mtrBarrierFreeMapping"]
 del output["lrtData"]
+del output["splashEntries"]
 
 with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
