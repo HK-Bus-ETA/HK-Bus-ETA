@@ -27,6 +27,28 @@
 				"zh": "黃石碼頭",
 				"en": "Wong Shek Pier"
 			}
+		},
+		{
+			"imageName": "eastern_street_des_voeux_road_west.jpg",
+			"description": {
+				"zh": "東邊街, 德輔道西",
+				"en": "Eastern Street, Des Voeux Road West"
+			},
+			"orientation": "portrait"
+		},
+		{
+			"imageName": "lau_fau_shan.jpg",
+			"description": {
+				"zh": "流浮山",
+				"en": "Lau Fau Shan"
+			}
+		},
+		{
+			"imageName": "ta_kwu_ling_tsung_yuen_ha.jpg",
+			"description": {
+				"zh": "打鼓嶺(松園下)",
+				"en": "Ta Kwu Ling (Tsung Yuen Ha)"
+			}
 		}
 	]
 }
