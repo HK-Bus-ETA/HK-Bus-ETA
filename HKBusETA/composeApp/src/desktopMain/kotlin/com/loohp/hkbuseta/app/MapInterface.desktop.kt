@@ -71,6 +71,7 @@ import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.closenessTo
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
+import com.loohp.hkbuseta.utils.toHexString
 import com.multiplatform.webview.jsbridge.IJsMessageHandler
 import com.multiplatform.webview.jsbridge.JsMessage
 import com.multiplatform.webview.jsbridge.rememberWebViewJsBridge
@@ -216,7 +217,7 @@ fun rememberLeafletScript(waypoints: RouteWaypoints): State<String> {
     val stopsJsArray by remember(waypoints) { derivedStateOf { waypoints.stops.joinToString(",") { "[${it.location.lat}, ${it.location.lng}]" } } }
     val pathsJsArray by remember(waypoints) { derivedStateOf { waypoints.simplifiedPaths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" } } }
     val pathColor = remember { waypoints.co.getLineColor(waypoints.routeNumber, Color.Red) }
-    val colorHex = remember { "#" + pathColor.toArgb().toHexString(HexFormat.UpperCase).padStart(6, '0').takeLast(6) }
+    val colorHex = remember { pathColor.toHexString() }
     val iconFile = remember { when (waypoints.co) {
         Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {
             KMBSubsidiary.KMB -> if (waypoints.isKmbCtbJoint) "bus_jointly_kmb.svg" else "bus_kmb.svg"
@@ -233,9 +234,7 @@ fun rememberLeafletScript(waypoints: RouteWaypoints): State<String> {
     } }
     val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
     val clearness = remember { pathColor.closenessTo(Color(0xFFFDE293)) }
-    val (outlineHex, outlineOpacity) = remember { if (clearness > 0.8F) {
-        "#" + Color.Blue.toArgb().toHexString(HexFormat.UpperCase).padStart(6, '0').takeLast(6) to ((clearness - 0.8) / 0.05).toFloat()
-    } else null to 0F }
+    val (outlineHex, outlineOpacity) = remember { if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F }
 
     return remember(waypoints, stopNames, stopsJsArray, pathsJsArray) { derivedStateOf { """
         layer.clearLayers();
@@ -295,11 +294,9 @@ actual fun MapRouteInterface(
         }
         LaunchedEffect (pathColor, webViewState.loadingState) {
             if (webViewState.loadingState == LoadingState.Finished) {
-                val colorHex = "#" + pathColor.toArgb().toHexString(HexFormat.UpperCase).padStart(6, '0').takeLast(6)
+                val colorHex = pathColor.toHexString()
                 val clearness = pathColor.closenessTo(Color(0xFFFDE293))
-                val (outlineHex, outlineOpacity) = if (clearness > 0.8F) {
-                    "#" + Color.Blue.toArgb().toHexString(HexFormat.UpperCase).padStart(6, '0').takeLast(6) to ((clearness - 0.8) / 0.05).toFloat()
-                } else null to 0F
+                val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
                 webViewNavigator.evaluateJavaScript("""
                 if (polylines || polylinesOutline) {
                     polylinesOutline.forEach(function(polyline) {

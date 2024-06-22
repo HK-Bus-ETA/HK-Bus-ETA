@@ -264,10 +264,12 @@ object Shared {
     var etaDisplayMode = ETADisplayMode.COUNTDOWN
     var lrtDirectionMode = false
     var theme = Theme.SYSTEM
+    var color: Long? = null
     var viewFavTab = 0
     var disableMarquee = false
     var historyEnabled = true
     var showRouteMap = true
+    var downloadSplash = true
 
     private val favouriteRouteStopLock: Lock = Lock()
     val favoriteRouteStops: MutableNonNullStateFlowList<FavouriteRouteGroup> = MutableStateFlow(emptyList<FavouriteRouteGroup>()).wrapList()

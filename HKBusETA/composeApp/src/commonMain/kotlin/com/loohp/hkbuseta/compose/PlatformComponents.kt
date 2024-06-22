@@ -125,6 +125,7 @@ expect val PlatformIcons.Filled.Sync: Painter @Composable get
 expect val PlatformIcons.Filled.TransferWithinAStation: Painter @Composable get
 expect val PlatformIcons.Filled.Update: Painter @Composable get
 expect val PlatformIcons.Filled.WrongLocation: Painter @Composable get
+expect val PlatformIcons.Filled.Palette: Painter @Composable get
 expect val PlatformIcons.Outlined.Add: Painter @Composable get
 expect val PlatformIcons.Outlined.Bedtime: Painter @Composable get
 expect val PlatformIcons.Outlined.Delete: Painter @Composable get
@@ -170,6 +171,7 @@ expect val PlatformIcons.Outlined.Upload: Painter @Composable get
 expect val PlatformIcons.Outlined.Watch: Painter @Composable get
 expect val PlatformIcons.Outlined.LineEndCircle: Painter @Composable get
 expect val PlatformIcons.Outlined.MobileFriendly: Painter @Composable get
+expect val PlatformIcons.Outlined.PhotoLibrary: Painter @Composable get
 
 expect val Painter.shouldBeTintedForIcons: Boolean
 

@@ -42,7 +42,10 @@ import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.isReachable
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.jvm.javaio.copyTo
+import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -136,6 +139,17 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
         File(fileName).outputStream().use {
             val (serializer, value) = writeJson.invoke()
             json.encodeToStream(serializer, value, it)
+            it.flush()
+        }
+    }
+
+    override suspend fun readRawFile(fileName: String): ByteReadChannel {
+        return File(fileName).inputStream().toByteReadChannel()
+    }
+
+    override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
+        File(fileName).outputStream().use {
+            writeBytes.invoke().copyTo(it)
             it.flush()
         }
     }

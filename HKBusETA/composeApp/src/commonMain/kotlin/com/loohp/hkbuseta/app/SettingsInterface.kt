@@ -23,11 +23,14 @@ package com.loohp.hkbuseta.app
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -38,20 +41,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.github.ajalt.colormath.model.RGB
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
@@ -75,13 +86,18 @@ import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.DarkMode
+import com.loohp.hkbuseta.compose.DismissRequestType
 import com.loohp.hkbuseta.compose.Download
 import com.loohp.hkbuseta.compose.Fingerprint
 import com.loohp.hkbuseta.compose.LightMode
 import com.loohp.hkbuseta.compose.Map
 import com.loohp.hkbuseta.compose.MobileFriendly
+import com.loohp.hkbuseta.compose.Palette
+import com.loohp.hkbuseta.compose.PhotoLibrary
+import com.loohp.hkbuseta.compose.PlatformAlertDialog
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
+import com.loohp.hkbuseta.compose.PlatformOutlinedTextField
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.Schedule
 import com.loohp.hkbuseta.compose.ScrollBarConfig
@@ -93,6 +109,8 @@ import com.loohp.hkbuseta.compose.Translate
 import com.loohp.hkbuseta.compose.Update
 import com.loohp.hkbuseta.compose.Upload
 import com.loohp.hkbuseta.compose.Watch
+import com.loohp.hkbuseta.compose.colorpicker.ClassicColorPicker
+import com.loohp.hkbuseta.compose.colorpicker.HsvColor
 import com.loohp.hkbuseta.compose.combinedClickable
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
 import com.loohp.hkbuseta.compose.platformShowDownloadAppBottomSheet
@@ -103,20 +121,23 @@ import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.toHexString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 
 
-fun relaunch(instance: AppActiveContext) {
+fun relaunch(instance: AppActiveContext, skipSplash: Boolean = true) {
     val intent = AppIntent(instance, AppScreen.MAIN)
     intent.addFlags(AppIntentFlag.NEW_TASK, AppIntentFlag.CLEAR_TASK, AppIntentFlag.NO_ANIMATION)
     intent.putExtra("relaunch", AppScreen.SETTINGS.name)
+    if (skipSplash) {
+        intent.putExtra("skipSplash", true)
+    }
     instance.startActivity(intent)
     instance.finishAffinity()
 }
@@ -126,7 +147,6 @@ expect suspend fun invalidateWatchCache(context: AppContext)
 @Composable
 expect fun rememberWearableConnected(context: AppContext): State<WearableConnectionState>
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun SettingsInterface(instance: AppActiveContext) {
     val haptic = LocalHapticFeedback.current
@@ -173,7 +193,7 @@ fun SettingsInterface(instance: AppActiveContext) {
                         Registry.clearInstance()
                         invalidateWatchCache(instance)
                         delay(500)
-                        relaunch(instance)
+                        relaunch(instance, skipSplash = false)
                     }
                 },
                 icon = PlatformIcons.Filled.Update,
@@ -194,6 +214,22 @@ fun SettingsInterface(instance: AppActiveContext) {
                     Theme.SYSTEM -> (if (Shared.language == "en") "System Default" else "系統預設").asAnnotatedString()
                 }
             )
+            val showingColorPickerState = remember { mutableStateOf(false) }
+            var showingColorPicker by showingColorPickerState
+            SettingsRow(
+                instance = instance,
+                onClick = { showingColorPicker = true },
+                icon = PlatformIcons.Filled.Palette,
+                text = (if (Shared.language == "en") "Color" else "顏色").asAnnotatedString(),
+                subText = if (Shared.color == null) {
+                    (if (Shared.language == "en") "Default Color" else "預設顏色").asAnnotatedString()
+                } else {
+                    (if (Shared.language == "en") "Custom Color" else "自定顏色").asAnnotatedString()
+                }
+            )
+            if (showingColorPicker) {
+                ThemeColorPicker(instance, showingColorPickerState)
+            }
             var etaDisplayMode by remember { mutableStateOf(Shared.etaDisplayMode) }
             SettingsRow(
                 instance = instance,
@@ -241,6 +277,21 @@ fun SettingsInterface(instance: AppActiveContext) {
                     (if (Shared.language == "en") "Showing Route Map" else "顯示路線地圖").asAnnotatedString()
                 } else {
                     (if (Shared.language == "en") "Hidden Route Map" else "隱藏路線地圖").asAnnotatedString()
+                }
+            )
+            var downloadSplash by remember { mutableStateOf(Shared.downloadSplash) }
+            SettingsRow(
+                instance = instance,
+                onClick = {
+                    Registry.getInstance(instance).setDownloadSplash(!Shared.downloadSplash, instance)
+                    downloadSplash = Shared.downloadSplash
+                },
+                icon = PlatformIcons.Outlined.PhotoLibrary,
+                text = (if (Shared.language == "en") "Splash Screen" else "啟動畫面").asAnnotatedString(),
+                subText = if (downloadSplash) {
+                    (if (Shared.language == "en") "Fancy Version (Shows various places in HK)" else "精美版 (展示香港不同地點)").asAnnotatedString()
+                } else {
+                    (if (Shared.language == "en") "Simple Version" else "簡單版").asAnnotatedString()
                 }
             )
             SettingsRow(
@@ -344,7 +395,6 @@ fun SettingsInterface(instance: AppActiveContext) {
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun SettingsRow(
     instance: AppActiveContext,
@@ -435,4 +485,100 @@ fun SettingsRow(
         }
     }
     HorizontalDivider()
+}
+
+@Composable
+fun ThemeColorPicker(instance: AppActiveContext, showingState: MutableState<Boolean>) {
+    var showing by showingState
+    val colorState = rememberSaveable(stateSaver = HsvColor.Saver) { mutableStateOf(HsvColor.from(Shared.color?.let { Color(it) }?: Color.Red)) }
+    var color by colorState
+    var hexInput by remember { mutableStateOf(TextFieldValue(text = color.toColor().toHexString())) }
+    var error by remember { mutableStateOf(false) }
+
+    LaunchedEffect (hexInput) {
+        val hex = hexInput.text
+        if (hex.matches("#[0-9A-F]{6}".toRegex())) {
+            color = HsvColor.from(Color(RGB(hex = hexInput.text).toRGBInt().argb.toLong()))
+            error = false
+        } else {
+            error = true
+        }
+    }
+    LaunchedEffect (color) {
+        hexInput = hexInput.copy(text = color.toColor().toHexString())
+    }
+
+    PlatformAlertDialog(
+        icon = {
+            PlatformIcon(
+                painter = PlatformIcons.Filled.Palette,
+                contentDescription = if (Shared.language == "en") "Pick Color" else "選擇顏色"
+            )
+        },
+        title = {
+            PlatformText(text = if (Shared.language == "en") "Pick Color" else "選擇顏色", textAlign = TextAlign.Center)
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ClassicColorPicker(
+                    modifier = Modifier.aspectRatio(1F),
+                    colorPickerValueState = colorState,
+                    showAlphaBar = false
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                            .background(color.toColor())
+                            .border(0.5F.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                    )
+                    PlatformOutlinedTextField(
+                        modifier = Modifier,
+                        value = hexInput,
+                        singleLine = true,
+                        isError = error,
+                        onValueChange = { hexInput = it.copy(text = it.text.uppercase()) }
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            PlatformText(
+                textAlign = TextAlign.Center,
+                lineHeight = 1.1F.em,
+                text = if (Shared.language == "en") "App Default" else "程式預設"
+            )
+        },
+        onDismissRequest = { when (it) {
+            DismissRequestType.BUTTON -> {
+                Shared.color = null
+                Registry.getInstance(instance).setColor(Shared.color, instance)
+                showing = false
+                relaunch(instance)
+            }
+            DismissRequestType.CLICK_OUTSIDE -> {
+                showing = false
+            }
+        } },
+        iosCloseButton = true,
+        confirmButton = {
+            PlatformText(
+                text = if (Shared.language == "en") "Confirm" else "確認"
+            )
+        },
+        onConfirm = {
+            Shared.color = color.toColor().toArgb().toLong()
+            Registry.getInstance(instance).setColor(Shared.color, instance)
+            showing = false
+            relaunch(instance)
+        }
+    )
 }

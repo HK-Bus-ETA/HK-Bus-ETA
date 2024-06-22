@@ -59,11 +59,18 @@ import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
 import com.loohp.hkbuseta.common.utils.wrap
 import com.loohp.hkbuseta.common.utils.wrapList
+import io.ktor.util.toByteArray
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UnsafeNumber
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.allocArrayOf
+import kotlinx.cinterop.convert
+import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.useContents
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -79,6 +86,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import platform.Foundation.NSBundle
 import platform.Foundation.NSCalendar
+import platform.Foundation.NSData
 import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSDateFormatterMediumStyle
 import platform.Foundation.NSDateFormatterNoStyle
@@ -99,6 +107,7 @@ import platform.WatchKit.WKHapticType
 import platform.WatchKit.WKInterfaceDevice
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
+import platform.posix.memcpy
 
 
 object HistoryStack {
@@ -212,6 +221,27 @@ open class AppContextWatchOS internal constructor() : AppContext {
             val fileURL = dir.URLByAppendingPathComponent(fileName)!!
             val text = NSString.create(string = writeText.invoke().string())
             text.writeToURL(fileURL, atomically = false)
+        }
+    }
+
+    override suspend fun readRawFile(fileName: String): ByteReadChannel {
+        return NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
+            dir as NSURL
+            val fileURL = dir.URLByAppendingPathComponent(fileName)!!
+            val data = NSData.create(contentsOfURL = fileURL)!!
+            ByteReadChannel(ByteArray(data.length.toInt()).apply {
+                usePinned { memcpy(it.addressOf(0), data.bytes, data.length) }
+            })
+        }
+    }
+
+    override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
+        NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
+            dir as NSURL
+            val fileURL = dir.URLByAppendingPathComponent(fileName)!!
+            val array = writeBytes.invoke().toByteArray()
+            val data = memScoped { NSData.create(bytes = allocArrayOf(array), length = array.size.convert()) }
+            data.writeToURL(fileURL, atomically = true)
         }
     }
 

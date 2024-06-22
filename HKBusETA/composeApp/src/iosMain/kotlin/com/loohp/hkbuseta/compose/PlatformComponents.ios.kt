@@ -231,6 +231,7 @@ actual inline val PlatformIcons.Filled.Sync: Painter @Composable get() = remembe
 actual inline val PlatformIcons.Filled.TransferWithinAStation: Painter @Composable get() = rememberSystemImagePainter("figure.walk")
 actual inline val PlatformIcons.Filled.Update: Painter @Composable get() = rememberSystemImagePainter("arrow.triangle.2.circlepath")
 actual inline val PlatformIcons.Filled.WrongLocation: Painter @Composable get() = rememberSystemImagePainter("mappin.slash")
+actual inline val PlatformIcons.Filled.Palette: Painter @Composable get() = rememberSystemImagePainter("paintpalette.fill")
 actual inline val PlatformIcons.Outlined.Add: Painter @Composable get() = rememberSystemImagePainter("plus")
 actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = rememberSystemImagePainter("moon")
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberSystemImagePainter("trash")
@@ -276,6 +277,7 @@ actual inline val PlatformIcons.Outlined.Upload: Painter @Composable get() = rem
 actual inline val PlatformIcons.Outlined.Watch: Painter @Composable get() = rememberSystemImagePainter("applewatch")
 actual inline val PlatformIcons.Outlined.LineEndCircle: Painter @Composable get() = rememberSystemImagePainter("arrow.forward.to.line.circle")
 actual inline val PlatformIcons.Outlined.MobileFriendly: Painter @Composable get() = rememberSystemImagePainter("smartphone")
+actual inline val PlatformIcons.Outlined.PhotoLibrary: Painter @Composable get() = rememberSystemImagePainter("photo.stack")
 
 actual val Painter.shouldBeTintedForIcons: Boolean get() = this is VectorPainter || (this is UIImagePainter && isIcon)
 
@@ -899,7 +901,8 @@ actual fun PlatformDropdownMenu(
         onDismissRequest = if (composePlatform.isMobileAppRunningOnDesktop) ({ /* do nothing */ }) else onDismissRequest,
         content = {
             AppTheme(
-                useDarkTheme = Shared.theme.isDarkMode
+                useDarkTheme = Shared.theme.isDarkMode,
+                customColor = Shared.color?.let { Color(it) }
             ) {
                 content.invoke(this)
             }

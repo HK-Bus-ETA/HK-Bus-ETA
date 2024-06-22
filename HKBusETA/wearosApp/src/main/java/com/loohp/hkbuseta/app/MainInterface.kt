@@ -125,11 +125,11 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
         }
     }
 
-    Loading(instance)
+    Loading(instance, instance.context.intent.getBooleanExtra("skipSplash", false))
 }
 
 @Composable
-fun Loading(instance: AppActiveContext) {
+fun Loading(instance: AppActiveContext, skipSplash: Boolean) {
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -139,7 +139,9 @@ fun Loading(instance: AppActiveContext) {
         ) {
             WearOSShared.MainTime()
         }
-        LoadingUpdatingElements(instance)
+        if (!skipSplash) {
+            LoadingUpdatingElements(instance)
+        }
     }
 }
 
@@ -185,15 +187,7 @@ fun UpdatingElements(instance: AppActiveContext) {
             fontSize = 17F.scaledSize(instance).sp,
             text = "更新數據中..."
         )
-        Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
-        Text(
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.primary,
-            fontSize = 14F.scaledSize(instance).sp,
-            text = "更新需時 請稍等"
-        )
-        Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
+        Spacer(modifier = Modifier.size(5.scaledSize(instance).dp))
         Text(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
@@ -201,15 +195,7 @@ fun UpdatingElements(instance: AppActiveContext) {
             fontSize = 17F.scaledSize(instance).sp,
             text = "Updating..."
         )
-        Spacer(modifier = Modifier.size(2.scaledSize(instance).dp))
-        Text(
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.primary,
-            fontSize = 14F.scaledSize(instance).sp,
-            text = "Might take a moment"
-        )
-        Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
+        Spacer(modifier = Modifier.size(30.scaledSize(instance).dp))
         LinearProgressIndicator(
             modifier = Modifier
                 .fillMaxWidth()

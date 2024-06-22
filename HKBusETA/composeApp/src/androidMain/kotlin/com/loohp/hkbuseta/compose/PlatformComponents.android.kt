@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.NearMeDisabled
 import androidx.compose.material.icons.filled.NoTransfer
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.Search
@@ -90,6 +91,9 @@ import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.Paid
+import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.PhotoCameraBack
+import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.PinDrop
 import androidx.compose.material.icons.outlined.Reorder
 import androidx.compose.material.icons.outlined.Schedule
@@ -127,7 +131,6 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.FloatingActionButtonElevation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
@@ -158,7 +161,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -184,8 +186,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import com.loohp.hkbuseta.utils.DrawableResource
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 
 actual inline val PlatformIcons.AutoMirrored.Filled.ArrowBack: Painter @Composable get() = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack)
@@ -224,6 +224,7 @@ actual inline val PlatformIcons.Filled.Sync: Painter @Composable get() = remembe
 actual inline val PlatformIcons.Filled.TransferWithinAStation: Painter @Composable get() = rememberVectorPainter(Icons.Filled.TransferWithinAStation)
 actual inline val PlatformIcons.Filled.Update: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Update)
 actual inline val PlatformIcons.Filled.WrongLocation: Painter @Composable get() = rememberVectorPainter(Icons.Filled.WrongLocation)
+actual inline val PlatformIcons.Filled.Palette: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Palette)
 actual inline val PlatformIcons.Outlined.Add: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Add)
 actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Bedtime)
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Delete)
@@ -269,6 +270,7 @@ actual inline val PlatformIcons.Outlined.Upload: Painter @Composable get() = rem
 actual inline val PlatformIcons.Outlined.Watch: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Watch)
 actual inline val PlatformIcons.Outlined.LineEndCircle: Painter @Composable get() = painterResource(DrawableResource("baseline_line_end_circle_24.xml"))
 actual inline val PlatformIcons.Outlined.MobileFriendly: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MobileFriendly)
+actual inline val PlatformIcons.Outlined.PhotoLibrary: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.PhotoLibrary)
 
 actual val Painter.shouldBeTintedForIcons: Boolean get() = this is VectorPainter
 

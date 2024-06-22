@@ -3,6 +3,7 @@ package com.loohp.hkbuseta.theme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 
 internal val LightColors = lightColorScheme(
@@ -70,4 +71,4 @@ internal val DarkColors = darkColorScheme(
 )
 
 @Composable
-expect fun AppTheme(useDarkTheme: Boolean, content: @Composable () -> Unit)
+expect fun AppTheme(useDarkTheme: Boolean, customColor: Color?, content: @Composable () -> Unit)

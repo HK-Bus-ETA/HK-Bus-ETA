@@ -31,12 +31,14 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HeadersBuilder
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.KtorDsl
 import io.ktor.utils.io.charsets.Charsets
 import kotlinx.serialization.encodeToString
@@ -232,6 +234,29 @@ suspend inline fun getMovedRedirect(link: String): String? {
         }.let {
             if (it.status == HttpStatusCode.MovedPermanently || it.status == HttpStatusCode.Found) {
                 it.headers[HttpHeaders.Location]
+            } else {
+                null
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+suspend inline fun getRawResponse(link: String): ByteReadChannel? {
+    return try {
+        httpClient.get(link) {
+            headers {
+                applyPlatformHeaders()
+            }
+            timeout {
+                requestTimeoutMillis = 120000
+                connectTimeoutMillis = 20000
+            }
+        }.let {
+            if (it.status == HttpStatusCode.OK) {
+                it.bodyAsChannel()
             } else {
                 null
             }

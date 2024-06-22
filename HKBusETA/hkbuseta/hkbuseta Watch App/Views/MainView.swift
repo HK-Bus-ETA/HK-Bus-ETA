@@ -16,28 +16,28 @@ struct MainView: AppScreenView {
     
     @State private var updateScreen = false
     @State private var launch: String
+    @State private var skipSplash: Bool
     
     private let appContext: AppActiveContextWatchOS
     
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
         self.launch = data["launch"] as? String ?? ""
+        self.skipSplash = data["skipSplash"] as? Bool ?? false
         self._registryState = StateObject(wrappedValue: StateFlowObservable(stateFlow: registry(appContext).state))
         self._updateProgressState = StateObject(wrappedValue: StateFlowObservable(stateFlow: registry(appContext).updatePercentageState))
     }
     
     var body: some View {
         VStack {
-            if updateScreen {
+            if skipSplash {
+                Text(" ")
+            } else if updateScreen {
                 Text("更新數據中...")
                     .font(.system(size: min(23.scaled(appContext, true), 26.scaled(appContext))))
-                Text("更新需時 請稍等")
-                    .font(.system(size: min(14.scaled(appContext, true), 17.scaled(appContext))))
                     .padding(.bottom)
                 Text("Updating...")
                     .font(.system(size: min(23.scaled(appContext, true), 26.scaled(appContext))))
-                Text("Might take a moment")
-                    .font(.system(size: min(14.scaled(appContext, true), 17.scaled(appContext))))
                     .padding(.bottom)
                 ProgressView(value: max(0.0, min(1.0, updateProgressState.state.floatValue)))
                     .tint(colorInt(0xFFF9DE09).asColor())

@@ -22,12 +22,19 @@
 
 package com.loohp.hkbuseta.app
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +46,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -52,8 +60,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -67,9 +81,12 @@ import com.loohp.hkbuseta.common.appcontext.AppShortcutIcon
 import com.loohp.hkbuseta.common.appcontext.primaryThemeColor
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.SplashEntry
 import com.loohp.hkbuseta.common.shared.BASE_URL
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.shared.Splash
+import com.loohp.hkbuseta.common.shared.readImage
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
@@ -77,13 +94,16 @@ import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformLinearProgressIndicator
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
-import com.loohp.hkbuseta.compose.platformSurfaceColor
 import com.loohp.hkbuseta.utils.DrawableResource
+import com.loohp.hkbuseta.utils.Small
+import com.loohp.hkbuseta.utils.append
+import com.loohp.hkbuseta.utils.asContentAnnotatedString
+import com.loohp.hkbuseta.utils.toImageBitmap
+import io.ktor.util.toByteArray
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 
@@ -93,11 +113,8 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
     val state by remember { Registry.getInstance(instance).also {
         if (!it.state.value.isProcessing && currentTimeMillis() - it.lastUpdateCheck > 30000) it.checkUpdate(instance, false)
     }.state }.collectAsStateMultiplatform()
+    var splashScreenDone by remember { mutableStateOf(false) }
 
-    instance.compose.setStatusNavBarColor(
-        status = platformSurfaceColor,
-        nav = platformSurfaceColor
-    )
     val iconColor = MaterialTheme.colorScheme.primary.toArgb().toLong()
     primaryThemeColor = iconColor
 
@@ -133,19 +150,21 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
         }
     }
 
-    LaunchedEffect (state) {
+    LaunchedEffect (state, splashScreenDone) {
         when (state) {
             Registry.State.READY -> {
-                val appScreen = (instance.compose.data["relaunch"] as? String)?.let { AppScreen.valueOfNullable(it) }
-                val noAnimation = instance.compose.flags.contains(AppIntentFlag.NO_ANIMATION)
-                if (appScreen != null) {
-                    delay(250)
-                }
-                Shared.handleLaunchOptions(instance, stopId, co, index, stop.value, route.value, listStopRoute.value, listStopScrollToStop, listStopShowEta, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch, appScreen, noAnimation) {
-                    if (instance.isTopOfStack()) {
-                        instance.startActivity(AppIntent(instance, AppScreen.TITLE))
+                if (splashScreenDone || instance.compose.data.containsKey("relaunch")) {
+                    val appScreen = (instance.compose.data["relaunch"] as? String)?.let { AppScreen.valueOfNullable(it) }
+                    val noAnimation = instance.compose.flags.contains(AppIntentFlag.NO_ANIMATION)
+                    if (appScreen != null) {
+                        delay(250)
                     }
-                    instance.finishAffinity()
+                    Shared.handleLaunchOptions(instance, stopId, co, index, stop.value, route.value, listStopRoute.value, listStopScrollToStop, listStopShowEta, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch, appScreen, noAnimation) {
+                        if (instance.isTopOfStack()) {
+                            instance.startActivity(AppIntent(instance, AppScreen.TITLE))
+                        }
+                        instance.finishAffinity()
+                    }
                 }
             }
             Registry.State.ERROR -> {
@@ -161,13 +180,119 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
         }
     }
 
-    Loading(instance)
+    Loading(instance, instance.compose.data["skipSplash"] == true) { splashScreenDone = true }
 }
 
 @Composable
-fun Loading(instance: AppActiveContext) {
+fun Loading(instance: AppActiveContext, skipSplash: Boolean, onSplashScreenDone: () -> Unit) {
     Scaffold {
-        LoadingUpdatingElements(instance)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (!skipSplash) {
+                SplashScreen(instance, onSplashScreenDone)
+                LoadingUpdatingElements(instance)
+            }
+        }
+    }
+}
+
+@Composable
+fun SplashScreen(instance: AppActiveContext, onSplashScreenDone: () -> Unit) {
+    var splashData: Pair<SplashEntry, ImageBitmap>? by remember { mutableStateOf(null) }
+    var isHeldDown by remember { mutableStateOf(false) }
+    var isDone by remember { mutableStateOf(false) }
+
+    LaunchedEffect (Unit) {
+        CoroutineScope(dispatcherIO).launch {
+            Splash.getRandomSplashEntry(instance)?.let {
+                splashData = it to it.readImage(instance).toByteArray().toImageBitmap()
+            }
+            delay(1000)
+            isDone = true
+        }
+    }
+    LaunchedEffect (isDone, isHeldDown) {
+        if (isDone && !isHeldDown) {
+            onSplashScreenDone.invoke()
+        }
+    }
+
+    instance.compose.setStatusNavBarColor(
+        status = Color.DarkGray,
+        nav = Color.DarkGray
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown()
+                    isHeldDown = true
+                    do {
+                        val event = awaitPointerEvent()
+                    } while (event.changes.any { it.pressed })
+                    isHeldDown = false
+                }
+            },
+        contentAlignment = Alignment.TopStart
+    ) {
+        AnimatedContent(
+            targetState = splashData,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(500))
+                    .togetherWith(fadeOut(animationSpec = tween(500)))
+            }
+        ) {
+            it?.also { (splashEntry, image) ->
+                Image(
+                    modifier = Modifier.fillMaxSize(),
+                    bitmap = image,
+                    contentDescription = splashEntry.description.toString(),
+                    alignment = Alignment.Center,
+                    contentScale = ContentScale.Crop
+                )
+            }?: Spacer(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.DarkGray),
+            )
+        }
+        Column(
+            modifier = Modifier
+                .padding(30.dp)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Image(
+                modifier = Modifier.size(60.dp),
+                painter = painterResource(DrawableResource("icon_max.png")),
+                contentDescription = "HKBusETA"
+            )
+            AnimatedContent(
+                targetState = splashData,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(500))
+                        .togetherWith(fadeOut(animationSpec = tween(500)))
+                }
+            ) {
+                PlatformText(
+                    text = it?.let { (splashEntry) ->
+                        splashEntry.displayText.asContentAnnotatedString().annotatedString
+                    }?: buildAnnotatedString {
+                        append("香港巴士到站預報")
+                        appendLine()
+                        append("HK Bus ETA", SpanStyle(fontSize = TextUnit.Small))
+                    },
+                    color = Color.White,
+                    fontSize = 25.sp,
+                    lineHeight = 1.1F.em
+                )
+            }
+        }
     }
 }
 
@@ -201,103 +326,54 @@ fun UpdatingElements(instance: AppActiveContext) {
 
     Column(
         modifier = Modifier
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Bottom),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         PlatformText(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
-            fontSize = 34F.sp,
+            color = Color.White,
+            fontSize = 22F.sp,
             lineHeight = 1.1F.em,
-            text = "更新數據中..."
+            text = "更新數據中... Updating..."
         )
-        Spacer(modifier = Modifier.size(10.dp))
-        PlatformText(
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            fontSize = 28F.sp,
-            lineHeight = 1.1F.em,
-            text = "更新需時 請稍等"
-        )
-        Spacer(modifier = Modifier.size(10.dp))
-        PlatformText(
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            fontSize = 34F.sp,
-            lineHeight = 1.1F.em,
-            text = "Updating..."
-        )
-        Spacer(modifier = Modifier.size(10.dp))
-        PlatformText(
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            fontSize = 28F.sp,
-            lineHeight = 1.1F.em,
-            text = "Might take a moment"
-        )
-        Spacer(modifier = Modifier.size(30.dp))
         PlatformLinearProgressIndicator(
             progress = { progressAnimation },
             modifier = Modifier
                 .widthIn(max = 500.dp)
-                .fillMaxWidth()
-                .padding(25.dp, 0.dp),
+                .fillMaxWidth(),
             color = Color(0xFFF9DE09),
             trackColor = Color(0xFF797979),
         )
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun LoadingElements(instance: AppActiveContext) {
     val currentState by remember { Registry.getInstanceNoUpdateCheck(instance).state }.collectAsStateMultiplatform()
     val checkingUpdate by remember { derivedStateOf { currentState == Registry.State.UPDATE_CHECKING } }
 
-    Box (
-        modifier = Modifier.fillMaxSize()
+    Column (
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Bottom),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Image(
-                    modifier = Modifier
-                        .size(200.dp)
-                        .align(Alignment.Center),
-                    painter = painterResource(DrawableResource("icon_max.png")),
-                    contentDescription = "HKBusETA"
-                )
-            }
-            Spacer(modifier = Modifier.size(40.dp))
-            PlatformText(
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                fontSize = 34F.sp,
-                lineHeight = 1.1F.em,
-                text = "載入中..."
-            )
-            Spacer(modifier = Modifier.size(4.dp))
-            PlatformText(
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                fontSize = 34F.sp,
-                lineHeight = 1.1F.em,
-                text = "Loading..."
-            )
-        }
         if (checkingUpdate) {
-            Box (
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-            ) {
-                SkipChecksumButton(instance)
-            }
+            SkipChecksumButton(instance)
+        }
+        if (currentState != Registry.State.READY && currentState != Registry.State.ERROR) {
+            PlatformText(
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                color = Color.White,
+                fontSize = 22F.sp,
+                lineHeight = 1.1F.em,
+                text = "載入中... Loading..."
+            )
         }
     }
 }
@@ -324,15 +400,19 @@ fun SkipChecksumButton(instance: AppActiveContext) {
         },
         modifier = Modifier
             .padding(bottom = 10.dp)
-            .width(110.dp)
-            .height(70.dp)
+            .width(100.dp)
+            .height(60.dp)
             .alpha(animatedAlpha),
         enabled = enableSkip,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.LightGray,
+            contentColor = Color.White,
+        ),
         content = {
             PlatformText(
                 modifier = Modifier.fillMaxWidth(0.9F),
                 textAlign = TextAlign.Center,
-                fontSize = 28F.sp,
+                fontSize = 22F.sp,
                 text = if (Shared.language == "en") "Skip" else "略過"
             )
         }

@@ -27,20 +27,29 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.glance.GlanceTheme
 import androidx.glance.color.ColorProviders
 import androidx.glance.material3.ColorProviders
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.theme.DarkColors
 import com.loohp.hkbuseta.theme.LightColors
 import com.loohp.hkbuseta.utils.adjustAlpha
+import com.materialkolor.dynamicColorScheme
 
 
 fun resolveWidgetColorScheme(context: Context): ColorProviders {
     val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val lightColors = Shared.color
+        ?.let { dynamicColorScheme(Color(it), isDark = false) }
+        ?: if (dynamicColor) dynamicLightColorScheme(context) else LightColors
+    val darkColors = Shared.color
+        ?.let { dynamicColorScheme(Color(it), isDark = true) }
+        ?: if (dynamicColor) dynamicDarkColorScheme(context) else DarkColors
     return ColorProviders(
-        light = (if (dynamicColor) dynamicLightColorScheme(context) else LightColors).forGlance(),
-        dark = (if (dynamicColor) dynamicDarkColorScheme(context) else DarkColors).forGlance(),
+        light = lightColors.forGlance(),
+        dark = darkColors.forGlance(),
     )
 }
 

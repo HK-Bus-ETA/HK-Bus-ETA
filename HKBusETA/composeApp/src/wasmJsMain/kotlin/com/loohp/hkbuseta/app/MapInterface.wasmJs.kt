@@ -36,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
@@ -59,6 +58,7 @@ import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.closenessTo
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
+import com.loohp.hkbuseta.utils.toHexString
 import kotlinx.collections.immutable.ImmutableList
 
 
@@ -99,21 +99,17 @@ actual fun MapRouteInterface(
 
     LaunchedEffect (waypoints) {
         webMap.show()
-        val colorHex = "#" + pathColor.toArgb().toHexString(HexFormat.UpperCase).padStart(6, '0').takeLast(6)
+        val colorHex = pathColor.toHexString()
         val clearness = pathColor.closenessTo(Color(0xFFFDE293))
-        val (outlineHex, outlineOpacity) = if (clearness > 0.8F) {
-            "#" + Color.Blue.toArgb().toHexString(HexFormat.UpperCase).padStart(6, '0').takeLast(6) to ((clearness - 0.8) / 0.05).toFloat()
-        } else null to 0F
+        val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
         webMap.updateMarkings(stopsJsArray, stopNames, pathsJsArray, colorHex, 1F, outlineHex, outlineOpacity, "assets/$iconFile", anchor.x, anchor.y) {
             selectedStop = indexMap[it] + 1
         }
     }
     LaunchedEffect (pathColor) {
-        val colorHex = "#" + pathColor.toArgb().toHexString(HexFormat.UpperCase).padStart(6, '0').takeLast(6)
+        val colorHex = pathColor.toHexString()
         val clearness = pathColor.closenessTo(Color(0xFFFDE293))
-        val (outlineHex, outlineOpacity) = if (clearness > 0.8F) {
-            "#" + Color.Blue.toArgb().toHexString(HexFormat.UpperCase).padStart(6, '0').takeLast(6) to ((clearness - 0.8) / 0.05).toFloat()
-        } else null to 0F
+        val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
         webMap.updateLineColor(colorHex, 1F, outlineHex, outlineOpacity)
     }
     LaunchedEffect (selectedStop) {

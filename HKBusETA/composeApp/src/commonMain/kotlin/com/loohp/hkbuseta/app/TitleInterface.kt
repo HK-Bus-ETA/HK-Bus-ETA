@@ -67,7 +67,9 @@ import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.shared.Splash
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.AdaptiveNavBar
 import com.loohp.hkbuseta.compose.AdaptiveNavBarItem
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -87,6 +89,7 @@ import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
 import com.loohp.hkbuseta.compose.rememberAutoResizeFontState
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 
@@ -175,6 +178,13 @@ fun TitleInterface(instance: AppActiveContext) {
     LaunchedEffect (pagerState.currentPage, pagerState.isScrollInProgress) {
         if (!pagerState.isScrollInProgress && instance.isTopOfStack()) {
             instance.compose.switchActivity(AppIntent(instance, titleTabItems[pagerState.currentPage].appScreens.first()))
+        }
+    }
+    LaunchedEffect (Unit) {
+        if (Shared.downloadSplash) {
+            CoroutineScope(dispatcherIO).launch {
+                Splash.downloadMissingImages(instance)
+            }
         }
     }
 

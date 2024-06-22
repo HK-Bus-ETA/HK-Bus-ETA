@@ -27,14 +27,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.materialkolor.dynamicColorScheme
 
 @Composable
-fun resolveColorScheme(useDarkTheme: Boolean): ColorScheme {
+fun resolveColorScheme(useDarkTheme: Boolean, customColor: Color?): ColorScheme {
     val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     return when {
-        dynamicColor && useDarkTheme -> dynamicDarkColorScheme(LocalContext.current)
-        dynamicColor && !useDarkTheme -> dynamicLightColorScheme(LocalContext.current)
+        dynamicColor && useDarkTheme && customColor == null -> dynamicDarkColorScheme(LocalContext.current)
+        dynamicColor && !useDarkTheme && customColor == null -> dynamicLightColorScheme(LocalContext.current)
+        customColor != null -> dynamicColorScheme(customColor, useDarkTheme)
         useDarkTheme -> DarkColors
         else -> LightColors
     }
@@ -43,10 +46,11 @@ fun resolveColorScheme(useDarkTheme: Boolean): ColorScheme {
 @Composable
 actual fun AppTheme(
     useDarkTheme: Boolean,
+    customColor: Color?,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = resolveColorScheme(useDarkTheme),
+        colorScheme = resolveColorScheme(useDarkTheme, customColor),
         typography = MaterialTheme.typography,
         content = content
     )

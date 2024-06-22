@@ -100,7 +100,7 @@ import com.loohp.hkbuseta.common.utils.Colored
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.InlineImage
-import com.loohp.hkbuseta.common.utils.JsonIgnoreKnownKeys
+import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asAutoSortedList
@@ -365,9 +365,11 @@ class Registry {
         Shared.viewFavTab = PREFERENCES!!.viewFavTab
         Shared.lrtDirectionMode = PREFERENCES!!.lrtDirectionMode
         Shared.theme = PREFERENCES!!.theme
+        Shared.color = PREFERENCES!!.color
         Shared.disableMarquee = PREFERENCES!!.disableMarquee
         Shared.historyEnabled = PREFERENCES!!.historyEnabled
         Shared.showRouteMap = PREFERENCES!!.showRouteMap
+        Shared.downloadSplash = PREFERENCES!!.downloadSplash
         Shared.updateFavoriteStops {
             if (it.value != PREFERENCES!!.favouriteStops) {
                 it.value = PREFERENCES!!.favouriteStops.toImmutableList()
@@ -476,6 +478,12 @@ class Registry {
         Tiles.requestTileUpdate()
     }
 
+    fun setColor(color: Long?, context: AppContext) {
+        Shared.color = color
+        PREFERENCES!!.color = color
+        savePreferences(context)
+    }
+
     fun setViewFavTab(viewFavTab: Int, context: AppContext) {
         Shared.viewFavTab = viewFavTab
         PREFERENCES!!.viewFavTab = viewFavTab
@@ -498,6 +506,19 @@ class Registry {
     fun setShowRouteMap(showRouteMap: Boolean, context: AppContext) {
         Shared.showRouteMap = showRouteMap
         PREFERENCES!!.showRouteMap = showRouteMap
+        savePreferences(context)
+    }
+
+    fun setDownloadSplash(downloadSplash: Boolean, context: AppContext) {
+        Shared.downloadSplash = downloadSplash
+        PREFERENCES!!.downloadSplash = downloadSplash
+        CoroutineScope(dispatcherIO).launch {
+            if (downloadSplash) {
+                Splash.downloadMissingImages(context)
+            } else {
+                Splash.clearDownloadedImages(context)
+            }
+        }
         savePreferences(context)
     }
 
@@ -629,6 +650,8 @@ class Registry {
             Shared.viewFavTab = PREFERENCES!!.viewFavTab
             Shared.lrtDirectionMode = PREFERENCES!!.lrtDirectionMode
             Shared.theme = PREFERENCES!!.theme
+            Shared.color = PREFERENCES!!.color
+            Shared.downloadSplash = PREFERENCES!!.downloadSplash
             Shared.disableMarquee = PREFERENCES!!.disableMarquee
             Shared.historyEnabled = PREFERENCES!!.historyEnabled
             Shared.showRouteMap = PREFERENCES!!.showRouteMap
@@ -734,7 +757,7 @@ class Registry {
                 if (cached) {
                     if (DATA == null) {
                         try {
-                            DATA = JsonIgnoreKnownKeys.decodeFromStringReadChannel(context.readTextFile(DATA_FILE_NAME))
+                            DATA = JsonIgnoreUnknownKeys.decodeFromStringReadChannel(context.readTextFile(DATA_FILE_NAME))
                             Tiles.requestTileUpdate()
                             Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
                             state.value = State.READY
@@ -762,7 +785,7 @@ class Registry {
                         val gzip = gzipSupported()
                         val length = getTextResponse(dataLengthUrl(!context.formFactor.reduceData, gzip))?.string().parseLongOr(-1)
                         val textResponse = getTextResponseWithPercentageCallback(dataUrl(!context.formFactor.reduceData, gzip), length, gzip) { p -> updatePercentageState.value = p * 0.85f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
-                        DATA = JsonIgnoreKnownKeys.decodeFromStringReadChannel(textResponse)
+                        DATA = JsonIgnoreUnknownKeys.decodeFromStringReadChannel(textResponse)
                         Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
                         getTextResponse(lastUpdatedUrl())?.string()?.toLong()?.apply { Shared.scheduleBackgroundUpdateService(context, this) }
                         CoroutineScope(dispatcherIO).launch {
@@ -845,6 +868,7 @@ class Registry {
                         }
                         setFavouriteStops(updateFavouriteStops, context)
                         setFavouriteRouteGroups(updateFavouriteRoutes, context)
+                        Splash.reloadEntries(DATA!!.splashEntries, context)
                         updatePercentageState.value = 1f
                         Tiles.requestTileUpdate()
                         state.value = State.READY

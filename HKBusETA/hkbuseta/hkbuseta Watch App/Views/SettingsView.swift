@@ -25,9 +25,12 @@ struct SettingsView: AppScreenView {
         self.appContext = appContext
     }
     
-    func relaunch() {
+    func relaunch(skipSplash: Bool = true) {
         let data = newAppDataConatiner()
         data["relaunch"] = AppScreen.settings
+        if skipSplash {
+            data["skipSplash"] = true
+        }
         let intent = newAppIntent(appContext, AppScreen.main, data)
         intent.addFlags(flags: [AppIntentFlag.theNewTask, AppIntentFlag.clearTask, AppIntentFlag.noAnimation].asKt())
         appContext.startActivity(appIntent: intent)
@@ -60,7 +63,7 @@ struct SettingsView: AppScreenView {
                         registryClear()
                         invalidatePhoneCache()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            relaunch()
+                            relaunch(skipSplash: false)
                         }
                     },
                     icon: { (Image(systemName: "arrow.triangle.2.circlepath"), true) },

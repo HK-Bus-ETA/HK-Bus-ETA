@@ -27,6 +27,7 @@ import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.charsets.Charsets
 import kotlinx.coroutines.Deferred
@@ -78,6 +79,10 @@ interface AppContext {
             json.encodeToString(serializer, value).toStringReadChannel(Charsets.UTF_8)
         }
     }
+
+    suspend fun readRawFile(fileName: String): ByteReadChannel
+
+    suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel)
 
     suspend fun listFiles(): List<String>
 

@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.style.TextAlign
 import com.loohp.hkbuseta.appcontext.HistoryStack
@@ -95,7 +96,8 @@ fun App() {
             }
 
             AppTheme(
-                useDarkTheme = Shared.theme.isDarkMode
+                useDarkTheme = Shared.theme.isDarkMode,
+                customColor = Shared.color?.let { Color(it) }
             ) {
                 PlatformScaffold(
                     snackbarHost = {

@@ -27,38 +27,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 @Immutable
-class DataContainer(
+data class DataContainer(
     val dataSheet: DataSheet,
     val mtrBusStopAlias: Map<String, List<String>>,
     val kmbSubsidiary: Map<KMBSubsidiary, List<String>>,
     @ReduceDataOmitted val lrtData: Map<String, StationInfo>? = null,
     @ReduceDataOmitted val mtrData: Map<String, StationInfo>? = null,
     @ReduceDataOmitted val mtrBarrierFreeMapping: StationBarrierFreeMapping? = null,
+    @ReduceDataOmitted val splashEntries: List<SplashEntry>? = null,
     val updatedTime: Long = currentTimeMillis()
-) {
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is DataContainer) return false
-
-        if (dataSheet != other.dataSheet) return false
-        if (mtrBusStopAlias != other.mtrBusStopAlias) return false
-        if (kmbSubsidiary != other.kmbSubsidiary) return false
-        if (lrtData != other.lrtData) return false
-        if (mtrData != other.mtrData) return false
-        if (mtrBarrierFreeMapping != other.mtrBarrierFreeMapping) return false
-        return updatedTime == other.updatedTime
-    }
-
-    override fun hashCode(): Int {
-        var result = dataSheet.hashCode()
-        result = 31 * result + mtrBusStopAlias.hashCode()
-        result = 31 * result + kmbSubsidiary.hashCode()
-        result = 31 * result + (lrtData?.hashCode() ?: 0)
-        result = 31 * result + (mtrData?.hashCode() ?: 0)
-        result = 31 * result + (mtrBarrierFreeMapping?.hashCode() ?: 0)
-        result = 31 * result + updatedTime.hashCode()
-        return result
-    }
-
-}
+)

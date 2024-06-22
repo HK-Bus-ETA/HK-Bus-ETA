@@ -60,8 +60,9 @@ fun Color.withAlpha(alpha: Int): Color {
     return Color(value or alphaShifted)
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 fun Color.toHexString(): String {
-    return "#${(this.toArgb() and 0xFFFFFF).toString(16).padStart(6, '0')}"
+    return "#${toArgb().toHexString(HexFormat.UpperCase).padStart(6, '0').takeLast(6)}"
 }
 
 fun Operator.getOperatorColor(elseColor: Color): Color {

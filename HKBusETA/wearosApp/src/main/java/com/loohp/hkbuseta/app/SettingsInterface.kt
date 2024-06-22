@@ -104,10 +104,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
-fun relaunch(instance: AppActiveContext) {
+fun relaunch(instance: AppActiveContext, skipSplash: Boolean = true) {
     val intent = AppIntent(instance, AppScreen.MAIN)
     intent.addFlags(AppIntentFlag.NEW_TASK, AppIntentFlag.CLEAR_TASK)
     intent.putExtra("relaunch", AppScreen.SETTINGS.name)
+    if (skipSplash) {
+        intent.putExtra("skipSplash", true)
+    }
     instance.startActivity(intent)
     instance.finishAffinity()
 }
@@ -179,7 +182,7 @@ fun SettingsInterface(instance: AppActiveContext) {
                         Registry.clearInstance()
                         invalidatePhoneCache(instance)
                         delay(500)
-                        relaunch(instance)
+                        relaunch(instance, skipSplash = false)
                     }
                 },
                 icon = Icons.Filled.Update,

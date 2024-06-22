@@ -21,19 +21,32 @@
 
 package com.loohp.hkbuseta.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import com.materialkolor.dynamicColorScheme
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
 import io.github.alexzhirkevich.cupertino.theme.darkColorScheme
 import io.github.alexzhirkevich.cupertino.theme.lightColorScheme
 
 @Composable
+fun resolveColorScheme(useDarkTheme: Boolean, customColor: Color?): ColorScheme {
+    return when {
+        customColor != null -> dynamicColorScheme(customColor, useDarkTheme)
+        useDarkTheme -> DarkColors
+        else -> LightColors
+    }
+}
+
+@Composable
 actual fun AppTheme(
     useDarkTheme: Boolean,
+    customColor: Color?,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = if (!useDarkTheme) LightColors else DarkColors,
+        colorScheme = resolveColorScheme(useDarkTheme, customColor),
         typography = MaterialTheme.typography,
     ) {
         CupertinoTheme(

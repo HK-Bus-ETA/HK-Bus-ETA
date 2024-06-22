@@ -53,16 +53,21 @@ import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.provideGzipBodyAsTextImpl
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import io.ktor.util.toByteArray
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
+import kotlinx.cinterop.allocArrayOf
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.sizeOf
 import kotlinx.cinterop.useContents
+import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.value
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
@@ -111,6 +116,7 @@ import platform.WatchConnectivity.WCSession
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 import platform.posix.AF_INET
+import platform.posix.memcpy
 import platform.posix.memset
 import platform.posix.sleep
 import platform.posix.sockaddr_in
@@ -221,6 +227,25 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
             val fileURL = dir.URLByAppendingPathComponent(fileName)!!
             val text = writeText.invoke().string().ns
             text.writeToURL(fileURL, atomically = true)
+        }
+    }
+
+    override suspend fun readRawFile(fileName: String): ByteReadChannel {
+        return NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
+            val fileURL = dir.URLByAppendingPathComponent(fileName)!!
+            val data = NSData.create(contentsOfURL = fileURL)!!
+            ByteReadChannel(ByteArray(data.length.toInt()).apply {
+                usePinned { memcpy(it.addressOf(0), data.bytes, data.length) }
+            })
+        }
+    }
+
+    override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
+        NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
+            val fileURL = dir.URLByAppendingPathComponent(fileName)!!
+            val array = writeBytes.invoke().toByteArray()
+            val data = memScoped { NSData.create(bytes = allocArrayOf(array), length = array.size.convert()) }
+            data.writeToURL(fileURL, atomically = true)
         }
     }
 

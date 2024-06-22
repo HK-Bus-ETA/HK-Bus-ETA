@@ -37,7 +37,7 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 
 
-val JsonIgnoreKnownKeys: Json = Json { ignoreUnknownKeys = true }
+val JsonIgnoreUnknownKeys: Json = Json { ignoreUnknownKeys = true }
 
 fun JsonObject.optJsonObject(key: String, default: JsonObject? = null): JsonObject? {
     return this[key]?.let { it as? JsonObject }?: default

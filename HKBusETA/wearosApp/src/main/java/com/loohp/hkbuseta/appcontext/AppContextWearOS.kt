@@ -81,7 +81,10 @@ import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.getBitmapFromVectorDrawable
 import com.loohp.hkbuseta.utils.startActivity
 import com.loohp.hkbuseta.utils.tint
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.jvm.javaio.copyTo
+import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -153,6 +156,20 @@ open class AppContextWearOS internal constructor(
             startWrite().use {
                 val (serializer, value) = writeJson.invoke()
                 json.encodeToStream(serializer, value, it)
+                it.flush()
+                finishWrite(it)
+            }
+        }
+    }
+
+    override suspend fun readRawFile(fileName: String): ByteReadChannel {
+        return context.applicationContext.openFileInput(fileName).toByteReadChannel()
+    }
+
+    override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
+        AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
+            startWrite().use {
+                writeBytes.invoke().copyTo(it)
                 it.flush()
                 finishWrite(it)
             }

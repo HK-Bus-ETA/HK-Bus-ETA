@@ -39,6 +39,10 @@ import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import io.ktor.util.decodeBase64Bytes
+import io.ktor.util.encodeBase64
+import io.ktor.util.toByteArray
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import kotlinx.browser.window
 import kotlinx.coroutines.CompletableDeferred
@@ -105,6 +109,15 @@ open class AppContextComposeWeb internal constructor() : AppContextCompose {
 
     override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
         writeToIndexedDB(fileName, writeText.invoke().string())
+    }
+
+    override suspend fun readRawFile(fileName: String): ByteReadChannel {
+        return ByteReadChannel(readTextFile(fileName).string().decodeBase64Bytes())
+    }
+
+    override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
+        val string = writeBytes.invoke().toByteArray().encodeBase64()
+        writeTextFile(fileName) { string.toStringReadChannel() }
     }
 
     override suspend fun listFiles(): List<String> {
