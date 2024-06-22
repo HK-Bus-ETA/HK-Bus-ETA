@@ -5,28 +5,32 @@
 			"description": {
 				"zh": "尖沙咀站",
 				"en": "Tsim Sha Tsui Station"
-			}
+			},
+			"revision": 1
 		},
 		{
 			"imageName": "shek_o.jpg",
 			"description": {
 				"zh": "石澳",
 				"en": "Shek O"
-			}
+			},
+			"revision": 1
 		},
 		{
 			"imageName": "sau_mau_ping_central.jpg",
 			"description": {
 				"zh": "中秀茂坪",
 				"en": "Sau Mau Ping (Central)"
-			}
+			},
+			"revision": 1
 		},
 		{
 			"imageName": "wong_shek_pier.jpg",
 			"description": {
 				"zh": "黃石碼頭",
 				"en": "Wong Shek Pier"
-			}
+			},
+			"revision": 1
 		}
 	]
 }
