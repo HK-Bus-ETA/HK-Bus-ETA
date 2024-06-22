@@ -27,6 +27,7 @@ In addition, it also supports **English**.<br>
 
 ## Domain Data Repositories 網域資訊儲存庫
 - [HK-Bus-ETA-AppLinks](https://github.com/HK-Bus-ETA/HK-Bus-ETA-AppLinks)
+- [HK-Bus-ETA-SplashScreens](https://github.com/HK-Bus-ETA/HK-Bus-ETA-SplashScreens)
 - [wear.hkbus.app](https://github.com/hkbus/wear.hkbus.app)
 - [watch.hkbus.app](https://github.com/hkbus/watch.hkbus.app)
 
