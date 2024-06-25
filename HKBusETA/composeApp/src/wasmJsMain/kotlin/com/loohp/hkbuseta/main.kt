@@ -92,7 +92,6 @@ fun main() {
         val historyStack by HistoryStack.historyStack.collectAsStateMultiplatform()
 
         LaunchedEffect (Unit) {
-            window.document.getElementById("splash")?.remove()
             window.location.href.extractShareLink()?.shareLaunch(HistoryStack.historyStack.value.last(), true)
         }
         LaunchedEffect (Unit) {
@@ -133,6 +132,6 @@ fun main() {
             }
         }
 
-        App()
+        App { window.document.getElementById("splash")?.remove() }
     }
 }

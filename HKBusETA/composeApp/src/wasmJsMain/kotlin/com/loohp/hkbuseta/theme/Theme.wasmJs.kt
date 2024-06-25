@@ -25,76 +25,102 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.platform.Font
 import com.loohp.hkbuseta.utils.FontResource
 import com.materialkolor.dynamicColorScheme
-import org.jetbrains.compose.resources.Font
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.FontResource
+import org.jetbrains.compose.resources.ResourceEnvironment
+import org.jetbrains.compose.resources.getFontResourceBytes
+import org.jetbrains.compose.resources.rememberResourceEnvironment
 
 
-val typography: Typography @Composable get() {
-    val font = FontFamily(
+@OptIn(ExperimentalResourceApi::class)
+suspend fun loadFontFamily(environment: ResourceEnvironment): FontFamily {
+    return FontFamily(
         Font(
-            resource = FontResource("fonts/NotoSansHK-Black.ttf"),
+            identity = "NotoSansHK-Black",
+            data = FontResource("fonts/NotoSansHK-Black.ttf").readBytes(environment),
             weight = FontWeight.Black
         ),
         Font(
-            resource = FontResource("fonts/NotoSansHK-Bold.ttf"),
+            identity = "NotoSansHK-Bold",
+            data = FontResource("fonts/NotoSansHK-Bold.ttf").readBytes(environment),
             weight = FontWeight.Bold
         ),
         Font(
-            resource = FontResource("fonts/NotoSansHK-ExtraBold.ttf"),
+            identity = "NotoSansHK-ExtraBold",
+            data = FontResource("fonts/NotoSansHK-ExtraBold.ttf").readBytes(environment),
             weight = FontWeight.ExtraBold
         ),
         Font(
-            resource = FontResource("fonts/NotoSansHK-ExtraLight.ttf"),
+            identity = "NotoSansHK-ExtraLight",
+            data = FontResource("fonts/NotoSansHK-ExtraLight.ttf").readBytes(environment),
             weight = FontWeight.ExtraLight
         ),
         Font(
-            resource = FontResource("fonts/NotoSansHK-Light.ttf"),
+            identity = "NotoSansHK-Light",
+            data = FontResource("fonts/NotoSansHK-Light.ttf").readBytes(environment),
             weight = FontWeight.Light
         ),
         Font(
-            resource = FontResource("fonts/NotoSansHK-Medium.ttf"),
+            identity = "NotoSansHK-Medium",
+            data = FontResource("fonts/NotoSansHK-Medium.ttf").readBytes(environment),
             weight = FontWeight.Medium
         ),
         Font(
-            resource = FontResource("fonts/NotoSansHK-Regular.ttf"),
+            identity = "NotoSansHK-Regular",
+            data = FontResource("fonts/NotoSansHK-Regular.ttf").readBytes(environment),
             weight = FontWeight.Normal
         ),
         Font(
-            resource = FontResource("fonts/NotoSansHK-SemiBold.ttf"),
+            identity = "NotoSansHK-SemiBold",
+            data = FontResource("fonts/NotoSansHK-SemiBold.ttf").readBytes(environment),
             weight = FontWeight.SemiBold
         ),
         Font(
-            resource = FontResource("fonts/NotoSansHK-Thin.ttf"),
+            identity = "NotoSansHK-Thin",
+            data = FontResource("fonts/NotoSansHK-Thin.ttf").readBytes(environment),
             weight = FontWeight.Thin
         )
     )
-    return MaterialTheme.typography.run {
-        Typography(
-            displayLarge = displayLarge.copy(fontFamily = font),
-            displayMedium = displayMedium.copy(fontFamily = font),
-            displaySmall = displaySmall.copy(fontFamily = font),
+}
 
-            headlineLarge = headlineLarge.copy(fontFamily = font),
-            headlineMedium = headlineMedium.copy(fontFamily = font),
-            headlineSmall = headlineSmall.copy(fontFamily = font),
+fun Typography.applyFontFamily(fontFamily: FontFamily): Typography {
+    return Typography(
+        displayLarge = displayLarge.copy(fontFamily = fontFamily),
+        displayMedium = displayMedium.copy(fontFamily = fontFamily),
+        displaySmall = displaySmall.copy(fontFamily = fontFamily),
 
-            titleLarge = titleLarge.copy(fontFamily = font),
-            titleMedium = titleMedium.copy(fontFamily = font),
-            titleSmall = titleSmall.copy(fontFamily = font),
+        headlineLarge = headlineLarge.copy(fontFamily = fontFamily),
+        headlineMedium = headlineMedium.copy(fontFamily = fontFamily),
+        headlineSmall = headlineSmall.copy(fontFamily = fontFamily),
 
-            bodyLarge = bodyLarge.copy(fontFamily = font),
-            bodyMedium = bodyMedium.copy(fontFamily = font),
-            bodySmall = bodySmall.copy(fontFamily = font),
+        titleLarge = titleLarge.copy(fontFamily = fontFamily),
+        titleMedium = titleMedium.copy(fontFamily = fontFamily),
+        titleSmall = titleSmall.copy(fontFamily = fontFamily),
 
-            labelLarge = labelLarge.copy(fontFamily = font),
-            labelMedium = labelMedium.copy(fontFamily = font),
-            labelSmall = labelSmall.copy(fontFamily = font)
-        )
-    }
+        bodyLarge = bodyLarge.copy(fontFamily = fontFamily),
+        bodyMedium = bodyMedium.copy(fontFamily = fontFamily),
+        bodySmall = bodySmall.copy(fontFamily = fontFamily),
+
+        labelLarge = labelLarge.copy(fontFamily = fontFamily),
+        labelMedium = labelMedium.copy(fontFamily = fontFamily),
+        labelSmall = labelSmall.copy(fontFamily = fontFamily)
+    )
+}
+
+@OptIn(ExperimentalResourceApi::class)
+suspend inline fun FontResource.readBytes(environment: ResourceEnvironment): ByteArray {
+    return getFontResourceBytes(environment, this)
 }
 
 @Composable
@@ -106,15 +132,27 @@ fun resolveColorScheme(useDarkTheme: Boolean, customColor: Color?): ColorScheme 
     }
 }
 
+@OptIn(ExperimentalResourceApi::class)
 @Composable
 actual fun AppTheme(
     useDarkTheme: Boolean,
     customColor: Color?,
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(
-        colorScheme = resolveColorScheme(useDarkTheme, customColor),
-        typography = typography,
-        content = content
-    )
+    val environment = rememberResourceEnvironment()
+    val platformTypography = MaterialTheme.typography
+    var appliedTypography: Typography? by remember { mutableStateOf(null) }
+
+    LaunchedEffect (Unit) {
+        val fontFamily = loadFontFamily(environment)
+        appliedTypography = platformTypography.applyFontFamily(fontFamily)
+    }
+
+    appliedTypography?.let {
+        MaterialTheme(
+            colorScheme = resolveColorScheme(useDarkTheme, customColor),
+            typography = it,
+            content = content
+        )
+    }
 }

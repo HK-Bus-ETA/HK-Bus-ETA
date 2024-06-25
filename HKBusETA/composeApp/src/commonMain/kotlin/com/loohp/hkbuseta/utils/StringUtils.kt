@@ -66,8 +66,6 @@ import kotlinx.collections.immutable.ImmutableCollection
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 
 val RESOURCE_RATIO: Map<String, Float> = mapOf(
@@ -78,7 +76,6 @@ val RESOURCE_RATIO: Map<String, Float> = mapOf(
 @Immutable
 data class ContentAnnotatedString(val annotatedString: AnnotatedString, val inlineResources: Map<String, String>) : CharSequence {
 
-    @OptIn(ExperimentalResourceApi::class)
     fun createInlineContent(imageHeight: TextUnit = 1F.em): Map<String, InlineTextContent> {
         return inlineResources.mapValues { (id, resource) ->
             InlineTextContent(

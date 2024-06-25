@@ -42,7 +42,7 @@ expect fun exitApp()
 expect fun watchDataOverwriteWarningInitialValue(): Boolean
 
 @Composable
-fun App() {
+fun App(onReady: (() -> Unit)? = null) {
     LeftToRightLayout {
         var watchDataOverwriteWarning by remember { mutableStateOf(watchDataOverwriteWarningInitialValue()) }
         if (watchDataOverwriteWarning) {
@@ -99,6 +99,9 @@ fun App() {
                 useDarkTheme = Shared.theme.isDarkMode,
                 customColor = Shared.color?.let { Color(it) }
             ) {
+                LaunchedEffect (Unit) {
+                    onReady?.invoke()
+                }
                 PlatformScaffold(
                     snackbarHost = {
                         SnackbarInterface(

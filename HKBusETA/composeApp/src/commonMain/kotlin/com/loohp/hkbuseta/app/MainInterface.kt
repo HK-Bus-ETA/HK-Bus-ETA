@@ -64,10 +64,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -88,6 +85,8 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Splash
 import com.loohp.hkbuseta.common.shared.readImage
 import com.loohp.hkbuseta.common.utils.ImmutableState
+import com.loohp.hkbuseta.common.utils.SmallSize
+import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.PlatformButton
@@ -95,8 +94,6 @@ import com.loohp.hkbuseta.compose.PlatformLinearProgressIndicator
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.utils.DrawableResource
-import com.loohp.hkbuseta.utils.Small
-import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.toImageBitmap
 import io.ktor.util.toByteArray
@@ -280,13 +277,11 @@ fun SplashScreen(instance: AppActiveContext, onSplashScreenDone: () -> Unit) {
                 }
             ) {
                 PlatformText(
-                    text = it?.let { (splashEntry) ->
-                        splashEntry.displayText.asContentAnnotatedString().annotatedString
-                    }?: buildAnnotatedString {
+                    text = (it?.first?.displayText?: buildFormattedString {
                         append("香港巴士到站預報")
-                        appendLine()
-                        append("HK Bus ETA", SpanStyle(fontSize = TextUnit.Small))
-                    },
+                        appendLineBreak()
+                        append("HK Bus ETA", SmallSize)
+                    }).asContentAnnotatedString().annotatedString,
                     color = Color.White,
                     fontSize = 25.sp,
                     lineHeight = 1.1F.em
