@@ -117,6 +117,7 @@ import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.spToDp
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -162,6 +163,11 @@ object FavouriteRoutesWidget : GlanceAppWidget() {
 @Composable
 private fun etaColor(context: Context): Color {
     return if (GlanceTheme.colors.isDark(context)) Color(0xFFAAC3D5) else Color(0xFF2582C4)
+}
+
+@Composable
+private fun etaSecondColor(context: Context): Color {
+    return if (GlanceTheme.colors.isDark(context)) Color(0xFFCCCCCC) else Color(0xFF444444)
 }
 
 @Composable
@@ -244,7 +250,9 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
     var loading by remember { mutableStateOf(true) }
 
     LaunchedEffect (Unit) {
-        delay(5000)
+        while (routeStops.size > etaResults.size) {
+            delay(200)
+        }
         loading = false
     }
     LaunchedEffect (Unit) {
@@ -276,7 +284,9 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
             )
             Spacer(modifier = GlanceModifier.defaultWeight())
             Text(
-                modifier = GlanceModifier.padding(end = 3.dp),
+                modifier = GlanceModifier
+                    .padding(end = 3.dp)
+                    .clickable(actionRunCallback<UpdateFavouriteRoutesCallback>()),
                 style = TextDefaults.defaultTextStyle.copy(
                     color = GlanceTheme.colors.onBackground,
                     fontSize = 15.sp
@@ -519,6 +529,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                 } else {
                     val (text1, text2) = eta.firstLine.shortText
                     Text(
+                        modifier = GlanceModifier.height(24.2F.spToDp(instance).dp),
                         text = text1,
                         style = TextDefaults.defaultTextStyle.copy(
                             fontSize = 22F.sp,
@@ -527,6 +538,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                         )
                     )
                     Text(
+                        modifier = GlanceModifier.height(11F.spToDp(instance).dp),
                         text = text2,
                         style = TextDefaults.defaultTextStyle.copy(
                             fontSize = 8F.sp,
@@ -534,6 +546,24 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                             textAlign = TextAlign.End
                         )
                     )
+                    (2..3).mapNotNull {
+                        val (eText1, eText2) = eta[it].shortText
+                        if (eText1.isBlank() || eText2 != text2) {
+                            null
+                        } else {
+                            eText1
+                        }
+                    }.takeIf { it.isNotEmpty() }?.joinToString(", ", postfix = text2)?.apply {
+                        Text(
+                            modifier = GlanceModifier.height(14F.spToDp(instance).dp),
+                            text = this,
+                            style = TextDefaults.defaultTextStyle.copy(
+                                fontSize = 10F.sp,
+                                color = ColorProvider(etaSecondColor(instance.context)),
+                                textAlign = TextAlign.End
+                            )
+                        )
+                    }
                 }
             }
         }

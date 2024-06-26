@@ -2310,7 +2310,6 @@ fun EtaText(
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun PipModeInterface(
     index: Int,
