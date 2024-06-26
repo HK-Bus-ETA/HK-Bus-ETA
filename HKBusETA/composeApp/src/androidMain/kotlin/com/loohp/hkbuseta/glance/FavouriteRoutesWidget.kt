@@ -267,12 +267,13 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
             .fillMaxSize()
             .background(GlanceTheme.colors.background)
             .appWidgetBackground()
-            .padding(10.dp),
+            .padding(vertical = 10.dp),
     ) {
         Row(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .wrapContentHeight(),
+                .wrapContentHeight()
+                .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
@@ -315,7 +316,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .wrapContentHeight()
-                .padding(horizontal = 0.dp, vertical = 5.dp),
+                .padding(horizontal = 10.dp, vertical = 5.dp),
             contentAlignment = Alignment.Center
         ) {
             Button(
@@ -355,7 +356,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(horizontal = 5.dp),
+                        .padding(horizontal = 15.dp),
                 ) {
                     Row(
                         modifier = GlanceModifier
