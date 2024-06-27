@@ -137,7 +137,7 @@ def download_and_process_mtr_bus_data():
     global DATA_SHEET
     global MTR_BUS_STOP_ALIAS
 
-    stop_id_pattern = re.compile("^[A-Z]?[0-9]{1,3}[A-Z]?-[A-Z][0-9]{3}$")
+    stop_id_pattern = re.compile("^[A-Z]?[0-9]{1,3}[A-Z]?-[a-zA-Z]+[0-9]{3}$")
     stops_alias_result = {}
 
     for stop_id in DATA_SHEET["stopList"].keys():
