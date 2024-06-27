@@ -41,11 +41,14 @@ function setDownloadAppSheetVisible(isApple, visible, forceDarkMode, wasmSupport
         document.getElementById("store-banner").alt = "在Google Play下載 Download on Google Play";
         document.getElementById("store-alt").innerHTML = "或在App Store下載 Or download on the App Store";
     }
-    if (wasmSupported) {
+    if (wasmSupported === true) {
         document.getElementById("continue-button").innerHTML = "繼續使用瀏覽器<br>Continue in Browser";
         document.getElementById("continue-button").disabled = false;
-    } else {
+    } else if (wasmSupported === false) {
         document.getElementById("continue-button").innerHTML = "您的瀏覽器不支援WASM<br>Your browser does not support WASM";
+        document.getElementById("continue-button").disabled = true;
+    } else {
+        document.getElementById("continue-button").innerHTML = "正在檢查您的瀏覽器<br>Checking your Browser";
         document.getElementById("continue-button").disabled = true;
     }
     if (visible) {

@@ -255,7 +255,13 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
             aspectRatio = 4F / 3F,
             offsetState = keyboardOffsetState
         ),
-        bottomSize = { if (it.isNarrow) (size.height / 11F * 4F).pixelsToDp(instance).dp.coerceIn(178.dp, 248.dp) else min(412F, (size.width / 2F).pixelsToDp(instance)).dp },
+        bottomSize = {
+            if (it.isNarrow) {
+                (size.height / 11F * 4F).pixelsToDp(instance).dp.coerceIn(178.dp, 248.dp)
+            } else {
+                min(412F, (size.width / 2F).pixelsToDp(instance)).dp
+            }
+        },
         top = {  _ ->
             Column {
                 Column(

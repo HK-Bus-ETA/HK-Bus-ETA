@@ -35,7 +35,8 @@ sealed class ComposePlatform(
     val applePlatform: Boolean,
     val appleEnvironment: Boolean,
     val isMobileAppRunningOnDesktop: Boolean,
-    val hasLargeScreen: Boolean
+    val hasLargeScreen: Boolean,
+    val browserEnvironment: Boolean
 ) {
     @Immutable
     data object AndroidPlatform: ComposePlatform(
@@ -48,7 +49,8 @@ sealed class ComposePlatform(
         applePlatform = false,
         appleEnvironment = false,
         isMobileAppRunningOnDesktop = false,
-        hasLargeScreen = false
+        hasLargeScreen = false,
+        browserEnvironment = false
     )
     @Immutable
     class IOSPlatform(ipad: Boolean): ComposePlatform(
@@ -61,7 +63,8 @@ sealed class ComposePlatform(
         applePlatform = true,
         appleEnvironment = true,
         isMobileAppRunningOnDesktop = false,
-        hasLargeScreen = ipad
+        hasLargeScreen = ipad,
+        browserEnvironment = false
     )
     @Immutable
     data object MacAppleSiliconPlatform: ComposePlatform(
@@ -74,7 +77,8 @@ sealed class ComposePlatform(
         applePlatform = true,
         appleEnvironment = true,
         isMobileAppRunningOnDesktop = true,
-        hasLargeScreen = true
+        hasLargeScreen = true,
+        browserEnvironment = false
     )
     @Immutable
     class DesktopPlatform(isApple: Boolean): ComposePlatform(
@@ -87,7 +91,8 @@ sealed class ComposePlatform(
         applePlatform = false,
         appleEnvironment = isApple,
         isMobileAppRunningOnDesktop = false,
-        hasLargeScreen = true
+        hasLargeScreen = true,
+        browserEnvironment = false
     )
     @Immutable
     class WebDesktopPlatform(isApple: Boolean): ComposePlatform(
@@ -100,7 +105,8 @@ sealed class ComposePlatform(
         applePlatform = false,
         appleEnvironment = isApple,
         isMobileAppRunningOnDesktop = true,
-        hasLargeScreen = true
+        hasLargeScreen = true,
+        browserEnvironment = true
     )
     @Immutable
     class WebMobilePlatform(isApple: Boolean): ComposePlatform(
@@ -113,7 +119,8 @@ sealed class ComposePlatform(
         applePlatform = false,
         appleEnvironment = isApple,
         isMobileAppRunningOnDesktop = false,
-        hasLargeScreen = false
+        hasLargeScreen = false,
+        browserEnvironment = true
     )
 }
 

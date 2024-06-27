@@ -62,8 +62,7 @@ body {
     bottom: 14px;
     color: #FFFFFF;
     font-size: 23px;
-    left: 50%;
-    transform: translateX(-50%);
+    width: 100%;
     margin: 0px 0px 4px 0px;
 }
 
@@ -211,6 +210,7 @@ body {
 }
 
 .continue-button:disabled, .continue-button[disabled] {
+    opacity: 0.6;
     cursor: default;
 }
 

@@ -56,9 +56,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,13 +77,16 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.utils.DrawableResource
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
+import kotlin.random.Random
 
 
 @Composable
@@ -167,6 +172,7 @@ fun AdaptiveTopBottomLayout(
     ) {
         var width by remember { mutableIntStateOf(0) }
         val windowSizeClass = calculateWindowSizeClass()
+        val bottomSizeValue = bottomSize.invoke(windowSizeClass)
         LaunchedEffect (Unit) {
             while (true) {
                 width = context.screenWidth
@@ -175,15 +181,20 @@ fun AdaptiveTopBottomLayout(
         }
         when {
             windowSizeClass.isNarrow -> {
-                val bottomSizeValue = bottomSize.invoke(windowSizeClass)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Top
                 ) {
+                    val scope = rememberCoroutineScope()
+                    var weightFix by remember { mutableFloatStateOf(0F) }
                     Box(
                         modifier = Modifier
                             .applyIf(animateSize) { animateContentSize() }
-                            .weight(1F)
+                            .weight(1F + weightFix)
+                            .applyIf(composePlatform.browserEnvironment) { onSizeChanged { scope.launch {
+                                delay(250)
+                                weightFix = Random.nextFloat() * 0.01F
+                            } } }
                     ) {
                         top.invoke(this, windowSizeClass)
                     }
@@ -197,7 +208,6 @@ fun AdaptiveTopBottomLayout(
                 }
             }
             else -> {
-                val bottomSizeValue = bottomSize.invoke(windowSizeClass)
                 when (mode) {
                     is AdaptiveTopBottomMode.BottomToLeft -> {
                         Row(
