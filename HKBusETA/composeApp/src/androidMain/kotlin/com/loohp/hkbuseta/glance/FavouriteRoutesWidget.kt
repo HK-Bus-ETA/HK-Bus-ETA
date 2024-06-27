@@ -520,6 +520,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                 if (Shared.etaDisplayMode.shortTextClockTime) {
                     val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
                     Text(
+                        modifier = GlanceModifier.height(19F.spToDp(instance).dp),
                         text = text1,
                         style = TextDefaults.defaultTextStyle.copy(
                             fontSize = 17F.sp,
@@ -527,6 +528,20 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                             textAlign = TextAlign.End
                         )
                     )
+                    (2..3).forEach {
+                        val eText1 = eta.getResolvedText(it, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
+                        if (eText1.length > 1) {
+                            Text(
+                                modifier = GlanceModifier.height(15F.spToDp(instance).dp),
+                                text = eText1,
+                                style = TextDefaults.defaultTextStyle.copy(
+                                    fontSize = 13F.sp,
+                                    color = ColorProvider(etaSecondColor(instance.context)),
+                                    textAlign = TextAlign.End
+                                )
+                            )
+                        }
+                    }
                 } else {
                     val (text1, text2) = eta.firstLine.shortText
                     Text(
