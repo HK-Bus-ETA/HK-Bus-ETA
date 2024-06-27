@@ -51,7 +51,7 @@ class Operator private constructor(
         val KMB = createBuiltIn("kmb", "^[0-9A-Z]{16}$")
         val CTB = createBuiltIn("ctb", "^[0-9]{6}$")
         val NLB = createBuiltIn("nlb", "^[0-9]{1,4}$")
-        val MTR_BUS = createBuiltIn("mtr-bus", "^[A-Z]?[0-9]{1,3}[A-Z]?-[A-Z][0-9]{3}$")
+        val MTR_BUS = createBuiltIn("mtr-bus", "^[A-Z]?[0-9]{1,3}[A-Z]?-[a-zA-Z]+[0-9]{3}$")
         val GMB = createBuiltIn("gmb", "^[0-9]{8}$")
         val LRT = createBuiltIn("lightRail", "^LR[0-9]+$")
         val MTR = createBuiltIn("mtr", "^[A-Z]{3}$")
