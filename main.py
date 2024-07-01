@@ -740,13 +740,14 @@ output = {
     "lrtData": LRT_DATA
 }
 
-with open('mtr_data.json', 'r') as file:
-    mtr_data = json.load(file)
-    merge(output, mtr_data)
+mtr_data = requests.get("https://mtrdata.hkbuseta.com/mtr_data.json").json()
+merge(output, mtr_data)
 
-with open('splash.json', 'r') as file:
-    splash_data = json.load(file)
-    merge(output, splash_data)
+lrt_data = requests.get("https://mtrdata.hkbuseta.com/lrt_data.json").json()
+merge(output, lrt_data)
+
+splash_data = requests.get("https://splash.hkbuseta.com/splash.json").json()
+merge(output, splash_data)
 
 with open(DATA_SHEET_FULL_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
@@ -766,5 +767,5 @@ with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
 with open(DATA_SHEET_FORMATTED_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'), indent=4)
 
-with open(LAST_UPDATED_FILE, 'w') as f:
+with open(LAST_UPDATED_FILE, 'w', encoding="utf-8") as f:
     f.write(str(int(time.time() * 1000)))
