@@ -257,6 +257,7 @@ fun MTRRouteMapMapInterface(
     val mtrRouteMapData by mtrRouteMapDataState.collectAsStateWithLifecycle()
     val typhoonInfo by Registry.getInstance(instance).typhoonInfo.collectAsStateWithLifecycle()
     val closestStop by closestStopState
+
     Zoomable(
         modifier = Modifier
             .fillMaxSize()
@@ -296,26 +297,6 @@ fun MTRRouteMapMapInterface(
                     .aspectRatio(mtrRouteMapData?.dimension?.run { width / height }?: 1F)
                     .fillMaxSize()
                     .onSizeChanged { imageSize = it }
-                    .composed {
-                        var hoveringStation by remember { mutableStateOf(false) }
-                        pointerInput(Unit) {
-                            awaitEachGesture {
-                                while (true) {
-                                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    if (event.type == PointerEventType.Move) {
-                                        val change = event.changes[0]
-                                        val offset = change.position
-                                        mtrRouteMapData?.let { data ->
-                                            val scaleX = data.dimension.width / imageSize.width
-                                            val scaleY = data.dimension.height / imageSize.height
-                                            val clickedPos = Offset(offset.x * scaleX, offset.y * scaleY)
-                                            hoveringStation = data.findClickedStations(clickedPos) != null
-                                        }
-                                    }
-                                }
-                            }
-                        }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else PointerIcon.Crosshair)
-                    }
                     .pointerInput(Unit) {
                         awaitEachGesture {
                             val down = awaitFirstDown(pass = PointerEventPass.Initial)

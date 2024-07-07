@@ -47,3 +47,4 @@ HKBusETA/composeApp/preferences.json
 *.lock
 
 *.aab
+.kotlin

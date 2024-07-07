@@ -126,7 +126,7 @@ suspend inline fun FontResource.readBytes(environment: ResourceEnvironment): Byt
 @Composable
 fun resolveColorScheme(useDarkTheme: Boolean, customColor: Color?): ColorScheme {
     return when {
-        customColor != null -> dynamicColorScheme(customColor, useDarkTheme)
+        customColor != null -> dynamicColorScheme(customColor, useDarkTheme, isAmoled = false)
         useDarkTheme -> DarkColors
         else -> LightColors
     }
