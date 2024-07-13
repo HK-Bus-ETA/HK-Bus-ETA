@@ -625,7 +625,7 @@ fun MTRRouteMapInterface(
     }
 }
 
-@OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MTRRouteMapMapInterface(
     instance: AppActiveContext,
@@ -659,7 +659,7 @@ fun MTRRouteMapMapInterface(
         state = state
     ) {
         Image(
-            modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
+            modifier = Modifier
                 .aspectRatio(mtrRouteMapData?.dimension?.run { width / height }?: 1F)
                 .fillMaxSize()
                 .onSizeChanged { imageSize = it }

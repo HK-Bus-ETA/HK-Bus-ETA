@@ -157,8 +157,7 @@ internal suspend fun PointerInputScope.detectZoomableGestures(
                                 val targetScale = (state.scale + delta).coerceIn(state.minScale, state.maxScale)
                                 launch {
                                     state.animateScaleTo(
-                                        targetScale = targetScale,
-                                        targetTranslation = state.calculateTargetTranslation(position) * targetScale
+                                        targetScale = targetScale
                                     )
                                 }
                             }

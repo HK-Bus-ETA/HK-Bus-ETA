@@ -20,6 +20,7 @@
 
 package com.loohp.hkbuseta.app
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -35,9 +36,12 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -47,28 +51,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -98,6 +101,7 @@ import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.coordinatesNullableStateSaver
 import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -172,7 +176,7 @@ fun MTRRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
     var zoomState by mtrRouteMapZoomState.collectAsStateWithLifecycle()
     val state = rememberZoomableState(
         initialScale = zoomState.scale,
-        maxScale = 9F,
+        maxScale = 8.5F,
         initialTranslationX = zoomState.translationX,
         initialTranslationY = zoomState.translationY,
         doubleTapOutScale = 6F,
@@ -257,14 +261,20 @@ fun MTRRouteMapMapInterface(
     val mtrRouteMapData by mtrRouteMapDataState.collectAsStateWithLifecycle()
     val typhoonInfo by Registry.getInstance(instance).typhoonInfo.collectAsStateWithLifecycle()
     val closestStop by closestStopState
-    Zoomable(
+    val painters = mapOf(
+        false to rememberAsyncImagePainter(if (typhoonInfo.isAboveTyphoonSignalNine) R.mipmap.mtr_system_map_watch_typhoon else R.mipmap.mtr_system_map_watch),
+        true to rememberAsyncImagePainter(if (typhoonInfo.isAboveTyphoonSignalNine) R.mipmap.mtr_system_map_watch_typhoon_ambient else R.mipmap.mtr_system_map_watch_ambient)
+    )
+    val transition = updateTransition(
+        targetState = ambientMode to painters[ambientMode]!!,
+        label = "MTRRouteMapAmbientCrossfade"
+    )
+    transition.Crossfade(
         modifier = Modifier
-            .fillMaxSize()
-            .clipToBounds()
             .onRotaryScrollEvent {
                 scope.launch {
                     scope.launch {
-                        val scale = state.scale + it.verticalScrollPixels / 192
+                        val scale = state.scale + it.verticalScrollPixels / 96
                         if (scale in state.minScale..state.maxScale) {
                             state.animateScaleTo(scale)
                         }
@@ -274,122 +284,113 @@ fun MTRRouteMapMapInterface(
             }
             .focusRequester(focusRequester)
             .focusable(),
-        state = state
-    ) {
-        val transition = updateTransition(
-            targetState = ambientMode to if (ambientMode) {
-                if (typhoonInfo.isAboveTyphoonSignalNine) R.mipmap.mtr_system_map_watch_typhoon_ambient else R.mipmap.mtr_system_map_watch_ambient
-            } else {
-                if (typhoonInfo.isAboveTyphoonSignalNine) R.mipmap.mtr_system_map_watch_typhoon else R.mipmap.mtr_system_map_watch
-            },
-            label = "MTRRouteMapAmbientCrossfade"
-        )
-        transition.Crossfade(
-            animationSpec = tween(
-                durationMillis = 500,
-                easing = FastOutSlowInEasing
-            ),
-            contentKey = { (a) -> a },
-        ) { (_, image) ->
-            Image(
-                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
-                    .aspectRatio(mtrRouteMapData?.dimension?.run { width / height }?: 1F)
+        animationSpec = tween(
+            durationMillis = 500,
+            easing = FastOutSlowInEasing
+        ),
+        contentKey = { (a) -> a },
+    ) { (_, painter) ->
+        Box(
+            contentAlignment = Alignment.Center,
+        ) {
+            AnimatedVisibility(
+                visible = painter.state is AsyncImagePainter.State.Loading
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(27.scaledSize(instance).dp),
+                    color = Color(0xFFF9DE09),
+                    strokeWidth = 3.dp,
+                    trackColor = Color(0xFF797979),
+                    strokeCap = StrokeCap.Round,
+                )
+            }
+            Zoomable(
+                modifier = Modifier
                     .fillMaxSize()
-                    .onSizeChanged { imageSize = it }
-                    .composed {
-                        var hoveringStation by remember { mutableStateOf(false) }
-                        pointerInput(Unit) {
+                    .clipToBounds()
+                    .drawWithContent { if (painter.state !is AsyncImagePainter.State.Loading) drawContent() },
+                state = state
+            ) {
+                Image(
+                    modifier = Modifier
+                        .aspectRatio(mtrRouteMapData?.dimension?.run { width / height }?: 1F)
+                        .fillMaxSize()
+                        .onSizeChanged { imageSize = it }
+                        .pointerInput(Unit) {
                             awaitEachGesture {
-                                while (true) {
+                                val down = awaitFirstDown(pass = PointerEventPass.Initial)
+                                val downTime = currentTimeMillis()
+                                val tapTimeout = viewConfiguration.longPressTimeoutMillis
+                                val tapPosition = down.position
+                                do {
                                     val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    if (event.type == PointerEventType.Move) {
-                                        val change = event.changes[0]
+                                    val currentTime = currentTimeMillis()
+                                    if (event.changes.size != 1) break
+                                    if (currentTime - downTime >= tapTimeout) break
+                                    val change = event.changes[0]
+                                    if ((change.position - tapPosition).getDistance() > viewConfiguration.touchSlop) break
+                                    if (change.id == down.id && !change.pressed) {
                                         val offset = change.position
                                         mtrRouteMapData?.let { data ->
                                             val scaleX = data.dimension.width / imageSize.width
                                             val scaleY = data.dimension.height / imageSize.height
                                             val clickedPos = Offset(offset.x * scaleX, offset.y * scaleY)
-                                            hoveringStation = data.findClickedStations(clickedPos) != null
-                                        }
-                                    }
-                                }
-                            }
-                        }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else PointerIcon.Crosshair)
-                    }
-                    .pointerInput(Unit) {
-                        awaitEachGesture {
-                            val down = awaitFirstDown(pass = PointerEventPass.Initial)
-                            val downTime = currentTimeMillis()
-                            val tapTimeout = viewConfiguration.longPressTimeoutMillis
-                            val tapPosition = down.position
-                            do {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                val currentTime = currentTimeMillis()
-                                if (event.changes.size != 1) break
-                                if (currentTime - downTime >= tapTimeout) break
-                                val change = event.changes[0]
-                                if ((change.position - tapPosition).getDistance() > viewConfiguration.touchSlop) break
-                                if (change.id == down.id && !change.pressed) {
-                                    val offset = change.position
-                                    mtrRouteMapData?.let { data ->
-                                        val scaleX = data.dimension.width / imageSize.width
-                                        val scaleY = data.dimension.height / imageSize.height
-                                        val clickedPos = Offset(offset.x * scaleX, offset.y * scaleY)
-                                        val stopId = data.findClickedStations(clickedPos)
-                                        if (stopId != null) {
-                                            change.consume()
-                                            scope.launch {
-                                                val stop = stopId.asStop(instance)
-                                                val result = Registry.getInstance(instance).findRoutes("", false) { r ->
-                                                    Shared.MTR_ROUTE_FILTER.invoke(r) && r.stops[Operator.MTR]?.contains(stopId) == true
-                                                }.onEach {
-                                                    it.stopInfo = StopInfo(stopId, stop, 0.0, Operator.MTR)
-                                                }.toStopIndexed(instance)
-                                                val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
-                                                intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJsonArray().toString())
-                                                intent.putExtra("listType", RouteListType.NORMAL.name)
-                                                intent.putExtra("showEta", true)
-                                                intent.putExtra("mtrSearch", stopId)
-                                                instance.startActivity(intent)
+                                            val stopId = data.findClickedStations(clickedPos)
+                                            if (stopId != null) {
+                                                change.consume()
+                                                scope.launch {
+                                                    val stop = stopId.asStop(instance)
+                                                    val result = Registry.getInstance(instance).findRoutes("", false) { r ->
+                                                        Shared.MTR_ROUTE_FILTER.invoke(r) && r.stops[Operator.MTR]?.contains(stopId) == true
+                                                    }.onEach {
+                                                        it.stopInfo = StopInfo(stopId, stop, 0.0, Operator.MTR)
+                                                    }.toStopIndexed(instance)
+                                                    val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
+                                                    intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJsonArray().toString())
+                                                    intent.putExtra("listType", RouteListType.NORMAL.name)
+                                                    intent.putExtra("showEta", true)
+                                                    intent.putExtra("mtrSearch", stopId)
+                                                    instance.startActivity(intent)
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            } while (event.changes.any { it.id == down.id && it.pressed })
-                        }
-                    }
-                    .drawWithContent {
-                        drawContent()
-                        mtrRouteMapData?.let { data ->
-                            val scaleX = data.dimension.width / imageSize.width
-                            val scaleY = data.dimension.height / imageSize.height
-                            closestStop?.let { closest ->
-                                val stopId = closest.key
-                                val position = data.stations[stopId]
-                                if (position != null) {
-                                    val center = Offset(position.x / scaleX, position.y / scaleY)
-                                    drawCircle(
-                                        color = Color(0xff199fff),
-                                        radius = animatedClosestStationRadius,
-                                        center = center,
-                                        alpha = 0.3F,
-                                        style = Fill
-                                    )
-                                    drawCircle(
-                                        color = Color(0xff199fff),
-                                        radius = animatedClosestStationRadius,
-                                        center = center,
-                                        style = Stroke(
-                                            width = 3.dp.toPx()
-                                        )
-                                    )
-                                }
+                                } while (event.changes.any { it.id == down.id && it.pressed })
                             }
                         }
-                    },
-                painter = painterResource(image),
-                contentDescription = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖"
-            )
+                        .drawWithContent {
+                            drawContent()
+                            mtrRouteMapData?.let { data ->
+                                val scaleX = data.dimension.width / imageSize.width
+                                val scaleY = data.dimension.height / imageSize.height
+                                closestStop?.let { closest ->
+                                    val stopId = closest.key
+                                    val position = data.stations[stopId]
+                                    if (position != null) {
+                                        val center = Offset(position.x / scaleX, position.y / scaleY)
+                                        drawCircle(
+                                            color = Color(0xff199fff),
+                                            radius = animatedClosestStationRadius,
+                                            center = center,
+                                            alpha = 0.3F,
+                                            style = Fill
+                                        )
+                                        drawCircle(
+                                            color = Color(0xff199fff),
+                                            radius = animatedClosestStationRadius,
+                                            center = center,
+                                            style = Stroke(
+                                                width = 3.dp.toPx()
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                    painter = painter,
+                    contentDescription = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖"
+                )
+            }
         }
     }
 }
@@ -401,7 +402,7 @@ fun LRTRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
     var zoomState by lrtRouteMapZoomState.collectAsStateWithLifecycle()
     val state = rememberZoomableState(
         initialScale = zoomState.scale,
-        maxScale = 6F,
+        maxScale = 6.5F,
         initialTranslationX = zoomState.translationX,
         initialTranslationY = zoomState.translationY,
         doubleTapOutScale = 5F,
@@ -485,13 +486,19 @@ fun LRTRouteMapMapInterface(
     )
     val mtrRouteMapData by lightRailRouteMapDataState.collectAsStateWithLifecycle()
     val closestStop by closestStopState
-    Zoomable(
+    val painters = mapOf(
+        false to rememberAsyncImagePainter(R.mipmap.light_rail_system_map_watch),
+        true to rememberAsyncImagePainter(R.mipmap.light_rail_system_map_watch_ambient)
+    )
+    val transition = updateTransition(
+        targetState = ambientMode to painters[ambientMode]!!,
+        label = "LRTRouteMapAmbientCrossfade"
+    )
+    transition.Crossfade(
         modifier = Modifier
-            .fillMaxSize()
-            .clipToBounds()
             .onRotaryScrollEvent {
                 scope.launch {
-                    val scale = state.scale + it.verticalScrollPixels / 192
+                    val scale = state.scale + it.verticalScrollPixels / 96
                     if (scale in state.minScale..state.maxScale) {
                         state.animateScaleTo(scale)
                     }
@@ -500,118 +507,113 @@ fun LRTRouteMapMapInterface(
             }
             .focusRequester(focusRequester)
             .focusable(),
-        state = state
-    ) {
-        val transition = updateTransition(
-            targetState = ambientMode to if (ambientMode) R.mipmap.light_rail_system_map_watch_ambient else R.mipmap.light_rail_system_map_watch,
-            label = "LRTRouteMapAmbientCrossfade"
-        )
-        transition.Crossfade(
-            animationSpec = tween(
-                durationMillis = 500,
-                easing = FastOutSlowInEasing
-            ),
-            contentKey = { (a) -> a },
-        ) { (_, image) ->
-            Image(
-                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
-                    .aspectRatio(mtrRouteMapData?.dimension?.run { width / height }?: 1F)
+        animationSpec = tween(
+            durationMillis = 500,
+            easing = FastOutSlowInEasing
+        ),
+        contentKey = { (a) -> a },
+    ) { (_, painter) ->
+        Box(
+            contentAlignment = Alignment.Center,
+        ) {
+            AnimatedVisibility(
+                visible = painter.state is AsyncImagePainter.State.Loading
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(27.scaledSize(instance).dp),
+                    color = Color(0xFFF9DE09),
+                    strokeWidth = 3.dp,
+                    trackColor = Color(0xFF797979),
+                    strokeCap = StrokeCap.Round,
+                )
+            }
+            Zoomable(
+                modifier = Modifier
                     .fillMaxSize()
-                    .onSizeChanged { imageSize = it }
-                    .composed {
-                        var hoveringStation by remember { mutableStateOf(false) }
-                        pointerInput(Unit) {
+                    .clipToBounds()
+                    .drawWithContent { if (painter.state !is AsyncImagePainter.State.Loading) drawContent() },
+                state = state
+            ) {
+                Image(
+                    modifier = Modifier
+                        .aspectRatio(mtrRouteMapData?.dimension?.run { width / height }?: 1F)
+                        .fillMaxSize()
+                        .onSizeChanged { imageSize = it }
+                        .pointerInput(Unit) {
                             awaitEachGesture {
-                                while (true) {
+                                val down = awaitFirstDown(pass = PointerEventPass.Initial)
+                                val downTime = currentTimeMillis()
+                                val tapTimeout = viewConfiguration.longPressTimeoutMillis
+                                val tapPosition = down.position
+                                do {
                                     val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    if (event.type == PointerEventType.Move) {
-                                        val change = event.changes[0]
+                                    val currentTime = currentTimeMillis()
+                                    if (event.changes.size != 1) break
+                                    if (currentTime - downTime >= tapTimeout) break
+                                    val change = event.changes[0]
+                                    if ((change.position - tapPosition).getDistance() > viewConfiguration.touchSlop) break
+                                    if (change.id == down.id && !change.pressed) {
                                         val offset = change.position
                                         mtrRouteMapData?.let { data ->
                                             val scaleX = data.dimension.width / imageSize.width
                                             val scaleY = data.dimension.height / imageSize.height
                                             val clickedPos = Offset(offset.x * scaleX, offset.y * scaleY)
-                                            hoveringStation = data.findClickedStations(clickedPos) != null
-                                        }
-                                    }
-                                }
-                            }
-                        }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else PointerIcon.Crosshair)
-                    }
-                    .pointerInput(Unit) {
-                        awaitEachGesture {
-                            val down = awaitFirstDown(pass = PointerEventPass.Initial)
-                            val downTime = currentTimeMillis()
-                            val tapTimeout = viewConfiguration.longPressTimeoutMillis
-                            val tapPosition = down.position
-                            do {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                val currentTime = currentTimeMillis()
-                                if (event.changes.size != 1) break
-                                if (currentTime - downTime >= tapTimeout) break
-                                val change = event.changes[0]
-                                if ((change.position - tapPosition).getDistance() > viewConfiguration.touchSlop) break
-                                if (change.id == down.id && !change.pressed) {
-                                    val offset = change.position
-                                    mtrRouteMapData?.let { data ->
-                                        val scaleX = data.dimension.width / imageSize.width
-                                        val scaleY = data.dimension.height / imageSize.height
-                                        val clickedPos = Offset(offset.x * scaleX, offset.y * scaleY)
-                                        val stopId = data.findClickedStations(clickedPos)
-                                        if (stopId != null) {
-                                            change.consume()
-                                            scope.launch {
-                                                val stop = stopId.asStop(instance)
-                                                val result = Registry.getInstance(instance).findRoutes("", false) { r ->
-                                                    r.co.firstCo() == Operator.LRT && r.stops[Operator.LRT]?.contains(stopId) == true
-                                                }.onEach {
-                                                    it.stopInfo = StopInfo(stopId, stop, 0.0, Operator.LRT)
-                                                }.toStopIndexed(instance)
-                                                val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
-                                                intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJsonArray().toString())
-                                                intent.putExtra("listType", RouteListType.NORMAL.name)
-                                                intent.putExtra("showEta", true)
-                                                intent.putExtra("mtrSearch", stopId)
-                                                instance.startActivity(intent)
+                                            val stopId = data.findClickedStations(clickedPos)
+                                            if (stopId != null) {
+                                                change.consume()
+                                                scope.launch {
+                                                    val stop = stopId.asStop(instance)
+                                                    val result = Registry.getInstance(instance).findRoutes("", false) { r ->
+                                                        r.co.firstCo() == Operator.LRT && r.stops[Operator.LRT]?.contains(stopId) == true
+                                                    }.onEach {
+                                                        it.stopInfo = StopInfo(stopId, stop, 0.0, Operator.LRT)
+                                                    }.toStopIndexed(instance)
+                                                    val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
+                                                    intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJsonArray().toString())
+                                                    intent.putExtra("listType", RouteListType.NORMAL.name)
+                                                    intent.putExtra("showEta", true)
+                                                    intent.putExtra("mtrSearch", stopId)
+                                                    instance.startActivity(intent)
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            } while (event.changes.any { it.id == down.id && it.pressed })
-                        }
-                    }
-                    .drawWithContent {
-                        drawContent()
-                        mtrRouteMapData?.let { data ->
-                            val scaleX = data.dimension.width / imageSize.width
-                            val scaleY = data.dimension.height / imageSize.height
-                            closestStop?.let { closest ->
-                                val stopId = closest.key
-                                val position = data.stations[stopId]
-                                if (position != null) {
-                                    val center = Offset(position.x / scaleX, position.y / scaleY)
-                                    drawCircle(
-                                        color = Color(0xff199fff),
-                                        radius = animatedClosestStationRadius,
-                                        center = center,
-                                        alpha = 0.3F,
-                                        style = Fill
-                                    )
-                                    drawCircle(
-                                        color = Color(0xff199fff),
-                                        radius = animatedClosestStationRadius,
-                                        center = center,
-                                        style = Stroke(
-                                            width = 3.dp.toPx()
-                                        )
-                                    )
-                                }
+                                } while (event.changes.any { it.id == down.id && it.pressed })
                             }
                         }
-                    },
-                painter = painterResource(image),
-                contentDescription = if (Shared.language == "en") "Light Rail Route Map" else "輕鐵路綫圖"
-            )
+                        .drawWithContent {
+                            drawContent()
+                            mtrRouteMapData?.let { data ->
+                                val scaleX = data.dimension.width / imageSize.width
+                                val scaleY = data.dimension.height / imageSize.height
+                                closestStop?.let { closest ->
+                                    val stopId = closest.key
+                                    val position = data.stations[stopId]
+                                    if (position != null) {
+                                        val center = Offset(position.x / scaleX, position.y / scaleY)
+                                        drawCircle(
+                                            color = Color(0xff199fff),
+                                            radius = animatedClosestStationRadius,
+                                            center = center,
+                                            alpha = 0.3F,
+                                            style = Fill
+                                        )
+                                        drawCircle(
+                                            color = Color(0xff199fff),
+                                            radius = animatedClosestStationRadius,
+                                            center = center,
+                                            style = Stroke(
+                                                width = 3.dp.toPx()
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                    painter = painter,
+                    contentDescription = if (Shared.language == "en") "Light Rail Route Map" else "輕鐵路綫圖"
+                )
+            }
         }
     }
 }
