@@ -39,7 +39,7 @@ struct EtaView: AppScreenView {
         self.route = route
         self.offsetStart = data["offsetStart"] as? Int ?? 0
         
-        self.stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: co == Operator.Companion().NLB ? route.nlbId : route.bound[co]!, co: co, gmbRegion: route.gmbRegion)
+        self.stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
         self.etaDisplayMode = Shared().etaDisplayMode
         self.lrtDirectionMode = Shared().lrtDirectionMode
     }

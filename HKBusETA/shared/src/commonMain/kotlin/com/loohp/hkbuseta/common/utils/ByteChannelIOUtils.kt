@@ -24,17 +24,43 @@ package com.loohp.hkbuseta.common.utils
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.core.buildPacket
+import io.ktor.utils.io.core.readText
 import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.core.writeFully
 import io.ktor.utils.io.readFully
-import io.ktor.utils.io.writeBoolean
 import io.ktor.utils.io.writeFully
-import io.ktor.utils.io.core.String
 
 
 suspend inline fun ByteReadChannel.read(size: Int): ByteArray {
     val bytes = ByteArray(size)
     readFully(bytes)
     return bytes
+}
+
+//suspend inline fun ByteReadChannel.readFloat(): Float {
+//    return Float.fromBits(readInt())
+//}
+//
+//suspend inline fun ByteWriteChannel.writeFloat(float: Float) {
+//    writeInt(float.toBits())
+//}
+//
+//suspend inline fun ByteReadChannel.readDouble(): Double {
+//    return Double.fromBits(readLong())
+//}
+//
+//suspend inline fun ByteWriteChannel.writeDouble(double: Double) {
+//    writeLong(double.toBits())
+//}
+//
+//suspend inline fun ByteReadChannel.readBoolean(): Boolean {
+//    return readByte() > 0
+//}
+
+suspend inline fun ByteWriteChannel.writeBoolean(boolean: Boolean) {
+    writeByte(if (boolean) 1 else 0)
 }
 
 suspend inline fun ByteWriteChannel.writeString(string: String, charset: Charset) {
@@ -44,8 +70,14 @@ suspend inline fun ByteWriteChannel.writeString(string: String, charset: Charset
 }
 
 suspend inline fun ByteReadChannel.readString(charset: Charset): String {
-    val bytes = read(readInt())
-    return String(bytes, charset = charset)
+    return read(readInt()).asString(charset)
+}
+
+inline fun ByteArray.asString(charset: Charset): String {
+    return when (charset) {
+        Charsets.UTF_8 -> decodeToString()
+        else -> buildPacket { writeFully(this@asString, 0, size) }.readText(charset)
+    }
 }
 
 suspend inline fun <T> ByteWriteChannel.writeNullable(value: T?, write: (ByteWriteChannel, T) -> Unit) {

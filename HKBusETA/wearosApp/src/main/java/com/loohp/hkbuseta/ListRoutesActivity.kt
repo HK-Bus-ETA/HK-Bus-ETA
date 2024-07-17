@@ -32,6 +32,7 @@ import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.toCoordinates
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
@@ -88,7 +89,7 @@ class ListRoutesActivity : ComponentActivity() {
             val co = it.co
             val stopInfo = it.stopInfo
             if (route != null && stopInfo != null) {
-                it.stopInfoIndex = Registry.getInstance(appContext).getAllStops(route.routeNumber, route.bound[co]!!, co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
+                it.stopInfoIndex = Registry.getInstance(appContext).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
             }
         }.toImmutableList()
         val listType = intent.extras!!.getString("listType")?.let { RouteListType.valueOf(it) }?: RouteListType.NORMAL

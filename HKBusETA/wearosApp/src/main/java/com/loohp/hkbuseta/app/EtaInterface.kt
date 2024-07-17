@@ -161,12 +161,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
         swiping = false
     }
 
-    val stopList = remember { Registry.getInstance(instance).getAllStops(
-        route.routeNumber,
-        route.idBound(co),
-        co,
-        route.gmbRegion
-    ).toImmutableList() }
+    val stopList = remember { Registry.getInstance(instance).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion).toImmutableList() }
 
     val focusRequester = rememberActiveFocusRequester()
     var currentOffset by remember { mutableFloatStateOf(offsetStart * instance.screenHeight.toFloat()) }

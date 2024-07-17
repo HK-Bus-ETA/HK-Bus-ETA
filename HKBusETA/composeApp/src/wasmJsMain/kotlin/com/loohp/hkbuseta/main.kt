@@ -37,13 +37,13 @@ import com.loohp.hkbuseta.common.shared.BASE_URL
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.URL_ROUTE
 import com.loohp.hkbuseta.common.shared.URL_STACK_COUNT
+import com.loohp.hkbuseta.common.utils.asString
 import com.loohp.hkbuseta.common.utils.provideGzipBodyAsTextImpl
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import io.ktor.http.decodeURLPart
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
-import io.ktor.utils.io.core.String
 import kotlinx.browser.window
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -64,12 +64,12 @@ suspend fun isWasmSupported(): Boolean = CompletableDeferred<Boolean>().apply { 
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    setVersionImpl { Triple("HKBusETA", "2.2.1", 9) }
+    setVersionImpl { Triple("HKBusETA", "2.2.2", 10) }
     if (canDecodeGzip()) {
         provideGzipBodyAsTextImpl { data, charset ->
             val defer = CompletableDeferred<String>()
             decodeGzip(data.encodeBase64()) {
-                defer.complete(String(it.decodeBase64Bytes(), charset = charset))
+                defer.complete(it.decodeBase64Bytes().asString(charset))
             }
             defer.await()
         }

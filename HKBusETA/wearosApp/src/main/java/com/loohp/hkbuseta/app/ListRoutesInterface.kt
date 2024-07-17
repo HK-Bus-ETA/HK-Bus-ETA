@@ -111,6 +111,7 @@ import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.getDisplayFormattedName
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.resolvedDest
@@ -486,7 +487,7 @@ fun LazyItemScope.RouteRow(
                     intent.putExtra("route", route)
                     instance.startActivity(intent)
                 } else {
-                    val stops = Registry.getInstance(instance).getAllStops(route.route!!.routeNumber, route.route!!.bound[co]!!, co, null)
+                    val stops = Registry.getInstance(instance).getAllStops(route.route!!.routeNumber, route.route!!.idBound(co), co, null)
                     val i = stops.indexOfFirst { it.stopId == mtrSearch }
                     val stopData = stops[i]
                     val intent = AppIntent(instance, AppScreen.ETA)

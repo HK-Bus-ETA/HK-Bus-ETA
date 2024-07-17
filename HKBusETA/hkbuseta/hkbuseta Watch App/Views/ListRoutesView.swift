@@ -76,7 +76,7 @@ struct ListRoutesView: AppScreenView {
             let co = $0.co
             let stopInfo = $0.stopInfo
             if route != nil && stopInfo != nil {
-                $0.stopInfoIndex = registry(appContext).getAllStops(routeNumber: route!.routeNumber, bound: route!.bound[co]!, co: co, gmbRegion: route!.gmbRegion).firstIndex(where: {
+                $0.stopInfoIndex = registry(appContext).getAllStops(routeNumber: route!.routeNumber, bound: route!.idBound(co: co), co: co, gmbRegion: route!.gmbRegion).firstIndex(where: {
                     $0.stopId == stopInfo!.stopId
                 })?.asInt32() ?? -1
             }
@@ -275,7 +275,7 @@ struct ListRoutesView: AppScreenView {
             registry(appContext).addLastLookupRoute(routeKey: route.routeKey, context: appContext)
             if let stopId = mtrSearch {
                 if !stopId.isEmpty {
-                    let stops = registry(appContext).getAllStops(routeNumber: route.route!.routeNumber, bound: route.route!.bound[route.co]!, co: route.co, gmbRegion: nil)
+                    let stops = registry(appContext).getAllStops(routeNumber: route.route!.routeNumber, bound: route.route!.idBound(co: route.co), co: route.co, gmbRegion: nil)
                     let i = stops.firstIndex { $0.stopId == stopId }!
                     let stopData = stops[i]
                     let data = newAppDataConatiner()

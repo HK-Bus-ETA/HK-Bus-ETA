@@ -21,25 +21,28 @@
 package com.loohp.hkbuseta.background
 
 import android.content.Context
-import androidx.concurrent.futures.CallbackToFutureAdapter
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.utils.dispatcherIO
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.guava.asListenableFuture
 import java.util.concurrent.TimeUnit
 
 class DailyUpdateWorker(private val context: Context, workerParams: WorkerParameters) : ListenableWorker(context, workerParams) {
 
     override fun startWork(): ListenableFuture<Result> {
-        return CallbackToFutureAdapter.getFuture {
+        return CoroutineScope(dispatcherIO).async {
             val registry = Registry.getInstance(context.appContext)
             while (registry.state.value.isProcessing) {
                 TimeUnit.MILLISECONDS.sleep(100)
             }
             TimeUnit.MILLISECONDS.sleep(2000)
-            it.set(Result.success())
-        }
+            Result.success()
+        }.asListenableFuture()
     }
 
 }

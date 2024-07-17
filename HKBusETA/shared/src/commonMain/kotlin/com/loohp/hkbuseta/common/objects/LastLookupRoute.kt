@@ -31,6 +31,8 @@ import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.readLong
+import io.ktor.utils.io.writeLong
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject

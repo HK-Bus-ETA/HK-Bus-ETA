@@ -21,6 +21,7 @@
 
 package com.loohp.hkbuseta.common.shared
 
+import co.touchlab.stately.collections.ConcurrentMutableList
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.SplashEntry
 import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
@@ -32,7 +33,7 @@ import kotlinx.serialization.json.Json
 
 object Splash {
 
-    private val splashEntries: MutableList<SplashEntry> = arrayListOf()
+    private val splashEntries: MutableList<SplashEntry> = ConcurrentMutableList()
 
     fun platformDomainSplashUrl(): String {
         return "https://splash.hkbuseta.com"

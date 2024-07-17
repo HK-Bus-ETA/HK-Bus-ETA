@@ -10,6 +10,7 @@ concurrentFuturesKtx = "1.2.0"
 cupertino = "0.1.0-alpha04"
 glanceAppwidget = "1.1.0"
 glanceMaterial3 = "1.1.0"
+kotlinxCoroutinesGuava = "1.8.1"
 material3WindowSizeClassMultiplatform = "0.5.0"
 materialIconsExtended = "1.6.7"
 materialKolor = "1.5.1"
@@ -31,7 +32,7 @@ kotlinxSerializationJson = "1.6.3"
 ktor = "3.0.0-wasm2"
 legacySupportV4 = "1.0.0"
 lifecycleRuntimeKtx = "2.7.0"
-mapsCompose = "5.0.4"
+mapsCompose = "6.1.0"
 material3 = "1.2.1"
 percentlayout = "1.0.0"
 playServicesLocation = "21.3.0"
@@ -54,7 +55,7 @@ androidx-test-ext-junit = "1.1.5"
 espresso-core = "3.5.1"
 compose-bom = "2024.02.01"
 googleDevToolsKsp = "1.9.24-1.0.20"
-firebase-bom = "33.1.1"
+firebase-bom = "33.1.2"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -93,6 +94,7 @@ commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "co
 compose-webview-multiplatform = { module = "io.github.kevinnzou:compose-webview-multiplatform", version.ref = "composeWebviewMultiplatform" }
 cupertino = { module = "io.github.alexzhirkevich:cupertino", version.ref = "cupertino" }
 cupertino-native = { module = "io.github.alexzhirkevich:cupertino-native", version.ref = "cupertino" }
+kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "kotlinxCoroutinesGuava" }
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 material3-window-size-clazz-multiplatform = { module = "dev.chrisbanes.material3:material3-window-size-class-multiplatform", version.ref = "material3WindowSizeClassMultiplatform" }
 xmlCore = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xmlCore" }

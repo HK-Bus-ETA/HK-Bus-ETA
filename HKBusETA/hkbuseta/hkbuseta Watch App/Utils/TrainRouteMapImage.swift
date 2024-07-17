@@ -125,7 +125,7 @@ struct TrainRouteMapImage: View {
                 .onChange(of: scrollAmount) { scrollAmount in
                     let diff = prevScrollAmount - scrollAmount
                     prevScrollAmount = scrollAmount
-                    targetScale = max(minScale, min(maxScale, targetScale - diff * 0.0005))
+                    targetScale = max(minScale, min(maxScale, targetScale - diff * 0.001))
                 }
                 .onChange(of: targetScale) { targetScale in
                     scaledSize = CGSize(width: imageSize.width * targetScale, height: imageSize.height * targetScale)

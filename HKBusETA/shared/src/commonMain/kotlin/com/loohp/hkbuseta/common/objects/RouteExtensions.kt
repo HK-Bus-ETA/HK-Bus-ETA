@@ -332,7 +332,7 @@ inline fun FavouriteRouteStop.resolveStop(context: AppContext, originGetter: () 
         return FavouriteResolvedStop(index, stopId, stop, route)
     }
     val origin = originGetter.invoke()?: return FavouriteResolvedStop(index, stopId, stop, route)
-    return Registry.getInstance(context).getAllStops(route.routeNumber, route.bound[co]!!, co, route.gmbRegion)
+    return Registry.getInstance(context).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion)
         .withIndex()
         .minBy { it.value.stop.location.distance(origin) }
         .let { FavouriteResolvedStop(it.index + 1, it.value.stopId, it.value.stop, it.value.route) }
@@ -346,7 +346,7 @@ inline fun List<FavouriteRouteStop>.resolveStops(context: AppContext, originGett
         return map { it to FavouriteResolvedStop(it.index, it.stopId, it.stop, it.route) }
     }
     val origin = originGetter.invoke()?: this[0].stop.location
-    val eachAllStop = map { Registry.getInstanceNoUpdateCheck(context).getAllStops(it.route.routeNumber, it.route.bound[it.co]!!, it.co, it.route.gmbRegion) }
+    val eachAllStop = map { Registry.getInstanceNoUpdateCheck(context).getAllStops(it.route.routeNumber, it.route.idBound(it.co), it.co, it.route.gmbRegion) }
     val closestStop = eachAllStop.flatten().minBy { it.stop.location.distance(origin) }
     return eachAllStop.withIndex().map { (index, allStops) ->
         allStops.withIndex()

@@ -94,7 +94,7 @@ fun RouteSearchResultEntry.toStopIndexed(instance: AppContext): StopIndexedRoute
     val co = this.co
     val stopInfo = this.stopInfo
     if (route != null && stopInfo != null) {
-        stopIndexed.stopInfoIndex = Registry.getInstance(instance).getAllStops(route.routeNumber, route.bound[co]!!, co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
+        stopIndexed.stopInfoIndex = Registry.getInstance(instance).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
     }
     return stopIndexed
 }

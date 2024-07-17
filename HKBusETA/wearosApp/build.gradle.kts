@@ -33,8 +33,8 @@ android {
         minSdk = 30
         //noinspection OldTargetApi
         targetSdk = 33
-        versionCode = 699
-        versionName = "2.2.1"
+        versionCode = 701
+        versionName = "2.2.2"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -115,6 +115,7 @@ dependencies {
     implementation(libs.coil.network.ktor)
     implementation(libs.ktor.client.android)
     implementation(libs.zoomable)
+    implementation(libs.kotlinx.coroutines.guava)
     implementation(libs.horologist.compose.layout)
     implementation(project.dependencies.platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)

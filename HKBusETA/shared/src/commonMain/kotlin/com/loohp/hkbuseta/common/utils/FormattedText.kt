@@ -24,6 +24,10 @@ package com.loohp.hkbuseta.common.utils
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.readInt
+import io.ktor.utils.io.readLong
+import io.ktor.utils.io.writeInt
+import io.ktor.utils.io.writeLong
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject

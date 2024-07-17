@@ -40,6 +40,7 @@ import com.loohp.hkbuseta.common.utils.readNullable
 import com.loohp.hkbuseta.common.utils.readString
 import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.loohp.hkbuseta.common.utils.toJsonObject
+import com.loohp.hkbuseta.common.utils.writeBoolean
 import com.loohp.hkbuseta.common.utils.writeCollection
 import com.loohp.hkbuseta.common.utils.writeMap
 import com.loohp.hkbuseta.common.utils.writeNullable
@@ -47,7 +48,6 @@ import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.writeBoolean
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray

@@ -85,6 +85,7 @@ kotlin {
             implementation(libs.androidx.work.runtime.ktx)
             implementation(libs.androidx.concurrent.futures.ktx)
             implementation(libs.androidx.browser)
+            implementation(libs.kotlinx.coroutines.guava)
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.analytics)
         }
@@ -144,8 +145,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 693
-        versionName = "2.2.1"
+        versionCode = 700
+        versionName = "2.2.2"
     }
     packaging {
         resources {
@@ -175,7 +176,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.loohp.hkbuseta"
-            packageVersion = "2.2.1"
+            packageVersion = "2.2.2"
         }
 
         buildTypes.release.proguard {

@@ -74,7 +74,7 @@ struct ListStopsView: AppScreenView {
         self.kmbCtbJoint = kmbCtbJoint
         let co = route.co
         self.co = co
-        let bound = co == Operator.Companion().NLB ? route.route!.nlbId : route.route!.bound[co]!
+        let bound = route.route!.idBound(co: route.co)
         self.bound = bound
         let gmbRegion = route.route!.gmbRegion
         self.gmbRegion = gmbRegion
