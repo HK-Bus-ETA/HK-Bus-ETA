@@ -26,16 +26,14 @@ import io.ktor.utils.io.core.readBytes
 
 interface IOSerializable {
 
-    companion object {
-
-    }
+    companion object;
 
     suspend fun serialize(out: ByteWriteChannel)
 
     suspend fun toByteArray(): ByteArray {
         return ByteChannel(autoFlush = true)
             .apply { serialize(this) }
-            .readRemaining().readBytes()
+            .let { it.readRemaining(it.availableForRead.toLong()).readBytes() }
     }
 
 }
