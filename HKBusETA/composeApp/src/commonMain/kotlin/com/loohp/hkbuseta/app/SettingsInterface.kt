@@ -89,6 +89,7 @@ import com.loohp.hkbuseta.compose.DarkMode
 import com.loohp.hkbuseta.compose.DismissRequestType
 import com.loohp.hkbuseta.compose.Download
 import com.loohp.hkbuseta.compose.Fingerprint
+import com.loohp.hkbuseta.compose.FormatBold
 import com.loohp.hkbuseta.compose.LightMode
 import com.loohp.hkbuseta.compose.Map
 import com.loohp.hkbuseta.compose.MobileFriendly
@@ -262,6 +263,21 @@ fun SettingsInterface(instance: AppActiveContext) {
                     (if (Shared.language == "en") "Disable Text Marquee" else "靜止模式").asAnnotatedString()
                 } else {
                     (if (Shared.language == "en") "Enable Text Marquee" else "走馬燈模式").asAnnotatedString()
+                }
+            )
+            var disableBoldDest by remember { mutableStateOf(Shared.disableBoldDest) }
+            SettingsRow(
+                instance = instance,
+                onClick = {
+                    Registry.getInstance(instance).setDisableBoldDest(!Shared.disableBoldDest, instance)
+                    disableBoldDest = Shared.disableBoldDest
+                },
+                icon = PlatformIcons.Outlined.FormatBold,
+                text = (if (Shared.language == "en") "Destination Text Format" else "目的地文字格式").asAnnotatedString(),
+                subText = if (disableBoldDest) {
+                    (if (Shared.language == "en") "Disable Bold" else "停用粗體").asAnnotatedString()
+                } else {
+                    (if (Shared.language == "en") "Enable Bold" else "使用粗體").asAnnotatedString()
                 }
             )
             var showRouteMap by remember { mutableStateOf(Shared.showRouteMap) }

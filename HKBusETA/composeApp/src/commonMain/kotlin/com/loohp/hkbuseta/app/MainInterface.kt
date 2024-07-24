@@ -95,6 +95,7 @@ import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
+import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.toImageBitmap
 import io.ktor.util.toByteArray
 import kotlinx.coroutines.CoroutineScope
@@ -395,8 +396,8 @@ fun SkipChecksumButton(instance: AppActiveContext) {
         },
         modifier = Modifier
             .padding(bottom = 10.dp)
-            .width(100.dp)
-            .height(60.dp)
+            .width(100.sp.dp)
+            .height(60.sp.dp)
             .alpha(animatedAlpha),
         enabled = enableSkip,
         colors = ButtonDefaults.buttonColors(

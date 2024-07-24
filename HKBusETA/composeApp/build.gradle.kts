@@ -145,8 +145,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 700
-        versionName = "2.2.2"
+        versionCode = 703
+        versionName = "2.2.3"
     }
     packaging {
         resources {
@@ -176,7 +176,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.loohp.hkbuseta"
-            packageVersion = "2.2.2"
+            packageVersion = "2.2.3"
         }
 
         buildTypes.release.proguard {

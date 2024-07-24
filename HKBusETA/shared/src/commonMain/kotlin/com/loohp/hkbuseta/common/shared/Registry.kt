@@ -367,6 +367,7 @@ class Registry {
         Shared.theme = PREFERENCES!!.theme
         Shared.color = PREFERENCES!!.color
         Shared.disableMarquee = PREFERENCES!!.disableMarquee
+        Shared.disableBoldDest = PREFERENCES!!.disableBoldDest
         Shared.historyEnabled = PREFERENCES!!.historyEnabled
         Shared.showRouteMap = PREFERENCES!!.showRouteMap
         Shared.downloadSplash = PREFERENCES!!.downloadSplash
@@ -494,6 +495,12 @@ class Registry {
     fun setDisableMarquee(disableMarquee: Boolean, context: AppContext) {
         Shared.disableMarquee = disableMarquee
         PREFERENCES!!.disableMarquee = disableMarquee
+        savePreferences(context)
+    }
+
+    fun setDisableBoldDest(disableBoldDest: Boolean, context: AppContext) {
+        Shared.disableBoldDest = disableBoldDest
+        PREFERENCES!!.disableBoldDest = disableBoldDest
         savePreferences(context)
     }
 
@@ -653,6 +660,7 @@ class Registry {
             Shared.color = PREFERENCES!!.color
             Shared.downloadSplash = PREFERENCES!!.downloadSplash
             Shared.disableMarquee = PREFERENCES!!.disableMarquee
+            Shared.disableBoldDest = PREFERENCES!!.disableBoldDest
             Shared.historyEnabled = PREFERENCES!!.historyEnabled
             Shared.showRouteMap = PREFERENCES!!.showRouteMap
             Shared.updateFavoriteStops {
@@ -1619,30 +1627,34 @@ class Registry {
                     co.contains(Operator.LRT) -> add(lrtLineStatus)
                 }
                 CoroutineScope(dispatcherIO).launch {
-                    when {
-                        co.contains(Operator.LRT) -> {
-                            val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
-                            data.optString("red_alert_message_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.let { title ->
-                                data.optString("red_alert_url_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.also { url ->
-                                    add(RouteNoticeExternal(
-                                        title = title,
-                                        co = Operator.LRT,
-                                        important = RouteNoticeImportance.IMPORTANT,
-                                        url = url.prependPdfViewerToUrl(),
-                                        sort = 0
-                                    ))
-                                }?: run {
-                                    add(RouteNoticeText(
-                                        title = title,
-                                        co = Operator.LRT,
-                                        important = RouteNoticeImportance.IMPORTANT,
-                                        content = "",
-                                        isRealTitle = true,
-                                        sort = 0
-                                    ))
+                    try {
+                        when {
+                            co.contains(Operator.LRT) -> {
+                                val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
+                                data.optString("red_alert_message_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.let { title ->
+                                    data.optString("red_alert_url_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.also { url ->
+                                        add(RouteNoticeExternal(
+                                            title = title,
+                                            co = Operator.LRT,
+                                            important = RouteNoticeImportance.IMPORTANT,
+                                            url = url.prependPdfViewerToUrl(),
+                                            sort = 0
+                                        ))
+                                    }?: run {
+                                        add(RouteNoticeText(
+                                            title = title,
+                                            co = Operator.LRT,
+                                            important = RouteNoticeImportance.IMPORTANT,
+                                            content = "",
+                                            isRealTitle = true,
+                                            sort = 0
+                                        ))
+                                    }
                                 }
                             }
                         }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
                     }
                     try {
                         val data = getXMLResponse<TrafficNews>("https://td.gov.hk/tc/special_news/trafficnews.xml")!!

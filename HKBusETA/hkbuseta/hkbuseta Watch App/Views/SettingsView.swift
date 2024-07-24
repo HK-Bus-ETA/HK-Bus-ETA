@@ -18,6 +18,7 @@ struct SettingsView: AppScreenView {
     @State private var historyEnabled = Shared().historyEnabled
     @State private var etaDisplayMode = Shared().etaDisplayMode
     @State private var disableMarquee = Shared().disableMarquee
+    @State private var disableBoldDest = Shared().disableBoldDest
     
     @State private var phoneConnection = WearableConnectionState.noneDetected
     
@@ -113,7 +114,16 @@ struct SettingsView: AppScreenView {
                     },
                     icon: { (Image(systemName: "textformat.abc.dottedunderline"), true) },
                     text: (Shared().language == "en" ? "Text Marquee Mode" : "文字顯示模式").asAttributedString(),
-                    subText: (disableMarquee ? (Shared().language == "en" ?  "Disable Text Marquee" : "靜止模式") : (Shared().language == "en" ?  "Enable Text Marquee" : "走馬燈模式")).asAttributedString()
+                    subText: (disableMarquee ? (Shared().language == "en" ? "Disable Text Marquee" : "靜止模式") : (Shared().language == "en" ? "Enable Text Marquee" : "走馬燈模式")).asAttributedString()
+                )
+                SettingsButton(
+                    onClick: {
+                        registry(appContext).setDisableBoldDest(disableBoldDest: !Shared().disableBoldDest, context: appContext)
+                        disableBoldDest = Shared().disableBoldDest
+                    },
+                    icon: { (Image(systemName: "bold"), true) },
+                    text: (Shared().language == "en" ? "Destination Text Format" : "目的地文字格式").asAttributedString(),
+                    subText: (disableBoldDest ? (Shared().language == "en" ? "Disable Bold" : "停用粗體") : (Shared().language == "en" ? "Enable Bold" : "使用粗體")).asAttributedString()
                 )
                 switch phoneConnection {
                 case .connected:

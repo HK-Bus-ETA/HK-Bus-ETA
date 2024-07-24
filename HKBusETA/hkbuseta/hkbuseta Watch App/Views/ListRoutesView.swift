@@ -311,7 +311,7 @@ struct ListRoutesView: AppScreenView {
                         }
                         UserMarqueeText(
                             text: dest,
-                            font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: .bold),
+                            font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: Shared().disableBoldDest ? .regular : .bold),
                             marqueeStartDelay: 2,
                             marqueeAlignment: .leadingFirstTextBaseline
                         )
@@ -328,7 +328,7 @@ struct ListRoutesView: AppScreenView {
                             }
                             UserMarqueeText(
                                 text: dest,
-                                font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: .bold),
+                                font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: Shared().disableBoldDest ? .regular : .bold),
                                 marqueeStartDelay: 2,
                                 marqueeAlignment: .leadingFirstTextBaseline
                             )

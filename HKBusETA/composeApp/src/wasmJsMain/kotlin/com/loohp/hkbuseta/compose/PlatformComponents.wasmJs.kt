@@ -83,6 +83,7 @@ import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EmojiFlags
 import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.FormatBold
 import androidx.compose.material.icons.outlined.Fullscreen
 import androidx.compose.material.icons.outlined.FullscreenExit
 import androidx.compose.material.icons.outlined.History
@@ -256,6 +257,7 @@ actual inline val PlatformIcons.Outlined.Download: Painter @Composable get() = r
 actual inline val PlatformIcons.Outlined.Edit: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Edit)
 actual inline val PlatformIcons.Outlined.EmojiFlags: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.EmojiFlags)
 actual inline val PlatformIcons.Outlined.Fingerprint: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Fingerprint)
+actual inline val PlatformIcons.Outlined.FormatBold: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.FormatBold)
 actual inline val PlatformIcons.Outlined.Fullscreen: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Fullscreen)
 actual inline val PlatformIcons.Outlined.FullscreenExit: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.FullscreenExit)
 actual inline val PlatformIcons.Outlined.History: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.History)

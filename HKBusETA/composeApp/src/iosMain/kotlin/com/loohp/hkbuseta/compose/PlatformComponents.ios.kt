@@ -240,6 +240,7 @@ actual inline val PlatformIcons.Outlined.Download: Painter @Composable get() = r
 actual inline val PlatformIcons.Outlined.Edit: Painter @Composable get() = rememberSystemImagePainter("pencil")
 actual inline val PlatformIcons.Outlined.EmojiFlags: Painter @Composable get() = rememberSystemImagePainter("flag")
 actual inline val PlatformIcons.Outlined.Fingerprint: Painter @Composable get() = rememberSystemImagePainter("person.fill")
+actual inline val PlatformIcons.Outlined.FormatBold: Painter @Composable get() = rememberSystemImagePainter("bold")
 actual inline val PlatformIcons.Outlined.Fullscreen: Painter @Composable get() = rememberSystemImagePainter("arrow.up.left.and.arrow.down.right")
 actual inline val PlatformIcons.Outlined.FullscreenExit: Painter @Composable get() = rememberSystemImagePainter("arrow.down.right.and.arrow.up.left")
 actual inline val PlatformIcons.Outlined.History: Painter @Composable get() = rememberSystemImagePainter("clock.arrow.circlepath")

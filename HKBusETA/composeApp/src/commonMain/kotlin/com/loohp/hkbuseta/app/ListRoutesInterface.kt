@@ -656,7 +656,7 @@ fun RouteRow(
     val kmbCtbJoint = route.route!!.isKmbCtbJoint
     val routeNumber = route.route!!.routeNumber
     val routeNumberDisplay = co.getListDisplayRouteNumber(routeNumber, true)
-    val dest = route.route!!.resolvedDestFormatted(false, BoldStyle)[Shared.language].asContentAnnotatedString().annotatedString
+    val dest = route.route!!.resolvedDestFormatted(false, *if (Shared.disableBoldDest) emptyArray() else arrayOf(BoldStyle))[Shared.language].asContentAnnotatedString().annotatedString
     val secondLineCoColor = co.getColor(routeNumber, Color.White).adjustBrightness(if (Shared.theme.isDarkMode) 1F else 0.7F)
     val localContentColor = LocalContentColor.current
     val secondLine = remember(route, co, kmbCtbJoint, routeNumber, dest, secondLineCoColor, listType, localContentColor) { buildList {

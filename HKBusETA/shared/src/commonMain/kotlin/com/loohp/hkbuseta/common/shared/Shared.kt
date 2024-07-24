@@ -270,6 +270,7 @@ object Shared {
     var historyEnabled = true
     var showRouteMap = true
     var downloadSplash = true
+    var disableBoldDest = false
 
     private val favouriteRouteStopLock: Lock = Lock()
     val favoriteRouteStops: MutableNonNullStateFlowList<FavouriteRouteGroup> = MutableStateFlow(emptyList<FavouriteRouteGroup>()).wrapList()

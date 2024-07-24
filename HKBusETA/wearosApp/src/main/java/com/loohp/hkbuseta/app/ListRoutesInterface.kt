@@ -594,7 +594,7 @@ fun RowScope.RouteRowText(
                     .alignByBaseline(),
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Start,
-                fontWeight = FontWeight.Bold,
+                fontWeight = if (Shared.disableBoldDest) FontWeight.Normal else FontWeight.Bold,
                 fontSize = fontSize,
                 style = LocalTextStyle.current.let { if (co != Operator.MTR && Shared.language != "en") it.copy(baselineShift = BaselineShift(3F / fontSize.px)) else it },
                 color = { color },
@@ -657,7 +657,7 @@ fun RowScope.WithSecondLine(
                     .userMarquee()
                     .alignByBaseline(),
                 overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.Bold,
+                fontWeight = if (Shared.disableBoldDest) FontWeight.Normal else FontWeight.Bold,
                 textAlign = TextAlign.Start,
                 fontSize = if (co == Operator.MTR && Shared.language != "en") {
                     14F.scaledSize(instance).sp.clamp(max = 17F.scaledSize(instance).dp)

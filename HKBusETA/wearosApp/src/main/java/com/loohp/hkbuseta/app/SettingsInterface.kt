@@ -42,6 +42,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.FormatBold
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Share
@@ -242,6 +243,23 @@ fun SettingsInterface(instance: AppActiveContext) {
                     (if (Shared.language == "en") "Disable Text Marquee" else "靜止模式").asAnnotatedString()
                 } else {
                     (if (Shared.language == "en") "Enable Text Marquee" else "走馬燈模式").asAnnotatedString()
+                }
+            )
+        }
+        item {
+            var disableBoldDest by remember { mutableStateOf(Shared.disableBoldDest) }
+            SettingsButton(
+                instance = instance,
+                onClick = {
+                    Registry.getInstance(instance).setDisableBoldDest(!Shared.disableBoldDest, instance)
+                    disableBoldDest = Shared.disableBoldDest
+                },
+                icon = Icons.Outlined.FormatBold,
+                text = (if (Shared.language == "en") "Destination Text Format" else "目的地文字格式").asAnnotatedString(),
+                subText = if (disableBoldDest) {
+                    (if (Shared.language == "en") "Disable Bold" else "停用粗體").asAnnotatedString()
+                } else {
+                    (if (Shared.language == "en") "Enable Bold" else "使用粗體").asAnnotatedString()
                 }
             )
         }

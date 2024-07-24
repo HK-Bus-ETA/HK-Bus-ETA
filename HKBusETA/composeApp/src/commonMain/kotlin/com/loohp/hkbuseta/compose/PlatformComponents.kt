@@ -134,6 +134,7 @@ expect val PlatformIcons.Outlined.Download: Painter @Composable get
 expect val PlatformIcons.Outlined.Edit: Painter @Composable get
 expect val PlatformIcons.Outlined.EmojiFlags: Painter @Composable get
 expect val PlatformIcons.Outlined.Fingerprint: Painter @Composable get
+expect val PlatformIcons.Outlined.FormatBold: Painter @Composable get
 expect val PlatformIcons.Outlined.Fullscreen: Painter @Composable get
 expect val PlatformIcons.Outlined.FullscreenExit: Painter @Composable get
 expect val PlatformIcons.Outlined.History: Painter @Composable get

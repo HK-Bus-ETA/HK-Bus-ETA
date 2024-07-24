@@ -33,7 +33,8 @@ interface IOSerializable {
     suspend fun toByteArray(): ByteArray {
         return ByteChannel(autoFlush = true)
             .apply { serialize(this) }
-            .let { it.readRemaining(it.availableForRead.toLong()).readBytes() }
+            .run { readRemaining(availableForRead.toLong()) }
+            .readBytes()
     }
 
 }
