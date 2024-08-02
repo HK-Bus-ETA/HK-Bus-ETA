@@ -26,9 +26,9 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.SplashEntry
 import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
 import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
+import com.loohp.hkbuseta.common.utils.forList
 import com.loohp.hkbuseta.common.utils.getRawResponse
 import io.ktor.utils.io.ByteReadChannel
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
 object Splash {
@@ -52,7 +52,7 @@ object Splash {
             removedEntries.forEach { context.deleteFile(it.imageName) }
             this.splashEntries.clear()
             this.splashEntries.addAll(splashEntries)
-            context.writeTextFile("splash.json", Json) { ListSerializer(SplashEntry.serializer()) to splashEntries }
+            context.writeTextFile("splash.json", Json) { SplashEntry.serializer().forList() to splashEntries }
         }
     }
 

@@ -3298,8 +3298,8 @@ class Registry {
     ): FormattedText(if (isTrain) {
         platform + routeNumber + destination + carts + clockTime + time + remark
     } else {
-        clockTime + platform + routeNumber + destination + carts + time + remark
-    }.content) {
+        clockTime + platform + routeNumber + destination + carts + time + operator + remark
+    }) {
         companion object {
             val EMPTY_NOTHING = ETALineEntryText(time = "".asFormattedText())
             val EMPTY = ETALineEntryText(time = "-".asFormattedText())
