@@ -49,7 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,6 +63,7 @@ import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
@@ -210,10 +210,12 @@ const val baseHtml: String = """
 </html>
 """
 
-@OptIn(ExperimentalStdlibApi::class)
 @Composable
-fun rememberLeafletScript(waypoints: RouteWaypoints): State<String> {
-    val stopNames by remember(waypoints) { derivedStateOf { waypoints.stops.joinToString(",") { "\"<b>" + it.name[Shared.language] + "</b>" + (it.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "") + "\"" } } }
+fun rememberLeafletScript(waypoints: RouteWaypoints, alternateStopNameShowing: Boolean, alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>): State<String> {
+    val stopNames by remember(waypoints) { derivedStateOf { waypoints.stops.mapIndexed { index, stop -> index to stop }.joinToString(",") { (index, stop) ->
+        val resolvedStop = alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
+        "\"<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "") + "\""
+    } } }
     val stopsJsArray by remember(waypoints) { derivedStateOf { waypoints.stops.joinToString(",") { "[${it.location.lat}, ${it.location.lng}]" } } }
     val pathsJsArray by remember(waypoints) { derivedStateOf { waypoints.simplifiedPaths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" } } }
     val pathColor = remember { waypoints.co.getLineColor(waypoints.routeNumber, Color.Red) }
@@ -268,14 +270,15 @@ fun rememberLeafletScript(waypoints: RouteWaypoints): State<String> {
     """.trimIndent() } }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
 @Composable
 actual fun MapRouteInterface(
     instance: AppActiveContext,
     waypoints: RouteWaypoints,
     stops: ImmutableList<Registry.StopData>,
     selectedStopState: MutableIntState,
-    selectedBranchState: MutableState<Route>
+    selectedBranchState: MutableState<Route>,
+    alternateStopNameShowing: Boolean,
+    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
 ) {
     KCEFWebContainer {
         val webViewState = rememberWebViewStateWithHTMLData(baseHtml)
@@ -283,7 +286,7 @@ actual fun MapRouteInterface(
         val webViewJsBridge = rememberWebViewJsBridge()
         var selectedStop by selectedStopState
         val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
-        val script by rememberLeafletScript(waypoints)
+        val script by rememberLeafletScript(waypoints, alternateStopNameShowing, alternateStopNames)
         val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
         val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
 

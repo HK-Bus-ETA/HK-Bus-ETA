@@ -51,6 +51,7 @@ import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.Stable
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
@@ -62,18 +63,22 @@ import com.loohp.hkbuseta.utils.toHexString
 import kotlinx.collections.immutable.ImmutableList
 
 
-@OptIn(ExperimentalStdlibApi::class)
 @Composable
 actual fun MapRouteInterface(
     instance: AppActiveContext,
     waypoints: RouteWaypoints,
     stops: ImmutableList<Registry.StopData>,
     selectedStopState: MutableIntState,
-    selectedBranchState: MutableState<Route>
+    selectedBranchState: MutableState<Route>,
+    alternateStopNameShowing: Boolean,
+    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
 ) {
     val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
 
-    val stopNames by remember(waypoints) { derivedStateOf { waypoints.stops.joinToString("\u0000") { "<b>" + it.name[Shared.language] + "</b>" + (it.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "") } } }
+    val stopNames by remember(waypoints, alternateStopNameShowing, alternateStopNames) { derivedStateOf { waypoints.stops.mapIndexed { index, stop -> index to stop }.joinToString("\u0000") { (index, stop) ->
+        val resolvedStop = alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
+        "<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "")
+    } } }
     val stopsJsArray by remember(waypoints) { derivedStateOf { waypoints.stops.joinToString("\u0000") { "${it.location.lat}\u0000${it.location.lng}" } } }
     val pathsJsArray by remember(waypoints) { derivedStateOf { waypoints.simplifiedPaths.joinToString("\u0000") { path -> path.joinToString(separator = "|") { "${it.lat}|${it.lng}" } } } }
     val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
@@ -97,7 +102,7 @@ actual fun MapRouteInterface(
 
     val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode)
 
-    LaunchedEffect (waypoints) {
+    LaunchedEffect (waypoints, stopNames) {
         webMap.show()
         val colorHex = pathColor.toHexString()
         val clearness = pathColor.closenessTo(Color(0xFFFDE293))

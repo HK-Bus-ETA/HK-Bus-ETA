@@ -58,6 +58,7 @@ import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.radians
 import com.loohp.hkbuseta.common.utils.withLock
 import com.loohp.hkbuseta.compose.LocationOff
@@ -116,7 +117,9 @@ actual fun MapRouteInterface(
     waypoints: RouteWaypoints,
     stops: ImmutableList<Registry.StopData>,
     selectedStopState: MutableIntState,
-    selectedBranchState: MutableState<Route>
+    selectedBranchState: MutableState<Route>,
+    alternateStopNameShowing: Boolean,
+    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
 ) {
     var selectedStop by selectedStopState
     val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
@@ -172,18 +175,21 @@ actual fun MapRouteInterface(
             }
         }
     }
-    DisposableEffect (waypoints) {
+    DisposableEffect (waypoints, alternateStopNameShowing, alternateStopNames) {
         val allocated = mutableListOf<CPointer<*>>()
         CoroutineScope(Dispatchers.Main).launch {
             lock.withLock {
                 map.removeAnnotations(annotations)
                 map.removeOverlays(overlays)
-                annotations = waypoints.stops.mapIndexed { index, stop -> MapAnnotation(
-                    titleStr = stop.name[Shared.language],
-                    subTitleStr = stop.remark?.get(Shared.language),
-                    index = index,
-                    location = stop.location
-                ) }
+                annotations = waypoints.stops.mapIndexed { index, stop ->
+                    val resolvedStop = alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
+                    MapAnnotation(
+                        titleStr = resolvedStop.name[Shared.language],
+                        subTitleStr = resolvedStop.remark?.get(Shared.language),
+                        index = index,
+                        location = stop.location
+                    )
+                }
                 overlays = waypoints.simplifiedPaths.map { path ->
                     MKPolyline.polylineWithCoordinates(path.toAppleCoordinates(nativeHeap).apply { allocated.add(this) }, path.size.convert())
                 }

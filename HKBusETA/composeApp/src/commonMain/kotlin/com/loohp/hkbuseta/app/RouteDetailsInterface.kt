@@ -129,6 +129,7 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.TimetableIntervalEntry
 import com.loohp.hkbuseta.common.utils.TimetableSingleEntry
 import com.loohp.hkbuseta.common.utils.TimetableSpecialEntry
+import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentEntry
 import com.loohp.hkbuseta.common.utils.currentFirstActiveBranch
@@ -185,11 +186,13 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.min
 
 
 private val specialDenoteChars = listOf("*", "^", "#")
+private val alternateStopNamesShowingState: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
 fun specialDenoteChar(index: Int): String {
     return specialDenoteChars[index % specialDenoteChars.size].repeat((index / specialDenoteChars.size) + 1)
@@ -311,6 +314,8 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val optAlightReminderService by AlightReminderService.currentInstance.collectAsStateMultiplatform()
     val alightReminderService by remember(optAlightReminderService) { derivedStateOf { optAlightReminderService.value } }
     val isActiveReminderService by remember(alightReminderService) { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
+
+    val alternateStopNamesShowing = alternateStopNamesShowingState.collectAsStateMultiplatform()
 
     instance.compose.setStatusNavBarColor(
         status = platformPrimaryContainerColor,
@@ -553,8 +558,8 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             ) {
                 val item = listStopsTabItem[it]
                 when (item.type) {
-                    StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranch, possibleBidirectionalSectionFare, isActiveReminderService, pagerScrollEnabled)
-                    StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranch)
+                    StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranch, possibleBidirectionalSectionFare, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing)
+                    StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranch, alternateStopNamesShowing)
                     StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.toImmutableList())
                     StopsTabItemType.TIMETABLE -> TimetableInterface(instance, routeBranches.toImmutableList())
                 }
@@ -599,7 +604,17 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapStopsInterface(instance: AppActiveContext, location: OriginData?, listRoute: RouteSearchResultEntry, selectedStopState: MutableIntState, selectedBranchState: MutableState<Route>, possibleBidirectionalSectionFare: Boolean, isActiveReminderService: Boolean, pagerScrollEnabled: MutableState<Boolean>) {
+fun MapStopsInterface(
+    instance: AppActiveContext,
+    location: OriginData?,
+    listRoute: RouteSearchResultEntry,
+    selectedStopState: MutableIntState,
+    selectedBranchState: MutableState<Route>,
+    possibleBidirectionalSectionFare: Boolean,
+    isActiveReminderService: Boolean,
+    pagerScrollEnabled: MutableState<Boolean>,
+    alternateStopNamesShowingState: MutableState<Boolean>
+) {
     var mapExpanded by remember { mutableStateOf(false) }
     val selectedBranch by selectedBranchState
 
@@ -607,13 +622,22 @@ fun MapStopsInterface(instance: AppActiveContext, location: OriginData?, listRou
     val co by remember(listRoute) { derivedStateOf { listRoute.co } }
     val bound by remember(listRoute, co) { derivedStateOf { listRoute.route!!.idBound(co) } }
     val gmbRegion by remember(listRoute) { derivedStateOf { listRoute.route!!.gmbRegion } }
+    val isKmbCtbJoint by remember(listRoute) { derivedStateOf { listRoute.route!!.isKmbCtbJoint } }
     val allStops by remember(routeNumber, co, bound, gmbRegion, listRoute, selectedBranch) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion) } }
     val stops by remember(allStops, co, selectedBranch) { derivedStateOf { (if (co.isTrain) allStops else allStops.filter { it.branchIds.contains(selectedBranch) }).map { it.stop } } }
+
+    val alternateStopNamesShowing by alternateStopNamesShowingState
 
     val pipMode = rememberIsInPipMode(instance)
 
     if (Shared.showRouteMap && !pipMode) {
         var waypoints by remember { mutableStateOf(if (co.isTrain) listRoute.defaultWaypoints(instance) else selectedBranch.defaultWaypoints(instance)) }
+
+        val alternateStopNames by remember(listRoute, isKmbCtbJoint) { derivedStateOf { if (isKmbCtbJoint) {
+            Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB).toImmutableList()
+        } else {
+            null
+        }.asImmutableState() } }
 
         LaunchedEffect (selectedBranch, stops) {
             CoroutineScope(dispatcherIO).launch {
@@ -653,7 +677,7 @@ fun MapStopsInterface(instance: AppActiveContext, location: OriginData?, listRou
                                 }
                             }
                     ) {
-                        MapRouteInterface(instance, waypoints, allStops.toImmutableList(), selectedStopState, selectedBranchState)
+                        MapRouteInterface(instance, waypoints, allStops.toImmutableList(), selectedStopState, selectedBranchState, alternateStopNamesShowing, alternateStopNames)
                         if (screenSize.isNarrow) {
                             PlatformFilledTonalIconToggleButton(
                                 modifier = Modifier
@@ -679,14 +703,14 @@ fun MapStopsInterface(instance: AppActiveContext, location: OriginData?, listRou
                 }
             },
             bottom = { _ ->
-                ListStopsEtaInterface(instance, if (isActiveReminderService) ListStopsInterfaceType.ALIGHT_REMINDER else ListStopsInterfaceType.ETA, location, listRoute, selectedStopState, selectedBranchState, possibleBidirectionalSectionFare)
+                ListStopsEtaInterface(instance, if (isActiveReminderService) ListStopsInterfaceType.ALIGHT_REMINDER else ListStopsInterfaceType.ETA, location, listRoute, selectedStopState, selectedBranchState, alternateStopNamesShowingState, possibleBidirectionalSectionFare)
             }
         )
     } else {
         Box (
             modifier = Modifier.fillMaxSize()
         ) {
-            ListStopsEtaInterface(instance, if (isActiveReminderService) ListStopsInterfaceType.ALIGHT_REMINDER else ListStopsInterfaceType.ETA, location, listRoute, selectedStopState, selectedBranchState, possibleBidirectionalSectionFare)
+            ListStopsEtaInterface(instance, if (isActiveReminderService) ListStopsInterfaceType.ALIGHT_REMINDER else ListStopsInterfaceType.ETA, location, listRoute, selectedStopState, selectedBranchState, alternateStopNamesShowingState, possibleBidirectionalSectionFare)
         }
     }
 }

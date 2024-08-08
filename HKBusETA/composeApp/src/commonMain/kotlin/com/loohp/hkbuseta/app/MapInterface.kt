@@ -29,6 +29,7 @@ import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.utils.ImmutableState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -39,7 +40,9 @@ expect fun MapRouteInterface(
     waypoints: RouteWaypoints,
     stops: ImmutableList<Registry.StopData>,
     selectedStopState: MutableIntState,
-    selectedBranchState: MutableState<Route>
+    selectedBranchState: MutableState<Route>,
+    alternateStopNameShowing: Boolean,
+    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
 )
 
 @Composable

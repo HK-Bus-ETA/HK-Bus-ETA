@@ -263,11 +263,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 
 
@@ -301,7 +298,6 @@ val RouteBranchStatus?.description: BilingualText get() = when (this) {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 private val etaUpdateScope: CoroutineDispatcher = dispatcherIO.limitedParallelism(4)
-private val alternateStopNamesShowingState: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
 fun generateRouteLineData(instance: AppActiveContext, routeNumber: String, co: Operator, isLrtCircular: Boolean, lineColor: Color, stopsList: ImmutableList<Registry.StopData>, selectedBranch: Route): List<Any> {
     return if (co.isTrain) {
@@ -321,7 +317,17 @@ fun generateRouteLineData(instance: AppActiveContext, routeNumber: String, co: O
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListStopsEtaInterface(instance: AppActiveContext, type: ListStopsInterfaceType, location: OriginData?, listRoute: RouteSearchResultEntry, selectedStopState: MutableIntState, selectedBranchState: MutableState<Route>, possibleBidirectionalSectionFare: Boolean = false, floatingActions: (@Composable BoxScope.(LazyListState) -> Unit)? = null) {
+fun ListStopsEtaInterface(
+    instance: AppActiveContext,
+    type: ListStopsInterfaceType,
+    location: OriginData?,
+    listRoute: RouteSearchResultEntry,
+    selectedStopState: MutableIntState,
+    selectedBranchState: MutableState<Route>,
+    alternateStopNamesShowingState: MutableState<Boolean>,
+    possibleBidirectionalSectionFare: Boolean = false,
+    floatingActions: (@Composable BoxScope.(LazyListState) -> Unit)? = null
+) {
     val routeNumber by remember(listRoute) { derivedStateOf { listRoute.route!!.routeNumber } }
     val co by remember(listRoute) { derivedStateOf { listRoute.co } }
     val bound by remember(listRoute) { derivedStateOf { listRoute.route!!.idBound(co) } }
@@ -532,7 +538,8 @@ fun ListStopsEtaInterface(instance: AppActiveContext, type: ListStopsInterfaceTy
                                 etaResultsState = etaResults,
                                 etaUpdateTimesState = etaUpdateTimes,
                                 sheetTypeState = sheetTypeState,
-                                togglingAlightReminderState = togglingAlightReminderState
+                                togglingAlightReminderState = togglingAlightReminderState,
+                                alternateStopNamesShowingState = alternateStopNamesShowingState
                             )
                         }
                         if (selectedStop >= allStops.size) {
@@ -972,7 +979,8 @@ fun StopEntry(
     etaResultsState: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
     sheetTypeState: MutableState<BottomSheetType>,
-    togglingAlightReminderState: MutableState<Boolean>
+    togglingAlightReminderState: MutableState<Boolean>,
+    alternateStopNamesShowingState: MutableState<Boolean>
 ) {
     val selectedBranch by selectedBranchState
     val selectedStop by selectedStopState
@@ -998,7 +1006,8 @@ fun StopEntry(
             routeLineData = routeLineData,
             routeNumber = routeNumber,
             co = co,
-            alightReminderHighlightBlinkState = alightReminderHighlightBlinkState
+            alightReminderHighlightBlinkState = alightReminderHighlightBlinkState,
+            alternateStopNamesShowingState = alternateStopNamesShowingState
         )
         Box(
             modifier = Modifier.animateContentSize(
@@ -1041,7 +1050,6 @@ fun StopEntry(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StopEntryCard(
     instance: AppActiveContext,
@@ -1057,11 +1065,12 @@ fun StopEntryCard(
     routeNumber: String,
     co: Operator,
     alightReminderHighlightBlinkState: MutableState<Boolean>,
+    alternateStopNamesShowingState: MutableState<Boolean>
 ) {
     val i = index - 1
     val selectedBranch by selectedBranchState
     var selectedStop by selectedStopState
-    var alternateStopNamesShowing by alternateStopNamesShowingState.collectAsStateMultiplatform()
+    var alternateStopNamesShowing by alternateStopNamesShowingState
 
     val optAlightReminderService by AlightReminderService.currentInstance.collectAsStateMultiplatform()
     val alightReminderService by remember(optAlightReminderService) { derivedStateOf { optAlightReminderService.value } }
