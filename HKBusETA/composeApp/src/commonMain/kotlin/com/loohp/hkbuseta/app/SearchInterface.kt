@@ -21,9 +21,6 @@
 
 package com.loohp.hkbuseta.app
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -64,7 +61,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.key.Key
@@ -94,7 +90,6 @@ import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.getDisplayName
-import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
@@ -108,6 +103,7 @@ import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.Backspace
 import com.loohp.hkbuseta.compose.Delete
 import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.History
 import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformFloatingActionButton
 import com.loohp.hkbuseta.compose.PlatformIcon
@@ -354,29 +350,21 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    val hasTrains by remember(state.routes) { derivedStateOf { state.routes.isEmpty() || state.routes.any { it.co.isTrain } } }
-                    val trainButtonOffset by animateDpAsState(
-                        targetValue = if (hasTrains) 0.dp else 100.dp,
-                        animationSpec = tween(200, easing = FastOutSlowInEasing)
-                    )
                     ListRoutesInterface(instance, state.routes, listType, showEta, recentSort, proximitySortOrigin, showEmptyText, visible, false)
-                    if (trainButtonOffset < 100.dp) {
-                        PlatformFloatingActionButton(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(10.dp)
-                                .graphicsLayer { translationX = trainButtonOffset.toPx() }
-                                .plainTooltip(if (Shared.language == "en") "MTR System Map & LRT Route Map" else "港鐵及輕鐵路綫圖"),
-                            onClick = {
-                                instance.startActivity(AppIntent(instance, AppScreen.SEARCH_TRAIN))
-                            },
-                        ) {
-                            Image(
-                                modifier = Modifier.size(27.dp),
-                                painter = painterResource(DrawableResource("mtr.png")),
-                                contentDescription = if (Shared.language == "en") "MTR System Map & LRT Route Map" else "港鐵及輕鐵路綫圖"
-                            )
-                        }
+                    PlatformFloatingActionButton(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(10.dp)
+                            .plainTooltip(if (Shared.language == "en") "Recents Searches" else "最近瀏覽"),
+                        onClick = {
+                            instance.startActivity(AppIntent(instance, AppScreen.RECENT))
+                        },
+                    ) {
+                        Image(
+                            modifier = Modifier.size(27.dp),
+                            painter = PlatformIcons.Outlined.History,
+                            contentDescription = if (Shared.language == "en") "Recents Searches" else "最近瀏覽"
+                        )
                     }
                 }
             }

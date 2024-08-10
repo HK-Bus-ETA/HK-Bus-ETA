@@ -43,8 +43,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
@@ -84,7 +86,6 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.utils.DrawableResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import kotlin.random.Random
 
@@ -310,11 +311,12 @@ fun AdaptiveTopBottomLayout(
 data class AdaptiveNavBarItem(
     val label: @Composable () -> Unit,
     val icon: @Composable () -> Unit,
+    val colors: NavigationBarItemColors? = null,
     val selected: Boolean,
     val onClick: () -> Unit
 )
 
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class, ExperimentalResourceApi::class)
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun AdaptiveNavBar(
     context: AppActiveContext,
@@ -345,12 +347,13 @@ fun AdaptiveNavBar(
                 bottomBar = {
                     PlatformNavigationBar {
                         (0 until itemCount).forEach { index ->
-                            val item = items.invoke(index)
+                            val (label, icon, colors, selected, onClick) = items.invoke(index)
                             PlatformNavigationBarItem(
-                                selected = item.selected,
-                                onClick = item.onClick,
-                                label = item.label,
-                                icon =  item.icon
+                                selected = selected,
+                                onClick = onClick,
+                                label = label,
+                                icon = icon,
+                                colors = colors
                             )
                         }
                     }
@@ -390,13 +393,23 @@ fun AdaptiveNavBar(
                             }
                         ) {
                             (0 until itemCount).forEach { index ->
-                                val item = items.invoke(index)
+                                val (label, icon, colors, selected, onClick) = items.invoke(index)
                                 NavigationRailItem(
                                     modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                                    selected = item.selected,
-                                    onClick = item.onClick,
-                                    label = item.label,
-                                    icon =  item.icon
+                                    selected = selected,
+                                    onClick = onClick,
+                                    label = label,
+                                    icon = icon,
+                                    colors = colors?.run {
+                                        NavigationRailItemDefaults.colors(
+                                            selectedIconColor = selectedIconColor,
+                                            selectedTextColor = selectedTextColor,
+                                            unselectedIconColor = unselectedIconColor,
+                                            unselectedTextColor = unselectedTextColor,
+                                            disabledIconColor = disabledIconColor,
+                                            disabledTextColor = disabledTextColor
+                                        )
+                                    }?: NavigationRailItemDefaults.colors(),
                                 )
                             }
                         }

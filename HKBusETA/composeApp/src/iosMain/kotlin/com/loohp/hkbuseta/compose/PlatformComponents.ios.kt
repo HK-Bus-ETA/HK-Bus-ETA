@@ -75,6 +75,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.ModalBottomSheetProperties
+import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.SheetState
@@ -98,6 +99,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -143,6 +145,7 @@ import io.github.alexzhirkevich.cupertino.CupertinoDividerDefaults
 import io.github.alexzhirkevich.cupertino.CupertinoDropdownMenuDefaults
 import io.github.alexzhirkevich.cupertino.CupertinoIcon
 import io.github.alexzhirkevich.cupertino.CupertinoNavigationBar
+import io.github.alexzhirkevich.cupertino.CupertinoNavigationBarDefaults
 import io.github.alexzhirkevich.cupertino.CupertinoNavigationBarItem
 import io.github.alexzhirkevich.cupertino.CupertinoScaffold
 import io.github.alexzhirkevich.cupertino.CupertinoScaffoldDefaults
@@ -407,6 +410,7 @@ actual fun RowScope.PlatformNavigationBarItem(
     enabled: Boolean,
     label: @Composable (() -> Unit)?,
     alwaysShowLabel: Boolean,
+    colors: NavigationBarItemColors?,
     interactionSource: MutableInteractionSource
 ) {
     CupertinoNavigationBarItem(
@@ -417,6 +421,16 @@ actual fun RowScope.PlatformNavigationBarItem(
         enabled = enabled,
         label = label,
         alwaysShowLabel = alwaysShowLabel,
+        colors = colors?.run {
+            CupertinoNavigationBarDefaults.itemColors(
+                selectedIconColor = selectedIconColor.takeOrElse { CupertinoTheme.colorScheme.accent },
+                selectedTextColor = selectedTextColor.takeOrElse { CupertinoTheme.colorScheme.accent },
+                unselectedIconColor = unselectedIconColor.takeOrElse { CupertinoTheme.colorScheme.secondaryLabel },
+                unselectedTextColor = unselectedTextColor.takeOrElse { CupertinoTheme.colorScheme.secondaryLabel },
+                disabledIconColor = disabledIconColor.takeOrElse { CupertinoTheme.colorScheme.tertiaryLabel },
+                disabledTextColor = disabledTextColor.takeOrElse { CupertinoTheme.colorScheme.tertiaryLabel },
+            )
+        }?: CupertinoNavigationBarDefaults.itemColors(),
         interactionSource = interactionSource
     )
 }

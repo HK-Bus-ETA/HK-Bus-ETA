@@ -151,6 +151,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemColors
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.ProgressIndicatorDefaults
@@ -399,6 +401,7 @@ actual fun RowScope.PlatformNavigationBarItem(
     enabled: Boolean,
     label: @Composable (() -> Unit)?,
     alwaysShowLabel: Boolean,
+    colors: NavigationBarItemColors?,
     interactionSource: MutableInteractionSource
 ) {
     NavigationBarItem(
@@ -409,6 +412,7 @@ actual fun RowScope.PlatformNavigationBarItem(
         enabled = enabled,
         label = label,
         alwaysShowLabel = alwaysShowLabel,
+        colors = colors?: NavigationBarItemDefaults.colors(),
         interactionSource = interactionSource
     )
 }

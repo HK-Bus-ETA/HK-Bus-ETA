@@ -26,8 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.loohp.hkbuseta.app.DummyInterface
 import com.loohp.hkbuseta.app.MainLoading
+import com.loohp.hkbuseta.app.RecentInterface
 import com.loohp.hkbuseta.app.RouteDetailsInterface
-import com.loohp.hkbuseta.app.RouteMapSearchInterface
 import com.loohp.hkbuseta.app.TitleInterface
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
@@ -38,7 +38,6 @@ import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.Theme
-import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
@@ -137,25 +136,25 @@ val AppActiveContext.compose: AppActiveContextCompose get() = this as AppActiveC
 fun AppActiveContextCompose.newScreen() {
     when (screen) {
         AppScreen.MAIN -> MainLoading(this, stopId = null, co = null, index = null, stop = ImmutableState(null), route = ImmutableState(null), listStopRoute = ImmutableState(null), listStopScrollToStop = null, listStopShowEta = null, listStopIsAlightReminder = null, queryKey = null, queryRouteNumber = null, queryBound = null, queryCo = null, queryDest = null, queryGMBRegion = null, queryStop = null, queryStopIndex = 0, queryStopDirectLaunch = false)
-        AppScreen.TITLE, AppScreen.LIST_ROUTES, AppScreen.FAV, AppScreen.FAV_ROUTE_LIST_VIEW, AppScreen.NEARBY, AppScreen.SEARCH, AppScreen.SETTINGS, AppScreen.RECENT -> TitleInterface(this)
+        AppScreen.TITLE, AppScreen.LIST_ROUTES, AppScreen.FAV, AppScreen.FAV_ROUTE_LIST_VIEW, AppScreen.NEARBY, AppScreen.SEARCH, AppScreen.SEARCH_TRAIN, AppScreen.SETTINGS -> TitleInterface(this)
         AppScreen.LIST_STOPS, AppScreen.ETA, AppScreen.ETA_MENU -> RouteDetailsInterface(this)
         AppScreen.DUMMY -> DummyInterface(this)
-        AppScreen.SEARCH_TRAIN -> RouteMapSearchInterface(this)
+        AppScreen.RECENT -> RecentInterface(this)
         else -> MainLoading(this, stopId = null, co = null, index = null, stop = ImmutableState(null), route = ImmutableState(null), listStopRoute = ImmutableState(null), listStopScrollToStop = null, listStopShowEta = null, listStopIsAlightReminder = null, queryKey = null, queryRouteNumber = null, queryBound = null, queryCo = null, queryDest = null, queryGMBRegion = null, queryStop = null, queryStopIndex = 0, queryStopDirectLaunch = false)
     }
 }
 
 enum class AppScreenGroup {
-    UNKNOWN, MAIN, TITLE, ROUTE_STOPS, DUMMY, SEARCH_TRAIN
+    UNKNOWN, MAIN, TITLE, ROUTE_STOPS, DUMMY, RECENT
 }
 
 fun AppActiveContextCompose.newScreenGroup(): AppScreenGroup {
     return when (screen) {
         AppScreen.MAIN -> AppScreenGroup.MAIN
-        AppScreen.TITLE, AppScreen.LIST_ROUTES, AppScreen.FAV, AppScreen.FAV_ROUTE_LIST_VIEW, AppScreen.NEARBY, AppScreen.SEARCH, AppScreen.SETTINGS, AppScreen.RECENT -> AppScreenGroup.TITLE
+        AppScreen.TITLE, AppScreen.LIST_ROUTES, AppScreen.FAV, AppScreen.FAV_ROUTE_LIST_VIEW, AppScreen.NEARBY, AppScreen.SEARCH, AppScreen.SEARCH_TRAIN, AppScreen.SETTINGS -> AppScreenGroup.TITLE
         AppScreen.LIST_STOPS, AppScreen.ETA, AppScreen.ETA_MENU -> AppScreenGroup.ROUTE_STOPS
         AppScreen.DUMMY -> AppScreenGroup.DUMMY
-        AppScreen.SEARCH_TRAIN -> AppScreenGroup.SEARCH_TRAIN
+        AppScreen.RECENT -> AppScreenGroup.RECENT
         else -> AppScreenGroup.UNKNOWN
     }
 }

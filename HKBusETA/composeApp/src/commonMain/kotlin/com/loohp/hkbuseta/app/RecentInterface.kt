@@ -56,6 +56,7 @@ import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.compose.ArrowBack
 import com.loohp.hkbuseta.compose.DeleteDialog
 import com.loohp.hkbuseta.compose.DeleteForever
 import com.loohp.hkbuseta.compose.PlatformButton
@@ -67,6 +68,7 @@ import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
 import com.loohp.hkbuseta.compose.platformLargeShape
+import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformTopBarColor
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -109,6 +111,24 @@ fun RecentInterface(instance: AppActiveContext, visible: Boolean = true) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
+                    PlatformButton(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape),
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent
+                        ),
+                        contentPadding = PaddingValues(0.dp),
+                        onClick = { instance.finish() }
+                    ) {
+                        PlatformIcon(
+                            modifier = Modifier.size(30.dp),
+                            painter = PlatformIcons.AutoMirrored.Filled.ArrowBack,
+                            tint = platformLocalContentColor,
+                            contentDescription = if (Shared.language == "en") "Back" else "返回"
+                        )
+                    }
                     PlatformText(
                         fontSize = 21.sp,
                         lineHeight = 1.1F.em,

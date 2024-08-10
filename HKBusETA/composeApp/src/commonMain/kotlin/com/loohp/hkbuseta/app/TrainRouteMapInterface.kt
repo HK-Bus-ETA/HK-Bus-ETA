@@ -46,7 +46,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -65,10 +64,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -172,7 +168,6 @@ import com.loohp.hkbuseta.common.utils.optJsonArray
 import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.Accessible
-import com.loohp.hkbuseta.compose.ArrowBack
 import com.loohp.hkbuseta.compose.Bedtime
 import com.loohp.hkbuseta.compose.Info
 import com.loohp.hkbuseta.compose.Map
@@ -191,11 +186,9 @@ import com.loohp.hkbuseta.compose.StarOutline
 import com.loohp.hkbuseta.compose.Start
 import com.loohp.hkbuseta.compose.Streetview
 import com.loohp.hkbuseta.compose.Train
-import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
-import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
@@ -362,46 +355,6 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
             modifier = Modifier.zIndex(2F),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val thickness = DividerDefaults.Thickness
-            val color = DividerDefaults.color
-            val backgroundColor = platformBackgroundColor
-            Box(
-                modifier = Modifier
-                    .applyIf(!composePlatform.applePlatform, { drawWithContent {
-                        drawRect(
-                            color = backgroundColor,
-                            topLeft = Offset.Zero,
-                            size = Size(size.width, size.height - thickness.toPx() * 1.4F)
-                        )
-                        drawContent()
-                        drawLine(
-                            color = color,
-                            strokeWidth = thickness.toPx(),
-                            start = Offset(0F, size.height - thickness.toPx() * 1.4F),
-                            end = Offset(size.width, size.height - thickness.toPx() * 1.4F),
-                        )
-                    } }, { background(backgroundColor) }),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                PlatformButton(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clip(CircleShape),
-                    colors = ButtonDefaults.textButtonColors(
-                        containerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent
-                    ),
-                    contentPadding = PaddingValues(0.dp),
-                    onClick = { instance.finish() }
-                ) {
-                    PlatformIcon(
-                        modifier = Modifier.size(30.dp),
-                        painter = PlatformIcons.AutoMirrored.Filled.ArrowBack,
-                        tint = platformLocalContentColor,
-                        contentDescription = if (Shared.language == "en") "Back" else "返回"
-                    )
-                }
-            }
             PlatformTabRow(selectedTabIndex = pagerState.currentPage) {
                 trainRouteMapItems.forEachIndexed { index, item ->
                     PlatformTab(

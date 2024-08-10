@@ -36,6 +36,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.NavigationBarItemColors
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -74,7 +77,6 @@ import com.loohp.hkbuseta.compose.AdaptiveNavBar
 import com.loohp.hkbuseta.compose.AdaptiveNavBarItem
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
-import com.loohp.hkbuseta.compose.History
 import com.loohp.hkbuseta.compose.NearMe
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
@@ -88,9 +90,11 @@ import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
 import com.loohp.hkbuseta.compose.rememberAutoResizeFontState
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
+import com.loohp.hkbuseta.utils.DrawableResource
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 
 
 @Immutable
@@ -98,11 +102,17 @@ data class TitleTabItem(
     val title: BilingualText,
     val unselectedIcon: @Composable () -> Painter,
     val selectedIcon: @Composable () -> Painter,
+    val unselectedColors: @Composable () -> NavigationBarItemColors? = { null },
+    val selectedColors: @Composable () -> NavigationBarItemColors? = { null },
     val appScreens: Set<AppScreen>
 ) {
 
     fun icon(selected: Boolean): @Composable () -> Painter {
         return if (selected) selectedIcon else unselectedIcon
+    }
+
+    fun colors(selected: Boolean): @Composable () -> NavigationBarItemColors? {
+        return if (selected) selectedColors else unselectedColors
     }
 
 }
@@ -127,10 +137,11 @@ val titleTabItems = listOf(
         appScreens = setOf(AppScreen.SEARCH, AppScreen.LIST_ROUTES)
     ),
     TitleTabItem(
-        title = "最近瀏覽" withEn "Recents",
-        unselectedIcon = { PlatformIcons.Outlined.History },
-        selectedIcon = { PlatformIcons.Filled.History },
-        appScreens = setOf(AppScreen.RECENT)
+        title = "港鐵" withEn "MTR",
+        unselectedIcon = { painterResource(DrawableResource("mtr_vector.xml")) },
+        selectedIcon = { painterResource(DrawableResource("mtr_vector.xml")) },
+        selectedColors = { NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFFAC2E44)) },
+        appScreens = setOf(AppScreen.SEARCH_TRAIN)
     ),
     TitleTabItem(
         title = "設定" withEn "Settings",
@@ -197,8 +208,9 @@ fun TitleInterface(instance: AppActiveContext) {
         itemCount = titleTabItems.size,
         items = { index ->
             val item = titleTabItems[index]
+            val selected = index == pagerState.currentPage
             AdaptiveNavBarItem(
-                selected = index == pagerState.currentPage,
+                selected = selected,
                 onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                 label = {
                     AutoResizeText(
@@ -208,19 +220,20 @@ fun TitleInterface(instance: AppActiveContext) {
                         text = item.title[Shared.language]
                     )
                 },
-                icon =  {
+                icon = {
                     val scale by animateFloatAsState(
-                        targetValue = if (index == pagerState.currentPage) 1.1F else 1F,
+                        targetValue = if (selected) 1.1F else 1F,
                         animationSpec = tween(200, easing = LinearEasing)
                     )
                     PlatformIcon(
                         modifier = Modifier
                             .size(22.dp)
                             .scale(scale),
-                        painter = item.icon(index == pagerState.currentPage).invoke(),
+                        painter = item.icon(selected).invoke(),
                         contentDescription = item.title[Shared.language]
                     )
-                }
+                },
+                colors = item.colors(selected).invoke()
             )
         },
         content = {
@@ -238,7 +251,7 @@ fun TitleInterface(instance: AppActiveContext) {
                         0 -> NearbyInterface(instance, isOnPage)
                         1 -> FavouriteInterface(instance, isOnPage)
                         2 -> SearchInterface(instance, isOnPage)
-                        3 -> RecentInterface(instance, isOnPage)
+                        3 -> RouteMapSearchInterface(instance)
                         4 -> SettingsInterface(instance)
                         else -> PlatformText(titleTabItems[it].title[Shared.language])
                     }

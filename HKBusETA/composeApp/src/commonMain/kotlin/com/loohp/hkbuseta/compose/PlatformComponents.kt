@@ -49,6 +49,7 @@ import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.TabRowDefaults
@@ -232,6 +233,7 @@ expect fun RowScope.PlatformNavigationBarItem(
     enabled: Boolean = true,
     label: @Composable (() -> Unit)? = null,
     alwaysShowLabel: Boolean = true,
+    colors: NavigationBarItemColors? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 )
 
