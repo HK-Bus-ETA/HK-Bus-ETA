@@ -220,6 +220,10 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
         //do nothing
     }
 
+    override fun removeAppShortcut(id: String) {
+        //do nothing
+    }
+
 }
 
 @Stable

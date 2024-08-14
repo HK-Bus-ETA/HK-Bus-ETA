@@ -59,6 +59,8 @@ class Preferences(
     var historyEnabled: Boolean,
     var showRouteMap: Boolean,
     var downloadSplash: Boolean,
+    var alternateStopName: Boolean,
+    var lastNearbyLocation: RadiusCenterPosition?,
     val favouriteStops: ConcurrentMutableList<String>,
     val favouriteRouteStops: ConcurrentMutableList<FavouriteRouteGroup>,
     val lastLookupRoutes: ConcurrentMutableList<LastLookupRoute>,
@@ -82,6 +84,8 @@ class Preferences(
             val historyEnabled = json.optBoolean("historyEnabled", true)
             val showRouteMap = json.optBoolean("showRouteMap", true)
             val downloadSplash = json.optBoolean("downloadSplash", true)
+            val alternateStopName = json.optBoolean("alternateStopName", false)
+            val lastNearbyLocation = if (json.containsKey("lastNearbyLocation")) RadiusCenterPosition.deserialize(json.optJsonObject("lastNearbyLocation")!!) else null
             val favouriteStops = ConcurrentMutableList<String>().apply { addAll(json.optJsonArray("favouriteStops")?.mapToMutableList { it.jsonPrimitive.content }?: mutableListOf()) }
             val favouriteRouteStops = if (json["favouriteRouteStops"] is JsonArray) {
                 ConcurrentMutableList<FavouriteRouteGroup>().apply { addAll(json.optJsonArray("favouriteRouteStops")!!.mapToMutableList { FavouriteRouteGroup.deserialize(it.jsonObject) }) }
@@ -92,7 +96,7 @@ class Preferences(
             val lastLookupRoutes = ConcurrentMutableList<LastLookupRoute>().apply { addAll(json.optJsonArray("lastLookupRoutes")!!.mapToMutableList { if (it is JsonObject) (if (it.containsKey("routeKey")) LastLookupRoute.deserialize(it) else null) else LastLookupRoute.fromLegacy(it.jsonPrimitive.content) }.filterNotNull()) }
             val etaTileConfigurations = ConcurrentMutableMap<Int, List<Int>>().apply { if (json.contains("etaTileConfigurations")) putAll(json.optJsonObject("etaTileConfigurations")!!.mapToMutableMap<Int, List<Int>>({ it.toInt() }) { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.int } }) }
             val routeSortModePreference = ConcurrentMutableMap<RouteListType, RouteSortMode>().apply { if (json.contains("routeSortModePreference")) putAll(json.optJsonObject("routeSortModePreference")!!.mapToMutableMap({ RouteListType.valueOf(it) }, { RouteSortMode.valueOf(it.jsonPrimitive.content) })) }
-            return Preferences(referenceChecksum, lastSaved, language, etaDisplayMode, lrtDirectionMode, theme, color, viewFavTab, disableMarquee, disableBoldDest, historyEnabled, showRouteMap, downloadSplash, favouriteStops, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
+            return Preferences(referenceChecksum, lastSaved, language, etaDisplayMode, lrtDirectionMode, theme, color, viewFavTab, disableMarquee, disableBoldDest, historyEnabled, showRouteMap, downloadSplash, alternateStopName, lastNearbyLocation, favouriteStops, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
         }
 
         fun createDefault(): Preferences {
@@ -110,6 +114,8 @@ class Preferences(
                 historyEnabled = true,
                 showRouteMap = true,
                 downloadSplash = true,
+                alternateStopName = false,
+                lastNearbyLocation = null,
                 favouriteStops = ConcurrentMutableList(),
                 favouriteRouteStops = ConcurrentMutableList<FavouriteRouteGroup>().apply { add(FavouriteRouteGroup.DEFAULT_GROUP) },
                 lastLookupRoutes = ConcurrentMutableList(),
@@ -134,6 +140,8 @@ class Preferences(
             this.historyEnabled = preferences.historyEnabled
             this.showRouteMap = preferences.showRouteMap
             this.downloadSplash = preferences.downloadSplash
+            this.alternateStopName = preferences.alternateStopName
+            this.lastNearbyLocation = preferences.lastNearbyLocation
             this.favouriteStops.apply { clear(); addAll(preferences.favouriteStops) }
             this.favouriteRouteStops.apply { clear(); addAll(preferences.favouriteRouteStops) }
             this.lastLookupRoutes.apply { clear(); addAll(preferences.lastLookupRoutes) }
@@ -159,6 +167,8 @@ class Preferences(
             put("historyEnabled", historyEnabled)
             put("showRouteMap", showRouteMap)
             put("downloadSplash", downloadSplash)
+            put("alternateStopName", alternateStopName)
+            lastNearbyLocation?.apply { put("lastNearbyLocation", serialize()) }
             favouriteStops.synchronize { put("favouriteStops", favouriteStops.toJsonArray()) }
             favouriteRouteStops.synchronize { put("favouriteRouteStops", favouriteRouteStops.toJsonArray()) }
             lastLookupRoutes.synchronize { put("lastLookupRoutes", lastLookupRoutes.toJsonArray()) }
@@ -184,6 +194,8 @@ class Preferences(
         if (disableBoldDest != other.disableBoldDest) return false
         if (showRouteMap != other.showRouteMap) return false
         if (downloadSplash != other.downloadSplash) return false
+        if (alternateStopName != other.alternateStopName) return false
+        if (lastNearbyLocation != other.lastNearbyLocation) return false
         if (favouriteStops != other.favouriteStops) return false
         if (favouriteRouteStops != other.favouriteRouteStops) return false
         if (lastLookupRoutes != other.lastLookupRoutes) return false
@@ -205,6 +217,8 @@ class Preferences(
         result = 31 * result + historyEnabled.hashCode()
         result = 31 * result + showRouteMap.hashCode()
         result = 31 * result + downloadSplash.hashCode()
+        result = 31 * result + alternateStopName.hashCode()
+        result = 31 * result + lastNearbyLocation.hashCode()
         result = 31 * result + favouriteStops.hashCode()
         result = 31 * result + favouriteRouteStops.hashCode()
         result = 31 * result + lastLookupRoutes.hashCode()

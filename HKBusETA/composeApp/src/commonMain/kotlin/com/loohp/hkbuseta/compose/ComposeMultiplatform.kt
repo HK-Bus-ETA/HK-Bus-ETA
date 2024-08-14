@@ -50,7 +50,10 @@ import kotlin.coroutines.EmptyCoroutineContext
 expect fun <T> StateFlow<T>.collectAsStateMultiplatform(context: CoroutineContext = EmptyCoroutineContext): State<T>
 
 @Composable
-fun <T> MutableStateFlow<T>.collectAsStateMultiplatform(context: CoroutineContext = EmptyCoroutineContext): MutableState<T> {
+fun <T> MutableStateFlow<T>.collectAsStateMultiplatform(
+    context: CoroutineContext = EmptyCoroutineContext,
+    setValueCallback: ((T) -> Unit)? = null
+): MutableState<T> {
     val delegate by (this as StateFlow<T>).collectAsStateMultiplatform(context)
     val mutableState = remember(delegate) { object : MutableState<T> {
         private var usingTempValue = false
@@ -61,6 +64,7 @@ fun <T> MutableStateFlow<T>.collectAsStateMultiplatform(context: CoroutineContex
                 tempValue = value
                 usingTempValue = true
                 this@collectAsStateMultiplatform.value = value
+                setValueCallback?.invoke(value)
             }
         override operator fun component1(): T = value
         override operator fun component2(): (T) -> Unit = { value = it }

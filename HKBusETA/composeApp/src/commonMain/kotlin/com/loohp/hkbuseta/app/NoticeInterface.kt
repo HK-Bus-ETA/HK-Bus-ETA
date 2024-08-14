@@ -21,7 +21,6 @@
 
 package com.loohp.hkbuseta.app
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,6 +63,7 @@ import com.loohp.hkbuseta.common.objects.RouteNoticeImportance
 import com.loohp.hkbuseta.common.objects.RouteNoticeText
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.FormattedText
+import com.loohp.hkbuseta.compose.CurrencyExchange
 import com.loohp.hkbuseta.compose.OpenInNew
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
@@ -80,9 +80,9 @@ import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.getOperatorColor
 import kotlinx.collections.immutable.ImmutableList
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNotice>?) {
+fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNotice>?, possibleBidirectionalSectionFare: Boolean) {
     if (notices == null) {
         EmptyBackgroundInterfaceProgress(
             instance = instance,
@@ -150,7 +150,13 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                         overflow = TextOverflow.Ellipsis,
                         text = notice.title
                     )
-                    if (notice.importance == RouteNoticeImportance.IMPORTANT) {
+                    if (possibleBidirectionalSectionFare && notice.possibleTwoWaySectionFareInfo) {
+                        PlatformIcon(
+                            modifier = Modifier.size(25.dp),
+                            painter = PlatformIcons.Outlined.CurrencyExchange,
+                            contentDescription = if (Shared.language == "en") "Contains Two-way Section Fare Info" else "雙向分段收費資訊"
+                        )
+                    } else if (notice.importance == RouteNoticeImportance.IMPORTANT) {
                         PlatformIcon(
                             modifier = Modifier.size(25.dp),
                             painter = PlatformIcons.Filled.PriorityHigh,

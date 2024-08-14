@@ -186,13 +186,11 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.min
 
 
 private val specialDenoteChars = listOf("*", "^", "#")
-private val alternateStopNamesShowingState: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
 fun specialDenoteChar(index: Int): String {
     return specialDenoteChars[index % specialDenoteChars.size].repeat((index / specialDenoteChars.size) + 1)
@@ -286,8 +284,9 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val gmbRegion by remember(route) { derivedStateOf { route.route!!.gmbRegion } }
 
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
+    var ctbHasTwoWaySectionFare by remember { mutableStateOf(false) }
     val importantNoticeCount by remember(notices) { derivedStateOf { notices?.count { it.importance == RouteNoticeImportance.IMPORTANT }?: 0 } }
-    val possibleBidirectionalSectionFare by remember(notices) { derivedStateOf { co == Operator.NLB || notices?.any { it.title.lowercase().contains("section fare") || it.title.contains("分段收費") } == true } }
+    val possibleBidirectionalSectionFare by remember(notices, ctbHasTwoWaySectionFare) { derivedStateOf { co == Operator.NLB || ctbHasTwoWaySectionFare || notices?.any { it.title.lowercase().contains("section fare") || it.title.contains("分段收費") } == true } }
 
     val routeBranches by remember(route) { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) } }
     val selectedBranch = remember { mutableStateOf(routeBranches.currentFirstActiveBranch(currentLocalDateTime(), instance)) }
@@ -315,7 +314,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val alightReminderService by remember(optAlightReminderService) { derivedStateOf { optAlightReminderService.value } }
     val isActiveReminderService by remember(alightReminderService) { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
 
-    val alternateStopNamesShowing = alternateStopNamesShowingState.collectAsStateMultiplatform()
+    val alternateStopNamesShowing = Shared.alternateStopNamesShowingState.collectAsStateMultiplatform { Registry.getInstance(instance).setAlternateStopNames(it, instance) }
 
     instance.compose.setStatusNavBarColor(
         status = platformPrimaryContainerColor,
@@ -346,6 +345,11 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     }
     LaunchedEffect (Unit) {
         notices = Registry.getInstance(instance).getRouteNotices(route.route!!, instance)
+    }
+    LaunchedEffect (Unit) {
+        if (co == Operator.CTB) {
+            Registry.getInstance(instance).getCtbHasTwoWaySectionFare(routeNumber) { ctbHasTwoWaySectionFare = it }
+        }
     }
     LaunchedEffect (route) {
         CoroutineScope(dispatcherIO).launch {
@@ -560,7 +564,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                 when (item.type) {
                     StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranch, possibleBidirectionalSectionFare, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing)
                     StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranch, alternateStopNamesShowing)
-                    StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.toImmutableList())
+                    StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.toImmutableList(), possibleBidirectionalSectionFare)
                     StopsTabItemType.TIMETABLE -> TimetableInterface(instance, routeBranches.toImmutableList())
                 }
             }

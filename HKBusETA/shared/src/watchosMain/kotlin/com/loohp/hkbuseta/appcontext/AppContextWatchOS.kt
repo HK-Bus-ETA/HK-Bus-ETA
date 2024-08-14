@@ -99,8 +99,8 @@ import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.URLByAppendingPathComponent
 import platform.Foundation.create
+import platform.Foundation.currentLocale
 import platform.Foundation.lastPathComponent
-import platform.Foundation.preferredLanguages
 import platform.Foundation.writeToURL
 import platform.WatchConnectivity.WCSession
 import platform.WatchKit.WKHapticType
@@ -322,7 +322,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     override fun formatTime(localDateTime: LocalDateTime): String {
         return NSCalendar.currentCalendar.dateFromComponents(localDateTime.toNSDateComponents())?.let {
             NSDateFormatter().apply {
-                locale = NSLocale((NSLocale.preferredLanguages.firstOrNull() as? String)?: "en")
+                locale = NSLocale.currentLocale
                 dateStyle = NSDateFormatterNoStyle
                 timeStyle = NSDateFormatterShortStyle
             }.stringFromDate(it)
@@ -332,7 +332,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     override fun formatDateTime(localDateTime: LocalDateTime, includeTime: Boolean): String {
         return NSCalendar.currentCalendar.dateFromComponents(localDateTime.toNSDateComponents())?.let {
             NSDateFormatter().apply {
-                locale = NSLocale((NSLocale.preferredLanguages.firstOrNull() as? String)?: "en")
+                locale = NSLocale.currentLocale
                 dateStyle = NSDateFormatterMediumStyle
                 timeStyle = NSDateFormatterShortStyle
             }.stringFromDate(it)
@@ -342,6 +342,10 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override fun setAppShortcut(id: String, shortLabel: String, longLabel: String, icon: AppShortcutIcon, tint: Long?, rank: Int, url: String) {
+        //do nothing
+    }
+
+    override fun removeAppShortcut(id: String) {
         //do nothing
     }
 

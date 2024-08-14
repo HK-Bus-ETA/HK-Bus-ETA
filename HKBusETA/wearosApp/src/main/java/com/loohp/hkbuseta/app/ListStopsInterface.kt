@@ -142,9 +142,6 @@ import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
-
-private val alternateStopNamesShowingState: MutableStateFlow<Boolean> = MutableStateFlow(false)
-
 @OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route: RouteSearchResultEntry, showEta: Boolean, scrollToStop: String?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
@@ -355,7 +352,7 @@ fun HeaderElement(
     alternateStopNames: ImmutableList<Registry.NearbyStopSearchResult>?,
     instance: AppActiveContext
 ) {
-    var alternateStopNamesShowing by alternateStopNamesShowingState.collectAsStateWithLifecycle()
+    var alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle { Registry.getInstance(instance).setAlternateStopNames(it, instance) }
     Column(
         modifier = Modifier
             .defaultMinSize(minHeight = 35.scaledSize(instance).dp)
@@ -464,7 +461,7 @@ fun LazyItemScope.StopRowElement(
     instance: AppActiveContext,
     schedule: (Boolean, Int, (() -> Unit)?) -> Unit
 ) {
-    val alternateStopNamesShowing by alternateStopNamesShowingState.collectAsStateWithLifecycle()
+    val alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle { Registry.getInstance(instance).setAlternateStopNames(it, instance) }
 
     val stopNumber = index + 1
     val isClosest = closestIndex == stopNumber

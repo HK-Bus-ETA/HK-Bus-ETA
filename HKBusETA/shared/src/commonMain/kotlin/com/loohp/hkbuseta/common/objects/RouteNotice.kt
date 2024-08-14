@@ -49,7 +49,8 @@ sealed class RouteNotice(
     val title: String,
     val co: Operator?,
     val importance: RouteNoticeImportance,
-    val sort: Int = Int.MAX_VALUE
+    val sort: Int = Int.MAX_VALUE,
+    val possibleTwoWaySectionFareInfo: Boolean
 ): Comparable<RouteNotice> {
     companion object {
         private val routeNoticeComparator = compareBy<RouteNotice> { it.importance }
@@ -65,8 +66,9 @@ class RouteNoticeExternal(
     co: Operator?,
     important: RouteNoticeImportance,
     val url: String,
-    sort: Int = Int.MAX_VALUE
-): RouteNotice(title, co, important, sort)
+    sort: Int = Int.MAX_VALUE,
+    possibleTwoWaySectionFareInfo: Boolean = false
+): RouteNotice(title, co, important, sort, possibleTwoWaySectionFareInfo)
 
 @Immutable
 class RouteNoticeText(
@@ -75,8 +77,9 @@ class RouteNoticeText(
     important: RouteNoticeImportance,
     sort: Int = Int.MAX_VALUE,
     val isRealTitle: Boolean,
-    val content: String
-): RouteNotice(title, co, important, sort) {
+    val content: String,
+    possibleTwoWaySectionFareInfo: Boolean = false
+): RouteNotice(title, co, important, sort, possibleTwoWaySectionFareInfo) {
     val display: FormattedText by lazy { buildFormattedString(extractUrls = true) {
         if (isRealTitle) {
             append(title, BigSize, BoldStyle)
@@ -164,7 +167,8 @@ fun ctbRouteInfo(route: Route): RouteNoticeExternal {
         title = if (Shared.language == "en") "Citybus Route Info" else "城巴路線資訊",
         co = Operator.CTB,
         important = RouteNoticeImportance.NORMAL,
-        url = "https://mobile.citybus.com.hk/nwp3/?f=1&ds=${route.routeNumber}&dsmode=1&l=${if (Shared.language == "en") 1 else 0}"
+        url = "https://mobile.citybus.com.hk/nwp3/?f=1&ds=${route.routeNumber}&dsmode=1&l=${if (Shared.language == "en") 1 else 0}",
+        possibleTwoWaySectionFareInfo = true
     )
 }
 
@@ -173,7 +177,8 @@ fun nlbRouteInfo(route: Route): RouteNoticeExternal {
         title = if (Shared.language == "en") "NLB Route Info" else "嶼巴路線資訊",
         co = Operator.NLB,
         important = RouteNoticeImportance.NORMAL,
-        url = "https://www.nlb.com.hk/route/detail/${route.nlbId}"
+        url = "https://www.nlb.com.hk/route/detail/${route.nlbId}",
+        possibleTwoWaySectionFareInfo = true
     )
 }
 
@@ -383,12 +388,14 @@ private val operatorNoticeFetchers: Map<Operator, suspend Route.(MutableList<Rou
         for ((index, obj) in notices.withIndex()) {
             val notice = obj.jsonObject
             val url = "https://search.kmb.hk/KMBWebSite/AnnouncementPicture.ashx?url=${notice.optString("kpi_noticeimageurl")}".prependPdfViewerToUrl()
+            val title = notice.optString(if (Shared.language == "en") "kpi_title" else "kpi_title_chi")
             list.add(RouteNoticeExternal(
-                title = notice.optString(if (Shared.language == "en") "kpi_title" else "kpi_title_chi"),
+                title = title,
                 co = Operator.KMB,
                 important = RouteNoticeImportance.IMPORTANT,
                 url = url,
-                sort = index
+                sort = index,
+                possibleTwoWaySectionFareInfo = title.lowercase().contains("section fare") || title.contains("分段收費")
             ))
         }
     }

@@ -189,6 +189,7 @@ import com.loohp.hkbuseta.compose.Train
 import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.platformComponentBackgroundColor
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
@@ -257,7 +258,10 @@ data class RouteMapData(
 }
 
 private val mtrRouteMapDataState: MutableStateFlow<RouteMapData?> = MutableStateFlow(null)
+private val mtrRouteMapLoaded: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
 private val lightRailRouteMapDataState: MutableStateFlow<RouteMapData?> = MutableStateFlow(null)
+private val lightRailRouteMapLoaded: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
 @Immutable
 data class TrainRouteMapTabItem(
@@ -291,7 +295,7 @@ private val routeMapSearchSelectedTabIndexState: MutableStateFlow<Int> = Mutable
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteMapSearchInterface(instance: AppActiveContext) {
+fun RouteMapSearchInterface(instance: AppActiveContext, visible: Boolean) {
     var routeMapSearchSelectedTabIndex by routeMapSearchSelectedTabIndexState.collectAsStateMultiplatform()
     val pagerState = rememberPagerState(
         initialPage = routeMapSearchSelectedTabIndex,
@@ -405,51 +409,58 @@ fun RouteMapSearchInterface(instance: AppActiveContext) {
             modifier = Modifier.weight(1F),
             contentAlignment = Alignment.TopCenter,
         ) {
-            HorizontalPager(
-                modifier = Modifier.fillMaxSize(),
-                state = pagerState,
-                userScrollEnabled = true,
-                verticalAlignment = Alignment.Top,
-            ) {
-                when (it) {
-                    0 -> MTRRouteMapInterface(instance, location)
-                    1 -> LRTRouteMapInterface(instance, location)
-                    2 -> NoticeInterface(instance, notices?.toImmutableList())
-                    else -> PlatformText(trainRouteMapItems[it].title[Shared.language])
-                }
-            }
-            val offset by animateDpAsState(
-                targetValue = if (pagerState.currentPage < 2) 0.dp else 100.dp,
-                animationSpec = tween(200, easing = FastOutSlowInEasing)
-            )
-            if (offset < 100.dp) {
-                val statusNotice = mtrLineStatus
-                val color = if (mtrLineServiceDisruption.values.any { it == TrainServiceStatus.DISRUPTION } && mtrLineServiceDisruptionBlink) Color.Red else null
-                PlatformExtendedFloatingActionButton(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(10.dp)
-                        .graphicsLayer { translationY = offset.toPx() },
-                    onClick = instance.handleWebpages(statusNotice.url, false, LocalHapticFeedback.current.common),
-                    icon = {
-                        PlatformIcon(
-                            modifier = Modifier.size(27.dp),
-                            painter = PlatformIcons.Filled.Info,
-                            tint = color,
-                            contentDescription = statusNotice.title
-                        )
-                    },
-                    text = {
-                        PlatformText(
-                            fontSize = 17.sp,
-                            color = color?: Color.Unspecified,
-                            text = statusNotice.title
-                        )
+            if (visible || (pagerState.currentPage == 0 && mtrRouteMapLoaded.value) || (pagerState.currentPage == 1 && lightRailRouteMapLoaded.value) || pagerState.currentPage == 2) {
+                HorizontalPager(
+                    modifier = Modifier.fillMaxSize(),
+                    state = pagerState,
+                    userScrollEnabled = true,
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    when (it) {
+                        0 -> MTRRouteMapInterface(instance, location)
+                        1 -> LRTRouteMapInterface(instance, location)
+                        2 -> NoticeInterface(instance, notices?.toImmutableList(), false)
+                        else -> PlatformText(trainRouteMapItems[it].title[Shared.language])
                     }
+                }
+                val offset by animateDpAsState(
+                    targetValue = if (pagerState.currentPage < 2) 0.dp else 100.dp,
+                    animationSpec = tween(200, easing = FastOutSlowInEasing)
+                )
+                if (offset < 100.dp) {
+                    val statusNotice = mtrLineStatus
+                    val color = if (mtrLineServiceDisruption.values.any { it == TrainServiceStatus.DISRUPTION } && mtrLineServiceDisruptionBlink) Color.Red else null
+                    PlatformExtendedFloatingActionButton(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(10.dp)
+                            .graphicsLayer { translationY = offset.toPx() },
+                        onClick = instance.handleWebpages(statusNotice.url, false, LocalHapticFeedback.current.common),
+                        icon = {
+                            PlatformIcon(
+                                modifier = Modifier.size(27.dp),
+                                painter = PlatformIcons.Filled.Info,
+                                tint = color,
+                                contentDescription = statusNotice.title
+                            )
+                        },
+                        text = {
+                            PlatformText(
+                                fontSize = 17.sp,
+                                color = color?: Color.Unspecified,
+                                text = statusNotice.title
+                            )
+                        }
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(platformComponentBackgroundColor)
                 )
             }
         }
-
     }
 }
 
@@ -519,6 +530,9 @@ fun MTRRouteMapInterface(
 
     LaunchedEffect (state.scale, state.translationX, state.translationY) {
         zoomState = ZoomState(state.scale, state.translationX, state.translationY)
+    }
+    LaunchedEffect (Unit) {
+        mtrRouteMapLoaded.value = true
     }
     LaunchedEffect (Unit) {
         if (mtrRouteMapData == null) {
@@ -1487,6 +1501,9 @@ fun LRTRouteMapInterface(
 
     LaunchedEffect (state.scale, state.translationX, state.translationY) {
         zoomState = ZoomState(state.scale, state.translationX, state.translationY)
+    }
+    LaunchedEffect (Unit) {
+        lightRailRouteMapLoaded.value = true
     }
     LaunchedEffect (Unit) {
         if (lightRailRouteMapData == null) {

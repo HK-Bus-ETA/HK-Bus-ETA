@@ -93,9 +93,9 @@ import platform.Foundation.NSString
 import platform.Foundation.NSURL
 import platform.Foundation.URLByAppendingPathComponent
 import platform.Foundation.create
+import platform.Foundation.currentLocale
 import platform.Foundation.isLowPowerModeEnabled
 import platform.Foundation.lastPathComponent
-import platform.Foundation.preferredLanguages
 import platform.Foundation.writeToURL
 import platform.MapKit.MKMapItem
 import platform.MapKit.MKPlacemark
@@ -342,7 +342,7 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
     override fun formatTime(localDateTime: LocalDateTime): String {
         return NSCalendar.currentCalendar.dateFromComponents(localDateTime.toNSDateComponents())?.let {
             NSDateFormatter().apply {
-                locale = NSLocale((NSLocale.preferredLanguages.firstOrNull() as? String)?: "en")
+                locale = NSLocale.currentLocale
                 dateStyle = NSDateFormatterNoStyle
                 timeStyle = NSDateFormatterShortStyle
             }.stringFromDate(it)
@@ -352,7 +352,7 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
     override fun formatDateTime(localDateTime: LocalDateTime, includeTime: Boolean): String {
         return NSCalendar.currentCalendar.dateFromComponents(localDateTime.toNSDateComponents())?.let {
             NSDateFormatter().apply {
-                locale = NSLocale((NSLocale.preferredLanguages.firstOrNull() as? String)?: "en")
+                locale = NSLocale.currentLocale
                 dateStyle = NSDateFormatterMediumStyle
                 timeStyle = NSDateFormatterShortStyle
             }.stringFromDate(it)
@@ -385,6 +385,11 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
         UIApplication.sharedApplication.shortcutItems = newItems.sortedBy {
             (it as? UIApplicationShortcutItem)?.userInfo?.get("rank")?.toString()?.toIntOrNull()?: Int.MAX_VALUE
         }
+    }
+
+    override fun removeAppShortcut(id: String) {
+        val existingItems = UIApplication.sharedApplication.shortcutItems?: return
+        UIApplication.sharedApplication.shortcutItems = existingItems.filterNot { (it as? UIApplicationShortcutItem)?.type == id }
     }
 
 }

@@ -32,6 +32,7 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
 import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
@@ -270,7 +271,10 @@ object Shared {
     var historyEnabled = true
     var showRouteMap = true
     var downloadSplash = true
+    var lastNearbyLocation: RadiusCenterPosition? = null
     var disableBoldDest = false
+
+    val alternateStopNamesShowingState: MutableNonNullStateFlow<Boolean> = MutableStateFlow(false).wrap()
 
     private val favouriteRouteStopLock: Lock = Lock()
     val favoriteRouteStops: MutableNonNullStateFlowList<FavouriteRouteGroup> = MutableStateFlow(emptyList<FavouriteRouteGroup>()).wrapList()

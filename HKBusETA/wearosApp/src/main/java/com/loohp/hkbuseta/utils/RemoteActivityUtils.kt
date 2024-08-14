@@ -23,6 +23,8 @@ package com.loohp.hkbuseta.utils
 import android.content.Context
 import android.content.Intent
 import androidx.wear.remote.interactions.RemoteActivityHelper
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.Wearable
@@ -103,16 +105,20 @@ class RemoteActivityUtils {
         }
 
         fun hasPhoneApp(instance: Context): Deferred<Boolean> {
-            val defer = CompletableDeferred<Boolean>()
-            Wearable.getCapabilityClient(instance).getCapability("hkbuseta_installed", CapabilityClient.FILTER_ALL).addOnCompleteListener {
-                try {
-                    defer.complete(it.result.nodes.isNotEmpty())
-                } catch (e: Throwable) {
-                    e.printStackTrace()
-                    defer.complete(false)
+            return if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(instance) != ConnectionResult.SUCCESS) {
+                CompletableDeferred(false)
+            } else {
+                CompletableDeferred<Boolean>().apply {
+                    Wearable.getCapabilityClient(instance).getCapability("hkbuseta_installed", CapabilityClient.FILTER_ALL).addOnCompleteListener {
+                        try {
+                            complete(it.result.nodes.isNotEmpty())
+                        } catch (e: Throwable) {
+                            e.printStackTrace()
+                            complete(false)
+                        }
+                    }
                 }
             }
-            return defer
         }
 
     }

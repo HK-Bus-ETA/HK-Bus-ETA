@@ -80,14 +80,13 @@ import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
-import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.compose.DismissRequestType
@@ -156,32 +155,10 @@ enum class LocationPermissionState(
 
 }
 
-@Immutable
-class CustomCenterPosition(
-    lat: Double,
-    lng: Double,
-    val radius: Float
-): Coordinates(lat, lng) {
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is CustomCenterPosition) return false
-        if (!super.equals(other)) return false
-
-        return radius == other.radius
-    }
-
-    override fun hashCode(): Int {
-        var result = super.hashCode()
-        result = 31 * result + radius.hashCode()
-        return result
-    }
-}
-
-private val defaultCustomPosition: CustomCenterPosition = CustomCenterPosition(22.2940359, 114.1680971, 0.3F)
+private val defaultCustomPosition: RadiusCenterPosition = RadiusCenterPosition(22.2940359, 114.1680971, 0.3F)
 
 private val locationPermissionState: MutableStateFlow<LocationPermissionState> = MutableStateFlow(LocationPermissionState.PENDING)
-private val customCenterPositionState: MutableStateFlow<CustomCenterPosition?> = MutableStateFlow(null)
+private val customCenterPositionState: MutableStateFlow<RadiusCenterPosition?> = MutableStateFlow(Shared.lastNearbyLocation)
 private val listedRoutesState: MutableStateFlow<ImmutableList<StopIndexedRouteSearchResultEntry>> = MutableStateFlow(persistentListOf())
 private val nearbyRoutesResultState: MutableStateFlow<Registry.NearbyRoutesResult?> = MutableStateFlow(null)
 
@@ -472,7 +449,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
         }
     }
     if (choosingCustomCenterPosition && actualHeight > 460) {
-        var initialPosition by remember { mutableStateOf(customCenterPosition?: location?.let { CustomCenterPosition(it.lat, it.lng, 0.3F) }?: defaultCustomPosition) }
+        var initialPosition by remember { mutableStateOf(customCenterPosition?: location?.let { RadiusCenterPosition(it.lat, it.lng, 0.3F) }?: defaultCustomPosition) }
         var position by remember { mutableStateOf(initialPosition) }
         var pxPerKm by remember { mutableFloatStateOf(1F) }
         var stopsInRange by remember { mutableStateOf(emptyList<Registry.NearbyStopSearchResult>()) }
@@ -612,8 +589,8 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                             updating = true
                                             CoroutineScope(dispatcherIO).launch {
                                                 val loc = it.resolveLocation().await()
-                                                val newPos = CustomCenterPosition(loc.lat, loc.lng, position.radius)
-                                                initialPosition = CustomCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
+                                                val newPos = RadiusCenterPosition(loc.lat, loc.lng, position.radius)
+                                                initialPosition = RadiusCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
                                                 delay(100)
                                                 initialPosition = newPos
                                                 position = newPos
@@ -650,9 +627,9 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                 CoroutineScope(dispatcherIO).launch {
                                     nearestStop?.let {
                                         val loc = it.stop.location
-                                        val newPos = CustomCenterPosition(loc.lat, loc.lng, position.radius)
+                                        val newPos = RadiusCenterPosition(loc.lat, loc.lng, position.radius)
                                         position = newPos
-                                        initialPosition = CustomCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
+                                        initialPosition = RadiusCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
                                         delay(100)
                                         initialPosition = newPos
                                     }
@@ -686,7 +663,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                             contentAlignment = Alignment.Center
                         ) {
                             MapSelectInterface(instance, initialPosition, position.radius) { pos, zoom ->
-                                position = CustomCenterPosition(pos.lat, pos.lng, position.radius)
+                                position = RadiusCenterPosition(pos.lat, pos.lng, position.radius)
                                 pxPerKm = 256F * 2F.pow(zoom) / 12742F
                             }
                             Canvas(
@@ -720,7 +697,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                         PlatformSlider(
                             value = position.radius,
                             valueRange = 0.02F..3.0F,
-                            onValueChange = { position = CustomCenterPosition(position.lat, position.lng, it) }
+                            onValueChange = { position = RadiusCenterPosition(position.lat, position.lng, it) }
                         )
                         PlatformText(
                             text = if (Shared.language == "en") "Search Radius: ${(position.radius * 1000).roundToInt()}m" else "搜尋半徑${(position.radius * 1000).roundToInt()}米"
@@ -739,6 +716,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                     customCenterPosition = position
                     routes = persistentListOf()
                     nearbyRoutesResult = null
+                    Registry.getInstance(instance).setLastNearbyLocation(customCenterPosition, instance)
                 }
             },
             dismissButton = {
@@ -753,6 +731,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                     customCenterPosition = null
                     routes = persistentListOf()
                     nearbyRoutesResult = null
+                    Registry.getInstance(instance).setLastNearbyLocation(customCenterPosition, instance)
                 }
             }
         )

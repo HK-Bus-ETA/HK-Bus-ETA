@@ -50,6 +50,7 @@ import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.MTRStatus
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Preferences
+import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteNotice
@@ -371,6 +372,8 @@ class Registry {
         Shared.historyEnabled = PREFERENCES!!.historyEnabled
         Shared.showRouteMap = PREFERENCES!!.showRouteMap
         Shared.downloadSplash = PREFERENCES!!.downloadSplash
+        Shared.alternateStopNamesShowingState.value = PREFERENCES!!.alternateStopName
+        Shared.lastNearbyLocation = PREFERENCES!!.lastNearbyLocation
         Shared.updateFavoriteStops {
             if (it.value != PREFERENCES!!.favouriteStops) {
                 it.value = PREFERENCES!!.favouriteStops.toImmutableList()
@@ -529,6 +532,18 @@ class Registry {
         savePreferences(context)
     }
 
+    fun setAlternateStopNames(alternateStopName: Boolean, context: AppContext) {
+        Shared.alternateStopNamesShowingState.value = alternateStopName
+        PREFERENCES!!.alternateStopName = alternateStopName
+        savePreferences(context)
+    }
+
+    fun setLastNearbyLocation(lastNearbyLocation: RadiusCenterPosition?, context: AppContext) {
+        Shared.lastNearbyLocation = lastNearbyLocation
+        PREFERENCES!!.lastNearbyLocation = lastNearbyLocation
+        savePreferences(context)
+    }
+
     fun setFavouriteStops(favouriteStops: List<String>, context: AppContext) {
         val distinct = favouriteStops.asSequence().distinct().toList().toImmutableList()
         Shared.updateFavoriteStops { it.value = distinct }
@@ -585,6 +600,24 @@ class Registry {
         PREFERENCES!!.lastLookupRoutes.clear()
         PREFERENCES!!.lastLookupRoutes.addAll(Shared.lastLookupRoutes.value)
         savePreferences(context)
+        setRecentAppShortcut(routeKey, context)
+    }
+
+    fun removeLastLookupRoutes(routeKey: String, context: AppContext) {
+        Shared.removeLookupRoute(routeKey)
+        PREFERENCES!!.lastLookupRoutes.clear()
+        PREFERENCES!!.lastLookupRoutes.addAll(Shared.lastLookupRoutes.value)
+        savePreferences(context)
+        Shared.lastLookupRoutes.value.firstOrNull().apply {
+            if (this == null) {
+                CoroutineScope(Dispatchers.Main).launch { context.removeAppShortcut(id = "Recent") }
+            } else {
+                setRecentAppShortcut(this.routeKey, context)
+            }
+        }
+    }
+
+    private fun setRecentAppShortcut(routeKey: String, context: AppContext) {
         CoroutineScope(dispatcherIO).launch {
             findRouteByKey(routeKey, null)?.let { route ->
                 val routeNumber = route.co.firstCo()!!.getDisplayRouteNumber(route.routeNumber)
@@ -608,17 +641,11 @@ class Registry {
         }
     }
 
-    fun removeLastLookupRoutes(routeKey: String, context: AppContext) {
-        Shared.removeLookupRoute(routeKey)
-        PREFERENCES!!.lastLookupRoutes.clear()
-        PREFERENCES!!.lastLookupRoutes.addAll(Shared.lastLookupRoutes.value)
-        savePreferences(context)
-    }
-
     fun clearLastLookupRoutes(context: AppContext) {
         Shared.clearLookupRoute()
         PREFERENCES!!.lastLookupRoutes.clear()
         savePreferences(context)
+        CoroutineScope(Dispatchers.Main).launch { context.removeAppShortcut(id = "Recent") }
     }
 
     fun setRouteSortModePreference(context: AppContext, listType: RouteListType, sortMode: RouteSortMode) {
@@ -659,6 +686,8 @@ class Registry {
             Shared.theme = PREFERENCES!!.theme
             Shared.color = PREFERENCES!!.color
             Shared.downloadSplash = PREFERENCES!!.downloadSplash
+            Shared.alternateStopNamesShowingState.value = PREFERENCES!!.alternateStopName
+            Shared.lastNearbyLocation = PREFERENCES!!.lastNearbyLocation
             Shared.disableMarquee = PREFERENCES!!.disableMarquee
             Shared.disableBoldDest = PREFERENCES!!.disableBoldDest
             Shared.historyEnabled = PREFERENCES!!.historyEnabled
@@ -1085,36 +1114,12 @@ class Registry {
                         }
                     }
                     if (match) {
-                        try {
-                            val type = data.serviceType.toInt()
-                            val matchingType = existingNearbyRoute.route!!.serviceType.toInt()
-                            if (type < matchingType) {
-                                existingNearbyRoute.routeKey = key
-                                existingNearbyRoute.stopInfo = nearbyStop
-                                existingNearbyRoute.route = data
-                                existingNearbyRoute.co = co
-                                existingNearbyRoute.origin = origin
-                                existingNearbyRoute.isInterchangeSearch = isInterchangeSearch
-                            } else if (type == matchingType) {
-                                val gtfs = data.gtfsId.parseIntOr(Int.MAX_VALUE)
-                                val matchingGtfs = existingNearbyRoute.route!!.gtfsId.parseIntOr(Int.MAX_VALUE)
-                                if (gtfs < matchingGtfs) {
-                                    existingNearbyRoute.routeKey = key
-                                    existingNearbyRoute.stopInfo = nearbyStop
-                                    existingNearbyRoute.route = data
-                                    existingNearbyRoute.co = co
-                                    existingNearbyRoute.origin = origin
-                                    existingNearbyRoute.isInterchangeSearch = isInterchangeSearch
-                                }
-                            }
-                        } catch (_: NumberFormatException) {
-                            existingNearbyRoute.routeKey = key
-                            existingNearbyRoute.stopInfo = nearbyStop
-                            existingNearbyRoute.route = data
-                            existingNearbyRoute.co = co
-                            existingNearbyRoute.origin = origin
-                            existingNearbyRoute.isInterchangeSearch = isInterchangeSearch
-                        }
+                        existingNearbyRoute.routeKey = key
+                        existingNearbyRoute.stopInfo = nearbyStop
+                        existingNearbyRoute.route = data
+                        existingNearbyRoute.co = co
+                        existingNearbyRoute.origin = origin
+                        existingNearbyRoute.isInterchangeSearch = isInterchangeSearch
                     }
                 } else {
                     nearbyRoutes[routeGroupKey] = RouteSearchResultEntry(key, data, co, nearbyStop, origin, isInterchangeSearch) to mutableListOf(data)
@@ -1748,6 +1753,18 @@ class Registry {
                 }
             }
         }).backingList
+    }
+
+    fun getCtbHasTwoWaySectionFare(routeNumber: String, callback: (Boolean) -> Unit) {
+        CoroutineScope(dispatcherIO).launch {
+            try {
+                val data = getJSONResponse<JsonObject>("https://www.citybus.com.hk/app/newfare/data/${routeNumber}.json")
+                callback.invoke(data!!.optJsonArray(routeNumber)!!.any { it.jsonObject.optString("two_way") == "true" })
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                callback.invoke(false)
+            }
+        }
     }
 
     private val cachedTimes: MutableMap<String, MutableMap<String, Double>> = ConcurrentMutableMap()

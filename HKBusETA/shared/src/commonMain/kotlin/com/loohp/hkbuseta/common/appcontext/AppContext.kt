@@ -114,6 +114,8 @@ interface AppContext {
 
     fun setAppShortcut(id: String, shortLabel: String, longLabel: String, icon: AppShortcutIcon, tint: Long? = null, rank: Int, url: String)
 
+    fun removeAppShortcut(id: String)
+
 }
 
 @Immutable

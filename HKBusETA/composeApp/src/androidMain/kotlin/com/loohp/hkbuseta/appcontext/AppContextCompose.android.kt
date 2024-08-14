@@ -259,6 +259,10 @@ open class AppContextComposeAndroid internal constructor(
         ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
     }
 
+    override fun removeAppShortcut(id: String) {
+        ShortcutManagerCompat.removeDynamicShortcuts(context, listOf(id))
+    }
+
 }
 
 @Stable

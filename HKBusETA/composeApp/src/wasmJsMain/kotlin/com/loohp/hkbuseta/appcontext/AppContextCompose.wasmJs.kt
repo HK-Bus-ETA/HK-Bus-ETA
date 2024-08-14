@@ -193,6 +193,10 @@ open class AppContextComposeWeb internal constructor() : AppContextCompose {
         //do nothing
     }
 
+    override fun removeAppShortcut(id: String) {
+        //do nothing
+    }
+
 }
 
 @Stable

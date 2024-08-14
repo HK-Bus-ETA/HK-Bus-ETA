@@ -8,17 +8,11 @@
 import SwiftUI
 import shared
 
-class AlternateStopNamesShowingState: ObservableObject {
-    
-    @Published var state: Bool = false
-    
-}
-
-let sharedAlternateStopNamesShowingState = AlternateStopNamesShowingState()
-
 struct ListStopsView: AppScreenView {
     
     @StateObject private var jointOperatedColorFraction = StateFlowObservable(stateFlow: Shared().jointOperatedColorFractionState)
+    
+    @StateObject private var alternateStopNamesShowingState = StateFlowObservable(stateFlow: Shared().alternateStopNamesShowingState, initSubscribe: true)
     
     @ObservedObject private var locationManager = SingleLocationManager()
     @State private var scrollTarget: Int? = nil
@@ -56,9 +50,7 @@ struct ListStopsView: AppScreenView {
     @State private var mtrLineSectionData: [MTRStopSectionData]
     @State private var alternateStopNames: [Registry.NearbyStopSearchResult]?
     @State private var closestIndex: Int
-    
-    @ObservedObject private var alternateStopNamesShowingState = sharedAlternateStopNamesShowingState
-    
+
     private let appContext: AppActiveContextWatchOS
     
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
@@ -117,8 +109,9 @@ struct ListStopsView: AppScreenView {
                         Header()
                     } else {
                         Button(action: {
-                            alternateStopNamesShowingState.state = !alternateStopNamesShowingState.state
-                            let operatorName = (alternateStopNamesShowingState.state ? Operator.Companion().CTB : Operator.Companion().KMB).getDisplayName(routeNumber: routeNumber, kmbCtbJoint: false, language: Shared().language, elseName: "???")
+                            let newState = !alternateStopNamesShowingState.state.boolValue
+                            registry(appContext).setAlternateStopNames(alternateStopName: newState, context: appContext)
+                            let operatorName = (newState ? Operator.Companion().CTB : Operator.Companion().KMB).getDisplayName(routeNumber: routeNumber, kmbCtbJoint: false, language: Shared().language, elseName: "???")
                             let text = Shared().language == "en" ? "Displaying \(operatorName) stop names" : "顯示\(operatorName)站名"
                             appContext.showToastText(text: text, duration: ToastDuration.short_)
                         }) {
@@ -265,7 +258,7 @@ struct ListStopsView: AppScreenView {
                         .foregroundColor(color)
                 }
                 UserMarqueeText(
-                    text: (alternateStopNamesShowingState.state && alternateStopNames != nil ? alternateStopNames![index].stop : stopData.stop).remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled(appContext, true), defaultWeight: isClosest ? .bold : .regular),
+                    text: (alternateStopNamesShowingState.state.boolValue && alternateStopNames != nil ? alternateStopNames![index].stop : stopData.stop).remarkedName.get(language: Shared().language).asAttributedString(defaultFontSize: 18.scaled(appContext, true), defaultWeight: isClosest ? .bold : .regular),
                     font: UIFont.systemFont(ofSize: 18.scaled(appContext, true), weight: isClosest ? .bold : .regular),
                     marqueeStartDelay: 2,
                     marqueeAlignment: .bottomLeading

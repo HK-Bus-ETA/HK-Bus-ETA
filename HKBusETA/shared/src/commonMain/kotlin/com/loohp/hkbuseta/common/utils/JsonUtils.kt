@@ -32,6 +32,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
@@ -61,6 +62,10 @@ fun JsonObject.optInt(key: String, default: Int = 0): Int {
 
 fun JsonObject.optLong(key: String, default: Long = 0): Long {
     return this[key]?.let { it as? JsonPrimitive }?.longOrNull?: default
+}
+
+fun JsonObject.optFloat(key: String, default: Float = Float.NaN): Float {
+    return this[key]?.let { it as? JsonPrimitive }?.floatOrNull?: default
 }
 
 fun JsonObject.optDouble(key: String, default: Double = Double.NaN): Double {

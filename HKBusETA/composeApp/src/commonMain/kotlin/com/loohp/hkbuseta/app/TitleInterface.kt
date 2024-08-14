@@ -251,7 +251,7 @@ fun TitleInterface(instance: AppActiveContext) {
                         0 -> NearbyInterface(instance, isOnPage)
                         1 -> FavouriteInterface(instance, isOnPage)
                         2 -> SearchInterface(instance, isOnPage)
-                        3 -> RouteMapSearchInterface(instance)
+                        3 -> RouteMapSearchInterface(instance, isOnPage)
                         4 -> SettingsInterface(instance)
                         else -> PlatformText(titleTabItems[it].title[Shared.language])
                     }

@@ -129,6 +129,7 @@ expect val PlatformIcons.Filled.WrongLocation: Painter @Composable get
 expect val PlatformIcons.Filled.Palette: Painter @Composable get
 expect val PlatformIcons.Outlined.Add: Painter @Composable get
 expect val PlatformIcons.Outlined.Bedtime: Painter @Composable get
+expect val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get
 expect val PlatformIcons.Outlined.Delete: Painter @Composable get
 expect val PlatformIcons.Outlined.DeleteForever: Painter @Composable get
 expect val PlatformIcons.Outlined.Download: Painter @Composable get

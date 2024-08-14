@@ -41,7 +41,8 @@ import kotlin.coroutines.EmptyCoroutineContext
 fun <T> MutableStateFlow<T>.collectAsStateWithLifecycle(
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
     minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
-    context: CoroutineContext = EmptyCoroutineContext
+    context: CoroutineContext = EmptyCoroutineContext,
+    setValueCallback: ((T) -> Unit)? = null
 ): MutableState<T> {
     val delegate by (this as StateFlow<T>).collectAsStateWithLifecycle(
         lifecycleOwner = lifecycleOwner,
@@ -57,6 +58,7 @@ fun <T> MutableStateFlow<T>.collectAsStateWithLifecycle(
                 tempValue = value
                 usingTempValue = true
                 this@collectAsStateWithLifecycle.value = value
+                setValueCallback?.invoke(value)
             }
         override operator fun component1(): T = value
         override operator fun component2(): (T) -> Unit = { value = it }
