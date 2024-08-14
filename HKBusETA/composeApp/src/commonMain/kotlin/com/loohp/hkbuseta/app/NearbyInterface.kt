@@ -591,7 +591,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                                 val loc = it.resolveLocation().await()
                                                 val newPos = RadiusCenterPosition(loc.lat, loc.lng, position.radius)
                                                 initialPosition = RadiusCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
-                                                delay(100)
+                                                delay(500)
                                                 initialPosition = newPos
                                                 position = newPos
                                                 updating = false
