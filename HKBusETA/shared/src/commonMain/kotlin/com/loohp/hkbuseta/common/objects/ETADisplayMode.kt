@@ -23,19 +23,19 @@ package com.loohp.hkbuseta.common.objects
 
 enum class ETADisplayMode(
     val hasClockTime: Boolean,
-    val shortTextClockTime: Boolean
+    val wearableShortTextClockTime: Boolean
 ) {
     COUNTDOWN(
         hasClockTime = false,
-        shortTextClockTime = false
+        wearableShortTextClockTime = false
     ),
     CLOCK_TIME(
         hasClockTime = true,
-        shortTextClockTime = true
+        wearableShortTextClockTime = true
     ),
     CLOCK_TIME_WITH_COUNTDOWN(
         hasClockTime = true,
-        shortTextClockTime = false
+        wearableShortTextClockTime = false
     );
 
     val next: ETADisplayMode get() = entries[(ordinal + 1) % entries.size]

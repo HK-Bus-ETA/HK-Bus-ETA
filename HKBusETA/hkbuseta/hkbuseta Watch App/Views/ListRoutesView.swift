@@ -407,7 +407,7 @@ struct ListRoutesEtaView: View {
                         }
                     } else {
                         let text: AttributedString = {
-                            if (Shared().etaDisplayMode.shortTextClockTime) {
+                            if (Shared().etaDisplayMode.wearableShortTextClockTime) {
                                 let text1 = Shared().getResolvedText(eta, seq: 1.asInt32(), etaDisplayMode: Shared().etaDisplayMode, context: appContext).resolvedClockTime.string.trimmingCharacters(in: .whitespaces)
                                 return text1.replace("\\s+", "\n").asAttributedString(fontSize: 14.5.scaled(appContext, true))
                             } else {

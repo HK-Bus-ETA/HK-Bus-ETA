@@ -90,6 +90,7 @@ import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.appcontext.nonActiveAppContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
@@ -517,68 +518,162 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                     )
                 }
             } else {
-                if (Shared.etaDisplayMode.shortTextClockTime) {
-                    val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
-                    Text(
-                        modifier = GlanceModifier.height(19F.spToDp(instance).dp),
-                        text = text1,
-                        style = TextDefaults.defaultTextStyle.copy(
-                            fontSize = 17F.sp,
-                            color = ColorProvider(etaColor(instance.context)),
-                            textAlign = TextAlign.End
+                when (Shared.etaDisplayMode) {
+                    ETADisplayMode.COUNTDOWN -> {
+                        val (text1, text2) = eta.firstLine.shortText
+                        Text(
+                            modifier = GlanceModifier.height(24.2F.spToDp(instance).dp),
+                            text = text1,
+                            style = TextDefaults.defaultTextStyle.copy(
+                                fontSize = 22F.sp,
+                                color = ColorProvider(etaColor(instance.context)),
+                                textAlign = TextAlign.End
+                            )
                         )
-                    )
-                    (2..3).forEach {
-                        val eText1 = eta.getResolvedText(it, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
-                        if (eText1.length > 1) {
+                        Text(
+                            modifier = GlanceModifier.height(11F.spToDp(instance).dp),
+                            text = text2,
+                            style = TextDefaults.defaultTextStyle.copy(
+                                fontSize = 8F.sp,
+                                color = ColorProvider(etaColor(instance.context)),
+                                textAlign = TextAlign.End
+                            )
+                        )
+                        (2..3).mapNotNull {
+                            val (eText1, eText2) = eta[it].shortText
+                            if (eText1.isBlank() || eText2 != text2) {
+                                null
+                            } else {
+                                eText1
+                            }
+                        }.takeIf { it.isNotEmpty() }?.joinToString(", ", postfix = text2)?.apply {
                             Text(
-                                modifier = GlanceModifier.height(15F.spToDp(instance).dp),
-                                text = eText1,
+                                modifier = GlanceModifier.height(14F.spToDp(instance).dp),
+                                text = this,
                                 style = TextDefaults.defaultTextStyle.copy(
-                                    fontSize = 13F.sp,
+                                    fontSize = 10F.sp,
                                     color = ColorProvider(etaSecondColor(instance.context)),
                                     textAlign = TextAlign.End
                                 )
                             )
                         }
                     }
-                } else {
-                    val (text1, text2) = eta.firstLine.shortText
-                    Text(
-                        modifier = GlanceModifier.height(24.2F.spToDp(instance).dp),
-                        text = text1,
-                        style = TextDefaults.defaultTextStyle.copy(
-                            fontSize = 22F.sp,
-                            color = ColorProvider(etaColor(instance.context)),
-                            textAlign = TextAlign.End
-                        )
-                    )
-                    Text(
-                        modifier = GlanceModifier.height(11F.spToDp(instance).dp),
-                        text = text2,
-                        style = TextDefaults.defaultTextStyle.copy(
-                            fontSize = 8F.sp,
-                            color = ColorProvider(etaColor(instance.context)),
-                            textAlign = TextAlign.End
-                        )
-                    )
-                    (2..3).mapNotNull {
-                        val (eText1, eText2) = eta[it].shortText
-                        if (eText1.isBlank() || eText2 != text2) {
-                            null
-                        } else {
-                            eText1
-                        }
-                    }.takeIf { it.isNotEmpty() }?.joinToString(", ", postfix = text2)?.apply {
+                    ETADisplayMode.CLOCK_TIME -> {
+                        val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
                         Text(
-                            modifier = GlanceModifier.height(14F.spToDp(instance).dp),
-                            text = this,
+                            modifier = GlanceModifier.height(19F.spToDp(instance).dp),
+                            text = text1,
                             style = TextDefaults.defaultTextStyle.copy(
-                                fontSize = 10F.sp,
-                                color = ColorProvider(etaSecondColor(instance.context)),
+                                fontSize = 17F.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ColorProvider(etaColor(instance.context)),
                                 textAlign = TextAlign.End
                             )
                         )
+                        (2..3).forEach {
+                            val eText1 = eta.getResolvedText(it, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
+                            if (eText1.length > 1) {
+                                Text(
+                                    modifier = GlanceModifier.height(15F.spToDp(instance).dp),
+                                    text = eText1,
+                                    style = TextDefaults.defaultTextStyle.copy(
+                                        fontSize = 13F.sp,
+                                        color = ColorProvider(etaSecondColor(instance.context)),
+                                        textAlign = TextAlign.End
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    ETADisplayMode.CLOCK_TIME_WITH_COUNTDOWN -> {
+                        val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
+                        val (text2, text3) = eta.firstLine.shortText
+                        Row(
+                            modifier = GlanceModifier
+                                .wrapContentSize()
+                                .padding(0.dp),
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            Text(
+                                modifier = GlanceModifier.height(19F.spToDp(instance).dp),
+                                text = text1,
+                                style = TextDefaults.defaultTextStyle.copy(
+                                    fontSize = 17F.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ColorProvider(etaColor(instance.context)),
+                                    textAlign = TextAlign.End
+                                )
+                            )
+                            Spacer(
+                                modifier = GlanceModifier
+                                    .height(1F.dp)
+                                    .width(14F.spToDp(instance).dp)
+                            )
+                            Text(
+                                modifier = GlanceModifier.height(19F.spToDp(instance).dp),
+                                text = text2,
+                                style = TextDefaults.defaultTextStyle.copy(
+                                    fontSize = 17F.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ColorProvider(etaColor(instance.context)),
+                                    textAlign = TextAlign.End
+                                )
+                            )
+                            Text(
+                                modifier = GlanceModifier.height(12F.spToDp(instance).dp),
+                                text = text3,
+                                style = TextDefaults.defaultTextStyle.copy(
+                                    fontSize = 10F.sp,
+                                    color = ColorProvider(etaColor(instance.context)),
+                                    textAlign = TextAlign.End
+                                )
+                            )
+                        }
+                        (2..3).forEach {
+                            val eText1 = eta.getResolvedText(it, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
+                            if (eText1.length > 1) {
+                                val (eText2, eText3) = eta[it].shortText
+                                Row(
+                                    modifier = GlanceModifier
+                                        .wrapContentSize()
+                                        .padding(0.dp),
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    Text(
+                                        modifier = GlanceModifier.height(15F.spToDp(instance).dp),
+                                        text = eText1,
+                                        style = TextDefaults.defaultTextStyle.copy(
+                                            fontSize = 13F.sp,
+                                            color = ColorProvider(etaSecondColor(instance.context)),
+                                            textAlign = TextAlign.End
+                                        )
+                                    )
+                                    Spacer(
+                                        modifier = GlanceModifier
+                                            .height(1F.dp)
+                                            .width(10F.spToDp(instance).dp)
+                                    )
+                                    Text(
+                                        modifier = GlanceModifier.height(15F.spToDp(instance).dp),
+                                        text = eText2,
+                                        style = TextDefaults.defaultTextStyle.copy(
+                                            fontSize = 13F.sp,
+                                            color = ColorProvider(etaColor(instance.context)),
+                                            textAlign = TextAlign.End
+                                        )
+                                    )
+                                    Text(
+                                        modifier = GlanceModifier.height(10F.spToDp(instance).dp),
+                                        text = eText3,
+                                        style = TextDefaults.defaultTextStyle.copy(
+                                            fontSize = 8F.sp,
+                                            color = ColorProvider(etaColor(instance.context)),
+                                            textAlign = TextAlign.End
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -106,6 +106,7 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RecentSortMode
@@ -886,36 +887,60 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults
                     )
                 }
             } else {
-                val (text, lineHeight) = if (Shared.etaDisplayMode.shortTextClockTime) {
-                    val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
-                    buildAnnotatedString {
-                        append(text1, SpanStyle(fontSize = 20.sp, color = etaColor, fontWeight = FontWeight.Bold))
-                        (2..3).forEach {
-                            val eText1 = eta.getResolvedText(it, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
-                            if (eText1.length > 1) {
-                                append("\n")
-                                append(eText1, SpanStyle(fontSize = 16.sp))
-                            }
-                        }
-                    } to 1.4F.em
-                } else {
-                    val (text1, text2) = eta.firstLine.shortText
-                    buildAnnotatedString {
-                        append(text1, SpanStyle(fontSize = 27.sp, color = etaColor))
-                        append("\n")
-                        append(text2, SpanStyle(fontSize = 14.sp, color = etaColor))
-                        (2..3).mapNotNull {
-                            val (eText1, eText2) = eta[it].shortText
-                            if (eText1.isBlank() || eText2 != text2) {
-                                null
-                            } else {
-                                eText1
-                            }
-                        }.takeIf { it.isNotEmpty() }?.joinToString(", ", postfix = text2)?.apply {
+                val (text, lineHeight) = when (Shared.etaDisplayMode) {
+                    ETADisplayMode.COUNTDOWN -> {
+                        val (text1, text2) = eta.firstLine.shortText
+                        buildAnnotatedString {
+                            append(text1, SpanStyle(fontSize = 27.sp, color = etaColor))
                             append("\n")
-                            append(this, SpanStyle(fontSize = 11.sp))
-                        }
-                    } to 1.1F.em
+                            append(text2, SpanStyle(fontSize = 14.sp, color = etaColor))
+                            (2..3).mapNotNull {
+                                val (eText1, eText2) = eta[it].shortText
+                                if (eText1.isBlank() || eText2 != text2) {
+                                    null
+                                } else {
+                                    eText1
+                                }
+                            }.takeIf { it.isNotEmpty() }?.joinToString(", ", postfix = text2)?.apply {
+                                append("\n")
+                                append(this, SpanStyle(fontSize = 11.sp))
+                            }
+                        } to 1.1F.em
+                    }
+                    ETADisplayMode.CLOCK_TIME -> {
+                        val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
+                        buildAnnotatedString {
+                            append(text1, SpanStyle(fontSize = 20.sp, color = etaColor, fontWeight = FontWeight.Bold))
+                            (2..3).forEach {
+                                val eText1 = eta.getResolvedText(it, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
+                                if (eText1.length > 1) {
+                                    append("\n")
+                                    append(eText1, SpanStyle(fontSize = 16.sp))
+                                }
+                            }
+                        } to 1.4F.em
+                    }
+                    ETADisplayMode.CLOCK_TIME_WITH_COUNTDOWN -> {
+                        val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
+                        val (text2, text3) = eta.firstLine.shortText
+                        buildAnnotatedString {
+                            append(text1, SpanStyle(fontSize = 20.sp, color = etaColor, fontWeight = FontWeight.Bold))
+                            append("  ")
+                            append(text2, SpanStyle(fontSize = 20.sp, color = etaColor, fontWeight = FontWeight.Bold))
+                            append(text3, SpanStyle(fontSize = 12.sp, color = etaColor))
+                            (2..3).forEach {
+                                val eText1 = eta.getResolvedText(it, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
+                                if (eText1.length > 1) {
+                                    val (eText2, eText3) = eta[it].shortText
+                                    append("\n")
+                                    append(eText1, SpanStyle(fontSize = 16.sp))
+                                    append("  ")
+                                    append(eText2, SpanStyle(fontSize = 16.sp))
+                                    append(eText3, SpanStyle(fontSize = 10.sp))
+                                }
+                            }
+                        } to 1.4F.em
+                    }
                 }
                 PlatformText(
                     textAlign = TextAlign.End,

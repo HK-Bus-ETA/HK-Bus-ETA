@@ -770,7 +770,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults
                     )
                 }
             } else {
-                val (text, lineHeight) = if (Shared.etaDisplayMode.shortTextClockTime) {
+                val (text, lineHeight) = if (Shared.etaDisplayMode.wearableShortTextClockTime) {
                     val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
                     val fontSize = 15F.scaledSize(instance).sp
                     text1.replace("\\s+".toRegex(), "\n").asAnnotatedString(SpanStyle(fontSize = fontSize)) to fontSize
