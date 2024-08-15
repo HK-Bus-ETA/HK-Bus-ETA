@@ -41,7 +41,7 @@ class MutableBranchedList<K, V, B> private constructor(
         return add(key, value)
     }
 
-    fun keyIndexOf(key: K, from: Int): Int {
+    private fun keyIndexOf(key: K, from: Int): Int {
         val itr = listIterator(from)
         while (itr.hasNext()) {
             val i = itr.nextIndex()
@@ -52,7 +52,7 @@ class MutableBranchedList<K, V, B> private constructor(
         return -1
     }
 
-    fun match(other: MutableBranchedList<K, V, B>, searchFrom: Int): IntArray? {
+    private fun match(other: MutableBranchedList<K, V, B>, searchFrom: Int): IntArray? {
         for ((i, entry) in other.withIndex()) {
             val indexOf = keyIndexOf(entry.key, searchFrom)
             if (indexOf >= 0) {
@@ -66,7 +66,11 @@ class MutableBranchedList<K, V, B> private constructor(
         return MutableBranchedList(delegate.subList(fromIndex, toIndex), branchId, conflictResolve)
     }
 
-    fun merge(other: MutableBranchedList<K, V, B>, searchFrom: Int = 0, addToFrontIfNotFound: Boolean = false) {
+    fun merge(other: MutableBranchedList<K, V, B>, mergeToFrontIfNotFound: Boolean) {
+        merge(other, 0, mergeToFrontIfNotFound, false)
+    }
+
+    private fun merge(other: MutableBranchedList<K, V, B>, searchFrom: Int, mergeToFrontIfNotFound: Boolean, addToFrontIfNotFound: Boolean) {
         if (other.isEmpty()) {
             return
         }
@@ -87,7 +91,7 @@ class MutableBranchedList<K, V, B> private constructor(
         addAll(selfIndex, other.subList(0, otherIndex))
         val newOther = other.subList(otherIndex + 1, other.size)
         if (newOther.isNotEmpty()) {
-            merge(newOther, selfIndex + 1, true)
+            merge(newOther, selfIndex + 1, mergeToFrontIfNotFound, mergeToFrontIfNotFound)
         }
     }
 

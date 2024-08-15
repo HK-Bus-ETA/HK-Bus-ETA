@@ -82,6 +82,7 @@ import com.loohp.hkbuseta.common.objects.getTitle
 import com.loohp.hkbuseta.common.objects.hkkfStopCode
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyStopCo
+import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isNightRoute
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.lrtLineStatus
@@ -1234,8 +1235,9 @@ class Registry {
                         if (aType > bType) b else a
                     }
                 }
+                val isMainBranchCircular = lists.firstOrNull()?.first?.branchId?.isCircular?: false
                 for ((first) in lists) {
-                    result.merge(first)
+                    result.merge(first, isMainBranchCircular || !first.branchId.isCircular)
                 }
                 result.asSequenceWithBranchIds()
                     .map { (f, s) -> f.withBranchIds(s) }
