@@ -32,7 +32,6 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Coordinates
-import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
 import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
@@ -42,6 +41,7 @@ import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.LastLookupRoute
 import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
@@ -381,6 +381,7 @@ object Shared {
         queryStopDirectLaunch: Boolean,
         appScreen: AppScreen?,
         noAnimation: Boolean,
+        skipTitle: Boolean,
         orElse: () -> Unit
     ) {
         CoroutineScope(Dispatchers.Default).launch {
@@ -457,7 +458,9 @@ object Shared {
                     queryGMBRegion = nearestRoute.gmbRegion
                 }
 
-                instance.startActivity(AppIntent(instance, AppScreen.TITLE))
+                if (!skipTitle) {
+                    instance.startActivity(AppIntent(instance, AppScreen.TITLE))
+                }
 
                 val result = Registry.getInstance(instance).findRoutes(queryRouteNumber?: "", true)
                 if (result.isNotEmpty()) {

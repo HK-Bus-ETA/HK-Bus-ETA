@@ -77,6 +77,7 @@ import com.loohp.hkbuseta.compose.AdaptiveNavBar
 import com.loohp.hkbuseta.compose.AdaptiveNavBarItem
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.MutableSignalState
 import com.loohp.hkbuseta.compose.NearMe
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
@@ -86,6 +87,7 @@ import com.loohp.hkbuseta.compose.Search
 import com.loohp.hkbuseta.compose.Settings
 import com.loohp.hkbuseta.compose.Star
 import com.loohp.hkbuseta.compose.StarOutline
+import com.loohp.hkbuseta.compose.mutableSignalStateOf
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
 import com.loohp.hkbuseta.compose.rememberAutoResizeFontState
@@ -104,7 +106,8 @@ data class TitleTabItem(
     val selectedIcon: @Composable () -> Painter,
     val unselectedColors: @Composable () -> NavigationBarItemColors? = { null },
     val selectedColors: @Composable () -> NavigationBarItemColors? = { null },
-    val appScreens: Set<AppScreen>
+    val appScreens: Set<AppScreen>,
+    val alreadyOnPageClickAction: (AppActiveContext.(MutableSignalState) -> Unit)? = null
 ) {
 
     fun icon(selected: Boolean): @Composable () -> Painter {
@@ -128,20 +131,23 @@ val titleTabItems = listOf(
         title = "喜愛" withEn "Favourites",
         unselectedIcon = { PlatformIcons.Outlined.StarOutline },
         selectedIcon = { PlatformIcons.Filled.Star },
-        appScreens = setOf(AppScreen.FAV, AppScreen.FAV_ROUTE_LIST_VIEW)
+        appScreens = setOf(AppScreen.FAV, AppScreen.FAV_ROUTE_LIST_VIEW),
+        alreadyOnPageClickAction = { it.notifySignal() }
     ),
     TitleTabItem(
         title = "搜尋路線" withEn "Search",
         unselectedIcon = { PlatformIcons.Outlined.Search },
         selectedIcon = { PlatformIcons.Filled.Search },
-        appScreens = setOf(AppScreen.SEARCH, AppScreen.LIST_ROUTES)
+        appScreens = setOf(AppScreen.SEARCH, AppScreen.LIST_ROUTES),
+        alreadyOnPageClickAction = { startActivity(AppIntent(this, AppScreen.RECENT)) }
     ),
     TitleTabItem(
         title = "港鐵" withEn "MTR",
         unselectedIcon = { painterResource(DrawableResource("mtr_vector.xml")) },
         selectedIcon = { painterResource(DrawableResource("mtr_vector.xml")) },
         selectedColors = { NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFFAC2E44)) },
-        appScreens = setOf(AppScreen.SEARCH_TRAIN)
+        appScreens = setOf(AppScreen.SEARCH_TRAIN),
+        alreadyOnPageClickAction = { it.notifySignal() }
     ),
     TitleTabItem(
         title = "設定" withEn "Settings",
@@ -159,6 +165,7 @@ fun TitleInterface(instance: AppActiveContext) {
         pageCount = { titleTabItems.size }
     )
     val scope = rememberCoroutineScope()
+    val signal = remember { mutableSignalStateOf() }
 
     val routes by remember(instance) { derivedStateOf { instance.compose.data["result"] as? List<*> } }
     var showBottomRouteSheet by rememberSaveable { mutableStateOf(false) }
@@ -211,7 +218,15 @@ fun TitleInterface(instance: AppActiveContext) {
             val selected = index == pagerState.currentPage
             AdaptiveNavBarItem(
                 selected = selected,
-                onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                onClick = {
+                    scope.launch {
+                        if (selected) {
+                            item.alreadyOnPageClickAction?.invoke(instance, signal)
+                        } else {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    }
+                },
                 label = {
                     AutoResizeText(
                         autoResizeTextState = autoFontSizeState,
@@ -249,9 +264,9 @@ fun TitleInterface(instance: AppActiveContext) {
                     val isOnPage = pagerState.currentPage == it && titleTabItems[it].appScreens.contains(instance.compose.screen)
                     when (it) {
                         0 -> NearbyInterface(instance, isOnPage)
-                        1 -> FavouriteInterface(instance, isOnPage)
+                        1 -> FavouriteInterface(instance, isOnPage, signal.signal)
                         2 -> SearchInterface(instance, isOnPage)
-                        3 -> RouteMapSearchInterface(instance, isOnPage)
+                        3 -> RouteMapSearchInterface(instance, isOnPage, signal.signal)
                         4 -> SettingsInterface(instance)
                         else -> PlatformText(titleTabItems[it].title[Shared.language])
                     }

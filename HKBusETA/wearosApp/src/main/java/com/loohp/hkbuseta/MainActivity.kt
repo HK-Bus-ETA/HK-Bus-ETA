@@ -20,6 +20,7 @@
 
 package com.loohp.hkbuseta
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -47,6 +48,8 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.app.MainLoading
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.appcontext.context
+import com.loohp.hkbuseta.common.external.extractShareLink
+import com.loohp.hkbuseta.common.external.shareLaunch
 import com.loohp.hkbuseta.common.objects.gmbRegion
 import com.loohp.hkbuseta.common.objects.operator
 import com.loohp.hkbuseta.common.shared.Registry
@@ -54,6 +57,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.dispatcherIO
+import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.tiles.EtaTileServiceCommon
 import com.loohp.hkbuseta.utils.RemoteActivityUtils.Companion.hasPhoneApp
@@ -61,12 +65,14 @@ import com.loohp.hkbuseta.utils.optBoolean
 import com.loohp.hkbuseta.utils.optInt
 import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.scaledSize
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 
 @Stable
-class MainActivity : ComponentActivity() {
+open class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -150,5 +156,21 @@ class MainActivity : ComponentActivity() {
                 MainLoading(appContext, stopId, co, index, stop.asImmutableState(), route.asImmutableState(), listStopRoute.asImmutableState(), listStopScrollToStop, listStopShowEta, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch, alightReminder)
             }
         }
+        CoroutineScope(dispatcherIO).launch {
+            intent.extractUrl()?.extractShareLink()?.apply {
+                delay(500)
+                shareLaunch(appContext, noAnimation = true, skipTitle = true)
+            }
+        }
+    }
+}
+
+internal fun Intent.extractUrl(): String? {
+    return when (action) {
+        Intent.ACTION_SEND -> (if (type == "text/plain") getStringExtra(Intent.EXTRA_TEXT)?.remove("\n") else null)
+            .apply { removeExtra(Intent.EXTRA_TEXT) }
+        Intent.ACTION_VIEW -> data.toString()
+            .apply { data = null }
+        else -> null
     }
 }

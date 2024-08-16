@@ -23,7 +23,11 @@ package com.loohp.hkbuseta.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisallowComposableCalls
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 @Composable
 expect fun RestartEffect(onRestart: () -> Unit)
@@ -42,3 +46,47 @@ inline fun ImmediateEffect(key1: Any?, key2: Any?, key3: Any?, crossinline effec
 
 @Composable
 inline fun ImmediateEffect(vararg keys: Any?, crossinline effect: @DisallowComposableCalls () -> Unit) = remember(keys = keys, effect)
+
+@Composable
+inline fun ChangedEffect(key1: Any?, crossinline effect: @DisallowComposableCalls () -> Unit) {
+    var launched by remember { mutableStateOf(false) }
+    LaunchedEffect (key1) {
+        if (launched) {
+            effect.invoke()
+        }
+        launched = true
+    }
+}
+
+@Composable
+inline fun ChangedEffect(key1: Any?, key2: Any?, crossinline effect: @DisallowComposableCalls () -> Unit) {
+    var launched by remember { mutableStateOf(false) }
+    LaunchedEffect (key1, key2) {
+        if (launched) {
+            effect.invoke()
+        }
+        launched = true
+    }
+}
+
+@Composable
+inline fun ChangedEffect(key1: Any?, key2: Any?, key3: Any?, crossinline effect: @DisallowComposableCalls () -> Unit) {
+    var launched by remember { mutableStateOf(false) }
+    LaunchedEffect (key1, key2, key3) {
+        if (launched) {
+            effect.invoke()
+        }
+        launched = true
+    }
+}
+
+@Composable
+inline fun ChangedEffect(vararg keys: Any?, crossinline effect: @DisallowComposableCalls () -> Unit) {
+    var launched by remember { mutableStateOf(false) }
+    LaunchedEffect (keys = keys) {
+        if (launched) {
+            effect.invoke()
+        }
+        launched = true
+    }
+}

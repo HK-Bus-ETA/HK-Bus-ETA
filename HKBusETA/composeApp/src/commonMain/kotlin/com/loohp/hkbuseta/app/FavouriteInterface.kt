@@ -94,6 +94,7 @@ import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.Add
 import com.loohp.hkbuseta.compose.AdvanceTabRow
 import com.loohp.hkbuseta.compose.AutoResizeText
+import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.DeleteDialog
 import com.loohp.hkbuseta.compose.DeleteForever
 import com.loohp.hkbuseta.compose.Edit
@@ -109,10 +110,12 @@ import com.loohp.hkbuseta.compose.PlatformTabRow
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.Reorder
 import com.loohp.hkbuseta.compose.ScrollBarConfig
+import com.loohp.hkbuseta.compose.Signal
 import com.loohp.hkbuseta.compose.TextInputDialog
 import com.loohp.hkbuseta.compose.TransferWithinAStation
 import com.loohp.hkbuseta.compose.WrongLocation
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.dummySignal
 import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.compose.platformComponentBackgroundColor
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
@@ -145,7 +148,7 @@ val mainFavouriteTabItem = listOf(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true) {
+fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, signal: Signal = dummySignal) {
     val pagerState = rememberPagerState(
         initialPage = Shared.viewFavTab.coerceIn(0, mainFavouriteTabItem.size - 1),
         pageCount = { mainFavouriteTabItem.size }
@@ -159,6 +162,10 @@ fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true) {
                 Registry.getInstance(instance).setViewFavTab(page, instance)
             }
         }
+    }
+    ChangedEffect (signal) {
+        val index = pagerState.currentPage
+        scope.launch { pagerState.animateScrollToPage(if (index == 0) 1 else 0) }
     }
 
     Column(

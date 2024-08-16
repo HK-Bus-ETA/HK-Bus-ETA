@@ -99,7 +99,7 @@ suspend fun String.extractShareLink(): JsonObject? {
     return null
 }
 
-fun JsonObject.shareLaunch(instance: AppActiveContext, noAnimation: Boolean = false) {
+fun JsonObject.shareLaunch(instance: AppActiveContext, noAnimation: Boolean = false, skipTitle: Boolean = false) {
     val queryKey = this["k"]?.jsonPrimitive?.content
     val queryRouteNumber = this["r"]?.jsonPrimitive?.content
     val queryBound = this["b"]?.jsonPrimitive?.content
@@ -111,5 +111,27 @@ fun JsonObject.shareLaunch(instance: AppActiveContext, noAnimation: Boolean = fa
     val queryStopDirectLaunch = this["sd"]?.jsonPrimitive?.booleanOrNull == true
     val appScreen = this["screen"]?.jsonPrimitive?.content?.let { AppScreen.valueOfNullable(it) }
 
-    Shared.handleLaunchOptions(instance, null, null, null, null, null, null, null, null, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch, appScreen, noAnimation) { /* do nothing */ }
+    Shared.handleLaunchOptions(
+        instance = instance,
+        stopId = null,
+        co = null,
+        index = null,
+        stop = null,
+        route = null,
+        listStopRoute = null,
+        listStopScrollToStop = null,
+        listStopShowEta = null,
+        queryKey = queryKey,
+        queryRouteNumber = queryRouteNumber,
+        queryBound = queryBound,
+        queryCo = queryCo,
+        queryDest = queryDest,
+        queryGMBRegion = queryGMBRegion,
+        queryStop = queryStop,
+        queryStopIndex = queryStopIndex,
+        queryStopDirectLaunch = queryStopDirectLaunch,
+        appScreen = appScreen,
+        noAnimation = noAnimation,
+        skipTitle = skipTitle
+    ) { /* do nothing */ }
 }

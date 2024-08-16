@@ -169,6 +169,7 @@ import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.Accessible
 import com.loohp.hkbuseta.compose.Bedtime
+import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.Info
 import com.loohp.hkbuseta.compose.Map
 import com.loohp.hkbuseta.compose.Paid
@@ -181,6 +182,7 @@ import com.loohp.hkbuseta.compose.PlatformTab
 import com.loohp.hkbuseta.compose.PlatformTabRow
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.ScrollBarConfig
+import com.loohp.hkbuseta.compose.Signal
 import com.loohp.hkbuseta.compose.Star
 import com.loohp.hkbuseta.compose.StarOutline
 import com.loohp.hkbuseta.compose.Start
@@ -199,8 +201,11 @@ import com.loohp.hkbuseta.compose.table.TableColumnWidth
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
+import com.loohp.hkbuseta.compose.SignalState
+import com.loohp.hkbuseta.compose.dummySignal
 import com.loohp.hkbuseta.compose.zoomable.Zoomable
 import com.loohp.hkbuseta.compose.zoomable.ZoomableState
+import com.loohp.hkbuseta.compose.dummySignalState
 import com.loohp.hkbuseta.compose.zoomable.rememberZoomableState
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
@@ -295,7 +300,7 @@ private val routeMapSearchSelectedTabIndexState: MutableStateFlow<Int> = Mutable
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteMapSearchInterface(instance: AppActiveContext, visible: Boolean) {
+fun RouteMapSearchInterface(instance: AppActiveContext, visible: Boolean, signal: Signal = dummySignal) {
     var routeMapSearchSelectedTabIndex by routeMapSearchSelectedTabIndexState.collectAsStateMultiplatform()
     val pagerState = rememberPagerState(
         initialPage = routeMapSearchSelectedTabIndex,
@@ -309,6 +314,10 @@ fun RouteMapSearchInterface(instance: AppActiveContext, visible: Boolean) {
         if (!pagerState.isScrollInProgress && trainRouteMapItems[index].shouldSaveTabPosition) {
             routeMapSearchSelectedTabIndex = index
         }
+    }
+    ChangedEffect (signal) {
+        val index = pagerState.currentPage
+        scope.launch { pagerState.animateScrollToPage(if (index == 0) 1 else 0) }
     }
 
     var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(null) }

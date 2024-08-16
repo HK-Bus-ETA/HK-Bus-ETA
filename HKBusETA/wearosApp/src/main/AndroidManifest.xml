@@ -53,9 +53,33 @@
             android:exported="true"
             android:theme="@style/Theme.App.Starting"
             android:taskAffinity="com.loohp.hkbuseta">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".DeepLinkLaunchActivity"
+            android:clearTaskOnLaunch="true"
+            android:exported="true"
+            android:theme="@style/Theme.App.Starting"
+            android:taskAffinity="com.loohp.hkbuseta">
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="app.hkbuseta.com"/>
             </intent-filter>
         </activity>
 

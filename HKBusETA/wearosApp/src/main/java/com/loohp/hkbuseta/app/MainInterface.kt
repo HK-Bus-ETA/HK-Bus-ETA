@@ -104,7 +104,7 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                     if (appScreen != null) {
                         delay(250)
                     }
-                    Shared.handleLaunchOptions(instance, stopId, co, index, stop.value, route.value, listStopRoute.value, listStopScrollToStop, listStopShowEta, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch, appScreen, noAnimation) {
+                    Shared.handleLaunchOptions(instance, stopId, co, index, stop.value, route.value, listStopRoute.value, listStopScrollToStop, listStopShowEta, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch, appScreen, noAnimation, false) {
                         WearOSShared.restoreCurrentScreenOrRun(instance, true) {
                             instance.startActivity(AppIntent(instance, AppScreen.TITLE))
                             instance.finishAffinity()
