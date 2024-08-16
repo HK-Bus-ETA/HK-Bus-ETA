@@ -247,7 +247,7 @@ func handleDataFromPhone(payload: [String: Any]) {
         let queryStop = payload["s"] as? String
         let queryStopIndex = (payload["si"] as? Int ?? 0).asInt32()
         let queryStopDirectLaunch = payload["sd"] as? Bool ?? false
-        Shared().handleLaunchOptions(instance: HistoryStack().historyStack.value.first! as! AppActiveContextWatchOS, stopId: nil, co: nil, index: nil, stop: nil, route: nil, listStopRoute: nil, listStopScrollToStop: nil, listStopShowEta: nil, queryKey: queryKey, queryRouteNumber: queryRouteNumber, queryBound: queryBound, queryCo: queryCo, queryDest: queryDest, queryGMBRegion: queryGMBRegion, queryStop: queryStop, queryStopIndex: queryStopIndex, queryStopDirectLaunch: queryStopDirectLaunch, appScreen: nil, noAnimation: false, orElse: { })
+        Shared().handleLaunchOptions(instance: HistoryStack().historyStack.value.first! as! AppActiveContextWatchOS, stopId: nil, co: nil, index: nil, stop: nil, route: nil, listStopRoute: nil, listStopScrollToStop: nil, listStopShowEta: nil, queryKey: queryKey, queryRouteNumber: queryRouteNumber, queryBound: queryBound, queryCo: queryCo, queryDest: queryDest, queryGMBRegion: queryGMBRegion, queryStop: queryStop, queryStopIndex: queryStopIndex, queryStopDirectLaunch: queryStopDirectLaunch, appScreen: nil, noAnimation: false, skipTitle: false, orElse: { })
     case Shared().SYNC_PREFERENCES_ID:
         let preferences = payload["payload"] as! String
         AppContextWatchOSKt.syncPreference(context: applicationContext(), preferenceJson: preferences, sync: false)
