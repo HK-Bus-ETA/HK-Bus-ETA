@@ -326,7 +326,10 @@ fun ListStopsEtaInterface(
     selectedBranchState: MutableState<Route>,
     alternateStopNamesShowingState: MutableState<Boolean>,
     possibleBidirectionalSectionFare: Boolean = false,
-    floatingActions: (@Composable BoxScope.(LazyListState) -> Unit)? = null
+    floatingActions: (@Composable BoxScope.(LazyListState) -> Unit)? = null,
+    timesStartIndexState: MutableIntState = remember { mutableIntStateOf(1) },
+    timesEndIndexState: MutableIntState = remember { mutableIntStateOf(2) },
+    timesInitState: MutableState<Boolean> = remember { mutableStateOf(false) }
 ) {
     val routeNumber by remember(listRoute) { derivedStateOf { listRoute.route!!.routeNumber } }
     val co by remember(listRoute) { derivedStateOf { listRoute.co } }
@@ -348,11 +351,10 @@ fun ListStopsEtaInterface(
     val etaResults = remember { ConcurrentMap<Int, Registry.ETAQueryResult>().asImmutableState() }
     val etaUpdateTimes = remember { ConcurrentMap<Int, Long>().asImmutableState() }
 
-    val timesStartIndexState = remember { mutableIntStateOf(1) }
-    val timesEndIndexState = remember { mutableIntStateOf(2) }
     val timesState = remember { mutableIntStateOf(-1) }
     var timesStartIndex by timesStartIndexState
     var timesEndIndex by timesEndIndexState
+    var timesInit by timesInitState
     var times by timesState
 
     val lrtDirectionModeState = remember { mutableStateOf(Shared.lrtDirectionMode) }
@@ -423,15 +425,18 @@ fun ListStopsEtaInterface(
                     }
                 }
                 ListStopsInterfaceType.TIMES -> {
-                    scroll.scrollToItem(index)
-                    if (type == ListStopsInterfaceType.TIMES) {
-                        if (index >= allStops.size - 1) {
-                            timesStartIndex = index
-                            timesEndIndex = index + 1
-                        } else {
-                            timesStartIndex = index + 1
-                            timesEndIndex = index + 2
+                    if (!timesInit) {
+                        scroll.scrollToItem(index)
+                        if (type == ListStopsInterfaceType.TIMES) {
+                            if (index >= allStops.size - 1) {
+                                timesStartIndex = index
+                                timesEndIndex = index + 1
+                            } else {
+                                timesStartIndex = index + 1
+                                timesEndIndex = index + 2
+                            }
                         }
+                        timesInit = true
                     }
                 }
                 ListStopsInterfaceType.ALIGHT_REMINDER -> { /* do nothing */ }
