@@ -85,6 +85,7 @@ expect val JOINT_OPERATED_COLOR_REFRESH_RATE: Long
 object Shared {
 
     const val ETA_UPDATE_INTERVAL: Int = 15000
+    const val ETA_FRESHNESS: Int = 60000
 
     const val START_ACTIVITY_ID = "/HKBusETA/Launch"
     const val SYNC_PREFERENCES_ID = "/HKBusETA/SyncPreference"

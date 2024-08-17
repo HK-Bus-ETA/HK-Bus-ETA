@@ -1760,8 +1760,8 @@ class Registry {
     fun getCtbHasTwoWaySectionFare(routeNumber: String, callback: (Boolean) -> Unit) {
         CoroutineScope(dispatcherIO).launch {
             try {
-                val data = getJSONResponse<JsonObject>("https://www.citybus.com.hk/app/newfare/data/${routeNumber}.json")
-                callback.invoke(data!!.optJsonArray(routeNumber)!!.any { it.jsonObject.optString("two_way") == "true" })
+                val data = Json.decodeFromString<JsonObject>(getTextResponse("https://www.citybus.com.hk/app/newfare/data/${routeNumber}.json")!!.string().remove("\uFEFF"))
+                callback.invoke(data.optJsonArray(routeNumber)!!.any { it.jsonObject.optString("two_way") == "true" })
             } catch (e: Throwable) {
                 e.printStackTrace()
                 callback.invoke(false)
@@ -3522,6 +3522,12 @@ class Registry {
                 return ETAQueryResult(false, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines)
             }
 
+        }
+
+        val time: Long = currentTimeMillis()
+
+        fun isOutdated(): Boolean {
+            return currentTimeMillis() - time > Shared.ETA_FRESHNESS
         }
 
         val rawLines: Map<Int, ETALineEntry> = lines

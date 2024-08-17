@@ -241,8 +241,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val lat = stop.location.lat
-                val lng = stop.location.lng
+                val (lat, lng) = stop.location
 
                 var active by remember { mutableStateOf(true) }
                 val etaStateFlow = remember { MutableStateFlow(null as ETAQueryResult?) }
@@ -496,6 +495,15 @@ fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, etaDisplayMo
     val content = lines.getResolvedText(seq, etaDisplayMode, instance).asContentAnnotatedString()
     val baseSize = if (lines?.nextCo == Operator.LRT && Shared.lrtDirectionMode) 14F else 16F
     val textSize = baseSize.scaledSize(instance).sp.let { if (seq > 1) it.clamp(max = baseSize.scaledSize(instance).dp) else it }
+    var freshness by remember { mutableStateOf(true) }
+
+    LaunchedEffect (lines) {
+        while (true) {
+            freshness = lines?.isOutdated() != true
+            delay(500)
+        }
+    }
+
     Box (
         modifier = Modifier
             .fillMaxWidth()
@@ -509,7 +517,11 @@ fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, etaDisplayMo
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
             fontSize = textSize,
-            color = MaterialTheme.colors.primary.adjustBrightness(if (lines == null || (ambientMode && seq > 1)) 0.7F else 1F),
+            color = if (freshness) {
+                MaterialTheme.colors.primary.adjustBrightness(if (lines == null || (ambientMode && seq > 1)) 0.7F else 1F)
+            } else {
+                Color(0xFFFFB0B0)
+            },
             maxLines = 1,
             text = content.annotatedString,
             inlineContent = content.createInlineContent(textSize)

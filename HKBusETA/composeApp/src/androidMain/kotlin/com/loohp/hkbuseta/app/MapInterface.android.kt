@@ -148,7 +148,7 @@ fun GoogleMapRouteInterface(
     alternateStopNameShowing: Boolean,
     alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
 ) {
-    var selectedStop by selectedStopState
+    val selectedStop by selectedStopState
     val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(stops[selectedStop - 1].stop.location.toGoogleLatLng(), 15F)
@@ -225,19 +225,34 @@ fun GoogleMapRouteInterface(
             cameraPositionState = cameraPositionState,
             onMapLoaded = { init = currentTimeMillis() }
         ) {
-            for ((index, stop) in waypoints.stops.withIndex()) {
-                Marker(
-                    state = rememberStopMarkerState(stop),
-                    title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop).name[Shared.language],
-                    snippet = stop.remark?.get(Shared.language),
-                    icon = BitmapDescriptorFactory.fromBitmap(icon),
-                    anchor = anchor,
-                    onClick = { selectedStop = indexMap[index] + 1; false },
-                    zIndex = 3F
-                )
-            }
+            StopMarkers(waypoints.stops, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap)
             WaypointPaths(waypoints)
         }
+    }
+}
+
+@Composable
+@GoogleMapComposable
+fun StopMarkers(
+    stops: List<Stop>,
+    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
+    alternateStopNameShowing: Boolean,
+    icon: Bitmap,
+    anchor: Offset,
+    selectedStopState: MutableIntState,
+    indexMap: ImmutableList<Int>
+) {
+    var selectedStop by selectedStopState
+    for ((index, stop) in stops.withIndex()) {
+        Marker(
+            state = rememberStopMarkerState(stop),
+            title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop).name[Shared.language],
+            snippet = stop.remark?.get(Shared.language),
+            icon = BitmapDescriptorFactory.fromBitmap(icon),
+            anchor = anchor,
+            onClick = { selectedStop = indexMap[index] + 1; false },
+            zIndex = 3F
+        )
     }
 }
 

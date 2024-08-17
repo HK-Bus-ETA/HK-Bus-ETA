@@ -2155,6 +2155,7 @@ fun ETAColumn(
     instance: AppActiveContext
 ) {
     var etaState by remember { mutableStateOf(etaResults.value[index]) }
+    var errorCounter by remember { mutableIntStateOf(0) }
 
     val refreshEta = suspend {
         val optionsCopy = options.copy()
@@ -2162,9 +2163,16 @@ fun ETAColumn(
             Registry.getInstance(instance).getEta(stopData.stopId, index, co, stopData.route, instance, options).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
         }.await()
         if (options == optionsCopy) {
-            etaState = result
-            etaResults.value[index] = result
-            if (!result.isConnectionError) {
+            if (result.isConnectionError) {
+                errorCounter++
+                if (errorCounter > 1) {
+                    etaState = result
+                    etaResults.value[index] = result
+                }
+            } else {
+                errorCounter = 0
+                etaState = result
+                etaResults.value[index] = result
                 etaUpdateTimes.value[index] = currentTimeMillis()
             }
         }
@@ -2198,6 +2206,7 @@ fun ETADisplay(
 ) {
     val resolvedText by remember(lineRange, lines, etaDisplayMode) { derivedStateOf { lineRange.associateWith { lines.getResolvedText(it, etaDisplayMode, instance) } } }
     val updating by remember(lines) { derivedStateOf { lines == null } }
+    var freshness by remember { mutableStateOf(true) }
 
     val hasClockTime by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.clockTime.isNotEmpty() } } }
     val hasPlatform by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.platform.isNotEmpty() } } }
@@ -2243,6 +2252,13 @@ fun ETADisplay(
         }.toImmutableList()
     } }
 
+    LaunchedEffect (lines) {
+        while (true) {
+            freshness = lines?.isOutdated() != true
+            delay(500)
+        }
+    }
+
     BoxWithConstraints {
         val rowHeight = 26.fontScaledDp(0.5F) * (fontSize.px / 18.sp.px)
         val range = if (dynamicLineRange && maxHeight != Dp.Infinity) {
@@ -2261,31 +2277,31 @@ fun ETADisplay(
             for (seq in range) {
                 row {
                     if (hasClockTime && !isTrain) cell {
-                        EtaText(resolvedText[seq]!!.clockTime, seq, updating, fontSize)
+                        EtaText(resolvedText[seq]!!.clockTime, seq, updating, freshness, fontSize)
                     }
                     if (hasPlatform) cell {
-                        EtaText(resolvedText[seq]!!.platform, seq, updating, fontSize)
+                        EtaText(resolvedText[seq]!!.platform, seq, updating, freshness, fontSize)
                     }
                     if (hasRouteNumber) cell {
-                        EtaText(resolvedText[seq]!!.routeNumber, seq, updating, fontSize)
+                        EtaText(resolvedText[seq]!!.routeNumber, seq, updating, freshness, fontSize)
                     }
                     if (hasDestination) cell {
-                        EtaText(resolvedText[seq]!!.destination, seq, updating, fontSize)
+                        EtaText(resolvedText[seq]!!.destination, seq, updating, freshness, fontSize)
                     }
                     if (hasCarts) cell {
-                        EtaText(resolvedText[seq]!!.carts, seq, updating, fontSize)
+                        EtaText(resolvedText[seq]!!.carts, seq, updating, freshness, fontSize)
                     }
                     if (hasClockTime && isTrain) cell {
-                        EtaText(resolvedText[seq]!!.clockTime, seq, updating, fontSize)
+                        EtaText(resolvedText[seq]!!.clockTime, seq, updating, freshness, fontSize)
                     }
                     if (hasTime) cell {
-                        EtaText(resolvedText[seq]!!.time, seq, updating, fontSize)
+                        EtaText(resolvedText[seq]!!.time, seq, updating, freshness, fontSize)
                     }
                     if (hasOperator) cell {
-                        EtaText(resolvedText[seq]!!.operator, seq, updating, fontSize)
+                        EtaText(resolvedText[seq]!!.operator, seq, updating, freshness, fontSize)
                     }
                     if (hasRemark) cell {
-                        EtaText(resolvedText[seq]!!.remark, seq, updating, fontSize)
+                        EtaText(resolvedText[seq]!!.remark, seq, updating, freshness, fontSize)
                     }
                 }
             }
@@ -2299,6 +2315,7 @@ fun EtaText(
     text: FormattedText,
     seq: Int,
     updating: Boolean,
+    freshness: Boolean,
     fontSize: TextUnit
 ) {
     val content = text.asContentAnnotatedString()
@@ -2311,7 +2328,7 @@ fun EtaText(
             textAlign = TextAlign.Start,
             lineHeight = fontSize * 1.1F,
             fontSize = fontSize,
-            color = platformLocalContentColor.adjustAlpha(if (updating) 0.7F else 1F),
+            color = if (freshness) platformLocalContentColor.adjustAlpha(if (updating) 0.7F else 1F) else Color(0xFFFFB0B0),
             maxLines = 1,
             text = content.annotatedString,
             inlineContent = content.createInlineContent(fontSize)

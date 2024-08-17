@@ -13,6 +13,8 @@ struct EtaView: AppScreenView {
     @State private var eta: Registry.ETAQueryResult? = nil
     let etaTimer = Timer.publish(every: Double(Shared().ETA_UPDATE_INTERVAL) / 1000, on: .main, in: .common).autoconnect()
     
+    let freshnessTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
+    
     @Environment(\.isLuminanceReduced) var ambientMode
     
     @State private var stopId: String
@@ -25,6 +27,8 @@ struct EtaView: AppScreenView {
     @State private var stopList: [Registry.StopData]
     @State private var etaDisplayMode: ETADisplayMode
     @State private var lrtDirectionMode: Bool
+    
+    @State private var freshness: Bool
     
     private let appContext: AppActiveContextWatchOS
     
@@ -42,6 +46,7 @@ struct EtaView: AppScreenView {
         self.stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
         self.etaDisplayMode = Shared().etaDisplayMode
         self.lrtDirectionMode = Shared().lrtDirectionMode
+        self.freshness = true
     }
     
     var body: some View {
@@ -152,6 +157,9 @@ struct EtaView: AppScreenView {
             let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
         }
+        .onReceive(freshnessTimer) { _ in
+            freshness = eta?.isOutdated() != true
+        }
         .onAppear {
             let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
@@ -174,7 +182,7 @@ struct EtaView: AppScreenView {
             startDelay: 2,
             alignment: .center
         )
-        .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: lines == nil || (ambientMode && seq > 1) ? 0.7 : 1))
+        .foregroundColor(freshness ? colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: lines == nil || (ambientMode && seq > 1) ? 0.7 : 1) : colorInt(0xFFFFB0B0).asColor())
         .lineLimit(1)
         .frame(minHeight: baseSize.scaled(appContext, true))
     }

@@ -191,6 +191,7 @@ import com.loohp.hkbuseta.compose.Train
 import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.dummySignal
 import com.loohp.hkbuseta.compose.platformComponentBackgroundColor
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
@@ -201,11 +202,8 @@ import com.loohp.hkbuseta.compose.table.TableColumnWidth
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
-import com.loohp.hkbuseta.compose.SignalState
-import com.loohp.hkbuseta.compose.dummySignal
 import com.loohp.hkbuseta.compose.zoomable.Zoomable
 import com.loohp.hkbuseta.compose.zoomable.ZoomableState
-import com.loohp.hkbuseta.compose.dummySignalState
 import com.loohp.hkbuseta.compose.zoomable.rememberZoomableState
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
@@ -760,6 +758,7 @@ fun MTRETADisplayInterface(
 ) {
     var routes: List<Triple<String, Color, ImmutableList<RouteSearchResultEntry>>> by remember(stopId) { mutableStateOf(emptyList()) }
     val etaState: SnapshotStateMap<String, Registry.ETAQueryResult?> = remember { mutableStateMapOf() }
+    val errorCounters: SnapshotStateMap<String, Int> = remember { mutableStateMapOf() }
 
     LaunchedEffect (stopId) {
         routes = Registry.getInstance(instance).findRoutes("", false) { _, r, o ->
@@ -777,7 +776,15 @@ fun MTRETADisplayInterface(
                    val result = CoroutineScope(dispatcherIO).async {
                        Registry.getInstance(instance).getEta(stopId, 0, Operator.MTR, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                    }.await()
-                   etaState[route.routeKey] = result
+                   if (result.isConnectionError) {
+                       errorCounters[route.routeKey] = (errorCounters[route.routeKey]?: 0) + 1
+                       if ((errorCounters[route.routeKey]?: 0) > 1) {
+                           etaState[route.routeKey] = result
+                       }
+                   } else {
+                       errorCounters[route.routeKey] = 0
+                       etaState[route.routeKey] = result
+                   }
                    delay(Shared.ETA_UPDATE_INTERVAL.toLong())
                }
             }
@@ -931,6 +938,15 @@ fun MTRRouteMapETAInterface(
     instance: AppActiveContext
 ) {
     val scope = rememberCoroutineScope()
+    var freshness by remember { mutableStateOf(true) }
+
+    LaunchedEffect (etaState) {
+        while (true) {
+            freshness = etaState.values.all { it?.isOutdated() != true }
+            delay(500)
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -1014,6 +1030,7 @@ fun MTRRouteMapETAInterface(
                                 etaDisplayMode = Shared.etaDisplayMode,
                                 stopId = stopId,
                                 co = Operator.MTR,
+                                freshness = freshness,
                                 instance = instance
                             )
                         }
@@ -1730,6 +1747,7 @@ fun LRTETADisplayInterface(
 ) {
     var placeholderRoute: RouteSearchResultEntry? by remember(stopId) { mutableStateOf(null) }
     var etaState: Registry.ETAQueryResult? by remember { mutableStateOf(null) }
+    var errorCounter by remember { mutableIntStateOf(0) }
 
     LaunchedEffect (stopId) {
         placeholderRoute = Registry.getInstance(instance).findRoutes("", false) { _, r, o ->
@@ -1744,7 +1762,15 @@ fun LRTETADisplayInterface(
             val result = CoroutineScope(dispatcherIO).async {
                 Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute!!.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             }.await()
-            etaState = result
+            if (result.isConnectionError) {
+                errorCounter++
+                if (errorCounter > 1) {
+                    etaState = result
+                }
+            } else {
+                errorCounter = 0
+                etaState = result
+            }
             delay(Shared.ETA_UPDATE_INTERVAL.toLong())
         }
     }
@@ -1868,6 +1894,14 @@ fun LRTETADisplayByPlatformInterface(
             byPlatform.asSequence().sortedBy { it.key }.associate { it.toPair() }
         }?: emptyMap()
     } }
+    var freshness by remember { mutableStateOf(true) }
+
+    LaunchedEffect (etaState) {
+        while (true) {
+            freshness = etaState?.isOutdated() != true
+            delay(500)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -1940,6 +1974,7 @@ fun LRTETADisplayByPlatformInterface(
                         etaDisplayMode = Shared.etaDisplayMode,
                         stopId = stopId,
                         co = Operator.LRT,
+                        freshness = freshness,
                         instance = instance
                     )
                 }
@@ -1980,6 +2015,14 @@ fun LRTETADisplayByRouteInterface(
                 .associate { it.toPair() }
         }?: emptyMap()
     } }
+    var freshness by remember { mutableStateOf(true) }
+
+    LaunchedEffect (etaState) {
+        while (true) {
+            freshness = etaState?.isOutdated() != true
+            delay(500)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -2068,6 +2111,7 @@ fun LRTETADisplayByRouteInterface(
                         etaDisplayMode = Shared.etaDisplayMode,
                         stopId = stopId,
                         co = Operator.LRT,
+                        freshness = freshness,
                         instance = instance
                     )
                 }
@@ -2587,6 +2631,7 @@ fun TrainETADisplay(
     etaDisplayMode: ETADisplayMode,
     stopId: String,
     co: Operator,
+    freshness: Boolean,
     instance: AppActiveContext
 ) {
     val scope = rememberCoroutineScope()
@@ -2663,28 +2708,28 @@ fun TrainETADisplay(
                 } } else null
             ) {
                 if (hasPlatform) cell {
-                    TrainEtaText(entry.platform)
+                    TrainEtaText(entry.platform, freshness)
                 }
                 if (hasRouteNumber) cell {
-                    TrainEtaText(entry.routeNumber)
+                    TrainEtaText(entry.routeNumber, freshness)
                 }
                 if (hasDestination) cell {
-                    TrainEtaText(entry.destination)
+                    TrainEtaText(entry.destination, freshness)
                 }
                 if (hasCarts) cell {
-                    TrainEtaText(entry.carts)
+                    TrainEtaText(entry.carts, freshness)
                 }
                 if (hasClockTime) cell {
-                    TrainEtaText(entry.clockTime)
+                    TrainEtaText(entry.clockTime, freshness)
                 }
                 if (hasTime) cell {
-                    TrainEtaText(entry.time)
+                    TrainEtaText(entry.time, freshness)
                 }
                 if (hasOperator) cell {
-                    TrainEtaText(entry.operator)
+                    TrainEtaText(entry.operator, freshness)
                 }
                 if (hasRemark) cell {
-                    TrainEtaText(entry.remark)
+                    TrainEtaText(entry.remark, freshness)
                 }
             }
         }
@@ -2694,7 +2739,8 @@ fun TrainETADisplay(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TrainEtaText(
-    text: FormattedText
+    text: FormattedText,
+    freshness: Boolean
 ) {
     val content = text.asContentAnnotatedString()
     PlatformText(
@@ -2705,7 +2751,7 @@ fun TrainEtaText(
         textAlign = TextAlign.Start,
         lineHeight = 1.1.em,
         fontSize = 18F.sp,
-        color = platformLocalContentColor,
+        color = if (freshness) platformLocalContentColor else Color(0xFFFFB0B0),
         maxLines = 1,
         text = content.annotatedString,
         inlineContent = content.createInlineContent(18F.sp)
