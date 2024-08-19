@@ -2178,8 +2178,8 @@ fun ETAColumn(
                 errorCounter = 0
                 etaState = result
                 etaResults.value[index] = result
-                etaUpdateTimes.value[index] = currentTimeMillis()
             }
+            etaUpdateTimes.value[index] = currentTimeMillis()
         }
     }
     LaunchedEffect (options) {

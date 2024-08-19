@@ -3566,6 +3566,7 @@ class Registry {
 
             other as ETAQueryResult
 
+            if (time != other.time) return false
             if (isConnectionError != other.isConnectionError) return false
             if (isMtrEndOfLine != other.isMtrEndOfLine) return false
             if (isTyphoonSchedule != other.isTyphoonSchedule) return false
@@ -3575,7 +3576,8 @@ class Registry {
         }
 
         override fun hashCode(): Int {
-            var result = isConnectionError.hashCode()
+            var result = time.hashCode()
+            result = 31 * result + isConnectionError.hashCode()
             result = 31 * result + isMtrEndOfLine.hashCode()
             result = 31 * result + isTyphoonSchedule.hashCode()
             result = 31 * result + nextCo.hashCode()
@@ -3613,6 +3615,7 @@ class Registry {
             if (this === other) return true
             if (other !is MergedETAQueryResult<*>) return false
 
+            if (time != other.time) return false
             if (isConnectionError != other.isConnectionError) return false
             if (isMtrEndOfLine != other.isMtrEndOfLine) return false
             if (isTyphoonSchedule != other.isTyphoonSchedule) return false
@@ -3625,7 +3628,8 @@ class Registry {
         }
 
         override fun hashCode(): Int {
-            var result = isConnectionError.hashCode()
+            var result = time.hashCode()
+            result = 31 * result + isConnectionError.hashCode()
             result = 31 * result + isMtrEndOfLine.hashCode()
             result = 31 * result + isTyphoonSchedule.hashCode()
             result = 31 * result + nextCo.hashCode()
