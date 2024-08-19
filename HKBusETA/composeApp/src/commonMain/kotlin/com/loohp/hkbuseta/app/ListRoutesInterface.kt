@@ -150,6 +150,7 @@ import com.loohp.hkbuseta.compose.PlatformFloatingActionButton
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformText
+import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.Schedule
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Sort
@@ -854,6 +855,18 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults
                 etaUpdateTimes.value[key] = currentTimeMillis()
             }
             delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+        }
+    }
+    RestartEffect {
+        CoroutineScope(etaUpdateScope).launch {
+            val result = CoroutineScope(etaUpdateScope).async {
+                Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            }.await()
+            etaState = result
+            etaResults.value[key] = result
+            if (!result.isConnectionError) {
+                etaUpdateTimes.value[key] = currentTimeMillis()
+            }
         }
     }
 

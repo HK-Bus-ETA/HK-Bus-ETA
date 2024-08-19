@@ -86,7 +86,7 @@ fun Operator.getColor(routeNumber: String, elseColor: Long): Long {
     return when (this) {
         Operator.KMB -> if (routeNumber.getKMBSubsidiary() == KMBSubsidiary.LWB) 0xFFF26C33 else 0xFFFF4747
         Operator.CTB -> 0xFFFFE15E
-        Operator.NLB -> 0xFF9BFFC6
+        Operator.NLB -> 0xFF74C497
         Operator.MTR_BUS -> 0xFFAAD4FF
         Operator.GMB -> 0xFF36FF42
         Operator.LRT -> 0xFFD3A809

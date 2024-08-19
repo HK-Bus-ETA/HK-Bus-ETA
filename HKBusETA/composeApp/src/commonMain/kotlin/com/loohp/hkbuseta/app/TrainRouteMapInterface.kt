@@ -181,6 +181,7 @@ import com.loohp.hkbuseta.compose.PlatformModalBottomSheet
 import com.loohp.hkbuseta.compose.PlatformTab
 import com.loohp.hkbuseta.compose.PlatformTabRow
 import com.loohp.hkbuseta.compose.PlatformText
+import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Signal
 import com.loohp.hkbuseta.compose.Star
@@ -1027,6 +1028,7 @@ fun MTRRouteMapETAInterface(
                             TrainETADisplay(
                                 modifier = Modifier,
                                 lines = (1..4).map { eta[it] }.toImmutableList(),
+                                time = eta.time,
                                 etaDisplayMode = Shared.etaDisplayMode,
                                 stopId = stopId,
                                 co = Operator.MTR,
@@ -1774,6 +1776,22 @@ fun LRTETADisplayInterface(
             delay(Shared.ETA_UPDATE_INTERVAL.toLong())
         }
     }
+    RestartEffect {
+        CoroutineScope(dispatcherIO).launch {
+            val result = CoroutineScope(dispatcherIO).async {
+                Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute!!.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            }.await()
+            if (result.isConnectionError) {
+                errorCounter++
+                if (errorCounter > 1) {
+                    etaState = result
+                }
+            } else {
+                errorCounter = 0
+                etaState = result
+            }
+        }
+    }
 
     val pagerState = rememberPagerState { lrtRouteDisplayModeItems.size }
     val scope = rememberCoroutineScope()
@@ -1971,6 +1989,7 @@ fun LRTETADisplayByPlatformInterface(
                     TrainETADisplay(
                         modifier = Modifier,
                         lines = platformSorted[i]!!.toImmutableList(),
+                        time = etaState?.time?: currentTimeMillis(),
                         etaDisplayMode = Shared.etaDisplayMode,
                         stopId = stopId,
                         co = Operator.LRT,
@@ -2108,6 +2127,7 @@ fun LRTETADisplayByRouteInterface(
                     TrainETADisplay(
                         modifier = Modifier,
                         lines = routeSorted[routeNumber]!!.toImmutableList(),
+                        time = etaState?.time?: currentTimeMillis(),
                         etaDisplayMode = Shared.etaDisplayMode,
                         stopId = stopId,
                         co = Operator.LRT,
@@ -2628,6 +2648,7 @@ fun TrainFareTableDisplay(
 fun TrainETADisplay(
     modifier: Modifier,
     lines: ImmutableList<Registry.ETALineEntry>,
+    time: Long,
     etaDisplayMode: ETADisplayMode,
     stopId: String,
     co: Operator,
@@ -2635,7 +2656,7 @@ fun TrainETADisplay(
     instance: AppActiveContext
 ) {
     val scope = rememberCoroutineScope()
-    val resolvedText by remember(lines, etaDisplayMode) { derivedStateOf { (1..lines.size).associateWith { lines.getResolvedText(it, etaDisplayMode, instance) } } }
+    val resolvedText by remember(lines, etaDisplayMode) { derivedStateOf { (1..lines.size).associateWith { lines.getResolvedText(it, etaDisplayMode, time, instance) } } }
 
     val hasPlatform by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.platform.isNotEmpty() } } }
     val hasRouteNumber by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.routeNumber.isNotEmpty() } } }

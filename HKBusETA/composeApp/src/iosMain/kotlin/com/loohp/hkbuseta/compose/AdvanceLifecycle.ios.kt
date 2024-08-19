@@ -23,20 +23,44 @@ package com.loohp.hkbuseta.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
+import com.multiplatform.lifecycle.LifecycleEvent
+import com.multiplatform.lifecycle.LifecycleObserver
+import com.multiplatform.lifecycle.LocalLifecycleTracker
 
 @Composable
 actual fun RestartEffect(onRestart: () -> Unit) {
-    LaunchedEffect (Unit) {
-        onRestart.invoke()
+    val lifecycleTracker = LocalLifecycleTracker.current
+    DisposableEffect(Unit) {
+        val listener = object : LifecycleObserver {
+            override fun onEvent(event: LifecycleEvent) {
+                when (event) {
+                    LifecycleEvent.OnResumeEvent, LifecycleEvent.OnStartEvent -> onRestart.invoke()
+                    else -> { /* do nothing */ }
+                }
+            }
+        }
+        lifecycleTracker.addObserver(listener)
+        onDispose {
+            lifecycleTracker.removeObserver(listener)
+        }
     }
 }
 
 @Composable
 actual fun PauseEffect(onPause: () -> Unit) {
-    DisposableEffect (Unit) {
+    val lifecycleTracker = LocalLifecycleTracker.current
+    DisposableEffect(Unit) {
+        val listener = object : LifecycleObserver {
+            override fun onEvent(event: LifecycleEvent) {
+                when (event) {
+                    LifecycleEvent.OnPauseEvent, LifecycleEvent.OnStopEvent -> onPause.invoke()
+                    else -> { /* do nothing */ }
+                }
+            }
+        }
+        lifecycleTracker.addObserver(listener)
         onDispose {
-            onPause.invoke()
+            lifecycleTracker.removeObserver(listener)
         }
     }
 }

@@ -117,6 +117,7 @@ kotlin {
             implementation(projects.shared)
             implementation(libs.cupertino)
             implementation(libs.cupertino.native)
+            api(libs.compose.multiplatform.lifecycle.tracker)
         }
         desktopMain.dependencies {
             implementation(projects.shared)
@@ -145,8 +146,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 733
-        versionName = "2.2.8"
+        versionCode = 735
+        versionName = "2.2.9"
     }
     packaging {
         resources {
@@ -176,7 +177,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.loohp.hkbuseta"
-            packageVersion = "2.2.8"
+            packageVersion = "2.2.9"
         }
 
         buildTypes.release.proguard {

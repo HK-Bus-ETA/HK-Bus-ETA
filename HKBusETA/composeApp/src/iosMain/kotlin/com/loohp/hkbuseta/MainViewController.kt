@@ -37,6 +37,7 @@ import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -44,19 +45,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.ComposeUIViewController
 import com.loohp.hkbuseta.appcontext.navColorState
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.multiplatform.lifecycle.LifecycleTracker
+import com.multiplatform.lifecycle.LocalLifecycleTracker
+import com.multiplatform.lifecyle.LifecycleComposeUIVCDelegate
 import platform.Foundation.NSProcessInfo
 import platform.Foundation.isiOSAppOnMac
+import platform.UIKit.UIViewController
 
 
-fun MainViewController() = ComposeUIViewController {
-    val navColor by navColorState.collectAsStateMultiplatform()
-    Box(
-        modifier = Modifier
-            .drawBehind { drawRect(navColor?: Color.Transparent) }
-            .consumeWindowInsets(WindowInsets.safeContent.exclude(WindowInsets.ime))
-            .padding(WindowInsets.safeDrawing.detectKeepSafeAreaSides().asPaddingValues())
-    ) {
-        App()
+fun MainViewController(): UIViewController {
+    val lifecycleTracker = LifecycleTracker()
+    return ComposeUIViewController({
+        delegate = LifecycleComposeUIVCDelegate(lifecycleTracker)
+    }) {
+        CompositionLocalProvider(
+            LocalLifecycleTracker provides lifecycleTracker
+        ) {
+            val navColor by navColorState.collectAsStateMultiplatform()
+            Box(
+                modifier = Modifier
+                    .drawBehind { drawRect(navColor?: Color.Transparent) }
+                    .consumeWindowInsets(WindowInsets.safeContent.exclude(WindowInsets.ime))
+                    .padding(WindowInsets.safeDrawing.detectKeepSafeAreaSides().asPaddingValues())
+            ) {
+                App()
+            }
+        }
     }
 }
 

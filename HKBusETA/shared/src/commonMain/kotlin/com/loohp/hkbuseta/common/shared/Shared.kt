@@ -60,9 +60,10 @@ import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
-import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.parseIntOr
+import com.loohp.hkbuseta.common.utils.plus
+import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.wrap
 import com.loohp.hkbuseta.common.utils.wrapList
 import io.ktor.utils.io.ByteReadChannel
@@ -172,7 +173,7 @@ object Shared {
     fun Registry.ETAQueryResult?.getResolvedText(seq: Int, etaDisplayMode: ETADisplayMode, context: AppContext): Registry.ETALineEntryText {
         return this?.getLine(seq)?.let {
             if (etaDisplayMode.hasClockTime && it.etaRounded >= 0) {
-                it.text.withDisplayMode(context.formatTime(currentLocalDateTime(it.etaRounded.toDuration(DurationUnit.MINUTES))).asFormattedText(), etaDisplayMode)
+                it.text.withDisplayMode(context.formatTime(time.toLocalDateTime() + it.eta.toDuration(DurationUnit.MINUTES)).asFormattedText(), etaDisplayMode)
             } else {
                 it.text
             }
@@ -183,10 +184,10 @@ object Shared {
         }
     }
 
-    fun List<Registry.ETALineEntry>.getResolvedText(seq: Int, etaDisplayMode: ETADisplayMode, context: AppContext): Registry.ETALineEntryText {
+    fun List<Registry.ETALineEntry>.getResolvedText(seq: Int, etaDisplayMode: ETADisplayMode, time: Long, context: AppContext): Registry.ETALineEntryText {
         return this.getOrNull(seq - 1)?.let {
             if (etaDisplayMode.hasClockTime && it.etaRounded >= 0) {
-                it.text.withDisplayMode(context.formatTime(currentLocalDateTime(it.etaRounded.toDuration(DurationUnit.MINUTES))).asFormattedText(), etaDisplayMode)
+                it.text.withDisplayMode(context.formatTime(time.toLocalDateTime() + it.eta.toDuration(DurationUnit.MINUTES)).asFormattedText(), etaDisplayMode)
             } else {
                 it.text
             }
@@ -208,7 +209,7 @@ object Shared {
                 this.allKeys.all { it.second.co == Operator.MTR } ||
                 this.mergedCount <= 1
         return line.first to (if (noRouteNumber) "".asFormattedText() else "$lineRoute > ".asFormattedText(SmallSize))
-            .plus(line.second.text.let { if (etaDisplayMode.hasClockTime && line.second.etaRounded >= 0) it.withDisplayMode(context.formatTime(currentLocalDateTime(line.second.etaRounded.toDuration(DurationUnit.MINUTES))).asFormattedText(), etaDisplayMode) else it })
+            .plus(line.second.text.let { if (etaDisplayMode.hasClockTime && line.second.etaRounded >= 0) it.withDisplayMode(context.formatTime(time.toLocalDateTime() + line.second.eta.toDuration(DurationUnit.MINUTES)).asFormattedText(), etaDisplayMode) else it })
     }
 
     fun getMtrLineSortingIndex(lineName: String): Int {

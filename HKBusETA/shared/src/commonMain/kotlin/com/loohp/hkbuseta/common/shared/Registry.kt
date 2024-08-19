@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.common.shared
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import co.touchlab.stately.collections.ConcurrentMutableList
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.collections.ConcurrentMutableSet
 import co.touchlab.stately.concurrency.AtomicBoolean
@@ -154,6 +155,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -169,8 +171,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.concurrent.Volatile
 import kotlin.math.absoluteValue
@@ -1769,36 +1773,43 @@ class Registry {
         }
     }
 
+    private val cachedPrefixes: MutableList<String> = ConcurrentMutableList()
     private val cachedTimes: MutableMap<String, MutableMap<String, Double>> = ConcurrentMutableMap()
+
+    private suspend fun cacheTimeBetweenStopPrefix(prefix: String) {
+        if (cachedPrefixes.contains(prefix)) return
+        val data = getJSONResponse<JsonObject>("https://timeinterval.hkbuseta.com/times/$prefix.json")?: return
+        for ((stopId, nextStopIds) in data) {
+            val cacheMap = cachedTimes.getOrPut(stopId) { ConcurrentMutableMap() }
+            for ((nextStopId, time) in nextStopIds.jsonObject) {
+                cacheMap[nextStopId] = time.jsonPrimitive.double
+            }
+        }
+        cachedPrefixes.add(prefix)
+    }
 
     fun getTimeBetweenStop(stopIds: List<Pair<String, Boolean>>, startIndex: Int, endIndex: Int): Deferred<Int> {
         return CoroutineScope(dispatcherIO).async {
-            var time = 0.0
-            var error = false
-            for ((index, value) in stopIds.withIndex()) {
-                val (stopId, inBranch) = value
-                if (inBranch && index in startIndex until endIndex) {
-                    val (nextStopId, _) = stopIds.subList(index + 1, stopIds.size).firstOrNull { (_, b) -> b }?: break
-                    val cacheMap = cachedTimes.getOrPut(stopId) { ConcurrentMutableMap() }
-                    val interval = cacheMap.getOrPut(nextStopId) {
+            val intervals = buildSet {
+                for ((index, value) in stopIds.withIndex()) {
+                    val (stopId, inBranch) = value
+                    if (inBranch && index in startIndex until endIndex) {
+                        val (nextStopId, _) = stopIds.subList(index + 1, stopIds.size).firstOrNull { (_, b) -> b }?: break
                         val prefix = if (stopId.length < 3) stopId else stopId.substring(0, 2)
-                        val data = getJSONResponse<JsonObject>("https://timeinterval.hkbuseta.com/times/$prefix.json")?: return@getOrPut -1.0
-                        val t = data.optJsonObject(stopId)?.optDouble(nextStopId)
-                        if (t == null || t < 0) {
-                            return@getOrPut -1.0
-                        } else {
-                            return@getOrPut t
-                        }
-                    }
-                    if (interval >= 0) {
-                        time += interval
-                    } else {
-                        error = true
-                        break
+                        add(CoroutineScope(dispatcherIO).async {
+                            cacheTimeBetweenStopPrefix(prefix)
+                            val cacheMap = cachedTimes.getOrPut(stopId) { ConcurrentMutableMap() }
+                            cacheMap[nextStopId]?: -1.0
+                        })
                     }
                 }
+            }.awaitAll()
+            var time = 0.0
+            for (interval in intervals) {
+                if (interval < 0) return@async -1
+                time += interval
             }
-            return@async time.takeUnless { error }?.roundToInt()?: -1
+            return@async time.roundToInt()
         }
     }
 
@@ -2018,14 +2029,11 @@ class Registry {
             val (first, second) = getAllDestinationsByDirection(routeNumber, Operator.KMB, null, null, route, stopId)
             val destKeys = second.asSequence().map { it.zh.remove(" ") }.toSet()
             val ctbEtaEntries: ConcurrentMutableMap<String?, MutableSet<JointOperatedEntry>> = ConcurrentMutableMap()
-            val stopQueryData: MutableList<JsonObject?> = mutableListOf()
-            val ctbFutures: MutableList<Deferred<*>> = mutableListOf()
-            for (ctbStopId in ctbStopIds) {
-                ctbFutures.add(scope.async { stopQueryData.add(getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber")) })
-            }
-            for (future in ctbFutures) {
-                future.await()
-            }
+            val stopQueryData = buildList {
+                for (ctbStopId in ctbStopIds) {
+                    add(scope.async { getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber") })
+                }
+            }.awaitAll()
             val stopSequences: MutableMap<String, MutableSet<Int>> = mutableMapOf()
             val queryBusDests: Array<Array<String?>?> = arrayOfNulls(stopQueryData.size)
             for (i in stopQueryData.indices) {
@@ -2140,6 +2148,7 @@ class Registry {
             var counter = 0
             for (entry in jointOperated.asSequence().sorted()) {
                 val mins = entry.mins
+                if (mins < -10) continue
                 val minsRounded = entry.minsRounded
                 val timeMessage = "".asFormattedText(BoldStyle) + entry.time
                 var remarkMessage = "".asFormattedText(BoldStyle) + entry.remark
@@ -2195,10 +2204,11 @@ class Registry {
                 val bound = bus.optString("dir")
                 val stopSeq = bus.optInt("seq")
                 if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq) {
-                    val seq = ++counter
                     if (usedRealSeq.add(bus.optInt("eta_seq"))) {
                         val eta = bus.optString("eta")
-                        val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
+                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
+                        if (mins < -10) continue
+                        val seq = ++counter
                         val minsRounded = mins.roundToInt()
                         var timeMessage = "".asFormattedText()
                         var remarkMessage = "".asFormattedText()
@@ -2300,10 +2310,11 @@ class Registry {
                 val bound = bus.optString("dir")
                 val stopSeq = bus.optInt("seq")
                 if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound) && stopSeq == matchingSeq) {
-                    val seq = ++counter
                     if (usedRealSeq.add(bus.optInt("eta_seq"))) {
                         val eta = bus.optString("eta")
-                        val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
+                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
+                        if (mins < -10) continue
+                        val seq = ++counter
                         val minsRounded = mins.roundToInt()
                         var timeMessage = "".asFormattedText()
                         var remarkMessage = "".asFormattedText()
@@ -2385,12 +2396,14 @@ class Registry {
         val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=${route.nlbId}&stopId=$stopId&language=${Shared.language}")
         if (!data.isNullOrEmpty() && data.contains("estimatedArrivals")) {
             val buses = data.optJsonArray("estimatedArrivals")!!
+            var counter = 0
             for (u in 0 until buses.size) {
                 val bus = buses.optJsonObject(u)!!
-                val seq = u + 1
                 val eta = bus.optString("estimatedArrivalTime")
                 val variant = bus.optString("routeVariantName").trim { it <= ' ' }
-                val mins: Double = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.let { "${it.substring(0, 10)}T${it.substring(11)}" }.toLocalDateTime().toInstant(hongKongTimeZone).epochSeconds - currentEpochSeconds) / 60.0
+                val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.let { "${it.substring(0, 10)}T${it.substring(11)}" }.toLocalDateTime().toInstant(hongKongTimeZone).epochSeconds - currentEpochSeconds) / 60.0
+                if (mins < -10) continue
+                val seq = ++counter
                 val minsRounded = mins.roundToInt()
                 var timeMessage = "".asFormattedText()
                 var remarkMessage = "".asFormattedText()
@@ -2476,13 +2489,13 @@ class Registry {
         }
         val busStops = data.optJsonArray("busStop")
         if (busStops != null) {
+            var counter = 0
             for (k in 0 until busStops.size) {
                 val busStop = busStops.optJsonObject(k)!!
                 val buses = busStop.optJsonArray("bus")!!
                 val busStopId = busStop.optString("busStopId")
                 for (u in 0 until buses.size) {
                     val bus = buses.optJsonObject(u)!!
-                    val seq = u + 1
                     var eta = bus.optDouble("arrivalTimeInSecond")
                     if (eta >= 108000) {
                         eta = bus.optDouble("departureTimeInSecond")
@@ -2506,6 +2519,8 @@ class Registry {
                         remark += if (language == "en") "Bus Delayed" else "行車緩慢"
                     }
                     val mins = eta / 60.0
+                    if (mins < -10) continue
+                    val seq = ++counter
                     val minsRounded = floor(mins).toLong()
                     if (DATA!!.mtrBusStopAlias[stopId]!!.contains(busStopId)) {
                         var timeMessage = "".asFormattedText()
@@ -2602,9 +2617,11 @@ class Registry {
             busList.removeAll { it.first != matchingSeq }
         }
         busList.sortBy { it.second }
+        var counter = 0
         for (i in busList.indices) {
             val (_, mins, bus) = busList[i]
-            val seq = i + 1
+            if (mins < -10) continue
+            val seq = ++counter
             var remark = if (language == "en") bus.optString("remarks_en") else bus.optString("remarks_tc")
             if (remark.equals("null", ignoreCase = true)) {
                 remark = ""
@@ -3576,7 +3593,8 @@ class Registry {
         val isTyphoonSchedule: Boolean,
         val nextCo: Operator,
         private val lines: Map<Int, Pair<T, ETALineEntry>>,
-        val mergedCount: Int
+        val mergedCount: Int,
+        val time: Long,
     ) {
 
         val nextScheduledBus: Long = lines[1]?.second?.etaRounded?: -1
@@ -3628,7 +3646,8 @@ class Registry {
                     isTyphoonSchedule = false,
                     nextCo = nextCo,
                     lines = emptyMap(),
-                    mergedCount = 1
+                    mergedCount = 1,
+                    time = -1
                 )
             }
 
@@ -3636,15 +3655,16 @@ class Registry {
                 if (etaQueryResult.size == 1) {
                     val (key, value) = etaQueryResult[0]
                     val lines = value.rawLines.mapValues { key to it.value }
-                    return MergedETAQueryResult(value.isConnectionError, value.isMtrEndOfLine, value.isTyphoonSchedule, value.nextCo, lines, 1)
+                    return MergedETAQueryResult(value.isConnectionError, value.isMtrEndOfLine, value.isTyphoonSchedule, value.nextCo, lines, 1, value.time)
                 }
+                val time = etaQueryResult.minOf { it.second.time }
                 val isConnectionError = etaQueryResult.all { it.second.isConnectionError }
                 val isMtrEndOfLine = etaQueryResult.all { it.second.isMtrEndOfLine }
                 val isTyphoonSchedule = etaQueryResult.any { it.second.isTyphoonSchedule }
                 if (isConnectionError) {
                     val (key, value) = etaQueryResult[0]
                     val lines = value.rawLines.mapValues { key to it.value }
-                    return MergedETAQueryResult(true, isMtrEndOfLine, isTyphoonSchedule, value.nextCo, lines, etaQueryResult.size)
+                    return MergedETAQueryResult(true, isMtrEndOfLine, isTyphoonSchedule, value.nextCo, lines, etaQueryResult.size, time)
                 }
                 val linesSorted: MutableList<Triple<T, ETALineEntry, Operator>> = etaQueryResult.asSequence()
                     .flatMap { it.second.rawLines.values.asSequence().map { line -> Triple(it.first, line, it.second.nextCo) } }
@@ -3659,7 +3679,7 @@ class Registry {
                 val nextCo = if (linesSorted.isEmpty()) etaQueryResult[0].second.nextCo else linesSorted[0].third
                 val lines: MutableMap<Int, Pair<T, ETALineEntry>> = mutableMapOf()
                 linesSorted.withIndex().forEach { lines[it.index + 1] = it.value.first to it.value.second }
-                return MergedETAQueryResult(false, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines, etaQueryResult.size)
+                return MergedETAQueryResult(false, isMtrEndOfLine, isTyphoonSchedule, nextCo, lines, etaQueryResult.size, time)
             }
 
         }

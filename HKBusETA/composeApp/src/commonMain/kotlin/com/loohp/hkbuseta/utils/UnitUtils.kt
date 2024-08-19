@@ -51,11 +51,11 @@ inline fun Float.fontScaledDp(factor: Float): Dp = (this * ((LocalDensity.curren
 @Composable
 inline fun Int.fontScaledDp(factor: Float): Dp = toFloat().fontScaledDp(factor)
 
-fun Float.sameValueAs(other: Float) : Boolean {
+fun Float.sameValueAs(other: Float): Boolean {
     return (this - other).absoluteValue < 0.00001
 }
 
-fun Double.sameValueAs(other: Double) : Boolean {
+fun Double.sameValueAs(other: Double): Boolean {
     return (this - other).absoluteValue < 0.00001
 }
 

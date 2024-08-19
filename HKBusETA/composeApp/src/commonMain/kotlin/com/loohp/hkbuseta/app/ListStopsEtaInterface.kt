@@ -2194,6 +2194,9 @@ fun ETAColumn(
             delay(Shared.ETA_UPDATE_INTERVAL.toLong())
         }
     }
+    RestartEffect {
+        CoroutineScope(etaUpdateScope).launch { refreshEta.invoke() }
+    }
 
     ETADisplay(modifier, etaState, Shared.etaDisplayMode, co.isTrain, fontSize, lineRange, dynamicLineRange, instance)
 }

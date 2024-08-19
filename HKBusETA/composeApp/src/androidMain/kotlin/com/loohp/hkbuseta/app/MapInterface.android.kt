@@ -55,7 +55,7 @@ import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.maps.android.compose.ComposeMapColorScheme
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.GoogleMapComposable
 import com.google.maps.android.compose.MapProperties
@@ -216,16 +216,14 @@ fun GoogleMapRouteInterface(
             googleMapOptionsFactory = { GoogleMapOptions().backgroundColor(backgroundColor) },
             properties = MapProperties(
                 isMyLocationEnabled = gpsEnabled,
-                mapStyleOptions = if (Shared.theme.isDarkMode) {
-                    MapStyleOptions.loadRawResourceStyle(instance.context, R.raw.google_map_dark)
-                } else {
-                    null
-                }
+                isBuildingEnabled = true,
+                isIndoorEnabled = true
             ),
             cameraPositionState = cameraPositionState,
+            mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
             onMapLoaded = { init = currentTimeMillis() }
         ) {
-            StopMarkers(waypoints.stops, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap)
+            StopMarkers(waypoints, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap)
             WaypointPaths(waypoints)
         }
     }
@@ -234,7 +232,7 @@ fun GoogleMapRouteInterface(
 @Composable
 @GoogleMapComposable
 fun StopMarkers(
-    stops: List<Stop>,
+    waypoints: RouteWaypoints,
     alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
     alternateStopNameShowing: Boolean,
     icon: Bitmap,
@@ -243,7 +241,7 @@ fun StopMarkers(
     indexMap: ImmutableList<Int>
 ) {
     var selectedStop by selectedStopState
-    for ((index, stop) in stops.withIndex()) {
+    for ((index, stop) in waypoints.stops.withIndex()) {
         Marker(
             state = rememberStopMarkerState(stop),
             title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop).name[Shared.language],
@@ -282,7 +280,7 @@ fun WaypointPaths(waypoints: RouteWaypoints) {
 
 @Composable
 fun rememberStopMarkerState(stop: Stop): MarkerState {
-    return rememberSaveable(stop, saver = MarkerState.Saver) { MarkerState(stop.location.toGoogleLatLng()) }
+    return remember(stop) { MarkerState(stop.location.toGoogleLatLng()) }
 }
 
 const val baseHtml: String = """
@@ -534,13 +532,11 @@ fun GoogleMapSelectInterface(
             googleMapOptionsFactory = { GoogleMapOptions().backgroundColor(backgroundColor) },
             properties = MapProperties(
                 isMyLocationEnabled = gpsEnabled,
-                mapStyleOptions = if (Shared.theme.isDarkMode) {
-                    MapStyleOptions.loadRawResourceStyle(instance.context, R.raw.google_map_dark)
-                } else {
-                    null
-                }
+                isBuildingEnabled = true,
+                isIndoorEnabled = true
             ),
             cameraPositionState = cameraPositionState,
+            mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
             onMapLoaded = { init = currentTimeMillis() }
         ) { /* do nothing */ }
     }
