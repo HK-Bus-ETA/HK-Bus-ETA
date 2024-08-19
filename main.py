@@ -495,7 +495,7 @@ def normalize(input_str):
 def capitalize(input_str, lower=True):
     if lower:
         input_str = input_str.lower()
-    return re.sub(r"(?:^|\s|[\"'(\[{/\-])+\S", lambda m: m.group().upper(), input_str)
+    return re.sub(r"(?:^|\s|[\"(\[{/\-]|'(?!s))+\S", lambda m: m.group().upper(), input_str)
 
 
 def apply_recapitalize_keywords(input_str):
