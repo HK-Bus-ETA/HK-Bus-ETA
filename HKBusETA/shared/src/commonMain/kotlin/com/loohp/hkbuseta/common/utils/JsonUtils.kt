@@ -24,6 +24,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
@@ -70,6 +71,10 @@ fun JsonObject.optFloat(key: String, default: Float = Float.NaN): Float {
 
 fun JsonObject.optDouble(key: String, default: Double = Double.NaN): Double {
     return this[key]?.let { it as? JsonPrimitive }?.doubleOrNull?: default
+}
+
+fun JsonObject.containsKeyAndNotNull(key: String): Boolean {
+    return this[key]?.let { it !is JsonNull }?: false
 }
 
 fun JsonArray.optJsonObject(index: Int, default: JsonObject? = null): JsonObject? {

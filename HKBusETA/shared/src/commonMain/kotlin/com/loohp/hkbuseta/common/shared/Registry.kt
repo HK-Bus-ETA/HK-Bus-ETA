@@ -111,12 +111,14 @@ import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.clearGlobalCache
 import com.loohp.hkbuseta.common.utils.commonElementPercentage
+import com.loohp.hkbuseta.common.utils.containsKeyAndNotNull
 import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentFirstActiveBranch
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
 import com.loohp.hkbuseta.common.utils.dispatcherIO
+import com.loohp.hkbuseta.common.utils.doRetry
 import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.epochSeconds
 import com.loohp.hkbuseta.common.utils.getCircledNumber
@@ -1932,9 +1934,11 @@ class Registry {
                                 if (bus.optString("rmk_en").isNotEmpty()) {
                                     remarkMessage += buildFormattedString {
                                         if (timeMessage.isEmpty()) {
-                                            append(bus.optString("rmk_en"))
+                                            append(bus.optString("rmk_en")
+                                                .replace("Final Bus", "Final KMB Bus"))
                                         } else {
-                                            append(" (${bus.optString("rmk_en")})", SmallSize)
+                                            append(" (${bus.optString("rmk_en")
+                                                .replace("Final Bus", "Final KMB Bus")})", SmallSize)
                                         }
                                     }
                                 }
@@ -1955,13 +1959,13 @@ class Registry {
                                         if (timeMessage.isEmpty()) {
                                             append(bus.optString("rmk_tc")
                                                 .replace("原定", "預定")
-                                                .replace("最後班次", "尾班車")
-                                                .replace("尾班車已過", "尾班車已過本站"))
+                                                .replace("最後班次", "九巴尾班車")
+                                                .replace("九巴尾班車已過", "尾班車已過本站"))
                                         } else {
                                             append(" (${bus.optString("rmk_tc")
                                                 .replace("原定", "預定")
-                                                .replace("最後班次", "尾班車")
-                                                .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
+                                                .replace("最後班次", "九巴尾班車")
+                                                .replace("九巴尾班車已過", "尾班車已過本站")})", SmallSize)
                                         }
                                     }
                                 }
@@ -1975,17 +1979,17 @@ class Registry {
                             if (language == "en") {
                                 if (bus.optString("rmk_en").isNotEmpty()) {
                                     remarkMessage += buildFormattedString {
-                                        append(bus.optString("rmk_en").remove("(Final Bus)"))
+                                        append(bus.optString("rmk_en")
+                                            .replace("Final Bus", "Final KMB Bus"))
                                     }
                                 }
                             } else {
                                 if (bus.optString("rmk_tc").isNotEmpty()) {
                                     remarkMessage += buildFormattedString {
                                         append(bus.optString("rmk_tc")
-                                            .remove("(尾班車)")
                                             .replace("原定", "預定")
-                                            .replace("最後班次", "尾班車")
-                                            .replace("尾班車已過", "尾班車已過本站"))
+                                            .replace("最後班次", "九巴尾班車")
+                                            .replace("九巴尾班車已過", "尾班車已過本站"))
                                     }
                                 }
                             }
@@ -2107,13 +2111,11 @@ class Registry {
                                         remarkMessage += buildFormattedString {
                                             if (timeMessage.isEmpty()) {
                                                 append(bus.optString("rmk_tc")
-                                                    .remove("(尾班車)")
                                                     .replace("原定", "預定")
                                                     .replace("最後班次", "尾班車")
                                                     .replace("尾班車已過", "尾班車已過本站"))
                                             } else {
                                                 append(" (${bus.optString("rmk_tc")
-                                                    .remove("(尾班車)")
                                                     .replace("原定", "預定")
                                                     .replace("最後班次", "尾班車")
                                                     .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
@@ -2476,15 +2478,14 @@ class Registry {
             put("language", language)
             put("routeName", routeNumber)
         }
-        var data: JsonObject? = postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body)
-        if (data?.optJsonArray("busStop") == null) {
-            data = postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body)
-        }
-        if (data?.optJsonArray("busStop") == null) {
-            data = postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body)
-        }
-        val status = data!!.optString("routeStatusRemarkTitle")
-        if (status.isNotBlank()) {
+        val data = doRetry<JsonObject?>(
+            block = { postJSONResponse("https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule", body) },
+            predicate = { it?.containsKeyAndNotNull("busStop") == true },
+            maxTries = 3,
+            limitReached = { throw RuntimeException() }
+        )
+        if (data!!.containsKeyAndNotNull("routeStatusRemarkTitle")) {
+            val status = data.optString("routeStatusRemarkTitle")
             lines[1] = ETALineEntry.textEntry(status)
         }
         val busStops = data.optJsonArray("busStop")
