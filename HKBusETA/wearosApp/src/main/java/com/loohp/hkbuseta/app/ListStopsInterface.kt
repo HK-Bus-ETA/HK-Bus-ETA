@@ -82,6 +82,7 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.BilingualText
+import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.OriginData
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
@@ -274,6 +275,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                         routeNumber = routeNumber,
                         kmbCtbJoint = kmbCtbJoint,
                         co = co,
+                        gmbRegion = gmbRegion,
                         coColor = coColor,
                         destName = resolvedDestName,
                         specialRoutes = specialRoutes,
@@ -346,6 +348,7 @@ fun HeaderElement(
     routeNumber: String,
     kmbCtbJoint: Boolean,
     co: Operator,
+    gmbRegion: GMBRegion?,
     coColor: Color,
     destName: BilingualText,
     specialRoutes: ImmutableList<BilingualText>,
@@ -360,7 +363,7 @@ fun HeaderElement(
             .fillMaxWidth()
             .applyIf(alternateStopNames != null) { clickable {
                 alternateStopNamesShowing = !alternateStopNamesShowing
-                val operatorName = (if (alternateStopNamesShowing) Operator.CTB else Operator.KMB).getDisplayName(routeNumber, false, Shared.language)
+                val operatorName = (if (alternateStopNamesShowing) Operator.CTB else Operator.KMB).getDisplayName(routeNumber, false, gmbRegion, Shared.language)
                 val text = if (Shared.language == "en") {
                     "Displaying $operatorName stop names"
                 } else {
@@ -385,7 +388,7 @@ fun HeaderElement(
             lineHeight = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp),
             color = { color.adjustBrightness(if (ambientMode) 0.7F else 1F) },
             maxLines = 1,
-            text = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language).plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
+            text = co.getDisplayName(routeNumber, kmbCtbJoint, gmbRegion, Shared.language).plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
         )
         AutoResizeText(
             modifier = Modifier

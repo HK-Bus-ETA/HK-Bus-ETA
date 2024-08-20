@@ -342,6 +342,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                 val co = route.co
                 val kmbCtbJoint = route.route!!.isKmbCtbJoint
                 val routeNumber = route.route!!.routeNumber
+                val gmbRegion = route.route!!.gmbRegion
                 val displayRouteNumber = co.getListDisplayRouteNumber(routeNumber, true)
                 val dest = route.route!!.resolvedDest(false)[Shared.language]
                 val secondLine = if (route.stopInfo != null) route.stopInfo!!.data!!.name[Shared.language] else null
@@ -387,7 +388,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                                 verticalAlignment = Alignment.Bottom,
                                 horizontalAlignment = Alignment.Start
                             ) {
-                                co.getDisplayFormattedName(routeNumber, kmbCtbJoint, Shared.language).content.forEach {
+                                co.getDisplayFormattedName(routeNumber, kmbCtbJoint, gmbRegion, Shared.language).content.forEach {
                                     val styleColor = it.style.asSequence()
                                         .filterIsInstance<ColorContentStyle>()
                                         .firstOrNull()

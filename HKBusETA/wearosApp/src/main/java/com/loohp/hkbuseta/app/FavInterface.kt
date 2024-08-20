@@ -517,12 +517,13 @@ fun FavButton(numIndex: Int, favouriteRouteStop: FavouriteRouteStop, etaResults:
                 val co = favouriteRouteStop.co
                 val routeNumber = route.routeNumber
                 val stopId = favouriteRouteStop.stopId
+                val gmbRegion = route.gmbRegion
                 val gpsStop = favouriteRouteStop.favouriteStopMode.isRequiresLocation
                 val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, false)
                 val rawColor = co.getColor(routeNumber, Color.White)
                 val color by WearOSShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { kmbCtbJoint })
 
-                val operator = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)
+                val operator = co.getDisplayName(routeNumber, kmbCtbJoint, gmbRegion, Shared.language)
                 val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
                 val routeText = destName[Shared.language]
                 val subText = buildAnnotatedString {

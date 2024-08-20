@@ -2520,9 +2520,9 @@ class Registry {
                     }
                     val mins = eta / 60.0
                     if (mins < -10) continue
-                    val seq = ++counter
                     val minsRounded = floor(mins).toLong()
                     if (DATA!!.mtrBusStopAlias[stopId]!!.contains(busStopId)) {
+                        val seq = ++counter
                         var timeMessage = "".asFormattedText()
                         var remarkMessage = "".asFormattedText()
                         if (language == "en") {

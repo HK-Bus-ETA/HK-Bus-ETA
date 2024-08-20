@@ -149,10 +149,10 @@ fun String.getKMBSubsidiary(): KMBSubsidiary {
 }
 
 fun Operator.getOperatorName(language: String, elseName: String = "???"): String {
-    return getDisplayName("", false, language, elseName)
+    return getDisplayName("", false, null, language, elseName)
 }
 
-fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language: String, elseName: String = "???"): String {
+fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, gmbRegion: GMBRegion?, language: String, elseName: String = "???"): String {
     return if (language == "en") when (this) {
         Operator.KMB -> when (routeNumber.getKMBSubsidiary()) {
             KMBSubsidiary.SUNB -> "Sun Bus"
@@ -162,7 +162,15 @@ fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language:
         Operator.CTB -> "CTB"
         Operator.NLB -> "NLB"
         Operator.MTR_BUS -> "MTR Bus"
-        Operator.GMB -> "GMB"
+        Operator.GMB -> buildString {
+            append("GMB")
+            when (gmbRegion) {
+                GMBRegion.HKI -> append(" HKI")
+                GMBRegion.KLN -> append(" KLN")
+                GMBRegion.NT -> append(" NT")
+                null -> { /* do nothing */ }
+            }
+        }
         Operator.LRT -> "LRT"
         Operator.MTR -> "MTR"
         Operator.SUNFERRY -> "Sun Ferry"
@@ -178,7 +186,15 @@ fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language:
         Operator.CTB -> "城巴"
         Operator.NLB -> "嶼巴"
         Operator.MTR_BUS -> "港鐵巴士"
-        Operator.GMB -> "專線小巴"
+        Operator.GMB -> buildString {
+            append("專線小巴")
+            when (gmbRegion) {
+                GMBRegion.HKI -> append(" 港島")
+                GMBRegion.KLN -> append(" 九龍")
+                GMBRegion.NT -> append(" 新界")
+                null -> { /* do nothing */ }
+            }
+        }
         Operator.LRT -> "輕鐵"
         Operator.MTR -> "港鐵"
         Operator.SUNFERRY -> "新渡輪"
@@ -188,7 +204,7 @@ fun Operator.getDisplayName(routeNumber: String, kmbCtbJoint: Boolean, language:
     }
 }
 
-fun Operator.getDisplayFormattedName(routeNumber: String, kmbCtbJoint: Boolean, language: String, elseName: FormattedText = "???".asFormattedText(), elseColor: Long = 0xFFFFFFFF): FormattedText {
+fun Operator.getDisplayFormattedName(routeNumber: String, kmbCtbJoint: Boolean, gmbRegion: GMBRegion?, language: String, elseName: FormattedText = "???".asFormattedText(), elseColor: Long = 0xFFFFFFFF): FormattedText {
     val color = Colored(getColor(routeNumber, elseColor))
     return if (language == "en") when (this) {
         Operator.KMB -> when (routeNumber.getKMBSubsidiary()) {
@@ -207,7 +223,15 @@ fun Operator.getDisplayFormattedName(routeNumber: String, kmbCtbJoint: Boolean, 
         Operator.CTB -> "CTB".asFormattedText(color)
         Operator.NLB -> "NLB".asFormattedText(color)
         Operator.MTR_BUS -> "MTR Bus".asFormattedText(color)
-        Operator.GMB -> "GMB".asFormattedText(color)
+        Operator.GMB -> buildFormattedString {
+            append("GMB", color)
+            when (gmbRegion) {
+                GMBRegion.HKI -> append(" HKI", color, SmallSize)
+                GMBRegion.KLN -> append(" KLN", color, SmallSize)
+                GMBRegion.NT -> append(" NT", color, SmallSize)
+                null -> { /* do nothing */ }
+            }
+        }
         Operator.LRT -> "LRT".asFormattedText(color)
         Operator.MTR -> "MTR".asFormattedText(color)
         Operator.SUNFERRY -> "Sun Ferry".asFormattedText(color)
@@ -231,7 +255,15 @@ fun Operator.getDisplayFormattedName(routeNumber: String, kmbCtbJoint: Boolean, 
         Operator.CTB -> "城巴".asFormattedText(color)
         Operator.NLB -> "嶼巴".asFormattedText(color)
         Operator.MTR_BUS -> "港鐵巴士".asFormattedText(color)
-        Operator.GMB -> "專線小巴".asFormattedText(color)
+        Operator.GMB -> buildFormattedString {
+            append("專線小巴", color)
+            when (gmbRegion) {
+                GMBRegion.HKI -> append(" 港島", color, SmallSize)
+                GMBRegion.KLN -> append(" 九龍", color, SmallSize)
+                GMBRegion.NT -> append(" 新界", color, SmallSize)
+                null -> { /* do nothing */ }
+            }
+        }
         Operator.LRT -> "輕鐵".asFormattedText(color)
         Operator.MTR -> "港鐵".asFormattedText(color)
         Operator.SUNFERRY -> "新渡輪".asFormattedText(color)

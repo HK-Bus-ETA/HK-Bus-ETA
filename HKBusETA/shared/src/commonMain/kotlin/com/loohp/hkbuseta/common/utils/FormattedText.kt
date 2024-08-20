@@ -163,6 +163,10 @@ open class FormattedText(
         }
     }
 
+    override fun toString(): String {
+        return string
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is FormattedText) return false

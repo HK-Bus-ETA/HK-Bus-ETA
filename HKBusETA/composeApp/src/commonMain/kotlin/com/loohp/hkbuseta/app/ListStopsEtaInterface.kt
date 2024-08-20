@@ -125,6 +125,7 @@ import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.FavouriteStopMode
+import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.OriginData
 import com.loohp.hkbuseta.common.objects.RecentSortMode
@@ -531,6 +532,7 @@ fun ListStopsEtaInterface(
                                 mtrStopsInterchange = mtrStopsInterchange,
                                 routeNumber = routeNumber,
                                 co = co,
+                                gmbRegion = gmbRegion,
                                 isKmbCtbJoint = isKmbCtbJoint,
                                 timesStartIndexState = timesStartIndexState,
                                 timesEndIndexState = timesEndIndexState,
@@ -880,7 +882,12 @@ fun ListStopsBottomSheet(
                                 onClick = {
                                     instance.compose.shareUrl(
                                         url = selectedBranch.getDeepLink(instance, allStops[selectedStop - 1].stopId, selectedStop - 1),
-                                        title = "${if (Shared.language == "en") "Share Route" else "分享路線"} - ${co.getDisplayName(routeNumber, isKmbCtbJoint, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${selectedBranch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${selectedStop}." else ""} ${allStops[selectedStop - 1].stop.name[Shared.language]}"
+                                        title = "${if (Shared.language == "en") "Share Route" else "分享路線"} - ${co.getDisplayName(
+                                            routeNumber,
+                                            isKmbCtbJoint,
+                                            null,
+                                            Shared.language
+                                        )} ${co.getDisplayRouteNumber(routeNumber)} ${selectedBranch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${selectedStop}." else ""} ${allStops[selectedStop - 1].stop.name[Shared.language]}"
                                     )
                                     scope.launch {
                                         sheetState.hide()
@@ -972,6 +979,7 @@ fun StopEntry(
     routeLineData: ImmutableState<List<Any>>,
     routeNumber: String,
     co: Operator,
+    gmbRegion: GMBRegion?,
     isKmbCtbJoint: Boolean,
     timesStartIndexState: MutableIntState,
     timesEndIndexState: MutableIntState,
@@ -1010,6 +1018,7 @@ fun StopEntry(
             mtrStopsInterchange = mtrStopsInterchange,
             routeLineData = routeLineData,
             routeNumber = routeNumber,
+            gmbRegion = gmbRegion,
             co = co,
             alightReminderHighlightBlinkState = alightReminderHighlightBlinkState,
             alternateStopNamesShowingState = alternateStopNamesShowingState
@@ -1037,6 +1046,7 @@ fun StopEntry(
                     routeNumber = routeNumber,
                     co = co,
                     isKmbCtbJoint = isKmbCtbJoint,
+                    gmbRegion = gmbRegion,
                     timesStartIndexState = timesStartIndexState,
                     timesEndIndexState = timesEndIndexState,
                     timesState = timesState,
@@ -1069,6 +1079,7 @@ fun StopEntryCard(
     routeLineData: ImmutableState<List<Any>>,
     routeNumber: String,
     co: Operator,
+    gmbRegion: GMBRegion?,
     alightReminderHighlightBlinkState: MutableState<Boolean>,
     alternateStopNamesShowingState: MutableState<Boolean>
 ) {
@@ -1100,7 +1111,7 @@ fun StopEntryCard(
         modifier = Modifier.clickable {
             if (selectedStop == index && alternateStopNames != null) {
                 alternateStopNamesShowing = !alternateStopNamesShowing
-                val operatorName = (if (alternateStopNamesShowing) Operator.CTB else Operator.KMB).getDisplayName(routeNumber, false, Shared.language)
+                val operatorName = (if (alternateStopNamesShowing) Operator.CTB else Operator.KMB).getDisplayName(routeNumber, false, gmbRegion, Shared.language)
                 val text = if (Shared.language == "en") {
                     "Displaying $operatorName stop names"
                 } else {
@@ -1235,6 +1246,7 @@ fun StopEntryExpansion(
     routeNumber: String,
     co: Operator,
     isKmbCtbJoint: Boolean,
+    gmbRegion: GMBRegion?,
     timesStartIndexState: MutableIntState,
     timesEndIndexState: MutableIntState,
     timesState: MutableIntState,
@@ -1290,6 +1302,7 @@ fun StopEntryExpansion(
                 routeNumber = routeNumber,
                 co = co,
                 isKmbCtbJoint = isKmbCtbJoint,
+                gmbRegion = gmbRegion,
                 lrtDirectionModeState = lrtDirectionModeState,
                 etaResultsState = etaResultsState,
                 etaUpdateTimesState = etaUpdateTimesState,
@@ -1312,6 +1325,7 @@ fun StopEntryExpansion(
                 routeNumber = routeNumber,
                 co = co,
                 isKmbCtbJoint = isKmbCtbJoint,
+                gmbRegion = gmbRegion,
                 sheetTypeState = sheetTypeState,
                 togglingAlightReminderState = togglingAlightReminderState,
                 alightReminderHighlightBlinkState = alightReminderHighlightBlinkState,
@@ -1337,6 +1351,7 @@ fun StopEntryExpansionEta(
     routeNumber: String,
     co: Operator,
     isKmbCtbJoint: Boolean,
+    gmbRegion: GMBRegion?,
     lrtDirectionModeState: MutableState<Boolean>,
     etaResultsState: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
@@ -1539,7 +1554,7 @@ fun StopEntryExpansionEta(
                         .plainTooltip(if (Shared.language == "en") "Share Route" else "分享路線"),
                     onClick = { instance.compose.shareUrl(
                         url = selectedBranch.getDeepLink(instance, allStops[selectedStop - 1].stopId, selectedStop - 1),
-                        title = "${if (Shared.language == "en") "Share Route" else "分享路線"} - ${co.getDisplayName(routeNumber, isKmbCtbJoint, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${selectedBranch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${selectedStop}." else ""} ${allStops[selectedStop - 1].stop.name[Shared.language]}"
+                        title = "${if (Shared.language == "en") "Share Route" else "分享路線"} - ${co.getDisplayName(routeNumber, isKmbCtbJoint, gmbRegion, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${selectedBranch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${selectedStop}." else ""} ${allStops[selectedStop - 1].stop.name[Shared.language]}"
                     ) },
                     shape = RoundedCornerShape(5.dp)
                 ) {
@@ -1674,6 +1689,7 @@ fun StopEntryExpansionAlightReminder(
     routeNumber: String,
     co: Operator,
     isKmbCtbJoint: Boolean,
+    gmbRegion: GMBRegion?,
     alightReminderHighlightBlinkState: MutableState<Boolean>,
     alightReminderStateState: MutableState<AlightReminderServiceState?>,
     alightReminderTimeLeftState: MutableIntState,
@@ -1856,7 +1872,7 @@ fun StopEntryExpansionAlightReminder(
                     .plainTooltip(if (Shared.language == "en") "Share Route" else "分享路線"),
                 onClick = { instance.compose.shareUrl(
                     url = selectedBranch.getDeepLink(instance, allStops[selectedStop - 1].stopId, selectedStop - 1),
-                    title = "${if (Shared.language == "en") "Share Route" else "分享路線"} - ${co.getDisplayName(routeNumber, isKmbCtbJoint, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${selectedBranch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${selectedStop}." else ""} ${allStops[selectedStop - 1].stop.name[Shared.language]}"
+                    title = "${if (Shared.language == "en") "Share Route" else "分享路線"} - ${co.getDisplayName(routeNumber, isKmbCtbJoint, gmbRegion, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${selectedBranch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${selectedStop}." else ""} ${allStops[selectedStop - 1].stop.name[Shared.language]}"
                 ) },
                 shape = RoundedCornerShape(5.dp)
             ) {

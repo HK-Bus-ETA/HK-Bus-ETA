@@ -374,7 +374,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
         val stopIndex = selectedStop.intValue
         val stop = allStops[stopIndex - 1]
         val branch = selectedBranch.value
-        updateBrowserState("${co.getDisplayName(routeNumber, branch.isKmbCtbJoint, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${branch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${stopIndex}." else ""} ${stop.stop.name[Shared.language]}", branch.getDeepLink(instance, stop.stopId, stopIndex))
+        updateBrowserState("${co.getDisplayName(routeNumber, branch.isKmbCtbJoint, gmbRegion, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${branch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${stopIndex}." else ""} ${stop.stop.name[Shared.language]}", branch.getDeepLink(instance, stop.stopId, stopIndex))
     }
     DisposableEffect (Unit) {
         onDispose { updateBrowserState("", BASE_URL) }

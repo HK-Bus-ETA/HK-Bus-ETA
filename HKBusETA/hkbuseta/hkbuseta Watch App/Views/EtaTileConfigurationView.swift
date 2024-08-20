@@ -189,11 +189,12 @@ struct EtaTileConfigurationView: AppScreenView {
                     let index = favouriteRouteStop.index
                     let route = favouriteRouteStop.route
                     let kmbCtbJoint = route.isKmbCtbJoint
+                    let gmbRegion = route.gmbRegion
                     let co = favouriteRouteStop.co
                     let routeNumber = route.routeNumber
                     let destName = registry(appContext).getStopSpecialDestinations(stopId: favouriteRouteStop.stopId, co: favouriteRouteStop.co, route: route, prependTo: true)
                     let color = operatorColor(favouriteRouteStop.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }
-                    let operatorName = favouriteRouteStop.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, language: Shared().language, elseName: "???")
+                    let operatorName = favouriteRouteStop.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, gmbRegion: gmbRegion, language: Shared().language, elseName: "???")
                     let mainText = "\(operatorName) \(favouriteRouteStop.co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))"
                     let routeText = destName.get(language: Shared().language)
                     let subText = ((co.isTrain || favouriteRouteStop.favouriteStopMode == FavouriteStopMode.closest ? "" : "\(index). ") + stopName.get(language: Shared().language)).asAttributedString()

@@ -160,11 +160,11 @@ enum class OperatorCategory(
     ),
     LRT(
         operators =  setOf(Operator.LRT),
-        displayName = { Operator.LRT.getDisplayName("", false, it) }
+        displayName = { Operator.LRT.getDisplayName("", false, null, it) }
     ),
     MTR(
         operators = setOf(Operator.MTR),
-        displayName = { Operator.MTR.getDisplayName("", false, it) }
+        displayName = { Operator.MTR.getDisplayName("", false, null, it) }
     ),
     FERRY(
         operators = setOf(Operator.SUNFERRY, Operator.HKKF, Operator.FORTUNEFERRY),

@@ -85,8 +85,7 @@ fun NearbyPage(location: LocationResult?, exclude: ImmutableSet<String>, interch
 @Composable
 fun WaitingText(usingGps: Boolean, instance: AppActiveContext) {
     Text(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp),

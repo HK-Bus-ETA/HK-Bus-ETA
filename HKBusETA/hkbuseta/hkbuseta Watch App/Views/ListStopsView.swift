@@ -111,7 +111,7 @@ struct ListStopsView: AppScreenView {
                         Button(action: {
                             let newState = !alternateStopNamesShowingState.state.boolValue
                             registry(appContext).setAlternateStopNames(alternateStopName: newState, context: appContext)
-                            let operatorName = (newState ? Operator.Companion().CTB : Operator.Companion().KMB).getDisplayName(routeNumber: routeNumber, kmbCtbJoint: false, language: Shared().language, elseName: "???")
+                            let operatorName = (newState ? Operator.Companion().CTB : Operator.Companion().KMB).getDisplayName(routeNumber: routeNumber, kmbCtbJoint: false, gmbRegion: gmbRegion, language: Shared().language, elseName: "???")
                             let text = Shared().language == "en" ? "Displaying \(operatorName) stop names" : "顯示\(operatorName)站名"
                             appContext.showToastText(text: text, duration: ToastDuration.short_)
                         }) {
@@ -206,7 +206,7 @@ struct ListStopsView: AppScreenView {
     func Header() -> some View {
         let coColor = operatorColor(co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
         return VStack(alignment: .center, spacing: 2.scaled(appContext)) {
-            Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
+            Text(co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, gmbRegion: gmbRegion, language: Shared().language, elseName: "???") + " " + co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))
                 .foregroundColor(coColor.adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(1)
                 .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)

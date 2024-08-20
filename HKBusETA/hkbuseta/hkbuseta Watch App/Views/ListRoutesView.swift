@@ -249,11 +249,12 @@ struct ListRoutesView: AppScreenView {
     
     func RouteRow(route: StopIndexedRouteSearchResultEntry) -> some View {
         let kmbCtbJoint = route.route!.isKmbCtbJoint
+        let gmbRegion = route.route!.gmbRegion
         let color = operatorColor(route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
         let dest = route.route!.resolvedDest(prependTo: false).get(language: Shared().language)
         let altSize = route.co == Operator.Companion().MTR && Shared().language != "en"
         let routeNumber = route.co.getListDisplayRouteNumber(routeNumber: route.route!.routeNumber, shortened: true)
-        let operatorName = route.co.getDisplayFormattedName(routeNumber: route.route!.routeNumber, kmbCtbJoint: kmbCtbJoint, language: Shared().language, elseName: FormattedTextKt.asFormattedText("???", style: [].asKt()), elseColor: 0xFFFFFFFF as Int64)
+        let operatorName = route.co.getDisplayFormattedName(routeNumber: route.route!.routeNumber, kmbCtbJoint: kmbCtbJoint, gmbRegion: gmbRegion, language: Shared().language, elseName: FormattedTextKt.asFormattedText("???", style: [].asKt()), elseColor: 0xFFFFFFFF as Int64)
         let secondLine: [AttributedString] = {
             var list: [AttributedString] = []
             if listType == RouteListType.Companion().RECENT {

@@ -33,7 +33,7 @@ actual val FavouriteRouteStop.platformDisplayInfo: JsonObject? get() = buildJson
     put("routeNumber", co.getDisplayRouteNumber(route.routeNumber, false))
     put("co", co.name)
     put("coDisplay-zh", buildJsonArray {
-        co.getDisplayFormattedName(route.routeNumber, route.isKmbCtbJoint, "zh").content.forEach {
+        co.getDisplayFormattedName(route.routeNumber, route.isKmbCtbJoint, route.gmbRegion, "zh").content.forEach {
             add(buildJsonObject {
                 put("string", it.string)
                 it.style.asSequence().filterIsInstance<ColorContentStyle>().firstOrNull()?.let { style ->
@@ -43,7 +43,7 @@ actual val FavouriteRouteStop.platformDisplayInfo: JsonObject? get() = buildJson
         }
     })
     put("coDisplay-en", buildJsonArray {
-        co.getDisplayFormattedName(route.routeNumber, route.isKmbCtbJoint, "en").content.forEach {
+        co.getDisplayFormattedName(route.routeNumber, route.isKmbCtbJoint, route.gmbRegion, "en").content.forEach {
             add(buildJsonObject {
                 put("string", it.string)
                 it.style.asSequence().filterIsInstance<ColorContentStyle>().firstOrNull()?.let { style ->

@@ -213,10 +213,11 @@ struct FavView: AppScreenView {
                     let kmbCtbJoint = route.isKmbCtbJoint
                     let co = favouriteRouteStop.co
                     let routeNumber = route.routeNumber
+                    let gmbRegion = route.gmbRegion
                     let gpsStop = favouriteRouteStop.favouriteStopMode.isRequiresLocation
                     let destName = registry(appContext).getStopSpecialDestinations(stopId: favouriteRouteStop.stopId, co: favouriteRouteStop.co, route: route, prependTo: false)
                     let color = operatorColor(favouriteRouteStop.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }
-                    let operatorName = favouriteRouteStop.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: route.isKmbCtbJoint, language: Shared().language, elseName: "???")
+                    let operatorName = favouriteRouteStop.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, gmbRegion: gmbRegion, language: Shared().language, elseName: "???")
                     let mainText = "\(operatorName) \(favouriteRouteStop.co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))"
                     let routeText = destName.get(language: Shared().language)
                     

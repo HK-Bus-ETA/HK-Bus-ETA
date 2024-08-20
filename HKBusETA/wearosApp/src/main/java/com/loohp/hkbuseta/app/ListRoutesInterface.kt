@@ -455,10 +455,11 @@ fun LazyItemScope.RouteRow(
     val co = route.co
     val kmbCtbJoint = route.route!!.isKmbCtbJoint
     val routeNumber = co.getListDisplayRouteNumber(route.route!!.routeNumber, true)
+    val gmbRegion = route.route!!.gmbRegion
     val routeTextWidth = if (Shared.language != "en" && co == Operator.MTR) mtrTextWidth else defaultTextWidth
     val rawColor = co.getColor(route.route!!.routeNumber, Color.White)
     val dest = route.route!!.resolvedDest(false)[Shared.language]
-    val operatorName = remember(route, co, kmbCtbJoint) { co.getDisplayFormattedName(route.route!!.routeNumber, kmbCtbJoint, Shared.language).asContentAnnotatedString().annotatedString }
+    val operatorName = remember(route, co, kmbCtbJoint) { co.getDisplayFormattedName(route.route!!.routeNumber, kmbCtbJoint, gmbRegion, Shared.language).asContentAnnotatedString().annotatedString }
 
     val secondLine = remember(route, co, kmbCtbJoint, routeNumber, rawColor, listType) { buildList {
         if (listType == RouteListType.RECENT) {

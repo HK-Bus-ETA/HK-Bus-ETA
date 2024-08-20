@@ -476,12 +476,13 @@ fun SelectButton(numIndex: Int, favouriteRouteStop: FavouriteRouteStop, selectSt
                 val kmbCtbJoint = route.isKmbCtbJoint
                 val co = favouriteRouteStop.co
                 val routeNumber = route.routeNumber
+                val gmbRegion = route.gmbRegion
                 val stopId = favouriteRouteStop.stopId
                 val destName = Registry.getInstanceNoUpdateCheck(instance).getStopSpecialDestinations(stopId, co, route, true)
                 val rawColor = co.getColor(routeNumber, Color.White)
                 val color by WearOSShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { kmbCtbJoint })
 
-                val operator = co.getDisplayName(routeNumber, kmbCtbJoint, Shared.language)
+                val operator = co.getDisplayName(routeNumber, kmbCtbJoint, gmbRegion, Shared.language)
                 val mainText = operator.plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
                 val routeText = destName[Shared.language]
                 val subText = (if (co.isTrain || favouriteRouteStop.favouriteStopMode == FavouriteStopMode.CLOSEST) "" else index.toString().plus(". ")).plus(stopName[Shared.language])

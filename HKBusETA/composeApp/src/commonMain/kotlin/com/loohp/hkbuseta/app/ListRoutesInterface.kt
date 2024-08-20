@@ -429,7 +429,7 @@ fun EmptyListRouteInterface(
                             textAlign = TextAlign.Start,
                             fontSize = 14F.sp,
                             maxLines = 1,
-                            text = route.co.firstCo()?.getDisplayName(route.routeNumber, route.isKmbCtbJoint, Shared.language)?: ""
+                            text = route.co.firstCo()?.getDisplayName(route.routeNumber, route.isKmbCtbJoint, route.gmbRegion, Shared.language)?: ""
                         )
                     }
                     Column (
@@ -659,6 +659,7 @@ fun RouteRow(
     val routeNumber = route.route!!.routeNumber
     val routeNumberDisplay = co.getListDisplayRouteNumber(routeNumber, true)
     val dest = route.route!!.resolvedDestFormatted(false, *if (Shared.disableBoldDest) emptyArray() else arrayOf(BoldStyle))[Shared.language].asContentAnnotatedString().annotatedString
+    val gmbRegion = route.route!!.gmbRegion
     val secondLineCoColor = co.getColor(routeNumber, Color.White).adjustBrightness(if (Shared.theme.isDarkMode) 1F else 0.7F)
     val localContentColor = LocalContentColor.current
     val secondLine = remember(route, co, kmbCtbJoint, routeNumber, dest, secondLineCoColor, listType, localContentColor) { buildList {
@@ -711,7 +712,7 @@ fun RouteRow(
                 fontSize = 14F.sp,
                 lineHeight = 1.1F.em,
                 maxLines = 1,
-                text = co.getDisplayFormattedName(routeNumber, kmbCtbJoint, Shared.language)
+                text = co.getDisplayFormattedName(routeNumber, kmbCtbJoint, gmbRegion, Shared.language)
                     .let { if (Shared.theme.isDarkMode) it else it.transformColors { _, c -> Colored(Color(c.color).adjustBrightness(0.75F).toArgb().toLong()) } }
                     .asContentAnnotatedString()
                     .annotatedString
