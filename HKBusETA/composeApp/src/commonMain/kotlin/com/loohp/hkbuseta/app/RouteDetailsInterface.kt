@@ -90,6 +90,7 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
+import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.OriginData
@@ -265,7 +266,7 @@ fun listStopsTabItem(co: Operator): List<ListStopsTabItem> {
 
 expect fun updateBrowserState(title: String, url: String)
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ReduceDataOmitted::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
 @Composable
 fun RouteDetailsInterface(instance: AppActiveContext) {
     val route by remember(instance) { derivedStateOf { when (val r = instance.compose.data["route"]) {
@@ -723,7 +724,7 @@ fun MapStopsInterface(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ReduceDataOmitted::class)
+@OptIn(ExperimentalLayoutApi::class, ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
 @Composable
 fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>) {
     val now by currentMinuteState.collectAsStateMultiplatform()

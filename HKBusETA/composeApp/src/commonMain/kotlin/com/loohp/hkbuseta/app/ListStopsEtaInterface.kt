@@ -119,6 +119,7 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
+import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
@@ -576,7 +577,7 @@ fun ListStopsEtaInterface(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ReduceDataOmitted::class)
+@OptIn(ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
 @Composable
 fun RouteBranchBar(
     instance: AppActiveContext,
