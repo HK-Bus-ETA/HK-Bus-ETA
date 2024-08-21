@@ -1,4 +1,5 @@
 import json
+import cbor
 import math
 import re
 import time
@@ -17,11 +18,10 @@ MTR_DATA = {}
 MTR_BARRIER_FREE_MAPPING = {}
 LRT_DATA = {}
 
-DATA_SHEET_FILE_NAME = "data.json"
-DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
-DATA_SHEET_FULL_FILE_NAME = "data_full.json"
-DATA_SHEET_FULL_FORMATTED_FILE_NAME = "data_full_formatted.json"
-CHECKSUM_FILE_NAME = "checksum.md5"
+DATA_SHEET_FILE_NAME = "data"
+DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted"
+DATA_SHEET_FULL_FILE_NAME = "data_full"
+DATA_SHEET_FULL_FORMATTED_FILE_NAME = "data_full_formatted"
 LAST_UPDATED_FILE = "last_updated.txt"
 
 RECAPITALIZE_KEYWORDS = [
@@ -749,11 +749,14 @@ merge(output, lrt_data)
 splash_data = requests.get("https://splash.hkbuseta.com/splash.json").json()
 merge(output, splash_data)
 
-with open(DATA_SHEET_FULL_FILE_NAME, "w", encoding="utf-8") as f:
+with open(DATA_SHEET_FULL_FILE_NAME + ".json", "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
 
-with open(DATA_SHEET_FULL_FORMATTED_FILE_NAME, "w", encoding="utf-8") as f:
+with open(DATA_SHEET_FULL_FORMATTED_FILE_NAME + ".json", "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'), indent=4)
+
+with open(DATA_SHEET_FULL_FILE_NAME + ".cbor", "w", encoding="utf-8") as f:
+    cbor.dump(output, f)
 
 strip_data_sheet(DATA_SHEET)
 del output["mtrData"]
@@ -761,10 +764,13 @@ del output["mtrBarrierFreeMapping"]
 del output["lrtData"]
 del output["splashEntries"]
 
-with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
+with open(DATA_SHEET_FILE_NAME + ".json", "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
 
-with open(DATA_SHEET_FORMATTED_FILE_NAME, "w", encoding="utf-8") as f:
+with open(DATA_SHEET_FILE_NAME + ".cbor", "w", encoding="utf-8") as f:
+    cbor.dump(output, f)
+
+with open(DATA_SHEET_FORMATTED_FILE_NAME + ".json", "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'), indent=4)
 
 with open(LAST_UPDATED_FILE, 'w', encoding="utf-8") as f:
