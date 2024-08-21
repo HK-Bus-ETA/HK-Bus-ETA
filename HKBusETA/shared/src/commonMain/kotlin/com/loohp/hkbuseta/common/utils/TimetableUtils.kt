@@ -23,6 +23,7 @@ package com.loohp.hkbuseta.common.utils
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
+import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.asBilingualText
@@ -429,6 +430,7 @@ inline fun buildTimetableEntryMap(
 ): Map<OperatingWeekdays, List<TimetableEntry>> = TimetableEntryMapBuilder(defaultRoute).apply(builder).build()
 
 @ReduceDataOmitted
+@ReduceDataPossiblyOmitted
 fun Collection<Route>.createTimetable(context: AppContext): Map<OperatingWeekdays, List<TimetableEntry>> {
     return createTimetable(Registry.getInstance(context).getServiceDayMap()) {
         it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() }
@@ -458,6 +460,7 @@ fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>,
 }
 
 @ReduceDataOmitted
+@ReduceDataPossiblyOmitted
 fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, context: AppContext): Route {
     val registry = Registry.getInstance(context)
     return currentFirstActiveBranch(time, registry.getServiceDayMap(), registry.getHolidays()) {
@@ -484,6 +487,7 @@ enum class RouteBranchStatus {
 }
 
 @ReduceDataOmitted
+@ReduceDataPossiblyOmitted
 fun Collection<Route>.currentBranchStatus(time: LocalDateTime, context: AppContext): Map<Route, RouteBranchStatus> {
     val registry = Registry.getInstance(context)
     return currentBranchStatus(time, registry.getServiceDayMap(), registry.getHolidays()) {
