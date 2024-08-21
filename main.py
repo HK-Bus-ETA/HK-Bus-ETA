@@ -1,5 +1,5 @@
 import json
-import cbor2 as cbor
+import cbor
 import math
 import re
 import time
@@ -752,11 +752,11 @@ merge(output, splash_data)
 with open(DATA_SHEET_FULL_FILE_NAME + ".json", "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
 
-with open(DATA_SHEET_FULL_FILE_NAME + ".cbor", "wb") as f:
-    cbor.dump(output, f)
-
 with open(DATA_SHEET_FULL_FORMATTED_FILE_NAME + ".json", "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'), indent=4)
+
+with open(DATA_SHEET_FULL_FILE_NAME + ".cbor", "w", encoding="utf-8") as f:
+    cbor.dump(output, f)
 
 strip_data_sheet(DATA_SHEET)
 del output["mtrData"]
@@ -767,7 +767,7 @@ del output["splashEntries"]
 with open(DATA_SHEET_FILE_NAME + ".json", "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
 
-with open(DATA_SHEET_FILE_NAME + ".cbor", "wb") as f:
+with open(DATA_SHEET_FILE_NAME + ".cbor", "w", encoding="utf-8") as f:
     cbor.dump(output, f)
 
 with open(DATA_SHEET_FORMATTED_FILE_NAME + ".json", "w", encoding="utf-8") as f:
