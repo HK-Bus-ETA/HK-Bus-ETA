@@ -122,6 +122,8 @@ interface AppContext {
 
     fun removeAppShortcut(id: String)
 
+    suspend fun <T> withHighBandwidthNetwork(block: suspend () -> T): T
+
 }
 
 @Immutable

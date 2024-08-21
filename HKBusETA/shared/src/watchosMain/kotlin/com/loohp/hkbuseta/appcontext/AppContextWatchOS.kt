@@ -349,6 +349,10 @@ open class AppContextWatchOS internal constructor() : AppContext {
         //do nothing
     }
 
+    override suspend fun <T> withHighBandwidthNetwork(block: suspend () -> T): T {
+        return block.invoke()
+    }
+
 }
 
 class AppActiveContextWatchOS internal constructor(

@@ -828,15 +828,17 @@ class Registry {
                         state.value = State.UPDATING
                         updatePercentageState.value = 0f
                         val percentageOffset = if (Shared.favoriteRouteStops.value.all { it.favouriteRouteStops.isEmpty() }) 0.15f else 0f
-                        if (!updateChecked.value) {
-                            checksum = checksumFetcher.invoke(true)
+                        context.withHighBandwidthNetwork {
+                            if (!updateChecked.value) {
+                                checksum = checksumFetcher.invoke(true)
+                            }
+                            val gzip = gzipSupported()
+                            val length = getTextResponse(dataLengthUrl(!context.formFactor.reduceData, gzip))?.string().parseLongOr(-1)
+                            val textResponse = getTextResponseWithPercentageCallback(dataUrl(!context.formFactor.reduceData, gzip), length, gzip) { p -> updatePercentageState.value = p * 0.85f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
+                            DATA = JsonIgnoreUnknownKeys.decodeFromStringReadChannel(textResponse)
+                            Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
+                            getTextResponse(lastUpdatedUrl())?.string()?.toLong()?.apply { Shared.scheduleBackgroundUpdateService(context, this) }
                         }
-                        val gzip = gzipSupported()
-                        val length = getTextResponse(dataLengthUrl(!context.formFactor.reduceData, gzip))?.string().parseLongOr(-1)
-                        val textResponse = getTextResponseWithPercentageCallback(dataUrl(!context.formFactor.reduceData, gzip), length, gzip) { p -> updatePercentageState.value = p * 0.85f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
-                        DATA = JsonIgnoreUnknownKeys.decodeFromStringReadChannel(textResponse)
-                        Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
-                        getTextResponse(lastUpdatedUrl())?.string()?.toLong()?.apply { Shared.scheduleBackgroundUpdateService(context, this) }
                         CoroutineScope(dispatcherIO).launch {
                             context.writeTextFile(DATA_FILE_NAME, Json) { DataContainer.serializer() to DATA!! }
                             context.writeTextFile(CHECKSUM_FILE_NAME) { (checksum?: "").toStringReadChannel() }

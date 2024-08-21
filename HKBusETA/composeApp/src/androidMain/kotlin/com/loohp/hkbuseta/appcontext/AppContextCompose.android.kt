@@ -263,6 +263,10 @@ open class AppContextComposeAndroid internal constructor(
         ShortcutManagerCompat.removeDynamicShortcuts(context, listOf(id))
     }
 
+    override suspend fun <T> withHighBandwidthNetwork(block: suspend () -> T): T {
+        return block.invoke()
+    }
+
 }
 
 @Stable

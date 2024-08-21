@@ -23,6 +23,10 @@ package com.loohp.hkbuseta.appcontext
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.Uri
 import android.os.Bundle
 import android.text.format.DateFormat
@@ -262,6 +266,31 @@ open class AppContextWearOS internal constructor(
 
     override fun removeAppShortcut(id: String) {
         ShortcutManagerCompat.removeDynamicShortcuts(context, listOf(id))
+    }
+
+    override suspend fun <T> withHighBandwidthNetwork(block: suspend () -> T): T {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                super.onAvailable(network)
+                connectivityManager.bindProcessToNetwork(network)
+            }
+        }
+        val bind = try {
+            connectivityManager.requestNetwork(NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build(), callback)
+            true
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            false
+        }
+        return try {
+            block.invoke()
+        } finally {
+            if (bind) {
+                connectivityManager.bindProcessToNetwork(null)
+                connectivityManager.unregisterNetworkCallback(callback)
+            }
+        }
     }
 
 }

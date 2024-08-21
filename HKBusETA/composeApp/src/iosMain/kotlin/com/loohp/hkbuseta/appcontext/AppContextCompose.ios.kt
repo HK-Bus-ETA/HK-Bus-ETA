@@ -392,6 +392,10 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
         UIApplication.sharedApplication.shortcutItems = existingItems.filterNot { (it as? UIApplicationShortcutItem)?.type == id }
     }
 
+    override suspend fun <T> withHighBandwidthNetwork(block: suspend () -> T): T {
+        return block.invoke()
+    }
+
 }
 
 @Stable

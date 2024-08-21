@@ -79,7 +79,7 @@ class Route(
     @ReduceDataOmitted val fares: List<Fare>? = null,
     @ReduceDataOmitted val faresHoliday: List<Fare>? = null,
     @ReduceDataPossiblyOmitted val freq: Map<String, Map<String, List<String>?>>? = null,
-    @SerialName("jt") @Serializable(with = IntOrStringAsIntSerializer::class) val journeyTime: Int? = null
+    @SerialName("jt") @Serializable(with = IntOrStringAsIntSerializer::class) @ReduceDataOmitted val journeyTime: Int? = null
 ) : JSONSerializable, IOSerializable {
 
     companion object {

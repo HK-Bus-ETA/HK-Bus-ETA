@@ -197,6 +197,10 @@ open class AppContextComposeWeb internal constructor() : AppContextCompose {
         //do nothing
     }
 
+    override suspend fun <T> withHighBandwidthNetwork(block: suspend () -> T): T {
+        return block.invoke()
+    }
+
 }
 
 @Stable
