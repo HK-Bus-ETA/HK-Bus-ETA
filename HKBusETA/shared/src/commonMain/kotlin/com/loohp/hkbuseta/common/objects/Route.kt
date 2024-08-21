@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
+import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.utils.IOSerializable
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.IntOrStringAsIntSerializer
@@ -77,7 +78,7 @@ class Route(
     val stops: Map<Operator, List<String>>,
     @ReduceDataOmitted val fares: List<Fare>? = null,
     @ReduceDataOmitted val faresHoliday: List<Fare>? = null,
-    @ReduceDataOmitted val freq: Map<String, Map<String, List<String>?>>? = null,
+    @ReduceDataPossiblyOmitted val freq: Map<String, Map<String, List<String>?>>? = null,
     @SerialName("jt") @Serializable(with = IntOrStringAsIntSerializer::class) val journeyTime: Int? = null
 ) : JSONSerializable, IOSerializable {
 

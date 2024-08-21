@@ -85,6 +85,7 @@ import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.OriginData
+import com.loohp.hkbuseta.common.objects.RemarkType
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.StopEntry
 import com.loohp.hkbuseta.common.objects.getDisplayName
@@ -161,7 +162,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
         val resolvedDestName = remember { route.route!!.resolvedDest(true) }
         val specialRoutes = remember { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion)
             .asSequence()
-            .map { it.resolveSpecialRemark(instance) }
+            .map { it.resolveSpecialRemark(instance, labelType = if (Registry.getInstance(instance).hasServiceDayMap()) RemarkType.LABEL_ALL_EXCEPT_MAIN else RemarkType.RAW) }
             .filter { it.zh.isNotBlank() }
             .toImmutableList()
         }
@@ -430,10 +431,14 @@ fun HeaderElement(
                     ),
                     maxLines = 2,
                     color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),
-                    text = if (Shared.language == "en") {
-                        "Special ${specialRoutes[it.coerceIn(specialRoutes.indices)].en}"
+                    text = if (Registry.getInstance(instance).hasServiceDayMap()) {
+                        specialRoutes[it.coerceIn(specialRoutes.indices)][Shared.language]
                     } else {
-                        "特別班 ${specialRoutes[it.coerceIn(specialRoutes.indices)].zh}"
+                        if (Shared.language == "en") {
+                            "Special ${specialRoutes[it.coerceIn(specialRoutes.indices)].en}"
+                        } else {
+                            "特別班 ${specialRoutes[it.coerceIn(specialRoutes.indices)].zh}"
+                        }
                     }
                 )
             }

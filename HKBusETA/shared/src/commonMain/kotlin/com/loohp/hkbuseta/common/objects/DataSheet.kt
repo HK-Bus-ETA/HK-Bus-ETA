@@ -20,7 +20,7 @@
  */
 package com.loohp.hkbuseta.common.objects
 
-import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
+import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import kotlinx.coroutines.CoroutineScope
@@ -87,7 +87,7 @@ class DataSheet(
     val routeList: Map<String, Route>,
     val stopList: Map<String, Stop>,
     val stopMap: Map<String, List<@Serializable(with = OperatorStopIdPairSerializer::class) Pair<Operator, String>>>,
-    @ReduceDataOmitted val serviceDayMap: Map<String, List<String>>? = null
+    @ReduceDataPossiblyOmitted val serviceDayMap: Map<String, List<String>>? = null
 ) {
 
     val routeNumberList: Set<String> by lazy { routeList.values.asSequence().map { it.routeNumber }.toSet() }

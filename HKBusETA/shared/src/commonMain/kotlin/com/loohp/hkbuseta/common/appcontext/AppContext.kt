@@ -36,11 +36,17 @@ import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 
 
-@RequiresOptIn(message = "Extra care should be taken as this might be not available on some platforms.")
+@RequiresOptIn(message = "Extra care should be taken as this might be not available on all devices on some platforms.")
 @Target(AnnotationTarget.FIELD, AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.BINARY)
 @MustBeDocumented
 annotation class ReduceDataOmitted
+
+@RequiresOptIn(message = "Extra care should be taken as this might be not available on certain devices on some platforms.")
+@Target(AnnotationTarget.FIELD, AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.BINARY)
+@MustBeDocumented
+annotation class ReduceDataPossiblyOmitted
 
 enum class FormFactor(val reduceData: Boolean) {
 

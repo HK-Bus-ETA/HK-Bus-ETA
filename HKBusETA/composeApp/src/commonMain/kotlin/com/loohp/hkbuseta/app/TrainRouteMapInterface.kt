@@ -1760,35 +1760,39 @@ fun LRTETADisplayInterface(
         }.first()
     }
     LaunchedEffect (placeholderRoute) {
-        while (true) {
-            val result = CoroutineScope(dispatcherIO).async {
-                Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute!!.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
-            }.await()
-            if (result.isConnectionError) {
-                errorCounter++
-                if (errorCounter > 1) {
+        placeholderRoute?.let { placeholderRoute ->
+            while (true) {
+                val result = CoroutineScope(dispatcherIO).async {
+                    Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                }.await()
+                if (result.isConnectionError) {
+                    errorCounter++
+                    if (errorCounter > 1) {
+                        etaState = result
+                    }
+                } else {
+                    errorCounter = 0
                     etaState = result
                 }
-            } else {
-                errorCounter = 0
-                etaState = result
+                delay(Shared.ETA_UPDATE_INTERVAL.toLong())
             }
-            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
         }
     }
     RestartEffect {
         CoroutineScope(dispatcherIO).launch {
-            val result = CoroutineScope(dispatcherIO).async {
-                Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute!!.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
-            }.await()
-            if (result.isConnectionError) {
-                errorCounter++
-                if (errorCounter > 1) {
+            placeholderRoute?.let { placeholderRoute ->
+                val result = CoroutineScope(dispatcherIO).async {
+                    Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                }.await()
+                if (result.isConnectionError) {
+                    errorCounter++
+                    if (errorCounter > 1) {
+                        etaState = result
+                    }
+                } else {
+                    errorCounter = 0
                     etaState = result
                 }
-            } else {
-                errorCounter = 0
-                etaState = result
             }
         }
     }

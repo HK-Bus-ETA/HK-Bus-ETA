@@ -37,6 +37,7 @@ import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppShortcutIcon
 import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
+import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.appcontext.primaryThemeColor
 import com.loohp.hkbuseta.common.branchedlist.MutableBranchedList
 import com.loohp.hkbuseta.common.objects.BilingualText
@@ -734,7 +735,11 @@ class Registry {
         return DATA!!.dataSheet.stopList
     }
 
-    @ReduceDataOmitted
+    fun hasServiceDayMap(): Boolean {
+        return DATA!!.dataSheet.serviceDayMap != null
+    }
+
+    @ReduceDataPossiblyOmitted
     internal fun getServiceDayMap(): Map<String, List<String>?> {
         return DATA!!.dataSheet.serviceDayMap!!
     }

@@ -77,7 +77,7 @@ struct ListStopsView: AppScreenView {
         self.destName = destName
         self.resolvedDestName = route.route!.resolvedDest(prependTo: true)
         self.specialRoutes = registry(appContext).getAllBranchRoutes(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion).map {
-            $0.resolveSpecialRemark(context: appContext, labelType: RemarkType.raw)
+            $0.resolveSpecialRemark(context: appContext, labelType: registry(appContext).hasServiceDayMap() ? RemarkType.labelAllExceptMain : RemarkType.raw)
         }.filter {
             !$0.zh.trimmingCharacters(in: .whitespaces).isEmpty
         }
@@ -217,7 +217,7 @@ struct ListStopsView: AppScreenView {
                 .autoResizing(maxSize: 13.scaled(appContext, true))
             if !co.isTrain && !co.isFerry && !specialRoutes.isEmpty {
                 CrossfadeText(
-                    textList: specialRoutes.map { ((Shared().language == "en" ? "Special " : "特別班 ") + $0.get(language: Shared().language)).asAttributedString() },
+                    textList: registry(appContext).hasServiceDayMap() ? (specialRoutes.map { $0.get(language: Shared().language).asAttributedString() }) : (specialRoutes.map { ((Shared().language == "en" ? "Special " : "特別班 ") + $0.get(language: Shared().language)).asAttributedString() }),
                     state: specialAnimationTick
                 )
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
