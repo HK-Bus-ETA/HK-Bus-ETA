@@ -193,6 +193,8 @@ def strip_data_sheet(data):
             del route_data["faresHoliday"]
         if "freq" in route_data:
             del route_data["freq"]
+        if "jt" in route_data:
+            del route_data["jt"]
     if "serviceDayMap" in data:
         del data["serviceDayMap"]
 
@@ -262,6 +264,9 @@ def download_and_process_data_sheet():
 
     for key, data in DATA_SHEET["routeList"].items():
         bounds = data.get("bound")
+
+        if "jt" in data and data["jt"] is None:
+            del data["jt"]
 
         cos = data.get("co")
         if "hkkf" in bounds and "hkkf" not in cos:
