@@ -31,21 +31,29 @@ jobs:
         run: |
           du -sb data.json | cut -f -1 > size.dat
           du -sb data_full.json | cut -f -1 > size_full.dat
+          du -sb data.cbor | cut -f -1 > size.cbor.dat
+          du -sb data_full.cbor | cut -f -1 > size_full.cbor.dat
       - name: GZip Data
         run: |
           gzip -k -f -9 data.json
           gzip -k -f -9 data_full.json
+          gzip -k -f -9 data.cbor
+          gzip -k -f -9 data_full.cbor
       - name: Update GZip Data Length
         run: |
           du -sb data.json.gz | cut -f -1 > size.gz.dat
           du -sb data_full.json.gz | cut -f -1 > size_full.gz.dat
+          du -sb data.cbor.gz | cut -f -1 > size.cbor.gz.dat
+          du -sb data_full.cbor.gz | cut -f -1 > size_full.cbor.gz.dat
       - name: Update resources
         uses: test-room-7/action-update-file@v1
         with:
             file-path: |
               data.json
+              data.cbor
               data_formatted.json
               data_full.json
+              data_full.cbor
               data_full_formatted.json
               checksum.md5
               size.dat
@@ -62,8 +70,10 @@ jobs:
         run: |
           mkdir data
           mv data.json data/
+          mv data.cbor data/
           mv data_formatted.json data/
           mv data_full.json data/
+          mv data_full.cbor data/
           mv data_full_formatted.json data/
           mv checksum.md5 data/
           mv size.dat data/
