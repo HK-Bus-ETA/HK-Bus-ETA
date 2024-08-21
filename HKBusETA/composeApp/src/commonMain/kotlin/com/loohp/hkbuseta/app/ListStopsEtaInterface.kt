@@ -21,6 +21,7 @@
 
 package com.loohp.hkbuseta.app
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -55,7 +56,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -76,11 +76,13 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -212,6 +214,7 @@ import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.combinedClickable
 import com.loohp.hkbuseta.compose.enterPipMode
+import com.loohp.hkbuseta.compose.itemsIndexedPossiblySticky
 import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
@@ -330,7 +333,6 @@ fun ListStopsEtaInterface(
     possibleBidirectionalSectionFare: Boolean = false,
     floatingActions: (@Composable BoxScope.(LazyListState) -> Unit)? = null,
     timesStartIndexState: MutableIntState = remember { mutableIntStateOf(1) },
-    timesEndIndexState: MutableIntState = remember { mutableIntStateOf(2) },
     timesInitState: MutableState<Boolean> = remember { mutableStateOf(false) }
 ) {
     val routeNumber by remember(listRoute) { derivedStateOf { listRoute.route!!.routeNumber } }
@@ -353,11 +355,9 @@ fun ListStopsEtaInterface(
     val etaResults = remember { ConcurrentMap<Int, Registry.ETAQueryResult>().asImmutableState() }
     val etaUpdateTimes = remember { ConcurrentMap<Int, Long>().asImmutableState() }
 
-    val timesState = remember { mutableIntStateOf(-1) }
+    val times: SnapshotStateMap<Int, Int> = remember { mutableStateMapOf() }
     var timesStartIndex by timesStartIndexState
-    var timesEndIndex by timesEndIndexState
     var timesInit by timesInitState
-    var times by timesState
 
     val lrtDirectionModeState = remember { mutableStateOf(Shared.lrtDirectionMode) }
     var lrtDirectionMode by lrtDirectionModeState
@@ -432,10 +432,8 @@ fun ListStopsEtaInterface(
                         if (type == ListStopsInterfaceType.TIMES) {
                             if (index >= allStops.size - 1) {
                                 timesStartIndex = index
-                                timesEndIndex = index + 1
                             } else {
                                 timesStartIndex = index + 1
-                                timesEndIndex = index + 2
                             }
                         }
                         timesInit = true
@@ -448,13 +446,12 @@ fun ListStopsEtaInterface(
     RestartEffect {
         lrtDirectionMode = Shared.lrtDirectionMode
     }
-    LaunchedEffect (timesStartIndex, timesEndIndex) {
+    LaunchedEffect (timesStartIndex) {
         if (type == ListStopsInterfaceType.TIMES) {
-            times = Int.MAX_VALUE
-            if (timesStartIndex > timesEndIndex) {
-                timesStartIndex = timesEndIndex.also { timesEndIndex = timesStartIndex }
+            times.clear()
+            for (i in timesStartIndex..allStops.size) {
+                times[i] = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), timesStartIndex - 1, i - 1).await()
             }
-            times = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), timesStartIndex - 1, timesEndIndex - 1).await()
         }
     }
     LaunchedEffect (selectedBranch) {
@@ -517,7 +514,11 @@ fun ListStopsEtaInterface(
                             ),
                         state = scroll
                     ) {
-                        itemsIndexed(allStops, key = { i, _ -> i + 1 }) { i, stopData ->
+                        itemsIndexedPossiblySticky(
+                            items = allStops,
+                            key = { i, _ -> i + 1 },
+                            sticky = { i, _ -> type == ListStopsInterfaceType.TIMES && i + 1 == timesStartIndex }
+                        ) { i, stopData, sticky ->
                             StopEntry(
                                 instance = instance,
                                 type = type,
@@ -536,8 +537,7 @@ fun ListStopsEtaInterface(
                                 gmbRegion = gmbRegion,
                                 isKmbCtbJoint = isKmbCtbJoint,
                                 timesStartIndexState = timesStartIndexState,
-                                timesEndIndexState = timesEndIndexState,
-                                timesState = timesState,
+                                times = times,
                                 alightReminderHighlightBlinkState = alightReminderHighlightBlinkState,
                                 alightReminderStateState = alightReminderStateState,
                                 alightReminderTimeLeftState = alightReminderTimeLeftState,
@@ -547,8 +547,16 @@ fun ListStopsEtaInterface(
                                 etaUpdateTimesState = etaUpdateTimes,
                                 sheetTypeState = sheetTypeState,
                                 togglingAlightReminderState = togglingAlightReminderState,
-                                alternateStopNamesShowingState = alternateStopNamesShowingState
+                                alternateStopNamesShowingState = alternateStopNamesShowingState,
+                                sticky = sticky
                             )
+                            if (sticky) {
+                                AnimatedVisibility(
+                                    visible = scroll.firstVisibleItemIndex >= i
+                                ) {
+                                    HorizontalDivider()
+                                }
+                            }
                         }
                         if (selectedStop >= allStops.size) {
                             item { HorizontalDivider() }
@@ -983,8 +991,7 @@ fun StopEntry(
     gmbRegion: GMBRegion?,
     isKmbCtbJoint: Boolean,
     timesStartIndexState: MutableIntState,
-    timesEndIndexState: MutableIntState,
-    timesState: MutableIntState,
+    times: SnapshotStateMap<Int, Int>,
     alightReminderHighlightBlinkState: MutableState<Boolean>,
     alightReminderStateState: MutableState<AlightReminderServiceState?>,
     alightReminderTimeLeftState: MutableIntState,
@@ -994,23 +1001,26 @@ fun StopEntry(
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
     sheetTypeState: MutableState<BottomSheetType>,
     togglingAlightReminderState: MutableState<Boolean>,
-    alternateStopNamesShowingState: MutableState<Boolean>
+    alternateStopNamesShowingState: MutableState<Boolean>,
+    sticky: Boolean
 ) {
     val selectedBranch by selectedBranchState
     val selectedStop by selectedStopState
 
     val timesStartIndex by timesStartIndexState
-    val timesEndIndex by timesEndIndexState
 
-    val expanded = (selectedStop == index || (type == ListStopsInterfaceType.TIMES && (timesStartIndex == index || timesEndIndex == index))) && (type == ListStopsInterfaceType.ETA || co.isTrain || stopData.branchIds.contains(selectedBranch))
+    val expanded = (selectedStop == index || (type == ListStopsInterfaceType.TIMES && timesStartIndex == index)) && (type == ListStopsInterfaceType.ETA || co.isTrain || stopData.branchIds.contains(selectedBranch))
 
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .applyIf(sticky) { background(platformBackgroundColor) }
     ) {
         StopEntryCard(
             instance = instance,
             type = type,
             selectedStopState = selectedStopState,
+            timesStartIndexState = timesStartIndexState,
             selectedBranchState = selectedBranchState,
             alternateStopNamesState = alternateStopNames,
             index = index,
@@ -1049,8 +1059,7 @@ fun StopEntry(
                     isKmbCtbJoint = isKmbCtbJoint,
                     gmbRegion = gmbRegion,
                     timesStartIndexState = timesStartIndexState,
-                    timesEndIndexState = timesEndIndexState,
-                    timesState = timesState,
+                    times = times,
                     alightReminderHighlightBlinkState = alightReminderHighlightBlinkState,
                     alightReminderStateState = alightReminderStateState,
                     alightReminderTimeLeftState = alightReminderTimeLeftState,
@@ -1071,6 +1080,7 @@ fun StopEntryCard(
     instance: AppActiveContext,
     type: ListStopsInterfaceType,
     selectedStopState: MutableIntState,
+    timesStartIndexState: MutableIntState,
     selectedBranchState: MutableState<Route>,
     alternateStopNamesState: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
     index: Int,
@@ -1089,23 +1099,34 @@ fun StopEntryCard(
     var selectedStop by selectedStopState
     var alternateStopNamesShowing by alternateStopNamesShowingState
 
+    val timesStartIndex by timesStartIndexState
+
     val optAlightReminderService by AlightReminderService.currentInstance.collectAsStateMultiplatform()
     val alightReminderService by remember(optAlightReminderService) { derivedStateOf { optAlightReminderService.value } }
 
     val alightReminderHighlightBlink by alightReminderHighlightBlinkState
 
     val onSelectedBranch = stopData.branchIds.contains(selectedBranch)
-    val highlightType = if (type == ListStopsInterfaceType.ALIGHT_REMINDER) {
-        alightReminderService?.run {
-            when {
-                currentStop.index == index -> if (alightReminderHighlightBlink) RouteHighlightType.BRIGHT else RouteHighlightType.NORMAL
-                currentStop.index > index || destinationStopId.index < index -> RouteHighlightType.DIM
-                else -> RouteHighlightType.BRIGHT
+    val highlightType = when (type) {
+        ListStopsInterfaceType.ALIGHT_REMINDER -> {
+            alightReminderService?.run {
+                when {
+                    currentStop.index == index -> if (alightReminderHighlightBlink) RouteHighlightType.BRIGHT else RouteHighlightType.NORMAL
+                    currentStop.index > index || destinationStopId.index < index -> RouteHighlightType.DIM
+                    else -> RouteHighlightType.BRIGHT
+                }
+            }?: RouteHighlightType.NORMAL
+        }
+        ListStopsInterfaceType.TIMES -> {
+            if ((stopList[selectedStop - 1].branchIds.contains(selectedBranch) && index in timesStartIndex..selectedStop) || index == timesStartIndex) {
+                if (index == selectedStop && index != timesStartIndex && alightReminderHighlightBlink) RouteHighlightType.NORMAL else RouteHighlightType.BRIGHT
+            } else {
+                RouteHighlightType.NORMAL
             }
-        }?: RouteHighlightType.NORMAL
-    } else {
-        RouteHighlightType.NORMAL
+        }
+        else -> RouteHighlightType.NORMAL
     }
+
     val alternateStopNames = alternateStopNamesState.value
 
     ElevatedCard(
@@ -1249,8 +1270,7 @@ fun StopEntryExpansion(
     isKmbCtbJoint: Boolean,
     gmbRegion: GMBRegion?,
     timesStartIndexState: MutableIntState,
-    timesEndIndexState: MutableIntState,
-    timesState: MutableIntState,
+    times: SnapshotStateMap<Int, Int>,
     alightReminderHighlightBlinkState: MutableState<Boolean>,
     alightReminderStateState: MutableState<AlightReminderServiceState?>,
     alightReminderTimeLeftState: MutableIntState,
@@ -1313,8 +1333,7 @@ fun StopEntryExpansion(
             ListStopsInterfaceType.TIMES -> StopEntryExpansionTimes(
                 index = index,
                 timesStartIndexState = timesStartIndexState,
-                timesEndIndexState = timesEndIndexState,
-                timesState = timesState
+                times = times[index]
             )
             ListStopsInterfaceType.ALIGHT_REMINDER -> StopEntryExpansionAlightReminder(
                 instance = instance,
@@ -1589,47 +1608,54 @@ fun StopEntryExpansionEta(
 fun StopEntryExpansionTimes(
     index: Int,
     timesStartIndexState: MutableIntState,
-    timesEndIndexState: MutableIntState,
-    timesState: MutableIntState
+    times: Int?
 ) {
     var timesStartIndex by timesStartIndexState
-    var timesEndIndex by timesEndIndexState
-    val times by timesState
 
     Column(
         modifier = Modifier
             .padding(vertical = 10.dp)
-            .height(140.fontScaledDp),
+            .height(80.fontScaledDp),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        if (timesStartIndex == index || timesEndIndex == index) {
-            val timesText = times
-                .takeIf { it >= 0 }
-                ?.let { (it / 60).coerceAtLeast(1) }
-                ?.let {
-                    if (it > 1000) {
-                        if (Shared.language == "en") "Journey Times: Loading... (Beta)" else "車程: 載入中... (測試版)"
-                    } else {
-                        if (Shared.language == "en") "Journey Times: $it Minutes (Beta)" else "車程: ${it}分鐘 (測試版)"
+        when {
+            index > timesStartIndex -> {
+                val timesText = times
+                    ?.takeIf { it >= 0 }
+                    ?.let { (it / 60).coerceAtLeast(1) }
+                    ?.let {
+                        if (it > 1000) {
+                            if (Shared.language == "en") "Journey Times: Loading... (Beta)" else "車程: 載入中... (測試版)"
+                        } else {
+                            if (Shared.language == "en") "Journey Times: $it Minutes (Beta)" else "車程: ${it}分鐘 (測試版)"
+                        }
                     }
-                }
-                ?: if (Shared.language == "en") "Unable to provide Journey Times (Beta)" else "未能提供車程 (測試版)"
-            PlatformText(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .userMarquee(),
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Start,
-                maxLines = userMarqueeMaxLines(),
-                text = timesText
-            )
-        } else {
-            PlatformText(
-                textAlign = TextAlign.Start,
-                maxLines = 1,
-                text = " "
-            )
+                    ?: if (Shared.language == "en") "Unable to provide Journey Times (Beta)" else "未能提供車程 (測試版)"
+                PlatformText(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .userMarquee(),
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Start,
+                    maxLines = userMarqueeMaxLines(),
+                    text = timesText
+                )
+            }
+            index == timesStartIndex -> {
+                PlatformText(
+                    textAlign = TextAlign.Start,
+                    maxLines = 1,
+                    text = if (Shared.language == "en") "Set as Origin" else "已設定為起點"
+                )
+            }
+            else -> {
+                PlatformText(
+                    textAlign = TextAlign.Start,
+                    maxLines = 1,
+                    text = if (Shared.language == "en") "Origin is set at a later stop" else "起點在後面"
+                )
+            }
         }
         PlatformButton(
             onClick = {
@@ -1638,9 +1664,9 @@ fun StopEntryExpansionTimes(
             modifier = Modifier
                 .size(200.fontScaledDp, 40.fontScaledDp),
             colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = if (timesStartIndex != index && timesEndIndex != index) Color(0xff2b87ff) else Color(0xff919191)
+                containerColor = if (timesStartIndex != index) Color(0xff2b87ff) else Color(0xff919191)
             ),
-            enabled = timesStartIndex != index && timesEndIndex != index,
+            enabled = timesStartIndex != index,
             shape = platformLargeShape,
             content = {
                 PlatformText(
@@ -1649,28 +1675,6 @@ fun StopEntryExpansionTimes(
                         if (Shared.language == "en") "Set as Origin" else "已設定為起點"
                     } else {
                         if (Shared.language == "en") "Set Origin" else "設定為起點"
-                    }
-                )
-            }
-        )
-        PlatformButton(
-            onClick = {
-                timesEndIndex = index
-            },
-            modifier = Modifier
-                .size(200.fontScaledDp, 40.fontScaledDp),
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = if (timesStartIndex != index && timesEndIndex != index) Color(0xffffb52b) else Color(0xff919191)
-            ),
-            enabled = timesStartIndex != index && timesEndIndex != index,
-            shape = platformLargeShape,
-            content = {
-                PlatformText(
-                    maxLines = 1,
-                    text = if (timesEndIndex == index) {
-                        if (Shared.language == "en") "Set as Destination" else "已設定為終點"
-                    } else {
-                        if (Shared.language == "en") "Set Destination" else "設定為終點"
                     }
                 )
             }

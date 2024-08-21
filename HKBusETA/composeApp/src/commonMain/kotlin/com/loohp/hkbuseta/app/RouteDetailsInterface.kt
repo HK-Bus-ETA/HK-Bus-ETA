@@ -312,7 +312,6 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     var location: OriginData? by remember { mutableStateOf(null) }
 
     val timesStartIndexState = remember { mutableIntStateOf(1) }
-    val timesEndIndexState = remember { mutableIntStateOf(2) }
     val timesInitState = remember { mutableStateOf(false) }
 
     val optAlightReminderService by AlightReminderService.currentInstance.collectAsStateMultiplatform()
@@ -568,7 +567,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                 val item = listStopsTabItem[it]
                 when (item.type) {
                     StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranch, possibleBidirectionalSectionFare, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing)
-                    StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranch, alternateStopNamesShowing, timesStartIndexState = timesStartIndexState, timesEndIndexState = timesEndIndexState, timesInitState = timesInitState)
+                    StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranch, alternateStopNamesShowing, timesStartIndexState = timesStartIndexState, timesInitState = timesInitState)
                     StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.toImmutableList(), possibleBidirectionalSectionFare)
                     StopsTabItemType.TIMETABLE -> TimetableInterface(instance, routeBranches.toImmutableList())
                 }
