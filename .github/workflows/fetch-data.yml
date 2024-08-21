@@ -58,14 +58,10 @@ jobs:
               checksum.md5
               size.dat
               data.json.gz
-              data.cbor.gz
               size.gz.dat
-              size.cbor.gz.dat
               size_full.dat
               data_full.json.gz
-              data_full.cbor.gz
               size_full.gz.dat
-              size_full.cbor.gz.dat
               last_updated.txt
             commit-msg: Update resources
             github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -82,14 +78,10 @@ jobs:
           mv checksum.md5 data/
           mv size.dat data/
           mv data.json.gz data/
-          mv data.cbor.gz data/
           mv size.gz.dat data/
-          mv size.cbor.gz.dat data/
           mv size_full.dat data/
           mv data_full.json.gz data/
-          mv data_full.cbor.gz data/
           mv size_full.gz.dat data/
-          mv size_full.cbor.gz.dat data/
           mv last_updated.txt data/
       - name: Push to wear.hkbus.app
         uses: cpina/github-action-push-to-another-repository@main
