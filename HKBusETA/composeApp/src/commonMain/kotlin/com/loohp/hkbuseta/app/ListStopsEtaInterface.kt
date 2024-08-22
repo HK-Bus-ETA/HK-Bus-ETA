@@ -449,7 +449,10 @@ fun ListStopsEtaInterface(
     LaunchedEffect (timesStartIndex) {
         if (type == ListStopsInterfaceType.TIMES) {
             times.clear()
-            for (i in timesStartIndex..allStops.size) {
+            for (i in 1..allStops.size) {
+                times[i] = Int.MAX_VALUE
+            }
+            for (i in allStops.size downTo timesStartIndex) {
                 times[i] = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), timesStartIndex - 1, i - 1).await()
             }
         }
