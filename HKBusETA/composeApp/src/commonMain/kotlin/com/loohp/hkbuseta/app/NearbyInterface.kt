@@ -342,6 +342,10 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                         append(" ")
                                         append("(+$extraStopsCount)", SpanStyle(fontSize = TextUnit.Small))
                                     }
+                                    if (customCenterPosition != null) {
+                                        append(" ")
+                                        append(if (Shared.language == "en") "[Custom]" else "[自訂位置]", SpanStyle(fontSize = TextUnit.Small))
+                                    }
                                 }
                             )
                         }
