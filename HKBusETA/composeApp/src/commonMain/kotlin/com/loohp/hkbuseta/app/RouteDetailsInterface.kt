@@ -848,15 +848,15 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                         is TimetableSingleEntry -> {
                             if (anyIntervals || intervalStrings.lastOrNull()?.isEmpty() == true) {
                                 timeStrings.add(stars + entry.toString(Shared.language).asAnnotatedString(style))
-                                intervalStrings.add("".asAnnotatedString(style))
+                                intervalStrings.add("".asAnnotatedString())
                             } else {
-                                val lastString = timeStrings.removeLastOrNull()?.let { it + ", ".asAnnotatedString(style) }?: "".asAnnotatedString(style)
+                                val lastString = timeStrings.removeLastOrNull()?.let { it + ", ".asAnnotatedString() }?: "".asAnnotatedString(style)
                                 timeStrings.add(lastString + stars + entry.toString(Shared.language).asAnnotatedString(style))
                             }
                         }
                         is TimetableSpecialEntry -> {
                             timeStrings.add(stars + entry.toString(Shared.language).asAnnotatedString(style))
-                            intervalStrings.add(" ".asAnnotatedString(style))
+                            intervalStrings.add(" ".asAnnotatedString())
                         }
                     }
                 }
