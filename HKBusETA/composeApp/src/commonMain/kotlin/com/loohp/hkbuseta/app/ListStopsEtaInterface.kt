@@ -175,6 +175,7 @@ import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
+import com.loohp.hkbuseta.common.utils.debugLog
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.floorToInt
 import com.loohp.hkbuseta.compose.Add
@@ -458,15 +459,19 @@ fun ListStopsEtaInterface(
         }
     }
     LaunchedEffect (selectedBranch) {
-        val firstBranchStopIndex = allStops.indexOfFirst { it.branchIds.contains(selectedBranch) }
-        if (firstBranchStopIndex >= 0 && scroll.firstVisibleItemIndex < firstBranchStopIndex) {
-            selectedStop = firstBranchStopIndex + 1
+        if (!pipMode && !allStops[selectedStop - 1].branchIds.contains(selectedBranch)) {
+            val firstBranchStopIndex = allStops.indexOfFirst { it.branchIds.contains(selectedBranch) }
+            if (firstBranchStopIndex >= 0 && scroll.firstVisibleItemIndex < firstBranchStopIndex) {
+                selectedStop = firstBranchStopIndex + 1
+            }
         }
     }
     LaunchedEffect (selectedStop) {
-        if (type == ListStopsInterfaceType.ALIGHT_REMINDER || type == ListStopsInterfaceType.ETA || scroll.layoutInfo.visibleItemsInfo.lastOrNull()?.let { it.index == selectedStop - 1 } == true) {
-            delay(200)
-            scroll.animateScrollToItem(selectedStop - 1)
+        if (!pipMode) {
+            if (type == ListStopsInterfaceType.ALIGHT_REMINDER || type == ListStopsInterfaceType.ETA || scroll.layoutInfo.visibleItemsInfo.lastOrNull()?.let { it.index == selectedStop - 1 } == true) {
+                delay(200)
+                scroll.animateScrollToItem(selectedStop - 1)
+            }
         }
     }
     LaunchedEffect (Unit) {
@@ -2380,6 +2385,9 @@ fun PipModeInterface(
     etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>,
     instance: AppActiveContext
 ) {
+    LaunchedEffect (index, stopData) {
+        debugLog(index, stopData.stop.name)
+    }
     Dialog(
         onDismissRequest = { /* do nothing */ },
         properties = DialogProperties(usePlatformDefaultWidth = false),
