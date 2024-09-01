@@ -66,7 +66,6 @@ import com.loohp.hkbuseta.compose.PlatformText
 import kotlinx.collections.immutable.ImmutableCollection
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableMap
 import org.jetbrains.compose.resources.painterResource
 
 val RESOURCE_RATIO: Map<String, Float> = mapOf(
@@ -240,4 +239,27 @@ fun AnnotatedString.renderedSize(fontSize: TextUnit, maxLines: Int = 1): State<I
         }
     }
     return result
+}
+
+fun <T> Iterable<T>.joinToAnnotatedString(separator: AnnotatedString = ", ".asAnnotatedString(), prefix: AnnotatedString = "".asAnnotatedString(), postfix: AnnotatedString = "".asAnnotatedString(), limit: Int = -1, truncated: AnnotatedString = "...".asAnnotatedString(), transform: ((T) -> AnnotatedString)? = null): AnnotatedString {
+    return AnnotatedString.Builder().apply {
+        append(prefix)
+        var count = 0
+        for (element in this@joinToAnnotatedString) {
+            if (++count > 1) append(separator)
+            if (limit < 0 || count <= limit) {
+                when {
+                    transform != null -> append(transform.invoke(element))
+                    element is AnnotatedString -> append(element)
+                    element is CharSequence? -> append(element)
+                    element is Char -> append(element)
+                    else -> append(element.toString())
+                }
+            } else break
+        }
+        if (limit in 0 until count) {
+            append(truncated)
+        }
+        append(postfix)
+    }.toAnnotatedString()
 }

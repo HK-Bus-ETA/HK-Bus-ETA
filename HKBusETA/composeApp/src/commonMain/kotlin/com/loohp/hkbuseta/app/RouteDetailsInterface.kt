@@ -118,6 +118,7 @@ import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
+import com.loohp.hkbuseta.common.objects.shouldAlertSpecialRoute
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
 import com.loohp.hkbuseta.common.objects.toRouteSearchResult
 import com.loohp.hkbuseta.common.objects.toStopIndexed
@@ -185,7 +186,6 @@ import com.loohp.hkbuseta.utils.pixelsToDp
 import com.loohp.hkbuseta.utils.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -290,8 +290,10 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val importantNoticeCount by remember(notices) { derivedStateOf { notices?.count { it.importance == RouteNoticeImportance.IMPORTANT }?: 0 } }
     val possibleBidirectionalSectionFare by remember(notices, ctbHasTwoWaySectionFare) { derivedStateOf { co == Operator.NLB || ctbHasTwoWaySectionFare || notices?.any { it.title.lowercase().contains("section fare") || it.title.contains("分段收費") } == true } }
 
+    val alertCheckRoute by remember(route) { derivedStateOf { route.route!!.shouldAlertSpecialRoute(instance) } }
+
     val routeBranches by remember(route) { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) } }
-    val selectedBranch = remember { mutableStateOf(routeBranches.currentFirstActiveBranch(currentLocalDateTime(), instance)) }
+    val selectedBranch = remember { mutableStateOf(routeBranches.currentFirstActiveBranch(currentLocalDateTime(), instance).first()) }
     val selectedStop = remember { mutableIntStateOf(
         ((instance.compose.data["scrollToStop"] as? String)?: (instance.compose.data["stopId"] as? String))
             ?.let { id -> Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).indexOfFirst { it.stopId == id }.takeIf { it >= 0 }?.let { it + 1 } }
@@ -567,7 +569,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             ) {
                 val item = listStopsTabItem[it]
                 when (item.type) {
-                    StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranch, possibleBidirectionalSectionFare, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing)
+                    StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranch, possibleBidirectionalSectionFare, alertCheckRoute, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing)
                     StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranch, alternateStopNamesShowing, timesStartIndexState = timesStartIndexState, timesInitState = timesInitState)
                     StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.asImmutableList(), possibleBidirectionalSectionFare)
                     StopsTabItemType.TIMETABLE -> TimetableInterface(instance, routeBranches.asImmutableList())
@@ -620,6 +622,7 @@ fun MapStopsInterface(
     selectedStopState: MutableIntState,
     selectedBranchState: MutableState<Route>,
     possibleBidirectionalSectionFare: Boolean,
+    alertCheckRoute: Boolean,
     isActiveReminderService: Boolean,
     pagerScrollEnabled: MutableState<Boolean>,
     alternateStopNamesShowingState: MutableState<Boolean>
@@ -712,14 +715,14 @@ fun MapStopsInterface(
                 }
             },
             bottom = { _ ->
-                ListStopsEtaInterface(instance, if (isActiveReminderService) ListStopsInterfaceType.ALIGHT_REMINDER else ListStopsInterfaceType.ETA, location, listRoute, selectedStopState, selectedBranchState, alternateStopNamesShowingState, possibleBidirectionalSectionFare)
+                ListStopsEtaInterface(instance, if (isActiveReminderService) ListStopsInterfaceType.ALIGHT_REMINDER else ListStopsInterfaceType.ETA, location, listRoute, selectedStopState, selectedBranchState, alternateStopNamesShowingState, possibleBidirectionalSectionFare, alertCheckRoute)
             }
         )
     } else {
         Box (
             modifier = Modifier.fillMaxSize()
         ) {
-            ListStopsEtaInterface(instance, if (isActiveReminderService) ListStopsInterfaceType.ALIGHT_REMINDER else ListStopsInterfaceType.ETA, location, listRoute, selectedStopState, selectedBranchState, alternateStopNamesShowingState, possibleBidirectionalSectionFare)
+            ListStopsEtaInterface(instance, if (isActiveReminderService) ListStopsInterfaceType.ALIGHT_REMINDER else ListStopsInterfaceType.ETA, location, listRoute, selectedStopState, selectedBranchState, alternateStopNamesShowingState, possibleBidirectionalSectionFare, alertCheckRoute)
         }
     }
 }

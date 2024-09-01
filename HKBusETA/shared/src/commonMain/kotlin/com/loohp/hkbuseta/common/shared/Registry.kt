@@ -1139,7 +1139,7 @@ class Registry {
                             existingNearbyRoute.stopInfo!!.distance > nearbyStop.distance || (existingNearbyRoute.stopInfo!!.distance == nearbyStop.distance && existingNearbyRoute.route!!.serviceType.parseIntOr(Int.MAX_VALUE) > data.serviceType.parseIntOr(Int.MAX_VALUE))
                         }
                         else -> {
-                            val routeSetActive = routeSet.currentFirstActiveBranch(now, serviceMap, getHolidays()) { null }
+                            val routeSetActive = routeSet.currentFirstActiveBranch(now, serviceMap, getHolidays()) { null }.first()
                             routeSetActive == data && (existingNearbyRoute.stopInfo!!.distance > nearbyStop.distance || existingNearbyRoute.route != routeSetActive)
                         }
                     }

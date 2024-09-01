@@ -134,7 +134,6 @@ import com.loohp.hkbuseta.utils.fontScaledDp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -596,7 +595,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                                 val loc = it.resolveLocation().await()
                                                 val newPos = RadiusCenterPosition(loc.lat, loc.lng, position.radius)
                                                 initialPosition = RadiusCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
-                                                delay(500)
+                                                delay(750)
                                                 initialPosition = newPos
                                                 position = newPos
                                                 updating = false

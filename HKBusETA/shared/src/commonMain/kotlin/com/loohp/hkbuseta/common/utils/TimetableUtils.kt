@@ -461,25 +461,25 @@ fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>,
 
 @ReduceDataOmitted
 @ReduceDataPossiblyOmitted
-fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, context: AppContext): Route {
+fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): List<Route> {
     val registry = Registry.getInstance(context)
-    return currentFirstActiveBranch(time, registry.getServiceDayMap(), registry.getHolidays()) {
-        it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() }
-    }
+    val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() } }) else ({ null })
+    return currentFirstActiveBranch(time, registry.getServiceDayMap(), registry.getHolidays(), resolveRemark)
 }
 
-fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): Route {
+fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): List<Route> {
     if (isEmpty()) throw IllegalArgumentException("Route list is empty")
-    if (size == 1) return first()
+    if (size == 1) return toList()
     val timetable = createTimetable(serviceDayMap, resolveSpecialRemark)
     val compareMidnight = if (timetable.isNightRoute()) nightServiceMidnight else dayServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
-    val entries = timetable.entries.firstOrNull { (k, _) -> k.contains(weekday) }?.value?: return first()
-    val current = entries.currentEntry(time).takeIf { it.isNotEmpty() }?: return first()
+    val entries = timetable.entries.firstOrNull { (k, _) -> k.contains(weekday) }?.value?: return toList()
+    val current = entries.currentEntry(time).takeIf { it.isNotEmpty() }?: return toList()
     return entries.asSequence()
         .filterIndexed { i, _ -> current.contains(i) }
         .sortedBy { indexOfOrNull(it.route)?: Int.MAX_VALUE }
-        .first().route
+        .map { it.route }
+        .toList()
 }
 
 enum class RouteBranchStatus {
@@ -488,11 +488,10 @@ enum class RouteBranchStatus {
 
 @ReduceDataOmitted
 @ReduceDataPossiblyOmitted
-fun Collection<Route>.currentBranchStatus(time: LocalDateTime, context: AppContext): Map<Route, RouteBranchStatus> {
+fun Collection<Route>.currentBranchStatus(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): Map<Route, RouteBranchStatus> {
     val registry = Registry.getInstance(context)
-    return currentBranchStatus(time, registry.getServiceDayMap(), registry.getHolidays()) {
-        it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() }
-    }
+    val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() } }) else ({ null })
+    return currentBranchStatus(time, registry.getServiceDayMap(), registry.getHolidays(), resolveRemark)
 }
 
 fun Collection<Route>.currentBranchStatus(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): Map<Route, RouteBranchStatus> {

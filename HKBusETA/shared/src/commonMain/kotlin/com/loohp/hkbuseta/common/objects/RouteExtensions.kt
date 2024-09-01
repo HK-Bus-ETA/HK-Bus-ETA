@@ -30,11 +30,14 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Colored
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.FormattingTextContentStyle
+import com.loohp.hkbuseta.common.utils.RouteBranchStatus
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.cache
 import com.loohp.hkbuseta.common.utils.createTimetable
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.differenceSequence
 import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.getRouteProportions
@@ -629,6 +632,28 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
                 }
             }
         }
+    }
+}
+
+@OptIn(ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
+fun Route.shouldAlertSpecialDest(context: AppContext): Boolean {
+    val (branches, remark) = shouldAlertSpecialInternal(context)
+    return remark.run { contains("特別班") && contains("開往") } &&
+            branches.currentBranchStatus(currentLocalDateTime(), context, false).values
+                .count { it != RouteBranchStatus.INACTIVE } > 1
+}
+
+@OptIn(ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
+fun Route.shouldAlertSpecialRoute(context: AppContext): Boolean {
+    val (branches, remark) = shouldAlertSpecialInternal(context)
+    return remark.contains("特別班") &&
+            branches.currentBranchStatus(currentLocalDateTime(), context, false).values
+                .count { it != RouteBranchStatus.INACTIVE } > 1
+}
+
+private fun Route.shouldAlertSpecialInternal(context: AppContext): Pair<List<Route>, String> {
+    return cache("shouldAlertSpecialInternal", this) {
+        Registry.getInstance(context).getAllBranchRoutes(routeNumber, idBound, co.firstCo()!!, gmbRegion) to resolveSpecialRemark(context, RemarkType.LABEL_ALL).zh
     }
 }
 

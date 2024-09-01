@@ -258,6 +258,7 @@ import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
+import com.loohp.hkbuseta.utils.joinToAnnotatedString
 import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.sp
 import io.ktor.util.collections.ConcurrentMap
@@ -334,6 +335,7 @@ fun ListStopsEtaInterface(
     selectedBranchState: MutableState<Route>,
     alternateStopNamesShowingState: MutableState<Boolean>,
     possibleBidirectionalSectionFare: Boolean = false,
+    alertCheckRoute: Boolean = false,
     floatingActions: (@Composable BoxScope.(LazyListState) -> Unit)? = null,
     timesStartIndexState: MutableIntState = remember { mutableIntStateOf(1) },
     timesInitState: MutableState<Boolean> = remember { mutableStateOf(false) }
@@ -535,6 +537,7 @@ fun ListStopsEtaInterface(
                                 selectedStopState = selectedStopState,
                                 selectedBranchState = selectedBranchState,
                                 possibleBidirectionalSectionFare = possibleBidirectionalSectionFare,
+                                alertCheckRoute = alertCheckRoute,
                                 alternateStopNames = alternateStopNames,
                                 index = i + 1,
                                 allStops = allStops,
@@ -989,6 +992,7 @@ fun StopEntry(
     selectedStopState: MutableIntState,
     selectedBranchState: MutableState<Route>,
     possibleBidirectionalSectionFare: Boolean,
+    alertCheckRoute: Boolean,
     alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
     index: Int,
     allStops: ImmutableList<Registry.StopData>,
@@ -1058,6 +1062,7 @@ fun StopEntry(
                     selectedStopState = selectedStopState,
                     selectedBranchState = selectedBranchState,
                     possibleBidirectionalSectionFare = possibleBidirectionalSectionFare,
+                    alertCheckRoute = alertCheckRoute,
                     index = index,
                     allStops = allStops,
                     stopData = stopData,
@@ -1269,6 +1274,7 @@ fun StopEntryExpansion(
     selectedStopState: MutableIntState,
     selectedBranchState: MutableState<Route>,
     possibleBidirectionalSectionFare: Boolean,
+    alertCheckRoute: Boolean,
     index: Int,
     allStops: ImmutableList<Registry.StopData>,
     stopData: Registry.StopData,
@@ -1326,6 +1332,7 @@ fun StopEntryExpansion(
                 selectedStopState = selectedStopState,
                 selectedBranchState = selectedBranchState,
                 possibleBidirectionalSectionFare = possibleBidirectionalSectionFare,
+                alertCheckRoute = alertCheckRoute,
                 index = index,
                 allStops = allStops,
                 stopData = stopData,
@@ -1374,6 +1381,7 @@ fun StopEntryExpansionEta(
     selectedStopState: MutableIntState,
     selectedBranchState: MutableState<Route>,
     possibleBidirectionalSectionFare: Boolean,
+    alertCheckRoute: Boolean,
     index: Int,
     allStops: ImmutableList<Registry.StopData>,
     stopData: Registry.StopData,
@@ -1437,11 +1445,19 @@ fun StopEntryExpansionEta(
                     )
                 }
             }
-            if (possibleBidirectionalSectionFare) {
+            val alerts by remember(possibleBidirectionalSectionFare, alertCheckRoute) { derivedStateOf { buildList {
+                if (possibleBidirectionalSectionFare) {
+                    add((if (Shared.language == "en") "Possible Two-way Section Fare" else "留意雙向分段收費").asAnnotatedString())
+                }
+                if (alertCheckRoute) {
+                    add((if (Shared.language == "en") "Check Actual Route on Bus" else "留意巴士實際路線").asAnnotatedString(SpanStyle(fontWeight = FontWeight.Bold)))
+                }
+            } } }
+            if (alerts.isNotEmpty()) {
                 PlatformText(
                     fontSize = 14.sp,
                     lineHeight = 1.3F.em,
-                    text = if (Shared.language == "en") "Possible Two-way Section Fare" else "留意雙向分段收費"
+                    text = alerts.joinToAnnotatedString("\n".asAnnotatedString())
                 )
             }
         }

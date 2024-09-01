@@ -48,6 +48,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
@@ -79,8 +80,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -131,6 +137,7 @@ import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
+import com.loohp.hkbuseta.common.objects.shouldAlertSpecialDest
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
 import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.shared.Registry
@@ -822,6 +829,7 @@ fun RouteRow(
     val routeNumber = route.route!!.routeNumber
     val routeNumberDisplay = co.getListDisplayRouteNumber(routeNumber, true)
     val dest = route.route!!.resolvedDestFormatted(false, *if (Shared.disableBoldDest) emptyArray() else arrayOf(BoldStyle))[Shared.language].asContentAnnotatedString().annotatedString
+    val hasSpecialDest = remember(route) { route.route!!.shouldAlertSpecialDest(instance) }
     val gmbRegion = route.route!!.gmbRegion
     val secondLineCoColor = co.getColor(routeNumber, Color.White).adjustBrightness(if (Shared.theme.isDarkMode) 1F else 0.7F)
     val localContentColor = LocalContentColor.current
@@ -859,17 +867,59 @@ fun RouteRow(
             modifier = Modifier.requiredWidth(routeNumberWidth.equivalentDp),
             verticalArrangement = Arrangement.Center
         ) {
-            PlatformText(
-                textAlign = TextAlign.Start,
-                fontSize = if ((co == Operator.MTR || co.isFerry) && Shared.language != "en") {
-                    22F.sp
-                } else {
-                    30F.sp
-                },
-                lineHeight = 1.1F.em,
-                maxLines = 1,
-                text = routeNumberDisplay
-            )
+            if (hasSpecialDest) {
+                val contentColor = platformLocalContentColor
+                Box(
+                    modifier = Modifier
+                        .padding(bottom = 4.sp.dp)
+                        .drawBehind {
+                            drawRoundRect(
+                                topLeft = Offset(-3.sp.toPx(), 1.sp.toPx()),
+                                size = Size(size.width + 6.sp.toPx(), size.height + 2.sp.toPx()),
+                                cornerRadius = CornerRadius(4.sp.toPx()),
+                                color = contentColor,
+                                style = Stroke(width = 2.sp.toPx())
+                            )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    PlatformText(
+                        modifier = Modifier
+                            .offset(y = (-2).sp.dp),
+                        textAlign = TextAlign.Start,
+                        fontSize = if ((co == Operator.MTR || co.isFerry) && Shared.language != "en") {
+                            22F.sp
+                        } else {
+                            30F.sp
+                        },
+                        lineHeight = 1.1F.em,
+                        maxLines = 1,
+                        text = routeNumberDisplay
+                    )
+                    PlatformText(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .offset(y = 2.sp.dp),
+                        textAlign = TextAlign.Start,
+                        fontSize = 8.sp,
+                        lineHeight = 8.sp,
+                        maxLines = 1,
+                        text = if (Shared.language == "en") "Check Dest" else "留意目的地"
+                    )
+                }
+            } else {
+                PlatformText(
+                    textAlign = TextAlign.Start,
+                    fontSize = if ((co == Operator.MTR || co.isFerry) && Shared.language != "en") {
+                        22F.sp
+                    } else {
+                        30F.sp
+                    },
+                    lineHeight = 1.1F.em,
+                    maxLines = 1,
+                    text = routeNumberDisplay
+                )
+            }
             PlatformText(
                 textAlign = TextAlign.Start,
                 fontSize = 14F.sp,
