@@ -127,6 +127,8 @@ kotlin {
         }
         wasmJsMain.dependencies {
             implementation(projects.shared)
+            //noinspection GradleDependency,UseTomlInstead
+            implementation("sh.calvin.reorderable:reorderable:2.2.0!!")
         }
         all {
             languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
