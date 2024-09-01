@@ -212,6 +212,7 @@ import kotlinx.datetime.DateTimeUnit
 import org.jetbrains.compose.resources.painterResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -373,7 +374,7 @@ fun ListRouteTopBar(
                     Row(
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .height(filterDirectionButtonSize.height.equivalentDp)
+                            .height(max(filterDirectionButtonSize.height, sortModeButtonSize.height).equivalentDp)
                     ) {
                         extraActions?.invoke(this)
                         if (availableDirections.isNotEmpty()) {
@@ -829,7 +830,7 @@ fun RouteRow(
     val routeNumber = route.route!!.routeNumber
     val routeNumberDisplay = co.getListDisplayRouteNumber(routeNumber, true)
     val dest = route.route!!.resolvedDestFormatted(false, *if (Shared.disableBoldDest) emptyArray() else arrayOf(BoldStyle))[Shared.language].asContentAnnotatedString().annotatedString
-    val hasSpecialDest = remember(route) { route.route!!.shouldAlertSpecialDest(instance) }
+    var hasSpecialDest by remember { mutableStateOf(false) }
     val gmbRegion = route.route!!.gmbRegion
     val secondLineCoColor = co.getColor(routeNumber, Color.White).adjustBrightness(if (Shared.theme.isDarkMode) 1F else 0.7F)
     val localContentColor = LocalContentColor.current
@@ -855,6 +856,13 @@ fun RouteRow(
             add((if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
         }
     } }
+
+    LaunchedEffect (route) {
+        CoroutineScope(dispatcherIO).launch {
+            hasSpecialDest = route.route!!.shouldAlertSpecialDest(instance)
+        }
+    }
+
     Row (
         modifier = Modifier
             .fillMaxWidth()

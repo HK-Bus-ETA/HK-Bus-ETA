@@ -127,8 +127,6 @@ kotlin {
         }
         wasmJsMain.dependencies {
             implementation(projects.shared)
-            //noinspection GradleDependency,UseTomlInstead
-            implementation("sh.calvin.reorderable:reorderable:2.2.0!!")
         }
         all {
             languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
@@ -148,7 +146,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 761
+        versionCode = 762
         versionName = "2.3.0"
     }
     packaging {
