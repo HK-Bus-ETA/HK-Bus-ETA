@@ -40,7 +40,7 @@ class DailyUpdateWorker(private val context: Context, workerParams: WorkerParame
             while (registry.state.value.isProcessing) {
                 TimeUnit.MILLISECONDS.sleep(100)
             }
-            TimeUnit.MILLISECONDS.sleep(2000)
+            TimeUnit.MILLISECONDS.sleep(10000)
             Result.success()
         }.asListenableFuture()
     }

@@ -23,6 +23,7 @@ package com.loohp.hkbuseta.common.objects
 import com.loohp.hkbuseta.common.utils.IOSerializable
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.JSONSerializable
+import com.loohp.hkbuseta.common.utils.findBearing
 import com.loohp.hkbuseta.common.utils.findDistance
 import com.loohp.hkbuseta.common.utils.optDouble
 import io.ktor.utils.io.ByteReadChannel
@@ -72,6 +73,10 @@ open class Coordinates(
 
     infix fun distance(other: Coordinates): Double {
         return findDistance(lat, lng, other.lat, other.lng)
+    }
+
+    infix fun bearingTo(other: Coordinates): Double {
+        return findBearing(other.lat, other.lng, lat, lng)
     }
 
     fun toArray(): DoubleArray {

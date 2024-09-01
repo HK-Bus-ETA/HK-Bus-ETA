@@ -101,6 +101,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MTRStopSectionData
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.common.utils.dispatcherIO
@@ -169,7 +170,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
 
         val coColor = remember { co.getColor(routeNumber, Color.White) }
 
-        val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).toImmutableList() }
+        val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).asImmutableList() }
         val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
         val mtrStopsInterchange = remember { if (co.isTrain) {
             stopsList.asSequence().map { Registry.getInstance(instance).getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
@@ -181,7 +182,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
             mtrStopsInterchange = mtrStopsInterchange,
             isLrtCircular = route.route!!.lrtCircular != null,
             context = instance
-        ).toImmutableList() else null }
+        ).asImmutableList() else null }
 
         val distances: MutableMap<Int, Double> = remember { ConcurrentHashMap() }
 
@@ -193,7 +194,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
         var closestIndex by remember { mutableIntStateOf(0) }
 
         val alternateStopNames by remember { derivedStateOf { if (kmbCtbJoint) {
-            Registry.getInstance(instance).findEquivalentStops(stopsList.map { it.stopId }, Operator.CTB).toImmutableList()
+            Registry.getInstance(instance).findEquivalentStops(stopsList.map { it.stopId }, Operator.CTB).asImmutableList()
         } else {
             null
         } } }

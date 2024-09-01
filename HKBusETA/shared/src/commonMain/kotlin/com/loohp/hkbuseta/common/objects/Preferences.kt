@@ -38,6 +38,7 @@ import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.loohp.hkbuseta.common.utils.toJsonObject
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
@@ -65,7 +66,7 @@ class Preferences(
     val favouriteRouteStops: ConcurrentMutableList<FavouriteRouteGroup>,
     val lastLookupRoutes: ConcurrentMutableList<LastLookupRoute>,
     val etaTileConfigurations: ConcurrentMutableMap<Int, List<Int>>,
-    val routeSortModePreference: ConcurrentMutableMap<RouteListType, RouteSortMode>
+    val routeSortModePreference: ConcurrentMutableMap<RouteListType, RouteSortPreference>
 ) : JSONSerializable {
 
     companion object {
@@ -95,7 +96,7 @@ class Preferences(
             }
             val lastLookupRoutes = ConcurrentMutableList<LastLookupRoute>().apply { addAll(json.optJsonArray("lastLookupRoutes")!!.mapToMutableList { if (it is JsonObject) (if (it.containsKey("routeKey")) LastLookupRoute.deserialize(it) else null) else LastLookupRoute.fromLegacy(it.jsonPrimitive.content) }.filterNotNull()) }
             val etaTileConfigurations = ConcurrentMutableMap<Int, List<Int>>().apply { if (json.contains("etaTileConfigurations")) putAll(json.optJsonObject("etaTileConfigurations")!!.mapToMutableMap<Int, List<Int>>({ it.toInt() }) { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.int } }) }
-            val routeSortModePreference = ConcurrentMutableMap<RouteListType, RouteSortMode>().apply { if (json.contains("routeSortModePreference")) putAll(json.optJsonObject("routeSortModePreference")!!.mapToMutableMap({ RouteListType.valueOf(it) }, { RouteSortMode.valueOf(it.jsonPrimitive.content) })) }
+            val routeSortModePreference = ConcurrentMutableMap<RouteListType, RouteSortPreference>().apply { if (json.contains("routeSortModePreference")) putAll(json.optJsonObject("routeSortModePreference")!!.mapToMutableMap({ RouteListType.valueOf(it) }, { if (it is JsonPrimitive) RouteSortPreference.fromLegacy(it) else RouteSortPreference.deserialize(it.jsonObject) })) }
             return Preferences(referenceChecksum, lastSaved, language, etaDisplayMode, lrtDirectionMode, theme, color, viewFavTab, disableMarquee, disableBoldDest, historyEnabled, showRouteMap, downloadSplash, alternateStopName, lastNearbyLocation, favouriteStops, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
         }
 
@@ -173,7 +174,7 @@ class Preferences(
             favouriteRouteStops.synchronize { put("favouriteRouteStops", favouriteRouteStops.toJsonArray()) }
             lastLookupRoutes.synchronize { put("lastLookupRoutes", lastLookupRoutes.toJsonArray()) }
             etaTileConfigurations.synchronize { put("etaTileConfigurations", etaTileConfigurations.toJsonObject { it.toJsonArray() }) }
-            routeSortModePreference.synchronize { put("routeSortModePreference", routeSortModePreference.toJsonObject { it.name }) }
+            routeSortModePreference.synchronize { put("routeSortModePreference", routeSortModePreference.toJsonObject { it.serialize() }) }
         }
     }
 

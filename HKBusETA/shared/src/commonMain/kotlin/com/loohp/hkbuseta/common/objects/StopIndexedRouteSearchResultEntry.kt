@@ -22,9 +22,13 @@
 package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.RouteBranchStatus
 import com.loohp.hkbuseta.common.utils.Stable
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.optBoolean
 import com.loohp.hkbuseta.common.utils.optJsonObject
@@ -103,42 +107,82 @@ fun List<RouteSearchResultEntry>.toStopIndexed(instance: AppContext): List<StopI
     return map { it.toStopIndexed(instance) }
 }
 
+@OptIn(ReduceDataPossiblyOmitted::class)
 fun List<StopIndexedRouteSearchResultEntry>.bySortModes(
     context: AppContext,
     recentSortMode: RecentSortMode,
     includeFavouritesInRecent: Boolean,
+    prioritizeWithTimetable: Boolean,
     proximitySortOrigin: Coordinates? = null
-): Map<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> = buildMap {
-    this[RouteSortMode.NORMAL] = this@bySortModes
-    if (recentSortMode.enabled) {
-        this[RouteSortMode.RECENT] = if (includeFavouritesInRecent) {
-            val favouriteRoutes = Shared.favoriteRouteStops.value.flatMap { it.favouriteRouteStops }
-            val interestedStops = Shared.getAllInterestedStops()
-            sortedWith(compareBy<StopIndexedRouteSearchResultEntry> {
-                favouriteRoutes.indexOfFirst { f -> it.route similarAs f.route }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
-            }.thenBy {
-                interestedStops.indexOfFirst { s -> it.route!!.stops.values.any { l -> l.contains(s) } }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
-            }.thenBy {
-                Shared.lastLookupRoutes.value.indexOf { l -> l.routeKey.asRoute(context) similarAs it.route }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
-            })
-        } else {
-            sortedBy {
-                Shared.lastLookupRoutes.value.indexOf { l -> l.routeKey == it.routeKey }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
+): Map<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> {
+    val registry = Registry.getInstance(context)
+    val activeRoutes = if (prioritizeWithTimetable && registry.hasServiceDayMap()) {
+        val now = currentLocalDateTime()
+        val serviceDayMap = registry.getServiceDayMap()
+        val holidayMap = registry.getHolidays()
+        associateWith {
+            val route = it.route!!
+            registry.getAllBranchRoutes(route.routeNumber, route.idBound(it.co), it.co, route.gmbRegion)
+                .currentBranchStatus(now, serviceDayMap, holidayMap) { null }
+                .any { (_, v) -> v != RouteBranchStatus.INACTIVE }
+        }
+    } else {
+        emptyMap()
+    }
+    return buildMap {
+        this[RouteSortMode.NORMAL] = if (activeRoutes.isEmpty()) this@bySortModes else sortedBy { activeRoutes[it] != true }
+        if (recentSortMode.enabled) {
+            this[RouteSortMode.RECENT] = if (includeFavouritesInRecent) {
+                val favouriteRoutes = Shared.favoriteRouteStops.value.flatMap { it.favouriteRouteStops }
+                val interestedStops = Shared.getAllInterestedStops()
+                sortedWith(compareBy<StopIndexedRouteSearchResultEntry> {
+                    favouriteRoutes
+                        .indexOfFirst { f -> it.route similarTo f.route }
+                        .takeIf { i -> i >= 0 }
+                        ?.let { i -> if (activeRoutes[it] == true) i - 100000 else i }
+                        ?: Int.MAX_VALUE
+                }.thenBy {
+                    interestedStops
+                        .indexOfFirst { s -> it.route!!.stops.values.any { l -> l.contains(s) } }
+                        .takeIf { i -> i >= 0 }
+                        ?.let { i -> if (activeRoutes[it] == true) i - 100000 else i }
+                        ?: Int.MAX_VALUE
+                }.thenBy {
+                    Shared.lastLookupRoutes.value
+                        .indexOf { l -> l.routeKey.asRoute(context) similarTo it.route }
+                        .takeIf { i -> i >= 0 }
+                        ?.let { i -> if (activeRoutes[it] == true) i - 100000 else i }
+                        ?: Int.MAX_VALUE
+                })
+            } else {
+                sortedBy {
+                    Shared.lastLookupRoutes.value
+                        .indexOf { l -> l.routeKey == it.routeKey }
+                        .takeIf { i -> i >= 0 }
+                        ?.let { i -> if (activeRoutes[it] == true) i - 100000 else i }
+                        ?: Int.MAX_VALUE
+                }
             }
         }
-    }
-    if (proximitySortOrigin != null) {
-        this[RouteSortMode.PROXIMITY] = if (recentSortMode.enabled) {
-            sortedWith(compareBy({
-                val location = it.stopInfo!!.data!!.location
-                proximitySortOrigin.distance(location)
-            }, {
-                Shared.lastLookupRoutes.value.indexOf { l -> l.routeKey == it.routeKey }.takeIf { i -> i >= 0 }?: Int.MAX_VALUE
-            }))
-        } else {
-            sortedBy {
-                val location = it.stopInfo!!.data!!.location
-                proximitySortOrigin.distance(location)
+        if (proximitySortOrigin != null) {
+            this[RouteSortMode.PROXIMITY] = if (recentSortMode.enabled) {
+                sortedWith(compareBy({
+                    val location = it.stopInfo!!.data!!.location
+                    proximitySortOrigin.distance(location)
+                }, {
+                    Shared.lastLookupRoutes.value
+                        .indexOf { l -> l.routeKey == it.routeKey }
+                        .takeIf { i -> i >= 0 }
+                        ?.let { i -> if (activeRoutes[it] == true) i - 100000 else i }
+                        ?: Int.MAX_VALUE
+                }))
+            } else {
+                sortedWith(compareBy({
+                    val location = it.stopInfo!!.data!!.location
+                    proximitySortOrigin.distance(location)
+                }, {
+                    activeRoutes[it] != true
+                }))
             }
         }
     }

@@ -307,7 +307,7 @@ fun Collection<TimetableEntry>.isNightRoute(): Boolean {
         } }
     }
     val minDiff = diff.values.min()
-    return diff.asSequence().filter { it.value == minDiff }.all { it.key in 0..5 }
+    return diff.asSequence().filter { it.value == minDiff }.all { it.key in 0..6 }
 }
 
 fun Map<OperatingWeekdays, List<TimetableEntry>>.getRouteProportions(

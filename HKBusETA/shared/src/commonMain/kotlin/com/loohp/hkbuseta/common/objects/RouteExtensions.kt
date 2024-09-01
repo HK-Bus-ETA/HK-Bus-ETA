@@ -44,6 +44,7 @@ import com.loohp.hkbuseta.common.utils.parseIntOr
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.common.utils.sequenceSimilarity
 import kotlinx.datetime.LocalTime
+import kotlin.math.absoluteValue
 import kotlin.math.max
 
 
@@ -645,7 +646,7 @@ fun FavouriteRouteStop.sameAs(stopId: String, co: Operator, index: Int, stop: St
     return true
 }
 
-infix fun Route?.similarAs(other: Route?): Boolean {
+infix fun Route?.similarTo(other: Route?): Boolean {
     if (this == other) return true
     if (this == null || other == null) return false
     if (routeNumber != other.routeNumber) return false
@@ -750,7 +751,7 @@ val routeComparator: Comparator<Route> = compareBy<Route> {
     if (it.co.firstCo() !== Operator.CTB) it.bound[it.co.firstCo()!!] else ""
 }
 
-suspend fun RouteSearchResultEntry.findReverse(context: AppContext): RouteSearchResultEntry? {
+fun RouteSearchResultEntry.findReverse(context: AppContext): RouteSearchResultEntry? {
     return when {
         co === Operator.NLB || co.isFerry -> {
             val stops = route!!.stops[co]?.takeIf { it.size > 1 }?: return null
@@ -789,7 +790,7 @@ suspend fun RouteSearchResultEntry.findReverse(context: AppContext): RouteSearch
     }
 }
 
-suspend fun Route.findSimilarRoutes(co: Operator, context: AppContext): List<RouteSearchResultEntry> {
+fun Route.findSimilarRoutes(co: Operator, context: AppContext): List<RouteSearchResultEntry> {
     val registry = Registry.getInstance(context)
     val stops = stops[co]?.takeIf { it.isNotEmpty() }?: emptyList()
     val equality: (String, String) -> Boolean = { a, b ->
@@ -810,7 +811,9 @@ suspend fun Route.findSimilarRoutes(co: Operator, context: AppContext): List<Rou
             false
         }
     }.sortedWith(compareBy<RouteSearchResultEntry> {
-        routeNumber.isNightRoute != it.route!!.routeNumber.isNightRoute
+        routeNumber.firstOrNull()?.takeIf { c -> c.isLetter() } != it.route!!.routeNumber.firstOrNull()?.takeIf { c -> c.isLetter() }
+    }.thenBy {
+        routeNumber.lastOrNull()?.takeIf { c -> c.isLetter() } != it.route!!.routeNumber.lastOrNull()?.takeIf { c -> c.isLetter() }
     }.thenBy {
         similarities.getOrPut(it.route!!.routeGroupKey(it.co)) {
             val s = it.route!!.stops[it.co]?.takeIf { s -> s.isNotEmpty() }?: listOf("----")
@@ -819,7 +822,43 @@ suspend fun Route.findSimilarRoutes(co: Operator, context: AppContext): List<Rou
     })
 }
 
-inline val String.isNightRoute: Boolean get() {
+fun List<StopIndexedRouteSearchResultEntry>.identifyGeneralDirections(context: AppContext): Map<GeneralDirection, List<StopIndexedRouteSearchResultEntry>> {
+    val registry = Registry.getInstance(context)
+    val axisDeviations: MutableMap<String, MutableMap<GeneralDirectionAxis, MutableList<Double>>> = mutableMapOf()
+    val map: MutableMap<StopIndexedRouteSearchResultEntry, Double> = mutableMapOf()
+    for (entry in this@identifyGeneralDirections) {
+        val originStop = entry.stopInfo?: continue
+        val origin = originStop.data?.location?: continue
+        val stops = entry.route?.stops?.get(entry.co)?: continue
+        val stopIndex = stops.indexOfFirst { it == originStop.stopId }.takeIf { it >= 0 }?: continue
+        val nextStop = stops.getOrNull(stopIndex + 1)?.asStop(context)?.location
+        val (direction, bearing) = if (nextStop == null) {
+            val previousStop = stops.getOrNull(stopIndex - 1)?.asStop(context)?.location?: continue
+            val bearing = previousStop.bearingTo(origin)
+            bearing.toGeneralDirection().opposite to bearing
+        } else {
+            val bearing = nextStop.bearingTo(origin)
+            bearing.toGeneralDirection() to bearing
+        }
+        val deviation = direction.deviation(bearing)
+        map[entry] = bearing
+        registry.findEquivalentStops(originStop.stopId, 0.3).forEach {
+            axisDeviations.getOrPut(it.stopId) { mutableMapOf() }.getOrPut(direction.axis) { mutableListOf() }.add(deviation)
+        }
+    }
+    val axisDeviationsResult: Map<String, GeneralDirectionAxis> = axisDeviations.mapValues { (_, v) ->
+        v.minBy { (_, d) -> d.asSequence().map { it.absoluteValue }.average() }.key
+    }
+    val result: MutableMap<GeneralDirection, MutableList<StopIndexedRouteSearchResultEntry>> = mutableMapOf()
+    for ((entry, bearing) in map) {
+        val axis = axisDeviationsResult[entry.stopInfo?.stopId]?.directions?: GeneralDirection.entries
+        val direction = bearing.toGeneralDirection(axis)
+        result.getOrPut(direction) { mutableListOf() }.add(entry)
+    }
+    return result.asSequence().sortedBy { (k) -> k }.associate { (k, v) -> k to v }
+}
+
+inline val String.isNightRouteLazyMethod: Boolean get() {
     return this[0] == 'N' || this == "270S" || this == "271S" || this == "293S" || this == "701S" || this == "796S"
 }
 

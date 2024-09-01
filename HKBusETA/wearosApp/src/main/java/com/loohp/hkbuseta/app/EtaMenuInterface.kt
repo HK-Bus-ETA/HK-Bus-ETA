@@ -90,6 +90,7 @@ import com.loohp.hkbuseta.common.objects.indexOfName
 import com.loohp.hkbuseta.common.objects.remove
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -177,11 +178,11 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             }
             item {
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
-                AddThisStopFavButton(favouriteRouteStops.toImmutableList(), selectedGroupState.value, stopId, co, index, stop, route, instance)
+                AddThisStopFavButton(favouriteRouteStops.asImmutableList(), selectedGroupState.value, stopId, co, index, stop, route, instance)
             }
             item {
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
-                AddAnyStopFavButton(favouriteRouteStops.toImmutableList(), selectedGroupState.value, stopId, co, index, stop, route, instance)
+                AddAnyStopFavButton(favouriteRouteStops.asImmutableList(), selectedGroupState.value, stopId, co, index, stop, route, instance)
             }
             item {
                 Spacer(modifier = Modifier.size(40.scaledSize(instance).dp))

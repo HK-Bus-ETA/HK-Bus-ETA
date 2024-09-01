@@ -132,6 +132,7 @@ expect val PlatformIcons.Outlined.Bedtime: Painter @Composable get
 expect val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get
 expect val PlatformIcons.Outlined.Delete: Painter @Composable get
 expect val PlatformIcons.Outlined.DeleteForever: Painter @Composable get
+expect val PlatformIcons.Outlined.DoubleArrow: Painter @Composable get
 expect val PlatformIcons.Outlined.Download: Painter @Composable get
 expect val PlatformIcons.Outlined.Edit: Painter @Composable get
 expect val PlatformIcons.Outlined.EmojiFlags: Painter @Composable get

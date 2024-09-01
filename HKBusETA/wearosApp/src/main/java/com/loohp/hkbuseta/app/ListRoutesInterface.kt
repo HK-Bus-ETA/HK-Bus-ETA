@@ -98,6 +98,7 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.GeneralDirection
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RecentSortMode
@@ -107,13 +108,16 @@ import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
 import com.loohp.hkbuseta.common.objects.bySortModes
+import com.loohp.hkbuseta.common.objects.extendedDisplayName
 import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.getDisplayFormattedName
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.idBound
+import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isFerry
+import com.loohp.hkbuseta.common.objects.next
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
 import com.loohp.hkbuseta.common.objects.uniqueKey
@@ -122,7 +126,10 @@ import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.ImmutableState
+import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.asImmutableState
+import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.DrawPhaseColorText
@@ -149,8 +156,8 @@ import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToPixels
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -179,19 +186,48 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
 
         val lastLookupRoutes by if (listType == RouteListType.RECENT) Shared.lastLookupRoutes.collectAsStateWithLifecycle() else remember { mutableStateOf("") }
 
+        var routeGroupedByDirections: Map<GeneralDirection, List<StopIndexedRouteSearchResultEntry>> by remember { mutableStateOf(emptyMap()) }
+        var filterDirections: GeneralDirection? by remember { mutableStateOf(null) }
+        val filterRoutesProvider = remember { {
+            if (routeGroupedByDirections.isEmpty() || filterDirections == null) {
+                result
+            } else {
+                routeGroupedByDirections[filterDirections]?.asImmutableList()?: persistentListOf()
+            }
+        } }
+
         var activeSortMode by remember { mutableStateOf(if (recentSort.forcedMode) {
             recentSort.defaultSortMode
         } else {
-            Shared.routeSortModePreference[listType]?.let { if (it.isLegalMode(
+            Shared.routeSortModePreference[listType]?.routeSortMode?.let { if (it.isLegalMode(
                     recentSort == RecentSortMode.CHOICE,
                     proximitySortOrigin != null
             )) it else null }?: RouteSortMode.NORMAL
         }) }
-        val sortTask = remember { { result.bySortModes(instance, recentSort, listType != RouteListType.RECENT, proximitySortOrigin).toImmutableMap() } }
+        val sortTask = remember { {
+            filterRoutesProvider.invoke().bySortModes(instance, recentSort, listType != RouteListType.RECENT, false, proximitySortOrigin).asImmutableMap()
+        } }
         @SuppressLint("MutableCollectionMutableState")
         var sortedByMode by remember { mutableStateOf(sortTask.invoke()) }
-        val sortedResults by remember { derivedStateOf { sortedByMode[activeSortMode]?: result } }
+        val sortedResults by remember { derivedStateOf { sortedByMode[activeSortMode]?: filterRoutesProvider.invoke() } }
 
+        LaunchedEffect (Unit) {
+            CoroutineScope(dispatcherIO).launch {
+                routeGroupedByDirections = result.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
+                val newSorted = sortTask.invoke()
+                if (newSorted != sortedByMode) {
+                    sortedByMode = newSorted
+                    hapticsController.enabled = false
+                    hapticsController.invokedCallback = {
+                        it.enabled = true
+                        it.invokedCallback = { /* do nothing */ }
+                    }
+                    scope.launch {
+                        scroll.scrollToItem(0)
+                    }
+                }
+            }
+        }
         RestartEffect {
             val newSorted = sortTask.invoke()
             if (newSorted != sortedByMode) {
@@ -199,7 +235,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                 hapticsController.enabled = false
                 hapticsController.invokedCallback = {
                     it.enabled = true
-                    it.invokedCallback = {}
+                    it.invokedCallback = { /* do nothing */ }
                 }
                 scope.launch {
                     scroll.scrollToItem(0)
@@ -240,7 +276,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                     .composed {
                         LaunchedEffect (activeSortMode) {
                             Shared.routeSortModePreference[listType].let {
-                                if (activeSortMode != it) {
+                                if (activeSortMode != it?.routeSortMode) {
                                     Registry.getInstance(instance).setRouteSortModePreference(instance, listType, activeSortMode)
                                 }
                             }
@@ -251,59 +287,114 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                 state = scroll
             ) {
                 item {
-                    if (ambientMode) {
-                        Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
-                    } else if (recentSort == RecentSortMode.FORCED) {
-                        Button(
-                            onClick = {
-                                Registry.getInstance(instance).clearLastLookupRoutes(instance)
-                                instance.finish()
-                            },
-                            modifier = Modifier
-                                .padding(20.dp, 25.dp, 20.dp, 0.dp)
-                                .width(35.scaledSize(instance).dp)
-                                .height(35.scaledSize(instance).dp),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = MaterialTheme.colors.secondary,
-                                contentColor = Color(0xFFFF0000)
-                            ),
-                            content = {
-                                Icon(
-                                    modifier = Modifier.size(17F.scaledSize(instance).sp.clamp(max = 17.dp).dp),
-                                    imageVector = Icons.Outlined.Delete,
-                                    contentDescription = if (Shared.language == "en") "Clear" else "清除",
-                                    tint = Color(0xFFFF0000),
+                    when {
+                        ambientMode -> {
+                            Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
+                        }
+                        recentSort == RecentSortMode.FORCED -> {
+                            Button(
+                                onClick = {
+                                    Registry.getInstance(instance).clearLastLookupRoutes(instance)
+                                    instance.finish()
+                                },
+                                modifier = Modifier
+                                    .padding(20.dp, 25.dp, 20.dp, 0.dp)
+                                    .width(35.scaledSize(instance).dp)
+                                    .height(35.scaledSize(instance).dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = MaterialTheme.colors.secondary,
+                                    contentColor = Color(0xFFFF0000)
+                                ),
+                                content = {
+                                    Icon(
+                                        modifier = Modifier.size(17F.scaledSize(instance).sp.clamp(max = 17.dp).dp),
+                                        imageVector = Icons.Outlined.Delete,
+                                        contentDescription = if (Shared.language == "en") "Clear" else "清除",
+                                        tint = Color(0xFFFF0000),
+                                    )
+                                }
+                            )
+                        }
+                        recentSort == RecentSortMode.CHOICE || proximitySortOrigin != null -> {
+                            Column(
+                                modifier = Modifier.padding(20.dp, 25.dp, 20.dp, 0.dp),
+                                verticalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        activeSortMode = activeSortMode.nextMode(
+                                            recentSort == RecentSortMode.CHOICE,
+                                            proximitySortOrigin != null
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.8F)
+                                        .height(35.scaledSize(instance).dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = MaterialTheme.colors.secondary,
+                                        contentColor = Color(0xFFFFFFFF)
+                                    ),
+                                    content = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(0.9F),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                modifier = Modifier.size(17F.scaledSize(instance).sp.clamp(max = 17.dp).dp),
+                                                painter = painterResource(R.drawable.baseline_sort_24),
+                                                contentDescription = activeSortMode.sortPrefixedTitle[Shared.language],
+                                                tint = MaterialTheme.colors.primary,
+                                            )
+                                            Text(
+                                                textAlign = TextAlign.Center,
+                                                color = MaterialTheme.colors.primary,
+                                                fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                                text = activeSortMode.extendedTitle[Shared.language]
+                                            )
+                                        }
+                                    }
                                 )
+                                if (routeGroupedByDirections.isNotEmpty()) {
+                                    Button(
+                                        onClick = {
+                                            filterDirections = filterDirections.next(routeGroupedByDirections.keys)
+                                            sortedByMode = sortTask.invoke()
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth(0.8F)
+                                            .height(35.scaledSize(instance).dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            backgroundColor = MaterialTheme.colors.secondary,
+                                            contentColor = Color(0xFFFFFFFF)
+                                        ),
+                                        content = {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(0.9F),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    modifier = Modifier.size(17F.scaledSize(instance).sp.clamp(max = 17.dp).dp),
+                                                    painter = painterResource(R.drawable.baseline_keyboard_double_arrow_right_24),
+                                                    contentDescription = filterDirections.extendedDisplayName[Shared.language],
+                                                    tint = MaterialTheme.colors.primary,
+                                                )
+                                                Text(
+                                                    textAlign = TextAlign.Center,
+                                                    color = MaterialTheme.colors.primary,
+                                                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                                    text = filterDirections.extendedDisplayName[Shared.language]
+                                                )
+                                            }
+                                        }
+                                    )
+                                }
                             }
-                        )
-                    } else if (recentSort == RecentSortMode.CHOICE || proximitySortOrigin != null) {
-                        Button(
-                            onClick = {
-                                activeSortMode = activeSortMode.nextMode(
-                                    recentSort == RecentSortMode.CHOICE,
-                                    proximitySortOrigin != null
-                                )
-                            },
-                            modifier = Modifier
-                                .padding(20.dp, 25.dp, 20.dp, 0.dp)
-                                .fillMaxWidth(0.8F)
-                                .height(35.scaledSize(instance).dp),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = MaterialTheme.colors.secondary,
-                                contentColor = Color(0xFFFFFFFF)
-                            ),
-                            content = {
-                                Text(
-                                    modifier = Modifier.fillMaxWidth(0.9F),
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colors.primary,
-                                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
-                                    text = activeSortMode.sortPrefixedTitle[Shared.language]
-                                )
-                            }
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
+                        }
+                        else -> {
+                            Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
+                        }
                     }
                 }
                 if (mtrSearch != null) {
@@ -461,7 +552,7 @@ fun LazyItemScope.RouteRow(
     val dest = route.route!!.resolvedDest(false)[Shared.language]
     val operatorName = remember(route, co, kmbCtbJoint) { co.getDisplayFormattedName(route.route!!.routeNumber, kmbCtbJoint, gmbRegion, Shared.language).asContentAnnotatedString().annotatedString }
 
-    val secondLine = remember(route, co, kmbCtbJoint, routeNumber, rawColor, listType) { buildList {
+    val secondLine = remember(route, co, kmbCtbJoint, routeNumber, rawColor, listType) { buildImmutableList {
         if (listType == RouteListType.RECENT) {
             add(instance.formatDateTime((Shared.findLookupRouteTime(route.routeKey)?: 0).toLocalDateTime(), true).asAnnotatedString())
         }
@@ -474,7 +565,7 @@ fun LazyItemScope.RouteRow(
         } else if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
             add((if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)").asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
         }
-    }.toImmutableList() }
+    } }
 
     Box (
         modifier = Modifier

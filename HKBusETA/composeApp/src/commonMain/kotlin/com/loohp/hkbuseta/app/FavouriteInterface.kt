@@ -90,6 +90,7 @@ import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.Add
 import com.loohp.hkbuseta.compose.AdvanceTabRow
@@ -281,7 +282,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     val (name, routeStops) = favouriteRouteStop
                     if (isOnPage) {
                         CoroutineScope(dispatcherIO).launch {
-                            routes[name] = routeStops.toRouteSearchResult(instance, location).toStopIndexed(instance).toImmutableList()
+                            routes[name] = routeStops.toRouteSearchResult(instance, location).toStopIndexed(instance).asImmutableList()
                         }
                     }
                 }
@@ -316,7 +317,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                             val groupIndex = groups.indexOfName(favouriteRouteStop.name)
                             val newList = groups[groupIndex].let { (name, list) -> FavouriteRouteGroup(name, list.toMutableList().apply { add(to.index, removeAt(from.index)) }) }
                             groups[groupIndex] = newList
-                            routes[name] = newList.favouriteRouteStops.toRouteSearchResult(instance, location).toStopIndexed(instance).toImmutableList()
+                            routes[name] = newList.favouriteRouteStops.toRouteSearchResult(instance, location).toStopIndexed(instance).asImmutableList()
                             CoroutineScope(dispatcherIO).launch {
                                 Registry.getInstance(instance).setFavouriteRouteGroups(groups, instance)
                             }
@@ -611,7 +612,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                         val stop = data.second
                         if (isOnPage) {
                             CoroutineScope(dispatcherIO).launch {
-                                routes[stop] = Registry.getInstance(instance).getNearbyRoutes(stop.location, emptySet(), false).result.toStopIndexed(instance).toImmutableList()
+                                routes[stop] = Registry.getInstance(instance).getNearbyRoutes(stop.location, emptySet(), false).result.toStopIndexed(instance).asImmutableList()
                             }
                         }
                     }

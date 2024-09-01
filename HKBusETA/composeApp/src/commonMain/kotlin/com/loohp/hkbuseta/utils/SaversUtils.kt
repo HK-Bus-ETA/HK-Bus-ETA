@@ -25,9 +25,16 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.RouteSortMode
+import com.loohp.hkbuseta.common.objects.RouteSortPreference
 import com.loohp.hkbuseta.common.objects.toCoordinatesOrNull
 
 val coordinatesNullableStateSaver: Saver<MutableState<Coordinates?>, DoubleArray> get() = Saver(
     save = { it.value?.toArray() },
     restore = { mutableStateOf(it.toCoordinatesOrNull()) }
+)
+
+val routeSortPreferenceStateSaver: Saver<MutableState<RouteSortPreference>, IntArray> get() = Saver(
+    save = { it.value.let { (m, f) -> intArrayOf(m.ordinal, if (f) 1 else 0) } },
+    restore = { mutableStateOf(RouteSortPreference(RouteSortMode.entries[it[0]], it[1] > 0)) }
 )

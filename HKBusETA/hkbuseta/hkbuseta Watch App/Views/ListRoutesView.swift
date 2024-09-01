@@ -32,6 +32,9 @@ struct ListRoutesView: AppScreenView {
     @State var allowAmbient: Bool
     @State var mtrSearch: String?
     
+    @State var routeGroupedByDirections: [GeneralDirection: [StopIndexedRouteSearchResultEntry]]
+    @State var filterDirections: GeneralDirection?
+    
     @State var activeSortMode: RouteSortMode
     @State var sortedByMode: [RouteSortMode: [StopIndexedRouteSearchResultEntry]]
     @State var sortedResults: [StopIndexedRouteSearchResultEntry]
@@ -95,16 +98,20 @@ struct ListRoutesView: AppScreenView {
             if preferred == nil {
                 return RouteSortMode.normal
             } else {
-                if preferred!.isLegalMode(allowRecentSort: recentSort == RecentSortMode.choice, allowProximitySort: proximitySortOrigin != nil) {
-                    return preferred!
+                if preferred!.routeSortMode.isLegalMode(allowRecentSort: recentSort == RecentSortMode.choice, allowProximitySort: proximitySortOrigin != nil) {
+                    return preferred!.routeSortMode
                 } else {
                     return RouteSortMode.normal
                 }
             }
         }()
+        let routeGroupedByDirectionsRaw = RouteExtensionsKt.identifyGeneralDirections(casedResult, context: appContext)
+        let routeGroupedByDirections = routeGroupedByDirectionsRaw.count > 1 ? routeGroupedByDirectionsRaw : [:]
+        self.routeGroupedByDirections = routeGroupedByDirections
+        self.filterDirections = nil
         self.activeSortMode = activeSortMode
         self.mtrSearch = data["mtrSearch"] as? String
-        let sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(casedResult, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, proximitySortOrigin: proximitySortOrigin)
+        let sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(casedResult, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: false, proximitySortOrigin: proximitySortOrigin)
         self.sortedByMode = sortedByMode
         self.sortedResults = sortedByMode[activeSortMode]!
         self.secondLineHeights = [:]
@@ -133,19 +140,33 @@ struct ListRoutesView: AppScreenView {
                             Button(action: {
                                 activeSortMode = activeSortMode.nextMode(allowRecentSort: recentSort == RecentSortMode.choice, allowProximitySort: proximitySortOrigin != nil)
                             }) {
-                                switch activeSortMode {
-                                case RouteSortMode.proximity:
-                                    Text(Shared().language == "en" ? "Sort: Proximity" : "排序: 巴士站距離")
-                                case RouteSortMode.recent:
-                                    Text(Shared().language == "en" ? "Sort: Fav/Recent" : "排序: 喜歡/最近瀏覽")
-                                default:
-                                    Text(Shared().language == "en" ? "Sort: Normal" : "排序: 正常")
+                                HStack {
+                                    Image(systemName: "slider.horizontal.3")
+                                        .font(.system(size: 17.scaled(appContext, true)))
+                                    Text(activeSortMode.extendedTitle.get(language: Shared().language))
+                                        .font(.system(size: 17.scaled(appContext, true)))
                                 }
                             }
                             .font(.system(size: 17.scaled(appContext), weight: .bold))
                             .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
                             .clipShape(RoundedRectangle(cornerRadius: 25))
                             .ignoresSafeArea(.all)
+                            if !routeGroupedByDirections.isEmpty {
+                                Button(action: {
+                                    filterDirections = AppContextWatchOSKt.nextGeneralDirection(generalDirection: filterDirections, availableDirections: routeGroupedByDirections.keys.map { $0 })
+                                }) {
+                                    HStack {
+                                        Image(systemName: "chevron.right.2")
+                                            .font(.system(size: 17.scaled(appContext, true)))
+                                        Text(AppContextWatchOSKt.getGeneralDirectionExtendedDisplayName(generalDirection: filterDirections).get(language: Shared().language))
+                                            .font(.system(size: 17.scaled(appContext, true)))
+                                    }
+                                }
+                                .font(.system(size: 17.scaled(appContext), weight: .bold))
+                                .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
+                                .clipShape(RoundedRectangle(cornerRadius: 25))
+                                .ignoresSafeArea(.all)
+                            }
                         }
                     }
                     if let stopId = mtrSearch {
@@ -223,6 +244,21 @@ struct ListRoutesView: AppScreenView {
                 }
             }
         }
+        .onChange(of: filterDirections) { _ in
+            let filteredRoutes: [StopIndexedRouteSearchResultEntry] = {
+                if routeGroupedByDirections.isEmpty || filterDirections == nil {
+                    return result
+                } else if let grouped = routeGroupedByDirections[filterDirections!] {
+                    return grouped
+                } else {
+                    return []
+                }
+            }()
+            sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(filteredRoutes, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: false, proximitySortOrigin: proximitySortOrigin)
+            withAnimation() { () -> () in
+                sortedResults = sortedByMode[activeSortMode]!
+            }
+        }
         .onChange(of: activeSortMode) { _ in
             let preferred = Shared().routeSortModePreference[listType]
             if preferred == nil || activeSortMode != preferred {
@@ -233,7 +269,7 @@ struct ListRoutesView: AppScreenView {
             }
         }
         .onChange(of: lastLookupRoutes.state) { _ in
-            let sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(result, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, proximitySortOrigin: proximitySortOrigin)
+            let sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(result, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: false, proximitySortOrigin: proximitySortOrigin)
             self.sortedByMode = sortedByMode
             withAnimation() { () -> () in
                 self.sortedResults = sortedByMode[activeSortMode]!

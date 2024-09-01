@@ -34,11 +34,16 @@ import com.loohp.hkbuseta.common.appcontext.FormFactor
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
+import com.loohp.hkbuseta.common.objects.GeneralDirection
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.displayName
+import com.loohp.hkbuseta.common.objects.extendedDisplayName
+import com.loohp.hkbuseta.common.objects.next
 import com.loohp.hkbuseta.common.services.AlightReminderActiveState
 import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
 import com.loohp.hkbuseta.common.shared.Registry
@@ -592,3 +597,15 @@ data class RouteMapData(
 }
 
 private fun Float.sq(): Float = this * this
+
+fun getGeneralDirectionDisplayName(generalDirection: GeneralDirection?): BilingualText {
+    return generalDirection.displayName
+}
+
+fun getGeneralDirectionExtendedDisplayName(generalDirection: GeneralDirection?): BilingualText {
+    return generalDirection.extendedDisplayName
+}
+
+fun nextGeneralDirection(generalDirection: GeneralDirection?, availableDirections: List<GeneralDirection>): GeneralDirection? {
+    return generalDirection.next(availableDirections)
+}

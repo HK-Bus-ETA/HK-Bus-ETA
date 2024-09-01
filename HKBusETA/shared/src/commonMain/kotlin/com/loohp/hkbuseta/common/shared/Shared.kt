@@ -45,7 +45,7 @@ import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
-import com.loohp.hkbuseta.common.objects.RouteSortMode
+import com.loohp.hkbuseta.common.objects.RouteSortPreference
 import com.loohp.hkbuseta.common.objects.StopInfo
 import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
@@ -359,7 +359,7 @@ object Shared {
         return lastLookupRoutes.value.asSequence().filter { it.routeKey == routeKey }.maxOfOrNull { it.time }
     }
 
-    val routeSortModePreference: Map<RouteListType, RouteSortMode> = ConcurrentMutableMap()
+    val routeSortModePreference: Map<RouteListType, RouteSortPreference> = ConcurrentMutableMap()
 
     @Suppress("NAME_SHADOWING")
     fun handleLaunchOptions(

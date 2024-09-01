@@ -56,6 +56,7 @@ import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.compose.ArrowBack
 import com.loohp.hkbuseta.compose.DeleteDialog
 import com.loohp.hkbuseta.compose.DeleteForever
@@ -89,7 +90,7 @@ fun RecentInterface(instance: AppActiveContext, visible: Boolean = true) {
 
     LaunchedEffect(visible, recentRouteKeys, recentRouteKeys) {
         if (visible) {
-            routes = Registry.getInstance(instance).findRoutes("", false, Shared.RECENT_ROUTE_FILTER).toStopIndexed(instance).toImmutableList()
+            routes = Registry.getInstance(instance).findRoutes("", false, Shared.RECENT_ROUTE_FILTER).toStopIndexed(instance).asImmutableList()
         }
         realVisible = visible
     }

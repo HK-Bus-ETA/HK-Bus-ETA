@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.common.utils
 
 import kotlin.math.PI
 import kotlin.math.asin
+import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
@@ -89,6 +90,23 @@ inline fun findDistance(lat1: Double, lng1: Double, lat2: Double, lng2: Double):
 
     return c * 6371
 }
+
+inline fun findBearing(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
+    val dLon = lng2 - lng1
+
+    val y = sin(dLon) * cos(lat2)
+    val x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+
+    var brng = atan2(y, x)
+
+    brng = brng.toDegrees()
+    brng = (brng + 360) % 360
+
+    return -(brng - 180) + 180
+}
+
+inline fun Double.toRadians(): Double = this / 180.0 * PI
+inline fun Double.toDegrees(): Double = this * 180.0 / PI
 
 inline fun Float.floorToInt(): Int = floor(this).toInt()
 inline fun Float.ceilToInt(): Int = ceil(this).toInt()

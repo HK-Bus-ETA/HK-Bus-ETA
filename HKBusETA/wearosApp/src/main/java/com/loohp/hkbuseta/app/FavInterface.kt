@@ -117,6 +117,7 @@ import com.loohp.hkbuseta.common.shared.TileUseState
 import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.LocationResult
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.indexOf
@@ -219,7 +220,7 @@ fun FavElements(ambientMode: Boolean, instance: AppActiveContext, schedule: (Boo
             }
             item {
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
-                SwitchGroupButton(favouriteRouteStops.toImmutableList(), selectedGroupState, instance)
+                SwitchGroupButton(favouriteRouteStops.asImmutableList(), selectedGroupState, instance)
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
             }
             if (routeStops.isNotEmpty()) {

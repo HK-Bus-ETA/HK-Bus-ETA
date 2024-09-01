@@ -170,7 +170,9 @@ import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MTRStopSectionData
 import com.loohp.hkbuseta.common.utils.RouteBranchStatus
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
+import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentMinuteState
@@ -342,10 +344,10 @@ fun ListStopsEtaInterface(
     val gmbRegion by remember(listRoute) { derivedStateOf { listRoute.route!!.gmbRegion } }
     val isKmbCtbJoint by remember(listRoute) { derivedStateOf { listRoute.route!!.isKmbCtbJoint } }
 
-    val routeBranches by remember(listRoute) { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion).toImmutableList() } }
+    val routeBranches by remember(listRoute) { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion).asImmutableList() } }
     val selectedBranch by selectedBranchState
     var selectedStop by selectedStopState
-    val allStops by remember(listRoute, selectedBranch) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).toImmutableList() } }
+    val allStops by remember(listRoute, selectedBranch) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).asImmutableList() } }
 
     val rawLineColor by remember(co) { derivedStateOf { co.getLineColor(routeNumber, Color.Red) } }
     val lineColor by ComposeShared.rememberOperatorColor(rawLineColor, Operator.CTB.getOperatorColor(Color.Yellow).takeIf { isKmbCtbJoint })
@@ -356,7 +358,7 @@ fun ListStopsEtaInterface(
     val etaResults = remember { ConcurrentMap<Int, Registry.ETAQueryResult>().asImmutableState() }
     val etaUpdateTimes = remember { ConcurrentMap<Int, Long>().asImmutableState() }
 
-    val times: SnapshotStateMap<Int, Int> = remember { mutableStateMapOf() }
+    val times: SnapshotStateMap<Int, Registry.TimeBetweenStopResult> = remember { mutableStateMapOf() }
     var timesStartIndex by timesStartIndexState
     var timesInit by timesInitState
 
@@ -385,7 +387,7 @@ fun ListStopsEtaInterface(
     val sheetType by sheetTypeState
 
     val alternateStopNames by remember(listRoute, isKmbCtbJoint) { derivedStateOf { if (isKmbCtbJoint) {
-        Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB).toImmutableList()
+        Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB).asImmutableList()
     } else {
         null
     }.asImmutableState() } }
@@ -406,7 +408,7 @@ fun ListStopsEtaInterface(
     LaunchedEffect (alightReminderService, alightReminderCurrentStop, alightReminderState) {
         alightReminderService?.let { service -> alightReminderCurrentStop?.let { currentStop ->
             alightReminderStopsLeft = service.stopsRemaining
-            alightReminderTimeLeft = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), currentStop.index - 1, service.destinationStopId.index - 1).await()
+            alightReminderTimeLeft = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), currentStop.index - 1, service.destinationStopId.index - 1).await().averageInterval
         } }
     }
     LaunchedEffect (sheetType) {
@@ -451,7 +453,7 @@ fun ListStopsEtaInterface(
         if (type == ListStopsInterfaceType.TIMES) {
             times.clear()
             for (i in 1..allStops.size) {
-                times[i] = Int.MAX_VALUE
+                times[i] = Registry.TimeBetweenStopResult.LOADING
             }
             for (i in allStops.size downTo timesStartIndex) {
                 times[i] = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), timesStartIndex - 1, i - 1).await()
@@ -945,7 +947,7 @@ fun ListStopsBottomSheet(
                 var routes: ImmutableList<StopIndexedRouteSearchResultEntry>? by remember(origin) { mutableStateOf(null) }
 
                 LaunchedEffect (origin) {
-                    routes = Registry.getInstance(instance).getNearbyRoutes(origin, setOf(listRoute.route!!.routeNumber), true).result.toStopIndexed(instance).toImmutableList()
+                    routes = Registry.getInstance(instance).getNearbyRoutes(origin, setOf(listRoute.route!!.routeNumber), true).result.toStopIndexed(instance).asImmutableList()
                 }
 
                 Scaffold(
@@ -999,7 +1001,7 @@ fun StopEntry(
     gmbRegion: GMBRegion?,
     isKmbCtbJoint: Boolean,
     timesStartIndexState: MutableIntState,
-    times: SnapshotStateMap<Int, Int>,
+    times: SnapshotStateMap<Int, Registry.TimeBetweenStopResult>,
     alightReminderHighlightBlinkState: MutableState<Boolean>,
     alightReminderStateState: MutableState<AlightReminderServiceState?>,
     alightReminderTimeLeftState: MutableIntState,
@@ -1278,7 +1280,7 @@ fun StopEntryExpansion(
     isKmbCtbJoint: Boolean,
     gmbRegion: GMBRegion?,
     timesStartIndexState: MutableIntState,
-    times: SnapshotStateMap<Int, Int>,
+    times: SnapshotStateMap<Int, Registry.TimeBetweenStopResult>,
     alightReminderHighlightBlinkState: MutableState<Boolean>,
     alightReminderStateState: MutableState<AlightReminderServiceState?>,
     alightReminderTimeLeftState: MutableIntState,
@@ -1616,37 +1618,39 @@ fun StopEntryExpansionEta(
 fun StopEntryExpansionTimes(
     index: Int,
     timesStartIndexState: MutableIntState,
-    times: Int?
+    times: Registry.TimeBetweenStopResult?
 ) {
     var timesStartIndex by timesStartIndexState
 
     Column(
-        modifier = Modifier
-            .padding(vertical = 10.dp)
-            .height(80.fontScaledDp),
+        modifier = Modifier.padding(vertical = 10.dp),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         when {
             index > timesStartIndex -> {
                 val timesText = times
-                    ?.takeIf { it >= 0 }
-                    ?.let { (it / 60).coerceAtLeast(1) }
+                    ?.takeIf { it.averageInterval >= 0 }
                     ?.let {
-                        if (it > 1000) {
+                        if (it.isLoading) {
                             if (Shared.language == "en") "Journey Times: Loading... (Beta)" else "車程: 載入中... (測試版)"
                         } else {
-                            if (Shared.language == "en") "Journey Times: $it Minutes (Beta)" else "車程: ${it}分鐘 (測試版)"
+                            buildString {
+                                val interval = (it.averageInterval / 60).coerceAtLeast(1)
+                                append(if (Shared.language == "en") "Journey Times: $interval Minutes (Beta)" else "車程: ${interval}分鐘 (測試版)")
+                                it.currentHourlyInterval?.let { hourTime ->
+                                    val intervalHour = (hourTime / 60).coerceAtLeast(1)
+                                    append("\n")
+                                    append(if (Shared.language == "en") "Average at this hour: $intervalHour Minutes (Experimental)" else "本小時平均: ${intervalHour}分鐘 (試驗版)")
+                                }
+                            }
                         }
                     }
                     ?: if (Shared.language == "en") "Unable to provide Journey Times (Beta)" else "未能提供車程 (測試版)"
                 PlatformText(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .userMarquee(),
+                    modifier = Modifier.fillMaxWidth(),
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Start,
-                    maxLines = userMarqueeMaxLines(),
                     text = timesText
                 )
             }
@@ -2255,7 +2259,7 @@ fun ETADisplay(
     val hasRemark by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.remark.isNotEmpty() } } }
 
     val columns by remember(resolvedText) { derivedStateOf {
-        buildList {
+        buildImmutableList {
             if (hasClockTime && !isTrain) add(DataColumn(
                 alignment = Alignment.End,
                 width = TableColumnWidth.Wrap
@@ -2286,7 +2290,7 @@ fun ETADisplay(
             if (hasRemark) add(DataColumn(
                 width = TableColumnWidth.Flex(1F)
             ) {})
-        }.toImmutableList()
+        }
     } }
 
     LaunchedEffect (lines) {

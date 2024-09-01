@@ -72,6 +72,7 @@ import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Splash
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.AdaptiveNavBar
 import com.loohp.hkbuseta.compose.AdaptiveNavBarItem
@@ -303,7 +304,7 @@ fun TitleInterface(instance: AppActiveContext) {
                         modifier = Modifier.padding(padding)
                     ) {
                         @Suppress("UNCHECKED_CAST")
-                        ListRoutesInterface(instance, (routes as List<RouteSearchResultEntry>).toStopIndexed(instance).toImmutableList(), RouteListType.NORMAL, false, RecentSortMode.DISABLED, null)
+                        ListRoutesInterface(instance, (routes as List<RouteSearchResultEntry>).toStopIndexed(instance).asImmutableList(), RouteListType.NORMAL, false, RecentSortMode.DISABLED, null)
                     }
                 }
             )

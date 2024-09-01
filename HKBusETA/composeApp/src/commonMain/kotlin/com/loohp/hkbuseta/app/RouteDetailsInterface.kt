@@ -130,6 +130,7 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.TimetableIntervalEntry
 import com.loohp.hkbuseta.common.utils.TimetableSingleEntry
 import com.loohp.hkbuseta.common.utils.TimetableSpecialEntry
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentEntry
@@ -360,7 +361,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             launch { reverseRoute = route.findReverse(instance) }
             for (branch in routeBranches) {
                 launch {
-                    val result = branch.findSimilarRoutes(co, instance).takeIf { it.isNotEmpty() }?.toStopIndexed(instance)?.toImmutableList()
+                    val result = branch.findSimilarRoutes(co, instance).takeIf { it.isNotEmpty() }?.toStopIndexed(instance)?.asImmutableList()
                     if (result == null) {
                         similarRoutes.remove(branch)
                     } else {
@@ -568,8 +569,8 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                 when (item.type) {
                     StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranch, possibleBidirectionalSectionFare, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing)
                     StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranch, alternateStopNamesShowing, timesStartIndexState = timesStartIndexState, timesInitState = timesInitState)
-                    StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.toImmutableList(), possibleBidirectionalSectionFare)
-                    StopsTabItemType.TIMETABLE -> TimetableInterface(instance, routeBranches.toImmutableList())
+                    StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.asImmutableList(), possibleBidirectionalSectionFare)
+                    StopsTabItemType.TIMETABLE -> TimetableInterface(instance, routeBranches.asImmutableList())
                 }
             }
         }
@@ -642,7 +643,7 @@ fun MapStopsInterface(
         var waypoints by remember { mutableStateOf(if (co.isTrain) listRoute.defaultWaypoints(instance) else selectedBranch.defaultWaypoints(instance)) }
 
         val alternateStopNames by remember(listRoute, isKmbCtbJoint) { derivedStateOf { if (isKmbCtbJoint) {
-            Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB).toImmutableList()
+            Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB).asImmutableList()
         } else {
             null
         }.asImmutableState() } }
@@ -685,7 +686,7 @@ fun MapStopsInterface(
                                 }
                             }
                     ) {
-                        MapRouteInterface(instance, waypoints, allStops.toImmutableList(), selectedStopState, selectedBranchState, alternateStopNamesShowing, alternateStopNames)
+                        MapRouteInterface(instance, waypoints, allStops.asImmutableList(), selectedStopState, selectedBranchState, alternateStopNamesShowing, alternateStopNames)
                         if (screenSize.isNarrow) {
                             PlatformFilledTonalIconToggleButton(
                                 modifier = Modifier

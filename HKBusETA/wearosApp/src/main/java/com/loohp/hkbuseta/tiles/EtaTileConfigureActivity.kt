@@ -102,6 +102,7 @@ import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Tiles
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.DrawPhaseColorText
@@ -210,7 +211,7 @@ fun SelectElements(tileId: Int, instance: AppActiveContext) {
                 }
             }
             item {
-                SwitchGroupButton(favouriteRouteStops.toImmutableList(), selectedGroupState, instance)
+                SwitchGroupButton(favouriteRouteStops.asImmutableList(), selectedGroupState, instance)
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
             }
             if (routeStops.isNotEmpty()) {

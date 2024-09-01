@@ -61,6 +61,7 @@ import com.loohp.hkbuseta.common.objects.RouteNoticeImportance
 import com.loohp.hkbuseta.common.objects.RouteNoticeText
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteSortMode
+import com.loohp.hkbuseta.common.objects.RouteSortPreference
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.SpecialTrafficNews
 import com.loohp.hkbuseta.common.objects.StationBarrierFreeMapping
@@ -85,7 +86,7 @@ import com.loohp.hkbuseta.common.objects.hkkfStopCode
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isCircular
-import com.loohp.hkbuseta.common.objects.isNightRoute
+import com.loohp.hkbuseta.common.objects.isNightRouteLazyMethod
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.lrtLineStatus
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
@@ -113,6 +114,7 @@ import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.clearGlobalCache
 import com.loohp.hkbuseta.common.utils.commonElementPercentage
 import com.loohp.hkbuseta.common.utils.containsKeyAndNotNull
+import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentFirstActiveBranch
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
@@ -133,6 +135,7 @@ import com.loohp.hkbuseta.common.utils.hongKongTimeZone
 import com.loohp.hkbuseta.common.utils.ifFalse
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.indexesOf
+import com.loohp.hkbuseta.common.utils.isNightRoute
 import com.loohp.hkbuseta.common.utils.minus
 import com.loohp.hkbuseta.common.utils.nextLocalDateTimeAfter
 import com.loohp.hkbuseta.common.utils.optDouble
@@ -147,6 +150,8 @@ import com.loohp.hkbuseta.common.utils.plus
 import com.loohp.hkbuseta.common.utils.postJSONResponse
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.common.utils.strEq
+import com.loohp.hkbuseta.common.utils.sundayZeroDayNumber
+import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
 import com.loohp.hkbuseta.common.utils.wrap
 import io.ktor.http.encodeURLQueryComponent
@@ -657,7 +662,12 @@ class Registry {
     }
 
     fun setRouteSortModePreference(context: AppContext, listType: RouteListType, sortMode: RouteSortMode) {
-        (Shared.routeSortModePreference as MutableMap)[listType] = sortMode
+        val filterTimetableActive = (Shared.routeSortModePreference as MutableMap)[listType]?.filterTimetableActive == true
+        setRouteSortModePreference(context, listType, RouteSortPreference(sortMode, filterTimetableActive))
+    }
+
+    fun setRouteSortModePreference(context: AppContext, listType: RouteListType, sortPreference: RouteSortPreference) {
+        (Shared.routeSortModePreference as MutableMap)[listType] = sortPreference
         PREFERENCES!!.routeSortModePreference.clear()
         PREFERENCES!!.routeSortModePreference.putAll(Shared.routeSortModePreference)
         savePreferences(context)
@@ -1016,6 +1026,11 @@ class Registry {
         }
     }
 
+    fun findEquivalentStops(stopId: String, radius: Double = 0.1): List<NearbyStopSearchResult> {
+        val ids = DATA!!.dataSheet.stopMap[stopId]?.asSequence()?.map { (_, s) -> s }?: findNearbyStops(DATA!!.dataSheet.stopList[stopId]!!.location, radius).asSequence().map { it.stopId }
+        return ids.map { NearbyStopSearchResult(it, DATA!!.dataSheet.stopList[it]!!, 0.0) }.toList()
+    }
+
     data class NearbyStopSearchResult(val stopId: String, val stop: Stop, val distance: Double)
 
     fun findRoutes(input: String, exact: Boolean): List<RouteSearchResultEntry> {
@@ -1082,6 +1097,7 @@ class Registry {
         return getNearbyRoutes(origin, 0.3, excludedRouteNumbers, isInterchangeSearch)
     }
 
+    @OptIn(ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
     suspend fun getNearbyRoutes(origin: Coordinates, radius: Double, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): NearbyRoutesResult {
         val nearbyStops: MutableList<StopInfo> = mutableListOf()
         var closestStop: Stop? = null
@@ -1149,6 +1165,18 @@ class Registry {
         val weekday = hongKongTime.dayOfWeek
         val date = hongKongTime.date
         val isHoliday = weekday == DayOfWeek.SATURDAY || isPublicHoliday(date)
+        val nightRouteByTimetable = if (hasServiceDayMap()) {
+            nearbyRoutes.values.associate { (k, v) ->
+                val routeNumber = k.route!!.routeNumber
+                k.routeKey to when {
+                    routeNumber.isNightRouteLazyMethod -> true
+                    routeNumber.lastOrNull() == 'S' -> v.createTimetable(getServiceDayMap()) { null }.isNightRoute()
+                    else -> false
+                }
+            }
+        } else {
+            emptyMap()
+        }
         return NearbyRoutesResult(nearbyRoutes.values.asSequence().map { it.first }.sortedWith(compareBy<RouteSearchResultEntry> { a ->
             val route = a.route!!
             val routeNumber = route.routeNumber
@@ -1161,7 +1189,7 @@ class Registry {
             } else if (bound.containsKey(Operator.MTR)) {
                 na += if (isInterchangeSearch) -2000 else 2000
             }
-            if (routeNumber.isNightRoute) {
+            if (nightRouteByTimetable[a.routeKey]?: routeNumber.isNightRouteLazyMethod) {
                 na -= (if (isNight) 1 else -1) * 10000
             }
             if (sa == "S" && routeNumber != "89S" && routeNumber != "796S") {
@@ -1785,21 +1813,57 @@ class Registry {
     private val cachedPrefixes: MutableList<String> = ConcurrentMutableList()
     private val cachedTimes: MutableMap<String, MutableMap<String, Double>> = ConcurrentMutableMap()
 
-    private suspend fun cacheTimeBetweenStopPrefix(prefix: String) {
-        if (cachedPrefixes.contains(prefix)) return
-        val data = getJSONResponse<JsonObject>("https://timeinterval.hkbuseta.com/times/$prefix.json")?: return
-        for ((stopId, nextStopIds) in data) {
-            val cacheMap = cachedTimes.getOrPut(stopId) { ConcurrentMutableMap() }
-            for ((nextStopId, time) in nextStopIds.jsonObject) {
-                cacheMap[nextStopId] = time.jsonPrimitive.double
-            }
-        }
-        cachedPrefixes.add(prefix)
+    private var cachedHourly: Pair<DayOfWeek, Int>? = null
+    private val cachedHourlyPrefixes: MutableList<String> = ConcurrentMutableList()
+    private val cachedHourlyTimes: MutableMap<String, MutableMap<String, Double>> = ConcurrentMutableMap()
+
+    private fun currentHourlyTimeBetweenStop(time: Long = currentTimeMillis()): Pair<DayOfWeek, Int> {
+        return time.toLocalDateTime().run { dayOfWeek to hour }
     }
 
-    fun getTimeBetweenStop(stopIds: List<Pair<String, Boolean>>, startIndex: Int, endIndex: Int): Deferred<Int> {
+    private suspend fun cacheTimeBetweenStopPrefix(prefix: String) {
+        if (!cachedPrefixes.contains(prefix)) {
+            val data = getJSONResponse<JsonObject>("https://timeinterval.hkbuseta.com/times/$prefix.json")?: return
+            for ((stopId, nextStopIds) in data) {
+                val cacheMap = cachedTimes.getOrPut(stopId) { ConcurrentMutableMap() }
+                for ((nextStopId, time) in nextStopIds.jsonObject) {
+                    cacheMap[nextStopId] = time.jsonPrimitive.double
+                }
+            }
+            cachedPrefixes.add(prefix)
+        }
+        val currentHourly = currentHourlyTimeBetweenStop()
+        if (currentHourly != cachedHourly) {
+            cachedHourlyPrefixes.clear()
+            cachedHourlyTimes.clear()
+        }
+        if (!cachedHourlyPrefixes.contains(prefix)) {
+            val (weekday, hour) = currentHourly
+            val data = getJSONResponse<JsonObject>("https://timeinterval.hkbuseta.com/times_hourly/${weekday.sundayZeroDayNumber}/${hour}/$prefix.json")?: return
+            for ((stopId, nextStopIds) in data) {
+                val cacheMap = cachedHourlyTimes.getOrPut(stopId) { ConcurrentMutableMap() }
+                for ((nextStopId, time) in nextStopIds.jsonObject) {
+                    cacheMap[nextStopId] = time.jsonPrimitive.double
+                }
+            }
+            cachedHourlyPrefixes.add(prefix)
+        }
+    }
+
+    @Immutable
+    data class TimeBetweenStopResult(val averageInterval: Int, val currentHourlyInterval: Int? = null) {
+        companion object {
+            val NOT_AVAILABLE: TimeBetweenStopResult = TimeBetweenStopResult(-1)
+            val LOADING: TimeBetweenStopResult = TimeBetweenStopResult(Int.MAX_VALUE)
+        }
+        constructor(averageInterval: Double, currentHourlyInterval: Double? = null):
+                this(averageInterval.roundToInt(), currentHourlyInterval?.roundToInt())
+        val isLoading: Boolean = averageInterval >= Int.MAX_VALUE
+    }
+
+    fun getTimeBetweenStop(stopIds: List<Pair<String, Boolean>>, startIndex: Int, endIndex: Int): Deferred<TimeBetweenStopResult> {
         return CoroutineScope(dispatcherIO).async {
-            val intervals = buildSet {
+            val intervals = buildList(stopIds.size) {
                 for ((index, value) in stopIds.withIndex()) {
                     val (stopId, inBranch) = value
                     if (inBranch && index in startIndex until endIndex) {
@@ -1808,17 +1872,23 @@ class Registry {
                         add(CoroutineScope(dispatcherIO).async {
                             cacheTimeBetweenStopPrefix(prefix)
                             val cacheMap = cachedTimes.getOrPut(stopId) { ConcurrentMutableMap() }
-                            cacheMap[nextStopId]?: -1.0
+                            val cacheHourlyMap = cachedHourlyTimes.getOrPut(stopId) { ConcurrentMutableMap() }
+                            (cacheMap[nextStopId]?: -1.0) to (cacheHourlyMap[nextStopId]?: -1.0)
                         })
                     }
                 }
             }.awaitAll()
             var time = 0.0
-            for (interval in intervals) {
-                if (interval < 0) return@async -1
+            for ((interval) in intervals) {
+                if (interval < 0) return@async TimeBetweenStopResult.NOT_AVAILABLE
                 time += interval
             }
-            return@async time.roundToInt()
+            var timeHourly = 0.0
+            for ((_, interval) in intervals) {
+                if (interval < 0) return@async TimeBetweenStopResult(time)
+                timeHourly += interval
+            }
+            return@async TimeBetweenStopResult(time, timeHourly)
         }
     }
 

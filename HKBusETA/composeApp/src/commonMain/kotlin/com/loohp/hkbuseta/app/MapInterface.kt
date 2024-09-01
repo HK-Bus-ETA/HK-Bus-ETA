@@ -30,6 +30,7 @@ import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.utils.ImmutableState
+import com.loohp.hkbuseta.common.utils.buildImmutableList
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -54,7 +55,7 @@ expect fun MapSelectInterface(
 )
 
 fun RouteWaypoints.buildStopListMapping(allStops: List<Registry.StopData>): ImmutableList<Int> {
-    return buildList {
+    return buildImmutableList {
         var waypointStopIndex = 0
         for ((index, stopData) in allStops.withIndex()) {
             val waypointStop = stops.getOrNull(waypointStopIndex)?: break
@@ -63,5 +64,5 @@ fun RouteWaypoints.buildStopListMapping(allStops: List<Registry.StopData>): Immu
                 waypointStopIndex++
             }
         }
-    }.toImmutableList()
+    }
 }

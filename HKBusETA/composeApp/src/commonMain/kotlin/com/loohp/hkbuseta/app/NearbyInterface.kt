@@ -87,6 +87,7 @@ import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.compose.DismissRequestType
@@ -232,7 +233,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
             CoroutineScope(dispatcherIO).launch {
                 if (customCenterPosition == null) {
                     val result = Registry.getInstance(instance).getNearbyRoutes(loc, emptySet(), false)
-                    routes = result.result.toStopIndexed(instance).toImmutableList()
+                    routes = result.result.toStopIndexed(instance).asImmutableList()
                     nearbyRoutesResult = result
                 }
             }
@@ -242,7 +243,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
         CoroutineScope(dispatcherIO).launch {
             customCenterPosition?.let {
                 val result = Registry.getInstance(instance).getNearbyRoutes(it, it.radius.toDouble(), emptySet(), false)
-                routes = result.result.toStopIndexed(instance).toImmutableList()
+                routes = result.result.toStopIndexed(instance).asImmutableList()
                 nearbyRoutesResult = result
             }
         }

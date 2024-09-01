@@ -95,6 +95,7 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.getPossibleNextChar
 import com.loohp.hkbuseta.common.utils.ImmutableState
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.AdaptiveTopBottomLayout
@@ -199,7 +200,7 @@ private val searchState: MutableStateFlow<RouteKeyboardState> = MutableStateFlow
 private suspend fun updateSearchState(text: String = searchState.value.text, categories: Set<OperatorCategory> = searchState.value.categories, resultProvider: (suspend (String, Set<OperatorCategory>) -> List<StopIndexedRouteSearchResultEntry>)? = null) {
     val result = resultProvider?.invoke(text, categories)?: searchState.value.routes
     val possibleNextChar = result.getPossibleNextChar(text)
-    searchState.value = RouteKeyboardState(text, possibleNextChar, categories, result.toImmutableList())
+    searchState.value = RouteKeyboardState(text, possibleNextChar, categories, result.asImmutableList())
 }
 
 private val floatingKeyboardState: MutableStateFlow<Offset> = MutableStateFlow(Offset.Zero)
@@ -471,7 +472,7 @@ fun handleInput(instance: AppActiveContext, input: Char) {
     }
     val result = Registry.getInstance(instance).findRoutes(newText, false) { r -> newCategories.containsAll(r.co) }.toStopIndexed(instance)
     val possibleNextChar = result.getPossibleNextChar(newText)
-    searchState.value = RouteKeyboardState(newText, possibleNextChar, newCategories, result.toImmutableList())
+    searchState.value = RouteKeyboardState(newText, possibleNextChar, newCategories, result.asImmutableList())
 }
 
 @Composable

@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.LocationDisabled
 import androidx.compose.material.icons.filled.NoTransfer
 import androidx.compose.material.icons.outlined.BrokenImage
+import androidx.compose.material.icons.outlined.DoubleArrow
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.RippleTheme
@@ -240,6 +241,7 @@ actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = re
 actual inline val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get() = rememberSystemImagePainter("dollarsign.arrow.circlepath")
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberSystemImagePainter("trash")
 actual inline val PlatformIcons.Outlined.DeleteForever: Painter @Composable get() = rememberSystemImagePainter("trash")
+actual inline val PlatformIcons.Outlined.DoubleArrow: Painter @Composable get() = rememberSystemImagePainter("chevron.right.2")
 actual inline val PlatformIcons.Outlined.Download: Painter @Composable get() = rememberSystemImagePainter("arrow.down.to.line")
 actual inline val PlatformIcons.Outlined.Edit: Painter @Composable get() = rememberSystemImagePainter("pencil")
 actual inline val PlatformIcons.Outlined.EmojiFlags: Painter @Composable get() = rememberSystemImagePainter("flag")

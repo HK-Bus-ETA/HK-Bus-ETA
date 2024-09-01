@@ -29,12 +29,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atDate
+import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
@@ -152,3 +154,5 @@ fun LocalTime.isBetweenInclusive(start: LocalTime, end: LocalTime): Boolean {
         else -> this > start || this < end
     }
 }
+
+inline val DayOfWeek.sundayZeroDayNumber get() = isoDayNumber % 7

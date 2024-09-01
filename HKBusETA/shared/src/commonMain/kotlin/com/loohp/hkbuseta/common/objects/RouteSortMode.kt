@@ -20,13 +20,24 @@
  */
 package com.loohp.hkbuseta.common.objects
 
-enum class RouteSortMode(val title: BilingualText) {
+enum class RouteSortMode(
+    val title: BilingualText,
+    val extendedTitle: BilingualText = title
+) {
 
-    NORMAL("正常" withEn "Normal"),
-    RECENT("喜歡/最近瀏覽" withEn "Fav/Recent"),
-    PROXIMITY("巴士站距離" withEn "Proximity");
+    NORMAL(
+        title = "正常" withEn "Normal"
+    ),
+    RECENT(
+        title = "常用" withEn "Fav/Recent",
+        extendedTitle = "喜歡/最近瀏覽" withEn "Fav/Recent"
+    ),
+    PROXIMITY(
+        title = "距離" withEn "Proximity",
+        extendedTitle = "巴士站距離" withEn "Proximity"
+    );
 
-    val sortPrefixedTitle: BilingualText = ("排序: " withEn "Sort: ") + title
+    val sortPrefixedTitle: BilingualText = ("排序: " withEn "Sort: ") + extendedTitle
 
     fun nextMode(allowRecentSort: Boolean, allowProximitySort: Boolean): RouteSortMode {
         val next = entries[(ordinal + 1) % entries.size]

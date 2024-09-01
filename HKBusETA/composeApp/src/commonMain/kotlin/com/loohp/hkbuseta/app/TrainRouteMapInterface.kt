@@ -158,6 +158,9 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.asImmutableMap
+import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.editDistance
@@ -221,7 +224,6 @@ import com.loohp.hkbuseta.utils.withAlpha
 import hkbuseta.composeapp.generated.resources.Res
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -427,7 +429,7 @@ fun RouteMapSearchInterface(instance: AppActiveContext, visible: Boolean, signal
                     when (it) {
                         0 -> MTRRouteMapInterface(instance, location)
                         1 -> LRTRouteMapInterface(instance, location)
-                        2 -> NoticeInterface(instance, notices?.toImmutableList(), false)
+                        2 -> NoticeInterface(instance, notices?.asImmutableList(), false)
                         else -> PlatformText(trainRouteMapItems[it].title[Shared.language])
                     }
                 }
@@ -768,7 +770,7 @@ fun MTRETADisplayInterface(
             return@findRoutes stops.contains(stopId)
         }
             .groupBy { it.route!!.routeNumber }
-            .map { (k, v) -> Triple(Operator.MTR.getDisplayRouteNumber(k, false), Operator.MTR.getLineColor(k, Color.White), v.toImmutableList()) }
+            .map { (k, v) -> Triple(Operator.MTR.getDisplayRouteNumber(k, false), Operator.MTR.getLineColor(k, Color.White), v.asImmutableList()) }
     }
     LaunchedEffect (routes) {
         for (route in routes.asSequence().flatMap { it.third }) {
@@ -1027,7 +1029,7 @@ fun MTRRouteMapETAInterface(
                         ) {
                             TrainETADisplay(
                                 modifier = Modifier,
-                                lines = (1..4).map { eta[it] }.toImmutableList(),
+                                lines = (1..4).map { eta[it] }.asImmutableList(),
                                 time = eta.time,
                                 etaDisplayMode = Shared.etaDisplayMode,
                                 stopId = stopId,
@@ -1296,7 +1298,7 @@ fun MTRRouteMapInfoSheetInterface(
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(platformPrimaryContainerColor)
                                     .padding(3.dp),
-                                fareTable = fareTable[null]!!.toImmutableMap()
+                                fareTable = fareTable[null]!!.asImmutableMap()
                             )
                         } else {
                             for ((viaStopId, optionFareTable) in fareTable) {
@@ -1315,7 +1317,7 @@ fun MTRRouteMapInfoSheetInterface(
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(Operator.MTR.getLineColor("AEL", Color.White).withAlpha(100))
                                         .padding(3.dp),
-                                    fareTable = optionFareTable.toImmutableMap()
+                                    fareTable = optionFareTable.asImmutableMap()
                                 )
                             }
                         }
@@ -1409,7 +1411,7 @@ fun MTRRouteMapInfoSheetInterface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 30.dp),
-                            path = it.path.toImmutableList(),
+                            path = it.path.asImmutableList(),
                             operator = Operator.MTR,
                             instance = instance
                         )
@@ -1471,7 +1473,7 @@ fun MTRRouteMapInfoSheetInterface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 30.dp),
-                            path = it.path.toImmutableList(),
+                            path = it.path.asImmutableList(),
                             operator = Operator.MTR,
                             instance = instance
                         )
@@ -1992,7 +1994,7 @@ fun LRTETADisplayByPlatformInterface(
                 ) {
                     TrainETADisplay(
                         modifier = Modifier,
-                        lines = platformSorted[i]!!.toImmutableList(),
+                        lines = platformSorted[i]!!.asImmutableList(),
                         time = etaState?.time?: currentTimeMillis(),
                         etaDisplayMode = Shared.etaDisplayMode,
                         stopId = stopId,
@@ -2130,7 +2132,7 @@ fun LRTETADisplayByRouteInterface(
                 ) {
                     TrainETADisplay(
                         modifier = Modifier,
-                        lines = routeSorted[routeNumber]!!.toImmutableList(),
+                        lines = routeSorted[routeNumber]!!.asImmutableList(),
                         time = etaState?.time?: currentTimeMillis(),
                         etaDisplayMode = Shared.etaDisplayMode,
                         stopId = stopId,
@@ -2305,7 +2307,7 @@ fun LRTETADisplayInfoSheetInterface(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(platformPrimaryContainerColor)
                                 .padding(3.dp),
-                            fareTable = fareTable.toImmutableMap()
+                            fareTable = fareTable.asImmutableMap()
                         )
                         PlatformText(
                             modifier = Modifier.padding(horizontal = 20.dp),
@@ -2397,7 +2399,7 @@ fun LRTETADisplayInfoSheetInterface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 30.dp),
-                            path = it.path.toImmutableList(),
+                            path = it.path.asImmutableList(),
                             operator = Operator.LRT,
                             instance = instance
                         )
@@ -2459,7 +2461,7 @@ fun LRTETADisplayInfoSheetInterface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 30.dp),
-                            path = it.path.toImmutableList(),
+                            path = it.path.asImmutableList(),
                             operator = Operator.LRT,
                             instance = instance
                         )
@@ -2550,7 +2552,7 @@ fun TrainFareTableDisplay(
 ) {
     var columnHeight by remember { mutableIntStateOf(100) }
     val columns by remember(fareTable) { derivedStateOf {
-        buildList {
+        buildImmutableList {
             add(DataColumn(
                 width = TableColumnWidth.Min(TableColumnWidth.MaxIntrinsic, TableColumnWidth.Fraction(0.5F)),
                 alignment = Alignment.Start
@@ -2596,7 +2598,7 @@ fun TrainFareTableDisplay(
                     text = TicketCategory.SINGLE.displayName[Shared.language]
                 )
             })
-        }.toImmutableList()
+        }
     } }
     var rowHeight by remember { mutableIntStateOf(100) }
 
@@ -2672,7 +2674,7 @@ fun TrainETADisplay(
     val hasRemark by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.remark.isNotEmpty() } } }
 
     val columns by remember(resolvedText) { derivedStateOf {
-        buildList {
+        buildImmutableList {
             if (hasPlatform) add(DataColumn(
                 width = TableColumnWidth.Wrap
             ) {})
@@ -2699,7 +2701,7 @@ fun TrainETADisplay(
             if (hasRemark) add(DataColumn(
                 width = TableColumnWidth.Flex(1F)
             ) {})
-        }.toImmutableList()
+        }
     } }
 
     DataTable(

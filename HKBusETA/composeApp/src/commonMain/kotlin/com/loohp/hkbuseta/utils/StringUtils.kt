@@ -61,6 +61,7 @@ import com.loohp.hkbuseta.common.utils.InlineImage
 import com.loohp.hkbuseta.common.utils.InlineImageStyle
 import com.loohp.hkbuseta.common.utils.SmallContentStyle
 import com.loohp.hkbuseta.common.utils.URLContentStyle
+import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.compose.PlatformText
 import kotlinx.collections.immutable.ImmutableCollection
 import kotlinx.collections.immutable.ImmutableMap
@@ -178,12 +179,12 @@ fun FormattedText.asContentAnnotatedString(isDarkTheme: Boolean, spanStyle: Span
 fun ImmutableCollection<String>.renderedSizes(fontSize: TextUnit, maxLines: Int = 1, spanStyle: SpanStyle? = null): State<ImmutableMap<String, IntSize?>> {
     val result: MutableState<ImmutableMap<String, IntSize?>> = remember { mutableStateOf(persistentMapOf()) }
     LaunchedEffect (this) {
-        result.value = result.value.toMutableMap().apply { keys.retainAll(this@renderedSizes) }.toImmutableMap()
+        result.value = result.value.toMutableMap().apply { keys.retainAll(this@renderedSizes) }.asImmutableMap()
     }
     for (string in this) {
         val stringResult by string.renderedSize(fontSize, maxLines, spanStyle)
         LaunchedEffect (string, stringResult) {
-            result.value = result.value.toMutableMap().apply { this[string] = stringResult }.toImmutableMap()
+            result.value = result.value.toMutableMap().apply { this[string] = stringResult }.asImmutableMap()
         }
     }
     return result
@@ -193,12 +194,12 @@ fun ImmutableCollection<String>.renderedSizes(fontSize: TextUnit, maxLines: Int 
 fun ImmutableCollection<AnnotatedString>.renderedSizes(fontSize: TextUnit, maxLines: Int = 1): State<ImmutableMap<AnnotatedString, IntSize?>> {
     val result: MutableState<ImmutableMap<AnnotatedString, IntSize?>> = remember { mutableStateOf(persistentMapOf()) }
     LaunchedEffect (this) {
-        result.value = result.value.toMutableMap().apply { keys.retainAll(this@renderedSizes) }.toImmutableMap()
+        result.value = result.value.toMutableMap().apply { keys.retainAll(this@renderedSizes) }.asImmutableMap()
     }
     for (string in this) {
         val stringResult by string.renderedSize(fontSize, maxLines)
         LaunchedEffect (string, stringResult) {
-            result.value = result.value.toMutableMap().apply { this[string] = stringResult }.toImmutableMap()
+            result.value = result.value.toMutableMap().apply { this[string] = stringResult }.asImmutableMap()
         }
     }
     return result

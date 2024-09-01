@@ -59,9 +59,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -107,20 +109,25 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
+import com.loohp.hkbuseta.common.objects.GeneralDirection
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSortMode
+import com.loohp.hkbuseta.common.objects.RouteSortPreference
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
 import com.loohp.hkbuseta.common.objects.bySortModes
+import com.loohp.hkbuseta.common.objects.displayName
+import com.loohp.hkbuseta.common.objects.extendedDisplayName
 import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.getDisplayFormattedName
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getFare
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
@@ -133,6 +140,9 @@ import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.Colored
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.ImmutableState
+import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.asImmutableMap
+import com.loohp.hkbuseta.common.utils.asImmutableSet
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
@@ -140,7 +150,9 @@ import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.transformColors
 import com.loohp.hkbuseta.compose.ArrowUpward
+import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.Close
+import com.loohp.hkbuseta.compose.DoubleArrow
 import com.loohp.hkbuseta.compose.LineEndCircle
 import com.loohp.hkbuseta.compose.NoTransfer
 import com.loohp.hkbuseta.compose.PlatformButton
@@ -161,6 +173,7 @@ import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.compose.platformComponentBackgroundColor
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
 import com.loohp.hkbuseta.compose.platformLargeShape
+import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformTopBarColor
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
@@ -173,12 +186,15 @@ import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clearColors
+import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.renderedSize
+import com.loohp.hkbuseta.utils.routeSortPreferenceStateSaver
 import io.ktor.util.collections.ConcurrentMap
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -223,20 +239,39 @@ fun ListRoutesInterface(
     extraActions: (@Composable RowScope.() -> Unit)? = null,
     reorderable: (suspend CoroutineScope.(LazyListItemInfo, LazyListItemInfo) -> Unit)? = null
 ) {
-    val activeSortModeProvider by remember(listType, recentSort, proximitySortOrigin) { derivedStateOf { {
+    val routeSortPreferenceProvider by remember(listType, recentSort, proximitySortOrigin) { derivedStateOf { {
         if (recentSort.forcedMode) {
-            recentSort.defaultSortMode
+            RouteSortPreference(recentSort.defaultSortMode, false)
         } else {
-            Shared.routeSortModePreference[listType]?.let { if (it.isLegalMode(
+            val preference = Shared.routeSortModePreference[listType]
+            val routeSortMode = preference?.routeSortMode?.let { if (it.isLegalMode(
                     allowRecentSort = recentSort == RecentSortMode.CHOICE,
                     allowProximitySort = proximitySortOrigin != null
                 )) it else null }?: RouteSortMode.NORMAL
+            val filterTimetableActive = preference?.filterTimetableActive == true
+            RouteSortPreference(routeSortMode, filterTimetableActive)
         }
     } } }
-    val activeSortModeState = rememberSaveable { mutableStateOf(activeSortModeProvider.invoke()) }
+    val activeSortModeState = rememberSaveable(saver = routeSortPreferenceStateSaver) { mutableStateOf(routeSortPreferenceProvider.invoke()) }
 
-    LaunchedEffect (visible, activeSortModeProvider) {
-        activeSortModeState.value = activeSortModeProvider.invoke()
+    var routeGroupedByDirections: Map<GeneralDirection, List<StopIndexedRouteSearchResultEntry>> by remember { mutableStateOf(emptyMap()) }
+    val filterDirectionsState: MutableState<GeneralDirection?> = remember { mutableStateOf(null) }
+    val filterDirections by filterDirectionsState
+    val filterRoutes = remember(routes, routeGroupedByDirections, filterDirections) {
+        if (routeGroupedByDirections.isEmpty() || filterDirections == null) {
+            routes
+        } else {
+            routeGroupedByDirections[filterDirections]?.asImmutableList()?: persistentListOf()
+        }
+    }
+
+    LaunchedEffect (routes) {
+        CoroutineScope(dispatcherIO).launch {
+            routeGroupedByDirections = routes.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
+        }
+    }
+    LaunchedEffect (visible, routeSortPreferenceProvider) {
+        activeSortModeState.value = routeSortPreferenceProvider.invoke()
     }
 
     Scaffold(
@@ -244,9 +279,11 @@ fun ListRoutesInterface(
         topBar = {
             ListRouteTopBar(
                 instance = instance,
-                routesEmpty = routes.isEmpty(),
+                routesEmpty = filterRoutes.isEmpty(),
                 listType = listType,
                 recentSort = recentSort,
+                filterDirectionsState = filterDirectionsState,
+                availableDirections = routeGroupedByDirections.keys.asImmutableSet(),
                 proximitySortOrigin = proximitySortOrigin,
                 extraActions = extraActions,
                 activeSortModeState = activeSortModeState
@@ -266,7 +303,7 @@ fun ListRoutesInterface(
                 } else {
                     ListRouteInterfaceInternal(
                         instance = instance,
-                        routes = routes,
+                        routes = filterRoutes,
                         listType = listType,
                         showEta = showEta,
                         recentSort = recentSort,
@@ -274,7 +311,8 @@ fun ListRoutesInterface(
                         maintainScrollPosition = maintainScrollPosition,
                         bottomExtraSpace = bottomExtraSpace,
                         reorderable = reorderable,
-                        activeSortModeState = activeSortModeState
+                        activeSortModeState = activeSortModeState,
+                        filterDirectionsState = filterDirectionsState
                     )
                 }
             }
@@ -283,17 +321,21 @@ fun ListRoutesInterface(
 
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListRouteTopBar(
     instance: AppActiveContext,
     routesEmpty: Boolean,
     listType: RouteListType,
     recentSort: RecentSortMode,
+    filterDirectionsState: MutableState<GeneralDirection?>,
+    availableDirections: ImmutableSet<GeneralDirection>,
     proximitySortOrigin: Coordinates?,
     extraActions: (@Composable RowScope.() -> Unit)? = null,
-    activeSortModeState: MutableState<RouteSortMode>
+    activeSortModeState: MutableState<RouteSortPreference>
 ) {
     var activeSortMode by activeSortModeState
+    var filterDirections by filterDirectionsState
     val scope = rememberCoroutineScope()
     Box (
         modifier = Modifier.fillMaxWidth()
@@ -310,6 +352,7 @@ fun ListRouteTopBar(
             )
         ) {
             var expandSortModeDropdown by remember { mutableStateOf(false) }
+            var expandFilterDirectionDropdown by remember { mutableStateOf(false) }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -317,19 +360,85 @@ fun ListRouteTopBar(
                     .background(platformTopBarColor),
                 contentAlignment = Alignment.CenterEnd
             ) {
-                var size by remember { mutableStateOf(IntSize(0, 10)) }
-                extraActions?.let {
+                var sortModeButtonSize by remember { mutableStateOf(IntSize(0, 10)) }
+                var filterDirectionButtonSize by remember { mutableStateOf(IntSize(0, 10)) }
+                if (extraActions != null || availableDirections.isNotEmpty()) {
                     Row(
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .height(size.height.equivalentDp)
+                            .height(filterDirectionButtonSize.height.equivalentDp)
                     ) {
-                        it.invoke(this)
-                        Spacer(modifier = Modifier.width(size.width.equivalentDp))
+                        extraActions?.invoke(this)
+                        if (availableDirections.isNotEmpty()) {
+                            Box {
+                                PlatformButton(
+                                    modifier = Modifier
+                                        .plainTooltip(if (Shared.language == "en") "Filter by Direction" else "按方向過濾")
+                                        .onSizeChanged { filterDirectionButtonSize = it },
+                                    onClick = { expandFilterDirectionDropdown = true },
+                                    contentPadding = PaddingValues(10.dp),
+                                    shape = platformLargeShape,
+                                    colors = ButtonDefaults.textButtonColors(),
+                                    content = {
+                                        PlatformIcon(
+                                            modifier = Modifier.size(23.dp),
+                                            painter = PlatformIcons.Outlined.DoubleArrow,
+                                            contentDescription = filterDirections.displayName[Shared.language]
+                                        )
+                                        PlatformText(
+                                            fontSize = 20.sp,
+                                            maxLines = 1,
+                                            text = filterDirections.displayName[Shared.language]
+                                        )
+                                    }
+                                )
+                                Box {
+                                    Spacer(modifier = Modifier.size(filterDirectionButtonSize.height.equivalentDp))
+                                    PlatformDropdownMenu(
+                                        expanded = expandFilterDirectionDropdown,
+                                        onDismissRequest = { expandFilterDirectionDropdown = false }
+                                    ) {
+                                        PlatformText(
+                                            modifier = Modifier.padding(horizontal = 10.dp),
+                                            fontSize = 17.sp,
+                                            color = platformLocalContentColor.adjustAlpha(0.5F),
+                                            text = if (Shared.language == "en") "Filter by Direction" else "按方向過濾"
+                                        )
+                                        HorizontalDivider(modifier = Modifier.padding(horizontal = 7.dp))
+                                        for (direction in setOf(null) + availableDirections) {
+                                            PlatformDropdownMenuItem(
+                                                onClick = {
+                                                    expandFilterDirectionDropdown = false
+                                                    filterDirections = direction
+                                                },
+                                                text = {
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(5.sp.dp, Alignment.Start),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        RadioButton(
+                                                            selected = direction == filterDirections,
+                                                            onClick = null
+                                                        )
+                                                        PlatformText(
+                                                            fontSize = 20.sp,
+                                                            text = direction.extendedDisplayName[Shared.language]
+                                                        )
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(sortModeButtonSize.width.equivalentDp))
                     }
                 }
                 PlatformButton(
-                    modifier = Modifier.onSizeChanged { size = it },
+                    modifier = Modifier
+                        .plainTooltip(if (Shared.language == "en") "Sorting" else "排序")
+                        .onSizeChanged { sortModeButtonSize = it },
                     onClick = { expandSortModeDropdown = true },
                     contentPadding = PaddingValues(10.dp),
                     shape = platformLargeShape,
@@ -339,28 +448,35 @@ fun ListRouteTopBar(
                         PlatformIcon(
                             modifier = Modifier.size(23.dp),
                             painter = PlatformIcons.AutoMirrored.Filled.Sort,
-                            contentDescription = activeSortMode.sortPrefixedTitle[Shared.language]
+                            contentDescription = activeSortMode.routeSortMode.sortPrefixedTitle[Shared.language]
                         )
                         PlatformText(
                             fontSize = 20.sp,
                             maxLines = 1,
-                            text = activeSortMode.sortPrefixedTitle[Shared.language]
+                            text = activeSortMode.routeSortMode.title[Shared.language]
                         )
                     }
                 )
                 Box {
-                    Spacer(modifier = Modifier.size(size.height.equivalentDp))
+                    Spacer(modifier = Modifier.size(sortModeButtonSize.height.equivalentDp))
                     PlatformDropdownMenu(
                         expanded = expandSortModeDropdown,
                         onDismissRequest = { expandSortModeDropdown = false }
                     ) {
+                        PlatformText(
+                            modifier = Modifier.padding(horizontal = 10.dp),
+                            fontSize = 17.sp,
+                            color = platformLocalContentColor.adjustAlpha(0.5F),
+                            text = if (Shared.language == "en") "Sorting" else "排序"
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 7.dp))
                         for (mode in RouteSortMode.entries) {
                             if (mode.isLegalMode(recentSort == RecentSortMode.CHOICE, proximitySortOrigin != null)) {
                                 PlatformDropdownMenuItem(
                                     onClick = {
                                         expandSortModeDropdown = false
                                         scope.launch {
-                                            activeSortMode = mode
+                                            activeSortMode = activeSortMode.copy(routeSortMode = mode)
                                             Shared.routeSortModePreference[listType].let {
                                                 if (activeSortMode != it) {
                                                     Registry.getInstance(instance).setRouteSortModePreference(instance, listType, mode)
@@ -369,14 +485,51 @@ fun ListRouteTopBar(
                                         }
                                     },
                                     text = {
-                                        PlatformText(
-                                            fontSize = 20.sp,
-                                            text = mode.title[Shared.language]
-                                        )
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(5.sp.dp, Alignment.Start),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = activeSortMode.routeSortMode == mode,
+                                                onClick = null
+                                            )
+                                            PlatformText(
+                                                fontSize = 20.sp,
+                                                text = mode.extendedTitle[Shared.language]
+                                            )
+                                        }
                                     }
                                 )
                             }
                         }
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 7.dp))
+                        PlatformDropdownMenuItem(
+                            onClick = {
+                                scope.launch {
+                                    activeSortMode = activeSortMode.copy(filterTimetableActive = !activeSortMode.filterTimetableActive)
+                                    Shared.routeSortModePreference[listType].let {
+                                        if (activeSortMode != it) {
+                                            Registry.getInstance(instance).setRouteSortModePreference(instance, listType, activeSortMode)
+                                        }
+                                    }
+                                }
+                            },
+                            text = {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(5.sp.dp, Alignment.Start),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = activeSortMode.filterTimetableActive,
+                                        onCheckedChange = null
+                                    )
+                                    PlatformText(
+                                        fontSize = 20.sp,
+                                        text = if (Shared.language == "en") "Prioritize In Service" else "現正服務優先"
+                                    )
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -481,7 +634,8 @@ fun ListRouteInterfaceInternal(
     maintainScrollPosition: Boolean,
     bottomExtraSpace: Dp,
     reorderable: (suspend CoroutineScope.(LazyListItemInfo, LazyListItemInfo) -> Unit)?,
-    activeSortModeState: MutableState<RouteSortMode>
+    activeSortModeState: MutableState<RouteSortPreference>,
+    filterDirectionsState: MutableState<GeneralDirection?>
 ) {
     val haptics = LocalHapticFeedback.current
     val initialScrollPosition = remember { scrollPositions[listType]?.takeIf { it.routes == routes } }
@@ -493,9 +647,10 @@ fun ListRouteInterfaceInternal(
     val lastLookupRoutes by if (listType == RouteListType.RECENT) Shared.lastLookupRoutes.collectAsStateMultiplatform() else remember { mutableStateOf(emptyList()) }
     val reorderableState = rememberReorderableLazyListState(scroll, onMove = reorderable?: { _, _ -> })
 
+    val filterDirections by filterDirectionsState
     val activeSortMode by activeSortModeState
-    val sortedByMode by remember(routes, lastLookupRoutes, listType, proximitySortOrigin) { derivedStateOf { routes.bySortModes(instance, recentSort, listType != RouteListType.RECENT, proximitySortOrigin).toImmutableMap() } }
-    val sortedResults by remember(sortedByMode, activeSortMode) { derivedStateOf { sortedByMode[activeSortMode]?: routes } }
+    val sortedByMode by remember(routes, lastLookupRoutes, listType, proximitySortOrigin) { derivedStateOf { routes.bySortModes(instance, recentSort, listType != RouteListType.RECENT, activeSortMode.filterTimetableActive, proximitySortOrigin).asImmutableMap() } }
+    val sortedResults by remember(sortedByMode, activeSortMode) { derivedStateOf { sortedByMode[activeSortMode.routeSortMode]?: routes } }
     var init by remember { mutableStateOf(false) }
 
     LaunchedEffect (scroll.firstVisibleItemIndex, scroll.firstVisibleItemScrollOffset) {
@@ -522,6 +677,14 @@ fun ListRouteInterfaceInternal(
             scroll.animateScrollToItem(0)
         }
     }
+    ChangedEffect (activeSortMode, filterDirections) {
+        scope.launch {
+            delay(100)
+            if (scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > 0) {
+                scroll.animateScrollToItem(0)
+            }
+        }
+    }
 
     val etaResults: MutableMap<String, Registry.ETAQueryResult> = remember { ConcurrentMap() }
     val etaUpdateTimes: MutableMap<String, Long> = remember { ConcurrentMap() }
@@ -530,7 +693,7 @@ fun ListRouteInterfaceInternal(
     val etaUpdateTimesState = remember { etaUpdateTimes.asImmutableState() }
 
     val routeNumberWidth by if (Shared.language == "en") "249M".renderedSize(30F.sp) else "機場快線".renderedSize(22F.sp)
-    val reorderEnabled by remember(reorderable, activeSortMode) { derivedStateOf { reorderable != null && activeSortMode == RouteSortMode.NORMAL } }
+    val reorderEnabled by remember(reorderable, activeSortMode) { derivedStateOf { reorderable != null && activeSortMode.routeSortMode == RouteSortMode.NORMAL } }
 
     Box(
         modifier = Modifier.fillMaxWidth(),
