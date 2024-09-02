@@ -90,6 +90,7 @@ import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.Add
@@ -215,6 +216,12 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
 
     LaunchedEffect (visible) {
         if (visible) {
+            if (location == null) {
+                val result = getGPSLocation(instance, LocationPriority.FASTER).await()
+                if (result?.isSuccess == true && location == null) {
+                    location = result.location!!
+                }
+            }
             while (true) {
                 val result = getGPSLocation(instance).await()
                 if (result?.isSuccess == true) {
@@ -543,6 +550,12 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
 
     LaunchedEffect (visible) {
         if (visible) {
+            if (location == null) {
+                val result = getGPSLocation(instance, LocationPriority.FASTER).await()
+                if (result?.isSuccess == true && location == null) {
+                    location = result.location!!
+                }
+            }
             while (true) {
                 val result = getGPSLocation(instance).await()
                 if (result?.isSuccess == true) {
