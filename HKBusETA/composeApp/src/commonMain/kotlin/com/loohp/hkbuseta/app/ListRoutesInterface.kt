@@ -66,6 +66,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -90,6 +92,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -173,6 +176,7 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.Schedule
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Sort
+import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.loadingPlaceholder
@@ -232,6 +236,7 @@ data class RouteListScrollPosition(
 
 private val scrollPositions: MutableMap<RouteListType, RouteListScrollPosition> = ConcurrentMutableMap()
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListRoutesInterface(
     instance: AppActiveContext,
@@ -245,7 +250,8 @@ fun ListRoutesInterface(
     maintainScrollPosition: Boolean = true,
     bottomExtraSpace: Dp = 0.dp,
     extraActions: (@Composable RowScope.() -> Unit)? = null,
-    reorderable: (suspend CoroutineScope.(LazyListItemInfo, LazyListItemInfo) -> Unit)? = null
+    reorderable: (suspend CoroutineScope.(LazyListItemInfo, LazyListItemInfo) -> Unit)? = null,
+    onPullToRefresh: (suspend () -> Unit)? = null
 ) {
     val routeSortPreferenceProvider by remember(listType, recentSort, proximitySortOrigin) { derivedStateOf { {
         if (recentSort.forcedMode) {
@@ -273,6 +279,8 @@ fun ListRoutesInterface(
         }
     }
 
+    val pullToRefreshState = if (onPullToRefresh == null) null else rememberPullToRefreshState()
+
     LaunchedEffect (routes) {
         CoroutineScope(dispatcherIO).launch {
             routeGroupedByDirections = routes.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
@@ -298,8 +306,10 @@ fun ListRoutesInterface(
             )
         },
         content = { padding ->
-            Box (
-                modifier = Modifier.padding(padding)
+            Box(
+                modifier = Modifier
+                    .applyIfNotNull(pullToRefreshState) { nestedScroll(it.nestedScrollConnection) }
+                    .padding(padding)
             ) {
                 if (routes.isEmpty()) {
                     EmptyListRouteInterface(
@@ -321,6 +331,19 @@ fun ListRoutesInterface(
                         reorderable = reorderable,
                         activeSortModeState = activeSortModeState,
                         filterDirectionsState = filterDirectionsState
+                    )
+                }
+                if (pullToRefreshState != null) {
+                    if (pullToRefreshState.isRefreshing) {
+                        LaunchedEffect(true) {
+                            onPullToRefresh?.invoke()
+                            pullToRefreshState.endRefresh()
+                        }
+                    }
+                    PullToRefreshContainer(
+                        state = pullToRefreshState,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter),
                     )
                 }
             }
@@ -657,10 +680,16 @@ fun ListRouteInterfaceInternal(
 
     val filterDirections by filterDirectionsState
     val activeSortMode by activeSortModeState
-    val sortedByMode by remember(routes, lastLookupRoutes, listType, proximitySortOrigin) { derivedStateOf { routes.bySortModes(instance, recentSort, listType != RouteListType.RECENT, activeSortMode.filterTimetableActive, proximitySortOrigin).asImmutableMap() } }
+    val sortedByModeProvider = { routes.bySortModes(instance, recentSort, listType != RouteListType.RECENT, activeSortMode.filterTimetableActive, proximitySortOrigin).asImmutableMap() }
+    var sortedByMode by remember { mutableStateOf(sortedByModeProvider.invoke()) }
     val sortedResults by remember(sortedByMode, activeSortMode) { derivedStateOf { sortedByMode[activeSortMode.routeSortMode]?: routes } }
     var init by remember { mutableStateOf(false) }
 
+    LaunchedEffect (routes, lastLookupRoutes, listType, proximitySortOrigin, activeSortMode.filterTimetableActive) {
+        CoroutineScope(dispatcherIO).launch {
+            sortedByMode = sortedByModeProvider.invoke()
+        }
+    }
     LaunchedEffect (scroll.firstVisibleItemIndex, scroll.firstVisibleItemScrollOffset) {
         scrollPositions[listType] = RouteListScrollPosition(
             routes = routes,
@@ -685,12 +714,14 @@ fun ListRouteInterfaceInternal(
             scroll.animateScrollToItem(0)
         }
     }
-    ChangedEffect (activeSortMode, filterDirections) {
+    var previousSortFilter by remember { mutableStateOf(activeSortMode to filterDirections) }
+    ChangedEffect (sortedByMode) {
         scope.launch {
             delay(100)
-            if (scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > 0) {
+            if (previousSortFilter != activeSortMode to filterDirections && (scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > 0)) {
                 scroll.animateScrollToItem(0)
             }
+            previousSortFilter = activeSortMode to filterDirections
         }
     }
 

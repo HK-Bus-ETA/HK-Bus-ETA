@@ -36,8 +36,10 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.atDate
 import kotlinx.datetime.isoDayNumber
 import kotlin.math.min
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 val LocalTime.Companion.MIDNIGHT: LocalTime by lazy { LocalTime(0, 0) }
@@ -237,36 +239,44 @@ fun List<TimetableEntry>.currentEntry(
     time: LocalDateTime,
     singleEntryActivePreWindowMinutes: Int = 60,
     searchPreWindow: IntRange = 0..0,
+    maxResults: Int = Int.MAX_VALUE
 ): List<Int> {
     if (isEmpty()) return emptyList()
     if (all { it is TimetableSpecialEntry }) return listOf(0)
     val singleEntryWindow = singleEntryActivePreWindowMinutes.minutes
-    val result = mutableSetOf<Int>()
+    val now = currentLocalDateTime()
+    val compareMidnight = if (isNightRoute()) nightServiceMidnight else dayServiceMidnight
+    val compareTime = compareMidnight.atDate(now.date).let { if (it > now) it - 1.days else it }
+    val searchStart = time + searchPreWindow.first.minutes
+    val searchEnd = time + searchPreWindow.last.minutes
     val addedBranches = mutableSetOf<Route>()
-    for (padMinute in searchPreWindow) {
-        val checkTime = time + padMinute.minutes
-        forEachIndexed { i, e ->
+    return buildList {
+        for ((i, e) in this@currentEntry.withIndex()) {
             val r = e.route
             if (!addedBranches.contains(r)) {
+                val start: LocalDateTime
+                val end: LocalDateTime
                 when (e) {
                     is TimetableSingleEntry -> {
-                        if (e.time.nextLocalDateTimeAfter(checkTime) - checkTime <= singleEntryWindow) {
-                            result.add(i)
-                            addedBranches.add(r)
+                        e.time.nextLocalDateTimeAfter(compareTime).let {
+                            start = it - singleEntryWindow
+                            end = it
                         }
                     }
                     is TimetableIntervalEntry -> {
-                        if (e.start.nextLocalDateTimeAfter(checkTime) >= e.end.nextLocalDateTimeAfter(checkTime)) {
-                            result.add(i)
-                            addedBranches.add(e.route)
-                        }
+                        start = e.start.nextLocalDateTimeAfter(compareTime)
+                        end = e.end.nextLocalDateTimeAfter(compareTime)
                     }
-                    is TimetableSpecialEntry -> { /* do nothing */ }
+                    is TimetableSpecialEntry -> continue
+                }
+                if (searchEnd >= start && searchStart <= end) {
+                    add(i)
+                    if (size > maxResults) break
+                    addedBranches.add(r)
                 }
             }
         }
     }
-    return result.sorted()
 }
 
 private fun String.parseLocalTime(): LocalTime {
@@ -461,6 +471,23 @@ fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>,
 
 @ReduceDataOmitted
 @ReduceDataPossiblyOmitted
+fun Collection<Route>.isTimetableActive(time: LocalDateTime, context: AppContext): Boolean {
+    val registry = Registry.getInstance(context)
+    return isTimetableActive(time, registry.getServiceDayMap(), registry.getHolidays())
+}
+
+fun Collection<Route>.isTimetableActive(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>): Boolean {
+    if (isEmpty()) throw IllegalArgumentException("Route list is empty")
+    val timetable = createTimetable(serviceDayMap) { null }
+    val compareMidnight = if (timetable.isNightRoute()) nightServiceMidnight else dayServiceMidnight
+    val weekday = time.dayOfWeek(holidays, compareMidnight)
+    val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return false
+    val jt = maxOf { it.journeyTimeCircular?: 0 }
+    return entries.currentEntry(time, 60, (-jt)..60, 1).isNotEmpty()
+}
+
+@ReduceDataOmitted
+@ReduceDataPossiblyOmitted
 fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): List<Route> {
     val registry = Registry.getInstance(context)
     val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() } }) else ({ null })
@@ -473,7 +500,7 @@ fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, serviceDayMa
     val timetable = createTimetable(serviceDayMap, resolveSpecialRemark)
     val compareMidnight = if (timetable.isNightRoute()) nightServiceMidnight else dayServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
-    val entries = timetable.entries.firstOrNull { (k, _) -> k.contains(weekday) }?.value?: return toList()
+    val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return toList()
     val current = entries.currentEntry(time).takeIf { it.isNotEmpty() }?: return toList()
     return entries.asSequence()
         .filterIndexed { i, _ -> current.contains(i) }
@@ -499,7 +526,7 @@ fun Collection<Route>.currentBranchStatus(time: LocalDateTime, serviceDayMap: Ma
     val timetable = createTimetable(serviceDayMap, resolveSpecialRemark)
     val compareMidnight = if (timetable.isNightRoute()) nightServiceMidnight else dayServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
-    val entries = timetable.entries.firstOrNull { (k, _) -> k.contains(weekday) }?.value?: return associateWith { RouteBranchStatus.INACTIVE }
+    val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return associateWith { RouteBranchStatus.INACTIVE }
     if (entries.all { it is TimetableSpecialEntry }) return associateWith { RouteBranchStatus.NO_TIMETABLE }
     val active = entries.currentEntry(time, 10).asSequence().map { entries[it].route }.toSet()
     val leftTerminus = filterToSet { !active.contains(it) && it.journeyTime != null && entries.currentEntry(time, 0, (-it.journeyTimeCircular!!)..0).let { d -> d.any { i -> entries[i].route == it } } }

@@ -211,7 +211,7 @@ fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
     CoroutineScope(dispatcherIO).launch {
         client.locationAvailability.addOnCompleteListener { task ->
             if (task.isSuccessful && task.result.isLocationAvailable) {
-                client.getCurrentLocation(CurrentLocationRequest.Builder().setMaxUpdateAgeMillis(2000).setDurationMillis(60000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), null).addOnCompleteListener { future.complete(
+                client.getCurrentLocation(CurrentLocationRequest.Builder().setMaxUpdateAgeMillis(6000).setDurationMillis(60000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), null).addOnCompleteListener { future.complete(
                     LocationResult.fromTask(it)) }
             } else {
                 val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager

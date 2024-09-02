@@ -1225,23 +1225,48 @@ class Registry {
         val origin: Coordinates
     )
 
-    fun getAllBranchRoutes(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?): List<Route> {
+    @Immutable
+    data class AllBranchRoutesSearchParmameters(
+        val routeNumber: String,
+        val bound: String,
+        val co: Operator,
+        val gmbRegion: GMBRegion?
+    )
+
+    fun getAllBranchRoutesBulk(parameters: List<AllBranchRoutesSearchParmameters>): List<List<Route>> {
         return try {
-            val lists: MutableList<Route> = mutableListOf()
+            val lists: Array<MutableList<Route>> = Array(parameters.size) { mutableListOf() }
             for (route in DATA!!.dataSheet.routeList.values) {
-                if (routeNumber == route.routeNumber && route.co.contains(co)) {
-                    val match = when {
-                        co === Operator.NLB -> bound == route.nlbId
-                        bound.length > 1 && !co.isTrain -> !(route.isCtbIsCircular && route.freq == null) && (co !== Operator.GMB || gmbRegion == route.gmbRegion)
-                        else -> bound == route.bound[co] && (co !== Operator.GMB || gmbRegion == route.gmbRegion)
-                    }
-                    if (match) {
-                        lists.add(route)
+                for (i in parameters.indices) {
+                    val (routeNumber, bound, co, gmbRegion) = parameters[i]
+                    if (routeNumber == route.routeNumber && route.co.contains(co)) {
+                        val match = when {
+                            co === Operator.NLB -> bound == route.nlbId
+                            bound.length > 1 && !co.isTrain -> !(route.isCtbIsCircular && route.freq == null) && (co !== Operator.GMB || gmbRegion == route.gmbRegion)
+                            else -> bound == route.bound[co] && (co !== Operator.GMB || gmbRegion == route.gmbRegion)
+                        }
+                        if (match) {
+                            lists[i].add(route)
+                        }
                     }
                 }
             }
-            lists.sortWith(compareBy<Route> { it.gtfsId.parseIntOr(Int.MAX_VALUE) }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) })
-            lists.distinctBy { it.stops[co] }
+            buildList {
+                for (i in parameters.indices) {
+                    val co = parameters[i].co
+                    val list = lists[i]
+                    list.sortWith(compareBy<Route> { it.gtfsId.parseIntOr(Int.MAX_VALUE) }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) })
+                    add(list.distinctBy { it.stops[co] })
+                }
+            }
+        } catch (e: Throwable) {
+            throw RuntimeException("Error occurred while getting branch routes for ${parameters.size} routes: ${e.message}", e)
+        }
+    }
+
+    fun getAllBranchRoutes(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?): List<Route> {
+        return try {
+            getAllBranchRoutesBulk(listOf(AllBranchRoutesSearchParmameters(routeNumber, bound, co, gmbRegion))).first()
         } catch (e: Throwable) {
             throw RuntimeException("Error occurred while getting branch routes for $routeNumber, $bound, $co, $gmbRegion: ${e.message}", e)
         }
@@ -1832,6 +1857,9 @@ class Registry {
             }
             cachedPrefixes.add(prefix)
         }
+    }
+
+    private suspend fun cacheTimeBetweenStopPrefixHourly(prefix: String) {
         val currentHourly = currentHourlyTimeBetweenStop()
         if (currentHourly != cachedHourly) {
             cachedHourlyPrefixes.clear()
@@ -1861,7 +1889,7 @@ class Registry {
         val isLoading: Boolean = averageInterval >= Int.MAX_VALUE
     }
 
-    fun getTimeBetweenStop(stopIds: List<Pair<String, Boolean>>, startIndex: Int, endIndex: Int): Deferred<TimeBetweenStopResult> {
+    fun getTimeBetweenStop(stopIds: List<Pair<String, Boolean>>, startIndex: Int, endIndex: Int, lookupHourly: Boolean): Deferred<TimeBetweenStopResult> {
         return CoroutineScope(dispatcherIO).async {
             val intervals = buildList(stopIds.size) {
                 for ((index, value) in stopIds.withIndex()) {
@@ -1871,6 +1899,7 @@ class Registry {
                         val prefix = if (stopId.length < 3) stopId else stopId.substring(0, 2)
                         add(CoroutineScope(dispatcherIO).async {
                             cacheTimeBetweenStopPrefix(prefix)
+                            if (lookupHourly) cacheTimeBetweenStopPrefixHourly(prefix)
                             val cacheMap = cachedTimes.getOrPut(stopId) { ConcurrentMutableMap() }
                             val cacheHourlyMap = cachedHourlyTimes.getOrPut(stopId) { ConcurrentMutableMap() }
                             (cacheMap[nextStopId]?: -1.0) to (cacheHourlyMap[nextStopId]?: -1.0)

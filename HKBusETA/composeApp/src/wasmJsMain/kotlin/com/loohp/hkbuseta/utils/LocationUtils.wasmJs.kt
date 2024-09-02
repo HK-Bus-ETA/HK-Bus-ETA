@@ -22,6 +22,7 @@
 package com.loohp.hkbuseta.utils
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import kotlinx.coroutines.CompletableDeferred
@@ -44,7 +45,7 @@ actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGra
     callback.invoke(false)
 }
 
-actual fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
+actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): Deferred<LocationResult?> {
     val defer = CompletableDeferred<LocationResult?>()
     getLocation(
         callback = { lat, lng -> defer.complete(LocationResult.of(lat, lng)) },

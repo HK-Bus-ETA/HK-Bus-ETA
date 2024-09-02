@@ -23,6 +23,7 @@ package com.loohp.hkbuseta.utils
 
 import co.touchlab.stately.collections.ConcurrentMutableList
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
@@ -30,12 +31,16 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import platform.CoreLocation.CLAuthorizationStatus
 import platform.CoreLocation.CLLocation
+import platform.CoreLocation.CLLocationAccuracy
 import platform.CoreLocation.CLLocationManager
 import platform.CoreLocation.CLLocationManagerDelegateProtocol
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
 import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
 import platform.CoreLocation.kCLLocationAccuracyBest
+import platform.CoreLocation.kCLLocationAccuracyBestForNavigation
+import platform.CoreLocation.kCLLocationAccuracyHundredMeters
+import platform.CoreLocation.kCLLocationAccuracyNearestTenMeters
 import platform.Foundation.NSError
 import platform.darwin.NSObject
 
@@ -116,7 +121,7 @@ actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGra
     }
 }
 
-actual fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
+actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): Deferred<LocationResult?> {
     val defer = CompletableDeferred<LocationResult?>()
     checkLocationPermission(appContext, false) {
         if (it) {
@@ -145,7 +150,7 @@ actual fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
                     }
 
                     locationManager.delegate = delegate
-                    locationManager.desiredAccuracy = kCLLocationAccuracyBest
+                    locationManager.desiredAccuracy = priority.toCLLocationAccuracy()
                     locationManager.requestLocation()
                     objectPreferenceStore.add(locationManager)
                     objectPreferenceStore.add(delegate)
@@ -203,4 +208,13 @@ actual fun getGPSLocation(appContext: AppContext, interval: Long, listener: (Loc
 fun CLLocation.toLocationResult(): LocationResult {
     val (lat, lng) = coordinate.useContents { latitude to longitude }
     return LocationResult.of(lat, lng, altitude, course.toFloat())
+}
+
+fun LocationPriority.toCLLocationAccuracy(): CLLocationAccuracy {
+    return when (this) {
+        LocationPriority.FASTEST -> kCLLocationAccuracyHundredMeters
+        LocationPriority.FASTER -> kCLLocationAccuracyNearestTenMeters
+        LocationPriority.ACCURATE -> kCLLocationAccuracyBest
+        LocationPriority.MOST_ACCURATE -> kCLLocationAccuracyBestForNavigation
+    }
 }

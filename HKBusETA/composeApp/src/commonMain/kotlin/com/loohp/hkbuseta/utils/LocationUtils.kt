@@ -22,14 +22,14 @@
 package com.loohp.hkbuseta.utils
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
 import kotlinx.coroutines.Deferred
-
 
 expect fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean = true, callback: (Boolean) -> Unit)
 
 expect fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGranted: Boolean = true, callback: (Boolean) -> Unit)
 
-expect fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?>
+expect fun getGPSLocation(appContext: AppContext, priority: LocationPriority = LocationPriority.ACCURATE): Deferred<LocationResult?>
 
 expect fun getGPSLocation(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit>

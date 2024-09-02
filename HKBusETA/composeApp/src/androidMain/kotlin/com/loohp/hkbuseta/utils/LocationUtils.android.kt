@@ -42,6 +42,7 @@ import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.GPSLocation
+import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import kotlinx.coroutines.CompletableDeferred
@@ -125,7 +126,7 @@ actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGra
     }
 }
 
-actual fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
+actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): Deferred<LocationResult?> {
     val defer = CompletableDeferred<LocationResult?>()
     checkLocationPermission(appContext, false) { permission ->
         if (permission) {
@@ -136,9 +137,9 @@ actual fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
                     if (task.isSuccessful && task.result.isLocationAvailable) {
                         client.getCurrentLocation(
                             CurrentLocationRequest.Builder()
-                                .setMaxUpdateAgeMillis(2000)
+                                .setMaxUpdateAgeMillis(priority.toMaxUpdateAgeMillis())
                                 .setDurationMillis(60000)
-                                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                                .setPriority(priority.toGMSPriority())
                                 .build(),
                             null
                         ).addOnCompleteListener { defer.complete(LocationResult.fromTask(it)) }
@@ -235,4 +236,19 @@ fun LocationResult.Companion.fromTask(task: Task<Location?>): LocationResult {
 
 fun LocationResult.Companion.fromLocationNullable(location: Location?): LocationResult {
     return LocationResult(if (location == null) null else GPSLocation(location.latitude, location.longitude, location.optAltitude, location.optBearing))
+}
+
+fun LocationPriority.toMaxUpdateAgeMillis(): Long {
+    return when (this) {
+        LocationPriority.FASTEST -> 12000
+        LocationPriority.FASTER -> 6000
+        LocationPriority.ACCURATE, LocationPriority.MOST_ACCURATE -> 2000
+    }
+}
+
+fun LocationPriority.toGMSPriority(): Int {
+    return when (this) {
+        LocationPriority.FASTEST, LocationPriority.FASTER -> Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        LocationPriority.ACCURATE, LocationPriority.MOST_ACCURATE -> Priority.PRIORITY_HIGH_ACCURACY
+    }
 }

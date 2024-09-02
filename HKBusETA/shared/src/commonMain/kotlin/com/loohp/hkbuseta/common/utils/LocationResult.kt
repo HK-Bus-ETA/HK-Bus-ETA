@@ -51,3 +51,7 @@ class LocationResult(val location: GPSLocation?) {
     }
 
 }
+
+enum class LocationPriority {
+    FASTEST, FASTER, ACCURATE, MOST_ACCURATE
+}

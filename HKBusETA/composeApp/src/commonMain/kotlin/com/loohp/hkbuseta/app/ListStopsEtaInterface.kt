@@ -410,7 +410,7 @@ fun ListStopsEtaInterface(
     LaunchedEffect (alightReminderService, alightReminderCurrentStop, alightReminderState) {
         alightReminderService?.let { service -> alightReminderCurrentStop?.let { currentStop ->
             alightReminderStopsLeft = service.stopsRemaining
-            alightReminderTimeLeft = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), currentStop.index - 1, service.destinationStopId.index - 1).await().averageInterval
+            alightReminderTimeLeft = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), currentStop.index - 1, service.destinationStopId.index - 1, false).await().averageInterval
         } }
     }
     LaunchedEffect (sheetType) {
@@ -458,7 +458,13 @@ fun ListStopsEtaInterface(
                 times[i] = Registry.TimeBetweenStopResult.LOADING
             }
             for (i in allStops.size downTo timesStartIndex) {
-                times[i] = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), timesStartIndex - 1, i - 1).await()
+                times[i] = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), timesStartIndex - 1, i - 1, false).await()
+            }
+            for (i in allStops.size downTo timesStartIndex) {
+                val time = times[i]
+                if (time != null && time.currentHourlyInterval == null) {
+                    times[i] = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), timesStartIndex - 1, i - 1, true).await()
+                }
             }
         }
     }

@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
@@ -87,6 +88,7 @@ import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
@@ -155,6 +157,8 @@ enum class LocationPermissionState(
 
 }
 
+inline val LocationPermissionState.isAllowed get() = this == LocationPermissionState.ALLOWED
+
 private val defaultCustomPosition: RadiusCenterPosition = RadiusCenterPosition(22.2940359, 114.1680971, 0.3F)
 
 private val locationPermissionState: MutableStateFlow<LocationPermissionState> = MutableStateFlow(LocationPermissionState.PENDING)
@@ -213,8 +217,17 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
             gpsFailed = true
         }
     }
+    LaunchedEffect (permissionState, visible) {
+        if (visible && permissionState.isAllowed) {
+            val result = getGPSLocation(instance, LocationPriority.FASTER).await()
+            if (result?.isSuccess == true && location == null) {
+                location = result.location!!
+                gpsFailed = false
+            }
+        }
+    }
     LaunchedEffect (customCenterPosition, permissionState, visible) {
-        if (visible && permissionState == LocationPermissionState.ALLOWED) {
+        if (visible && permissionState.isAllowed) {
             while (true) {
                 val result = getGPSLocation(instance).await()
                 if (result?.isSuccess == true) {
@@ -287,12 +300,14 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                 text = if (Shared.language == "en") "Location Denied" else "位置權限被拒絕"
                             )
                         }
-                        LocationPermissionState.ALLOWED -> EmptyBackgroundInterface(
-                            instance = instance,
-                            icon = PlatformIcons.Filled.Forest,
-                            text = if (Shared.language == "en") "Unable to read your location" else "無法讀取你的位置",
-                            subText = if (Shared.language == "en") "Please check whether your GPS is enabled" else "請檢查你的定位服務是否已開啟"
-                        )
+                        LocationPermissionState.ALLOWED -> {
+                            EmptyBackgroundInterface(
+                                instance = instance,
+                                icon = PlatformIcons.Filled.Forest,
+                                text = if (Shared.language == "en") "Unable to read your location" else "無法讀取你的位置",
+                                subText = if (Shared.language == "en") "Please check whether your GPS is enabled" else "請檢查你的定位服務是否已開啟"
+                            )
+                        }
                     }
                 } else {
                     EmptyBackgroundInterface(
@@ -432,7 +447,17 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                 }
                             )
                         }
-                    }
+                    },
+                    onPullToRefresh = if (visible && permissionState.isAllowed && customCenterPosition == null) ({
+                        val result = getGPSLocation(instance, LocationPriority.MOST_ACCURATE).await()
+                        if (result?.isSuccess == true) {
+                            location = result.location!!
+                            gpsFailed = false
+                        } else {
+                            gpsFailed = true
+                        }
+                        instance.showToastText(if (Shared.language == "en") "Refreshed your current location" else "你的位置已刷新", ToastDuration.SHORT)
+                    }) else null
                 )
             }
         }
