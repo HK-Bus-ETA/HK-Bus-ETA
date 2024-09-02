@@ -42,6 +42,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 
 
 private val minuteState: MutableStateFlow<LocalDateTime> = MutableStateFlow(currentLocalDateTime())
@@ -107,10 +108,8 @@ fun LocalTime.toLocalDateTime(date: LocalDate = currentLocalDateTime().date): Lo
 }
 
 fun LocalTime.nextLocalDateTimeAfter(after: LocalDateTime): LocalDateTime {
-    val hongKongZone = hongKongTimeZone
-    val today = Clock.System.now().toLocalDateTime(hongKongZone).date
-    val todayAtTime = LocalDateTime(today, this)
-    return if (todayAtTime < after) LocalDateTime(today + DatePeriod(days = 1), this) else todayAtTime
+    val timeAtDate = LocalDateTime(after.date, this)
+    return if (timeAtDate < after) timeAtDate + 1.days else timeAtDate
 }
 
 operator fun LocalDateTime.minus(other: LocalDateTime): Duration {

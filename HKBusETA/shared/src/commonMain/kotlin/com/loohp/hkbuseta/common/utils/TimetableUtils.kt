@@ -244,9 +244,8 @@ fun List<TimetableEntry>.currentEntry(
     if (isEmpty()) return emptyList()
     if (all { it is TimetableSpecialEntry }) return listOf(0)
     val singleEntryWindow = singleEntryActivePreWindowMinutes.minutes
-    val now = currentLocalDateTime()
     val compareMidnight = if (isNightRoute()) nightServiceMidnight else dayServiceMidnight
-    val compareTime = compareMidnight.atDate(now.date).let { if (it > now) it - 1.days else it }
+    val compareTime = compareMidnight.atDate(time.date).let { if (it > time) it - 1.days else it }
     val searchStart = time + searchPreWindow.first.minutes
     val searchEnd = time + searchPreWindow.last.minutes
     val addedBranches = mutableSetOf<Route>()
@@ -265,7 +264,7 @@ fun List<TimetableEntry>.currentEntry(
                     }
                     is TimetableIntervalEntry -> {
                         start = e.start.nextLocalDateTimeAfter(compareTime)
-                        end = e.end.nextLocalDateTimeAfter(compareTime)
+                        end = e.end.nextLocalDateTimeAfter(start)
                     }
                     is TimetableSpecialEntry -> continue
                 }
