@@ -411,7 +411,11 @@ struct hkbusetaApp: App {
                 switch ($0) {
                 case .success(let fileUrl):
                     do {
-                        let _ = fileImportExport.importingFileCallback!(try String(contentsOf: fileUrl))
+                        let started = fileUrl.startAccessingSecurityScopedResource()
+                        if started {
+                            let _ = fileImportExport.importingFileCallback!(try String(contentsOf: fileUrl))
+                            fileUrl.stopAccessingSecurityScopedResource()
+                        }
                     } catch {
                     }
                 default:
