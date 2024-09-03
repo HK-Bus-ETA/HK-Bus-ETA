@@ -381,7 +381,7 @@ class TimetableEntryMapBuilder(
 
     fun build(): Map<OperatingWeekdays, List<TimetableEntry>> {
         if (timetableEntryMap.isEmpty()) {
-            return mapOf(OperatingWeekdays.ALL to listOf(TimetableSpecialEntry(defaultRoute, "只在特定日子提供服務" withEn "Service only on specific days", null)))
+            return mapOf(OperatingWeekdays.ALL to listOf(TimetableSpecialEntry(defaultRoute, "只在特定日子提供服務/沒有時間表資訊" withEn "Service only on specific days / No timetable info", null)))
         }
         val merged: MutableMap<OperatingWeekdays, List<TimetableEntry>> = mutableMapOf()
         var current: Pair<MutableSet<DayOfWeek>, List<TimetableEntry>>? = null

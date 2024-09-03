@@ -715,7 +715,7 @@ fun ListRouteInterfaceInternal(
         }
     }
     var previousSortFilter by remember { mutableStateOf(activeSortMode to filterDirections) }
-    ChangedEffect (sortedByMode) {
+    ChangedEffect (sortedResults) {
         scope.launch {
             delay(100)
             if (previousSortFilter != activeSortMode to filterDirections && (scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > 0)) {

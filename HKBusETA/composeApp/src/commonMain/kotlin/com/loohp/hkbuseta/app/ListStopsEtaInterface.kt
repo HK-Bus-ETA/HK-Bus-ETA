@@ -1437,11 +1437,19 @@ fun StopEntryExpansionEta(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (stopData.fare != null) {
-                    PlatformText(
-                        fontSize = 14.sp,
-                        lineHeight = 1.3F.em,
-                        text = "${if (Shared.language == "en") "Fare: " else "車費: "} $${stopData.fare}"
-                    )
+                    if (co.isFerry) {
+                        PlatformText(
+                            fontSize = 14.sp,
+                            lineHeight = 1.3F.em,
+                            text = "${if (Shared.language == "en") "Fare: " else "票價: "} $${stopData.fare}"
+                        )
+                    } else {
+                        PlatformText(
+                            fontSize = 14.sp,
+                            lineHeight = 1.3F.em,
+                            text = "${if (Shared.language == "en") "Fare: " else "車費: "} $${stopData.fare}"
+                        )
+                    }
                 }
                 if (stopData.holidayFare != null) {
                     PlatformText(
@@ -1457,6 +1465,9 @@ fun StopEntryExpansionEta(
                 }
                 if (alertCheckRoute) {
                     add((if (Shared.language == "en") "Check Actual Route on Bus" else "留意巴士實際路線").asAnnotatedString(SpanStyle(fontWeight = FontWeight.Bold)))
+                }
+                if (co.isFerry) {
+                    add((if (Shared.language == "en") "Check Actual Fare on Ferry" else "檢查渡輪實際票價").asAnnotatedString(SpanStyle(fontWeight = FontWeight.Bold)))
                 }
             } } }
             if (alerts.isNotEmpty()) {

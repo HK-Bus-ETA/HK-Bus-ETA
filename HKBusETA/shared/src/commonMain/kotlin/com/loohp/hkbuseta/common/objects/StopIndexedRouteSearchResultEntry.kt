@@ -137,53 +137,54 @@ fun List<StopIndexedRouteSearchResultEntry>.bySortModes(
             this[RouteSortMode.RECENT] = if (includeFavouritesInRecent) {
                 val favouriteRoutes = Shared.favoriteRouteStops.value.flatMap { it.favouriteRouteStops }
                 val interestedStops = Shared.getAllInterestedStops()
-                sortedWith(compareBy<StopIndexedRouteSearchResultEntry> {
-                    (favouriteRoutes
+                sortedWith(compareBy({
+                    activeRoutes[it] != true
+                }, {
+                    favouriteRoutes
                         .indexOfFirst { f -> it.route similarTo f.route }
                         .takeIf { i -> i >= 0 }
-                        ?: Int.MAX_VALUE)
-                        .let { i -> if (activeRoutes[it] == true) i - 100000 else i }
-                }.thenBy {
-                    (interestedStops
+                        ?: Int.MAX_VALUE
+                }, {
+                    interestedStops
                         .indexOfFirst { s -> it.route!!.stops.values.any { l -> l.contains(s) } }
                         .takeIf { i -> i >= 0 }
-                        ?: Int.MAX_VALUE)
-                        .let { i -> if (activeRoutes[it] == true) i - 100000 else i }
-                }.thenBy {
-                    (Shared.lastLookupRoutes.value
+                        ?: Int.MAX_VALUE
+                }, {
+                    Shared.lastLookupRoutes.value
                         .indexOf { l -> l.routeKey.asRoute(context) similarTo it.route }
                         .takeIf { i -> i >= 0 }
-                        ?: Int.MAX_VALUE)
-                        .let { i -> if (activeRoutes[it] == true) i - 100000 else i }
-                })
+                        ?: Int.MAX_VALUE
+                }))
             } else {
-                sortedBy {
-                    (Shared.lastLookupRoutes.value
+                sortedWith(compareBy({
+                    activeRoutes[it] != true
+                }, {
+                    Shared.lastLookupRoutes.value
                         .indexOf { l -> l.routeKey == it.routeKey }
                         .takeIf { i -> i >= 0 }
-                        ?: Int.MAX_VALUE)
-                        .let { i -> if (activeRoutes[it] == true) i - 100000 else i }
-                }
+                        ?: Int.MAX_VALUE
+                }))
             }
         }
         if (proximitySortOrigin != null) {
             this[RouteSortMode.PROXIMITY] = if (recentSortMode.enabled) {
                 sortedWith(compareBy({
+                    activeRoutes[it] != true
+                }, {
                     val location = it.stopInfo!!.data!!.location
                     proximitySortOrigin.distance(location)
                 }, {
-                    (Shared.lastLookupRoutes.value
+                    Shared.lastLookupRoutes.value
                         .indexOf { l -> l.routeKey == it.routeKey }
                         .takeIf { i -> i >= 0 }
-                        ?: Int.MAX_VALUE)
-                        .let { i -> if (activeRoutes[it] == true) i - 100000 else i }
+                        ?: Int.MAX_VALUE
                 }))
             } else {
                 sortedWith(compareBy({
+                    activeRoutes[it] != true
+                }, {
                     val location = it.stopInfo!!.data!!.location
                     proximitySortOrigin.distance(location)
-                }, {
-                    activeRoutes[it] != true
                 }))
             }
         }
