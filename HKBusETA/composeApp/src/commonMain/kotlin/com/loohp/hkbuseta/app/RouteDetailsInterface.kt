@@ -436,7 +436,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                 .alignByBaseline()
                                 .userMarquee(),
                             overflow = TextOverflow.Ellipsis,
-                            text = route.route!!.resolvedDestWithBranchFormatted(false, selectedBranch.value)[Shared.language].asContentAnnotatedString().annotatedString,
+                            text = route.route!!.resolvedDestWithBranchFormatted(false, selectedBranch.value, selectedStop.intValue, allStops[selectedStop.intValue - 1].stopId, instance)[Shared.language].asContentAnnotatedString().annotatedString,
                             autoResizeTextState = autoResizeFontState,
                             lineHeight = 1.1F.em,
                             maxLines = 2,
@@ -605,7 +605,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                     Box(
                         modifier = Modifier.padding(padding)
                     ) {
-                        ListRoutesInterface(instance, similarRoutes[selectedBranch.value]?: persistentListOf(), RouteListType.NORMAL, false, RecentSortMode.DISABLED, null, true)
+                        ListRoutesInterface(instance, similarRoutes[selectedBranch.value]?: persistentListOf(), false, RouteListType.NORMAL, false, RecentSortMode.DISABLED, null, true)
                     }
                 }
             )

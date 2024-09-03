@@ -319,7 +319,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     contentAlignment = Alignment.TopStart
                 ) {
                     routes[name]?.let { route ->
-                        ListRoutesInterface(instance, route, RouteListType.FAVOURITE, true, RecentSortMode.DISABLED, location?.asOriginData(false), visible, visible, extraActions = editActionButton, reorderable = { from, to ->
+                        ListRoutesInterface(instance, route, true, RouteListType.FAVOURITE, true, RecentSortMode.DISABLED, location?.asOriginData(false), visible, visible, extraActions = editActionButton, reorderable = { from, to ->
                             val groups = Shared.favoriteRouteStops.value.toMutableList()
                             val groupIndex = groups.indexOfName(favouriteRouteStop.name)
                             val newList = groups[groupIndex].let { (name, list) -> FavouriteRouteGroup(name, list.toMutableList().apply { add(to.index, removeAt(from.index)) }) }
@@ -330,7 +330,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                             }
                         })
                     }?: run {
-                        ListRoutesInterface(instance, persistentListOf(), RouteListType.FAVOURITE, true, RecentSortMode.DISABLED, location?.asOriginData(false), false, visible, extraActions = editActionButton)
+                        ListRoutesInterface(instance, persistentListOf(), true, RouteListType.FAVOURITE, true, RecentSortMode.DISABLED, location?.asOriginData(false), false, visible, extraActions = editActionButton)
                     }
                 }
                 if (editingRouteGroup) {
@@ -632,7 +632,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     val (stopId, stop) = data
                     routes[stop]?.let { route ->
                         var deleting by remember { mutableStateOf(false) }
-                        ListRoutesInterface(instance, route, RouteListType.FAVOURITE_STOP, true, RecentSortMode.CHOICE, stop.location.asOriginData(false), visible, visible, extraActions = {
+                        ListRoutesInterface(instance, route, true, RouteListType.FAVOURITE_STOP, true, RecentSortMode.CHOICE, stop.location.asOriginData(false), visible, visible, extraActions = {
                             val haptic = LocalHapticFeedback.current
                             PlatformButton(
                                 modifier = Modifier
@@ -702,7 +702,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                             )
                         }
                     }?: run {
-                        ListRoutesInterface(instance, persistentListOf(), RouteListType.FAVOURITE_STOP, true, RecentSortMode.CHOICE, stop.location.asOriginData(false), false, visible)
+                        ListRoutesInterface(instance, persistentListOf(), true, RouteListType.FAVOURITE_STOP, true, RecentSortMode.CHOICE, stop.location.asOriginData(false), false, visible)
                     }
                 }
             }

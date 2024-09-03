@@ -78,3 +78,5 @@ data class RouteSortPreference(
     }
 
 }
+
+inline val RouteSortPreference.isDefault: Boolean get() = routeSortMode == RouteSortMode.NORMAL && !filterTimetableActive

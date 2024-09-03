@@ -170,7 +170,7 @@ fun RecentInterface(instance: AppActiveContext, visible: Boolean = true) {
             Box(
                 modifier = Modifier.padding(padding)
             ) {
-                ListRoutesInterface(instance, routes, RouteListType.RECENT, false, RecentSortMode.FORCED, null, realVisible, realVisible)
+                ListRoutesInterface(instance, routes, false, RouteListType.RECENT, false, RecentSortMode.FORCED, null, realVisible, realVisible)
             }
         }
     )

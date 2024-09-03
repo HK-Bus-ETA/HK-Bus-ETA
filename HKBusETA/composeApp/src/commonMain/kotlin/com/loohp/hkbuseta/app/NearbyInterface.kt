@@ -369,6 +369,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                 ListRoutesInterface(
                     instance = instance,
                     routes = if (visible) routes else persistentListOf(),
+                    checkSpecialDest = true,
                     listType = RouteListType.NEARBY,
                     showEta = true,
                     recentSort = RecentSortMode.CHOICE,

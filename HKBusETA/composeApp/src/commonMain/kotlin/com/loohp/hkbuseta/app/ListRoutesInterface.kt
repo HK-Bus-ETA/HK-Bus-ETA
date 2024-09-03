@@ -137,6 +137,7 @@ import com.loohp.hkbuseta.common.objects.getFare
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
+import com.loohp.hkbuseta.common.objects.isDefault
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
@@ -241,6 +242,7 @@ private val scrollPositions: MutableMap<RouteListType, RouteListScrollPosition> 
 fun ListRoutesInterface(
     instance: AppActiveContext,
     routes: ImmutableList<StopIndexedRouteSearchResultEntry>,
+    checkSpecialDest: Boolean,
     listType: RouteListType,
     showEta: Boolean,
     recentSort: RecentSortMode,
@@ -322,6 +324,7 @@ fun ListRoutesInterface(
                     ListRouteInterfaceInternal(
                         instance = instance,
                         routes = filterRoutes,
+                        checkSpecialDest = checkSpecialDest,
                         listType = listType,
                         showEta = showEta,
                         recentSort = recentSort,
@@ -658,6 +661,7 @@ fun EmptyListRouteInterface(
 fun ListRouteInterfaceInternal(
     instance: AppActiveContext,
     routes: ImmutableList<StopIndexedRouteSearchResultEntry>,
+    checkSpecialDest: Boolean,
     listType: RouteListType,
     showEta: Boolean,
     recentSort: RecentSortMode,
@@ -732,7 +736,7 @@ fun ListRouteInterfaceInternal(
     val etaUpdateTimesState = remember { etaUpdateTimes.asImmutableState() }
 
     val routeNumberWidth by if (Shared.language == "en") "249M".renderedSize(30F.sp) else "機場快線".renderedSize(22F.sp)
-    val reorderEnabled by remember(reorderable, activeSortMode) { derivedStateOf { reorderable != null && activeSortMode.routeSortMode == RouteSortMode.NORMAL } }
+    val reorderEnabled by remember(reorderable, activeSortMode) { derivedStateOf { reorderable != null && activeSortMode.isDefault } }
 
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -761,13 +765,37 @@ fun ListRouteInterfaceInternal(
                         key = uniqueKey
                     ) { isDragging ->
                         val elevation by animateDpAsState(if (isDragging) 2.dp else 0.dp)
-                        RouteEntry(Modifier.longPressDraggableHandle(
-                            enabled = reorderEnabled,
-                            onDragStarted = { haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
-                        ).shadow(elevation), uniqueKey, listType, width, showEta, deleteFunction, route, etaResultsState, etaUpdateTimesState, instance)
+                        RouteEntry(
+                            modifier = Modifier
+                                .longPressDraggableHandle(
+                                    enabled = reorderEnabled,
+                                    onDragStarted = { haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
+                                )
+                                .shadow(elevation),
+                            key = uniqueKey,
+                            listType = listType,
+                            routeNumberWidth = width,
+                            showEta = showEta,
+                            deleteFunction = deleteFunction,
+                            route = route,
+                            checkSpecialDest = checkSpecialDest,
+                            etaResults = etaResultsState,
+                            etaUpdateTimes = etaUpdateTimesState,
+                            instance = instance)
                     }
                 } else {
-                    RouteEntry(Modifier, uniqueKey, listType, width, showEta, deleteFunction, route, etaResultsState, etaUpdateTimesState, instance)
+                    RouteEntry(
+                        modifier = Modifier,
+                        key = uniqueKey,
+                        listType = listType,
+                        routeNumberWidth = width,
+                        showEta = showEta,
+                        deleteFunction = deleteFunction,
+                        route = route,
+                        checkSpecialDest = checkSpecialDest,
+                        etaResults = etaResultsState,
+                        etaUpdateTimes = etaUpdateTimesState,
+                        instance = instance)
                 }
                 HorizontalDivider(
                     modifier = Modifier.graphicsLayer { translationY = if (index + 1 >= sortedResults.size) 1.dp.toPx() else 0F }
@@ -814,6 +842,7 @@ fun LazyItemScope.RouteEntry(
     showEta: Boolean,
     deleteFunction: (() -> Unit)?,
     route: StopIndexedRouteSearchResultEntry,
+    checkSpecialDest: Boolean,
     etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>,
     etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>,
     instance: AppActiveContext
@@ -839,7 +868,17 @@ fun LazyItemScope.RouteEntry(
                 }
             }
     ) {
-        RouteRow(key, listType, routeNumberWidth, showEta, deleteFunction, route, etaResults, etaUpdateTimes, instance)
+        RouteRow(
+            key = key,
+            listType = listType,
+            routeNumberWidth = routeNumberWidth,
+            showEta = showEta,
+            deleteFunction = deleteFunction,
+            route = route,
+            checkSpecialDest = checkSpecialDest,
+            etaResults = etaResults,
+            etaUpdateTimes = etaUpdateTimes,
+            instance = instance)
     }
 }
 
@@ -852,6 +891,7 @@ fun RouteRow(
     showEta: Boolean,
     deleteFunction: (() -> Unit)?,
     route: StopIndexedRouteSearchResultEntry,
+    checkSpecialDest: Boolean,
     etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>,
     etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>,
     instance: AppActiveContext
@@ -860,7 +900,7 @@ fun RouteRow(
     val kmbCtbJoint = route.route!!.isKmbCtbJoint
     val routeNumber = route.route!!.routeNumber
     val routeNumberDisplay = co.getListDisplayRouteNumber(routeNumber, true)
-    val dest = route.route!!.resolvedDestFormatted(false, *if (Shared.disableBoldDest) emptyArray() else arrayOf(BoldStyle))[Shared.language].asContentAnnotatedString().annotatedString
+    val dest = route.resolvedDestFormatted(false, instance, *if (Shared.disableBoldDest) emptyArray() else arrayOf(BoldStyle))[Shared.language].asContentAnnotatedString().annotatedString
     var hasSpecialDest by remember { mutableStateOf(false) }
     val gmbRegion = route.route!!.gmbRegion
     val secondLineCoColor = co.getColor(routeNumber, Color.White).adjustBrightness(if (Shared.theme.isDarkMode) 1F else 0.7F)
@@ -889,8 +929,10 @@ fun RouteRow(
     } }
 
     LaunchedEffect (route) {
-        CoroutineScope(dispatcherIO).launch {
-            hasSpecialDest = route.route!!.shouldAlertSpecialDest(instance)
+        if (checkSpecialDest) {
+            CoroutineScope(dispatcherIO).launch {
+                hasSpecialDest = route.route!!.shouldAlertSpecialDest(instance)
+            }
         }
     }
 

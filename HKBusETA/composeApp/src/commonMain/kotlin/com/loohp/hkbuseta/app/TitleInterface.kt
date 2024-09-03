@@ -304,7 +304,7 @@ fun TitleInterface(instance: AppActiveContext) {
                         modifier = Modifier.padding(padding)
                     ) {
                         @Suppress("UNCHECKED_CAST")
-                        ListRoutesInterface(instance, (routes as List<RouteSearchResultEntry>).toStopIndexed(instance).asImmutableList(), RouteListType.NORMAL, false, RecentSortMode.DISABLED, null)
+                        ListRoutesInterface(instance, (routes as List<RouteSearchResultEntry>).toStopIndexed(instance).asImmutableList(), false, RouteListType.NORMAL, false, RecentSortMode.DISABLED, null)
                     }
                 }
             )

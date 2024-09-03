@@ -41,6 +41,7 @@ import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.differenceSequence
 import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.getRouteProportions
+import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.common.utils.mergeSequences
 import com.loohp.hkbuseta.common.utils.outOfOrderSequence
 import com.loohp.hkbuseta.common.utils.parseIntOr
@@ -290,12 +291,74 @@ fun Route.resolvedDestFormatted(prependTo: Boolean, vararg style: FormattingText
     return lrtCircular?.asFormattedText(*style)?: dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) }
 }
 
+fun StopIndexedRouteSearchResultEntry.resolvedDest(prependTo: Boolean, context: AppContext): BilingualText {
+    return if (stopInfo == null || co !== Operator.KMB || !route!!.isCircular) {
+        route!!.resolvedDest(prependTo)
+    } else {
+        val circularMiddle = route!!.dest.zh.remove("(循環線)")
+        val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
+        val middleIndex = stops.indexOfFirst { it.stop.name.zh.contains(circularMiddle) }
+        if (stops.indexesOf { it.stopId == stopInfo!!.stopId }.minBy { (it - stopInfoIndex).absoluteValue } >= middleIndex) {
+            stops.last().stop.name.let { if (prependTo) it.prependTo() else it } + ("(循環線)" withEn "(Circular)")
+        } else {
+            route!!.resolvedDest(prependTo)
+        }
+    }
+}
+
+fun StopIndexedRouteSearchResultEntry.resolvedDestFormatted(prependTo: Boolean, context: AppContext, vararg style: FormattingTextContentStyle): BilingualFormattedText {
+    return if (stopInfo == null || co !== Operator.KMB || !route!!.isCircular) {
+        route!!.resolvedDestFormatted(prependTo, *style)
+    } else {
+        val circularMiddle = route!!.dest.zh.remove("(循環線)")
+        val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
+        val middleIndex = stops.indexOfFirst { it.stop.name.zh.contains(circularMiddle) }
+        if (stops.indexesOf { it.stopId == stopInfo!!.stopId }.minBy { (it - stopInfoIndex).absoluteValue } >= middleIndex) {
+            stops.last().stop.name.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + ("(循環線)" withEn "(Circular)").asFormattedText(*style)
+        } else {
+            route!!.resolvedDestFormatted(prependTo, *style)
+        }
+    }
+}
+
 fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route): BilingualText {
     return lrtCircular?: branch.dest.let { if (prependTo) it.prependTo() else it }
 }
 
 fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, vararg style: FormattingTextContentStyle): BilingualFormattedText {
     return lrtCircular?.asFormattedText(*style)?: branch.dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) }
+}
+
+fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop: Int, selectedStopId: String, context: AppContext): BilingualText {
+    val co = co.firstCo()!!
+    return if (co !== Operator.KMB || !branch.isCircular || !isCircular) {
+        resolvedDestWithBranch(prependTo, branch)
+    } else {
+        val circularMiddle = branch.dest.zh.remove("(循環線)")
+        val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)
+        val middleIndex = stops.indexOfFirst { it.stop.name.zh.contains(circularMiddle) }
+        if (stops.indexesOf { it.stopId == selectedStopId }.minBy { (it - selectedStop).absoluteValue } >= middleIndex) {
+            stops.last().stop.name.let { if (prependTo) it.prependTo() else it } + ("(循環線)" withEn "(Circular)")
+        } else {
+            resolvedDestWithBranch(prependTo, branch)
+        }
+    }
+}
+
+fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, selectedStop: Int, selectedStopId: String, context: AppContext, vararg style: FormattingTextContentStyle): BilingualFormattedText {
+    val co = co.firstCo()!!
+    return if (co !== Operator.KMB || !branch.isCircular || !isCircular) {
+        resolvedDestWithBranchFormatted(prependTo, branch, *style)
+    } else {
+        val circularMiddle = branch.dest.zh.remove("(循環線)")
+        val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)
+        val middleIndex = stops.indexOfFirst { it.stop.name.zh.contains(circularMiddle) }
+        if (stops.indexesOf { it.stopId == selectedStopId }.minBy { (it - selectedStop).absoluteValue } >= middleIndex) {
+            stops.last().stop.name.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + ("(循環線)" withEn "(Circular)").asFormattedText(*style)
+        } else {
+            resolvedDestWithBranchFormatted(prependTo, branch, *style)
+        }
+    }
 }
 
 val Route.isCircular: Boolean get() = dest.zh.contains("循環線")
