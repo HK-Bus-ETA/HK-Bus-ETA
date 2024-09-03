@@ -250,3 +250,13 @@ inline fun <T> Collection<T>.commonElementPercentage(other: Collection<T>): Floa
     if (count == 0) return 0F
     return count / other.size.toFloat()
 }
+
+inline fun <T> Iterable<T>.any(threshold: Int, predicate: (T) -> Boolean): Boolean {
+    if (this is Collection && isEmpty()) return false
+    var count = 0
+    for (element in this) {
+        if (predicate(element)) ++count
+        if (count >= threshold) return true
+    }
+    return false
+}

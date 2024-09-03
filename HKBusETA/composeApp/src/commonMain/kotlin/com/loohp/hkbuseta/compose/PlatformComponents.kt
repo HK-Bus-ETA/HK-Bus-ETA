@@ -98,6 +98,7 @@ expect val PlatformIcons.AutoMirrored.Outlined.Backspace: Painter @Composable ge
 expect val PlatformIcons.AutoMirrored.Outlined.AltRoute: Painter @Composable get
 expect val PlatformIcons.Filled.ArrowDownward: Painter @Composable get
 expect val PlatformIcons.Filled.ArrowUpward: Painter @Composable get
+expect val PlatformIcons.Filled.Bolt: Painter @Composable get
 expect val PlatformIcons.Filled.ChevronLeft: Painter @Composable get
 expect val PlatformIcons.Filled.ChevronRight: Painter @Composable get
 expect val PlatformIcons.Filled.FirstPage: Painter @Composable get
@@ -129,6 +130,7 @@ expect val PlatformIcons.Filled.WrongLocation: Painter @Composable get
 expect val PlatformIcons.Filled.Palette: Painter @Composable get
 expect val PlatformIcons.Outlined.Add: Painter @Composable get
 expect val PlatformIcons.Outlined.Bedtime: Painter @Composable get
+expect val PlatformIcons.Outlined.Bolt: Painter @Composable get
 expect val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get
 expect val PlatformIcons.Outlined.Delete: Painter @Composable get
 expect val PlatformIcons.Outlined.DeleteForever: Painter @Composable get

@@ -94,7 +94,6 @@ import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
 import com.loohp.hkbuseta.compose.rememberAutoResizeFontState
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.utils.DrawableResource
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -221,7 +220,7 @@ fun TitleInterface(instance: AppActiveContext) {
                 selected = selected,
                 onClick = {
                     scope.launch {
-                        if (selected) {
+                        if (selected && !Shared.disableNavBarQuickActions) {
                             item.alreadyOnPageClickAction?.invoke(instance, signal)
                         } else {
                             pagerState.animateScrollToPage(index)

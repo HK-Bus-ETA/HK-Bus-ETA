@@ -128,9 +128,11 @@ import com.loohp.hkbuseta.common.shared.BASE_URL
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.TimetableIntervalEntry
 import com.loohp.hkbuseta.common.utils.TimetableSingleEntry
 import com.loohp.hkbuseta.common.utils.TimetableSpecialEntry
+import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.createTimetable
@@ -344,9 +346,17 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     }
     LaunchedEffect (Unit) {
         if (!launchedWithStop) {
-            val result = getGPSLocation(instance).await()
-            if (result?.isSuccess == true) {
-                location = result.location!!.asOriginData(true)
+            val fastResult = getGPSLocation(instance, LocationPriority.FASTER).await()
+            if (fastResult?.isSuccess == true) {
+                val pos = fastResult.location!!
+                if (allStops.any(2) { it.stop.location.distance(pos) < 0.1 }) {
+                    val result = getGPSLocation(instance).await()
+                    if (result?.isSuccess == true) {
+                        location = result.location!!.asOriginData(true)
+                    }
+                } else {
+                    location = fastResult.location!!.asOriginData(true)
+                }
             }
         }
     }

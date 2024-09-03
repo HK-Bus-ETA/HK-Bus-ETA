@@ -52,7 +52,6 @@ import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.LocationDisabled
 import androidx.compose.material.icons.filled.NoTransfer
 import androidx.compose.material.icons.outlined.BrokenImage
-import androidx.compose.material.icons.outlined.DoubleArrow
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.RippleTheme
@@ -207,6 +206,7 @@ actual inline val PlatformIcons.AutoMirrored.Outlined.Backspace: Painter @Compos
 actual inline val PlatformIcons.AutoMirrored.Outlined.AltRoute: Painter @Composable get() = rememberSystemImagePainter("arrow.triangle.branch")
 actual inline val PlatformIcons.Filled.ArrowDownward: Painter @Composable get() = rememberSystemImagePainter("arrow.down")
 actual inline val PlatformIcons.Filled.ArrowUpward: Painter @Composable get() = rememberSystemImagePainter("arrow.up")
+actual inline val PlatformIcons.Filled.Bolt: Painter @Composable get() = rememberSystemImagePainter("bolt.fill")
 actual inline val PlatformIcons.Filled.ChevronLeft: Painter @Composable get() = rememberSystemImagePainter("chevron.left")
 actual inline val PlatformIcons.Filled.ChevronRight: Painter @Composable get() = rememberSystemImagePainter("chevron.right")
 actual inline val PlatformIcons.Filled.FirstPage: Painter @Composable get() = rememberSystemImagePainter("arrow.left.to.line")
@@ -238,6 +238,7 @@ actual inline val PlatformIcons.Filled.WrongLocation: Painter @Composable get() 
 actual inline val PlatformIcons.Filled.Palette: Painter @Composable get() = rememberSystemImagePainter("paintpalette.fill")
 actual inline val PlatformIcons.Outlined.Add: Painter @Composable get() = rememberSystemImagePainter("plus")
 actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = rememberSystemImagePainter("moon")
+actual inline val PlatformIcons.Outlined.Bolt: Painter @Composable get() = rememberSystemImagePainter("bolt")
 actual inline val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get() = rememberSystemImagePainter("dollarsign.arrow.circlepath")
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberSystemImagePainter("trash")
 actual inline val PlatformIcons.Outlined.DeleteForever: Painter @Composable get() = rememberSystemImagePainter("trash")

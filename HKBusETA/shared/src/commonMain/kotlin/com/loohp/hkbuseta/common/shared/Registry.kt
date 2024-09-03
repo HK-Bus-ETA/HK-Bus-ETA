@@ -387,6 +387,7 @@ class Registry {
         Shared.downloadSplash = PREFERENCES!!.downloadSplash
         Shared.alternateStopNamesShowingState.value = PREFERENCES!!.alternateStopName
         Shared.lastNearbyLocation = PREFERENCES!!.lastNearbyLocation
+        Shared.disableNavBarQuickActions = PREFERENCES!!.disableNavBarQuickActions
         Shared.updateFavoriteStops {
             if (it.value != PREFERENCES!!.favouriteStops) {
                 it.value = PREFERENCES!!.favouriteStops.toImmutableList()
@@ -557,6 +558,12 @@ class Registry {
         savePreferences(context)
     }
 
+    fun setDisableNavBarQuickActions(disableNavBarQuickActions: Boolean, context: AppContext) {
+        Shared.disableNavBarQuickActions = disableNavBarQuickActions
+        PREFERENCES!!.disableNavBarQuickActions = disableNavBarQuickActions
+        savePreferences(context)
+    }
+
     fun setFavouriteStops(favouriteStops: List<String>, context: AppContext) {
         val distinct = favouriteStops.asSequence().distinct().toList().toImmutableList()
         Shared.updateFavoriteStops { it.value = distinct }
@@ -710,6 +717,7 @@ class Registry {
             Shared.disableBoldDest = PREFERENCES!!.disableBoldDest
             Shared.historyEnabled = PREFERENCES!!.historyEnabled
             Shared.showRouteMap = PREFERENCES!!.showRouteMap
+            Shared.disableNavBarQuickActions = PREFERENCES!!.disableNavBarQuickActions
             Shared.updateFavoriteStops {
                 it.value = PREFERENCES!!.favouriteStops.toImmutableList()
             }

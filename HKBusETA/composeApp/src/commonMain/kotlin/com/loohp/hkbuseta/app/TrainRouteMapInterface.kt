@@ -158,6 +158,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.buildImmutableList
@@ -224,7 +225,6 @@ import com.loohp.hkbuseta.utils.withAlpha
 import hkbuseta.composeapp.generated.resources.Res
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -325,7 +325,7 @@ fun RouteMapSearchInterface(instance: AppActiveContext, visible: Boolean, signal
 
     LaunchedEffect (Unit) {
         while (true) {
-            val result = getGPSLocation(instance).await()
+            val result = getGPSLocation(instance, LocationPriority.FASTER).await()
             if (result?.isSuccess == true) {
                 location = result.location!!
             }
@@ -521,7 +521,7 @@ fun MTRRouteMapInterface(
         doubleTapOutScale = 6F,
         doubleTapScale = 7F
     )
-    val imageSizeState = remember { mutableStateOf(IntSize(0, 0)) }
+    val imageSizeState = remember { mutableStateOf(IntSize.Zero) }
     val imageSize by imageSizeState
     var mtrRouteMapData by mtrRouteMapDataState.collectAsStateMultiplatform()
     var allStops by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
@@ -561,12 +561,12 @@ fun MTRRouteMapInterface(
                 }
                 if (!locationJumped) {
                     mtrRouteMapData?.let { data ->
-                        locationJumped = true
                         val position = data.stations[stop.key]!!
                         val scaleX = data.dimension.width / imageSize.width
                         val scaleY = data.dimension.height / imageSize.height
                         val offset = Offset((position.x / scaleX) - (imageSize.width / 2), (position.y / scaleY) - (imageSize.height / 2))
                         state.animateTranslateTo(-offset)
+                        locationJumped = true
                     }
                 }
             }
@@ -1552,12 +1552,12 @@ fun LRTRouteMapInterface(
                 }
                 if (!locationJumped) {
                     lightRailRouteMapData?.let { data ->
-                        locationJumped = true
                         val position = data.stations[stop.key]!!
                         val scaleX = data.dimension.width / imageSize.width
                         val scaleY = data.dimension.height / imageSize.height
                         val offset = Offset((position.x / scaleX) - (imageSize.width / 2), (position.y / scaleY) - (imageSize.height / 2))
                         state.animateTranslateTo(-offset)
+                        locationJumped = true
                     }
                 }
             }

@@ -85,6 +85,7 @@ import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
+import com.loohp.hkbuseta.compose.Bolt
 import com.loohp.hkbuseta.compose.DarkMode
 import com.loohp.hkbuseta.compose.DismissRequestType
 import com.loohp.hkbuseta.compose.Download
@@ -293,6 +294,21 @@ fun SettingsInterface(instance: AppActiveContext) {
                     (if (Shared.language == "en") "Showing Route Map" else "顯示路線地圖").asAnnotatedString()
                 } else {
                     (if (Shared.language == "en") "Hidden Route Map" else "隱藏路線地圖").asAnnotatedString()
+                }
+            )
+            var disableNavBarQuickActions by remember { mutableStateOf(Shared.disableNavBarQuickActions) }
+            SettingsRow(
+                instance = instance,
+                onClick = {
+                    Registry.getInstance(instance).setDisableNavBarQuickActions(!Shared.disableNavBarQuickActions, instance)
+                    disableNavBarQuickActions = Shared.disableNavBarQuickActions
+                },
+                icon = if (disableNavBarQuickActions) PlatformIcons.Outlined.Bolt else PlatformIcons.Filled.Bolt,
+                text = (if (Shared.language == "en") "Bottom Nav Bar Quick Actions" else "底部導覽列快速操作").asAnnotatedString(),
+                subText = if (disableNavBarQuickActions) {
+                    (if (Shared.language == "en") "Disabled Navigation Bar Quick Actions" else "停用導覽列快速操作").asAnnotatedString()
+                } else {
+                    (if (Shared.language == "en") "Enabled Navigation Bar Quick Actions" else "使用導覽列快速操作").asAnnotatedString()
                 }
             )
             var downloadSplash by remember { mutableStateOf(Shared.downloadSplash) }

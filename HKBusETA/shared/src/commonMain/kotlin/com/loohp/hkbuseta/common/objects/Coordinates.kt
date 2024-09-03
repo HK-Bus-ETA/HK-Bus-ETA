@@ -117,4 +117,8 @@ open class Coordinates(
         return result
     }
 
+    override fun toString(): String {
+        return "Coordinates(lat=$lat, lng=$lng)"
+    }
+
 }

@@ -274,6 +274,7 @@ object Shared {
     var showRouteMap = true
     var downloadSplash = true
     var lastNearbyLocation: RadiusCenterPosition? = null
+    var disableNavBarQuickActions = false
     var disableBoldDest = false
 
     val alternateStopNamesShowingState: MutableNonNullStateFlow<Boolean> = MutableStateFlow(false).wrap()
