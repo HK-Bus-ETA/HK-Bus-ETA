@@ -342,7 +342,7 @@ fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, var
 
 fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop: Int, selectedStopId: String, context: AppContext): BilingualText {
     val co = co.firstCo()!!
-    return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular || !isCircular) {
+    return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular) {
         resolvedDestWithBranch(prependTo, branch)
     } else {
         val circularMiddle = branch.dest.zh.remove("(循環線)")
@@ -362,7 +362,7 @@ fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop
 
 fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, selectedStop: Int, selectedStopId: String, context: AppContext, vararg style: FormattingTextContentStyle): BilingualFormattedText {
     val co = co.firstCo()!!
-    return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular || !isCircular) {
+    return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular) {
         resolvedDestWithBranchFormatted(prependTo, branch, *style)
     } else {
         val circularMiddle = branch.dest.zh.remove("(循環線)")
