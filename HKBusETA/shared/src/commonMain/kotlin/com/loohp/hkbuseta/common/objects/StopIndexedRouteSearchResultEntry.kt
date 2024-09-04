@@ -121,7 +121,7 @@ fun List<StopIndexedRouteSearchResultEntry>.bySortModes(
         val holidayMap = registry.getHolidays()
         val branchRoutes = registry.getAllBranchRoutesBulk(map {
             val route = it.route!!
-            Registry.AllBranchRoutesSearchParmameters(route.routeNumber, route.idBound(it.co), it.co, route.gmbRegion)
+            Registry.AllBranchRoutesSearchParameters(route.routeNumber, route.idBound(it.co), it.co, route.gmbRegion)
         })
         buildMap {
             forEachIndexed { index, entry ->

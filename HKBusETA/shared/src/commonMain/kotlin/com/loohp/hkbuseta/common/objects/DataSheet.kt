@@ -100,16 +100,16 @@ class DataSheet(
         routeList.entries.asSequence().sortedWith(compareBy(routeComparatorRouteNumberFirst) { it.value }).map { it.key }.toList()
     }
     @Transient
-    val routeKeysByStopId: Deferred<Map<String, Set<String>>> = CoroutineScope(dispatcherIO).async {
-        val mapping: MutableMap<String, MutableSet<String>> = mutableMapOf()
-        for ((key, route) in routeList) {
-            for (stopIds in route.stops.values) {
-                for (stopId in stopIds) {
-                    mapping.getOrPut(stopId) { HashSet() }.add(key)
+    val routeKeysByStopId: Deferred<Map<String, Set<Pair<String, Int>>>> = CoroutineScope(dispatcherIO).async {
+        mutableMapOf<String, MutableSet<Pair<String, Int>>>().apply {
+            for ((key, route) in routeList) {
+                for (stopIds in route.stops.values) {
+                    for ((index, stopId) in stopIds.withIndex()) {
+                        getOrPut(stopId) { HashSet() }.add(key to index)
+                    }
                 }
             }
         }
-        mapping
     }
 
     override fun equals(other: Any?): Boolean {

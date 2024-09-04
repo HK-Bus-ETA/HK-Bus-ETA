@@ -281,6 +281,8 @@ fun Operator.getDisplayFormattedName(routeNumber: String, kmbCtbJoint: Boolean, 
 }
 
 private val bracketsRemovalRegex: Regex = " *\\([^)]*\\) *".toRegex()
+private val busTerminusZhRegex: Regex = " *(?:巴士)?總站".toRegex()
+private val busTerminusEnRegex: Regex = "(?i) *(?:Bus )?Terminus".toRegex()
 
 fun Route.shouldPrependTo(): Boolean {
     return lrtCircular == null
@@ -301,12 +303,18 @@ fun StopIndexedRouteSearchResultEntry.resolvedDest(prependTo: Boolean, context: 
         val circularMiddle = route!!.dest.zh.remove("(循環線)")
         val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
         val middleIndex = stops.indexOfFirst { it.stop.name.zh.eitherContains(circularMiddle) }
-        if (stops.indexesOf { it.stopId == stopInfo!!.stopId }.minBy { (it - stopInfoIndex).absoluteValue } >= middleIndex) {
-            var dest = stops.last().stop.name
-            if (co === Operator.GMB) {
-                dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.remove(bracketsRemovalRegex)
+        if (middleIndex >= 0) {
+            val stopIndex = stops.indexesOf { it.stopId == stopInfo!!.stopId }.minByOrNull { (it - stopInfoIndex).absoluteValue }
+            if (stopIndex != null && stopIndex >= middleIndex) {
+                var dest = stops.last().stop.name
+                if (co === Operator.GMB) {
+                    dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
+                }
+                dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
+                dest.let { if (prependTo) it.prependTo() else it } + ("(循環線)" withEn "(Circular)")
+            } else {
+                route!!.resolvedDest(prependTo)
             }
-            dest.let { if (prependTo) it.prependTo() else it } + ("(循環線)" withEn "(Circular)")
         } else {
             route!!.resolvedDest(prependTo)
         }
@@ -320,12 +328,18 @@ fun StopIndexedRouteSearchResultEntry.resolvedDestFormatted(prependTo: Boolean, 
         val circularMiddle = route!!.dest.zh.remove("(循環線)")
         val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
         val middleIndex = stops.indexOfFirst { it.stop.name.zh.eitherContains(circularMiddle) }
-        if (stops.indexesOf { it.stopId == stopInfo!!.stopId }.minBy { (it - stopInfoIndex).absoluteValue } >= middleIndex) {
-            var dest = stops.last().stop.name
-            if (co === Operator.GMB) {
-                dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.remove(bracketsRemovalRegex)
+        if (middleIndex >= 0) {
+            val stopIndex = stops.indexesOf { it.stopId == stopInfo!!.stopId }.minByOrNull { (it - stopInfoIndex).absoluteValue }
+            if (stopIndex != null && stopIndex >= middleIndex) {
+                var dest = stops.last().stop.name
+                if (co === Operator.GMB) {
+                    dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
+                }
+                dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
+                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + ("(循環線)" withEn "(Circular)").asFormattedText(*style)
+            } else {
+                route!!.resolvedDestFormatted(prependTo, *style)
             }
-            dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + ("(循環線)" withEn "(Circular)").asFormattedText(*style)
         } else {
             route!!.resolvedDestFormatted(prependTo, *style)
         }
@@ -348,12 +362,18 @@ fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop
         val circularMiddle = branch.dest.zh.remove("(循環線)")
         val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)
         val middleIndex = stops.indexOfFirst { it.stop.name.zh.eitherContains(circularMiddle) }
-        if (stops.indexesOf { it.stopId == selectedStopId }.minBy { (it - selectedStop).absoluteValue } >= middleIndex) {
-            var dest = stops.last().stop.name
-            if (co === Operator.GMB) {
-                dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.remove(bracketsRemovalRegex)
+        if (middleIndex >= 0) {
+            val stopIndex = stops.indexesOf { it.stopId == selectedStopId }.minByOrNull { (it - selectedStop).absoluteValue }
+            if (stopIndex != null && stopIndex >= middleIndex) {
+                var dest = stops.last().stop.name
+                if (co === Operator.GMB) {
+                    dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
+                }
+                dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
+                dest.let { if (prependTo) it.prependTo() else it } + ("(循環線)" withEn "(Circular)")
+            } else {
+                resolvedDestWithBranch(prependTo, branch)
             }
-            dest.let { if (prependTo) it.prependTo() else it } + ("(循環線)" withEn "(Circular)")
         } else {
             resolvedDestWithBranch(prependTo, branch)
         }
@@ -368,12 +388,18 @@ fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, sel
         val circularMiddle = branch.dest.zh.remove("(循環線)")
         val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)
         val middleIndex = stops.indexOfFirst { it.stop.name.zh.eitherContains(circularMiddle) }
-        if (stops.indexesOf { it.stopId == selectedStopId }.minBy { (it - selectedStop).absoluteValue } >= middleIndex) {
-            var dest = stops.last().stop.name
-            if (co === Operator.GMB) {
-                dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.remove(bracketsRemovalRegex)
+        if (middleIndex >= 0) {
+            val stopIndex = stops.indexesOf { it.stopId == selectedStopId }.minByOrNull { (it - selectedStop).absoluteValue }
+            if (stopIndex != null && stopIndex >= middleIndex) {
+                var dest = stops.last().stop.name
+                if (co === Operator.GMB) {
+                    dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
+                }
+                dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
+                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + ("(循環線)" withEn "(Circular)").asFormattedText(*style)
+            } else {
+                resolvedDestWithBranchFormatted(prependTo, branch, *style)
             }
-            dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + ("(循環線)" withEn "(Circular)").asFormattedText(*style)
         } else {
             resolvedDestWithBranchFormatted(prependTo, branch, *style)
         }
