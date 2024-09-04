@@ -1137,8 +1137,15 @@ class Registry {
             val stopId = nearbyStop.stopId
             for ((key, branchStopIndex) in DATA!!.dataSheet.routeKeysByStopId.await()[stopId]?: emptyList()) {
                 val data = DATA!!.dataSheet.routeList[key]!!
-                val co = nearbyStop.co
-                if (!data.co.contains(co)) continue
+                val co = if (data.isKmbCtbJoint) {
+                    val alternateStopName = Shared.alternateStopNamesShowingState.value
+                    if (alternateStopName && nearbyStop.co === Operator.KMB) continue
+                    if (!alternateStopName && nearbyStop.co === Operator.CTB) continue
+                    Operator.KMB
+                } else {
+                    nearbyStop.co
+                }
+                if (!data.co.contains(nearbyStop.co)) continue
                 if (excludedRouteNumbers.contains(data.routeNumber)) continue
                 if (data.isCtbIsCircular) continue
                 val routeGroupKey = data.routeGroupKey(co)
