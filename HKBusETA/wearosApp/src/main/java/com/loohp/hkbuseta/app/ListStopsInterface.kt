@@ -202,9 +202,14 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
         LaunchedEffect (Unit) {
             val scrollTask: (OriginData?, String?) -> Unit = { origin, stopId ->
                 if (stopId != null) {
-                    stopsList.withIndex().find { it.value.stopId == stopId }?.let {
+                    var index = stopsList.indexOfFirst { it.stopId == stopId }
+                    if (index < 0 && route.route!!.isKmbCtbJoint) {
+                        val altStops = Registry.getInstance(instance).findEquivalentStops(stopsList.map { it.stopId }, Operator.CTB)
+                        index = altStops.indexOfFirst { it.stopId == stopId }
+                    }
+                    if (index >= 0) {
                         scope.launch {
-                            scroll.animateScrollToItem(it.index + 2, (-instance.screenHeight / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
+                            scroll.animateScrollToItem(index + 2, (-instance.screenHeight / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
                         }
                     }
                 } else if (origin != null) {
@@ -390,7 +395,7 @@ fun HeaderElement(
             lineHeight = 17F.scaledSize(instance).sp.clamp(max = 20F.scaledSize(instance).dp),
             color = { color.adjustBrightness(if (ambientMode) 0.7F else 1F) },
             maxLines = 1,
-            text = co.getDisplayName(routeNumber, kmbCtbJoint, gmbRegion, Shared.language).plus(" ").plus(co.getDisplayRouteNumber(routeNumber))
+            text = co.getDisplayName(routeNumber, kmbCtbJoint, gmbRegion, Shared.language) + " " + co.getDisplayRouteNumber(routeNumber)
         )
         AutoResizeText(
             modifier = Modifier

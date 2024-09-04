@@ -22,20 +22,25 @@ package com.loohp.hkbuseta.compose
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -114,36 +119,75 @@ inline fun DrawPhaseColorText(
     noinline onTextLayout: (TextLayoutResult) -> Unit = { /* do nothing */ },
     style: TextStyle = androidx.wear.compose.material.LocalTextStyle.current
 ) {
-    Text(
-        modifier = modifier
-            .graphicsLayer {
-                compositingStrategy = CompositingStrategy.Offscreen
+    val spanStyles by remember(text) { derivedStateOf {
+        var required = false
+        buildList {
+            for (each in text.spanStyles) {
+                if (each.item.color.isSpecified) required = true
+                add(if (each.item.color.isUnspecified) each.copy(item = each.item.copy(color = Color.Transparent)) else each)
             }
-            .drawWithContent {
-                drawContent()
-                drawRect(
-                    color = color.invoke(),
-                    blendMode = BlendMode.SrcIn
-                )
-            },
-        text = text,
-        color = Color.White,
-        fontSize = fontSize,
-        fontStyle = fontStyle,
-        fontWeight = fontWeight,
-        fontFamily = fontFamily,
-        letterSpacing = letterSpacing,
-        textDecoration = textDecoration,
-        textAlign = textAlign,
-        lineHeight = lineHeight,
-        overflow = overflow,
-        softWrap = softWrap,
-        maxLines = maxLines,
-        minLines = minLines,
-        inlineContent = inlineContent,
-        onTextLayout = onTextLayout,
-        style = style
-    )
+        }.takeIf { required }
+    } }
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.TopStart
+    ) {
+        Text(
+            modifier = Modifier
+                .graphicsLayer {
+                    compositingStrategy = CompositingStrategy.Offscreen
+                }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        color = color.invoke(),
+                        blendMode = BlendMode.SrcIn
+                    )
+                },
+            text = text,
+            color = Color.White,
+            fontSize = fontSize,
+            fontStyle = fontStyle,
+            fontWeight = fontWeight,
+            fontFamily = fontFamily,
+            letterSpacing = letterSpacing,
+            textDecoration = textDecoration,
+            textAlign = textAlign,
+            lineHeight = lineHeight,
+            overflow = overflow,
+            softWrap = softWrap,
+            maxLines = maxLines,
+            minLines = minLines,
+            inlineContent = inlineContent,
+            onTextLayout = onTextLayout,
+            style = style
+        )
+        spanStyles?.apply {
+            Text(
+                text = AnnotatedString(
+                    text = text.text,
+                    spanStyles = this,
+                    paragraphStyles = text.paragraphStyles
+                ),
+                color = Color.White,
+                fontSize = fontSize,
+                fontStyle = fontStyle,
+                fontWeight = fontWeight,
+                fontFamily = fontFamily,
+                letterSpacing = letterSpacing,
+                textDecoration = textDecoration,
+                textAlign = textAlign,
+                lineHeight = lineHeight,
+                overflow = overflow,
+                softWrap = softWrap,
+                maxLines = maxLines,
+                minLines = minLines,
+                inlineContent = inlineContent,
+                onTextLayout = onTextLayout,
+                style = style
+            )
+        }
+    }
 }
 
 @Composable
