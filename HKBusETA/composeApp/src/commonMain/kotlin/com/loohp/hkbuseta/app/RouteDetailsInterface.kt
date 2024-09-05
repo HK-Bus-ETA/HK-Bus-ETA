@@ -298,7 +298,19 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val selectedBranch = remember { mutableStateOf(routeBranches.currentFirstActiveBranch(currentLocalDateTime(), instance).first()) }
     val selectedStop = remember { mutableIntStateOf(
         ((instance.compose.data["scrollToStop"] as? String)?: (instance.compose.data["stopId"] as? String))
-            ?.let { id -> Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).indexOfFirst { it.stopId == id }.takeIf { it >= 0 }?.let { it + 1 } }
+            ?.let { id ->
+                val allStops = Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion)
+                val index = allStops.indexOfFirst { it.stopId == id }
+                if (index >= 0) {
+                    index + 1
+                } else if (route.route!!.isKmbCtbJoint) {
+                    val altStops = Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB)
+                    val ctbIndex = altStops.indexOfFirst { it.stopId == id }
+                    ctbIndex.takeIf { it >= 0 }?.let { it + 1 }
+                } else {
+                    null
+                }
+            }
             ?: route.stopInfoIndex.takeIf { it >= 0 }?.let { it + 1 }?: 1
     ) }
     val allStops by remember(route, selectedBranch) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion) } }

@@ -166,16 +166,20 @@ struct ListStopsView: AppScreenView {
             }
         }
         .onAppear {
-            if scrollToStop == nil {
+            if let scrollToStop = self.scrollToStop {
+                var index = stopList.firstIndex(where: { $0.stopId == scrollToStop })
+                if index == nil && route.route!.isKmbCtbJoint {
+                    let altStops = registry(appContext).findEquivalentStops(stopIds: stopList.map { $0.stopId }, co: Operator.Companion().CTB)
+                    index = altStops.firstIndex(where: { $0.stopId == scrollToStop })
+                }
+                if index != nil {
+                    scrollTarget = index!
+                }
+            } else {
                 if locationManager.readyForRequest {
                     locationManager.requestLocation()
                 } else if !locationManager.authorizationDenied {
                     locationManager.requestPermission()
-                }
-            } else {
-                let index = stopList.firstIndex(where: { $0.stopId == scrollToStop! })
-                if index != nil {
-                    scrollTarget = index!
                 }
             }
         }
