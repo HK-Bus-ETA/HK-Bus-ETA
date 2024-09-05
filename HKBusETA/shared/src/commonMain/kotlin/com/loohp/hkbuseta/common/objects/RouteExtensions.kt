@@ -300,9 +300,9 @@ fun StopIndexedRouteSearchResultEntry.resolvedDest(prependTo: Boolean, context: 
     return if (stopInfo == null || (co !== Operator.KMB && co !== Operator.GMB) || !route!!.isCircular) {
         route!!.resolvedDest(prependTo)
     } else {
-        val circularMiddle = route!!.dest.zh.remove("(循環線)")
+        val circularMiddle = route!!.dest.zh.remove("(循環線)").trim()
         val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
-        val middleIndex = stops.indexOfFirst { it.stop.name.zh.eitherContains(circularMiddle) }
+        val middleIndex = stops.indexOfFirst { it.stop.name.zh.trim().eitherContains(circularMiddle) }
         if (middleIndex >= 0) {
             val stopIndex = stops.indexesOf { it.stopId == stopInfo!!.stopId }.minByOrNull { (it - stopInfoIndex).absoluteValue }
             if (stopIndex != null && stopIndex >= middleIndex) {
@@ -325,9 +325,9 @@ fun StopIndexedRouteSearchResultEntry.resolvedDestFormatted(prependTo: Boolean, 
     return if (stopInfo == null || (co !== Operator.KMB && co !== Operator.GMB) || !route!!.isCircular) {
         route!!.resolvedDestFormatted(prependTo, *style)
     } else {
-        val circularMiddle = route!!.dest.zh.remove("(循環線)")
+        val circularMiddle = route!!.dest.zh.remove("(循環線)").trim()
         val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
-        val middleIndex = stops.indexOfFirst { it.stop.name.zh.eitherContains(circularMiddle) }
+        val middleIndex = stops.indexOfFirst { it.stop.name.zh.trim().eitherContains(circularMiddle) }
         if (middleIndex >= 0) {
             val stopIndex = stops.indexesOf { it.stopId == stopInfo!!.stopId }.minByOrNull { (it - stopInfoIndex).absoluteValue }
             if (stopIndex != null && stopIndex >= middleIndex) {
@@ -359,9 +359,9 @@ fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop
     return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular) {
         resolvedDestWithBranch(prependTo, branch)
     } else {
-        val circularMiddle = branch.dest.zh.remove("(循環線)")
+        val circularMiddle = branch.dest.zh.remove("(循環線)").trim()
         val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)
-        val middleIndex = stops.indexOfFirst { it.stop.name.zh.eitherContains(circularMiddle) }
+        val middleIndex = stops.indexOfFirst { it.stop.name.zh.trim().eitherContains(circularMiddle) }
         if (middleIndex >= 0) {
             val stopIndex = stops.indexesOf { it.stopId == selectedStopId }.minByOrNull { (it - selectedStop).absoluteValue }
             if (stopIndex != null && stopIndex >= middleIndex) {
@@ -385,9 +385,9 @@ fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, sel
     return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular) {
         resolvedDestWithBranchFormatted(prependTo, branch, *style)
     } else {
-        val circularMiddle = branch.dest.zh.remove("(循環線)")
+        val circularMiddle = branch.dest.zh.remove("(循環線)").trim()
         val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)
-        val middleIndex = stops.indexOfFirst { it.stop.name.zh.eitherContains(circularMiddle) }
+        val middleIndex = stops.indexOfFirst { it.stop.name.zh.trim().eitherContains(circularMiddle) }
         if (middleIndex >= 0) {
             val stopIndex = stops.indexesOf { it.stopId == selectedStopId }.minByOrNull { (it - selectedStop).absoluteValue }
             if (stopIndex != null && stopIndex >= middleIndex) {
