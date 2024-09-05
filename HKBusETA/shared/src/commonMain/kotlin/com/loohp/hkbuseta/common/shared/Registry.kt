@@ -1568,7 +1568,9 @@ class Registry {
         }
         return typhoonInfoDeferred.value.takeIf { it.isActive }?: CoroutineScope(dispatcherIO).async {
             val data = getJSONResponse<JsonObject>("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=" + if (Shared.language == "en") "en" else "tc")
-            if (data != null && data.contains("WTCSGNL")) {
+            if (data == null) {
+                return@async typhoonInfo.value
+            } else if (data.contains("WTCSGNL")) {
                 val matchingGroups = "TC([0-9]+)(.*)".toRegex().find(data.optJsonObject("WTCSGNL")!!.optString("code"))?.groupValues
                 if (matchingGroups?.getOrNull(1) != null) {
                     val signal = matchingGroups[1].toInt()
