@@ -690,6 +690,7 @@ fun ListRouteInterfaceInternal(
     var init by remember { mutableStateOf(false) }
 
     LaunchedEffect (routes, lastLookupRoutes, listType, proximitySortOrigin, activeSortMode.filterTimetableActive) {
+        delay(100)
         CoroutineScope(dispatcherIO).launch {
             sortedByMode = sortedByModeProvider.invoke()
         }

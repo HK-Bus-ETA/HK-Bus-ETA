@@ -73,7 +73,6 @@ import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformTopBarColor
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 
 
@@ -88,7 +87,7 @@ fun RecentInterface(instance: AppActiveContext, visible: Boolean = true) {
     var clearingHistory by remember { mutableStateOf(false) }
     var historyEnabled by remember { mutableStateOf(Shared.historyEnabled) }
 
-    LaunchedEffect(visible, recentRouteKeys, recentRouteKeys) {
+    LaunchedEffect(visible, recentRouteKeys) {
         if (visible) {
             routes = Registry.getInstance(instance).findRoutes("", false, Shared.RECENT_ROUTE_FILTER).toStopIndexed(instance).asImmutableList()
         }
