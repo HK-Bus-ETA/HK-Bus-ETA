@@ -2753,9 +2753,10 @@ class Registry {
         for (i in 0 until data!!.optJsonArray("data")!!.size) {
             val routeData = data.optJsonArray("data")!!.optJsonObject(i)!!
             val buses = routeData.optJsonArray("eta")
-            val filteredEntry = DATA!!.dataSheet.routeList.values.firstOrNull { it.bound.containsKey(Operator.GMB) && it.gtfsId == routeData.optString("route_id") }
-            if (filteredEntry != null && buses != null) {
-                val routeNumber = filteredEntry.routeNumber
+            val bound = if (routeData.optInt("route_seq") <= 1) "O" else "I"
+            val routeId = routeData.optString("route_id")
+            if (route.bound[co] == bound && route.gtfsId == routeId && buses != null) {
+                val routeNumber = route.routeNumber
                 val stopSeq = routeData.optInt("stop_seq")
                 for (u in 0 until buses.size) {
                     val bus = buses.optJsonObject(u)!!

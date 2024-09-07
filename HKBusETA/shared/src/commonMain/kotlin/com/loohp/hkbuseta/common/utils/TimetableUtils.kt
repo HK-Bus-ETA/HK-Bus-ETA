@@ -535,6 +535,7 @@ fun Collection<Route>.currentBranchStatus(time: LocalDateTime, serviceDayMap: Ma
         leftTerminus.contains(it) && soonBegin.contains(it) -> if (entries.all { e -> e.route != it || e is TimetableSingleEntry }) RouteBranchStatus.ACTIVE else RouteBranchStatus.HOUR_GAP
         leftTerminus.contains(it) -> RouteBranchStatus.LAST_LEFT_TERMINUS
         soonBegin.contains(it) -> RouteBranchStatus.SOON_BEGIN
-        else -> RouteBranchStatus.INACTIVE
+        timetable.entries.any { e -> e.value.any { e1 -> e1.route == it } } -> RouteBranchStatus.INACTIVE
+        else -> RouteBranchStatus.NO_TIMETABLE
     } }
 }
