@@ -2305,7 +2305,7 @@ class Registry {
             var counter = 0
             for (entry in jointOperated.asSequence().sorted()) {
                 val mins = entry.mins
-                if (mins < -10) continue
+                if (mins.isFinite() && mins < -10.0) continue
                 val minsRounded = entry.minsRounded
                 val timeMessage = "".asFormattedText(BoldStyle) + entry.time
                 var remarkMessage = "".asFormattedText(BoldStyle) + entry.remark
@@ -2363,8 +2363,8 @@ class Registry {
                 if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq) {
                     if (usedRealSeq.add(bus.optInt("eta_seq"))) {
                         val eta = bus.optString("eta")
-                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
-                        if (mins < -10) continue
+                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
+                        if (mins.isFinite() && mins < -10) continue
                         val seq = ++counter
                         val minsRounded = mins.roundToInt()
                         var timeMessage = "".asFormattedText()
@@ -2469,8 +2469,8 @@ class Registry {
                 if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound) && stopSeq == matchingSeq) {
                     if (usedRealSeq.add(bus.optInt("eta_seq"))) {
                         val eta = bus.optString("eta")
-                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
-                        if (mins < -10) continue
+                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
+                        if (mins.isFinite() && mins < -10.0) continue
                         val seq = ++counter
                         val minsRounded = mins.roundToInt()
                         var timeMessage = "".asFormattedText()
@@ -2558,8 +2558,8 @@ class Registry {
                 val bus = buses.optJsonObject(u)!!
                 val eta = bus.optString("estimatedArrivalTime")
                 val variant = bus.optString("routeVariantName").trim { it <= ' ' }
-                val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.let { "${it.substring(0, 10)}T${it.substring(11)}" }.toLocalDateTime().toInstant(hongKongTimeZone).epochSeconds - currentEpochSeconds) / 60.0
-                if (mins < -10) continue
+                val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.let { "${it.substring(0, 10)}T${it.substring(11)}" }.toLocalDateTime().toInstant(hongKongTimeZone).epochSeconds - currentEpochSeconds) / 60.0
+                if (mins.isFinite() && mins < -10.0) continue
                 val seq = ++counter
                 val minsRounded = mins.roundToInt()
                 var timeMessage = "".asFormattedText()
@@ -2675,7 +2675,7 @@ class Registry {
                         remark += if (language == "en") "Bus Delayed" else "行車緩慢"
                     }
                     val mins = eta / 60.0
-                    if (mins < -10) continue
+                    if (mins.isFinite() && mins < -10.0) continue
                     val minsRounded = floor(mins).toLong()
                     if (DATA!!.mtrBusStopAlias[stopId]!!.contains(busStopId)) {
                         val seq = ++counter
@@ -2762,7 +2762,7 @@ class Registry {
                     val bus = buses.optJsonObject(u)!!
                     if (routeNumber == route.routeNumber) {
                         val eta = bus.optString("timestamp")
-                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) -999.0 else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
+                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
                         stopSequences.add(stopSeq)
                         busList.add(Triple(stopSeq, mins, bus))
                     }
@@ -2777,7 +2777,7 @@ class Registry {
         var counter = 0
         for (i in busList.indices) {
             val (_, mins, bus) = busList[i]
-            if (mins < -10) continue
+            if (mins.isFinite() && mins < -10.0) continue
             val seq = ++counter
             var remark = if (language == "en") bus.optString("remarks_en") else bus.optString("remarks_tc")
             if (remark.equals("null", ignoreCase = true)) {
@@ -3157,7 +3157,7 @@ class Registry {
             val time = entryData.optString(timeKey).takeIf { it.matches("[0-9]{2}:[0-9]{2}".toRegex()) }?.let {
                 LocalTime(it.substring(0, 2).toInt(), it.substring(3, 5).toInt()).nextLocalDateTimeAfter(now)
             }
-            val mins = if (time == null) -999.0 else (time.epochSeconds - currentEpochSeconds) / 60.0
+            val mins = if (time == null) Double.NEGATIVE_INFINITY else (time.epochSeconds - currentEpochSeconds) / 60.0
             val remark = entryData.optString("rmk_${if (language == "en") "en" else "tc"}").takeIf { it.isNotBlank() && !it.equals("null", true) }?: ""
             val minsRounded = mins.roundToInt()
             if (minsRounded < -5) continue
@@ -3232,7 +3232,7 @@ class Registry {
             val entryData = element.jsonObject
             val eta = entryData.optString("ETA")
             val time = if (eta.isNotEmpty() && !eta.equals("null", true)) eta.toInstant().toLocalDateTime(hongKongTimeZone) else null
-            val mins = if (time == null) -999.0 else (time.epochSeconds - currentEpochSeconds) / 60.0
+            val mins = if (time == null) Double.NEGATIVE_INFINITY else (time.epochSeconds - currentEpochSeconds) / 60.0
             val remark = entryData.optString("rmk_${if (language == "en") "en" else "tc"}").takeIf { it.isNotBlank() && !it.equals("null", true) }?: ""
             val minsRounded = mins.roundToInt()
             if (minsRounded < -5) continue
@@ -3318,7 +3318,7 @@ class Registry {
                     val departTime = entryData.optString("depart_time").takeIf { it.matches("[0-9]{2}:[0-9]{2}".toRegex()) }?.let {
                         LocalTime(it.substring(0, 2).toInt(), it.substring(3, 5).toInt()).nextLocalDateTimeAfter(now)
                     }
-                    val mins = if (departTime == null) -999.0 else (departTime.epochSeconds - currentEpochSeconds) / 60.0
+                    val mins = if (departTime == null) Double.NEGATIVE_INFINITY else (departTime.epochSeconds - currentEpochSeconds) / 60.0
                     val remark = entryData.optString("rmk_${if (language == "en") "en" else "tc"}").takeIf { it.isNotBlank() && !it.equals("null", true) }?: ""
                     val minsRounded = mins.roundToInt()
                     if (minsRounded < -5) continue
