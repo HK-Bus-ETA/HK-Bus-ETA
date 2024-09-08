@@ -136,8 +136,8 @@ import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.createTimetable
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentEntry
-import com.loohp.hkbuseta.common.utils.currentFirstActiveBranch
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.common.utils.dayOfWeek
@@ -295,7 +295,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val alertCheckRoute by remember(route) { derivedStateOf { route.route!!.shouldAlertSpecialRoute(instance) } }
 
     val routeBranches by remember(route) { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) } }
-    val selectedBranch = remember { mutableStateOf(routeBranches.currentFirstActiveBranch(currentLocalDateTime(), instance).first()) }
+    val selectedBranch = remember { mutableStateOf(routeBranches.currentBranchStatus(currentLocalDateTime(), instance).asSequence().sortedByDescending { it.value.activeness }.first().key) }
     val selectedStop = remember { mutableIntStateOf(
         ((instance.compose.data["scrollToStop"] as? String)?: (instance.compose.data["stopId"] as? String))
             ?.let { id ->

@@ -508,8 +508,15 @@ fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, serviceDayMa
         .toList()
 }
 
-enum class RouteBranchStatus {
-    SOON_BEGIN, ACTIVE, HOUR_GAP, LAST_LEFT_TERMINUS, INACTIVE, NO_TIMETABLE
+enum class RouteBranchStatus(
+    val activeness: Int
+) {
+    SOON_BEGIN(1),
+    ACTIVE(4),
+    HOUR_GAP(2),
+    LAST_LEFT_TERMINUS(3),
+    INACTIVE(0),
+    NO_TIMETABLE(0)
 }
 
 @ReduceDataOmitted
