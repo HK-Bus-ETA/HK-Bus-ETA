@@ -131,7 +131,6 @@ import com.loohp.hkbuseta.utils.keyString
 import com.loohp.hkbuseta.utils.pixelsToDp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch

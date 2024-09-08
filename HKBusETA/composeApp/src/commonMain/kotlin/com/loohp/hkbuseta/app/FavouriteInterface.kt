@@ -136,8 +136,10 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sh.calvin.reorderable.ReorderableColumn
 
 
@@ -289,7 +291,10 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     val (name, routeStops) = favouriteRouteStop
                     if (isOnPage) {
                         CoroutineScope(dispatcherIO).launch {
-                            routes[name] = routeStops.toRouteSearchResult(instance, location).toStopIndexed(instance).asImmutableList()
+                            val routeSearch = routeStops.toRouteSearchResult(instance, location).toStopIndexed(instance).asImmutableList()
+                            withContext(Dispatchers.Main) {
+                                routes[name] = routeSearch
+                            }
                         }
                     }
                 }
@@ -625,7 +630,10 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                         val stop = data.second
                         if (isOnPage) {
                             CoroutineScope(dispatcherIO).launch {
-                                routes[stop] = Registry.getInstance(instance).getNearbyRoutes(stop.location, emptySet(), false).result.toStopIndexed(instance).asImmutableList()
+                                val nearbyRoutes = Registry.getInstance(instance).getNearbyRoutes(stop.location, emptySet(), false).result.toStopIndexed(instance).asImmutableList()
+                                withContext(Dispatchers.Main) {
+                                    routes[stop] = nearbyRoutes
+                                }
                             }
                         }
                     }

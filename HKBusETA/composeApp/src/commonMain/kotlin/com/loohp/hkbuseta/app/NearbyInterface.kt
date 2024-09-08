@@ -137,9 +137,11 @@ import com.loohp.hkbuseta.utils.getGPSLocation
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -245,8 +247,11 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
             CoroutineScope(dispatcherIO).launch {
                 if (customCenterPosition == null) {
                     val result = Registry.getInstance(instance).getNearbyRoutes(loc, emptySet(), false)
-                    routes = result.result.toStopIndexed(instance).asImmutableList()
-                    nearbyRoutesResult = result
+                    val stopIndexed = result.result.toStopIndexed(instance).asImmutableList()
+                    withContext(Dispatchers.Main) {
+                        routes = stopIndexed
+                        nearbyRoutesResult = result
+                    }
                 }
             }
         }
@@ -255,8 +260,11 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
         CoroutineScope(dispatcherIO).launch {
             customCenterPosition?.let {
                 val result = Registry.getInstance(instance).getNearbyRoutes(it, it.radius.toDouble(), emptySet(), false)
-                routes = result.result.toStopIndexed(instance).asImmutableList()
-                nearbyRoutesResult = result
+                val stopIndexed = result.result.toStopIndexed(instance).asImmutableList()
+                withContext(Dispatchers.Main) {
+                    routes = stopIndexed
+                    nearbyRoutesResult = result
+                }
             }
         }
     }
@@ -492,8 +500,12 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
 
         LaunchedEffect (position) {
             CoroutineScope(dispatcherIO).launch {
-                stopsInRange = Registry.getInstance(instance).findNearbyStops(position, position.radius.toDouble())
-                nearestStop = Registry.getInstance(instance).findNearestStops(position)
+                val stopsInRangeAsync = Registry.getInstance(instance).findNearbyStops(position, position.radius.toDouble())
+                val nearestStopAsync = Registry.getInstance(instance).findNearestStops(position)
+                withContext(Dispatchers.Main) {
+                    stopsInRange = stopsInRangeAsync
+                    nearestStop = nearestStopAsync
+                }
             }
         }
 
@@ -620,11 +632,13 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                             CoroutineScope(dispatcherIO).launch {
                                                 val loc = it.resolveLocation().await()
                                                 val newPos = RadiusCenterPosition(loc.lat, loc.lng, position.radius)
-                                                initialPosition = RadiusCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
-                                                delay(750)
-                                                initialPosition = newPos
-                                                position = newPos
-                                                updating = false
+                                                withContext(Dispatchers.Main) {
+                                                    initialPosition = RadiusCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
+                                                    delay(750)
+                                                    initialPosition = newPos
+                                                    position = newPos
+                                                    updating = false
+                                                }
                                             }
                                         }
                                         .padding(5.dp)
@@ -658,10 +672,12 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                     nearestStop?.let {
                                         val loc = it.stop.location
                                         val newPos = RadiusCenterPosition(loc.lat, loc.lng, position.radius)
-                                        position = newPos
-                                        initialPosition = RadiusCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
-                                        delay(100)
-                                        initialPosition = newPos
+                                        withContext(Dispatchers.Main) {
+                                            position = newPos
+                                            initialPosition = RadiusCenterPosition(loc.lat, loc.lng, position.radius - 0.1F)
+                                            delay(100)
+                                            initialPosition = newPos
+                                        }
                                     }
                                 }
                             }

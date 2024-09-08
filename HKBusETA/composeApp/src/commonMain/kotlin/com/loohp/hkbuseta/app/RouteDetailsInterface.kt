@@ -189,8 +189,10 @@ import com.loohp.hkbuseta.utils.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.min
 
 
@@ -382,14 +384,19 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     }
     LaunchedEffect (route) {
         CoroutineScope(dispatcherIO).launch {
-            launch { reverseRoute = route.findReverse(instance) }
+            launch {
+                val reverse = route.findReverse(instance)
+                withContext(Dispatchers.Main) { reverseRoute = reverse }
+            }
             for (branch in routeBranches) {
                 launch {
                     val result = branch.findSimilarRoutes(co, instance).takeIf { it.isNotEmpty() }?.toStopIndexed(instance)?.asImmutableList()
-                    if (result == null) {
-                        similarRoutes.remove(branch)
-                    } else {
-                        similarRoutes[branch] = result
+                    withContext(Dispatchers.Main) {
+                        if (result == null) {
+                            similarRoutes.remove(branch)
+                        } else {
+                            similarRoutes[branch] = result
+                        }
                     }
                 }
             }
@@ -675,7 +682,10 @@ fun MapStopsInterface(
 
         LaunchedEffect (selectedBranch, stops) {
             CoroutineScope(dispatcherIO).launch {
-                waypoints = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, instance, stops).await()
+                val waypointsAsync = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, instance, stops).await()
+                withContext(Dispatchers.Main) {
+                    waypoints = waypointsAsync
+                }
             }
         }
 

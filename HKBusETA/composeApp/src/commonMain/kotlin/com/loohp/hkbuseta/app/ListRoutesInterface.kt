@@ -209,10 +209,12 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import org.jetbrains.compose.resources.painterResource
 import sh.calvin.reorderable.ReorderableItem
@@ -285,7 +287,10 @@ fun ListRoutesInterface(
 
     LaunchedEffect (routes) {
         CoroutineScope(dispatcherIO).launch {
-            routeGroupedByDirections = routes.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
+            val byDirections = routes.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
+            withContext(Dispatchers.Main) {
+                routeGroupedByDirections = byDirections
+            }
         }
     }
     LaunchedEffect (visible, routeSortPreferenceProvider) {
@@ -692,7 +697,10 @@ fun ListRouteInterfaceInternal(
     LaunchedEffect (routes, lastLookupRoutes, listType, proximitySortOrigin, activeSortMode.filterTimetableActive) {
         delay(100)
         CoroutineScope(dispatcherIO).launch {
-            sortedByMode = sortedByModeProvider.invoke()
+            val sorted = sortedByModeProvider.invoke()
+            withContext(Dispatchers.Main) {
+                sortedByMode = sorted
+            }
         }
     }
     LaunchedEffect (scroll.firstVisibleItemIndex, scroll.firstVisibleItemScrollOffset) {
@@ -932,7 +940,10 @@ fun RouteRow(
     LaunchedEffect (route) {
         if (checkSpecialDest) {
             CoroutineScope(dispatcherIO).launch {
-                hasSpecialDest = route.route!!.shouldAlertSpecialDest(instance)
+                val specialDest = route.route!!.shouldAlertSpecialDest(instance)
+                withContext(Dispatchers.Main) {
+                    hasSpecialDest = specialDest
+                }
             }
         }
     }
@@ -1154,15 +1165,13 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults
         }
     }
     RestartEffect {
-        CoroutineScope(etaUpdateScope).launch {
-            val result = CoroutineScope(etaUpdateScope).async {
-                Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
-            }.await()
-            etaState = result
-            etaResults.value[key] = result
-            if (!result.isConnectionError) {
-                etaUpdateTimes.value[key] = currentTimeMillis()
-            }
+        val result = CoroutineScope(etaUpdateScope).async {
+            Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+        }.await()
+        etaState = result
+        etaResults.value[key] = result
+        if (!result.isConnectionError) {
+            etaUpdateTimes.value[key] = currentTimeMillis()
         }
     }
 

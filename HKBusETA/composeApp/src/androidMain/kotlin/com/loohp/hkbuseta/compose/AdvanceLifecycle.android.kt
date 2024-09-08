@@ -23,46 +23,50 @@ package com.loohp.hkbuseta.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.launch
 
 @Composable
-actual fun RestartEffect(onRestart: () -> Unit) {
-    LifecycleEffect { _, event ->
-        when (event) {
-            Lifecycle.Event.ON_RESUME, Lifecycle.Event.ON_START -> onRestart.invoke()
-            else -> {}
+actual fun RestartEffect(onRestart: suspend () -> Unit) {
+    val eventHandler = rememberUpdatedState(onRestart)
+    val lifecycleOwner = rememberUpdatedState(LocalLifecycleOwner.current)
+    val scope = rememberCoroutineScope()
+
+    DisposableEffect(lifecycleOwner.value) {
+        val lifecycle = lifecycleOwner.value.lifecycle
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME) {
+                scope.launch { eventHandler.value() }
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
         }
     }
 }
 
 @Composable
 actual fun PauseEffect(onPause: () -> Unit) {
-    LifecycleEffect { _, event ->
-        when (event) {
-            Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> onPause.invoke()
-            else -> {}
-        }
-    }
-}
-
-@Composable
-fun LifecycleEffect(onEvent: (owner: LifecycleOwner, event: Lifecycle.Event) -> Unit) {
-    val eventHandler = rememberUpdatedState(onEvent)
+    val eventHandler = rememberUpdatedState(onPause)
     val lifecycleOwner = rememberUpdatedState(LocalLifecycleOwner.current)
+    val scope = rememberCoroutineScope()
 
     DisposableEffect(lifecycleOwner.value) {
         val lifecycle = lifecycleOwner.value.lifecycle
-        val observer = LifecycleEventObserver { owner, event ->
-            eventHandler.value(owner, event)
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
+                scope.launch { eventHandler.value() }
+            }
         }
-
         lifecycle.addObserver(observer)
         onDispose {
             lifecycle.removeObserver(observer)
+            onPause.invoke()
         }
     }
 }

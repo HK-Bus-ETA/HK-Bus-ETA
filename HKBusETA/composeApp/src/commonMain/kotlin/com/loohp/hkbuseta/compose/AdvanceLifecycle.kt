@@ -30,7 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
 @Composable
-expect fun RestartEffect(onRestart: () -> Unit)
+expect fun RestartEffect(onRestart: suspend () -> Unit)
 
 @Composable
 expect fun PauseEffect(onPause: () -> Unit)

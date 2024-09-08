@@ -23,18 +23,22 @@ package com.loohp.hkbuseta.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import com.multiplatform.lifecycle.LifecycleEvent
 import com.multiplatform.lifecycle.LifecycleObserver
 import com.multiplatform.lifecycle.LocalLifecycleTracker
+import kotlinx.coroutines.launch
 
 @Composable
-actual fun RestartEffect(onRestart: () -> Unit) {
+actual fun RestartEffect(onRestart: suspend () -> Unit) {
     val lifecycleTracker = LocalLifecycleTracker.current
+    val scope = rememberCoroutineScope()
+
     DisposableEffect(Unit) {
         val listener = object : LifecycleObserver {
             override fun onEvent(event: LifecycleEvent) {
                 when (event) {
-                    LifecycleEvent.OnResumeEvent, LifecycleEvent.OnStartEvent -> onRestart.invoke()
+                    LifecycleEvent.OnResumeEvent, LifecycleEvent.OnStartEvent -> scope.launch { onRestart.invoke() }
                     else -> { /* do nothing */ }
                 }
             }

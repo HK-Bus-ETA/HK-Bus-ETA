@@ -158,10 +158,12 @@ import com.loohp.hkbuseta.utils.spToPixels
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
@@ -213,10 +215,11 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
 
         LaunchedEffect (Unit) {
             CoroutineScope(dispatcherIO).launch {
-                routeGroupedByDirections = result.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
+                val byDirection = result.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
+                withContext(Dispatchers.Main) { routeGroupedByDirections = byDirection }
                 val newSorted = sortTask.invoke()
                 if (newSorted != sortedByMode) {
-                    sortedByMode = newSorted
+                    withContext(Dispatchers.Main) { sortedByMode = newSorted }
                     hapticsController.enabled = false
                     hapticsController.invokedCallback = {
                         it.enabled = true

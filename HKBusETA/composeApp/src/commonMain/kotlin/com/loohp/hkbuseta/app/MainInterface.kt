@@ -102,6 +102,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 
@@ -205,10 +206,15 @@ fun SplashScreen(instance: AppActiveContext, onSplashScreenDone: () -> Unit) {
     LaunchedEffect (Unit) {
         CoroutineScope(dispatcherIO).launch {
             Splash.getRandomSplashEntry(instance)?.let {
-                splashData = it to it.readImage(instance).toByteArray().toImageBitmap()
+                val data = it to it.readImage(instance).toByteArray().toImageBitmap()
+                withContext(Dispatchers.Main) {
+                    splashData = data
+                }
             }
             delay(1000)
-            isDone = true
+            withContext(Dispatchers.Main) {
+                isDone = true
+            }
         }
     }
     LaunchedEffect (isDone, isHeldDown) {

@@ -1781,20 +1781,18 @@ fun LRTETADisplayInterface(
         }
     }
     RestartEffect {
-        CoroutineScope(dispatcherIO).launch {
-            placeholderRoute?.let { placeholderRoute ->
-                val result = CoroutineScope(dispatcherIO).async {
-                    Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
-                }.await()
-                if (result.isConnectionError) {
-                    errorCounter++
-                    if (errorCounter > 1) {
-                        etaState = result
-                    }
-                } else {
-                    errorCounter = 0
+        placeholderRoute?.let { placeholderRoute ->
+            val result = CoroutineScope(dispatcherIO).async {
+                Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            }.await()
+            if (result.isConnectionError) {
+                errorCounter++
+                if (errorCounter > 1) {
                     etaState = result
                 }
+            } else {
+                errorCounter = 0
+                etaState = result
             }
         }
     }

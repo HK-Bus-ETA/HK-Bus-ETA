@@ -26,7 +26,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 
 @Composable
-actual fun RestartEffect(onRestart: () -> Unit) {
+actual fun RestartEffect(onRestart: suspend () -> Unit) {
     LaunchedEffect (Unit) {
         onRestart.invoke()
     }
