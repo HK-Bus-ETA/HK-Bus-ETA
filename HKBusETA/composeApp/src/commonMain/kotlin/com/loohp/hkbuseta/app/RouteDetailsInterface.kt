@@ -101,6 +101,7 @@ import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteNotice
 import com.loohp.hkbuseta.common.objects.RouteNoticeImportance
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.SpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.asOriginData
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
@@ -111,6 +112,7 @@ import com.loohp.hkbuseta.common.objects.getDeepLink
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isFerry
@@ -118,7 +120,6 @@ import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
-import com.loohp.hkbuseta.common.objects.shouldAlertSpecialRoute
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
 import com.loohp.hkbuseta.common.objects.toRouteSearchResult
 import com.loohp.hkbuseta.common.objects.toStopIndexed
@@ -294,7 +295,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val importantNoticeCount by remember(notices) { derivedStateOf { notices?.count { it.importance == RouteNoticeImportance.IMPORTANT }?: 0 } }
     val possibleBidirectionalSectionFare by remember(notices, ctbHasTwoWaySectionFare) { derivedStateOf { co == Operator.NLB || ctbHasTwoWaySectionFare || notices?.any { it.title.lowercase().contains("section fare") || it.title.contains("分段收費") } == true } }
 
-    val alertCheckRoute by remember(route) { derivedStateOf { route.route!!.shouldAlertSpecialRoute(instance) } }
+    val alertCheckRoute by remember(route) { derivedStateOf { route.route!!.getSpecialRouteAlerts(instance).contains(SpecialRouteAlerts.CheckRoute) } }
 
     val routeBranches by remember(route) { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) } }
     val selectedBranch = remember { mutableStateOf(routeBranches.currentBranchStatus(currentLocalDateTime(), instance).asSequence().sortedByDescending { it.value.activeness }.first().key) }

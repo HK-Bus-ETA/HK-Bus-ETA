@@ -166,6 +166,7 @@ import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.indexOf
+import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.common.utils.mapToMutableMap
 import com.loohp.hkbuseta.common.utils.optDouble
 import com.loohp.hkbuseta.common.utils.optJsonArray
@@ -2500,7 +2501,7 @@ fun TrainStationBarrierFreeDisplay(
     ) {
         for ((id, category) in getMTRBarrierFreeCategories(instance)) {
             val categoryItems = items[id]
-            if (!categoryItems.isNullOrEmpty()) {
+            if (categoryItems.isNotNullAndNotEmpty()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

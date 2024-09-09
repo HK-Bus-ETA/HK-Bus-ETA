@@ -93,13 +93,18 @@ import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
+import com.loohp.hkbuseta.common.objects.SpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.bilingualOnlyToPrefix
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
 import com.loohp.hkbuseta.common.objects.getDeepLink
 import com.loohp.hkbuseta.common.objects.getDisplayFormattedName
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
+import com.loohp.hkbuseta.common.objects.shouldPrependTo
 import com.loohp.hkbuseta.common.objects.toRouteSearchResult
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.uniqueKey
@@ -112,7 +117,9 @@ import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
+import com.loohp.hkbuseta.common.utils.firstIsInstanceOrNull
 import com.loohp.hkbuseta.common.utils.indexOf
+import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -354,6 +361,14 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                     null
                 }
                 val color = co.getColor(routeNumber, Color.White).adjustBrightness(if (GlanceTheme.colors.isDark(instance.compose.context)) 1F else 0.7F)
+                val specialRouteAlerts = route.route!!.getSpecialRouteAlerts(instance)
+                val otherDests = specialRouteAlerts.firstIsInstanceOrNull<SpecialRouteAlerts.SpecialDest>()?.routes?.mapNotNull {
+                    if (it == route.route) {
+                        null
+                    } else {
+                        it to it.resolvedDestWithBranch(false, it, route.stopInfoIndex, route.stopInfo!!.stopId, instance)[Shared.language]
+                    }
+                }
 
                 Column(
                     modifier = GlanceModifier
@@ -415,23 +430,54 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                             Row(
                                 modifier = GlanceModifier.wrapContentSize(),
                             ) {
-                                Text(
-                                    modifier = GlanceModifier.wrapContentWidth(),
-                                    text = bilingualToPrefix[Shared.language],
-                                    style = TextDefaults.defaultTextStyle.copy(
-                                        color = GlanceTheme.colors.onBackground,
-                                        fontSize = 22F.sp * TextUnit.Small.value
+                                if (route.route!!.shouldPrependTo()) {
+                                    Text(
+                                        modifier = GlanceModifier.wrapContentWidth(),
+                                        text = bilingualToPrefix[Shared.language],
+                                        style = TextDefaults.defaultTextStyle.copy(
+                                            color = GlanceTheme.colors.onBackground,
+                                            fontSize = 22F.sp * TextUnit.Small.value
+                                        )
                                     )
-                                )
+                                }
                                 Text(
                                     modifier = GlanceModifier.defaultWeight(),
                                     text = dest,
                                     style = TextDefaults.defaultTextStyle.copy(
                                         color = GlanceTheme.colors.onBackground,
                                         fontSize = 22F.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = if (Shared.disableBoldDest) TextDefaults.defaultTextStyle.fontWeight else FontWeight.Bold
                                     )
                                 )
+                            }
+                            if (otherDests.isNotNullAndNotEmpty()) {
+                                otherDests?.let { otherDests ->
+                                    for ((otherRoute, otherDest) in otherDests) {
+                                        Row(
+                                            modifier = GlanceModifier.wrapContentSize(),
+                                        ) {
+                                            if (otherRoute.shouldPrependTo()) {
+                                                Text(
+                                                    modifier = GlanceModifier.wrapContentWidth(),
+                                                    text = bilingualOnlyToPrefix[Shared.language],
+                                                    style = TextDefaults.defaultTextStyle.copy(
+                                                        color = GlanceTheme.colors.onBackground,
+                                                        fontSize = 17F.sp * TextUnit.Small.value
+                                                    )
+                                                )
+                                            }
+                                            Text(
+                                                modifier = GlanceModifier.defaultWeight(),
+                                                text = otherDest,
+                                                style = TextDefaults.defaultTextStyle.copy(
+                                                    color = GlanceTheme.colors.onBackground,
+                                                    fontSize = 17F.sp,
+                                                    fontWeight = if (Shared.disableBoldDest) TextDefaults.defaultTextStyle.fontWeight else FontWeight.Bold
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             if (coSpecialRemark != null) {
                                 Text(

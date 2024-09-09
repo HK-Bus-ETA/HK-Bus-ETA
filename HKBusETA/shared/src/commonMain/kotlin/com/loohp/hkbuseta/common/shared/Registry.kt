@@ -137,6 +137,7 @@ import com.loohp.hkbuseta.common.utils.ifFalse
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.common.utils.isNightRoute
+import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.common.utils.minus
 import com.loohp.hkbuseta.common.utils.nextLocalDateTimeAfter
 import com.loohp.hkbuseta.common.utils.optDouble
@@ -2558,7 +2559,7 @@ class Registry {
         lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(language, null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
         val isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
         val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/nlb/stop.php?action=estimatedArrivals&routeId=${route.nlbId}&stopId=$stopId&language=${Shared.language}")
-        if (!data.isNullOrEmpty() && data.contains("estimatedArrivals")) {
+        if (data.isNotNullAndNotEmpty() && data.contains("estimatedArrivals")) {
             val buses = data.optJsonArray("estimatedArrivals")!!
             var counter = 0
             for (u in 0 until buses.size) {

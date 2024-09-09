@@ -125,7 +125,9 @@ import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSortMode
 import com.loohp.hkbuseta.common.objects.RouteSortPreference
+import com.loohp.hkbuseta.common.objects.SpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.bilingualOnlyToPrefix
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
 import com.loohp.hkbuseta.common.objects.bySortModes
 import com.loohp.hkbuseta.common.objects.displayName
@@ -136,12 +138,13 @@ import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getFare
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
 import com.loohp.hkbuseta.common.objects.isDefault
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
-import com.loohp.hkbuseta.common.objects.shouldAlertSpecialDest
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
 import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.shared.Registry
@@ -158,6 +161,7 @@ import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
+import com.loohp.hkbuseta.common.utils.firstIsInstanceOrNull
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.transformColors
 import com.loohp.hkbuseta.compose.ArrowUpward
@@ -910,7 +914,7 @@ fun RouteRow(
     val routeNumber = route.route!!.routeNumber
     val routeNumberDisplay = co.getListDisplayRouteNumber(routeNumber, true)
     val dest = route.resolvedDestFormatted(false, instance, *if (Shared.disableBoldDest) emptyArray() else arrayOf(BoldStyle))[Shared.language].asContentAnnotatedString().annotatedString
-    var hasSpecialDest by remember { mutableStateOf(false) }
+    var specialRouteAlerts: Set<SpecialRouteAlerts>? by remember { mutableStateOf(null) }
     val gmbRegion = route.route!!.gmbRegion
     val secondLineCoColor = co.getColor(routeNumber, Color.White).adjustBrightness(if (Shared.theme.isDarkMode) 1F else 0.7F)
     val localContentColor = LocalContentColor.current
@@ -936,14 +940,19 @@ fun RouteRow(
             add((if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
         }
     } }
+    val otherDests = specialRouteAlerts?.firstIsInstanceOrNull<SpecialRouteAlerts.SpecialDest>()?.routes?.mapNotNull {
+        if (it == route.route) {
+            null
+        } else {
+            it to it.resolvedDestWithBranchFormatted(false, it, route.stopInfoIndex, route.stopInfo!!.stopId, instance, *if (Shared.disableBoldDest) emptyArray() else arrayOf(BoldStyle))[Shared.language].asContentAnnotatedString().annotatedString
+        }
+    }
 
     LaunchedEffect (route) {
         if (checkSpecialDest) {
             CoroutineScope(dispatcherIO).launch {
-                val specialDest = route.route!!.shouldAlertSpecialDest(instance)
-                withContext(Dispatchers.Main) {
-                    hasSpecialDest = specialDest
-                }
+                val alerts = route.route!!.getSpecialRouteAlerts(instance)
+                withContext(Dispatchers.Main) { specialRouteAlerts = alerts }
             }
         }
     }
@@ -960,7 +969,7 @@ fun RouteRow(
             modifier = Modifier.requiredWidth(routeNumberWidth.equivalentDp),
             verticalArrangement = Arrangement.Center
         ) {
-            if (hasSpecialDest) {
+            if (specialRouteAlerts?.contains(SpecialRouteAlerts.CheckDest) == true) {
                 val contentColor = platformLocalContentColor
                 Box(
                     modifier = Modifier
@@ -1024,7 +1033,7 @@ fun RouteRow(
                     .annotatedString
             )
         }
-        if (secondLine.isEmpty()) {
+        if (secondLine.isEmpty() && otherDests == null) {
             Row(
                 modifier = Modifier.weight(1F),
                 horizontalArrangement = Arrangement.Start
@@ -1092,32 +1101,64 @@ fun RouteRow(
                         text = dest
                     )
                 }
-                val infiniteTransition = rememberInfiniteTransition(label = "SecondLineCrossFade")
-                val animatedCurrentLine by infiniteTransition.animateValue(
-                    initialValue = 0,
-                    targetValue = secondLine.size,
-                    typeConverter = Int.VectorConverter,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(5500 * secondLine.size, easing = LinearEasing),
-                        repeatMode = RepeatMode.Restart
-                    ),
-                    label = "SecondLineCrossFade"
-                )
-                Crossfade(
-                    modifier = Modifier.animateContentSize(),
-                    targetState = animatedCurrentLine,
-                    animationSpec = tween(durationMillis = 500, easing = LinearEasing),
-                    label = "SecondLineCrossFade"
-                ) {
-                    PlatformText(
-                        modifier = Modifier.userMarquee(),
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Start,
-                        fontSize = 16F.sp,
-                        lineHeight = 1.1F.em,
-                        maxLines = userMarqueeMaxLines(),
-                        text = secondLine[it.coerceIn(secondLine.indices)]
+                otherDests?.let { otherDests ->
+                    for ((otherRoute, otherDest) in otherDests) {
+                        Row(
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+                            if (otherRoute.shouldPrependTo()) {
+                                PlatformText(
+                                    modifier = Modifier.alignByBaseline(),
+                                    textAlign = TextAlign.Start,
+                                    lineHeight = 1.1F.em,
+                                    fontSize = 17F.sp,
+                                    maxLines = 1,
+                                    text = bilingualOnlyToPrefix[Shared.language].asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))
+                                )
+                            }
+                            PlatformText(
+                                modifier = Modifier
+                                    .alignByBaseline()
+                                    .weight(1F)
+                                    .userMarquee(),
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Start,
+                                lineHeight = 1.1F.em,
+                                fontSize = 17F.sp,
+                                maxLines = userMarqueeMaxLines(),
+                                text = otherDest
+                            )
+                        }
+                    }
+                }
+                if (secondLine.isNotEmpty()) {
+                    val infiniteTransition = rememberInfiniteTransition(label = "SecondLineCrossFade")
+                    val animatedCurrentLine by infiniteTransition.animateValue(
+                        initialValue = 0,
+                        targetValue = secondLine.size,
+                        typeConverter = Int.VectorConverter,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(5500 * secondLine.size, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart
+                        ),
+                        label = "SecondLineCrossFade"
                     )
+                    Crossfade(
+                        modifier = Modifier.animateContentSize(),
+                        targetState = animatedCurrentLine,
+                        animationSpec = tween(durationMillis = 500, easing = LinearEasing),
+                        label = "SecondLineCrossFade"
+                    ) {
+                        PlatformText(
+                            modifier = Modifier.userMarquee(),
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Start,
+                            fontSize = 16F.sp,
+                            lineHeight = 1.1F.em,
+                            maxLines = userMarqueeMaxLines(),
+                            text = secondLine[it.coerceIn(secondLine.indices)]
+                        )
+                    }
                 }
             }
         }

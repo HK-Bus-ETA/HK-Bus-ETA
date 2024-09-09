@@ -147,14 +147,14 @@ inline val WindowSizeClass.isNarrow: Boolean get() {
     }
 }
 
-sealed class AdaptiveTopBottomMode {
-    data object BottomToLeft: AdaptiveTopBottomMode()
-    data object BottomToRight: AdaptiveTopBottomMode()
+sealed interface AdaptiveTopBottomMode {
+    data object BottomToLeft: AdaptiveTopBottomMode
+    data object BottomToRight: AdaptiveTopBottomMode
     data class BottomToFloating(
         val alignment: Alignment,
         val aspectRatio: Float,
         val offsetState: MutableState<Offset>
-    ): AdaptiveTopBottomMode()
+    ): AdaptiveTopBottomMode
 }
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)

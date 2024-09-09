@@ -32,6 +32,7 @@ import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.FormattingTextContentStyle
 import com.loohp.hkbuseta.common.utils.RouteBranchStatus
 import com.loohp.hkbuseta.common.utils.SmallSize
+import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.cache
@@ -54,6 +55,7 @@ import kotlin.math.max
 
 
 val bilingualToPrefix = "往" withEn "To "
+val bilingualOnlyToPrefix = "只往" withEn "To "
 
 inline val Operator.isTrain: Boolean get() = when (this) {
     Operator.MTR, Operator.LRT -> true
@@ -743,25 +745,35 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
     }
 }
 
-@OptIn(ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
-fun Route.shouldAlertSpecialDest(context: AppContext): Boolean {
-    val (branches, remark) = shouldAlertSpecialInternal(context)
-    return remark.run { contains("特別班") && contains("開往") } &&
-            branches.currentBranchStatus(currentLocalDateTime(), context, false).values
-                .count { it != RouteBranchStatus.INACTIVE } > 1
+sealed interface SpecialRouteAlerts {
+    data object CheckRoute : SpecialRouteAlerts
+    data object CheckDest : SpecialRouteAlerts
+    data class SpecialDest(val routes: List<Route>) : SpecialRouteAlerts
 }
 
 @OptIn(ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
-fun Route.shouldAlertSpecialRoute(context: AppContext): Boolean {
-    val (branches, remark) = shouldAlertSpecialInternal(context)
-    return remark.contains("特別班") &&
-            branches.currentBranchStatus(currentLocalDateTime(), context, false).values
-                .count { it != RouteBranchStatus.INACTIVE } > 1
-}
-
-private fun Route.shouldAlertSpecialInternal(context: AppContext): Pair<List<Route>, String> {
-    return cache("shouldAlertSpecialInternal", this) {
-        Registry.getInstance(context).getAllBranchRoutes(routeNumber, idBound, co.firstCo()!!, gmbRegion) to resolveSpecialRemark(context, RemarkType.LABEL_ALL).zh
+fun Route.getSpecialRouteAlerts(context: AppContext): Set<SpecialRouteAlerts> {
+    if (co.firstCo()!!.let { it.isTrain || it.isFerry }) return emptySet()
+    val branches = cache("getSpecialRouteAlerts", routeGroupKey) {
+        Registry.getInstance(context).getAllBranchRoutes(routeNumber, idBound, co.firstCo()!!, gmbRegion)
+    }
+    val status = branches.currentBranchStatus(currentLocalDateTime(), context, false)
+    return buildSet {
+        val nonInactiveRoutes = status.filter { (_, v) -> v.activeness > 1 }
+        if (nonInactiveRoutes.size > 1) {
+            add(SpecialRouteAlerts.CheckRoute)
+            if (nonInactiveRoutes.asSequence().mapNotNull { (k) -> k.stops[k.co.firstCo()!!]?.lastOrNull() }.distinct().any(2)) {
+                add(SpecialRouteAlerts.CheckDest)
+            }
+        }
+        val activeRoutes = status.asSequence()
+            .filter { (_, v) -> v == RouteBranchStatus.ACTIVE }
+            .distinctBy { (k) -> k.stops[k.co.firstCo()!!]?.lastOrNull() }
+            .map { (k) -> k }
+            .toList()
+        if (activeRoutes.size > 1) {
+            add(SpecialRouteAlerts.SpecialDest(activeRoutes))
+        }
     }
 }
 

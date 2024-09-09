@@ -24,6 +24,8 @@ package com.loohp.hkbuseta.common.utils
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import co.touchlab.stately.concurrency.Lock
 import co.touchlab.stately.concurrency.withLock
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 
 class AutoSortedList<E: Comparable<E>, T: MutableList<E>>(
@@ -251,6 +253,16 @@ inline fun <T> Collection<T>.commonElementPercentage(other: Collection<T>): Floa
     return count / other.size.toFloat()
 }
 
+inline fun <T> Iterable<T>.any(threshold: Int): Boolean {
+    if (this is Collection && isEmpty()) return false
+    var count = 0
+    for (element in this) {
+        ++count
+        if (count >= threshold) return true
+    }
+    return false
+}
+
 inline fun <T> Iterable<T>.any(threshold: Int, predicate: (T) -> Boolean): Boolean {
     if (this is Collection && isEmpty()) return false
     var count = 0
@@ -259,4 +271,43 @@ inline fun <T> Iterable<T>.any(threshold: Int, predicate: (T) -> Boolean): Boole
         if (count >= threshold) return true
     }
     return false
+}
+
+inline fun <T> Sequence<T>.any(threshold: Int): Boolean {
+    var count = 0
+    for (element in this) {
+        ++count
+        if (count >= threshold) return true
+    }
+    return false
+}
+
+inline fun <T> Sequence<T>.any(threshold: Int, predicate: (T) -> Boolean): Boolean {
+    var count = 0
+    for (element in this) {
+        if (predicate(element)) ++count
+        if (count >= threshold) return true
+    }
+    return false
+}
+
+inline fun <reified R> Iterable<*>.firstIsInstanceOrNull(): R? {
+    for (element in this) if (element is R) return element
+    return null
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun <T> Collection<T>?.isNotNullAndNotEmpty(): Boolean {
+    contract {
+        returns(true) implies (this@isNotNullAndNotEmpty != null)
+    }
+    return !isNullOrEmpty()
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun <K, V> Map<out K, V>?.isNotNullAndNotEmpty(): Boolean {
+    contract {
+        returns(true) implies (this@isNotNullAndNotEmpty != null)
+    }
+    return !isNullOrEmpty()
 }

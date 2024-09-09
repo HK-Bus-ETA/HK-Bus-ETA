@@ -28,6 +28,7 @@ import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
 import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
 import com.loohp.hkbuseta.common.utils.forList
 import com.loohp.hkbuseta.common.utils.getRawResponse
+import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.json.Json
 
@@ -47,7 +48,7 @@ object Splash {
     }
 
     suspend fun reloadEntries(splashEntries: List<SplashEntry>?, context: AppContext) {
-        if (!splashEntries.isNullOrEmpty()) {
+        if (splashEntries.isNotNullAndNotEmpty()) {
             val removedEntries = this.splashEntries - splashEntries.toSet()
             removedEntries.forEach { context.deleteFile(it.imageName) }
             this.splashEntries.clear()
