@@ -215,8 +215,6 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
 
         LaunchedEffect (Unit) {
             CoroutineScope(dispatcherIO).launch {
-                val byDirection = result.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
-                withContext(Dispatchers.Main) { routeGroupedByDirections = byDirection }
                 val newSorted = sortTask.invoke()
                 if (newSorted != sortedByMode) {
                     withContext(Dispatchers.Main) { sortedByMode = newSorted }
@@ -229,6 +227,10 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                         scroll.scrollToItem(0)
                     }
                 }
+            }
+            CoroutineScope(dispatcherIO).launch {
+                val byDirection = result.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
+                withContext(Dispatchers.Main) { routeGroupedByDirections = byDirection }
             }
         }
         RestartEffect {
