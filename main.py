@@ -34,7 +34,8 @@ RECAPITALIZE_KEYWORDS = [
     "apm",
     "II",
     "GTC",
-    "HK"
+    "HK",
+    "HKFYG"
 ]
 
 NORMALIZE_CHARS = {
