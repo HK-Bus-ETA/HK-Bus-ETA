@@ -116,8 +116,8 @@ import com.loohp.hkbuseta.common.utils.clearGlobalCache
 import com.loohp.hkbuseta.common.utils.commonElementPercentage
 import com.loohp.hkbuseta.common.utils.containsKeyAndNotNull
 import com.loohp.hkbuseta.common.utils.createTimetable
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentEpochSeconds
-import com.loohp.hkbuseta.common.utils.currentFirstActiveBranch
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
@@ -1131,7 +1131,7 @@ class Registry {
             nearbyStops.sortBy { it.distance }
         }
         val now = currentLocalDateTime()
-        val nearbyRoutes: MutableMap<String, Pair<MutableList<Pair<RouteSearchResultEntry, Int>>, MutableList<Route>>> = mutableMapOf()
+        val nearbyRoutes: MutableMap<String, Pair<MutableList<Pair<RouteSearchResultEntry, Int>>, MutableList<Route>?>> = mutableMapOf()
         val allStopsCache: MutableMap<String, List<StopData>> = mutableMapOf()
         for (nearbyStop in nearbyStops) {
             val stopId = nearbyStop.stopId
@@ -1153,9 +1153,16 @@ class Registry {
                 val stopIndex = allStops.indexesOf { it.stopId == stopId }.minByOrNull { (it - branchStopIndex).absoluteValue }?: -1
                 if (nearbyRoutes.containsKey(routeGroupKey)) {
                     val (existingNearbyRoutes, routeSet) = nearbyRoutes[routeGroupKey]!!
-                    routeSet.apply {
-                        if (!contains(data)) add(data)
-                        sortBy { it.serviceType.parseIntOr(Int.MAX_VALUE) }
+                    if (serviceMap != null) {
+                        routeSet!!.apply {
+                            if (!contains(data)) {
+                                add(data)
+                                if (size > 1) {
+                                    val status = currentBranchStatus(now, serviceMap, getHolidays()) { null }
+                                    sortWith(compareByDescending<Route> { status[it]?.activeness?: 0 }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) })
+                                }
+                            }
+                        }
                     }
                     val (existingNearbyRoute, existingStopIndex) = existingNearbyRoutes.first()
                     val match = if (serviceMap == null) {
@@ -1169,7 +1176,7 @@ class Registry {
                             s1 > s2 || (s1 == s2 && existingNearbyRoute.route!!.gtfsId.parseIntOr(Int.MAX_VALUE) > data.gtfsId.parseIntOr(Int.MAX_VALUE))
                         }
                     } else {
-                        val routeSetActive = routeSet.currentFirstActiveBranch(now, serviceMap, getHolidays()) { null }.first()
+                        val routeSetActive = routeSet!!.first()
                         routeSetActive == data && (existingNearbyRoute.stopInfo!!.distance > nearbyStop.distance || existingNearbyRoute.route != routeSetActive)
                     }
                     if (match) {
@@ -1190,7 +1197,7 @@ class Registry {
                         }
                     }
                 } else {
-                    nearbyRoutes[routeGroupKey] = mutableListOf(RouteSearchResultEntry(key, data, co, nearbyStop, origin, isInterchangeSearch) to stopIndex) to mutableListOf(data)
+                    nearbyRoutes[routeGroupKey] = mutableListOf(RouteSearchResultEntry(key, data, co, nearbyStop, origin, isInterchangeSearch) to stopIndex) to if (serviceMap == null) null else mutableListOf(data)
                 }
             }
         }
@@ -1203,7 +1210,7 @@ class Registry {
         val weekday = hongKongTime.dayOfWeek
         val date = hongKongTime.date
         val isHoliday = weekday == DayOfWeek.SATURDAY || isPublicHoliday(date)
-        val nightRouteByTimetable = if (hasServiceDayMap()) {
+        val nightRouteByTimetable = if (serviceMap != null) {
             buildMap {
                 for ((ks, v) in nearbyRoutes.values) {
                     for ((k) in ks) {
@@ -1211,7 +1218,7 @@ class Registry {
                         getOrPut(k.routeKey) {
                             when {
                                 routeNumber.isNightRouteLazyMethod -> true
-                                routeNumber.lastOrNull() == 'S' -> v.createTimetable(getServiceDayMap()) { null }.isNightRoute()
+                                routeNumber.lastOrNull() == 'S' -> v!!.createTimetable(serviceMap) { null }.isNightRoute()
                                 else -> false
                             }
                         }
