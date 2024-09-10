@@ -2469,8 +2469,7 @@ class Registry {
         val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
         var counter = 0
         val usedRealSeq: MutableSet<Int> = HashSet()
-        for (u in 0 until buses.size) {
-            val bus = buses.optJsonObject(u)!!
+        for (bus in buses.asSequence().map { it.jsonObject }.sortedBy { it.optInt("eta_seq", Int.MAX_VALUE) }) {
             if (Operator.CTB === Operator.valueOf(bus.optString("co"))) {
                 val bound = bus.optString("dir")
                 val stopSeq = bus.optInt("seq")
