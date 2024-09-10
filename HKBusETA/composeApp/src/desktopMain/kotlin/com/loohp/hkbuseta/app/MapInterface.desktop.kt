@@ -43,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -82,6 +83,7 @@ import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import dev.datlag.kcef.KCEF
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.max
@@ -289,6 +291,7 @@ actual fun MapRouteInterface(
         val script by rememberLeafletScript(waypoints, alternateStopNameShowing, alternateStopNames)
         val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
         val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
+        val scope = rememberCoroutineScope()
 
         LaunchedEffect (script, webViewState.loadingState) {
             if (webViewState.loadingState == LoadingState.Finished) {
@@ -301,15 +304,15 @@ actual fun MapRouteInterface(
                 val clearness = pathColor.closenessTo(Color(0xFFFDE293))
                 val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
                 webViewNavigator.evaluateJavaScript("""
-                if (polylines || polylinesOutline) {
-                    polylinesOutline.forEach(function(polyline) {
-                        polyline.setStyle({ color: '$outlineHex', opacity: $outlineOpacity });
-                    });
-                    polylines.forEach(function(polyline) {
-                        polyline.setStyle({ color: '$colorHex', opacity: 1.0 });
-                    });
-                }
-            """.trimIndent())
+                    if (polylines || polylinesOutline) {
+                        polylinesOutline.forEach(function(polyline) {
+                            polyline.setStyle({ color: '$outlineHex', opacity: $outlineOpacity });
+                        });
+                        polylines.forEach(function(polyline) {
+                            polyline.setStyle({ color: '$colorHex', opacity: 1.0 });
+                        });
+                    }
+                """.trimIndent())
             }
         }
         LaunchedEffect (selectedStop, webViewState.loadingState) {
@@ -324,7 +327,7 @@ actual fun MapRouteInterface(
             webViewJsBridge.register(object : IJsMessageHandler {
                 override fun methodName(): String = "SelectStop"
                 override fun handle(message: JsMessage, navigator: WebViewNavigator?, callback: (String) -> Unit) {
-                    message.params.toIntOrNull()?.apply { selectedStop = indexMap[this] + 1 }
+                    message.params.toIntOrNull()?.apply { scope.launch { selectedStop = indexMap[this@apply] + 1 } }
                 }
             })
         }
@@ -369,6 +372,7 @@ actual fun MapSelectInterface(
         val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
         var position by remember { mutableStateOf(initialPosition) }
         var init by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
 
         LaunchedEffect (Unit) {
             webViewJsBridge.register(object : IJsMessageHandler {
@@ -376,8 +380,10 @@ actual fun MapSelectInterface(
                 override fun handle(message: JsMessage, navigator: WebViewNavigator?, callback: (String) -> Unit) {
                     val parts = message.params.split(",")
                     val pos = Coordinates(parts[0].toDouble(), parts[1].toDouble())
-                    position = pos
-                    onMove.invoke(pos, parts[2].toFloat())
+                    scope.launch {
+                        position = pos
+                        onMove.invoke(pos, parts[2].toFloat())
+                    }
                 }
             })
         }
@@ -385,20 +391,20 @@ actual fun MapSelectInterface(
             if (webViewState.loadingState == LoadingState.Finished) {
                 if (init) {
                     webViewNavigator.evaluateJavaScript("""
-                    map.flyTo([${initialPosition.lat},${initialPosition.lng}], 15, {animate: true, duration: 0.5});
-                """.trimIndent())
+                        map.flyTo([${initialPosition.lat},${initialPosition.lng}], 15, {animate: true, duration: 0.5});
+                    """.trimIndent())
                 } else {
                     webViewNavigator.evaluateJavaScript("""
-                    map.flyTo([${initialPosition.lat},${initialPosition.lng}], 15, {animate: false});
-                    
-                    function onMapMove() {
-                        var center = map.getCenter();
-                        var zoom = map.getZoom();
-                        window.kmpJsBridge.callNative("MoveCenter", center.lat + "," + center.lng + "," + zoom, null);
-                    }
-                    
-                    map.on('moveend', onMapMove);
-                """.trimIndent())
+                        map.flyTo([${initialPosition.lat},${initialPosition.lng}], 15, {animate: false});
+                        
+                        function onMapMove() {
+                            var center = map.getCenter();
+                            var zoom = map.getZoom();
+                            window.kmpJsBridge.callNative("MoveCenter", center.lat + "," + center.lng + "," + zoom, null);
+                        }
+                        
+                        map.on('moveend', onMapMove);
+                    """.trimIndent())
                     init = true
                 }
             }
@@ -406,15 +412,15 @@ actual fun MapSelectInterface(
         LaunchedEffect (position, currentRadius, webViewState.loadingState) {
             if (webViewState.loadingState == LoadingState.Finished) {
                 webViewNavigator.evaluateJavaScript("""
-                layer.clearLayers();
-                var marker = L.marker([lat, lng]).addTo(layer);
-                var circle = L.circle([lat, lng], {
-                    color: '#199fff',
-                    fillColor: '#199fff',
-                    fillOpacity: 0.3,
-                    radius: radius
-                }).addTo(layer);
-            """.trimIndent())
+                    layer.clearLayers();
+                    var marker = L.marker([lat, lng]).addTo(layer);
+                    var circle = L.circle([lat, lng], {
+                        color: '#199fff',
+                        fillColor: '#199fff',
+                        fillOpacity: 0.3,
+                        radius: radius
+                    }).addTo(layer);
+                """.trimIndent())
             }
         }
         LanguageDarkModeChangeEffect (webViewState.loadingState) { language, darkMode ->

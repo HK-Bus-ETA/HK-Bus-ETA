@@ -708,30 +708,39 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                             modifier = Modifier.fillMaxHeight(0.7F),
                             contentAlignment = Alignment.Center
                         ) {
-                            MapSelectInterface(instance, initialPosition, position.radius) { pos, zoom ->
-                                position = RadiusCenterPosition(pos.lat, pos.lng, position.radius)
-                                pxPerKm = 256F * 2F.pow(zoom) / 12742F
-                            }
+                            MapSelectInterface(
+                                instance = instance,
+                                initialPosition = initialPosition,
+                                currentRadius = position.radius,
+                                onMove = { pos, zoom ->
+                                    position = RadiusCenterPosition(pos.lat, pos.lng, position.radius)
+                                    pxPerKm = 256F * 2F.pow(zoom) / 12742F
+                                }
+                            )
                             Canvas(
                                 modifier = Modifier
                                     .matchParentSize()
                                     .clipToBounds()
                             ) {
+                                val radius = pxPerKm * position.radius
+                                val maxRadius = size.maxDimension * 0.75F
                                 drawCircle(
                                     color = Color(0xff199fff),
-                                    radius = pxPerKm * position.radius,
+                                    radius = radius.coerceAtMost(maxRadius),
                                     center = size.center,
                                     alpha = 0.3F,
                                     style = Fill
                                 )
-                                drawCircle(
-                                    color = Color(0xff199fff),
-                                    radius = pxPerKm * position.radius,
-                                    center = size.center,
-                                    style = Stroke(
-                                        width = 3.dp.toPx()
+                                if (radius < maxRadius) {
+                                    drawCircle(
+                                        color = Color(0xff199fff),
+                                        radius = radius,
+                                        center = size.center,
+                                        style = Stroke(
+                                            width = 3.dp.toPx()
+                                        )
                                     )
-                                )
+                                }
                             }
                             PlatformIcon(
                                 modifier = Modifier.size(30.dp),

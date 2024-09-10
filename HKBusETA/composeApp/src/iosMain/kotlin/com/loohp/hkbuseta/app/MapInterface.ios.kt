@@ -90,6 +90,7 @@ import platform.CoreGraphics.CGPoint
 import platform.CoreGraphics.CGPointMake
 import platform.CoreLocation.CLLocationCoordinate2D
 import platform.CoreLocation.CLLocationCoordinate2DMake
+import platform.CoreLocation.CLLocationDistance
 import platform.MapKit.MKAnnotationProtocol
 import platform.MapKit.MKAnnotationView
 import platform.MapKit.MKMapCamera
@@ -160,7 +161,7 @@ actual fun MapRouteInterface(
                     val location = stops[selectedStop - 1].stop.location
                     camera = MKMapCamera()
                     camera.centerCoordinate = location.toAppleCoordinates()
-                    camera.altitude = 1000.0
+                    camera.altitude = DefaultAltitude
                     map.setCamera(camera, true)
                 } else {
                     init = true
@@ -220,7 +221,7 @@ actual fun MapRouteInterface(
             lock.withLock {
                 val location = stops[selectedStop - 1].stop.location
                 camera.centerCoordinate = location.toAppleCoordinates()
-                camera.altitude = 1000.0
+                camera.altitude = DefaultAltitude
                 map.setCamera(camera, false)
                 checkLocationPermission(instance, true) { hasLocation = it }
             }
@@ -287,7 +288,7 @@ actual fun MapSelectInterface(
             delay(200)
             lock.withLock {
                 camera.centerCoordinate = initialPosition.toAppleCoordinates()
-                camera.altitude = 1000.0
+                camera.altitude = DefaultAltitude
                 map.setCamera(camera, false)
                 checkLocationPermission(instance, true) { hasLocation = it }
                 init = true
@@ -299,7 +300,7 @@ actual fun MapSelectInterface(
             lock.withLock {
                 if (init) {
                     camera.centerCoordinate = initialPosition.toAppleCoordinates()
-                    camera.altitude = 1000.0
+                    camera.altitude = DefaultAltitude
                     map.setCamera(camera, true)
                 }
             }
@@ -353,6 +354,8 @@ actual fun MapSelectInterface(
         )
     }
 }
+
+const val DefaultAltitude: CLLocationDistance = 2500.0
 
 @OptIn(ExperimentalForeignApi::class)
 inline fun Offset.asAppleMapOffset(): CValue<CGPoint> {

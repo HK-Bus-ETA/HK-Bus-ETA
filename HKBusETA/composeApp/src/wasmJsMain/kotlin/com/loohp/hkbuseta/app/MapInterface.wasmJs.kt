@@ -32,6 +32,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -61,6 +62,7 @@ import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.toHexString
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -99,6 +101,7 @@ actual fun MapRouteInterface(
     val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
     var selectedStop by selectedStopState
     val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
+    val scope = rememberCoroutineScope()
 
     val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode)
 
@@ -108,7 +111,7 @@ actual fun MapRouteInterface(
         val clearness = pathColor.closenessTo(Color(0xFFFDE293))
         val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
         webMap.updateMarkings(stopsJsArray, stopNames, pathsJsArray, colorHex, 1F, outlineHex, outlineOpacity, "assets/$iconFile", anchor.x, anchor.y) {
-            selectedStop = indexMap[it] + 1
+            scope.launch { selectedStop = indexMap[it] + 1 }
         }
     }
     LaunchedEffect (pathColor) {
@@ -149,15 +152,18 @@ actual fun MapSelectInterface(
     val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
     var position by remember { mutableStateOf(initialPosition) }
     var init by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode)
 
     LaunchedEffect (Unit) {
         webMap.show()
         webMap.startSelect(initialPosition.lat, initialPosition.lng, currentRadius) { lat, lng, zoom ->
-            val pos = Coordinates(lat, lng)
-            position = pos
-            onMove.invoke(position, zoom.toFloat())
+            scope.launch {
+                val pos = Coordinates(lat, lng)
+                position = pos
+                onMove.invoke(position, zoom.toFloat())
+            }
         }
         init = true
     }
