@@ -58,7 +58,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -81,7 +80,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -153,7 +151,6 @@ import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.findTextLengthDp
 import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getOperatorColor
-import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToPixels
 import kotlinx.collections.immutable.ImmutableList
@@ -687,14 +684,13 @@ fun RowScope.RouteRowText(
             )
             DrawPhaseColorText(
                 modifier = Modifier
+                    .alignByBaseline()
                     .weight(1F)
-                    .userMarquee()
-                    .alignByBaseline(),
+                    .userMarquee(),
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Start,
                 fontWeight = if (Shared.disableBoldDest) FontWeight.Normal else FontWeight.Bold,
                 fontSize = fontSize,
-                style = LocalTextStyle.current.let { if (co != Operator.MTR && Shared.language != "en") it.copy(baselineShift = BaselineShift(3F / fontSize.px)) else it },
                 color = { color },
                 maxLines = userMarqueeMaxLines(),
                 text = dest
