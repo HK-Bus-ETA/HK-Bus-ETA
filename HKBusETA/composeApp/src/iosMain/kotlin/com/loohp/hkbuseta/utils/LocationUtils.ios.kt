@@ -22,6 +22,8 @@
 package com.loohp.hkbuseta.utils
 
 import co.touchlab.stately.collections.ConcurrentMutableList
+import com.loohp.hkbuseta.appcontext.ComposePlatform
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
@@ -211,10 +213,17 @@ fun CLLocation.toLocationResult(): LocationResult {
 }
 
 fun LocationPriority.toCLLocationAccuracy(): CLLocationAccuracy {
-    return when (this) {
-        LocationPriority.FASTEST -> kCLLocationAccuracyHundredMeters
-        LocationPriority.FASTER -> kCLLocationAccuracyNearestTenMeters
-        LocationPriority.ACCURATE -> kCLLocationAccuracyBest
-        LocationPriority.MOST_ACCURATE -> kCLLocationAccuracyBestForNavigation
+    return if (composePlatform is ComposePlatform.MacAppleSiliconPlatform) {
+        when (this) {
+            LocationPriority.MOST_ACCURATE -> kCLLocationAccuracyBestForNavigation
+            else -> kCLLocationAccuracyBest
+        }
+    } else {
+        when (this) {
+            LocationPriority.FASTEST -> kCLLocationAccuracyHundredMeters
+            LocationPriority.FASTER -> kCLLocationAccuracyNearestTenMeters
+            LocationPriority.ACCURATE -> kCLLocationAccuracyBest
+            LocationPriority.MOST_ACCURATE -> kCLLocationAccuracyBestForNavigation
+        }
     }
 }
