@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
@@ -115,6 +116,7 @@ import androidx.compose.ui.zIndex
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.common
+import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.appcontext.newScreenGroup
@@ -151,6 +153,8 @@ import com.loohp.hkbuseta.common.objects.getMTRStationBarrierFree
 import com.loohp.hkbuseta.common.objects.getMTRStationLayoutUrl
 import com.loohp.hkbuseta.common.objects.getMTRStationStreetMapUrl
 import com.loohp.hkbuseta.common.objects.getStationBarrierFreeDetails
+import com.loohp.hkbuseta.common.objects.identifyStopCo
+import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
@@ -302,7 +306,11 @@ private val routeMapSearchSelectedTabIndexState: MutableStateFlow<Int> = Mutable
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RouteMapSearchInterface(instance: AppActiveContext, visible: Boolean, signal: Signal = dummySignal) {
+fun RouteMapSearchInterface(
+    instance: AppActiveContext,
+    visible: Boolean,
+    signal: Signal = dummySignal
+) {
     var routeMapSearchSelectedTabIndex by routeMapSearchSelectedTabIndexState.collectAsStateMultiplatform()
     val pagerState = rememberPagerState(
         initialPage = routeMapSearchSelectedTabIndex,
@@ -310,6 +318,26 @@ fun RouteMapSearchInterface(instance: AppActiveContext, visible: Boolean, signal
     )
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
+
+    var stopLaunch: String? by remember { mutableStateOf(null) }
+
+    LaunchedEffect (Unit) {
+        val stopId = instance.compose.data["stopLaunch"] as? String
+        if (stopId != null) {
+            val operators = stopId.identifyStopCo()
+            if (operators.isNotEmpty()) {
+                val co = operators.first()
+                if (co.isTrain) {
+                    when (co) {
+                        Operator.MTR -> pagerState.animateScrollToPage(0)
+                        Operator.LRT -> pagerState.animateScrollToPage(1)
+                    }
+                    stopLaunch = stopId
+                    instance.compose.data.remove("stopLaunch")
+                }
+            }
+        }
+    }
 
     LaunchedEffect (pagerState.currentPage, pagerState.isScrollInProgress) {
         val index = pagerState.currentPage
@@ -428,8 +456,8 @@ fun RouteMapSearchInterface(instance: AppActiveContext, visible: Boolean, signal
                     verticalAlignment = Alignment.Top,
                 ) {
                     when (it) {
-                        0 -> MTRRouteMapInterface(instance, location)
-                        1 -> LRTRouteMapInterface(instance, location)
+                        0 -> MTRRouteMapInterface(instance, location, stopLaunch, false)
+                        1 -> LRTRouteMapInterface(instance, location, stopLaunch, false)
                         2 -> NoticeInterface(instance, notices?.asImmutableList(), false)
                         else -> PlatformText(trainRouteMapItems[it].title[Shared.language])
                     }
@@ -511,7 +539,9 @@ var lastChosenLine: Color = Color.Transparent
 @Composable
 fun MTRRouteMapInterface(
     instance: AppActiveContext,
-    location: Coordinates?
+    location: Coordinates?,
+    stopLaunch: String?,
+    isPreview: Boolean
 ) {
     var zoomState by mtrRouteMapZoomState.collectAsStateMultiplatform()
     val state = rememberZoomableState(
@@ -530,7 +560,7 @@ fun MTRRouteMapInterface(
     var closestStop by closestStopState
 
     val sheetState = rememberPlatformModalBottomSheetState(skipPartiallyExpanded = true)
-    val selectedStopId by mtrRouteMapSelectedStopIdState.collectAsStateMultiplatform()
+    var selectedStopId by mtrRouteMapSelectedStopIdState.collectAsStateMultiplatform()
     var showingSheet by mtrRouteMapShowingSheetState.collectAsStateMultiplatform()
     var locationJumped by mtrRouteMapLocationJumpedState.collectAsStateMultiplatform()
     var selectedMtrStartingStation by selectedMtrStartingStationState.collectAsStateMultiplatform()
@@ -560,7 +590,7 @@ fun MTRRouteMapInterface(
                 if (selectedMtrStartingStation == null) {
                     selectedMtrStartingStation = stop.key
                 }
-                if (!locationJumped) {
+                if (!locationJumped && stopLaunch == null) {
                     mtrRouteMapData?.let { data ->
                         val position = data.stations[stop.key]!!
                         val scaleX = data.dimension.width / imageSize.width
@@ -569,6 +599,23 @@ fun MTRRouteMapInterface(
                         state.animateTranslateTo(-offset)
                         locationJumped = true
                     }
+                }
+            }
+        }
+    }
+    LaunchedEffect (stopLaunch) {
+        stopLaunch?.let { stopLaunch ->
+            while (mtrRouteMapData == null) delay(10)
+            mtrRouteMapData?.let { data ->
+                val position = data.stations[stopLaunch]
+                if (position != null) {
+                    val scaleX = data.dimension.width / imageSize.width
+                    val scaleY = data.dimension.height / imageSize.height
+                    val offset = Offset((position.x / scaleX) - (imageSize.width / 2), (position.y / scaleY) - (imageSize.height / 2))
+                    state.animateTranslateTo(-offset)
+                    selectedStopId = stopLaunch
+                    sheetState.hide()
+                    showingSheet = true
                 }
             }
         }
@@ -584,7 +631,7 @@ fun MTRRouteMapInterface(
                 sheetState = sheetState,
                 desktopCloseColor = Color.White
             ) {
-                MTRETADisplayInterface(stopId, stop, mtrSheetInfoTypeState, instance)
+                MTRETADisplayInterface(stopId, stop, mtrSheetInfoTypeState, isPreview, instance)
             }
         }
         if (mtrSheetInfoType.showing) {
@@ -758,7 +805,9 @@ fun MTRETADisplayInterface(
     stopId: String,
     stop: Stop,
     sheetInfoTypeState: MutableState<StationInfoSheetType>,
-    instance: AppActiveContext
+    isPreview: Boolean,
+    instance: AppActiveContext,
+    extraActions: (@Composable RowScope.() -> Unit)? = null
 ) {
     var routes: List<Triple<String, Color, ImmutableList<RouteSearchResultEntry>>> by remember(stopId) { mutableStateOf(emptyList()) }
     val etaState: SnapshotStateMap<String, Registry.ETAQueryResult?> = remember { mutableStateMapOf() }
@@ -827,16 +876,23 @@ fun MTRETADisplayInterface(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF001F50))
-                        .padding(5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                        .background(Color(0xFF001F50)),
+                    contentAlignment = Alignment.Center
                 ) {
+                    Row(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .align(Alignment.CenterStart)
+                    ) {
+                        extraActions?.invoke(this)
+                    }
                     PlatformText(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .padding(5.dp)
+                            .fillMaxWidth(),
                         color = Color(0xFFFFFFFF),
                         text = stop.remarkedName[Shared.language].asContentAnnotatedString().annotatedString,
                         fontSize = 25.sp,
@@ -928,7 +984,13 @@ fun MTRETADisplayInterface(
                     }
                 }
                 HorizontalDivider()
-                MTRRouteMapOptionsInterface(stopId, stop, sheetInfoTypeState, instance)
+                if (isPreview) {
+                    Spacer(modifier = Modifier.size(30.dp))
+                    PreviewDetailsButton(instance, stopId)
+                    Spacer(modifier = Modifier.size(30.dp))
+                } else {
+                    MTRRouteMapOptionsInterface(stopId, stop, sheetInfoTypeState, instance)
+                }
             }
         }
     )
@@ -1502,7 +1564,9 @@ private val selectedLrtStartingStationState: MutableStateFlow<String?> = Mutable
 @Composable
 fun LRTRouteMapInterface(
     instance: AppActiveContext,
-    location: Coordinates?
+    location: Coordinates?,
+    stopLaunch: String?,
+    isPreview: Boolean
 ) {
     var zoomState by lrtRouteMapZoomState.collectAsStateMultiplatform()
     val state = rememberZoomableState(
@@ -1521,7 +1585,7 @@ fun LRTRouteMapInterface(
     var closestStop by closestStopState
 
     val sheetState = rememberPlatformModalBottomSheetState(skipPartiallyExpanded = true)
-    val selectedStopId by lrtRouteMapSelectedStopIdState.collectAsStateMultiplatform()
+    var selectedStopId by lrtRouteMapSelectedStopIdState.collectAsStateMultiplatform()
     var showingSheet by lrtRouteMapShowingSheetState.collectAsStateMultiplatform()
     var locationJumped by lrtRouteMapLocationJumpedState.collectAsStateMultiplatform()
     var selectedLrtStartingStation by selectedLrtStartingStationState.collectAsStateMultiplatform()
@@ -1551,7 +1615,7 @@ fun LRTRouteMapInterface(
                 if (selectedLrtStartingStation == null) {
                     selectedLrtStartingStation = stop.key
                 }
-                if (!locationJumped) {
+                if (!locationJumped && stopLaunch == null) {
                     lightRailRouteMapData?.let { data ->
                         val position = data.stations[stop.key]!!
                         val scaleX = data.dimension.width / imageSize.width
@@ -1565,6 +1629,23 @@ fun LRTRouteMapInterface(
 
         }
     }
+    LaunchedEffect (stopLaunch) {
+        stopLaunch?.let { stopLaunch ->
+            while (lightRailRouteMapData == null) delay(10)
+            lightRailRouteMapData?.let { data ->
+                val position = data.stations[stopLaunch]
+                if (position != null) {
+                    val scaleX = data.dimension.width / imageSize.width
+                    val scaleY = data.dimension.height / imageSize.height
+                    val offset = Offset((position.x / scaleX) - (imageSize.width / 2), (position.y / scaleY) - (imageSize.height / 2))
+                    state.animateTranslateTo(-offset)
+                    selectedStopId = stopLaunch
+                    sheetState.hide()
+                    showingSheet = true
+                }
+            }
+        }
+    }
 
     LRTRouteMapMapInterface(state, sheetState, imageSizeState, closestStopState)
 
@@ -1576,7 +1657,7 @@ fun LRTRouteMapInterface(
                 sheetState = sheetState,
                 desktopCloseColor = Color(0xFF001F50)
             ) {
-                LRTETADisplayInterface(instance, stopId, stop, lrtSheetInfoTypeState)
+                LRTETADisplayInterface(instance, stopId, stop, lrtSheetInfoTypeState, isPreview)
             }
         }
         if (lrtSheetInfoType.showing) {
@@ -1595,7 +1676,7 @@ fun LRTRouteMapInterface(
     }
 }
 
-@OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LRTRouteMapMapInterface(
     state: ZoomableState,
@@ -1748,7 +1829,9 @@ fun LRTETADisplayInterface(
     instance: AppActiveContext,
     stopId: String,
     stop: Stop,
-    sheetInfoTypeState: MutableState<StationInfoSheetType>
+    sheetInfoTypeState: MutableState<StationInfoSheetType>,
+    isPreview: Boolean,
+    extraActions: (@Composable RowScope.() -> Unit)? = null
 ) {
     var placeholderRoute: RouteSearchResultEntry? by remember(stopId) { mutableStateOf(null) }
     var etaState: Registry.ETAQueryResult? by remember { mutableStateOf(null) }
@@ -1807,16 +1890,23 @@ fun LRTETADisplayInterface(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Operator.LRT.getOperatorColor(Color.White))
-                        .padding(5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                        .background(Operator.LRT.getOperatorColor(Color.White)),
+                    contentAlignment = Alignment.Center
                 ) {
+                    Row(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .align(Alignment.CenterStart)
+                    ) {
+                        extraActions?.invoke(this)
+                    }
                     PlatformText(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .padding(5.dp)
+                            .fillMaxWidth(),
                         color = Color(0xFF001F50),
                         text = stop.remarkedName[Shared.language].asContentAnnotatedString().annotatedString,
                         fontSize = 25.sp,
@@ -1881,7 +1971,12 @@ fun LRTETADisplayInterface(
                 }
                 HorizontalDivider()
                 Spacer(modifier = Modifier.size(30.dp))
-                LRTETADisplayOptionsInterface(instance, stopId, stop, sheetInfoTypeState)
+                if (isPreview) {
+                    PreviewDetailsButton(instance, stopId)
+                    Spacer(modifier = Modifier.size(30.dp))
+                } else {
+                    LRTETADisplayOptionsInterface(instance, stopId, stop, sheetInfoTypeState)
+                }
             }
         }
     )
@@ -2906,5 +3001,35 @@ fun TrainPathTableDisplay(
             }
             HorizontalDivider()
         }
+    }
+}
+
+@Composable
+fun PreviewDetailsButton(
+    instance: AppActiveContext,
+    stopId: String
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        PlatformButton(
+            onClick = {
+                val intent = AppIntent(instance, AppScreen.SEARCH_TRAIN)
+                intent.putExtra("stopLaunch", stopId)
+                instance.startActivity(intent)
+            },
+            content = {
+                PlatformIcon(
+                    modifier = Modifier.padding(end = 5.dp),
+                    painter = PlatformIcons.Outlined.Train,
+                    contentDescription = if (Shared.language == "en") "Details" else "詳細資訊"
+                )
+                PlatformText(
+                    fontSize = 17.sp,
+                    text = if (Shared.language == "en") "Details" else "詳細資訊"
+                )
+            }
+        )
     }
 }

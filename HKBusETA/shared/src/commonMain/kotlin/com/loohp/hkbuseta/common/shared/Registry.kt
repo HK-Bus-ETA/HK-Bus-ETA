@@ -73,6 +73,7 @@ import com.loohp.hkbuseta.common.objects.TrafficNews
 import com.loohp.hkbuseta.common.objects.TrainServiceStatus
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.defaultOperatorNotices
+import com.loohp.hkbuseta.common.objects.endOfLineText
 import com.loohp.hkbuseta.common.objects.fetchOperatorNotices
 import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.getBody
@@ -2861,7 +2862,7 @@ class Registry {
         val stopsList = route.stops[Operator.LRT]!!
         if (stopsList.indexOf(stopId) + 1 >= stopsList.size) {
             isMtrEndOfLine = true
-            lines[1] = ETALineEntry.textEntry(if (language == "en") "End of Line" else "終點站")
+            lines[1] = ETALineEntry.textEntry(route.endOfLineText[language])
         } else {
             val hongKongTime = Clock.System.now().toLocalDateTime(hongKongTimeZone)
             val hour = hongKongTime.hour
@@ -3039,7 +3040,7 @@ class Registry {
         val bound = route.bound[Operator.MTR]
         if (isMtrStopEndOfLine(stopId, lineName, bound)) {
             isMtrEndOfLine = true
-            lines[1] = ETALineEntry.textEntry(if (language == "en") "End of Line" else "終點站")
+            lines[1] = ETALineEntry.textEntry(route.endOfLineText[language])
         } else {
             val hongKongTime = Clock.System.now().toLocalDateTime(hongKongTimeZone)
             val hour = hongKongTime.hour
@@ -3310,7 +3311,7 @@ class Registry {
         val index = stops.indexOf(stopId)
         if (index + 1 >= stops.size) {
             isMtrEndOfLine = true
-            lines[1] = ETALineEntry.textEntry(if (language == "en") "End of Route" else "終點")
+            lines[1] = ETALineEntry.textEntry(route.endOfLineText[language])
         } else {
             val now = currentLocalDateTime() - 1.hours
             val stop = DATA!!.dataSheet.stopList[stops[index]]!!.hkkfStopCode

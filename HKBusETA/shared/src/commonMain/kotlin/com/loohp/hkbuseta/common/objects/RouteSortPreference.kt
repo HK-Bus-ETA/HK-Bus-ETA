@@ -48,6 +48,8 @@ data class RouteSortPreference(
 
     companion object {
 
+        val DEFAULT: RouteSortPreference = RouteSortPreference(RouteSortMode.NORMAL, false)
+
         fun fromLegacy(json: JsonPrimitive): RouteSortPreference {
             return RouteSortPreference(RouteSortMode.valueOf(json.content), false)
         }
@@ -79,4 +81,4 @@ data class RouteSortPreference(
 
 }
 
-inline val RouteSortPreference.isDefault: Boolean get() = routeSortMode == RouteSortMode.NORMAL && !filterTimetableActive
+inline val RouteSortPreference.isDefault: Boolean get() = this == RouteSortPreference.DEFAULT

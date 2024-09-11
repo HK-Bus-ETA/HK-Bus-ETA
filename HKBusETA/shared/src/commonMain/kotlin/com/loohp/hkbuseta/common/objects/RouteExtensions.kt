@@ -57,6 +57,20 @@ import kotlin.math.max
 val bilingualToPrefix = "往" withEn "To "
 val bilingualOnlyToPrefix = "只往" withEn "To "
 
+inline val Route.endOfLineText: BilingualText get() {
+    val co = co.firstCo()
+    return if (co?.isTrain == true) {
+        if (co == Operator.MTR) {
+            val lineName = routeNumber.getMtrLineName()
+            (lineName.zh + "終點站") withEn ("End of the " + lineName.en)
+        } else {
+            "終點站" withEn "End of Line"
+        }
+    } else {
+        "終點" withEn "End of Route"
+    }
+}
+
 inline val Operator.isTrain: Boolean get() = when (this) {
     Operator.MTR, Operator.LRT -> true
     else -> false
@@ -86,6 +100,22 @@ inline val Route.idBoundWithRegion: String get() = idBoundWithRegion(co.firstCo(
 fun Route.routeGroupKey(co: Operator): String = routeNumber + "," + co.name + "," + idBoundWithRegion(co)
 
 inline val Route.routeGroupKey: String get() = routeGroupKey(co.firstCo()!!)
+
+fun String.getMtrLineName(orElse: () -> BilingualText = { asBilingualText() }): BilingualText {
+    return when (this) {
+        "AEL" -> "機場快綫" withEn "Airport Express"
+        "TCL" -> "東涌綫" withEn "Tung Chung Line"
+        "TML" -> "屯馬綫" withEn "Tuen Ma Line"
+        "TKL" -> "將軍澳綫" withEn "Tseung Kwan O Line"
+        "EAL" -> "東鐵綫" withEn "East Rail Line"
+        "SIL" -> "南港島綫" withEn "South Island Line"
+        "TWL" -> "荃灣綫" withEn "Tsuen Wan Line"
+        "ISL" -> "港島綫" withEn "Island Line"
+        "KTL" -> "觀塘綫" withEn "Kwun Tong Line"
+        "DRL" -> "迪士尼綫" withEn "Disneyland Resort Line"
+        else -> orElse.invoke()
+    }
+}
 
 fun Operator.getOperatorColor(elseColor: Long): Long {
     return getColor("", elseColor)

@@ -233,7 +233,7 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
 @Stable
 class AppActiveContextComposeDesktop internal constructor(
     override val screen: AppScreen,
-    override val data: Map<String, Any?>,
+    override val data: MutableMap<String, Any?>,
     override val flags: Set<AppIntentFlag>,
     private val finishCallback: ((AppIntentResult) -> Unit)? = null
 ) : AppContextComposeDesktop(), AppActiveContextCompose {
@@ -402,5 +402,5 @@ class AppActiveContextComposeDesktop internal constructor(
 }
 
 actual val applicationAppContext: AppContextCompose = AppContextComposeDesktop()
-actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeDesktop(AppScreen.MAIN, emptyMap(), emptySet())
+actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeDesktop(AppScreen.MAIN, mutableMapOf(), emptySet())
 actual fun handleEmptyStack(stack: MutableList<AppActiveContextCompose>) { stack.add(initialScreen()) }

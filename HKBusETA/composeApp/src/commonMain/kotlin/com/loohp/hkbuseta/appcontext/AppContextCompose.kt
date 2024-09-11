@@ -108,7 +108,7 @@ interface AppContextCompose : AppContext {
 interface AppActiveContextCompose: AppContextCompose, AppActiveContext {
 
     val screen: AppScreen
-    val data: Map<String, Any?>
+    val data: MutableMap<String, Any?>
     val flags: Set<AppIntentFlag>
 
     fun setStatusNavBarColor(status: Color? = null, nav: Color? = null)

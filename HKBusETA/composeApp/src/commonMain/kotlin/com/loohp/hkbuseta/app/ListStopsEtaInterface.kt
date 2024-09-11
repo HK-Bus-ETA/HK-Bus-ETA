@@ -1191,7 +1191,9 @@ fun StopEntryCard(
                                 if (HistoryStack.historyStack.value.takeIf { i -> i.size > 1 }?.let { i -> i[i.lastIndex - 1] }?.screen == AppScreen.SEARCH_TRAIN) {
                                     instance.finish()
                                 } else {
-                                    instance.startActivity(AppIntent(instance, AppScreen.SEARCH_TRAIN))
+                                    val intent = AppIntent(instance, AppScreen.SEARCH_TRAIN)
+                                    intent.putExtra("stopLaunch", stopData.stopId)
+                                    instance.startActivity(intent)
                                 }
                             }
                             .padding(start = 10.dp)

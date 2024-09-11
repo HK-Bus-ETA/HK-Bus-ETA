@@ -206,7 +206,7 @@ open class AppContextComposeWeb internal constructor() : AppContextCompose {
 @Stable
 class AppActiveContextComposeWeb internal constructor(
     override val screen: AppScreen,
-    override val data: Map<String, Any?>,
+    override val data: MutableMap<String, Any?>,
     override val flags: Set<AppIntentFlag>,
     private val finishCallback: ((AppIntentResult) -> Unit)? = null
 ) : AppContextComposeWeb(), AppActiveContextCompose {
@@ -331,5 +331,5 @@ class AppActiveContextComposeWeb internal constructor(
 }
 
 actual val applicationAppContext: AppContextCompose = AppContextComposeWeb()
-actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeWeb(AppScreen.MAIN, emptyMap(), emptySet())
+actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeWeb(AppScreen.MAIN, mutableMapOf(), emptySet())
 actual fun handleEmptyStack(stack: MutableList<AppActiveContextCompose>) { stack.add(initialScreen()) }

@@ -97,6 +97,7 @@ import com.loohp.hkbuseta.common.objects.SpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.bilingualOnlyToPrefix
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
+import com.loohp.hkbuseta.common.objects.endOfLineText
 import com.loohp.hkbuseta.common.objects.getDeepLink
 import com.loohp.hkbuseta.common.objects.getDisplayFormattedName
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
@@ -545,7 +546,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                 if (eta.isMtrEndOfLine) {
                     Image(
                         modifier = GlanceModifier.size(25.dp),
-                        contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
+                        contentDescription = route.route!!.endOfLineText[Shared.language],
                         provider = ImageProvider(R.drawable.baseline_line_end_circle_24),
                         colorFilter = ColorFilter.tint(ColorProvider(etaColor(instance.context)))
                     )

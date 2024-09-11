@@ -108,6 +108,7 @@ import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
 import com.loohp.hkbuseta.common.objects.bySortModes
+import com.loohp.hkbuseta.common.objects.endOfLineText
 import com.loohp.hkbuseta.common.objects.extendedDisplayName
 import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.getDisplayFormattedName
@@ -848,7 +849,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults
                     Icon(
                         modifier = Modifier.size(18F.scaledSize(instance).sp.dp),
                         painter = painterResource(R.drawable.baseline_line_end_circle_24),
-                        contentDescription = if (Shared.language == "en") "End of Line" else "終點站",
+                        contentDescription = route.route!!.endOfLineText[Shared.language],
                         tint = Color(0xFFAAC3D5),
                     )
                 } else if (eta.isTyphoonSchedule) {

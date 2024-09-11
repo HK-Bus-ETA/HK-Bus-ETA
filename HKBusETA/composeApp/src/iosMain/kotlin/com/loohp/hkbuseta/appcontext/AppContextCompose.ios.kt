@@ -401,7 +401,7 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
 @Stable
 class AppActiveContextComposeIOS internal constructor(
     override val screen: AppScreen,
-    override val data: Map<String, Any?>,
+    override val data: MutableMap<String, Any?>,
     override val flags: Set<AppIntentFlag>,
     private val finishCallback: ((AppIntentResult) -> Unit)? = null
 ) : AppContextComposeIOS(), AppActiveContextCompose {
@@ -543,7 +543,7 @@ class AppActiveContextComposeIOS internal constructor(
 }
 
 actual val applicationAppContext: AppContextCompose = AppContextComposeIOS().apply { applicationBaseAppContext = this }
-actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeIOS(AppScreen.MAIN, emptyMap(), emptySet())
+actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeIOS(AppScreen.MAIN, mutableMapOf(), emptySet())
 actual fun handleEmptyStack(stack: MutableList<AppActiveContextCompose>) { stack.add(initialScreen()) }
 
 

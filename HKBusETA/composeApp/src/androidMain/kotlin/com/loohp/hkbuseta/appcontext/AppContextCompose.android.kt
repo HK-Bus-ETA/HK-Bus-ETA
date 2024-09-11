@@ -272,7 +272,7 @@ open class AppContextComposeAndroid internal constructor(
 @Stable
 class AppActiveContextComposeAndroid internal constructor(
     override val screen: AppScreen,
-    override val data: Map<String, Any?>,
+    override val data: MutableMap<String, Any?>,
     override val flags: Set<AppIntentFlag>,
     private val finishCallback: ((AppIntentResult) -> Unit)? = null
 ) : AppContextComposeAndroid(componentActivity), AppActiveContextCompose {
@@ -484,7 +484,7 @@ val Context.nonActiveAppContext: AppContextComposeAndroid get() = AppContextComp
 
 val componentActivity: ComponentActivity get() = componentActivityInternal ?: throw RuntimeException()
 actual fun handleEmptyStack(stack: MutableList<AppActiveContextCompose>) { componentActivityInternal?.finish()?.apply { componentActivityInternal = null } }
-actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeAndroid(AppScreen.MAIN, emptyMap(), emptySet())
+actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeAndroid(AppScreen.MAIN, mutableMapOf(), emptySet())
 
 val AppScreen.foregroundServiceActivityClass: Class<*> get() = when (this) {
     AppScreen.ALIGHT_REMINDER_SERVICE -> AlightReminderForegroundService::class.java

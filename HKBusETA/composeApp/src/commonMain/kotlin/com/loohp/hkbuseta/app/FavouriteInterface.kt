@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
@@ -75,6 +76,7 @@ import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
+import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.Stop
@@ -83,8 +85,10 @@ import com.loohp.hkbuseta.common.objects.anyEquals
 import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.asOriginData
 import com.loohp.hkbuseta.common.objects.asStop
+import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.indexOfName
 import com.loohp.hkbuseta.common.objects.isDefaultGroup
+import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.toRouteSearchResult
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.withEn
@@ -638,9 +642,10 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                         }
                     }
                     val (stopId, stop) = data
+                    val co by remember(stopId) { derivedStateOf { stopId.identifyStopCo().first() } }
                     routes[stop]?.let { route ->
                         var deleting by remember { mutableStateOf(false) }
-                        ListRoutesInterface(instance, route, true, RouteListType.FAVOURITE_STOP, true, RecentSortMode.CHOICE, stop.location.asOriginData(false), visible, visible, extraActions = {
+                        val extraActions: @Composable RowScope.() -> Unit = {
                             val haptic = LocalHapticFeedback.current
                             PlatformButton(
                                 modifier = Modifier
@@ -653,7 +658,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                 colors = ButtonDefaults.textButtonColors(),
                                 content = {
                                     PlatformIcon(
-                                        modifier = Modifier.size(23.dp),
+                                        modifier = Modifier.requiredSize(23.dp),
                                         painter = PlatformIcons.Filled.DeleteForever,
                                         tint = Color.Red,
                                         contentDescription = if (Shared.language == "en") "Remove Stop" else "刪除巴士站"
@@ -671,8 +676,13 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                 colors = ButtonDefaults.textButtonColors(),
                                 content = {
                                     PlatformIcon(
-                                        modifier = Modifier.size(23.dp),
+                                        modifier = Modifier.requiredSize(23.dp),
                                         painter = PlatformIcons.Filled.Map,
+                                        tint = when (co) {
+                                            Operator.MTR -> Color.White
+                                            Operator.LRT -> Color(0xFF001F50)
+                                            else -> null
+                                        },
                                         contentDescription = if (Shared.language == "en") "Open Stop Location on Maps" else "在地圖上顯示巴士站位置"
                                     )
                                 }
@@ -689,14 +699,19 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                     colors = ButtonDefaults.textButtonColors(),
                                     content = {
                                         PlatformIcon(
-                                            modifier = Modifier.size(23.dp),
+                                            modifier = Modifier.requiredSize(23.dp),
                                             painter = PlatformIcons.Filled.TransferWithinAStation,
                                             contentDescription = if (Shared.language == "en") "Open KMB BBI Layout Map" else "顯示九巴轉車站位置圖"
                                         )
                                     }
                                 )
                             }
-                        })
+                        }
+                        if (co.isTrain) {
+                            FavouriteTrainStationInterface(instance, stopId, stop, co, extraActions)
+                        } else {
+                            ListRoutesInterface(instance, route, true, RouteListType.FAVOURITE_STOP, true, RecentSortMode.CHOICE, stop.location.asOriginData(false), visible, visible, extraActions = extraActions)
+                        }
                         if (deleting) {
                             DeleteDialog(
                                 icon = PlatformIcons.Filled.DeleteForever,
@@ -714,6 +729,38 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun FavouriteTrainStationInterface(
+    instance: AppActiveContext,
+    stopId: String,
+    stop: Stop,
+    co: Operator,
+    extraActions: (@Composable RowScope.() -> Unit)? = null
+) {
+    when (co) {
+        Operator.MTR -> {
+            MTRETADisplayInterface(
+                stopId = stopId,
+                stop = stop,
+                sheetInfoTypeState = remember { mutableStateOf(StationInfoSheetType.NONE) },
+                isPreview = true,
+                instance = instance,
+                extraActions = extraActions
+            )
+        }
+        Operator.LRT -> {
+            LRTETADisplayInterface(
+                stopId = stopId,
+                stop = stop,
+                sheetInfoTypeState = remember { mutableStateOf(StationInfoSheetType.NONE) },
+                isPreview = true,
+                instance = instance,
+                extraActions = extraActions
+            )
         }
     }
 }
