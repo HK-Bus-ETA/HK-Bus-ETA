@@ -45,7 +45,8 @@ RECAPITALIZE_KEYWORDS = [
     "H.K.U.S.T.",
     "HSBC",
     "JPC",
-    "SOGO"
+    "SOGO",
+    "CNT"
 ]
 
 NORMALIZE_CHARS = {
