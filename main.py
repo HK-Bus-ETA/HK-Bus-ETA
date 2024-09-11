@@ -35,7 +35,17 @@ RECAPITALIZE_KEYWORDS = [
     "II",
     "GTC",
     "HK",
-    "HKFYG"
+    "HKFYG",
+    "HKU",
+    "HKSYU",
+    "CCC",
+    "H.K.",
+    "OSH",
+    "HACTL",
+    "H.K.U.S.T.",
+    "HSBC",
+    "JPC",
+    "SOGO"
 ]
 
 NORMALIZE_CHARS = {
