@@ -116,7 +116,6 @@ import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -138,9 +137,9 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
     if (swipe.currentValue) {
         instance.runOnUiThread {
             val text = if (Shared.language == "en") {
-                "Nearby Interchange Routes of ".plus(stop.name.en)
+                "Nearby Interchange Routes of ${stop.name.en}"
             } else {
-                "".plus(stop.name.zh).plus(" 附近轉乘路線")
+                "${stop.name.zh} 附近轉乘路線"
             }
             instance.showToastText(text, ToastDuration.LONG)
         }
@@ -458,7 +457,7 @@ fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
-        text = if (co.isTrain) name else index.toString().plus(". ").plus(name),
+        text = if (co.isTrain) name else "$index. $name",
         maxLines = 2,
         fontWeight = FontWeight.Bold,
         fontSizeRange = FontSizeRange(

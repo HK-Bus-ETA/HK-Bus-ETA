@@ -109,7 +109,7 @@ object WearOSShared {
                 if (context is Activity) {
                     var stacktrace = throwable.stackTraceToString()
                     if (stacktrace.length > 459000) {
-                        stacktrace = stacktrace.substring(0, 459000).plus("...")
+                        stacktrace = stacktrace.substring(0, 459000) + "..."
                     }
                     val intent = Intent(context, FatalErrorActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

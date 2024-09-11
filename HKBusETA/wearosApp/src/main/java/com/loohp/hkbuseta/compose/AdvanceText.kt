@@ -22,25 +22,19 @@ package com.loohp.hkbuseta.compose
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.isSpecified
-import androidx.compose.ui.graphics.isUnspecified
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -56,11 +50,12 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.common.shared.Shared
 
 
+@Suppress("NOTHING_TO_INLINE")
 @Composable
 inline fun DrawPhaseColorText(
     text: String,
     modifier: Modifier = Modifier,
-    crossinline color: () -> Color = { Color.Unspecified },
+    color: ColorProducer? = null,
     fontSize: TextUnit = TextUnit.Unspecified,
     fontStyle: FontStyle? = null,
     fontWeight: FontWeight? = null,
@@ -76,33 +71,34 @@ inline fun DrawPhaseColorText(
     noinline onTextLayout: (TextLayoutResult) -> Unit = { /* do nothing */ },
     style: TextStyle = LocalTextStyle.current
 ) {
-    DrawPhaseColorText(
-        text = AnnotatedString(text),
+    BasicText(
+        text = text,
         modifier = modifier,
-        color = color,
-        fontSize = fontSize,
-        fontStyle = fontStyle,
-        fontWeight = fontWeight,
-        fontFamily = fontFamily,
-        letterSpacing = letterSpacing,
-        textDecoration = textDecoration,
-        textAlign = textAlign,
-        lineHeight = lineHeight,
+        style = style.copy(
+            fontSize = fontSize,
+            fontStyle = fontStyle,
+            fontWeight = fontWeight,
+            fontFamily = fontFamily,
+            letterSpacing = letterSpacing,
+            textDecoration = textDecoration,
+            textAlign = textAlign?: TextAlign.Unspecified,
+            lineHeight = lineHeight,
+        ),
+        onTextLayout = onTextLayout,
         overflow = overflow,
         softWrap = softWrap,
         maxLines = maxLines,
         minLines = minLines,
-        inlineContent = emptyMap(),
-        onTextLayout = onTextLayout,
-        style = style
+        color = color
     )
 }
 
+@Suppress("NOTHING_TO_INLINE")
 @Composable
 inline fun DrawPhaseColorText(
     text: AnnotatedString,
     modifier: Modifier = Modifier,
-    crossinline color: () -> Color = { Color.Unspecified },
+    color: ColorProducer? = null,
     fontSize: TextUnit = TextUnit.Unspecified,
     fontStyle: FontStyle? = null,
     fontWeight: FontWeight? = null,
@@ -119,75 +115,27 @@ inline fun DrawPhaseColorText(
     noinline onTextLayout: (TextLayoutResult) -> Unit = { /* do nothing */ },
     style: TextStyle = androidx.wear.compose.material.LocalTextStyle.current
 ) {
-    val spanStyles by remember(text) { derivedStateOf {
-        var required = false
-        buildList {
-            for (each in text.spanStyles) {
-                if (each.item.color.isSpecified) required = true
-                add(if (each.item.color.isUnspecified) each.copy(item = each.item.copy(color = Color.Transparent)) else each)
-            }
-        }.takeIf { required }
-    } }
-    Box(
+    BasicText(
+        text = text,
         modifier = modifier,
-        contentAlignment = Alignment.TopStart
-    ) {
-        Text(
-            modifier = Modifier
-                .graphicsLayer {
-                    compositingStrategy = CompositingStrategy.Offscreen
-                }
-                .drawWithContent {
-                    drawContent()
-                    drawRect(
-                        color = color.invoke(),
-                        blendMode = BlendMode.SrcIn
-                    )
-                },
-            text = text,
-            color = Color.White,
+        style = style.copy(
             fontSize = fontSize,
             fontStyle = fontStyle,
             fontWeight = fontWeight,
             fontFamily = fontFamily,
             letterSpacing = letterSpacing,
             textDecoration = textDecoration,
-            textAlign = textAlign,
+            textAlign = textAlign?: TextAlign.Unspecified,
             lineHeight = lineHeight,
-            overflow = overflow,
-            softWrap = softWrap,
-            maxLines = maxLines,
-            minLines = minLines,
-            inlineContent = inlineContent,
-            onTextLayout = onTextLayout,
-            style = style
-        )
-        spanStyles?.apply {
-            Text(
-                text = AnnotatedString(
-                    text = text.text,
-                    spanStyles = this,
-                    paragraphStyles = text.paragraphStyles
-                ),
-                color = Color.White,
-                fontSize = fontSize,
-                fontStyle = fontStyle,
-                fontWeight = fontWeight,
-                fontFamily = fontFamily,
-                letterSpacing = letterSpacing,
-                textDecoration = textDecoration,
-                textAlign = textAlign,
-                lineHeight = lineHeight,
-                overflow = overflow,
-                softWrap = softWrap,
-                maxLines = maxLines,
-                minLines = minLines,
-                inlineContent = inlineContent,
-                onTextLayout = onTextLayout,
-                style = style
-            )
-        }
-    }
+        ),
+        onTextLayout = onTextLayout,
+        overflow = overflow,
+        softWrap = softWrap,
+        maxLines = maxLines,
+        minLines = minLines,
+        inlineContent = inlineContent,
+        color = color
+    )
 }
 
 @Composable
@@ -195,7 +143,73 @@ fun AutoResizeDrawPhaseColorText(
     text: String,
     fontSizeRange: FontSizeRange,
     modifier: Modifier = Modifier,
-    color: () -> Color = { Color.Unspecified },
+    color: ColorProducer? = null,
+    fontStyle: FontStyle? = null,
+    fontWeight: FontWeight? = null,
+    fontFamily: FontFamily? = null,
+    letterSpacing: TextUnit = TextUnit.Unspecified,
+    textDecoration: TextDecoration? = null,
+    textAlign: TextAlign? = null,
+    lineHeight: TextUnit = TextUnit.Unspecified,
+    overflow: TextOverflow = TextOverflow.Clip,
+    softWrap: Boolean = true,
+    maxLines: Int = Int.MAX_VALUE,
+    style: TextStyle = LocalTextStyle.current,
+) {
+    var previousText by remember { mutableStateOf(text) }
+    var fontSizeValue by remember { mutableFloatStateOf(fontSizeRange.max.value) }
+    var readyToDraw by remember { mutableStateOf(false) }
+
+    DrawPhaseColorText(
+        text = text,
+        color = color,
+        maxLines = maxLines,
+        fontStyle = fontStyle,
+        fontWeight = fontWeight,
+        fontFamily = fontFamily,
+        letterSpacing = letterSpacing,
+        textDecoration = textDecoration,
+        textAlign = textAlign,
+        lineHeight = lineHeight,
+        overflow = overflow,
+        softWrap = softWrap,
+        style = style,
+        fontSize = fontSizeValue.sp,
+        onTextLayout = {
+            if (previousText != text) {
+                if (fontSizeRange.resetToMaxIfTextUpdated) {
+                    fontSizeValue = fontSizeRange.max.value
+                }
+                previousText = text
+            }
+            if (it.didOverflowHeight || (maxLines <= 1 && it.didOverflowWidth)) {
+                if (readyToDraw) {
+                    readyToDraw = false
+                }
+                val nextFontSizeValue = fontSizeValue - fontSizeRange.step.value
+                if (nextFontSizeValue <= fontSizeRange.min.value) {
+                    // Reached minimum, set minimum font size and it's readToDraw
+                    fontSizeValue = fontSizeRange.min.value
+                    readyToDraw = true
+                } else {
+                    // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
+                    fontSizeValue = nextFontSizeValue
+                }
+            } else {
+                // Text fits before reaching the minimum, it's readyToDraw
+                readyToDraw = true
+            }
+        },
+        modifier = modifier.drawWithContent { if (readyToDraw) drawContent() }
+    )
+}
+
+@Composable
+fun AutoResizeDrawPhaseColorText(
+    text: AnnotatedString,
+    fontSizeRange: FontSizeRange,
+    modifier: Modifier = Modifier,
+    color: ColorProducer? = null,
     fontStyle: FontStyle? = null,
     fontWeight: FontWeight? = null,
     fontFamily: FontFamily? = null,
@@ -259,6 +273,72 @@ fun AutoResizeDrawPhaseColorText(
 @Composable
 fun AutoResizeText(
     text: String,
+    fontSizeRange: FontSizeRange,
+    modifier: Modifier = Modifier,
+    color: Color = Color.Unspecified,
+    fontStyle: FontStyle? = null,
+    fontWeight: FontWeight? = null,
+    fontFamily: FontFamily? = null,
+    letterSpacing: TextUnit = TextUnit.Unspecified,
+    textDecoration: TextDecoration? = null,
+    textAlign: TextAlign? = null,
+    lineHeight: TextUnit = TextUnit.Unspecified,
+    overflow: TextOverflow = TextOverflow.Clip,
+    softWrap: Boolean = true,
+    maxLines: Int = Int.MAX_VALUE,
+    style: TextStyle = LocalTextStyle.current,
+) {
+    var previousText by remember { mutableStateOf(text) }
+    var fontSizeValue by remember { mutableFloatStateOf(fontSizeRange.max.value) }
+    var readyToDraw by remember { mutableStateOf(false) }
+
+    Text(
+        text = text,
+        color = color,
+        maxLines = maxLines,
+        fontStyle = fontStyle,
+        fontWeight = fontWeight,
+        fontFamily = fontFamily,
+        letterSpacing = letterSpacing,
+        textDecoration = textDecoration,
+        textAlign = textAlign,
+        lineHeight = lineHeight,
+        overflow = overflow,
+        softWrap = softWrap,
+        style = style,
+        fontSize = fontSizeValue.sp,
+        onTextLayout = {
+            if (previousText != text) {
+                if (fontSizeRange.resetToMaxIfTextUpdated) {
+                    fontSizeValue = fontSizeRange.max.value
+                }
+                previousText = text
+            }
+            if (it.didOverflowHeight || (maxLines <= 1 && it.didOverflowWidth)) {
+                if (readyToDraw) {
+                    readyToDraw = false
+                }
+                val nextFontSizeValue = fontSizeValue - fontSizeRange.step.value
+                if (nextFontSizeValue <= fontSizeRange.min.value) {
+                    // Reached minimum, set minimum font size and it's readToDraw
+                    fontSizeValue = fontSizeRange.min.value
+                    readyToDraw = true
+                } else {
+                    // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
+                    fontSizeValue = nextFontSizeValue
+                }
+            } else {
+                // Text fits before reaching the minimum, it's readyToDraw
+                readyToDraw = true
+            }
+        },
+        modifier = modifier.drawWithContent { if (readyToDraw) drawContent() }
+    )
+}
+
+@Composable
+fun AutoResizeText(
+    text: AnnotatedString,
     fontSizeRange: FontSizeRange,
     modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,
