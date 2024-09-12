@@ -64,7 +64,7 @@ suspend fun isWasmSupported(): Boolean = CompletableDeferred<Boolean>().apply { 
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    setVersionImpl { Triple("HKBusETA", "2.3.0", 19) }
+    setVersionImpl { Triple("HKBusETA", "2.3.1", 19) }
     if (canDecodeGzip()) {
         provideGzipBodyAsTextImpl { data, charset ->
             val defer = CompletableDeferred<String>()

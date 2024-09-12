@@ -551,31 +551,36 @@ enum class RemarkType {
     RAW, LABEL_MAIN_BRANCH, LABEL_ALL, LABEL_ALL_EXCEPT_MAIN
 }
 
-abstract class RouteDifference {
-    abstract fun displayText(stopList: Map<String, Stop>): BilingualText
+sealed interface RouteDifference {
+    fun displayText(stopList: Map<String, Stop>): BilingualText
 }
-data object RouteDifferenceMain: RouteDifference() {
+data object RouteDifferenceMain: RouteDifference {
     override fun displayText(stopList: Map<String, Stop>): BilingualText {
         return BilingualText.EMPTY
     }
 }
+data object RouteDifferenceUnknown: RouteDifference {
+    override fun displayText(stopList: Map<String, Stop>): BilingualText {
+        return "常規特別路線" withEn "Regular Alt. Route"
+    }
+}
 data class RouteDifferenceDestination(
     val destinationName: BilingualText
-): RouteDifference() {
+): RouteDifference {
     override fun displayText(stopList: Map<String, Stop>): BilingualText {
         return ("開往" withEn "To ") + destinationName
     }
 }
 data class RouteDifferenceOrigin(
     val originName: BilingualText
-): RouteDifference() {
+): RouteDifference {
     override fun displayText(stopList: Map<String, Stop>): BilingualText {
         return ("從" withEn "From ") + originName + ("開出" withEn "")
     }
 }
 data class RouteDifferenceVia(
     val viaDiff: List<List<String>>
-): RouteDifference() {
+): RouteDifference {
     override fun displayText(stopList: Map<String, Stop>): BilingualText {
         return viaDiff.asSequence().mapNotNull {
             when (it.size) {
@@ -588,7 +593,7 @@ data class RouteDifferenceVia(
 }
 data class RouteDifferenceOmit(
     val omitDiff: List<List<String>>
-): RouteDifference() {
+): RouteDifference {
     override fun displayText(stopList: Map<String, Stop>): BilingualText {
         return omitDiff.asSequence().mapNotNull {
             when (it.size) {
@@ -601,7 +606,7 @@ data class RouteDifferenceOmit(
 }
 data class RouteDifferenceViaFirst(
     val firstVia: BilingualText
-): RouteDifference() {
+): RouteDifference {
     override fun displayText(stopList: Map<String, Stop>): BilingualText {
         return ("先經" withEn "Via ") + firstVia + ("" withEn " first")
     }
@@ -611,9 +616,9 @@ fun Collection<RouteDifference>.displayText(allStops: List<String>, stopList: Ma
     val diff = distinct()
     if (diff.size == 1) return diff.first().displayText(stopList)
     return buildList {
-        diff.filterIsInstance<RouteDifferenceMain>().forEach { add(it.displayText(stopList)) }
-        diff.filterIsInstance<RouteDifferenceDestination>().forEach { add(it.displayText(stopList)) }
-        diff.filterIsInstance<RouteDifferenceOrigin>().forEach { add(it.displayText(stopList)) }
+        diff.asSequence().filterIsInstance<RouteDifferenceMain>().forEach { add(it.displayText(stopList)) }
+        diff.asSequence().filterIsInstance<RouteDifferenceDestination>().forEach { add(it.displayText(stopList)) }
+        diff.asSequence().filterIsInstance<RouteDifferenceOrigin>().forEach { add(it.displayText(stopList)) }
         diff.filterIsInstance<RouteDifferenceVia>().let { f ->
             if (f.isNotEmpty()) {
                 add(RouteDifferenceVia(f.asSequence().map { it.viaDiff }.flatten().toList().mergeSequences(allStops)).displayText(stopList))
@@ -624,11 +629,11 @@ fun Collection<RouteDifference>.displayText(allStops: List<String>, stopList: Ma
                 add(RouteDifferenceOmit(f.asSequence().map { it.omitDiff }.flatten().toList().mergeSequences(allStops)).displayText(stopList))
             }
         }
-        diff.filterIsInstance<RouteDifferenceViaFirst>().forEach { add(it.displayText(stopList)) }
+        diff.asSequence().filterIsInstance<RouteDifferenceViaFirst>().forEach { add(it.displayText(stopList)) }
     }.joinBilingualText(" ".asBilingualText())
 }
 
-fun Route.findDifference(mainRoute: Route, stopList: Map<String, Stop>): RouteDifference {
+fun Route.findDifference(mainRoute: Route, stopList: Map<String, Stop>, definitiveMain: Boolean): RouteDifference {
     val co = bound.keys.firstCo()?: throw RuntimeException()
     return when {
         mainRoute.stops[co]?.last() != stops[co]?.last() -> RouteDifferenceDestination(dest)
@@ -673,10 +678,10 @@ fun Route.findDifference(mainRoute: Route, stopList: Map<String, Stop>): RouteDi
                                         stopList[diff.first()]!!.name
                                     })
                                 } else {
-                                    RouteDifferenceMain
+                                    if (definitiveMain) RouteDifferenceUnknown else RouteDifferenceMain
                                 }
                             } else {
-                                RouteDifferenceMain
+                                if (definitiveMain) RouteDifferenceUnknown else RouteDifferenceMain
                             }
                         }
                     }
@@ -701,7 +706,7 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
         val mainRoute = routeList.first()
         val proportions = timetable?.takeIf { co == Operator.KMB || co == Operator.CTB }?.getRouteProportions()?: mapOf(mainRoute to 1F)
         if (proportions[mainRoute]?.let { it > 0.4F } == true) {
-            val remark = (if (this != mainRoute) findDifference(mainRoute, stopList) else RouteDifferenceMain).displayText(stopList)
+            val remark = (if (this != mainRoute) findDifference(mainRoute, stopList, true) else RouteDifferenceMain).displayText(stopList)
             when (labelType) {
                 RemarkType.RAW -> remark
                 RemarkType.LABEL_MAIN_BRANCH -> remark.let {
@@ -742,7 +747,7 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
             val remark = buildList {
                 for (branch in routeList.sortedBy { proportions[it]?: 0F }) {
                     if (this@resolveSpecialRemark != branch) {
-                        add(findDifference(branch, stopList))
+                        add(findDifference(branch, stopList, false))
                     }
                 }
             }.displayText(allStops, stopList)

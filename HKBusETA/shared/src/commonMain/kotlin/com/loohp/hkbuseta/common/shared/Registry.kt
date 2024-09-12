@@ -1312,7 +1312,7 @@ class Registry {
                     val co = parameters[i].co
                     val list = lists[i]
                     list.sortWith(compareBy<Route> { it.gtfsId.parseIntOr(Int.MAX_VALUE) }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) })
-                    add(list.distinctBy { it.stops[co] })
+                    add(list.distinctBy { it.stops[co] to it.freq })
                 }
             }
         } catch (e: Throwable) {
