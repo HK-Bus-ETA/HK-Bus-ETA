@@ -76,8 +76,9 @@ RECAPITALIZE_KEYWORDS = [
     "SkyCity Marriott",
     "and",
     "of",
-    "the",
-    "for"
+    "for",
+    "of the",
+    "for the",
 ]
 
 NORMALIZE_CHARS = {
