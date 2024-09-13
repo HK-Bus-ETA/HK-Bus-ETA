@@ -22,6 +22,8 @@
 package com.loohp.hkbuseta.app
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.ScrollableDefaults
@@ -41,6 +43,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -67,10 +70,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -147,9 +153,11 @@ import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.getCircledNumber
 import com.loohp.hkbuseta.common.utils.isNightRoute
 import com.loohp.hkbuseta.common.utils.nightServiceMidnight
+import com.loohp.hkbuseta.common.utils.toDisplayText
 import com.loohp.hkbuseta.compose.AdaptiveTopBottomLayout
 import com.loohp.hkbuseta.compose.AltRoute
 import com.loohp.hkbuseta.compose.ArrowBack
+import com.loohp.hkbuseta.compose.ArrowDropDown
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.ConditionalComposable
 import com.loohp.hkbuseta.compose.FontSizeRange
@@ -168,6 +176,7 @@ import com.loohp.hkbuseta.compose.RightToLeftRow
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.UTurnRight
 import com.loohp.hkbuseta.compose.applyIf
+import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.isNarrow
 import com.loohp.hkbuseta.compose.plainTooltip
@@ -184,6 +193,7 @@ import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clearColors
+import com.loohp.hkbuseta.utils.fontScaledDp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.pixelsToDp
 import com.loohp.hkbuseta.utils.sp
@@ -844,25 +854,66 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                 .filter { it.specialRouteRemark != null }
                 .groupBy { it.specialRouteRemark!! }
                 .mapValues { it.value to denoteIndex++ }
+            val onlyDaily by remember(timetableKeysSorted) { derivedStateOf { timetableKeysSorted.size <= 1 } }
             timetableKeysSorted.forEach { weekdays ->
+                var dayExpanded by remember { mutableStateOf(onlyDaily || composePlatform.hasLargeScreen || weekdays.contains(weekday)) }
+                val dayDropdownIconDegree by animateFloatAsState(
+                    targetValue = if (dayExpanded) 180F else 0F,
+                    animationSpec = tween(300)
+                )
                 val entries = timetableData[weekdays]!!
                 val anyIntervals = entries.any { it is TimetableIntervalEntry }
                 val currentIndexes = timetableCurrentEntries[weekdays]!!
-                FlowRow(
+                var boxWidth by remember { mutableStateOf(0) }
+                var leftWidth by remember { mutableStateOf(0) }
+                var rightWidth by remember { mutableStateOf(0) }
+                var settled by remember { mutableStateOf(false) }
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 25.dp)
+                        .applyIf(!onlyDaily) { clickable { dayExpanded = !dayExpanded } }
+                        .onSizeChanged { boxWidth = it.width }
+                        .applyIf(settled) { animateContentSize() },
+                    contentAlignment = Alignment.TopStart
                 ) {
                     val style = FontWeight.Bold.takeIf { weekdays.contains(weekday) && currentIndexes.isNotEmpty() }
-                    PlatformText(
-                        textAlign = TextAlign.Start,
-                        fontSize = 16.sp,
-                        fontWeight = style,
-                        text = weekdays.displayText[Shared.language]
-                    )
-                    if (anyIntervals) {
+                    Row(
+                        modifier = Modifier.onSizeChanged { leftWidth = it.width },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         PlatformText(
-                            modifier = Modifier.weight(1F),
+                            textAlign = TextAlign.Start,
+                            fontSize = 16.sp,
+                            fontWeight = style,
+                            text = weekdays.displayText[Shared.language]
+                        )
+                        if (!onlyDaily) {
+                            PlatformIcon(
+                                modifier = Modifier
+                                    .rotate(dayDropdownIconDegree)
+                                    .size(20.fontScaledDp),
+                                painter = PlatformIcons.Filled.ArrowDropDown,
+                                contentDescription = null
+                            )
+                        }
+                    }
+                    androidx.compose.animation.AnimatedVisibility(
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                        visible = anyIntervals && dayExpanded
+                    ) {
+                        PlatformText(
+                            modifier = Modifier
+                                .onSizeChanged { rightWidth = it.width }
+                                .layout { measurable, constraints ->
+                                    val placeable = measurable.measure(constraints)
+                                    val flow = if (leftWidth + rightWidth > boxWidth) placeable.height else 0
+                                    layout(placeable.width, placeable.height + flow) {
+                                        placeable.placeRelative(0, flow)
+                                    }.apply {
+                                        settled = true
+                                    }
+                                },
                             textAlign = TextAlign.End,
                             fontSize = 16.sp,
                             fontWeight = style,
@@ -872,44 +923,130 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                     }
                 }
                 HorizontalDivider()
-                val timeStrings = mutableListOf<AnnotatedString>()
-                val intervalStrings = mutableListOf<AnnotatedString>()
-                for ((index, entry) in entries.withIndex()) {
-                    val style = SpanStyle(fontWeight = FontWeight.Bold.takeIf { currentIndexes.contains(index) })
-                    val stars = (entry.specialRouteRemark?.let { specialDenoteChar(remarks[it]!!.second) }?: "").asAnnotatedString(style)
-                    when (entry) {
-                        is TimetableIntervalEntry -> {
-                            timeStrings.add(stars + entry.toString(Shared.language).asAnnotatedString(style))
-                            intervalStrings.add(entry.interval.toString().asAnnotatedString(style))
-                        }
-                        is TimetableSingleEntry -> {
-                            if (anyIntervals || intervalStrings.lastOrNull()?.isEmpty() == true) {
-                                timeStrings.add(stars + entry.toString(Shared.language).asAnnotatedString(style))
-                                intervalStrings.add("".asAnnotatedString())
-                            } else {
-                                val lastString = timeStrings.removeLastOrNull()?.let { it + ", ".asAnnotatedString() }?: "".asAnnotatedString(style)
-                                timeStrings.add(lastString + stars + entry.toString(Shared.language).asAnnotatedString(style))
+                Column(
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .animateContentSize()
+                ) {
+                    if (dayExpanded) {
+                        val timetableDisplayEntries = mutableListOf<TimetableDisplayEntries>()
+                        for ((index, entry) in entries.withIndex()) {
+                            val style = SpanStyle(fontWeight = FontWeight.Bold.takeIf { currentIndexes.contains(index) })
+                            val stars = (entry.specialRouteRemark?.let { specialDenoteChar(remarks[it]!!.second) }?: "").asAnnotatedString(style)
+                            when (entry) {
+                                is TimetableIntervalEntry -> {
+                                    val currentSubIndexes by remember(now, entry) { derivedStateOf { if (weekdays.contains(weekday)) entry.subEntries.currentEntry(now) else emptyList() } }
+                                    val subDisplayEntries: List<TimetableDisplayEntries>? = if (entry.subEntries.size > 1) {
+                                        buildList {
+                                            for ((subIndex, subEntry) in entry.subEntries.withIndex()) {
+                                                val subStyle = SpanStyle(fontWeight = FontWeight.Bold.takeIf { currentSubIndexes.contains(subIndex) })
+                                                add(
+                                                    TimetableDisplayEntries(
+                                                        timeString = stars + subEntry.toString(Shared.language).asAnnotatedString(subStyle),
+                                                        intervalString = subEntry.interval.toDisplayText().asAnnotatedString(subStyle)
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        null
+                                    }
+                                    timetableDisplayEntries.add(
+                                        TimetableDisplayEntries(
+                                            timeString = stars + entry.toString(Shared.language).asAnnotatedString(style),
+                                            intervalString = entry.interval.toDisplayText().asAnnotatedString(style),
+                                            subDisplayEntries = subDisplayEntries
+                                        )
+                                    )
+                                }
+                                is TimetableSingleEntry -> {
+                                    if (anyIntervals || timetableDisplayEntries.lastOrNull()?.intervalString?.isNotEmpty() == true) {
+                                        timetableDisplayEntries.add(
+                                            TimetableDisplayEntries(
+                                                timeString = stars + entry.toString(Shared.language).asAnnotatedString(style),
+                                                intervalString = "".asAnnotatedString()
+                                            )
+                                        )
+                                    } else {
+                                        val lastEntry = timetableDisplayEntries.removeLastOrNull()
+                                        val lastString = lastEntry?.timeString?.let { it + ", ".asAnnotatedString() }?: "".asAnnotatedString()
+                                        timetableDisplayEntries.add(
+                                            TimetableDisplayEntries(
+                                                timeString = lastString + stars + entry.toString(Shared.language).asAnnotatedString(style),
+                                                intervalString = "".asAnnotatedString()
+                                            )
+                                        )
+                                    }
+                                }
+                                is TimetableSpecialEntry -> {
+                                    timetableDisplayEntries.add(
+                                        TimetableDisplayEntries(
+                                            timeString = stars + entry.toString(Shared.language).asAnnotatedString(style),
+                                            intervalString = " ".asAnnotatedString()
+                                        )
+                                    )
+                                }
                             }
                         }
-                        is TimetableSpecialEntry -> {
-                            timeStrings.add(stars + entry.toString(Shared.language).asAnnotatedString(style))
-                            intervalStrings.add(" ".asAnnotatedString())
+                        for (entry in timetableDisplayEntries) {
+                            var expanded by remember { mutableStateOf(false) }
+                            val dropdownIconDegree by animateFloatAsState(
+                                targetValue = if (expanded) 180F else 0F,
+                                animationSpec = tween(300)
+                            )
+                            Column(
+                                modifier = Modifier
+                                    .applyIf(entry.subDisplayEntries != null) { clickable { expanded = !expanded } }
+                                    .animateContentSize()
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        modifier = Modifier.wrapContentSize(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        PlatformText(
+                                            fontSize = 16.sp,
+                                            text = entry.timeString
+                                        )
+                                        if (entry.subDisplayEntries != null) {
+                                            PlatformIcon(
+                                                modifier = Modifier
+                                                    .rotate(dropdownIconDegree)
+                                                    .size(20.fontScaledDp),
+                                                painter = PlatformIcons.Filled.ArrowDropDown,
+                                                contentDescription = null
+                                            )
+                                        }
+                                    }
+                                    PlatformText(
+                                        fontSize = 16.sp,
+                                        text = entry.intervalString
+                                    )
+                                }
+                                if (expanded && entry.subDisplayEntries != null) {
+                                    for (subEntry in entry.subDisplayEntries) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(start = 20.fontScaledDp),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            PlatformText(
+                                                fontSize = 14.sp,
+                                                text = subEntry.timeString
+                                            )
+                                            PlatformText(
+                                                fontSize = 14.sp,
+                                                text = subEntry.intervalString
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
-                }
-                for ((i, e) in timeStrings.withIndex()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        PlatformText(
-                            fontSize = 16.sp,
-                            text = e
-                        )
-                        PlatformText(
-                            fontSize = 16.sp,
-                            text = intervalStrings.getOrNull(i)?: "".asAnnotatedString()
-                        )
                     }
                 }
             }
@@ -926,3 +1063,10 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
         }
     }
 }
+
+@Immutable
+data class TimetableDisplayEntries(
+    val timeString: AnnotatedString,
+    val intervalString: AnnotatedString,
+    val subDisplayEntries: List<TimetableDisplayEntries>? = null
+)

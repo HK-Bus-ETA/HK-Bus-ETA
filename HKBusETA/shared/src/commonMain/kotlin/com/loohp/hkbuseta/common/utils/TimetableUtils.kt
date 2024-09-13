@@ -178,15 +178,34 @@ sealed class TimetableEntry(
     abstract fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean
     abstract infix fun overlap(other: TimetableEntry): Boolean
     abstract fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TimetableEntry) return false
+        if (route != other.route) return false
+        if (specialRouteRemark != other.specialRouteRemark) return false
+        if (compareTime != other.compareTime) return false
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = route.hashCode()
+        result = 31 * result + (specialRouteRemark?.hashCode() ?: 0)
+        result = 31 * result + (compareTime?.hashCode() ?: 0)
+        return result
+    }
 }
 @Immutable
 class TimetableIntervalEntry(
     route: Route,
     val start: LocalTime,
     val end: LocalTime,
-    val interval: Int,
-    specialRouteRemark: BilingualText?
+    val interval: IntRange,
+    specialRouteRemark: BilingualText?,
+    subEntries: List<TimetableIntervalEntry>? = null
 ): TimetableEntry(route, specialRouteRemark, start) {
+    val subEntries: List<TimetableIntervalEntry> = subEntries?: listOf(this)
+    fun mergeAfter(entry: TimetableIntervalEntry): TimetableIntervalEntry {
+        return TimetableIntervalEntry(route, start, entry.end, interval merge entry.interval, specialRouteRemark, subEntries + entry.subEntries)
+    }
     override fun toString(language: String): String {
         return "${start.hour.pad(2)}:${start.minute.pad(2)} - ${end.hour.pad(2)}:${end.minute.pad(2)}"
     }
@@ -201,7 +220,23 @@ class TimetableIntervalEntry(
         return false
     }
     override fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int {
-        return ((end - start).inWholeMinutes.toInt() / interval) + if (firstServiceCheck.invoke(start)) 1 else 0
+        return ((end - start).inWholeMinutes.toInt() / interval.middle) + if (firstServiceCheck.invoke(start)) 1 else 0
+    }
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TimetableIntervalEntry) return false
+        if (!super.equals(other)) return false
+        if (start != other.start) return false
+        if (end != other.end) return false
+        if (interval != other.interval) return false
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + start.hashCode()
+        result = 31 * result + end.hashCode()
+        result = 31 * result + interval.hashCode()
+        return result
     }
 }
 @Immutable
@@ -222,6 +257,18 @@ class TimetableSingleEntry(
     override fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int {
         return 1
     }
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TimetableSingleEntry) return false
+        if (!super.equals(other)) return false
+        if (time != other.time) return false
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + time.hashCode()
+        return result
+    }
 }
 @Immutable
 class TimetableSpecialEntry(
@@ -233,6 +280,18 @@ class TimetableSpecialEntry(
     override fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean = false
     override infix fun overlap(other: TimetableEntry): Boolean = false
     override fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int = 0
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TimetableSpecialEntry) return false
+        if (!super.equals(other)) return false
+        if (notice != other.notice) return false
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + notice.hashCode()
+        return result
+    }
 }
 
 fun List<TimetableEntry>.currentEntry(
@@ -379,12 +438,28 @@ class TimetableEntryMapBuilder(
         timetableEntries.forEach { routeOrder.add(it.route) }
     }
 
+    private fun mergeSimilarTimeIntervals(entries: MutableList<TimetableEntry>) {
+        for (i in (entries.size - 1) downTo 1) {
+            val currentEntry = entries[i]
+            if (currentEntry is TimetableIntervalEntry) {
+                val previousEntry = entries[i - 1]
+                if (previousEntry is TimetableIntervalEntry && currentEntry.route == previousEntry.route && currentEntry.start == previousEntry.end && currentEntry.interval maxDifference previousEntry.interval <= 5) {
+                    entries.removeAt(i)
+                    entries[i - 1] = previousEntry.mergeAfter(currentEntry)
+                }
+            }
+        }
+    }
+
     fun build(): Map<OperatingWeekdays, List<TimetableEntry>> {
         if (timetableEntryMap.isEmpty()) {
             return mapOf(OperatingWeekdays.ALL to listOf(TimetableSpecialEntry(defaultRoute, "只在特定日子提供服務/沒有時間表資訊" withEn "Service only on specific days / No timetable info", null)))
         }
         val merged: MutableMap<OperatingWeekdays, List<TimetableEntry>> = mutableMapOf()
         var current: Pair<MutableSet<DayOfWeek>, List<TimetableEntry>>? = null
+        for (timetableEntries in timetableEntryMap.values) {
+            mergeSimilarTimeIntervals(timetableEntries)
+        }
         for ((weekday, timetableEntries) in timetableEntryMap) {
             when {
                 current == null -> current = mutableSetOf(weekday) to timetableEntries
@@ -457,7 +532,7 @@ fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>,
                         val entries = v.map { (start, list) ->
                             when (list) {
                                 null -> TimetableSingleEntry(it, start.parseLocalTime(), remark)
-                                else -> TimetableIntervalEntry(it, start.parseLocalTime(), list[0].parseLocalTime(), list[1].parseInterval(), remark)
+                                else -> TimetableIntervalEntry(it, start.parseLocalTime(), list[0].parseLocalTime(), list[1].parseInterval().asRange(), remark)
                             }
                         }
                         insert(weekdays, entries)

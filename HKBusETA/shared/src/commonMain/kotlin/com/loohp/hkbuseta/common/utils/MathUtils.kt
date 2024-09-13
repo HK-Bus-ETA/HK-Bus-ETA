@@ -26,6 +26,8 @@ import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -110,3 +112,10 @@ inline fun Double.toDegrees(): Double = this * 180.0 / PI
 
 inline fun Float.floorToInt(): Int = floor(this).toInt()
 inline fun Float.ceilToInt(): Int = ceil(this).toInt()
+
+inline val IntRange.middle: Int get() = (last + first) / 2
+inline val IntRange.isRange: Boolean get() = last != first
+inline fun Int.asRange(): IntRange = this..this
+inline infix fun IntRange.maxDifference(other: IntRange): Int = max(other.last - first, last - other.first)
+inline infix fun IntRange.merge(other: IntRange): IntRange = min(first, other.first)..max(last, other.last)
+inline fun IntRange.toDisplayText(): String = if (isRange) "$first-$last" else first.toString()
