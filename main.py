@@ -78,7 +78,7 @@ RECAPITALIZE_KEYWORDS = [
     "of",
     "for",
     "of the",
-    "for the",
+    "for the"
 ]
 
 NORMALIZE_CHARS = {
