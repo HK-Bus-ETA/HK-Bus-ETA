@@ -111,11 +111,13 @@ import androidx.compose.ui.unit.sp
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
 import com.loohp.hkbuseta.appcontext.HistoryStack
+import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.appcontext.newScreenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.GeneralDirection
@@ -183,8 +185,8 @@ import com.loohp.hkbuseta.compose.Schedule
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Sort
 import com.loohp.hkbuseta.compose.applyIfNotNull
-import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.combinedClickable
 import com.loohp.hkbuseta.compose.loadingPlaceholder
 import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.compose.platformComponentBackgroundColor
@@ -692,8 +694,8 @@ fun ListRouteInterfaceInternal(
     val lastLookupRoutes by if (listType == RouteListType.RECENT) Shared.lastLookupRoutes.collectAsStateMultiplatform() else remember { mutableStateOf(emptyList()) }
     val reorderableState = rememberReorderableLazyListState(scroll, onMove = reorderable?: { _, _ -> })
 
-    val filterDirections by filterDirectionsState
-    val activeSortMode by activeSortModeState
+    var filterDirections by filterDirectionsState
+    var activeSortMode by activeSortModeState
     val sortedByModeProvider = { routes.bySortModes(instance, recentSort, listType != RouteListType.RECENT, activeSortMode.filterTimetableActive, proximitySortOrigin).asImmutableMap() }
     var sortedByMode by remember { mutableStateOf(sortedByModeProvider.invoke()) }
     val sortedResults by remember(sortedByMode, activeSortMode) { derivedStateOf { sortedByMode[activeSortMode.routeSortMode]?: routes } }
@@ -750,7 +752,7 @@ fun ListRouteInterfaceInternal(
     val etaUpdateTimesState = remember { etaUpdateTimes.asImmutableState() }
 
     val routeNumberWidth by if (Shared.language == "en") "249M".renderedSize(30F.sp) else "機場快線".renderedSize(22F.sp)
-    val reorderEnabled by remember(reorderable, activeSortMode) { derivedStateOf { reorderable != null && activeSortMode.isDefault } }
+    val reorderEnabled by remember(reorderable, activeSortMode, filterDirections) { derivedStateOf { reorderable != null && activeSortMode.isDefault && filterDirections == null } }
 
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -791,11 +793,13 @@ fun ListRouteInterfaceInternal(
                             routeNumberWidth = width,
                             showEta = showEta,
                             deleteFunction = deleteFunction,
+                            onLongClick = null,
                             route = route,
                             checkSpecialDest = checkSpecialDest,
                             etaResults = etaResultsState,
                             etaUpdateTimes = etaUpdateTimesState,
-                            instance = instance)
+                            instance = instance
+                        )
                     }
                 } else {
                     RouteEntry(
@@ -805,11 +809,38 @@ fun ListRouteInterfaceInternal(
                         routeNumberWidth = width,
                         showEta = showEta,
                         deleteFunction = deleteFunction,
+                        onLongClick = if (reorderable != null) ({
+                            instance.compose.showToastText(
+                                text = if (Shared.language == "en") {
+                                    "Routes may only be reordered while no sorting or filters are enabled"
+                                } else {
+                                    "未使用排序或過濾時才可以對路線進行重新排序"
+                                },
+                                duration = ToastDuration.LONG,
+                                actionLabel = if (Shared.language == "en") {
+                                    "Reset"
+                                } else {
+                                    "重置排序及過濾"
+                                },
+                                action = {
+                                    scope.launch {
+                                        activeSortMode = RouteSortPreference.DEFAULT
+                                        filterDirections = null
+                                        Shared.routeSortModePreference[listType].let {
+                                            if (activeSortMode != it) {
+                                                Registry.getInstance(instance).setRouteSortModePreference(instance, listType, activeSortMode)
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                        }) else null,
                         route = route,
                         checkSpecialDest = checkSpecialDest,
                         etaResults = etaResultsState,
                         etaUpdateTimes = etaUpdateTimesState,
-                        instance = instance)
+                        instance = instance
+                    )
                 }
                 HorizontalDivider(
                     modifier = Modifier.graphicsLayer { translationY = if (index + 1 >= sortedResults.size) 1.dp.toPx() else 0F }
@@ -855,6 +886,7 @@ fun LazyItemScope.RouteEntry(
     routeNumberWidth: Int,
     showEta: Boolean,
     deleteFunction: (() -> Unit)?,
+    onLongClick: (() -> Unit)?,
     route: StopIndexedRouteSearchResultEntry,
     checkSpecialDest: Boolean,
     etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>,
@@ -866,21 +898,24 @@ fun LazyItemScope.RouteEntry(
             .fillParentMaxWidth()
             .animateItemPlacement()
             .background(platformComponentBackgroundColor)
-            .clickable {
-                CoroutineScope(dispatcherIO).launch {
-                    Registry.getInstance(instance).addLastLookupRoute(route.routeKey, instance)
-                    val intent = AppIntent(instance, AppScreen.LIST_STOPS)
-                    intent.putExtra("route", route)
-                    if (route.stopInfo != null) {
-                        intent.putExtra("stopId", route.stopInfo!!.stopId)
+            .combinedClickable(
+                onClick = {
+                    CoroutineScope(dispatcherIO).launch {
+                        Registry.getInstance(instance).addLastLookupRoute(route.routeKey, instance)
+                        val intent = AppIntent(instance, AppScreen.LIST_STOPS)
+                        intent.putExtra("route", route)
+                        if (route.stopInfo != null) {
+                            intent.putExtra("stopId", route.stopInfo!!.stopId)
+                        }
+                        if (HistoryStack.historyStack.value.last().newScreenGroup() == AppScreenGroup.ROUTE_STOPS) {
+                            instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
+                            delay(300)
+                        }
+                        instance.startActivity(intent)
                     }
-                    if (HistoryStack.historyStack.value.last().newScreenGroup() == AppScreenGroup.ROUTE_STOPS) {
-                        instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
-                        delay(300)
-                    }
-                    instance.startActivity(intent)
-                }
-            }
+                },
+                onLongClick = onLongClick
+            )
     ) {
         RouteRow(
             key = key,

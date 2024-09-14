@@ -335,10 +335,6 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
         }
     }
 
-    override fun showToastText(text: String, duration: ToastDuration) {
-        ToastTextState.toastState.value = ToastTextData(text, duration)
-    }
-
     override fun formatTime(localDateTime: LocalDateTime): String {
         return NSCalendar.currentCalendar.dateFromComponents(localDateTime.toNSDateComponents())?.let {
             NSDateFormatter().apply {

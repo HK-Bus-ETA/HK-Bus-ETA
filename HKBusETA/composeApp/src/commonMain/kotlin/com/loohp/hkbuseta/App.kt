@@ -2,6 +2,7 @@ package com.loohp.hkbuseta
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -85,8 +86,18 @@ fun App(onReady: (() -> Unit)? = null) {
             }
             LaunchedEffect (toastState) {
                 if (toastState.text.isNotBlank()) {
-                    snackbarHostState.showSnackbar(toastState.text, duration = toastState.duration.snackbar)
-                    ToastTextState.resetToastState()
+                    try {
+                        val result = snackbarHostState.showSnackbar(
+                            message = toastState.text,
+                            duration = toastState.duration.snackbar,
+                            actionLabel = toastState.actionLabel
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            toastState.action?.invoke()
+                        }
+                    } finally {
+                        ToastTextState.resetToastState()
+                    }
                 }
             }
             LaunchedEffect (instance) {

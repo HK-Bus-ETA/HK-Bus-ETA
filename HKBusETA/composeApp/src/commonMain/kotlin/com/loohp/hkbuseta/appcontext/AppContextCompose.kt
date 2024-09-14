@@ -79,11 +79,16 @@ fun AppActiveContext.isTopOfStack(): Boolean {
     return HistoryStack.historyStack.value.lastOrNull() == this
 }
 
-data class ToastTextData(val text: String, val duration: ToastDuration) {
+data class ToastTextData(
+    val text: String,
+    val duration: ToastDuration,
+    val actionLabel: String?,
+    val action: (() -> Unit)?
+) {
 
     companion object {
 
-        val RESET: ToastTextData = ToastTextData("", ToastDuration.SHORT)
+        val RESET: ToastTextData = ToastTextData("", ToastDuration.SHORT, null, null)
 
     }
 
@@ -102,6 +107,14 @@ object ToastTextState {
 interface AppContextCompose : AppContext {
 
     val screenWidthScale: Float
+
+    override fun showToastText(text: String, duration: ToastDuration) {
+        showToastText(text, duration, null, null)
+    }
+
+    fun showToastText(text: String, duration: ToastDuration, actionLabel: String?, action: (() -> Unit)?) {
+        ToastTextState.toastState.value = ToastTextData(text, duration, actionLabel, action)
+    }
 
 }
 

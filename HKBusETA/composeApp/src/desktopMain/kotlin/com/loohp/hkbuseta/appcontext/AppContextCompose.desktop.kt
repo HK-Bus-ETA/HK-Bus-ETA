@@ -200,10 +200,6 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
         throw RuntimeException("Unsupported Platform Operation")
     }
 
-    override fun showToastText(text: String, duration: ToastDuration) {
-        ToastTextState.toastState.value = ToastTextData(text, duration)
-    }
-
     override fun formatTime(localDateTime: LocalDateTime): String {
         val dateFormat = DateFormat.getTimeInstance(DateFormat.SHORT)
         val pattern = (dateFormat as? SimpleDateFormat)?.toPattern()?: "HH:mm"

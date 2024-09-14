@@ -235,10 +235,6 @@ open class AppContextComposeAndroid internal constructor(
         context.startService(intent)
     }
 
-    override fun showToastText(text: String, duration: ToastDuration) {
-        ToastTextState.toastState.value = ToastTextData(text, duration)
-    }
-
     override fun formatTime(localDateTime: LocalDateTime): String {
         return localDateTime.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern((DateFormat.getTimeFormat(context) as? SimpleDateFormat)?.toPattern()?: "HH:mm"))
     }

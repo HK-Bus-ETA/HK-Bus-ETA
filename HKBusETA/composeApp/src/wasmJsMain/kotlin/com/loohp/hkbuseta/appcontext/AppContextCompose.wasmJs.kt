@@ -172,10 +172,6 @@ open class AppContextComposeWeb internal constructor() : AppContextCompose {
         throw RuntimeException("Unsupported Platform Operation")
     }
 
-    override fun showToastText(text: String, duration: ToastDuration) {
-        ToastTextState.toastState.value = ToastTextData(text, duration)
-    }
-
     override fun formatTime(localDateTime: LocalDateTime): String {
         return "${localDateTime.hour.pad(2)}:${localDateTime.minute.pad(2)}"
     }
