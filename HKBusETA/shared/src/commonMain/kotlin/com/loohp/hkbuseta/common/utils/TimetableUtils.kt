@@ -25,8 +25,10 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
 import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.objects.BilingualText
+import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.asBilingualText
+import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.joinBilingualText
 import com.loohp.hkbuseta.common.objects.journeyTimeCircular
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
@@ -480,7 +482,7 @@ class TimetableEntryMapBuilder(
             else -> self.compareTime.compareToBy(other.compareTime, compareMidnight)
         } }.resolveConflict { a, b ->
             val (firstEntry, secondEntry) = if (routeOrder.indexOf { it == a.route } > routeOrder.indexOf { it == b.route }) b to a else a to b
-            if (firstEntry.route.serviceType == secondEntry.route.serviceType) {
+            if (firstEntry.route.co.firstCo() == Operator.KMB && firstEntry.route.serviceType == secondEntry.route.serviceType) {
                 when (firstEntry) {
                     is TimetableSingleEntry -> listOf(firstEntry)
                     is TimetableIntervalEntry -> {

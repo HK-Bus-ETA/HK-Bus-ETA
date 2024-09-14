@@ -96,6 +96,7 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.awaitWithTimeout
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.Add
 import com.loohp.hkbuseta.compose.AdvanceTabRow
@@ -223,7 +224,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
     LaunchedEffect (visible) {
         if (visible) {
             if (location == null) {
-                val result = getGPSLocation(instance, LocationPriority.FASTER).await()
+                val result = getGPSLocation(instance, LocationPriority.FASTER).awaitWithTimeout(3000)
                 if (result?.isSuccess == true && location == null) {
                     location = result.location!!
                 }
@@ -560,7 +561,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
     LaunchedEffect (visible) {
         if (visible) {
             if (location == null) {
-                val result = getGPSLocation(instance, LocationPriority.FASTER).await()
+                val result = getGPSLocation(instance, LocationPriority.FASTER).awaitWithTimeout(3000)
                 if (result?.isSuccess == true && location == null) {
                     location = result.location!!
                 }

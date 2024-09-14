@@ -24,10 +24,20 @@ package com.loohp.hkbuseta.common.utils
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withTimeout
+import kotlin.coroutines.cancellation.CancellationException
 
 expect val dispatcherIO: CoroutineDispatcher
 
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Deferred<T>.getCompletedOrNull(): T? {
     return if (isCompleted) getCompleted() else null
+}
+
+suspend inline fun <T> Deferred<T>.awaitWithTimeout(timeout: Long, defaultValue: () -> T? = { null }): T? {
+    return try {
+        withTimeout(timeout) { await() }
+    } catch (e: CancellationException) {
+        defaultValue.invoke()
+    }
 }

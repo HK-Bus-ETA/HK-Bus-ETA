@@ -165,6 +165,7 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableMap
+import com.loohp.hkbuseta.common.utils.awaitWithTimeout
 import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
@@ -354,9 +355,14 @@ fun RouteMapSearchInterface(
 
     LaunchedEffect (Unit) {
         while (true) {
-            val result = getGPSLocation(instance, LocationPriority.FASTER).await()
+            val result = getGPSLocation(instance, LocationPriority.FASTER).awaitWithTimeout(3000)
             if (result?.isSuccess == true) {
                 location = result.location!!
+            } else {
+                val retryResult = getGPSLocation(instance).await()
+                if (retryResult?.isSuccess == true) {
+                    location = retryResult.location!!
+                }
             }
             delay(Shared.ETA_UPDATE_INTERVAL.toLong())
         }

@@ -142,6 +142,7 @@ import com.loohp.hkbuseta.common.utils.TimetableSpecialEntry
 import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
+import com.loohp.hkbuseta.common.utils.awaitWithTimeout
 import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentEntry
@@ -371,7 +372,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     }
     LaunchedEffect (Unit) {
         if (!launchedWithStop) {
-            val fastResult = getGPSLocation(instance, LocationPriority.FASTER).await()
+            val fastResult = getGPSLocation(instance, LocationPriority.FASTER).awaitWithTimeout(3000)
             if (fastResult?.isSuccess == true) {
                 val pos = fastResult.location!!
                 if (allStops.any(2) { it.stop.location.distance(pos) < 0.1 }) {

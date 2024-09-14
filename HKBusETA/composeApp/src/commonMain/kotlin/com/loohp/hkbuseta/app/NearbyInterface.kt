@@ -90,6 +90,7 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.awaitWithTimeout
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.compose.DismissRequestType
@@ -221,7 +222,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
     }
     LaunchedEffect (permissionState, visible) {
         if (visible && permissionState.isAllowed) {
-            val result = getGPSLocation(instance, LocationPriority.FASTER).await()
+            val result = getGPSLocation(instance, LocationPriority.FASTER).awaitWithTimeout(3000)
             if (result?.isSuccess == true && location == null) {
                 location = result.location!!
                 gpsFailed = false
