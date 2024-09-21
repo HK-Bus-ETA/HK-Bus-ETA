@@ -45,6 +45,7 @@ import com.loohp.hkbuseta.common.utils.eitherContains
 import com.loohp.hkbuseta.common.utils.getRouteProportions
 import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.common.utils.mergeSequences
+import com.loohp.hkbuseta.common.utils.nonNullEquals
 import com.loohp.hkbuseta.common.utils.outOfOrderSequence
 import com.loohp.hkbuseta.common.utils.parseIntOr
 import com.loohp.hkbuseta.common.utils.remove
@@ -781,9 +782,27 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
 }
 
 sealed interface SpecialRouteAlerts {
+    data object AlightingStop : SpecialRouteAlerts
     data object CheckRoute : SpecialRouteAlerts
     data object CheckDest : SpecialRouteAlerts
     data class SpecialDest(val routes: List<Route>) : SpecialRouteAlerts
+}
+
+fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext): Set<SpecialRouteAlerts> {
+    val allStops = cachedAllStops?: Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
+    val branches = allStops.asSequence().flatMap { it.branchIds }.toSet()
+    val branchStops = branches.associateWith { b -> allStops.filter { it.branchIds.contains(b) } }
+    val isAlightingStop = branchStops.values.all {
+        it.size <= stopInfoIndex + 1 || (it.getOrNull(stopInfoIndex)?.stop?.name nonNullEquals it.getOrNull(stopInfoIndex + 1)?.stop?.name) && it.size <= stopInfoIndex + 2
+    }
+    return if (isAlightingStop) {
+        buildSet {
+            addAll(route!!.getSpecialRouteAlerts(context))
+            add(SpecialRouteAlerts.AlightingStop)
+        }
+    } else {
+        route!!.getSpecialRouteAlerts(context)
+    }
 }
 
 @OptIn(ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
@@ -880,13 +899,13 @@ fun String.compareRouteNumber(other: String): Int {
     return if (diff == 0) compareTo(other) else diff
 }
 
-val Route.waypointsId: String? get() {
+val Route.waypointsId: String get() {
     val operator = co.firstCo()
     return when {
         operator === Operator.MTR -> routeNumber.substring(0, routeNumber.indexOf("-").takeIf { it >= 0 }?: 3).lowercase()
         operator === Operator.LRT -> if (lrtCircular != null) routeNumber else "${routeNumber}_${bound[operator]}"
         operator?.isFerry == true -> routeNumber
-        gtfsId.isBlank() -> null
+        gtfsId.isBlank() -> "${routeNumber}-${operator}-${if (bound[operator] == "I") "I" else "O"}-${serviceType}"
         else -> "${gtfsId}-${if (bound[operator] == "I") "I" else "O"}"
     }
 }

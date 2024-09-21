@@ -44,7 +44,8 @@ class StopIndexedRouteSearchResultEntry(
     var stopInfoIndex: Int,
     origin: Coordinates?,
     isInterchangeSearch: Boolean,
-    favouriteStopMode: FavouriteStopMode?
+    favouriteStopMode: FavouriteStopMode?,
+    var cachedAllStops: List<Registry.StopData>? = null,
 ) : RouteSearchResultEntry(routeKey, route, co, stopInfo, origin, isInterchangeSearch, favouriteStopMode) {
 
     companion object {
@@ -97,7 +98,9 @@ fun RouteSearchResultEntry.toStopIndexed(instance: AppContext): StopIndexedRoute
     val co = this.co
     val stopInfo = this.stopInfo
     if (route != null && stopInfo != null) {
-        stopIndexed.stopInfoIndex = Registry.getInstance(instance).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
+        val allStops = Registry.getInstance(instance).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion)
+        stopIndexed.cachedAllStops = allStops
+        stopIndexed.stopInfoIndex = allStops.indexOfFirst { i -> i.stopId == stopInfo.stopId }
     }
     return stopIndexed
 }

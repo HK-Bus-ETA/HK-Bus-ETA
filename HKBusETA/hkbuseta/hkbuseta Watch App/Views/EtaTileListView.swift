@@ -275,7 +275,7 @@ struct EtaTileView: View {
     }
     
     func ETALine(lines: RegistryMergedETAQueryResult<KotlinPair<FavouriteResolvedStop, FavouriteRouteStop>>?, seq: Int, mainResolvedStop: KotlinPair<FavouriteResolvedStop, FavouriteRouteStop>) -> some View {
-        let line = Shared().getResolvedText(lines, seq: seq.asInt32(), etaDisplayMode: Shared().etaDisplayMode, context_: appContext)
+        let line = Shared().getResolvedTextWithFavouriteResolvedStopFavouriteRouteStopPair(lines, seq: seq.asInt32(), etaDisplayMode: Shared().etaDisplayMode, context: appContext)
         let text = line.second!.asAttributedString(defaultFontSize: 17.scaled(appContext, true))
         
         let pair = line.first ?? mainResolvedStop

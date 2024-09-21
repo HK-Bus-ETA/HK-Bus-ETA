@@ -1989,9 +1989,6 @@ class Registry {
         val co = route.co.firstCo()!!
         val isKmbCtbJoint = route.isKmbCtbJoint
         val stops = route.stops[co]!!.map { it.asStop(context)!! }
-        if (id == null) {
-            return CompletableDeferred(RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, listOf(stops.map { it.location })))
-        }
         return CoroutineScope(dispatcherIO).async {
             return@async cachedWaypoints.getOrPut(id) {
                 getJSONResponse<JsonObject>("https://waypoints.hkbuseta.com/waypoints$gzipFolder/$id.json$gzipSuffix", gzip)
@@ -3774,6 +3771,10 @@ class Registry {
 
         operator fun get(index: Int): Pair<T?, ETALineEntry> {
             return getLine(index)
+        }
+
+        fun isOutdated(): Boolean {
+            return currentTimeMillis() - time > Shared.ETA_FRESHNESS
         }
 
         override fun equals(other: Any?): Boolean {

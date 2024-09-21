@@ -46,6 +46,7 @@ import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteSortPreference
+import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.StopInfo
 import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.objects.asBilingualText
@@ -53,9 +54,11 @@ import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getMtrLineName
 import com.loohp.hkbuseta.common.objects.getRouteKey
 import com.loohp.hkbuseta.common.objects.isFerry
+import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.putExtra
 import com.loohp.hkbuseta.common.objects.resolveStop
 import com.loohp.hkbuseta.common.objects.uniqueKey
+import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
@@ -77,6 +80,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlin.math.absoluteValue
+import kotlin.native.ObjCName
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -200,6 +204,25 @@ object Shared {
         }
     }
 
+    @ObjCName("getResolvedTextWithStopIndexedRouteSearchResultEntry")
+    fun Registry.MergedETAQueryResult<StopIndexedRouteSearchResultEntry>?.getResolvedText(seq: Int, etaDisplayMode: ETADisplayMode, context: AppContext): Triple<StopIndexedRouteSearchResultEntry?, FormattedText, Registry.ETALineEntryText> {
+        if (this == null) {
+            return Triple(null, if (seq == 1) (if (language == "en") "Updating" else "更新中").asFormattedText() else "".asFormattedText(), Registry.ETALineEntryText.EMPTY_NOTHING)
+        }
+        val line = this[seq]
+        val lineRoute = line.first?.let { it.co.getDisplayRouteNumber(it.route!!.routeNumber, true).asFormattedText(BoldStyle) }
+        val noRouteNumber = lineRoute == null ||
+                (1..4).all { this[it].first?.route?.routeNumber.let { route -> route == null || route == line.first?.route?.routeNumber } } ||
+                (1..4).all { this[it].first?.co?.isTrain == true } ||
+                this.mergedCount <= 1
+        return Triple(
+            first = line.first,
+            second = if (noRouteNumber) "".asFormattedText() else lineRoute!!,
+            third = line.second.text.let { if (etaDisplayMode.hasClockTime && line.second.etaRounded >= 0) it.withDisplayMode(context.formatTime(time.toLocalDateTime() + line.second.eta.toDuration(DurationUnit.MINUTES)).asFormattedText(), etaDisplayMode) else it },
+        )
+    }
+
+    @ObjCName("getResolvedTextWithFavouriteResolvedStopFavouriteRouteStopPair")
     fun Registry.MergedETAQueryResult<Pair<FavouriteResolvedStop, FavouriteRouteStop>>?.getResolvedText(seq: Int, etaDisplayMode: ETADisplayMode, context: AppContext): Pair<Pair<FavouriteResolvedStop, FavouriteRouteStop>?, FormattedText> {
         if (this == null) {
             return null to if (seq == 1) (if (language == "en") "Updating" else "更新中").asFormattedText() else "".asFormattedText()
@@ -208,7 +231,7 @@ object Shared {
         val lineRoute = line.first?.let { it.second.co.getDisplayRouteNumber(it.second.route.routeNumber, true) }
         val noRouteNumber = lineRoute == null ||
                 (1..3).all { this[it].first?.second?.route?.routeNumber.let { route -> route == null || route == line.first?.second?.route?.routeNumber } } ||
-                this.allKeys.all { it.second.co == Operator.MTR } ||
+                this.allKeys.all { it.second.co.isTrain } ||
                 this.mergedCount <= 1
         return line.first to (if (noRouteNumber) "".asFormattedText() else "$lineRoute > ".asFormattedText(SmallSize))
             .plus(line.second.text.let { if (etaDisplayMode.hasClockTime && line.second.etaRounded >= 0) it.withDisplayMode(context.formatTime(time.toLocalDateTime() + line.second.eta.toDuration(DurationUnit.MINUTES)).asFormattedText(), etaDisplayMode) else it })

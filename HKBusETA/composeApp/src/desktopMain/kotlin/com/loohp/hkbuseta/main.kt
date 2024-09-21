@@ -40,7 +40,7 @@ import java.awt.Dimension
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() = application {
     DesktopShared.setDefaultExceptionHandler()
-    setVersionImpl { Triple("HKBusETA", "2.3.2", 20) }
+    setVersionImpl { Triple("HKBusETA", "2.3.3", 21) }
     Window(
         onCloseRequest = ::exitApplication,
         title = if (Shared.language == "en") "HK Bus ETA" else "香港巴士到站預報",

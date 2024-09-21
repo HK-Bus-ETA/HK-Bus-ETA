@@ -74,7 +74,10 @@ val RESOURCE_RATIO: Map<String, Float> = mapOf(
 )
 
 @Immutable
-data class ContentAnnotatedString(val annotatedString: AnnotatedString, val inlineResources: Map<String, String>) : CharSequence {
+data class ContentAnnotatedString(
+    val annotatedString: AnnotatedString,
+    val inlineResources: Map<String, String>
+): CharSequence {
 
     fun createInlineContent(imageHeight: TextUnit = 1F.em): Map<String, InlineTextContent> {
         return inlineResources.mapValues { (id, resource) ->
@@ -106,9 +109,10 @@ data class ContentAnnotatedString(val annotatedString: AnnotatedString, val inli
     }
 
     operator fun plus(other: ContentAnnotatedString): ContentAnnotatedString {
-        val map = mutableMapOf<String, String>()
-        map.putAll(inlineResources)
-        map.putAll(other.inlineResources)
+        val map = buildMap {
+            putAll(inlineResources)
+            putAll(other.inlineResources)
+        }
         return ContentAnnotatedString(annotatedString + other.annotatedString, map)
     }
 

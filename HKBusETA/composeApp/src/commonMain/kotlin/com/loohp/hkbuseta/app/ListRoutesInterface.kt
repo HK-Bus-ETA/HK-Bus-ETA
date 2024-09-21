@@ -40,16 +40,20 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -108,16 +112,20 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.compose
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.appcontext.newScreenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.BilingualFormattedText
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.GeneralDirection
@@ -157,20 +165,26 @@ import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.Colored
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.ImmutableState
+import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.asImmutableSet
 import com.loohp.hkbuseta.common.utils.asImmutableState
+import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.firstIsInstanceOrNull
+import com.loohp.hkbuseta.common.utils.floorToInt
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.transformColors
 import com.loohp.hkbuseta.compose.ArrowUpward
+import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.Close
 import com.loohp.hkbuseta.compose.DoubleArrow
+import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.Fullscreen
 import com.loohp.hkbuseta.compose.LineEndCircle
 import com.loohp.hkbuseta.compose.NoTransfer
 import com.loohp.hkbuseta.compose.PlatformButton
@@ -187,13 +201,19 @@ import com.loohp.hkbuseta.compose.Sort
 import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.combinedClickable
+import com.loohp.hkbuseta.compose.enterPipMode
 import com.loohp.hkbuseta.compose.loadingPlaceholder
 import com.loohp.hkbuseta.compose.plainTooltip
+import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.compose.platformComponentBackgroundColor
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
 import com.loohp.hkbuseta.compose.platformLargeShape
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformTopBarColor
+import com.loohp.hkbuseta.compose.rememberIsInPipMode
+import com.loohp.hkbuseta.compose.table.DataColumn
+import com.loohp.hkbuseta.compose.table.DataTable
+import com.loohp.hkbuseta.compose.table.TableColumnWidth
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
 import com.loohp.hkbuseta.compose.verticalScrollBar
@@ -207,9 +227,12 @@ import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
+import com.loohp.hkbuseta.utils.fontScaledDp
 import com.loohp.hkbuseta.utils.getColor
+import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.renderedSize
 import com.loohp.hkbuseta.utils.routeSortPreferenceStateSaver
+import com.loohp.hkbuseta.utils.sp
 import io.ktor.util.collections.ConcurrentMap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
@@ -219,6 +242,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -262,7 +286,8 @@ fun ListRoutesInterface(
     bottomExtraSpace: Dp = 0.dp,
     extraActions: (@Composable RowScope.() -> Unit)? = null,
     reorderable: (suspend CoroutineScope.(LazyListItemInfo, LazyListItemInfo) -> Unit)? = null,
-    onPullToRefresh: (suspend () -> Unit)? = null
+    onPullToRefresh: (suspend () -> Unit)? = null,
+    pipModeListName: BilingualFormattedText? = null,
 ) {
     val routeSortPreferenceProvider by remember(listType, recentSort, proximitySortOrigin) { derivedStateOf { {
         if (recentSort.forcedMode) {
@@ -304,6 +329,8 @@ fun ListRoutesInterface(
         activeSortModeState.value = routeSortPreferenceProvider.invoke()
     }
 
+    val pipMode = rememberIsInPipMode(instance)
+
     Scaffold(
         modifier = Modifier.background(platformComponentBackgroundColor),
         topBar = {
@@ -316,7 +343,8 @@ fun ListRoutesInterface(
                 availableDirections = routeGroupedByDirections.keys.asImmutableSet(),
                 proximitySortOrigin = proximitySortOrigin,
                 extraActions = extraActions,
-                activeSortModeState = activeSortModeState
+                activeSortModeState = activeSortModeState,
+                pipModeAllowed = pipModeListName != null
             )
         },
         content = { padding ->
@@ -330,7 +358,9 @@ fun ListRoutesInterface(
                         instance = instance,
                         showEta = showEta,
                         recentSort = recentSort,
-                        showEmptyText = showEmptyText
+                        showEmptyText = showEmptyText,
+                        pipMode = pipMode,
+                        pipModeListName = pipModeListName
                     )
                 } else {
                     ListRouteInterfaceInternal(
@@ -345,10 +375,12 @@ fun ListRoutesInterface(
                         bottomExtraSpace = bottomExtraSpace,
                         reorderable = reorderable,
                         activeSortModeState = activeSortModeState,
-                        filterDirectionsState = filterDirectionsState
+                        filterDirectionsState = filterDirectionsState,
+                        pipMode = pipMode,
+                        pipModeListName = pipModeListName
                     )
                 }
-                if (pullToRefreshState != null) {
+                if (pullToRefreshState != null && !pipMode) {
                     if (pullToRefreshState.isRefreshing) {
                         LaunchedEffect(true) {
                             onPullToRefresh?.invoke()
@@ -364,7 +396,6 @@ fun ListRoutesInterface(
             }
         }
     )
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -378,7 +409,8 @@ fun ListRouteTopBar(
     availableDirections: ImmutableSet<GeneralDirection>,
     proximitySortOrigin: Coordinates?,
     extraActions: (@Composable RowScope.() -> Unit)? = null,
-    activeSortModeState: MutableState<RouteSortPreference>
+    activeSortModeState: MutableState<RouteSortPreference>,
+    pipModeAllowed: Boolean
 ) {
     var activeSortMode by activeSortModeState
     var filterDirections by filterDirectionsState
@@ -415,6 +447,25 @@ fun ListRouteTopBar(
                             .height(max(filterDirectionButtonSize.height, sortModeButtonSize.height).equivalentDp)
                     ) {
                         extraActions?.invoke(this)
+                        if (pipModeAllowed && composePlatform.supportPip) {
+                            PlatformButton(
+                                modifier = Modifier
+                                    .width(45.dp)
+                                    .fillMaxHeight()
+                                    .plainTooltip(if (Shared.language == "en") "Picture-in-picture Display Mode" else "畫中畫顯示模式"),
+                                onClick = { instance.enterPipMode() },
+                                contentPadding = PaddingValues(10.dp),
+                                shape = platformLargeShape,
+                                colors = ButtonDefaults.textButtonColors(),
+                                content = {
+                                    PlatformIcon(
+                                        modifier = Modifier.size(23.dp),
+                                        painter = PlatformIcons.Outlined.Fullscreen,
+                                        contentDescription = if (Shared.language == "en") "Picture-in-picture Display Mode" else "畫中畫顯示模式"
+                                    )
+                                }
+                            )
+                        }
                         if (availableDirections.isNotEmpty()) {
                             Box {
                                 PlatformButton(
@@ -588,9 +639,17 @@ fun EmptyListRouteInterface(
     instance: AppActiveContext,
     showEta: Boolean,
     recentSort: RecentSortMode,
-    showEmptyText: Boolean
+    showEmptyText: Boolean,
+    pipMode: Boolean,
+    pipModeListName: BilingualFormattedText?
 ) {
-    if (showEmptyText) {
+    if (pipMode && pipModeListName != null) {
+        PipModeInterface(
+            instance = instance,
+            listName = pipModeListName,
+            routes = persistentListOf()
+        )
+    } else if (showEmptyText) {
         EmptyBackgroundInterface(
             instance = instance,
             icon = PlatformIcons.Filled.NoTransfer,
@@ -682,7 +741,9 @@ fun ListRouteInterfaceInternal(
     bottomExtraSpace: Dp,
     reorderable: (suspend CoroutineScope.(LazyListItemInfo, LazyListItemInfo) -> Unit)?,
     activeSortModeState: MutableState<RouteSortPreference>,
-    filterDirectionsState: MutableState<GeneralDirection?>
+    filterDirectionsState: MutableState<GeneralDirection?>,
+    pipMode: Boolean,
+    pipModeListName: BilingualFormattedText?
 ) {
     val haptics = LocalHapticFeedback.current
     val initialScrollPosition = remember { scrollPositions[listType]?.takeIf { it.routes == routes } }
@@ -698,7 +759,7 @@ fun ListRouteInterfaceInternal(
     var activeSortMode by activeSortModeState
     val sortedByModeProvider = { routes.bySortModes(instance, recentSort, listType != RouteListType.RECENT, activeSortMode.filterTimetableActive, proximitySortOrigin).asImmutableMap() }
     var sortedByMode by remember { mutableStateOf(sortedByModeProvider.invoke()) }
-    val sortedResults by remember(sortedByMode, activeSortMode) { derivedStateOf { sortedByMode[activeSortMode.routeSortMode]?: routes } }
+    val sortedResults by remember(sortedByMode, activeSortMode) { derivedStateOf { (sortedByMode[activeSortMode.routeSortMode]?: routes).asImmutableList() } }
     var init by remember { mutableStateOf(false) }
 
     LaunchedEffect (routes, lastLookupRoutes, listType, proximitySortOrigin, activeSortMode.filterTimetableActive) {
@@ -754,46 +815,94 @@ fun ListRouteInterfaceInternal(
     val routeNumberWidth by if (Shared.language == "en") "249M".renderedSize(30F.sp) else "機場快線".renderedSize(22F.sp)
     val reorderEnabled by remember(reorderable, activeSortMode, filterDirections) { derivedStateOf { reorderable != null && activeSortMode.isDefault && filterDirections == null } }
 
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        LazyColumn(
-            modifier = Modifier
-                .verticalScrollBar(
-                    state = scroll,
-                    scrollbarConfig = ScrollBarConfig(
-                        indicatorThickness = 6.dp,
-                        padding = PaddingValues(0.dp, 2.dp, 0.dp, 2.dp)
-                    )
-                ),
-            state = scroll,
-            contentPadding = PaddingValues(vertical = 1.dp)
+    if (pipMode && pipModeListName != null) {
+        PipModeInterface(
+            instance = instance,
+            listName = pipModeListName,
+            routes = sortedResults
+        )
+    } else {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.TopCenter
         ) {
-            itemsIndexed(sortedResults, key = { _, route -> route.uniqueKey }) { index, route ->
-                val uniqueKey = route.uniqueKey
-                val width = routeNumberWidth?.width?: 0
-                val deleteFunction = { Registry.getInstance(instance).removeLastLookupRoutes(route.routeKey, instance) }.takeIf { recentSort == RecentSortMode.FORCED }
-                if (reorderEnabled) {
-                    ReorderableItem(
-                        state = reorderableState,
-                        enabled = reorderEnabled,
-                        key = uniqueKey
-                    ) { isDragging ->
-                        val elevation by animateDpAsState(if (isDragging) 2.dp else 0.dp)
+            LazyColumn(
+                modifier = Modifier
+                    .verticalScrollBar(
+                        state = scroll,
+                        scrollbarConfig = ScrollBarConfig(
+                            indicatorThickness = 6.dp,
+                            padding = PaddingValues(0.dp, 2.dp, 0.dp, 2.dp)
+                        )
+                    ),
+                state = scroll,
+                contentPadding = PaddingValues(vertical = 1.dp)
+            ) {
+                itemsIndexed(sortedResults, key = { _, route -> route.uniqueKey }) { index, route ->
+                    val uniqueKey = route.uniqueKey
+                    val width = routeNumberWidth?.width?: 0
+                    val deleteFunction = { Registry.getInstance(instance).removeLastLookupRoutes(route.routeKey, instance) }.takeIf { recentSort == RecentSortMode.FORCED }
+                    if (reorderEnabled) {
+                        ReorderableItem(
+                            state = reorderableState,
+                            enabled = reorderEnabled,
+                            key = uniqueKey
+                        ) { isDragging ->
+                            val elevation by animateDpAsState(if (isDragging) 2.dp else 0.dp)
+                            RouteEntry(
+                                modifier = Modifier
+                                    .longPressDraggableHandle(
+                                        enabled = reorderEnabled,
+                                        onDragStarted = { haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
+                                    )
+                                    .shadow(elevation),
+                                key = uniqueKey,
+                                listType = listType,
+                                routeNumberWidth = width,
+                                showEta = showEta,
+                                deleteFunction = deleteFunction,
+                                onLongClick = null,
+                                route = route,
+                                checkSpecialDest = checkSpecialDest,
+                                etaResults = etaResultsState,
+                                etaUpdateTimes = etaUpdateTimesState,
+                                instance = instance
+                            )
+                        }
+                    } else {
                         RouteEntry(
-                            modifier = Modifier
-                                .longPressDraggableHandle(
-                                    enabled = reorderEnabled,
-                                    onDragStarted = { haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
-                                )
-                                .shadow(elevation),
+                            modifier = Modifier,
                             key = uniqueKey,
                             listType = listType,
                             routeNumberWidth = width,
                             showEta = showEta,
                             deleteFunction = deleteFunction,
-                            onLongClick = null,
+                            onLongClick = if (reorderable != null) ({
+                                instance.compose.showToastText(
+                                    text = if (Shared.language == "en") {
+                                        "Routes may only be reordered while no sorting or filters are enabled"
+                                    } else {
+                                        "未使用排序或過濾時才可以對路線進行重新排序"
+                                    },
+                                    duration = ToastDuration.LONG,
+                                    actionLabel = if (Shared.language == "en") {
+                                        "Reset"
+                                    } else {
+                                        "重置排序及過濾"
+                                    },
+                                    action = {
+                                        scope.launch {
+                                            activeSortMode = RouteSortPreference.DEFAULT
+                                            filterDirections = null
+                                            Shared.routeSortModePreference[listType].let {
+                                                if (activeSortMode != it) {
+                                                    Registry.getInstance(instance).setRouteSortModePreference(instance, listType, activeSortMode)
+                                                }
+                                            }
+                                        }
+                                    }
+                                )
+                            }) else null,
                             route = route,
                             checkSpecialDest = checkSpecialDest,
                             etaResults = etaResultsState,
@@ -801,80 +910,39 @@ fun ListRouteInterfaceInternal(
                             instance = instance
                         )
                     }
-                } else {
-                    RouteEntry(
-                        modifier = Modifier,
-                        key = uniqueKey,
-                        listType = listType,
-                        routeNumberWidth = width,
-                        showEta = showEta,
-                        deleteFunction = deleteFunction,
-                        onLongClick = if (reorderable != null) ({
-                            instance.compose.showToastText(
-                                text = if (Shared.language == "en") {
-                                    "Routes may only be reordered while no sorting or filters are enabled"
-                                } else {
-                                    "未使用排序或過濾時才可以對路線進行重新排序"
-                                },
-                                duration = ToastDuration.LONG,
-                                actionLabel = if (Shared.language == "en") {
-                                    "Reset"
-                                } else {
-                                    "重置排序及過濾"
-                                },
-                                action = {
-                                    scope.launch {
-                                        activeSortMode = RouteSortPreference.DEFAULT
-                                        filterDirections = null
-                                        Shared.routeSortModePreference[listType].let {
-                                            if (activeSortMode != it) {
-                                                Registry.getInstance(instance).setRouteSortModePreference(instance, listType, activeSortMode)
-                                            }
-                                        }
-                                    }
-                                }
-                            )
-                        }) else null,
-                        route = route,
-                        checkSpecialDest = checkSpecialDest,
-                        etaResults = etaResultsState,
-                        etaUpdateTimes = etaUpdateTimesState,
-                        instance = instance
+                    HorizontalDivider(
+                        modifier = Modifier.graphicsLayer { translationY = if (index + 1 >= sortedResults.size) 1.dp.toPx() else 0F }
                     )
                 }
-                HorizontalDivider(
-                    modifier = Modifier.graphicsLayer { translationY = if (index + 1 >= sortedResults.size) 1.dp.toPx() else 0F }
-                )
-            }
-            if (bottomExtraSpace > 0.dp) {
-                item {
-                    Spacer(modifier = Modifier.size(bottomExtraSpace))
+                if (bottomExtraSpace > 0.dp) {
+                    item {
+                        Spacer(modifier = Modifier.size(bottomExtraSpace))
+                    }
                 }
             }
-        }
-        val offset by animateDpAsState(
-            targetValue = if (scroll.firstVisibleItemIndex >= 10) 0.dp else (-100).dp,
-            animationSpec = tween(200, easing = FastOutSlowInEasing)
-        )
-        if (offset > (-100).dp) {
-            PlatformFloatingActionButton(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(10.dp)
-                    .size(45.dp)
-                    .graphicsLayer { translationY = offset.toPx() }
-                    .plainTooltip(if (Shared.language == "en") "Scroll to Top" else "返回頂部"),
-                onClick = { scope.launch { scroll.animateScrollToItem(0) } },
-            ) {
-                PlatformIcon(
-                    modifier = Modifier.size(27.dp),
-                    painter = PlatformIcons.Filled.ArrowUpward,
-                    contentDescription = if (Shared.language == "en") "Scroll to Top" else "返回頂部"
-                )
+            val offset by animateDpAsState(
+                targetValue = if (scroll.firstVisibleItemIndex >= 10) 0.dp else (-100).dp,
+                animationSpec = tween(200, easing = FastOutSlowInEasing)
+            )
+            if (offset > (-100).dp) {
+                PlatformFloatingActionButton(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp)
+                        .size(45.dp)
+                        .graphicsLayer { translationY = offset.toPx() }
+                        .plainTooltip(if (Shared.language == "en") "Scroll to Top" else "返回頂部"),
+                    onClick = { scope.launch { scroll.animateScrollToItem(0) } },
+                ) {
+                    PlatformIcon(
+                        modifier = Modifier.size(27.dp),
+                        painter = PlatformIcons.Filled.ArrowUpward,
+                        contentDescription = if (Shared.language == "en") "Scroll to Top" else "返回頂部"
+                    )
+                }
             }
         }
     }
-
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -987,7 +1055,7 @@ fun RouteRow(
     LaunchedEffect (route) {
         if (checkSpecialDest) {
             CoroutineScope(dispatcherIO).launch {
-                val alerts = route.route!!.getSpecialRouteAlerts(instance)
+                val alerts = route.getSpecialRouteAlerts(instance)
                 withContext(Dispatchers.Main) { specialRouteAlerts = alerts }
             }
         }
@@ -1043,6 +1111,35 @@ fun RouteRow(
                         lineHeight = 8.sp,
                         maxLines = 1,
                         text = if (Shared.language == "en") "Check Dest" else "留意目的地"
+                    )
+                }
+            } else if (specialRouteAlerts?.contains(SpecialRouteAlerts.AlightingStop) == true) {
+                Box(
+                    modifier = Modifier.padding(bottom = 10.sp.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    PlatformText(
+                        modifier = Modifier
+                            .offset(y = (-2).sp.dp),
+                        textAlign = TextAlign.Start,
+                        fontSize = if ((co == Operator.MTR || co.isFerry) && Shared.language != "en") {
+                            18F.sp
+                        } else {
+                            26F.sp
+                        },
+                        lineHeight = 1.1F.em,
+                        maxLines = 1,
+                        text = routeNumberDisplay
+                    )
+                    PlatformText(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .offset(y = 10.sp.dp),
+                        textAlign = TextAlign.Start,
+                        fontSize = 12.sp,
+                        lineHeight = 12.sp,
+                        maxLines = 1,
+                        text = if (Shared.language == "en") "Alighting" else "落客站"
                     )
                 }
             } else {
@@ -1222,7 +1319,262 @@ fun RouteRow(
 }
 
 @Composable
-fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, instance: AppActiveContext) {
+fun PipModeInterface(
+    instance: AppActiveContext,
+    listName: BilingualFormattedText,
+    routes: ImmutableList<StopIndexedRouteSearchResultEntry>
+) {
+    var lrtDirectionMode by remember { mutableStateOf(Shared.lrtDirectionMode) }
+
+    RestartEffect {
+        lrtDirectionMode = Shared.lrtDirectionMode
+    }
+
+    Dialog(
+        onDismissRequest = { /* do nothing */ },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        var size by remember { mutableStateOf(IntSize(599, 336)) }
+        val factor by remember(size) { derivedStateOf { size.height / 336F } }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .onSizeChanged { size = it },
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.Start
+        ) {
+            Column(
+                modifier = Modifier
+                    .background(platformTopBarColor)
+                    .padding(top = 5.dp, bottom = 2.5F.dp, start = 10.dp, end = 10.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    AutoResizeText(
+                        modifier = Modifier
+                            .weight(1F)
+                            .alignByBaseline(),
+                        fontSizeRange = FontSizeRange(max = 15.dp.sp * factor),
+                        lineHeight = 1.1F.em,
+                        text = listName[Shared.language].asContentAnnotatedString().annotatedString,
+                        maxLines = 1
+                    )
+                    Image(
+                        modifier = Modifier
+                            .requiredSize(17.dp * factor)
+                            .offset(y = 1.5F.dp)
+                            .padding(start = 2.5F.dp)
+                            .align(Alignment.Top),
+                        painter = painterResource(DrawableResource("icon_max.png")),
+                        contentDescription = "HKBusETA"
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1F)
+                    .background(platformBackgroundColor)
+                    .padding(top = 2.5F.dp, bottom = 10.dp, start = 10.dp, end = 10.dp),
+                contentAlignment = Alignment.TopStart
+            ) {
+                if (routes.isEmpty()) {
+                    EtaText(
+                        text = "-".asFormattedText(),
+                        seq = 1,
+                        updating = false,
+                        freshness = true,
+                        fontSize = 14.5F.dp.sp * factor
+                    )
+                } else {
+                    PipETAColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        routes = routes,
+                        options = Registry.EtaQueryOptions(lrtDirectionMode),
+                        fontSize = 14.5F.dp.sp * factor,
+                        lineRange = 1..4,
+                        dynamicLineRange = true,
+                        instance = instance
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PipETAColumn(
+    modifier: Modifier = Modifier,
+    routes: ImmutableList<StopIndexedRouteSearchResultEntry>,
+    options: Registry.EtaQueryOptions,
+    fontSize: TextUnit,
+    lineRange: IntRange,
+    dynamicLineRange: Boolean,
+    instance: AppActiveContext
+) {
+    var etaState: Registry.MergedETAQueryResult<StopIndexedRouteSearchResultEntry>? by remember { mutableStateOf(null) }
+
+    val refreshEta = suspend {
+        val result = Registry.MergedETAQueryResult.merge(buildList {
+            for (route in routes) {
+                add(CoroutineScope(etaUpdateScope).async {
+                    route to Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance, options).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                })
+            }
+        }.awaitAll())
+        withContext(Dispatchers.Main) {
+            etaState = result
+        }
+    }
+
+    LaunchedEffect (Unit) {
+        while (true) {
+            refreshEta.invoke()
+            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+        }
+    }
+    RestartEffect {
+        refreshEta.invoke()
+    }
+
+    PipETADisplay(modifier, etaState, Shared.etaDisplayMode, fontSize, lineRange, dynamicLineRange, instance)
+}
+
+@Composable
+fun PipETADisplay(
+    modifier: Modifier,
+    lines: Registry.MergedETAQueryResult<StopIndexedRouteSearchResultEntry>?,
+    etaDisplayMode: ETADisplayMode,
+    fontSize: TextUnit,
+    lineRange: IntRange,
+    dynamicLineRange: Boolean,
+    instance: AppActiveContext
+) {
+    val resolvedText by remember(lineRange, lines, etaDisplayMode) { derivedStateOf { lineRange.associateWith { lines.getResolvedText(it, etaDisplayMode, instance) } } }
+    val updating by remember(lines) { derivedStateOf { lines == null } }
+    var freshness by remember { mutableStateOf(true) }
+
+    val hasPrefix by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.second.isNotEmpty() } } }
+    val hasClockTime by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.clockTime.isNotEmpty() } } }
+    val hasPlatform by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.platform.isNotEmpty() } } }
+    val hasRouteNumber by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.routeNumber.isNotEmpty() } } }
+    val hasDestination by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.destination.isNotEmpty() } } }
+    val hasCarts by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.carts.isNotEmpty() } } }
+    val hasTime by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.time.isNotEmpty() } } }
+    val hasOperator by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.operator.isNotEmpty() } } }
+    val hasRemark by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.remark.isNotEmpty() } } }
+
+    val columns by remember(resolvedText) { derivedStateOf {
+        buildImmutableList {
+            if (hasPrefix) {
+                add(DataColumn(
+                    width = TableColumnWidth.Wrap
+                ) {})
+                add(DataColumn(
+                    width = TableColumnWidth.Wrap
+                ) {})
+            }
+            if (hasClockTime) add(DataColumn(
+                alignment = Alignment.End,
+                width = TableColumnWidth.Wrap
+            ) {})
+            if (hasPlatform) add(DataColumn(
+                width = TableColumnWidth.Wrap
+            ) {})
+            if (hasRouteNumber) add(DataColumn(
+                width = TableColumnWidth.Wrap
+            ) {})
+            if (hasDestination) add(DataColumn(
+                width = TableColumnWidth.Flex(1F)
+            ) {})
+            if (hasCarts) add(DataColumn(
+                width = TableColumnWidth.Wrap
+            ) {})
+            if (hasTime) add(DataColumn(
+                alignment = if ((lines?.nextScheduledBus?: -1) < 0) Alignment.Start else Alignment.End,
+                width = TableColumnWidth.Wrap
+            ) {})
+            if (hasOperator) add(DataColumn(
+                width = TableColumnWidth.Wrap
+            ) {})
+            if (hasRemark) add(DataColumn(
+                width = TableColumnWidth.Flex(1F)
+            ) {})
+        }
+    } }
+
+    LaunchedEffect (lines) {
+        while (true) {
+            freshness = lines?.isOutdated() != true
+            delay(500)
+        }
+    }
+
+    BoxWithConstraints {
+        val rowHeight = 26.fontScaledDp(0.5F) * (fontSize.px / 18.sp.px)
+        val range = if (dynamicLineRange && maxHeight != Dp.Infinity) {
+            lineRange.first..lineRange.last.coerceAtMost((maxHeight / rowHeight).floorToInt())
+        } else {
+            lineRange
+        }
+        DataTable(
+            modifier = modifier.fillMaxWidth(),
+            columns = columns,
+            rowHeight = rowHeight,
+            headerHeight = 0.dp,
+            horizontalPadding = 0.dp,
+            separator = { Spacer(modifier = Modifier.size(1.dp)) }
+        ) {
+            for (seq in range) {
+                row {
+                    if (hasPrefix) {
+                        cell {
+                            EtaText(resolvedText[seq]!!.second, seq, updating, freshness, fontSize)
+                        }
+                        cell {
+                            Spacer(modifier = Modifier.width(5.dp))
+                        }
+                    }
+                    if (hasClockTime) cell {
+                        EtaText(resolvedText[seq]!!.third.clockTime, seq, updating, freshness, fontSize)
+                    }
+                    if (hasPlatform) cell {
+                        EtaText(resolvedText[seq]!!.third.platform, seq, updating, freshness, fontSize)
+                    }
+                    if (hasRouteNumber) cell {
+                        EtaText(resolvedText[seq]!!.third.routeNumber, seq, updating, freshness, fontSize)
+                    }
+                    if (hasDestination) cell {
+                        EtaText(resolvedText[seq]!!.third.destination, seq, updating, freshness, fontSize)
+                    }
+                    if (hasCarts) cell {
+                        EtaText(resolvedText[seq]!!.third.carts, seq, updating, freshness, fontSize)
+                    }
+                    if (hasTime) cell {
+                        EtaText(resolvedText[seq]!!.third.time, seq, updating, freshness, fontSize)
+                    }
+                    if (hasOperator) cell {
+                        EtaText(resolvedText[seq]!!.third.operator, seq, updating, freshness, fontSize)
+                    }
+                    if (hasRemark) cell {
+                        EtaText(resolvedText[seq]!!.third.remark, seq, updating, freshness, fontSize)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ETAElement(
+    key: String,
+    route: StopIndexedRouteSearchResultEntry,
+    etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>,
+    etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>,
+    instance: AppActiveContext
+) {
     var etaState by remember { mutableStateOf(etaResults.value[key]) }
 
     LaunchedEffect (Unit) {

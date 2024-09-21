@@ -177,7 +177,6 @@ import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.debugLog
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.floorToInt
 import com.loohp.hkbuseta.compose.Add
@@ -2424,9 +2423,6 @@ fun PipModeInterface(
     etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>,
     instance: AppActiveContext
 ) {
-    LaunchedEffect (index, stopData) {
-        debugLog(index, stopData.stop.name)
-    }
     Dialog(
         onDismissRequest = { /* do nothing */ },
         properties = DialogProperties(usePlatformDefaultWidth = false),

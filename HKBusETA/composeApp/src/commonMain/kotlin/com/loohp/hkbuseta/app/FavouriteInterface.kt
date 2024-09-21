@@ -83,6 +83,7 @@ import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.anyEquals
 import com.loohp.hkbuseta.common.objects.asBilingualText
+import com.loohp.hkbuseta.common.objects.asFormattedText
 import com.loohp.hkbuseta.common.objects.asOriginData
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.identifyStopCo
@@ -338,9 +339,9 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                             CoroutineScope(dispatcherIO).launch {
                                 Registry.getInstance(instance).setFavouriteRouteGroups(groups, instance)
                             }
-                        })
+                        }, pipModeListName = name.asFormattedText())
                     }?: run {
-                        ListRoutesInterface(instance, persistentListOf(), true, RouteListType.FAVOURITE, true, RecentSortMode.DISABLED, location?.asOriginData(false), false, visible, extraActions = editActionButton)
+                        ListRoutesInterface(instance, persistentListOf(), true, RouteListType.FAVOURITE, true, RecentSortMode.DISABLED, location?.asOriginData(false), false, visible, extraActions = editActionButton, pipModeListName = name.asFormattedText())
                     }
                 }
                 if (editingRouteGroup) {
