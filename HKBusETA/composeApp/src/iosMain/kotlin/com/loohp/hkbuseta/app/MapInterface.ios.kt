@@ -55,12 +55,14 @@ import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
+import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.radians
 import com.loohp.hkbuseta.common.utils.withLock
+import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.LocationOff
 import com.loohp.hkbuseta.compose.PlatformFilledTonalIconToggleButton
 import com.loohp.hkbuseta.compose.PlatformIcons
@@ -139,6 +141,7 @@ actual fun MapRouteInterface(
         Operator.MTR -> "mtr_stop"
         else -> "bus_kmb"
     } }
+    val shouldShowStopIndex = remember { !waypoints.co.run { isTrain || isFerry } }
     val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
     val mapDelegate = remember { MapDelegate(iconName, pathColor, anchor) { selectedStop = indexMap[it] + 1 } }
     val map = remember { MKMapView() }
@@ -184,9 +187,10 @@ actual fun MapRouteInterface(
                 map.removeOverlays(overlays)
                 annotations = waypoints.stops.mapIndexed { index, stop ->
                     val resolvedStop = alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
+                    val title = resolvedStop.name[Shared.language]
                     MapAnnotation(
-                        titleStr = resolvedStop.name[Shared.language],
-                        subTitleStr = resolvedStop.remark?.get(Shared.language),
+                        title = if (shouldShowStopIndex) "${indexMap[index] + 1}. $title" else title,
+                        subTitle = resolvedStop.remark?.get(Shared.language),
                         index = index,
                         location = stop.location
                     )
@@ -224,6 +228,17 @@ actual fun MapRouteInterface(
                 camera.altitude = DefaultAltitude
                 map.setCamera(camera, false)
                 checkLocationPermission(instance, true) { hasLocation = it }
+            }
+        }
+    }
+    ChangedEffect (selectedStop) {
+        val index = indexMap.indexOf(selectedStop - 1)
+        if (index >= 0) {
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(400)
+                lock.withLock {
+                    map.selectAnnotation(annotations[index], true)
+                }
             }
         }
     }
@@ -422,26 +437,34 @@ class MapDelegate(
 
 @ExperimentalForeignApi
 class MapAnnotation(
-    private val titleStr: String? = null,
-    private val subTitleStr: String? = null,
+    title: String? = null,
+    subTitle: String? = null,
     private val index: Int,
     private val location: Coordinates
 ): NSObject(), MKAnnotationProtocol {
+
+    private val titleInternal = title
+    private val subTitleInternal = subTitle
+    private val appleCoordinates = location.toAppleCoordinates()
 
     fun index(): Int {
         return index
     }
 
     override fun title(): String? {
-        return titleStr
+        return titleInternal
     }
 
     override fun subtitle(): String? {
-        return subTitleStr
+        return subTitleInternal
+    }
+
+    fun location(): Coordinates {
+        return location
     }
 
     override fun coordinate(): CValue<CLLocationCoordinate2D> {
-        return location.toAppleCoordinates()
+        return appleCoordinates
     }
 
 }

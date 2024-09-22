@@ -789,11 +789,15 @@ sealed interface SpecialRouteAlerts {
 }
 
 fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext): Set<SpecialRouteAlerts> {
-    val allStops = cachedAllStops?: Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
-    val branches = allStops.asSequence().flatMap { it.branchIds }.toSet()
-    val branchStops = branches.associateWith { b -> allStops.filter { it.branchIds.contains(b) } }
-    val isAlightingStop = branchStops.values.all {
-        it.size <= stopInfoIndex + 1 || (it.getOrNull(stopInfoIndex)?.stop?.name nonNullEquals it.getOrNull(stopInfoIndex + 1)?.stop?.name) && it.size <= stopInfoIndex + 2
+    val isAlightingStop = if (stopInfo?.data?.name?.zh?.contains("落客") == true) {
+        true
+    } else {
+        val allStops = cachedAllStops?: Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
+        val branches = allStops.asSequence().flatMap { it.branchIds }.toSet()
+        val branchStops = branches.associateWith { b -> allStops.filter { it.branchIds.contains(b) } }
+        branchStops.values.all {
+            it.size <= stopInfoIndex + 1 || (it.getOrNull(stopInfoIndex)?.stop?.name nonNullEquals it.getOrNull(stopInfoIndex + 1)?.stop?.name) && it.size <= stopInfoIndex + 2
+        }
     }
     return if (isAlightingStop) {
         buildSet {

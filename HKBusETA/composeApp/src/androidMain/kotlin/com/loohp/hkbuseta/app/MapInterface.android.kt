@@ -76,11 +76,13 @@ import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
+import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
+import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.LocationOff
 import com.loohp.hkbuseta.compose.PlatformFilledTonalIconToggleButton
@@ -167,6 +169,7 @@ fun GoogleMapRouteInterface(
         Operator.MTR -> R.mipmap.mtr
         else -> R.mipmap.bus_kmb
     }), 96, 96, false) }
+    val shouldShowStopIndex = remember { !waypoints.co.run { isTrain || isFerry } }
     val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
     var init by remember { mutableLongStateOf(-1) }
     var hasLocation by remember { mutableStateOf(false) }
@@ -223,7 +226,7 @@ fun GoogleMapRouteInterface(
             mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
             onMapLoaded = { init = currentTimeMillis() }
         ) {
-            StopMarkers(waypoints, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap)
+            StopMarkers(waypoints, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap, shouldShowStopIndex)
             WaypointPaths(waypoints)
         }
     }
@@ -238,17 +241,26 @@ fun StopMarkers(
     icon: Bitmap,
     anchor: Offset,
     selectedStopState: MutableIntState,
-    indexMap: ImmutableList<Int>
+    indexMap: ImmutableList<Int>,
+    shouldShowStopIndex: Boolean
 ) {
     var selectedStop by selectedStopState
-    for ((index, stop) in waypoints.stops.withIndex()) {
+    for ((i, stop) in waypoints.stops.withIndex()) {
+        val stopIndex = indexMap[i] + 1
+        val title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(stopIndex - 1)?.stop?: stop).name[Shared.language]
+        val markerState = rememberStopMarkerState(stop)
+        ChangedEffect (selectedStop) {
+            if (selectedStop == stopIndex) {
+                markerState.showInfoWindow()
+            }
+        }
         Marker(
-            state = rememberStopMarkerState(stop),
-            title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop).name[Shared.language],
+            state = markerState,
+            title = if (shouldShowStopIndex) "${stopIndex}. $title" else title,
             snippet = stop.remark?.get(Shared.language),
             icon = BitmapDescriptorFactory.fromBitmap(icon),
             anchor = anchor,
-            onClick = { selectedStop = indexMap[index] + 1; false },
+            onClick = { selectedStop = stopIndex; false },
             zIndex = 3F
         )
     }
@@ -317,7 +329,12 @@ const val baseHtml: String = """
 """
 
 @Composable
-fun rememberLeafletScript(waypoints: RouteWaypoints, alternateStopNameShowing: Boolean, alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>): State<String> {
+fun rememberLeafletScript(
+    waypoints: RouteWaypoints,
+    alternateStopNameShowing: Boolean,
+    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
+    indexMap: ImmutableList<Int>
+): State<String> {
     val stopNames by remember(waypoints) { derivedStateOf { waypoints.stops.mapIndexed { index, stop -> index to stop }.joinToString(",") { (index, stop) ->
         val resolvedStop = alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
         "\"<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "") + "\""
@@ -343,6 +360,7 @@ fun rememberLeafletScript(waypoints: RouteWaypoints, alternateStopNameShowing: B
     val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
     val clearness = remember { pathColor.closenessTo(Color(0xFFFDE293)) }
     val (outlineHex, outlineOpacity) = remember { if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F }
+    val shouldShowStopIndex = remember { !waypoints.co.run { isTrain || isFerry } }
 
     return remember(waypoints, stopNames, stopsJsArray, pathsJsArray) { derivedStateOf { """
         layer.clearLayers();
@@ -355,11 +373,18 @@ fun rememberLeafletScript(waypoints: RouteWaypoints, alternateStopNameShowing: B
 
         var stops = [$stopsJsArray];
         var stopNames = [$stopNames];
+        var indexMap = [${indexMap.joinToString(separator = ",")}];
 
-        stops.forEach(function(point, index) {
-            L.marker(point, {icon: stopIcon})
+        var stopMarkers = stops.map(function(point, index) {
+            var title;
+            if ("$shouldShowStopIndex" == "true") {
+                title = "<div style='text-align: center;'><b>" + (indexMap[index] + 1) + ". </b>" + stopNames[index] + "<div>";
+            } else {
+                title = "<div style='text-align: center;'>" + stopNames[index] + "<div>";
+            }
+            return L.marker(point, {icon: stopIcon})
                 .addTo(layer)
-                .bindPopup("<div style='text-align: center;'>" + stopNames[index] + "<div>", { offset: L.point(0, -22), closeButton: false })
+                .bindPopup(title, { offset: L.point(0, -22), closeButton: false })
                 .on('click', () => window.kmpJsBridge.callNative("SelectStop", index.toString(), null));
         });
         
@@ -389,7 +414,7 @@ fun DefaultMapRouteInterface(
     val webViewJsBridge = rememberWebViewJsBridge()
     var selectedStop by selectedStopState
     val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
-    val script by rememberLeafletScript(waypoints, alternateStopNameShowing, alternateStopNames)
+    val script by rememberLeafletScript(waypoints, alternateStopNameShowing, alternateStopNames, indexMap)
     val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
     val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
 
@@ -443,6 +468,14 @@ fun DefaultMapRouteInterface(
                     maxZoom: 19,
                 }).addTo(tileLayers);
             """.trimIndent())
+        }
+    }
+    ChangedEffect (selectedStop) {
+        val index = indexMap.indexOf(selectedStop - 1)
+        if (index >= 0) {
+            webViewNavigator.evaluateJavaScript("""
+            stopMarkers[$index].openPopup()
+        """.trimIndent())
         }
     }
 

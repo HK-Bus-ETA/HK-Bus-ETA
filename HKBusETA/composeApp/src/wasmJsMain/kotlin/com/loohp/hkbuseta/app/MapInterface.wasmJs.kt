@@ -49,11 +49,13 @@ import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
+import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.Stable
+import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.shared.ComposeShared
@@ -110,7 +112,7 @@ actual fun MapRouteInterface(
         val colorHex = pathColor.toHexString()
         val clearness = pathColor.closenessTo(Color(0xFFFDE293))
         val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
-        webMap.updateMarkings(stopsJsArray, stopNames, pathsJsArray, colorHex, 1F, outlineHex, outlineOpacity, "assets/$iconFile", anchor.x, anchor.y) {
+        webMap.updateMarkings(stopsJsArray, stopNames, pathsJsArray, colorHex, 1F, outlineHex, outlineOpacity, "assets/$iconFile", anchor.x, anchor.y, indexMap.joinToString(separator = ","), waypoints.co.run { isTrain || isFerry }) {
             scope.launch { selectedStop = indexMap[it] + 1 }
         }
     }
@@ -137,6 +139,12 @@ actual fun MapRouteInterface(
     }
     LanguageDarkModeChangeEffect { language, darkMode ->
         webMap.reloadTiles(language, darkMode)
+    }
+    ChangedEffect (selectedStop) {
+        val index = indexMap.indexOf(selectedStop - 1)
+        if (index >= 0) {
+            webMap.showMarker(index)
+        }
     }
 
     WebMapContainer(webMap)
@@ -230,7 +238,8 @@ external class WebMap(language: String, darkMode: Boolean): JsAny {
     fun startSelect(lat: Double, lng: Double, radius: Float, onMoveCallback: (Double, Double, Double) -> Unit)
     fun flyToSelect(lat: Double, lng: Double)
     fun updateSelect(lat: Double, lng: Double, radius: Float)
-    fun updateMarkings(stopsJsArray: String, stopNamesJsArray: String, pathsJsArray: String, colorHex: String, opacity: Float, outlineHex: String?, outlineOpacity: Float, iconFile: String, anchorX: Float, anchorY: Float, selectStopCallback: (Int) -> Unit)
+    fun updateMarkings(stopsJsArray: String, stopNamesJsArray: String, pathsJsArray: String, colorHex: String, opacity: Float, outlineHex: String?, outlineOpacity: Float, iconFile: String, anchorX: Float, anchorY: Float, indexMap: String, shouldShowStopIndex: Boolean, selectStopCallback: (Int) -> Unit)
     fun updateLineColor(colorHex: String, opacity: Float, outlineHex: String?, outlineOpacity: Float)
     fun mapFlyTo(lat: Double, lng: Double)
+    fun showMarker(index: Int)
 }

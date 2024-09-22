@@ -17,6 +17,8 @@ class WebMap {
         this.polylines = [];
         this.polylinesOutline = [];
 
+        this.stopMarkers = [];
+
         this.resizeCallback = () => this.map.invalidateSize();
         window.addEventListener("resize", this.resizeCallback);
     }
@@ -102,7 +104,7 @@ class WebMap {
         }).addTo(this.layer);
     }
 
-    updateMarkings(stopsJsArray, stopNamesJsArray, pathsJsArray, colorHex, opacity, outlineHex, outlineOpacity, iconFile, anchorX, anchorY, selectStopCallback) {
+    updateMarkings(stopsJsArray, stopNamesJsArray, pathsJsArray, colorHex, opacity, outlineHex, outlineOpacity, iconFile, anchorX, anchorY, indexMap, shouldShowStopIndex, selectStopCallback) {
         this.layer.clearLayers();
 
         var stopIcon = L.icon({
@@ -113,12 +115,19 @@ class WebMap {
 
         var stops = splitLatLngPairs(stopsJsArray);
         var stopNames = stopNamesJsArray.split('\0');
+        var indexMap = indexMap.split(',').map((s) => Number(s));
 
-        stops.forEach((point, index) => {
+        this.stopMarkers = stops.map((point, index) => {
             var clicked = false;
+            var title;
+            if (shouldShowStopIndex) {
+                title = "<div style='text-align: center;'><b>" + (indexMap[index] + 1) + ". </b>" + stopNames[index] + "<div>";
+            } else {
+                title = "<div style='text-align: center;'>" + stopNames[index] + "<div>";
+            }
             var marker = L.marker(point, {icon: stopIcon})
                 .addTo(this.layer)
-                .bindPopup("<div style='text-align: center;'>" + stopNames[index] + "<div>", { offset: L.point(0, -22), closeButton: false })
+                .bindPopup(title, { offset: L.point(0, -22), closeButton: false })
                 .on('click', () => {
                     selectStopCallback(index);
                     clicked = true;
@@ -135,6 +144,7 @@ class WebMap {
                         marker.closePopup();
                     }
                 });
+            return marker;
         });
 
         var paths = splitLatLngPaths(pathsJsArray);
@@ -161,6 +171,10 @@ class WebMap {
                 polyline.setStyle({ color: colorHex, opacity: opacity });
             });
         }
+    }
+
+    showMarker(index) {
+        this.stopMarkers[index].openPopup()
     }
 }
 
