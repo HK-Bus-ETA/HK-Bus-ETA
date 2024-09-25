@@ -48,6 +48,8 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.LocationDisabled
 import androidx.compose.material.icons.filled.NoTransfer
@@ -207,6 +209,7 @@ actual inline val PlatformIcons.AutoMirrored.Outlined.AltRoute: Painter @Composa
 actual inline val PlatformIcons.Filled.ArrowDownward: Painter @Composable get() = rememberSystemImagePainter("arrow.down")
 actual inline val PlatformIcons.Filled.ArrowUpward: Painter @Composable get() = rememberSystemImagePainter("arrow.up")
 actual inline val PlatformIcons.Filled.Bolt: Painter @Composable get() = rememberSystemImagePainter("bolt.fill")
+actual inline val PlatformIcons.Filled.CheckCircle: Painter @Composable get() = rememberSystemImagePainter("checkmark.circle.fill")
 actual inline val PlatformIcons.Filled.ChevronLeft: Painter @Composable get() = rememberSystemImagePainter("chevron.left")
 actual inline val PlatformIcons.Filled.ChevronRight: Painter @Composable get() = rememberSystemImagePainter("chevron.right")
 actual inline val PlatformIcons.Filled.FirstPage: Painter @Composable get() = rememberSystemImagePainter("arrow.left.to.line")
@@ -217,6 +220,7 @@ actual inline val PlatformIcons.Filled.Dangerous: Painter @Composable get() = re
 actual inline val PlatformIcons.Filled.DarkMode: Painter @Composable get() = rememberSystemImagePainter("moon.fill")
 actual inline val PlatformIcons.Filled.DeleteForever: Painter @Composable get() = rememberSystemImagePainter("trash.fill")
 actual inline val PlatformIcons.Filled.EditNote: Painter @Composable get() = rememberSystemImagePainter("square.and.pencil")
+actual inline val PlatformIcons.Filled.Error: Painter @Composable get() = rememberSystemImagePainter("exclamationmark.circle.fill")
 actual inline val PlatformIcons.Filled.Forest: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Forest)
 actual inline val PlatformIcons.Filled.History: Painter @Composable get() = rememberSystemImagePainter("clock.arrow.circlepath")
 actual inline val PlatformIcons.Filled.Info: Painter @Composable get() = rememberSystemImagePainter("info.circle.fill")

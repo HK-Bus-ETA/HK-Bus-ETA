@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
@@ -55,6 +56,7 @@ import androidx.compose.material.icons.filled.Dangerous
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.FirstPage
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.History
@@ -221,6 +223,7 @@ actual inline val PlatformIcons.AutoMirrored.Outlined.AltRoute: Painter @Composa
 actual inline val PlatformIcons.Filled.ArrowDownward: Painter @Composable get() = rememberVectorPainter(Icons.Filled.ArrowDownward)
 actual inline val PlatformIcons.Filled.ArrowUpward: Painter @Composable get() = rememberVectorPainter(Icons.Filled.ArrowUpward)
 actual inline val PlatformIcons.Filled.Bolt: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Bolt)
+actual inline val PlatformIcons.Filled.CheckCircle: Painter @Composable get() = rememberVectorPainter(Icons.Filled.CheckCircle)
 actual inline val PlatformIcons.Filled.ChevronLeft: Painter @Composable get() = rememberVectorPainter(Icons.Filled.ChevronLeft)
 actual inline val PlatformIcons.Filled.ChevronRight: Painter @Composable get() = rememberVectorPainter(Icons.Filled.ChevronRight)
 actual inline val PlatformIcons.Filled.FirstPage: Painter @Composable get() = rememberVectorPainter(Icons.Filled.FirstPage)
@@ -231,6 +234,7 @@ actual inline val PlatformIcons.Filled.Dangerous: Painter @Composable get() = re
 actual inline val PlatformIcons.Filled.DarkMode: Painter @Composable get() = rememberVectorPainter(Icons.Filled.DarkMode)
 actual inline val PlatformIcons.Filled.DeleteForever: Painter @Composable get() = rememberVectorPainter(Icons.Filled.DeleteForever)
 actual inline val PlatformIcons.Filled.EditNote: Painter @Composable get() = rememberVectorPainter(Icons.Filled.EditNote)
+actual inline val PlatformIcons.Filled.Error: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Error)
 actual inline val PlatformIcons.Filled.Forest: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Forest)
 actual inline val PlatformIcons.Filled.History: Painter @Composable get() = rememberVectorPainter(Icons.Filled.History)
 actual inline val PlatformIcons.Filled.Info: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Info)

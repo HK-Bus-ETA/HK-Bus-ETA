@@ -52,6 +52,7 @@ import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getMtrLineName
+import com.loohp.hkbuseta.common.objects.getMtrLineSortingIndex
 import com.loohp.hkbuseta.common.objects.getRouteKey
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
@@ -66,7 +67,6 @@ import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.parseIntOr
 import com.loohp.hkbuseta.common.utils.plus
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.wrap
@@ -238,22 +238,7 @@ object Shared {
     }
 
     fun getMtrLineSortingIndex(lineName: String): Int {
-        return when (lineName) {
-            "AEL" -> 0
-            "TCL" -> 1
-            "TML" -> 4
-            "TKL" -> 9
-            "EAL" -> 3
-            "SIL" -> 5
-            "TWL" -> 8
-            "ISL" -> 6
-            "KTL" -> 7
-            "DRL" -> 2
-            else -> {
-                val i = lineName.substring(0, 3).parseIntOr(Int.MAX_VALUE)
-                return i * 10 + lineName.length
-            }
-        }
+        return lineName.getMtrLineSortingIndex()
     }
 
     fun getMtrLineName(lineName: String): String {

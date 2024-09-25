@@ -102,6 +102,12 @@ fun Route.routeGroupKey(co: Operator): String = routeNumber + "," + co.name + ",
 
 inline val Route.routeGroupKey: String get() = routeGroupKey(co.firstCo()!!)
 
+val mtrLines: List<String> = listOf("AEL", "TCL", "DRL", "EAL", "TML", "SIL", "ISL", "KTL", "TWL", "TKL")
+
+fun String.getMtrLineSortingIndex(): Int {
+    return mtrLines.indexOf(this).takeIf { it >= 0 }?: (substring(0, 3.coerceAtMost(length)).parseIntOr(Int.MAX_VALUE) * 10 + length)
+}
+
 fun String.getMtrLineName(orElse: () -> BilingualText = { asBilingualText() }): BilingualText {
     return when (this) {
         "AEL" -> "機場快綫" withEn "Airport Express"

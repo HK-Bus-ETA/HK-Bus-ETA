@@ -22,5 +22,5 @@
 package com.loohp.hkbuseta.common.objects
 
 enum class TrainServiceStatus {
-    NORMAL, NON_SERVICE_HOUR, DISRUPTION
+    NORMAL, NON_SERVICE_HOUR, TYPHOON, DISRUPTION
 }

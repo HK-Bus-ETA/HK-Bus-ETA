@@ -1712,24 +1712,26 @@ class Registry {
         }
     }
 
-    suspend fun getMtrLineServiceDisruption(): Map<String, TrainServiceStatus> {
+    suspend fun getMtrLineServiceDisruption(): Map<String, TrainServiceStatus>? {
         val now = currentTimeMillis()
-        return buildMap {
-            CoroutineScope(dispatcherIO).async {
-                try {
-                    val data = getXMLResponse<MTRStatus>("https://tnews.mtr.com.hk/alert/ryg_line_status.xml?_=$now")!!
-                    for (line in data.lines) {
-                        this@buildMap[line.line] = when (line.status) {
-                            "green" -> TrainServiceStatus.NORMAL
-                            "grey" -> TrainServiceStatus.NON_SERVICE_HOUR
-                            else -> TrainServiceStatus.DISRUPTION
-                        }
+        return CoroutineScope(dispatcherIO).async {
+            val map = mutableMapOf<String, TrainServiceStatus>()
+            try {
+                val data = getXMLResponse<MTRStatus>("https://tnews.mtr.com.hk/alert/ryg_line_status.xml?_=$now")!!
+                val typhoon = typhoonInfo.value.isAboveTyphoonSignalNine
+                for (line in data.lines) {
+                    map[line.line] = when (line.status) {
+                        "green" -> TrainServiceStatus.NORMAL
+                        "grey" -> TrainServiceStatus.NON_SERVICE_HOUR
+                        else -> if (typhoon) TrainServiceStatus.TYPHOON else TrainServiceStatus.DISRUPTION
                     }
-                } catch (e: Throwable) {
-                    e.printStackTrace()
                 }
-            }.await()
-        }
+                map
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                null
+            }
+        }.await()
     }
 
     suspend fun getLrtLineRedAlert(): Pair<String, String?>? {

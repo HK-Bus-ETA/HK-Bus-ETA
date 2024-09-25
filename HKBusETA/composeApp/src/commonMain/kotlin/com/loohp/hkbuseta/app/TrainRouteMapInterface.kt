@@ -59,6 +59,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -152,10 +153,12 @@ import com.loohp.hkbuseta.common.objects.getMTRBarrierFreeCategories
 import com.loohp.hkbuseta.common.objects.getMTRStationBarrierFree
 import com.loohp.hkbuseta.common.objects.getMTRStationLayoutUrl
 import com.loohp.hkbuseta.common.objects.getMTRStationStreetMapUrl
+import com.loohp.hkbuseta.common.objects.getMtrLineSortingIndex
 import com.loohp.hkbuseta.common.objects.getStationBarrierFreeDetails
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
+import com.loohp.hkbuseta.common.objects.mtrLines
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
@@ -180,11 +183,14 @@ import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.Accessible
 import com.loohp.hkbuseta.compose.Bedtime
 import com.loohp.hkbuseta.compose.ChangedEffect
+import com.loohp.hkbuseta.compose.CheckCircle
+import com.loohp.hkbuseta.compose.DarkMode
+import com.loohp.hkbuseta.compose.Error
 import com.loohp.hkbuseta.compose.Info
 import com.loohp.hkbuseta.compose.Map
 import com.loohp.hkbuseta.compose.Paid
 import com.loohp.hkbuseta.compose.PlatformButton
-import com.loohp.hkbuseta.compose.PlatformExtendedFloatingActionButton
+import com.loohp.hkbuseta.compose.PlatformFloatingActionButton
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformModalBottomSheet
@@ -369,7 +375,7 @@ fun RouteMapSearchInterface(
     }
 
     val mtrLineServiceDisruption: SnapshotStateMap<String, TrainServiceStatus> = remember { mutableStateMapOf() }
-    var mtrLineServiceDisruptionBlink by remember { mutableStateOf(false) }
+    var mtrLineServiceDisruptionAvailable by remember { mutableStateOf(false) }
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
     var lrtRedAlert: Pair<String, String?>? by remember { mutableStateOf(null) }
 
@@ -379,8 +385,13 @@ fun RouteMapSearchInterface(
     LaunchedEffect (Unit) {
         while (true) {
             val result = Registry.getInstance(instance).getMtrLineServiceDisruption()
-            mtrLineServiceDisruption.clear()
-            mtrLineServiceDisruption.putAll(result)
+            if (result == null) {
+                mtrLineServiceDisruptionAvailable = false
+            } else {
+                mtrLineServiceDisruptionAvailable = true
+                mtrLineServiceDisruption.clear()
+                mtrLineServiceDisruption.putAll(result)
+            }
             delay(180000)
         }
     }
@@ -388,12 +399,6 @@ fun RouteMapSearchInterface(
         while (true) {
             lrtRedAlert = Registry.getInstance(instance).getLrtLineRedAlert()
             delay(180000)
-        }
-    }
-    LaunchedEffect (Unit) {
-        while (true) {
-            mtrLineServiceDisruptionBlink = !mtrLineServiceDisruptionBlink
-            delay(1000)
         }
     }
 
@@ -474,29 +479,131 @@ fun RouteMapSearchInterface(
                 )
                 if (offset < 100.dp) {
                     val statusNotice = mtrLineStatus
-                    val color = if (mtrLineServiceDisruption.values.any { it == TrainServiceStatus.DISRUPTION } && mtrLineServiceDisruptionBlink) Color.Red else null
-                    PlatformExtendedFloatingActionButton(
+                    val disruptedLines = mtrLineServiceDisruption.asSequence()
+                        .filter { (_, v) -> v == TrainServiceStatus.DISRUPTION }
+                        .map { (k) -> k }
+                        .sortedBy { it.getMtrLineSortingIndex() }
+                        .map { it to if (it == "LR") Operator.LRT.getOperatorColor(Color.LightGray) else Operator.MTR.getLineColor(it, Color.LightGray) }
+                        .toList()
+                    val mtrLinesStatus = mtrLineServiceDisruption.filter { (k) -> mtrLines.contains(k) }
+                    val (statusMessage, statusIcon) = when {
+                        mtrLinesStatus.values.all { it == TrainServiceStatus.NON_SERVICE_HOUR } -> {
+                            (if (Shared.language == "en") "Non-service Hours" else "非服務時間") to PlatformIcons.Filled.DarkMode
+                        }
+                        mtrLinesStatus.values.all { it == TrainServiceStatus.TYPHOON } -> {
+                            (if (Shared.language == "en") "Typhoon Timetable" else "颱風時間表") to PlatformIcons.Filled.Error
+                        }
+                        else -> {
+                            (if (Shared.language == "en") "Good Service" else "正常服務") to PlatformIcons.Filled.CheckCircle
+                        }
+                    }
+                    PlatformFloatingActionButton(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(10.dp)
                             .graphicsLayer { translationY = offset.toPx() },
                         onClick = instance.handleWebpages(statusNotice.url, false, LocalHapticFeedback.current.common),
-                        icon = {
-                            PlatformIcon(
-                                modifier = Modifier.size(27.dp),
-                                painter = PlatformIcons.Filled.Info,
-                                tint = color,
-                                contentDescription = statusNotice.title
-                            )
-                        },
-                        text = {
-                            PlatformText(
-                                fontSize = 17.sp,
-                                color = color?: Color.Unspecified,
-                                text = statusNotice.title
-                            )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .animateContentSize(),
+                            horizontalArrangement = Arrangement.spacedBy(20.dp)
+                        ) {
+                            Column {
+                                PlatformText(
+                                    fontSize = 17.sp,
+                                    text = statusNotice.title,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                when {
+                                    !mtrLineServiceDisruptionAvailable -> PlatformText(
+                                        fontSize = 14.sp,
+                                        text = if (Shared.language == "en") "Click to Check" else "點擊查看"
+                                    )
+                                    disruptedLines.isEmpty() -> PlatformText(
+                                        fontSize = 14.sp,
+                                        text = statusMessage
+                                    )
+                                    else -> Row(
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        PlatformText(
+                                            fontSize = 14.sp,
+                                            text = if (Shared.language == "en") "Disruption" else "服務受阻"
+                                        )
+                                        PlatformIcon(
+                                            modifier = Modifier.size(16.dp),
+                                            painter = PlatformIcons.Filled.Error,
+                                            contentDescription = if (Shared.language == "en") "Disruption" else "服務受阻"
+                                        )
+                                    }
+                                }
+                            }
+                            if (mtrLineServiceDisruptionAvailable) {
+                                when (disruptedLines.size) {
+                                    0 -> PlatformIcon(
+                                        modifier = Modifier
+                                            .size(22.dp)
+                                            .align(Alignment.Bottom),
+                                        painter = statusIcon,
+                                        contentDescription = statusMessage
+                                    )
+                                    1, 2 -> Row(
+                                        modifier = Modifier
+                                            .align(Alignment.Bottom)
+                                            .height(25.dp)
+                                            .requiredWidth(22.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Spacer(modifier = Modifier.weight(1F))
+                                        for ((_, lineColor) in disruptedLines) {
+                                            Spacer(
+                                                modifier = Modifier
+                                                    .fillMaxHeight()
+                                                    .width(10.dp)
+                                                    .clip(RoundedCornerShape(5.dp))
+                                                    .background(lineColor)
+                                            )
+                                        }
+                                    }
+                                    else -> Column(
+                                        modifier = Modifier
+                                            .align(Alignment.Bottom)
+                                            .requiredWidth(22.dp),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        for (r in disruptedLines.indices step 2) {
+                                            Row(
+                                                modifier = Modifier.align(Alignment.End),
+                                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                            ) {
+                                                for (i in 0..1) {
+                                                    disruptedLines.getOrNull(r + i)?.let { (_, lineColor) ->
+                                                        Spacer(
+                                                            modifier = Modifier
+                                                                .size(10.dp)
+                                                                .clip(RoundedCornerShape(5.dp))
+                                                                .background(lineColor)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                PlatformIcon(
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .align(Alignment.Bottom),
+                                    painter = PlatformIcons.Filled.Info,
+                                    contentDescription = if (Shared.language == "en") "Click to Check" else "點擊查看"
+                                )
+                            }
                         }
-                    )
+                    }
                 }
             } else {
                 Box(
