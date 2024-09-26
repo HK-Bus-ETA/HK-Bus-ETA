@@ -24,6 +24,8 @@ package com.loohp.hkbuseta.compose.table
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.FirstBaseline
+import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
@@ -42,6 +44,7 @@ fun DataTable(
     footer: @Composable () -> Unit = { },
     sortColumnIndex: Int? = null,
     sortAscending: Boolean = true,
+    alignmentLine: HorizontalAlignmentLine? = FirstBaseline,
     content: DataTableScope.() -> Unit
 ) {
     BasicDataTable(
@@ -55,6 +58,7 @@ fun DataTable(
         cellContentProvider = Material3CellContentProvider,
         sortColumnIndex = sortColumnIndex,
         sortAscending = sortAscending,
+        alignmentLine = alignmentLine,
         content = content
     )
 }

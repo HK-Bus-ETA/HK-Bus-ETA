@@ -21,7 +21,11 @@
 
 package com.loohp.hkbuseta.compose.table
 
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.Composable
+
 internal data class TableRowData(
     val onClick: (() -> Unit)?,
+    val background: @Composable (BoxScope.() -> Unit)?,
     val content: TableRowScope.() -> Unit,
 )

@@ -21,7 +21,9 @@
 
 package com.loohp.hkbuseta.compose.table
 
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.LayoutScopeMarker
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 
 /**
@@ -34,22 +36,28 @@ interface DataTableScope {
     /**
      * Creates a new row in the [BasicDataTable] with the specified content.
      */
-    fun row(onClick: (() -> Unit)? = null, content: TableRowScope.() -> Unit)
+    fun row(onClick: (() -> Unit)? = null, background: @Composable (BoxScope.() -> Unit)? = null, content: TableRowScope.() -> Unit)
 
     /**
      * Creates a new rows in the [BasicDataTable] with the specified content.
      */
-    fun rows(count: Int, content: TableRowScope.(Int) -> Unit)
+    fun rows(count: Int, background: @Composable (BoxScope.(Int) -> Unit)? = null, content: TableRowScope.(Int) -> Unit)
 }
 
 internal class DataTableScopeImpl : DataTableScope {
     val tableRows = mutableListOf<TableRowData>()
 
-    override fun row(onClick: (() -> Unit)?, content: TableRowScope.() -> Unit) {
-        tableRows += TableRowData(onClick, content)
+    override fun row(onClick: (() -> Unit)?, background: @Composable (BoxScope.() -> Unit)?, content: TableRowScope.() -> Unit) {
+        tableRows += TableRowData(onClick, background, content)
     }
 
-    override fun rows(count: Int, content: TableRowScope.(Int) -> Unit) {
-        TODO("Not yet implemented")
+    override fun rows(count: Int, background: @Composable (BoxScope.(Int) -> Unit)?, content: TableRowScope.(Int) -> Unit) {
+        for (i in 0 until count) {
+            row(
+                onClick = null,
+                background = background?.let { { it.invoke(this, i) } },
+                content = { content.invoke(this, i) }
+            )
+        }
     }
 }

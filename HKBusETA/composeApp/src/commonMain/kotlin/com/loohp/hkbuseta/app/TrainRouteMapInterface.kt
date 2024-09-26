@@ -90,6 +90,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -166,6 +167,7 @@ import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.LocationPriority
+import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.awaitWithTimeout
@@ -2921,8 +2923,9 @@ fun TrainETADisplay(
     ) {
         for (seq in 1..lines.size) {
             val entry = resolvedText[seq]!!
+            val isEmpty = entry == Registry.ETALineEntryText.EMPTY
             row(
-                onClick = if (co == Operator.LRT) { {
+                onClick = if (co == Operator.LRT) ({
                     scope.launch {
                         Registry.getInstance(instance).findRoutes(lines[seq - 1].routeNumber, true).asSequence()
                             .filter { it.route!!.stops[Operator.LRT]?.contains(stopId) == true }
@@ -2939,7 +2942,25 @@ fun TrainETADisplay(
                                 instance.startActivity(intent)
                             }
                     }
-                } } else null
+                }) else null,
+                background = {
+                    if (seq % 2 == 0) {
+                        val color = platformPrimaryContainerColor
+                        Spacer(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .drawWithCache {
+                                    onDrawWithContent {
+                                        drawRect(
+                                            topLeft = Offset(x = -5.dp.toPx(), y = 0F),
+                                            size = size.copy(width = size.width + 10.dp.toPx()),
+                                            color = color.adjustAlpha(0.5F)
+                                        )
+                                    }
+                                }
+                        )
+                    }
+                }
             ) {
                 if (hasPlatform) cell {
                     TrainEtaText(entry.platform, freshness)
@@ -2957,7 +2978,7 @@ fun TrainETADisplay(
                     TrainEtaText(entry.clockTime, freshness)
                 }
                 if (hasTime) cell {
-                    TrainEtaText(entry.time, freshness)
+                    TrainEtaText(if (isEmpty) "".asFormattedText() else entry.time, freshness)
                 }
                 if (hasOperator) cell {
                     TrainEtaText(entry.operator, freshness)

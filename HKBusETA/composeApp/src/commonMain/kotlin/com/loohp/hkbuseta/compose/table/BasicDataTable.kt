@@ -29,6 +29,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.layout.FirstBaseline
+import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -37,6 +40,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.constrain
 import androidx.compose.ui.unit.dp
+import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.clickable
 import kotlinx.collections.immutable.ImmutableList
 import kotlin.math.max
@@ -57,6 +61,7 @@ fun BasicDataTable(
     cellContentProvider: CellContentProvider = DefaultCellContentProvider,
     sortColumnIndex: Int? = null,
     sortAscending: Boolean = true,
+    alignmentLine: HorizontalAlignmentLine? = FirstBaseline,
     content: DataTableScope.() -> Unit
 ) {
     val tableScope = DataTableScopeImpl()
@@ -123,11 +128,18 @@ fun BasicDataTable(
     }
 
     val rowBackgrounds = @Composable {
-        tableScope.tableRows.forEach {
-            Box(Modifier
+        tableScope.tableRows.forEach { (onClick, background) ->
+            val rowModifier = Modifier
                 .fillMaxSize()
-                .then(if (it.onClick != null) Modifier.clickable { it.onClick.invoke() } else Modifier)
-            )
+                .applyIfNotNull(onClick) { clickable { it.invoke() } }
+            if (background == null) {
+                Box(modifier = rowModifier)
+            } else {
+                Box(
+                    modifier = rowModifier,
+                    content = background
+                )
+            }
         }
     }
 
@@ -202,7 +214,7 @@ fun BasicDataTable(
         }
 
         // Measure the remaining children and calculate row heights.
-        val rowHeights = Array(rowCount) { 0 }
+        val rowHeights = IntArray(rowCount)
         for (row in 0 until rowCount) {
             for (column in 0 until columnCount) {
                 if (placeables[row][column] == null) {
@@ -215,7 +227,7 @@ fun BasicDataTable(
             }
         }
 
-        val columnOffsets = Array(columnCount + 1) { 0 }
+        val columnOffsets = IntArray(columnCount + 1)
         for (column in 0 until columnCount) {
             columnOffsets[column + 1] = columnOffsets[column] + columnWidths[column]
         }
@@ -240,10 +252,27 @@ fun BasicDataTable(
         }
 
         // Compute row/column offsets.
-        val rowOffsets = Array(rowCount + 1) { 0 }
+        val rowOffsets = IntArray(rowCount + 1)
         for (row in 0 until rowCount) {
             rowOffsets[row + 1] = rowOffsets[row] + rowHeights[row]
         }
+
+        val (rowHighestBaselineHeight, cellBaselineHeight) = if (alignmentLine == null) {
+            null to null
+        } else {
+            val rowHighestBaselineHeight = IntArray(rowCount)
+            val cellBaselineHeight = Array(rowCount) { IntArray(columnCount) }
+            for (row in 0 until rowCount) {
+                for (column in 0 until columnCount) {
+                    val alignmentLineOffset = placeables[row][column]?.get(alignmentLine)
+                        ?.takeIf { h -> h != AlignmentLine.Unspecified }?: 0
+                    cellBaselineHeight[row][column] = alignmentLineOffset
+                    rowHighestBaselineHeight[row] = max(rowHighestBaselineHeight[row], alignmentLineOffset)
+                }
+            }
+            rowHighestBaselineHeight to cellBaselineHeight
+        }
+
 
         val tableHeight = max(constraints.minHeight, rowOffsets[rowCount] + (footerPlaceable?.height ?: 0))
 
@@ -274,9 +303,14 @@ fun BasicDataTable(
                         val position = columns[column].alignment.align(
                             it.width, columnWidths[column], layoutDirection
                         )
+                        val alignmentLineHeight = if (rowHighestBaselineHeight == null || cellBaselineHeight == null) {
+                            0
+                        } else {
+                            rowHighestBaselineHeight[row] - cellBaselineHeight[row][column]
+                        }
                         it.place(
                             x = columnOffsets[column] + position,
-                            y = rowOffsets[row]
+                            y = rowOffsets[row] + alignmentLineHeight
                         )
                     }
                 }

@@ -21,6 +21,8 @@
 
 package com.loohp.hkbuseta.compose.table.paging
 
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.Composable
 import com.loohp.hkbuseta.compose.table.DataTableScope
 import com.loohp.hkbuseta.compose.table.TableRowScope
 
@@ -31,14 +33,20 @@ internal class PaginatedRowScope(
 ) : DataTableScope {
     var index: Int = 0
 
-    override fun row(onClick: (() -> Unit)?, content: TableRowScope.() -> Unit) {
+    override fun row(onClick: (() -> Unit)?, background: @Composable (BoxScope.() -> Unit)?, content: TableRowScope.() -> Unit) {
         if (index in from until to) {
-            parentScope.row(onClick, content)
+            parentScope.row(onClick, background, content)
         }
         index++
     }
 
-    override fun rows(count: Int, content: TableRowScope.(Int) -> Unit) {
-        TODO("Not yet implemented")
+    override fun rows(count: Int, background: @Composable (BoxScope.(Int) -> Unit)?, content: TableRowScope.(Int) -> Unit) {
+        for (i in 0 until count) {
+            row(
+                onClick = null,
+                background = background?.let { { it.invoke(this, i) } },
+                content = { content.invoke(this, i) }
+            )
+        }
     }
 }

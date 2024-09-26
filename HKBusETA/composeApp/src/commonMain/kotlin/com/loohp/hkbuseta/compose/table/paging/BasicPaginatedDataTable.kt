@@ -23,6 +23,8 @@ package com.loohp.hkbuseta.compose.table.paging
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.FirstBaseline
+import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.loohp.hkbuseta.compose.table.BasicDataTable
@@ -45,6 +47,7 @@ fun BasicPaginatedDataTable(
     cellContentProvider: CellContentProvider = DefaultCellContentProvider,
     sortColumnIndex: Int? = null,
     sortAscending: Boolean = true,
+    alignmentLine: HorizontalAlignmentLine? = FirstBaseline,
     content: DataTableScope.() -> Unit
 ) {
     BasicDataTable(
@@ -57,6 +60,7 @@ fun BasicPaginatedDataTable(
         footer = footer,
         cellContentProvider = cellContentProvider,
         sortColumnIndex = sortColumnIndex,
+        alignmentLine = alignmentLine,
         sortAscending = sortAscending,
     ) {
         val start = state.pageIndex * state.pageSize

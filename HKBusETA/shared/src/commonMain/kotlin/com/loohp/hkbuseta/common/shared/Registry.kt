@@ -3564,6 +3564,42 @@ class Registry {
                 )
             }
         }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is ETALineEntryText) return false
+            if (!super.equals(other)) return false
+
+            if (clockTime != other.clockTime) return false
+            if (platform != other.platform) return false
+            if (routeNumber != other.routeNumber) return false
+            if (destination != other.destination) return false
+            if (carts != other.carts) return false
+            if (time != other.time) return false
+            if (operator != other.operator) return false
+            if (remark != other.remark) return false
+            if (isTrain != other.isTrain) return false
+            if (resolvedClockTime != other.resolvedClockTime) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = super.hashCode()
+            result = 31 * result + clockTime.hashCode()
+            result = 31 * result + platform.hashCode()
+            result = 31 * result + routeNumber.hashCode()
+            result = 31 * result + destination.hashCode()
+            result = 31 * result + carts.hashCode()
+            result = 31 * result + time.hashCode()
+            result = 31 * result + operator.hashCode()
+            result = 31 * result + remark.hashCode()
+            result = 31 * result + isTrain.hashCode()
+            result = 31 * result + resolvedClockTime.hashCode()
+            return result
+        }
+
+
     }
 
     @Immutable
