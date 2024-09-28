@@ -37,8 +37,9 @@ import com.loohp.hkbuseta.common.utils.writeBoolean
 import com.loohp.hkbuseta.common.utils.writeNullable
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.core.BytePacketBuilder
+import io.ktor.utils.io.core.writeDouble
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -134,7 +135,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
         }
     }
 
-    override suspend fun serialize(out: ByteWriteChannel) {
+    override fun serialize(out: BytePacketBuilder) {
         out.writeString(routeKey, UTF_8)
         out.writeNullable(route) { o, v -> v.serialize(o) }
         out.writeString(co.name, UTF_8)
@@ -208,7 +209,7 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
         }
     }
 
-    override suspend fun serialize(out: ByteWriteChannel) {
+    override fun serialize(out: BytePacketBuilder) {
         out.writeString(stopId, UTF_8)
         out.writeNullable(data) { o, v -> v.serialize(o) }
         out.writeDouble(distance)

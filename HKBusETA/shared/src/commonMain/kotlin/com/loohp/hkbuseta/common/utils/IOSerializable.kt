@@ -20,21 +20,18 @@
  */
 package com.loohp.hkbuseta.common.utils
 
-import io.ktor.utils.io.ByteChannel
-import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.core.BytePacketBuilder
+import io.ktor.utils.io.core.buildPacket
 import io.ktor.utils.io.core.readBytes
 
 interface IOSerializable {
 
     companion object;
 
-    suspend fun serialize(out: ByteWriteChannel)
+    fun serialize(out: BytePacketBuilder)
 
-    suspend fun toByteArray(): ByteArray {
-        return ByteChannel(autoFlush = true)
-            .apply { serialize(this) }
-            .run { readRemaining(availableForRead.toLong()) }
-            .readBytes()
+    fun toByteArray(): ByteArray {
+        return buildPacket { serialize(this) }.readBytes()
     }
 
 }

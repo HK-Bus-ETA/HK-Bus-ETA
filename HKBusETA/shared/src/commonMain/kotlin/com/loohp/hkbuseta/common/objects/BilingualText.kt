@@ -27,8 +27,8 @@ import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.common.utils.readString
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.core.BytePacketBuilder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -94,7 +94,7 @@ class BilingualText(
         }
     }
 
-    override suspend fun serialize(out: ByteWriteChannel) {
+    override fun serialize(out: BytePacketBuilder) {
         out.writeString(zh, UTF_8)
         out.writeString(en, UTF_8)
     }

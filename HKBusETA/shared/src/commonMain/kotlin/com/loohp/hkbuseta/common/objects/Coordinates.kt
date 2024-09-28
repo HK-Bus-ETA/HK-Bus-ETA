@@ -27,7 +27,8 @@ import com.loohp.hkbuseta.common.utils.findBearing
 import com.loohp.hkbuseta.common.utils.findDistance
 import com.loohp.hkbuseta.common.utils.optDouble
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.core.BytePacketBuilder
+import io.ktor.utils.io.core.writeDouble
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -98,7 +99,7 @@ open class Coordinates(
         }
     }
 
-    override suspend fun serialize(out: ByteWriteChannel) {
+    override fun serialize(out: BytePacketBuilder) {
         out.writeDouble(lat)
         out.writeDouble(lng)
     }

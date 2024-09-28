@@ -22,15 +22,15 @@
 package com.loohp.hkbuseta.common.utils
 
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.core.BytePacketBuilder
 import io.ktor.utils.io.core.buildPacket
 import io.ktor.utils.io.core.readText
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.core.writeFully
+import io.ktor.utils.io.core.writeInt
 import io.ktor.utils.io.readFully
-import io.ktor.utils.io.writeFully
 
 
 suspend inline fun ByteReadChannel.read(size: Int): ByteArray {
@@ -59,11 +59,11 @@ suspend inline fun ByteReadChannel.read(size: Int): ByteArray {
 //    return readByte() > 0
 //}
 
-suspend inline fun ByteWriteChannel.writeBoolean(boolean: Boolean) {
+inline fun BytePacketBuilder.writeBoolean(boolean: Boolean) {
     writeByte(if (boolean) 1 else 0)
 }
 
-suspend inline fun ByteWriteChannel.writeString(string: String, charset: Charset) {
+inline fun BytePacketBuilder.writeString(string: String, charset: Charset) {
     val bytes = string.toByteArray(charset)
     writeInt(bytes.size)
     writeFully(bytes)
@@ -80,7 +80,7 @@ inline fun ByteArray.asString(charset: Charset): String {
     }
 }
 
-suspend inline fun <T> ByteWriteChannel.writeNullable(value: T?, write: (ByteWriteChannel, T) -> Unit) {
+inline fun <T> BytePacketBuilder.writeNullable(value: T?, write: (BytePacketBuilder, T) -> Unit) {
     value?.let { writeBoolean(true); write.invoke(this, it) }?: writeBoolean(false)
 }
 
@@ -88,7 +88,7 @@ suspend inline fun <T> ByteReadChannel.readNullable(read: (ByteReadChannel) -> T
     return if (readBoolean()) read.invoke(this) else null
 }
 
-suspend inline fun <K, V> ByteWriteChannel.writeMap(map: Map<K, V>, write: (ByteWriteChannel, K, V) -> Unit) {
+inline fun <K, V> BytePacketBuilder.writeMap(map: Map<K, V>, write: (BytePacketBuilder, K, V) -> Unit) {
     writeInt(map.size)
     map.entries.forEach { write.invoke(this, it.key, it.value) }
 }
@@ -99,7 +99,7 @@ suspend inline fun <M: MutableMap<K, V>, K, V> ByteReadChannel.readMap(map: M, r
     return map
 }
 
-suspend inline fun <T> ByteWriteChannel.writeCollection(collection: Collection<T>, write: (ByteWriteChannel, T) -> Unit) {
+inline fun <T> BytePacketBuilder.writeCollection(collection: Collection<T>, write: (BytePacketBuilder, T) -> Unit) {
     writeInt(collection.size)
     collection.forEach { write.invoke(this, it) }
 }

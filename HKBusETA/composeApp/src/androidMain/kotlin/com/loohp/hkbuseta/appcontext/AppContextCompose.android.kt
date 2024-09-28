@@ -54,7 +54,6 @@ import com.loohp.hkbuseta.common.appcontext.AppShortcutIcon
 import com.loohp.hkbuseta.common.appcontext.FormFactor
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
-import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.shared.Shared
@@ -80,7 +79,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -502,7 +500,7 @@ fun AppBundle.toAndroidBundle(): Bundle? {
     return Bundle().apply {
         for ((key, value) in data) {
             when (value) {
-                is IOSerializable -> putByteArray(key, runBlocking(dispatcherIO) { value.toByteArray() })
+                is IOSerializable -> putByteArray(key, value.toByteArray())
                 is Boolean -> putBoolean(key, value)
                 is Byte -> putByte(key, value)
                 is Char -> putChar(key, value)

@@ -22,8 +22,10 @@
 package com.loohp.hkbuseta.common.utils
 
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.core.BytePacketBuilder
+import io.ktor.utils.io.core.writeInt
+import io.ktor.utils.io.core.writeLong
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -152,7 +154,7 @@ open class FormattedText(
         }
     }
 
-    override suspend fun serialize(out: ByteWriteChannel) {
+    override fun serialize(out: BytePacketBuilder) {
         out.writeInt(content.size)
         for (formattedTextContent in content) {
             out.writeString(formattedTextContent.string, UTF_8)
@@ -307,14 +309,14 @@ sealed class FormattingTextContentStyle(
 
     internal open fun serializeValues(): JsonObject? = null
 
-    internal open suspend fun serializeValues(out: ByteWriteChannel) { }
+    internal open fun serializeValues(out: BytePacketBuilder) { }
 
     override fun serialize(): JsonObject = buildJsonObject {
         put("type", identifier)
         serializeValues()?.let { put("values", it) }
     }
 
-    override suspend fun serialize(out: ByteWriteChannel) {
+    override fun serialize(out: BytePacketBuilder) {
         out.writeString(identifier, UTF_8)
         serializeValues(out)
     }
@@ -347,7 +349,7 @@ data class ColorContentStyle(
         put("darkThemeColor", darkThemeColor)
     }
 
-    override suspend fun serializeValues(out: ByteWriteChannel) {
+    override fun serializeValues(out: BytePacketBuilder) {
         out.writeLong(color)
         out.writeLong(darkThemeColor)
     }
@@ -372,7 +374,7 @@ data class InlineImageStyle(
         put("image", image.name)
     }
 
-    override suspend fun serializeValues(out: ByteWriteChannel) {
+    override fun serializeValues(out: BytePacketBuilder) {
         out.writeString(image.name, UTF_8)
     }
 
@@ -396,7 +398,7 @@ data class URLContentStyle(
         put("url", url)
     }
 
-    override suspend fun serializeValues(out: ByteWriteChannel) {
+    override fun serializeValues(out: BytePacketBuilder) {
         out.writeString(url, UTF_8)
     }
 
