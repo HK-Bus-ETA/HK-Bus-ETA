@@ -26,16 +26,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
+import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.utils.FontResource
 import com.materialkolor.dynamicColorScheme
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.FontResource
 import org.jetbrains.compose.resources.ResourceEnvironment
@@ -43,55 +54,48 @@ import org.jetbrains.compose.resources.getFontResourceBytes
 import org.jetbrains.compose.resources.rememberResourceEnvironment
 
 
+private data class WebFontEntry(
+    val identity: String,
+    val weight: FontWeight
+)
+
+private val webFonts = listOf(
+    WebFontEntry("NotoSansHK-Regular", FontWeight.Normal),
+    WebFontEntry("NotoSansHK-Bold", FontWeight.Bold),
+    WebFontEntry("NotoSansHK-ExtraBold", FontWeight.ExtraBold),
+    WebFontEntry("NotoSansHK-ExtraLight", FontWeight.ExtraLight),
+    WebFontEntry("NotoSansHK-Light", FontWeight.Light),
+    WebFontEntry("NotoSansHK-Medium", FontWeight.Medium),
+    WebFontEntry("NotoSansHK-SemiBold", FontWeight.SemiBold),
+    WebFontEntry("NotoSansHK-Thin", FontWeight.Thin)
+)
+
 @OptIn(ExperimentalResourceApi::class)
-suspend fun loadFontFamily(environment: ResourceEnvironment): FontFamily {
-    return FontFamily(
-        Font(
-            identity = "NotoSansHK-Black",
-            data = FontResource("fonts/NotoSansHK-Black.ttf").readBytes(environment),
-            weight = FontWeight.Black
-        ),
-        Font(
-            identity = "NotoSansHK-Bold",
-            data = FontResource("fonts/NotoSansHK-Bold.ttf").readBytes(environment),
-            weight = FontWeight.Bold
-        ),
-        Font(
-            identity = "NotoSansHK-ExtraBold",
-            data = FontResource("fonts/NotoSansHK-ExtraBold.ttf").readBytes(environment),
-            weight = FontWeight.ExtraBold
-        ),
-        Font(
-            identity = "NotoSansHK-ExtraLight",
-            data = FontResource("fonts/NotoSansHK-ExtraLight.ttf").readBytes(environment),
-            weight = FontWeight.ExtraLight
-        ),
-        Font(
-            identity = "NotoSansHK-Light",
-            data = FontResource("fonts/NotoSansHK-Light.ttf").readBytes(environment),
-            weight = FontWeight.Light
-        ),
-        Font(
-            identity = "NotoSansHK-Medium",
-            data = FontResource("fonts/NotoSansHK-Medium.ttf").readBytes(environment),
-            weight = FontWeight.Medium
-        ),
-        Font(
-            identity = "NotoSansHK-Regular",
-            data = FontResource("fonts/NotoSansHK-Regular.ttf").readBytes(environment),
-            weight = FontWeight.Normal
-        ),
-        Font(
-            identity = "NotoSansHK-SemiBold",
-            data = FontResource("fonts/NotoSansHK-SemiBold.ttf").readBytes(environment),
-            weight = FontWeight.SemiBold
-        ),
-        Font(
-            identity = "NotoSansHK-Thin",
-            data = FontResource("fonts/NotoSansHK-Thin.ttf").readBytes(environment),
-            weight = FontWeight.Thin
-        )
-    )
+@Composable
+fun rememberLoadFontFamily(environment: ResourceEnvironment): State<FontFamily?> {
+    var fonts: ImmutableList<Font> by remember { mutableStateOf(persistentListOf()) }
+    val fontFamilyState: MutableState<FontFamily?> = remember { mutableStateOf(null) }
+    var fontFamily by fontFamilyState
+
+    LaunchedEffect (Unit) {
+        for ((identity, weight) in webFonts) {
+            CoroutineScope(dispatcherIO).launch {
+                val font = Font(
+                    identity = identity,
+                    data = FontResource("fonts/$identity.ttf").readBytes(environment),
+                    weight = weight
+                )
+                val newFonts = (fonts + font).asImmutableList()
+                val newFontFamily = FontFamily(newFonts)
+                withContext(Dispatchers.Main) {
+                    fonts = newFonts
+                    fontFamily = newFontFamily
+                }
+            }
+        }
+    }
+
+    return fontFamilyState
 }
 
 fun Typography.applyFontFamily(fontFamily: FontFamily): Typography {
@@ -141,11 +145,11 @@ actual fun AppTheme(
 ) {
     val environment = rememberResourceEnvironment()
     val platformTypography = MaterialTheme.typography
+    val loadedFontFamily by rememberLoadFontFamily(environment)
     var appliedTypography: Typography? by remember { mutableStateOf(null) }
 
-    LaunchedEffect (Unit) {
-        val fontFamily = loadFontFamily(environment)
-        appliedTypography = platformTypography.applyFontFamily(fontFamily)
+    LaunchedEffect (loadedFontFamily) {
+        loadedFontFamily?.let { appliedTypography = platformTypography.applyFontFamily(it) }
     }
 
     appliedTypography?.let {
