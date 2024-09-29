@@ -112,7 +112,7 @@ actual fun MapRouteInterface(
         val colorHex = pathColor.toHexString()
         val clearness = pathColor.closenessTo(Color(0xFFFDE293))
         val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
-        webMap.updateMarkings(stopsJsArray, stopNames, pathsJsArray, colorHex, 1F, outlineHex, outlineOpacity, "assets/$iconFile", anchor.x, anchor.y, indexMap.joinToString(separator = ","), waypoints.co.run { isTrain || isFerry }) {
+        webMap.updateMarkings(stopsJsArray, stopNames, pathsJsArray, colorHex, 1F, outlineHex, outlineOpacity, "assets/$iconFile", anchor.x, anchor.y, indexMap.joinToString(separator = ","), !waypoints.co.run { isTrain || isFerry }) {
             scope.launch { selectedStop = indexMap[it] + 1 }
         }
     }
