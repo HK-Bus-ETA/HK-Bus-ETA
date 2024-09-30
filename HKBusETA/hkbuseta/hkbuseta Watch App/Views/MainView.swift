@@ -34,10 +34,10 @@ struct MainView: AppScreenView {
                 Text(" ")
             } else if updateScreen {
                 Text("更新數據中...")
-                    .font(.system(size: min(23.scaled(appContext, true), 26.scaled(appContext))))
+                    .font(.system(size: min(21.scaled(appContext, true), 24.scaled(appContext))))
                     .padding(.bottom)
                 Text("Updating...")
-                    .font(.system(size: min(23.scaled(appContext, true), 26.scaled(appContext))))
+                    .font(.system(size: min(21.scaled(appContext, true), 24.scaled(appContext))))
                     .padding(.bottom)
                 ProgressView(value: max(0.0, min(1.0, updateProgressState.state.floatValue)))
                     .tint(colorInt(0xFFF9DE09).asColor())
@@ -50,10 +50,10 @@ struct MainView: AppScreenView {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 60.0.scaled(appContext), height: 60.0.scaled(appContext))
                 Text("載入中...")
-                    .font(.system(size: min(23.scaled(appContext, true), 26.scaled(appContext))))
+                    .font(.system(size: min(21.scaled(appContext, true), 24.scaled(appContext))))
                     .padding(.top)
                 Text("Loading...")
-                    .font(.system(size: min(23.scaled(appContext, true), 26.scaled(appContext))))
+                    .font(.system(size: min(21.scaled(appContext, true), 24.scaled(appContext))))
                     .padding(.bottom)
             }
         }

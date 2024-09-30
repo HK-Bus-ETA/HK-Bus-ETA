@@ -35,8 +35,8 @@ import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.AppShortcutIcon
 import com.loohp.hkbuseta.common.appcontext.FormFactor
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
-import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.appcontext.applicationBaseAppContext
+import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
 import com.loohp.hkbuseta.common.external.extractShareLink
 import com.loohp.hkbuseta.common.external.shareLaunch
 import com.loohp.hkbuseta.common.objects.Preferences
@@ -223,10 +223,12 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
     }
 
     override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
-        NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
-            val fileURL = dir.URLByAppendingPathComponent(fileName)!!
-            val text = writeText.invoke().string().ns
-            text.writeToURL(fileURL, atomically = true)
+        withGlobalWritingFilesCounter {
+            NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
+                val fileURL = dir.URLByAppendingPathComponent(fileName)!!
+                val text = writeText.invoke().string().ns
+                text.writeToURL(fileURL, atomically = true)
+            }
         }
     }
 
@@ -241,11 +243,13 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
     }
 
     override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
-        NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
-            val fileURL = dir.URLByAppendingPathComponent(fileName)!!
-            val array = writeBytes.invoke().toByteArray()
-            val data = memScoped { NSData.create(bytes = allocArrayOf(array), length = array.size.convert()) }
-            data.writeToURL(fileURL, atomically = true)
+        withGlobalWritingFilesCounter {
+            NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
+                val fileURL = dir.URLByAppendingPathComponent(fileName)!!
+                val array = writeBytes.invoke().toByteArray()
+                val data = memScoped { NSData.create(bytes = allocArrayOf(array), length = array.size.convert()) }
+                data.writeToURL(fileURL, atomically = true)
+            }
         }
     }
 

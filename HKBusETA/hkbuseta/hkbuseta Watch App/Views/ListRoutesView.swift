@@ -255,7 +255,7 @@ struct ListRoutesView: AppScreenView {
                 }
             }()
             sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(filteredRoutes, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: false, proximitySortOrigin: proximitySortOrigin)
-            withAnimation() { () -> () in
+            withAnimation() {
                 sortedResults = sortedByMode[activeSortMode]!
             }
         }
@@ -264,14 +264,14 @@ struct ListRoutesView: AppScreenView {
             if preferred == nil || activeSortMode != preferred {
                 registry(appContext).setRouteSortModePreference(context: appContext, listType: listType, sortMode: activeSortMode)
             }
-            withAnimation() { () -> () in
+            withAnimation() {
                 sortedResults = sortedByMode[activeSortMode]!
             }
         }
         .onChange(of: lastLookupRoutes.state) { _ in
             let sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(result, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: false, proximitySortOrigin: proximitySortOrigin)
             self.sortedByMode = sortedByMode
-            withAnimation() { () -> () in
+            withAnimation() {
                 self.sortedResults = sortedByMode[activeSortMode]!
             }
         }

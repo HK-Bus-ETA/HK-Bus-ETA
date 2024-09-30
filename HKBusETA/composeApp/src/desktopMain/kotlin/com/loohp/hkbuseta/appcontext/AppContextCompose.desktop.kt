@@ -33,6 +33,7 @@ import com.loohp.hkbuseta.common.appcontext.AppShortcutIcon
 import com.loohp.hkbuseta.common.appcontext.FormFactor
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
@@ -128,18 +129,22 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     }
 
     override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
-        File(fileName).outputStream().use {
-            writeText.invoke().transferTo(it)
-            it.flush()
+        withGlobalWritingFilesCounter {
+            File(fileName).outputStream().use {
+                writeText.invoke().transferTo(it)
+                it.flush()
+            }
         }
     }
 
     @OptIn(ExperimentalSerializationApi::class)
     override suspend fun <T> writeTextFile(fileName: String, json: Json, writeJson: () -> Pair<SerializationStrategy<T>, T>) {
-        File(fileName).outputStream().use {
-            val (serializer, value) = writeJson.invoke()
-            json.encodeToStream(serializer, value, it)
-            it.flush()
+        withGlobalWritingFilesCounter {
+            File(fileName).outputStream().use {
+                val (serializer, value) = writeJson.invoke()
+                json.encodeToStream(serializer, value, it)
+                it.flush()
+            }
         }
     }
 
@@ -148,9 +153,11 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     }
 
     override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
-        File(fileName).outputStream().use {
-            writeBytes.invoke().copyTo(it)
-            it.flush()
+        withGlobalWritingFilesCounter {
+            File(fileName).outputStream().use {
+                writeBytes.invoke().copyTo(it)
+                it.flush()
+            }
         }
     }
 

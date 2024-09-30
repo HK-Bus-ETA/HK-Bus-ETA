@@ -74,7 +74,7 @@ fun TextInputDialog(
         text = initialText?: "",
         selection = TextRange(initialText?.length?: 0)
     )) }
-    val inputValid by remember(textInput) { derivedStateOf { inputValidation.invoke(textInput.text) } }
+    val inputValid by remember { derivedStateOf { inputValidation.invoke(textInput.text) } }
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect (Unit) {
         delay(200)

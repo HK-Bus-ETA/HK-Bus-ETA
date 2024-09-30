@@ -143,7 +143,7 @@ actual fun MapRouteInterface(
     } }
     val shouldShowStopIndex = remember { !waypoints.co.run { isTrain || isFerry } }
     val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
-    val mapDelegate = remember { MapDelegate(iconName, pathColor, anchor) { selectedStop = indexMap[it] + 1 } }
+    val mapDelegate = remember(indexMap) { MapDelegate(iconName, pathColor, anchor) { selectedStop = indexMap[it] + 1 } }
     val map = remember { MKMapView() }
     val lock = remember { Lock() }
 
@@ -166,6 +166,11 @@ actual fun MapRouteInterface(
                     camera.centerCoordinate = location.toAppleCoordinates()
                     camera.altitude = DefaultAltitude
                     map.setCamera(camera, true)
+
+                    val index = indexMap.indexOf(selectedStop - 1)
+                    if (index >= 0) {
+                        map.selectAnnotation(annotations[index], true)
+                    }
                 } else {
                     init = true
                 }
@@ -228,17 +233,6 @@ actual fun MapRouteInterface(
                 camera.altitude = DefaultAltitude
                 map.setCamera(camera, false)
                 checkLocationPermission(instance, true) { hasLocation = it }
-            }
-        }
-    }
-    ChangedEffect (selectedStop) {
-        val index = indexMap.indexOf(selectedStop - 1)
-        if (index >= 0) {
-            CoroutineScope(Dispatchers.Main).launch {
-                delay(400)
-                lock.withLock {
-                    map.selectAnnotation(annotations[index], true)
-                }
             }
         }
     }

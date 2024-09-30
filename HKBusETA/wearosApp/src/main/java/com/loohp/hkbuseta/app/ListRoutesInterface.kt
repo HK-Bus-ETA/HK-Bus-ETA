@@ -525,6 +525,15 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                 ) {
                     WearOSShared.MainTime()
                 }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Transparent),
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    WearOSShared.MainTime(scroll)
+                }
             }
         }
     }

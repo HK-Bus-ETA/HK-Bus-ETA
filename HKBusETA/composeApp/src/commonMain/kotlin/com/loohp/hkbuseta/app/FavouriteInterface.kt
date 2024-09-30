@@ -291,8 +291,8 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
-                val isOnPage by remember(it, visible, pagerState.currentPage) { derivedStateOf { pagerState.currentPage == it && visible } }
-                val favouriteRouteStop by remember(favouriteRouteStops, it) { derivedStateOf { favouriteRouteStops[it] } }
+                val isOnPage by remember(it, visible) { derivedStateOf { pagerState.currentPage == it && visible } }
+                val favouriteRouteStop by remember(it) { derivedStateOf { favouriteRouteStops[it] } }
                 LaunchedEffect (favouriteRouteStop, isOnPage) {
                     val (name, routeStops) = favouriteRouteStop
                     if (isOnPage) {
@@ -553,7 +553,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
 fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
     val favouriteStopIds by Shared.favoriteStops.collectAsStateMultiplatform()
     var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(null) }
-    val favouriteStops by remember(favouriteStopIds) { derivedStateOf {
+    val favouriteStops by remember { derivedStateOf {
         favouriteStopIds.mapNotNull { it.asStop(instance)?.let { s -> it to s } }.let { stops ->
             location?.let { l -> stops.sortedBy { it.second.location.distance(l) } }?: stops
         }
@@ -630,7 +630,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    val isOnPage by remember(it, visible, pagerState.currentPage) { derivedStateOf { pagerState.currentPage == it && visible } }
+                    val isOnPage by remember(it, visible) { derivedStateOf { pagerState.currentPage == it && visible } }
                     val data by remember(it) { derivedStateOf { favouriteStops[it] } }
                     LaunchedEffect (data, isOnPage) {
                         val stop = data.second

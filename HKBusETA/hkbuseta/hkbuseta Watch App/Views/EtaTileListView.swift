@@ -71,7 +71,7 @@ struct EtaTileListView: AppScreenView {
             if locationManager.location != nil {
                 let origin = locationManager.location!.toLocationResult()
                 self.origin = origin
-                withAnimation() { () -> () in
+                withAnimation() {
                     self.etaTileIds = Tiles().getSortedEtaTileConfigurationsIds(context: appContext) { origin.location }.map { Int32(truncating: $0) }
                 }
             }

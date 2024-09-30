@@ -27,19 +27,34 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.unit.sp
+import androidx.wear.compose.foundation.curvedComposable
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.TimeTextDefaults
 import androidx.work.Constraints
@@ -53,17 +68,23 @@ import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.background.DailyUpdateWorker
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.globalWritingFilesCounterState
 import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.MutableNullableStateFlow
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.interpolateColor
 import com.loohp.hkbuseta.common.utils.nextScheduledDataUpdateMillis
+import com.loohp.hkbuseta.compose.collectAsStateWithLifecycle
 import com.loohp.hkbuseta.utils.HongKongTimeSource
+import com.loohp.hkbuseta.utils.adjustAlpha
+import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.isEqualTo
 import com.loohp.hkbuseta.utils.sp
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -92,11 +113,60 @@ object WearOSShared {
     )
 
     @Composable
-    fun MainTime() {
+    fun MainTime(lazyListState: LazyListState, modifier: Modifier = Modifier) {
+        val hidden by remember { derivedStateOf { lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0 } }
+        MainTime(hidden, modifier)
+    }
+
+    @Composable
+    fun MainTime(scrollState: ScrollState, modifier: Modifier = Modifier) {
+        val hidden by remember { derivedStateOf { scrollState.value > 0 } }
+        MainTime(hidden, modifier)
+    }
+
+    @Composable
+    fun MainTime(hidden: Boolean, modifier: Modifier = Modifier) {
+        val hiddenOffset by animateDpAsState(
+            targetValue = if (hidden) (-100).dp else 0.dp,
+            animationSpec = tween(300),
+            label = "HiddenOffset"
+        )
+        MainTime(modifier.offset { IntOffset(0, hiddenOffset.roundToPx()) })
+    }
+
+    private val globalWritingFilesState: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
+    @Composable
+    fun MainTime(modifier: Modifier = Modifier) {
+        val globalWritingFilesCounter by globalWritingFilesCounterState.collectAsStateWithLifecycle()
+        var globalWritingFiles by globalWritingFilesState.collectAsStateWithLifecycle()
+        val globalWritingFilesIndicatorAlpha by animateFloatAsState(
+            targetValue = if (globalWritingFiles) 1F else 0F,
+            animationSpec = tween(300),
+            label = "GlobalWritingFilesIndicatorAlpha"
+        )
+        LaunchedEffect (globalWritingFilesCounter) {
+            if (globalWritingFilesCounter > 0) {
+                delay(500)
+                globalWritingFiles = true
+            } else {
+                globalWritingFiles = false
+            }
+        }
+        val indicator: (@Composable () -> Unit)? = if (globalWritingFilesIndicatorAlpha > 0F) ({
+            Spacer(
+                modifier = Modifier
+                    .size(10F.sp.dp)
+                    .shadow(5.dp, CircleShape)
+                    .background(Color.Green.adjustAlpha(globalWritingFilesIndicatorAlpha), CircleShape),
+            )
+        }) else null
         TimeText(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             timeSource = HongKongTimeSource(TimeTextDefaults.timeFormat()),
-            timeTextStyle = TimeTextDefaults.timeTextStyle().merge(fontSize = 15.dp.sp)
+            timeTextStyle = TimeTextDefaults.timeTextStyle().merge(fontSize = 15.dp.sp),
+            endCurvedContent = indicator?.let { { curvedComposable { it.invoke() } } },
+            endLinearContent = indicator
         )
     }
 

@@ -270,7 +270,7 @@ fun StopMarkers(
 @GoogleMapComposable
 fun WaypointPaths(waypoints: RouteWaypoints) {
     val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
-    val closeness by remember(pathColor) { derivedStateOf { max(pathColor.closenessTo(Color(0xFFFDE293)), pathColor.closenessTo(Color(0xFFAAD4FF))) } }
+    val closeness by remember { derivedStateOf { max(pathColor.closenessTo(Color(0xFFFDE293)), pathColor.closenessTo(Color(0xFFAAD4FF))) } }
     for (lines in waypoints.simplifiedPaths) {
         val clearness = if (Shared.theme.isDarkMode) 0F else closeness
         if (clearness > 0.8F) {

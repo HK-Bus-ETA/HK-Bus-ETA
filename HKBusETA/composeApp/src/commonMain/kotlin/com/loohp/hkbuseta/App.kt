@@ -1,6 +1,16 @@
 package com.loohp.hkbuseta
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
@@ -10,9 +20,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.ToastTextState
 import com.loohp.hkbuseta.appcontext.applicationAppContext
@@ -23,6 +39,7 @@ import com.loohp.hkbuseta.appcontext.newScreenGroup
 import com.loohp.hkbuseta.appcontext.snackbar
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppBundle
+import com.loohp.hkbuseta.common.appcontext.globalWritingFilesCounterState
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
@@ -35,8 +52,12 @@ import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformScaffold
 import com.loohp.hkbuseta.compose.PlatformText
+import com.loohp.hkbuseta.compose.RightToLeftRow
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.theme.AppTheme
+import com.loohp.hkbuseta.utils.adjustAlpha
+import com.loohp.hkbuseta.utils.dp
 import kotlinx.coroutines.delay
 
 expect fun exitApp()
@@ -77,6 +98,13 @@ fun App(onReady: (() -> Unit)? = null) {
             val toastState by ToastTextState.toastState.collectAsStateMultiplatform()
             val snackbarHostState = remember { SnackbarHostState() }
 
+            val globalWritingFilesCounter by globalWritingFilesCounterState.collectAsStateMultiplatform()
+            var globalWritingFiles by remember { mutableStateOf(false) }
+            val globalWritingFilesIndicatorAlpha by animateFloatAsState(
+                targetValue = if (globalWritingFiles) 1F else 0F,
+                animationSpec = tween(300)
+            )
+
             BackButtonEffect {
                 if (historyStack.size > 1) {
                     historyStack.last().finish()
@@ -105,6 +133,14 @@ fun App(onReady: (() -> Unit)? = null) {
                     putString("id", instance.screen.name.lowercase())
                 })
             }
+            LaunchedEffect (globalWritingFilesCounter) {
+                if (globalWritingFilesCounter > 0) {
+                    delay(500)
+                    globalWritingFiles = true
+                } else {
+                    globalWritingFiles = false
+                }
+            }
 
             AppTheme(
                 useDarkTheme = Shared.theme.isDarkMode,
@@ -121,11 +157,42 @@ fun App(onReady: (() -> Unit)? = null) {
                         )
                     },
                     content = {
-                        AnimatedContent(
-                            targetState = instance,
-                            contentKey = { it.newScreenGroup() }
-                        ) {
-                            it.newScreen()
+                        Box {
+                            AnimatedContent(
+                                targetState = instance,
+                                contentKey = { it.newScreenGroup() }
+                            ) {
+                                it.newScreen()
+                            }
+                            if (globalWritingFilesIndicatorAlpha > 0F) {
+                                RightToLeftRow(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .background(platformBackgroundColor.adjustAlpha(0.5F), RoundedCornerShape(5.dp))
+                                        .padding(5.dp)
+                                        .graphicsLayer { alpha = globalWritingFilesIndicatorAlpha },
+                                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Spacer(
+                                        modifier = Modifier
+                                            .size(12F.sp.dp)
+                                            .shadow(5.dp, CircleShape)
+                                            .background(Color.Green, CircleShape),
+                                    )
+                                    PlatformText(
+                                        textAlign = TextAlign.End,
+                                        fontSize = 10F.sp,
+                                        lineHeight = 10F.sp,
+                                        maxLines = 2,
+                                        text = if (Shared.language == "en") {
+                                            "Saving App Data...\nPlease do not close the app"
+                                        } else {
+                                            "正在儲存資料...\n請勿關閉應用程式"
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 )

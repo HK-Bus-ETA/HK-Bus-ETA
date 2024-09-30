@@ -94,6 +94,7 @@ import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
+import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.clamp
@@ -148,169 +149,181 @@ fun SettingsInterface(instance: AppActiveContext) {
     val haptic = LocalHapticFeedback.current
     val phoneConnection by rememberPhoneConnected(instance)
 
-    LazyColumn (
-        modifier = Modifier
-            .fillMaxSize()
-            .fullPageVerticalLazyScrollbar(
-                state = scroll,
-                context = instance
-            )
-            .rotaryScroll(scroll, focusRequester),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        state = scroll
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        item {
-            Spacer(modifier = Modifier.height(40.dp))
-        }
-        item {
-            SettingsButton(
-                instance = instance,
-                onClick = {
-                    Registry.getInstance(instance).setLanguage(if (Shared.language == "en") "zh" else "en", instance)
-                    relaunch(instance)
-                },
-                icon = Icons.Filled.Translate,
-                text = "切換語言 Switch Language".asAnnotatedString(),
-                subText = (if (Shared.language == "en") "English/中文" else "中文/English").asAnnotatedString()
-            )
-        }
-        item {
-            SettingsButton(
-                instance = instance,
-                onClick = {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        Registry.invalidateCache(instance)
-                        Registry.clearInstance()
-                        invalidatePhoneCache(instance)
-                        delay(500)
-                        relaunch(instance, skipSplash = false)
-                    }
-                },
-                icon = Icons.Filled.Update,
-                text = (if (Shared.language == "en") "Update Route Database" else "更新路線資料庫").asAnnotatedString(),
-                subText = ("${if (Shared.language == "en") "Last updated" else "最近更新時間"}: ${Registry.getInstance(instance).getLastUpdatedTime()?.let { instance.formatDateTime(it.toLocalDateTime(), true) }?: if (Shared.language == "en") "Never" else "從未"}").asAnnotatedString()
-            )
-        }
-        item {
-            var historyEnabled by remember { mutableStateOf(Shared.historyEnabled) }
-            SettingsButton(
-                instance = instance,
-                onClick = {
-                    Registry.getInstance(instance).setHistoryEnabled(!Shared.historyEnabled, instance)
-                    historyEnabled = Shared.historyEnabled
-                },
-                icon = if (historyEnabled) rememberVectorPainter(Icons.Outlined.History) else painterResource(R.drawable.baseline_delete_history_24),
-                text = (if (Shared.language == "en") "Recent History" else "歷史記錄").asAnnotatedString(),
-                subText = if (historyEnabled) {
-                    if (Shared.language == "en") "Enabled" else "開啟"
-                } else {
-                    if (Shared.language == "en") "Disabled" else "停用"
-                }.asAnnotatedString()
-            )
-        }
-        item {
-            var etaDisplayMode by remember { mutableStateOf(Shared.etaDisplayMode) }
-            SettingsButton(
-                instance = instance,
-                onClick = {
-                    Registry.getInstance(instance).setEtaDisplayMode(Shared.etaDisplayMode.next, instance)
-                    etaDisplayMode = Shared.etaDisplayMode
-                },
-                icon = when (etaDisplayMode) {
-                    ETADisplayMode.COUNTDOWN -> Icons.Outlined.Timer
-                    ETADisplayMode.CLOCK_TIME -> Icons.Outlined.Schedule
-                    ETADisplayMode.CLOCK_TIME_WITH_COUNTDOWN -> Icons.Outlined.Update
-                },
-                text = (if (Shared.language == "en") "Clock Time Display Mode" else "時間顯示模式").asAnnotatedString(),
-                subText = when (etaDisplayMode) {
-                    ETADisplayMode.COUNTDOWN -> (if (Shared.language == "en") "Countdown" else "倒數時間").asAnnotatedString()
-                    ETADisplayMode.CLOCK_TIME -> (if (Shared.language == "en") "Clock Time" else "時鐘時間").asAnnotatedString()
-                    ETADisplayMode.CLOCK_TIME_WITH_COUNTDOWN -> (if (Shared.language == "en") "Clock Time + Countdown" else "時鐘+倒數時間").asAnnotatedString()
-                }
-            )
-        }
-        item {
-            var disableMarquee by remember { mutableStateOf(Shared.disableMarquee) }
-            SettingsButton(
-                instance = instance,
-                onClick = {
-                    Registry.getInstance(instance).setDisableMarquee(!Shared.disableMarquee, instance)
-                    disableMarquee = Shared.disableMarquee
-                },
-                icon = Icons.Outlined.TextRotationNone,
-                text = (if (Shared.language == "en") "Text Marquee Mode" else "文字顯示模式").asAnnotatedString(),
-                subText = if (disableMarquee) {
-                    (if (Shared.language == "en") "Disable Text Marquee" else "靜止模式").asAnnotatedString()
-                } else {
-                    (if (Shared.language == "en") "Enable Text Marquee" else "走馬燈模式").asAnnotatedString()
-                }
-            )
-        }
-        item {
-            var disableBoldDest by remember { mutableStateOf(Shared.disableBoldDest) }
-            SettingsButton(
-                instance = instance,
-                onClick = {
-                    Registry.getInstance(instance).setDisableBoldDest(!Shared.disableBoldDest, instance)
-                    disableBoldDest = Shared.disableBoldDest
-                },
-                icon = Icons.Outlined.FormatBold,
-                text = (if (Shared.language == "en") "Destination Text Format" else "目的地文字格式").asAnnotatedString(),
-                subText = if (disableBoldDest) {
-                    (if (Shared.language == "en") "Disable Bold" else "停用粗體").asAnnotatedString()
-                } else {
-                    (if (Shared.language == "en") "Enable Bold" else "使用粗體").asAnnotatedString()
-                }
-            )
-        }
-        item {
-            if (phoneConnection == WearableConnectionState.CONNECTED) {
+        LazyColumn (
+            modifier = Modifier
+                .fillMaxSize()
+                .fullPageVerticalLazyScrollbar(
+                    state = scroll,
+                    context = instance
+                )
+                .rotaryScroll(scroll, focusRequester),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            state = scroll
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+            item {
                 SettingsButton(
                     instance = instance,
-                    icon = Icons.Outlined.Smartphone,
-                    text = (if (Shared.language == "en") "Mobile Sync" else "手機同步").asAnnotatedString(),
-                    subText = (if (Shared.language == "en") "Connected ✓" else "已連接 ✓").asAnnotatedString()
+                    onClick = {
+                        Registry.getInstance(instance).setLanguage(if (Shared.language == "en") "zh" else "en", instance)
+                        relaunch(instance)
+                    },
+                    icon = Icons.Filled.Translate,
+                    text = "切換語言 Switch Language".asAnnotatedString(),
+                    subText = (if (Shared.language == "en") "English/中文" else "中文/English").asAnnotatedString()
                 )
-            } else {
+            }
+            item {
+                SettingsButton(
+                    instance = instance,
+                    onClick = {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            Registry.invalidateCache(instance)
+                            Registry.clearInstance()
+                            invalidatePhoneCache(instance)
+                            delay(500)
+                            relaunch(instance, skipSplash = false)
+                        }
+                    },
+                    icon = Icons.Filled.Update,
+                    text = (if (Shared.language == "en") "Update Route Database" else "更新路線資料庫").asAnnotatedString(),
+                    subText = ("${if (Shared.language == "en") "Last updated" else "最近更新時間"}: ${Registry.getInstance(instance).getLastUpdatedTime()?.let { instance.formatDateTime(it.toLocalDateTime(), true) }?: if (Shared.language == "en") "Never" else "從未"}").asAnnotatedString()
+                )
+            }
+            item {
+                var historyEnabled by remember { mutableStateOf(Shared.historyEnabled) }
+                SettingsButton(
+                    instance = instance,
+                    onClick = {
+                        Registry.getInstance(instance).setHistoryEnabled(!Shared.historyEnabled, instance)
+                        historyEnabled = Shared.historyEnabled
+                    },
+                    icon = if (historyEnabled) rememberVectorPainter(Icons.Outlined.History) else painterResource(R.drawable.baseline_delete_history_24),
+                    text = (if (Shared.language == "en") "Recent History" else "歷史記錄").asAnnotatedString(),
+                    subText = if (historyEnabled) {
+                        if (Shared.language == "en") "Enabled" else "開啟"
+                    } else {
+                        if (Shared.language == "en") "Disabled" else "停用"
+                    }.asAnnotatedString()
+                )
+            }
+            item {
+                var etaDisplayMode by remember { mutableStateOf(Shared.etaDisplayMode) }
+                SettingsButton(
+                    instance = instance,
+                    onClick = {
+                        Registry.getInstance(instance).setEtaDisplayMode(Shared.etaDisplayMode.next, instance)
+                        etaDisplayMode = Shared.etaDisplayMode
+                    },
+                    icon = when (etaDisplayMode) {
+                        ETADisplayMode.COUNTDOWN -> Icons.Outlined.Timer
+                        ETADisplayMode.CLOCK_TIME -> Icons.Outlined.Schedule
+                        ETADisplayMode.CLOCK_TIME_WITH_COUNTDOWN -> Icons.Outlined.Update
+                    },
+                    text = (if (Shared.language == "en") "Clock Time Display Mode" else "時間顯示模式").asAnnotatedString(),
+                    subText = when (etaDisplayMode) {
+                        ETADisplayMode.COUNTDOWN -> (if (Shared.language == "en") "Countdown" else "倒數時間").asAnnotatedString()
+                        ETADisplayMode.CLOCK_TIME -> (if (Shared.language == "en") "Clock Time" else "時鐘時間").asAnnotatedString()
+                        ETADisplayMode.CLOCK_TIME_WITH_COUNTDOWN -> (if (Shared.language == "en") "Clock Time + Countdown" else "時鐘+倒數時間").asAnnotatedString()
+                    }
+                )
+            }
+            item {
+                var disableMarquee by remember { mutableStateOf(Shared.disableMarquee) }
+                SettingsButton(
+                    instance = instance,
+                    onClick = {
+                        Registry.getInstance(instance).setDisableMarquee(!Shared.disableMarquee, instance)
+                        disableMarquee = Shared.disableMarquee
+                    },
+                    icon = Icons.Outlined.TextRotationNone,
+                    text = (if (Shared.language == "en") "Text Marquee Mode" else "文字顯示模式").asAnnotatedString(),
+                    subText = if (disableMarquee) {
+                        (if (Shared.language == "en") "Disable Text Marquee" else "靜止模式").asAnnotatedString()
+                    } else {
+                        (if (Shared.language == "en") "Enable Text Marquee" else "走馬燈模式").asAnnotatedString()
+                    }
+                )
+            }
+            item {
+                var disableBoldDest by remember { mutableStateOf(Shared.disableBoldDest) }
+                SettingsButton(
+                    instance = instance,
+                    onClick = {
+                        Registry.getInstance(instance).setDisableBoldDest(!Shared.disableBoldDest, instance)
+                        disableBoldDest = Shared.disableBoldDest
+                    },
+                    icon = Icons.Outlined.FormatBold,
+                    text = (if (Shared.language == "en") "Destination Text Format" else "目的地文字格式").asAnnotatedString(),
+                    subText = if (disableBoldDest) {
+                        (if (Shared.language == "en") "Disable Bold" else "停用粗體").asAnnotatedString()
+                    } else {
+                        (if (Shared.language == "en") "Enable Bold" else "使用粗體").asAnnotatedString()
+                    }
+                )
+            }
+            item {
+                if (phoneConnection == WearableConnectionState.CONNECTED) {
+                    SettingsButton(
+                        instance = instance,
+                        icon = Icons.Outlined.Smartphone,
+                        text = (if (Shared.language == "en") "Mobile Sync" else "手機同步").asAnnotatedString(),
+                        subText = (if (Shared.language == "en") "Connected ✓" else "已連接 ✓").asAnnotatedString()
+                    )
+                } else {
+                    SettingsButton(
+                        instance = instance,
+                        onClick = instance.handleWebpages(BASE_URL, false, haptic.common),
+                        onLongClick = instance.wear.handleWebpages(BASE_URL, watchFirst = true, true, haptic.common),
+                        icon = Icons.Outlined.Smartphone,
+                        text = (if (Shared.language == "en") "Mobile App" else "手機應用程式").asAnnotatedString(),
+                    )
+                }
+            }
+            item {
                 SettingsButton(
                     instance = instance,
                     onClick = instance.handleWebpages(BASE_URL, false, haptic.common),
                     onLongClick = instance.wear.handleWebpages(BASE_URL, watchFirst = true, true, haptic.common),
-                    icon = Icons.Outlined.Smartphone,
-                    text = (if (Shared.language == "en") "Mobile App" else "手機應用程式").asAnnotatedString(),
+                    icon = Icons.Outlined.Share,
+                    text = (if (Shared.language == "en") "Share App" else "分享應用程式").asAnnotatedString()
                 )
             }
+            item {
+                SettingsButton(
+                    instance = instance,
+                    onClick = instance.handleWebpages("https://data.hkbuseta.com/PRIVACY_POLICY.html", false, haptic.common),
+                    onLongClick = instance.wear.handleWebpages("https://data.hkbuseta.com/PRIVACY_POLICY.html", watchFirst = true, true, haptic.common),
+                    icon = Icons.Outlined.Fingerprint,
+                    text = (if (Shared.language == "en") "Privacy Policy" else "隱私權聲明").asAnnotatedString()
+                )
+            }
+            item {
+                SettingsButton(
+                    instance = instance,
+                    onClick = instance.handleWebpages("https://play.google.com/store/apps/details?id=com.loohp.hkbuseta", false, haptic.common),
+                    onLongClick = instance.wear.handleWebpages("https://loohpjames.com", true, haptic.common),
+                    icon = R.mipmap.icon_circle,
+                    text = "${if (Shared.language == "en") "HK Bus ETA" else "香港巴士到站預報"} v${instance.versionName} (${instance.versionCode})".asAnnotatedString(),
+                    subText = "@LoohpJames".asAnnotatedString()
+                )
+            }
+            item {
+                Spacer(modifier = Modifier.height(40.dp))
+            }
         }
-        item {
-            SettingsButton(
-                instance = instance,
-                onClick = instance.handleWebpages(BASE_URL, false, haptic.common),
-                onLongClick = instance.wear.handleWebpages(BASE_URL, watchFirst = true, true, haptic.common),
-                icon = Icons.Outlined.Share,
-                text = (if (Shared.language == "en") "Share App" else "分享應用程式").asAnnotatedString()
-            )
-        }
-        item {
-            SettingsButton(
-                instance = instance,
-                onClick = instance.handleWebpages("https://data.hkbuseta.com/PRIVACY_POLICY.html", false, haptic.common),
-                onLongClick = instance.wear.handleWebpages("https://data.hkbuseta.com/PRIVACY_POLICY.html", watchFirst = true, true, haptic.common),
-                icon = Icons.Outlined.Fingerprint,
-                text = (if (Shared.language == "en") "Privacy Policy" else "隱私權聲明").asAnnotatedString()
-            )
-        }
-        item {
-            SettingsButton(
-                instance = instance,
-                onClick = instance.handleWebpages("https://play.google.com/store/apps/details?id=com.loohp.hkbuseta", false, haptic.common),
-                onLongClick = instance.wear.handleWebpages("https://loohpjames.com", true, haptic.common),
-                icon = R.mipmap.icon_circle,
-                text = "${if (Shared.language == "en") "HK Bus ETA" else "香港巴士到站預報"} v${instance.versionName} (${instance.versionCode})".asAnnotatedString(),
-                subText = "@LoohpJames".asAnnotatedString()
-            )
-        }
-        item {
-            Spacer(modifier = Modifier.height(40.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Transparent),
+            verticalArrangement = Arrangement.Top
+        ) {
+            WearOSShared.MainTime(scroll)
         }
     }
 }

@@ -54,6 +54,9 @@ struct hkbuseta_Watch_AppApp: App {
     
     @StateObject private var historyStackState = StateFlowListObservable(stateFlow: HistoryStack().historyStack, initSubscribe: true)
     
+    @StateObject private var globalWritingFilesCounterState = StateFlowObservable(stateFlow: AppContextKt.globalWritingFilesCounterState, initSubscribe: true)
+    @State private var globalWritingFiles = false
+    
     let toastTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
     @State private var toastText = ""
     @State private var toastShowTimeLeft = 0.0
@@ -121,9 +124,7 @@ struct hkbuseta_Watch_AppApp: App {
                     }
                 } else {
                     context.screen.newView(context: context)
-                    if context.screen.needBackButton() {
-                        BackButton(context, scrollingScreen: context.screen.isScrollingScreen())
-                    }
+                    TopOverlayBar(context)
                     if toastShowTimeLeft > 0 {
                         Text(toastText)
                             .multilineTextAlignment(.center)
@@ -166,6 +167,17 @@ struct hkbuseta_Watch_AppApp: App {
                     Shared().ensureRegistryDataAvailable(context: context)
                 }
             }
+            .onChange(of: globalWritingFilesCounterState.state) { globalWritingFilesCounter in
+                if globalWritingFilesCounter.intValue > 0 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        if globalWritingFilesCounterState.state.intValue > 0 {
+                            globalWritingFiles = true
+                        }
+                    }
+                } else {
+                    globalWritingFiles = false
+                }
+            }
             .onReceive(toastTimer) { _ in
                 if self.toastShowTimeLeft > 0 {
                     self.toastShowTimeLeft -= 0.5
@@ -196,40 +208,53 @@ struct hkbuseta_Watch_AppApp: App {
             }
         }
     }
-}
-
-func BackButton(_ appContext: AppContext, scrollingScreen: Bool) -> some View {
-    ZStack {
-        Button(action: {
-            HistoryStack().popHistoryStack()
-        }) {
-            Image(systemName: "arrow.left")
-                .font(.system(size: 17.scaled(appContext, true), weight: .bold))
-                .foregroundColor(.white)
-        }
-        .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
-        .contentShape(Rectangle())
-        .buttonStyle(PlainButtonStyle())
-        .position(x: 23.scaled(appContext), y: 23.scaled(appContext))
-        .highPriorityGesture(
-            TapGesture()
-                .onEnded { _ in
-                    HistoryStack().popHistoryStack()
+    
+    @ViewBuilder func TopOverlayBar(_ appContext: AppActiveContextWatchOS) -> some View {
+        if appContext.screen.needBackButton() || globalWritingFiles {
+            ZStack {
+                if appContext.screen.needBackButton() {
+                    Button(action: {
+                        HistoryStack().popHistoryStack()
+                    }) {
+                        Image(systemName: "arrow.left")
+                            .font(.system(size: 17.scaled(appContext, true), weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
+                    .contentShape(Rectangle())
+                    .buttonStyle(PlainButtonStyle())
+                    .position(x: 23.scaled(appContext), y: 23.scaled(appContext))
+                    .highPriorityGesture(
+                        TapGesture()
+                            .onEnded { _ in
+                                HistoryStack().popHistoryStack()
+                            }
+                    )
+                    .zIndex(1)
                 }
-        )
-    }
-    .background(alignment: .top) {
-        if scrollingScreen {
-            LinearGradient(gradient: Gradient(colors: [colorInt(0xFF000000).asColor(), colorInt(0xFF000000).asColor(), colorInt(0xFF000000).asColor(), colorInt(0x00000000).asColor()]), startPoint: .top, endPoint: .bottom)
-                .frame(height: 45.scaled(appContext))
+                if globalWritingFiles {
+                    Circle()
+                        .fill(colorInt(0xFF00FF00).asColor())
+                        .frame(width: 10.scaled(appContext), height: 10.scaled(appContext))
+                        .position(x: 46.scaled(appContext), y: 22.5.scaled(appContext))
+                        .transition(.opacity.animation(.linear(duration: 0.3)))
+                        .zIndex(2)
+                }
+            }
+            .background(alignment: .top) {
+                if appContext.screen.isScrollingScreen() {
+                    LinearGradient(gradient: Gradient(colors: [colorInt(0xFF000000).asColor(), colorInt(0xFF000000).asColor(), colorInt(0xFF000000).asColor(), colorInt(0x00000000).asColor()]), startPoint: .top, endPoint: .bottom)
+                        .frame(height: 45.scaled(appContext))
+                }
+            }
+            .frame(
+                maxWidth: .infinity,
+                maxHeight: .infinity,
+                alignment: .top
+            )
+            .ignoresSafeArea(.all)
         }
     }
-    .frame(
-        maxWidth: .infinity,
-        maxHeight: .infinity,
-        alignment: .top
-    )
-    .ignoresSafeArea(.all)
 }
 
 func handleDataFromPhone(payload: [String: Any]) {

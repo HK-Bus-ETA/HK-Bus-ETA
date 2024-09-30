@@ -34,6 +34,7 @@ import com.loohp.hkbuseta.common.appcontext.FormFactor
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.GeneralDirection
@@ -221,11 +222,13 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
-        NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
-            dir as NSURL
-            val fileURL = dir.URLByAppendingPathComponent(fileName)!!
-            val text = NSString.create(string = writeText.invoke().string())
-            text.writeToURL(fileURL, atomically = false)
+        withGlobalWritingFilesCounter {
+            NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
+                dir as NSURL
+                val fileURL = dir.URLByAppendingPathComponent(fileName)!!
+                val text = NSString.create(string = writeText.invoke().string())
+                text.writeToURL(fileURL, atomically = false)
+            }
         }
     }
 
@@ -241,12 +244,14 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
-        NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
-            dir as NSURL
-            val fileURL = dir.URLByAppendingPathComponent(fileName)!!
-            val array = writeBytes.invoke().toByteArray()
-            val data = memScoped { NSData.create(bytes = allocArrayOf(array), length = array.size.convert()) }
-            data.writeToURL(fileURL, atomically = true)
+        withGlobalWritingFilesCounter {
+            NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
+                dir as NSURL
+                val fileURL = dir.URLByAppendingPathComponent(fileName)!!
+                val array = writeBytes.invoke().toByteArray()
+                val data = memScoped { NSData.create(bytes = allocArrayOf(array), length = array.size.convert()) }
+                data.writeToURL(fileURL, atomically = true)
+            }
         }
     }
 

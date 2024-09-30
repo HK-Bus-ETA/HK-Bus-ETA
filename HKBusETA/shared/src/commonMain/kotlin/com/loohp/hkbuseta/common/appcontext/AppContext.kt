@@ -25,12 +25,16 @@ import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import com.loohp.hkbuseta.common.utils.wrap
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.charsets.Charsets
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
@@ -60,6 +64,17 @@ enum class AppShortcutIcon {
 }
 
 var primaryThemeColor: Long? = null
+
+val globalWritingFilesCounterState: MutableNonNullStateFlow<Int> = MutableStateFlow(0).wrap()
+
+suspend fun <T> withGlobalWritingFilesCounter(block: suspend () -> T): T {
+    try {
+        globalWritingFilesCounterState.update { it + 1 }
+        return block.invoke()
+    } finally {
+        globalWritingFilesCounterState.update { (it - 1).coerceAtLeast(0) }
+    }
+}
 
 @Immutable
 interface AppContext {

@@ -32,7 +32,6 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.buildImmutableList
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 
 
 @Composable

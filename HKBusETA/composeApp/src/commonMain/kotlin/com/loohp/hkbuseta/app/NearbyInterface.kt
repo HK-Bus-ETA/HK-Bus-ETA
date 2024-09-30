@@ -350,7 +350,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                             animationSpec = tween(durationMillis = 300)
                         )
                     ) {
-                        val extraStopsCount by remember(nearbyRoutesResult) { derivedStateOf { (nearbyRoutesResult?.result?.asSequence()
+                        val extraStopsCount by remember { derivedStateOf { (nearbyRoutesResult?.result?.asSequence()
                             ?.mapNotNull { r -> r.stopInfo?.stopId }
                             ?.distinct()
                             ?.count()?: 0) - 1
@@ -433,7 +433,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                 }
                             )
                         }
-                        val closestKmbBbiStop by remember(nearbyRoutesResult) { derivedStateOf { nearbyRoutesResult?.result?.asSequence()
+                        val closestKmbBbiStop by remember { derivedStateOf { nearbyRoutesResult?.result?.asSequence()
                             ?.filter { it.stopInfo?.data?.kmbBbiId != null }
                             ?.minByOrNull { it.stopInfo!!.distance }
                             ?.stopInfo

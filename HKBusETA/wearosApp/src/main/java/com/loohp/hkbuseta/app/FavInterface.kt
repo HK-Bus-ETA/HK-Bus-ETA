@@ -144,7 +144,6 @@ import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -190,59 +189,72 @@ fun FavElements(ambientMode: Boolean, instance: AppActiveContext, schedule: (Boo
             }
         }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .fullPageVerticalLazyScrollbar(
-                    state = state,
-                    context = instance
-                )
-                .rotaryScroll(state, focusRequester),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            state = state
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-            item {
-                Spacer(modifier = Modifier.size(30.scaledSize(instance).dp))
-            }
-            item {
-                FavTitle(ambientMode, instance)
-                Spacer(modifier = Modifier.size(5.scaledSize(instance).dp))
-                FavDescription(ambientMode, instance)
-            }
-            if (showRouteListViewButton) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .fullPageVerticalLazyScrollbar(
+                        state = state,
+                        context = instance
+                    )
+                    .rotaryScroll(state, focusRequester),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                state = state
+            ) {
+                item {
+                    Spacer(modifier = Modifier.size(30.scaledSize(instance).dp))
+                }
+                item {
+                    FavTitle(ambientMode, instance)
+                    Spacer(modifier = Modifier.size(5.scaledSize(instance).dp))
+                    FavDescription(ambientMode, instance)
+                }
+                if (showRouteListViewButton) {
+                    item {
+                        Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
+                        RouteListViewButton(ambientMode, instance)
+                    }
+                } else {
+                    item {
+                        Spacer(modifier = Modifier.size(0.dp))
+                    }
+                }
                 item {
                     Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
-                    RouteListViewButton(ambientMode, instance)
+                    SwitchGroupButton(favouriteRouteStops.asImmutableList(), selectedGroupState, instance)
+                    Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                 }
-            } else {
-                item {
-                    Spacer(modifier = Modifier.size(0.dp))
-                }
-            }
-            item {
-                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
-                SwitchGroupButton(favouriteRouteStops.asImmutableList(), selectedGroupState, instance)
-                Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
-            }
-            if (routeStops.isNotEmpty()) {
-                itemsIndexed(routeStops, key = { _, r -> r.favouriteId }) { index, routeStop ->
-                    Column (
-                        modifier = Modifier.animateItemPlacement()
-                    ) {
-                        FavButton(index + 1, routeStop, etaResults, etaUpdateTimes, origin, instance, schedule)
+                if (routeStops.isNotEmpty()) {
+                    itemsIndexed(routeStops, key = { _, r -> r.favouriteId }) { index, routeStop ->
+                        Column (
+                            modifier = Modifier.animateItemPlacement()
+                        ) {
+                            FavButton(index + 1, routeStop, etaResults, etaUpdateTimes, origin, instance, schedule)
+                            Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
+                        }
+                    }
+                } else {
+                    item {
+                        NoFavText(instance)
                         Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
                     }
                 }
-            } else {
                 item {
-                    NoFavText(instance)
-                    Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
+                    Spacer(modifier = Modifier.size(45.scaledSize(instance).dp))
                 }
             }
-            item {
-                Spacer(modifier = Modifier.size(45.scaledSize(instance).dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Transparent),
+                verticalArrangement = Arrangement.Top
+            ) {
+                WearOSShared.MainTime(state)
             }
         }
+
     }
 }
 

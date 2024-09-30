@@ -259,19 +259,19 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     var reverseRoute: RouteSearchResultEntry? by remember { mutableStateOf(null) }
     val similarRoutes: MutableMap<Route, ImmutableList<StopIndexedRouteSearchResultEntry>> = remember { mutableStateMapOf() }
 
-    val routeNumber by remember(route) { derivedStateOf { route.route!!.routeNumber } }
-    val co by remember(route) { derivedStateOf { route.co } }
-    val bound by remember(route) { derivedStateOf { route.route!!.idBound(co) } }
-    val gmbRegion by remember(route) { derivedStateOf { route.route!!.gmbRegion } }
+    val routeNumber by remember { derivedStateOf { route.route!!.routeNumber } }
+    val co by remember { derivedStateOf { route.co } }
+    val bound by remember { derivedStateOf { route.route!!.idBound(co) } }
+    val gmbRegion by remember { derivedStateOf { route.route!!.gmbRegion } }
 
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
     var ctbHasTwoWaySectionFare by remember { mutableStateOf(false) }
-    val importantNoticeCount by remember(notices) { derivedStateOf { notices?.count { it.importance == RouteNoticeImportance.IMPORTANT }?: 0 } }
-    val possibleBidirectionalSectionFare by remember(notices, ctbHasTwoWaySectionFare) { derivedStateOf { co == Operator.NLB || ctbHasTwoWaySectionFare || notices?.any { it.title.lowercase().contains("section fare") || it.title.contains("分段收費") } == true } }
+    val importantNoticeCount by remember { derivedStateOf { notices?.count { it.importance == RouteNoticeImportance.IMPORTANT }?: 0 } }
+    val possibleBidirectionalSectionFare by remember { derivedStateOf { co == Operator.NLB || ctbHasTwoWaySectionFare || notices?.any { it.title.lowercase().contains("section fare") || it.title.contains("分段收費") } == true } }
 
-    val alertCheckRoute by remember(route) { derivedStateOf { route.route!!.getSpecialRouteAlerts(instance).contains(SpecialRouteAlerts.CheckRoute) } }
+    val alertCheckRoute by remember { derivedStateOf { route.route!!.getSpecialRouteAlerts(instance).contains(SpecialRouteAlerts.CheckRoute) } }
 
-    val routeBranches by remember(route) { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) } }
+    val routeBranches by remember { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) } }
     val selectedBranch = remember { mutableStateOf(routeBranches.currentBranchStatus(currentLocalDateTime(), instance).asSequence().sortedByDescending { it.value.activeness }.first().key) }
     val selectedStop = remember { mutableIntStateOf(
         ((instance.compose.data["scrollToStop"] as? String)?: (instance.compose.data["stopId"] as? String))
@@ -290,11 +290,11 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             }
             ?: route.stopInfoIndex.takeIf { it >= 0 }?.let { it + 1 }?: 1
     ) }
-    val allStops by remember(route, selectedBranch) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion) } }
+    val allStops by remember { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion) } }
 
     val launchedWithStop = remember { route.stopInfo != null || instance.compose.data.containsKey("scrollToStop") || instance.compose.data.containsKey("stopId") }
 
-    val listStopsTabItem by remember(route) { derivedStateOf { listStopsTabItem(co) } }
+    val listStopsTabItem by remember { derivedStateOf { listStopsTabItem(co) } }
 
     val pagerState = rememberPagerState { listStopsTabItem.size }
     val scope = rememberCoroutineScope()
@@ -309,8 +309,8 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val timesInitState = remember { mutableStateOf(false) }
 
     val optAlightReminderService by AlightReminderService.currentInstance.collectAsStateMultiplatform()
-    val alightReminderService by remember(optAlightReminderService) { derivedStateOf { optAlightReminderService.value } }
-    val isActiveReminderService by remember(alightReminderService) { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
+    val alightReminderService by remember { derivedStateOf { optAlightReminderService.value } }
+    val isActiveReminderService by remember { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
 
     val alternateStopNamesShowing = Shared.alternateStopNamesShowingState.collectAsStateMultiplatform { Registry.getInstance(instance).setAlternateStopNames(it, instance) }
 
@@ -636,11 +636,11 @@ fun MapStopsInterface(
 
     val routeNumber by remember(listRoute) { derivedStateOf { listRoute.route!!.routeNumber } }
     val co by remember(listRoute) { derivedStateOf { listRoute.co } }
-    val bound by remember(listRoute, co) { derivedStateOf { listRoute.route!!.idBound(co) } }
+    val bound by remember(listRoute) { derivedStateOf { listRoute.route!!.idBound(co) } }
     val gmbRegion by remember(listRoute) { derivedStateOf { listRoute.route!!.gmbRegion } }
     val isKmbCtbJoint by remember(listRoute) { derivedStateOf { listRoute.route!!.isKmbCtbJoint } }
-    val allStops by remember(routeNumber, co, bound, gmbRegion, listRoute, selectedBranch) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion) } }
-    val stops by remember(allStops, co, selectedBranch) { derivedStateOf { (if (co.isTrain) allStops else allStops.filter { it.branchIds.contains(selectedBranch) }).map { it.stop } } }
+    val allStops by remember(listRoute) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion) } }
+    val stops by remember { derivedStateOf { (if (co.isTrain) allStops else allStops.filter { it.branchIds.contains(selectedBranch) }).map { it.stop } } }
 
     val alternateStopNamesShowing by alternateStopNamesShowingState
 

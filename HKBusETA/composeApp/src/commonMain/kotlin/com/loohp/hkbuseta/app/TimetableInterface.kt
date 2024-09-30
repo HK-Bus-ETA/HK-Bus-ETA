@@ -101,12 +101,12 @@ fun specialDenoteChar(index: Int): String {
 @Composable
 fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>) {
     val now by currentMinuteState.collectAsStateMultiplatform()
-    val timetableData by remember(routes) { derivedStateOf { routes.createTimetable(instance) } }
-    val compareMidnight by remember(timetableData) { derivedStateOf { if (timetableData.isNightRoute()) nightServiceMidnight else dayServiceMidnight } }
-    val weekday by remember(now, compareMidnight) { derivedStateOf { now.dayOfWeek(Registry.getInstance(instance).getHolidays(), compareMidnight) } }
+    val timetableData = remember(routes) { routes.createTimetable(instance) }
+    val compareMidnight = remember(timetableData) { if (timetableData.isNightRoute()) nightServiceMidnight else dayServiceMidnight }
+    val weekday by remember(timetableData, compareMidnight) { derivedStateOf { now.dayOfWeek(Registry.getInstance(instance).getHolidays(), compareMidnight) } }
     val timetableKeysSorted by remember(timetableData) { derivedStateOf { timetableData.keys.sorted() } }
-    val timetableCurrentEntries by remember(now, routes) { derivedStateOf { timetableKeysSorted.associateWith { if (it.contains(weekday)) timetableData[it]!!.currentEntry(now) else emptyList() } } }
-    val currentBranches by remember(timetableData, timetableCurrentEntries) { derivedStateOf { timetableCurrentEntries.asSequence().map { (k, v) -> timetableData[k]!!.asSequence().filterIndexed { i, _ -> v.contains(i) }.map { it.route } }.flatten().toSet() } }
+    val timetableCurrentEntries by remember(timetableData) { derivedStateOf { timetableKeysSorted.associateWith { if (it.contains(weekday)) timetableData[it]!!.currentEntry(now) else emptyList() } } }
+    val currentBranches by remember(timetableData) { derivedStateOf { timetableCurrentEntries.asSequence().map { (k, v) -> timetableData[k]!!.asSequence().filterIndexed { i, _ -> v.contains(i) }.map { it.route } }.flatten().toSet() } }
     val scroll = rememberScrollState()
     val hasJourneyTimeBranches by remember(routes) { derivedStateOf { routes.asSequence().filter { it.journeyTime != null }.associateWith { it.journeyTime!! } } }
 
@@ -181,7 +181,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                 .filter { it.specialRouteRemark != null }
                 .groupBy { it.specialRouteRemark!! }
                 .mapValues { it.value to denoteIndex++ }
-            val onlyDaily by remember(timetableKeysSorted) { derivedStateOf { timetableKeysSorted.size <= 1 } }
+            val onlyDaily by remember { derivedStateOf { timetableKeysSorted.size <= 1 } }
             timetableKeysSorted.forEach { weekdays ->
                 var dayExpanded by remember { mutableStateOf(onlyDaily || composePlatform.hasLargeScreen || weekdays.contains(weekday)) }
                 val dayDropdownIconDegree by animateFloatAsState(
@@ -262,7 +262,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                             val stars = (entry.specialRouteRemark?.let { specialDenoteChar(remarks[it]!!.second) }?: "").asAnnotatedString(style)
                             when (entry) {
                                 is TimetableIntervalEntry -> {
-                                    val currentSubIndexes by remember(now, entry) { derivedStateOf { if (weekdays.contains(weekday)) entry.subEntries.currentEntry(now) else emptyList() } }
+                                    val currentSubIndexes by remember(entry) { derivedStateOf { if (weekdays.contains(weekday)) entry.subEntries.currentEntry(now) else emptyList() } }
                                     val subDisplayEntries: List<TimetableDisplayEntries>? = if (entry.subEntries.size > 1) {
                                         buildList {
                                             for ((subIndex, subEntry) in entry.subEntries.withIndex()) {

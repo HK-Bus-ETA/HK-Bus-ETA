@@ -18,8 +18,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-@file:OptIn(ExperimentalResourceApi::class)
-
 package com.loohp.hkbuseta.app
 
 import androidx.compose.animation.AnimatedContent

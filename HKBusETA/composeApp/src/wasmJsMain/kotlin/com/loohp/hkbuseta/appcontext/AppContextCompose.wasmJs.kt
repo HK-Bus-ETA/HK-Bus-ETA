@@ -32,7 +32,7 @@ import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.AppShortcutIcon
 import com.loohp.hkbuseta.common.appcontext.FormFactor
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
-import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.StringReadChannel
@@ -59,6 +59,10 @@ external fun readFile(callback: (String) -> Unit)
 external fun writeFile(fileName: String, fileContent: String)
 external fun logFirebase(name: String, keyValues: String)
 external fun shareUrlMenu(url: String, title: String?)
+
+suspend inline fun <T> awaitCallback(block: CompletableDeferred<T>.() -> Unit): T {
+    return CompletableDeferred<T>().apply(block).await()
+}
 
 private var versionImpl: () -> Triple<String, String, Long> = { Triple("Unknown", "Unknown", -1) }
 
@@ -102,13 +106,13 @@ open class AppContextComposeWeb internal constructor() : AppContextCompose {
     override val formFactor: FormFactor = FormFactor.NORMAL
 
     override suspend fun readTextFile(fileName: String, charset: Charset): StringReadChannel {
-        return CompletableDeferred<String>().apply {
-            readFromIndexedDB(fileName) { complete(it) }
-        }.await().toStringReadChannel(charset)
+        return awaitCallback { readFromIndexedDB(fileName) { complete(it) } }.toStringReadChannel(charset)
     }
 
     override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
-        writeToIndexedDB(fileName, writeText.invoke().string())
+        withGlobalWritingFilesCounter {
+            writeToIndexedDB(fileName, writeText.invoke().string())
+        }
     }
 
     override suspend fun readRawFile(fileName: String): ByteReadChannel {
@@ -116,22 +120,18 @@ open class AppContextComposeWeb internal constructor() : AppContextCompose {
     }
 
     override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
-        val string = writeBytes.invoke().toByteArray().encodeBase64()
-        writeTextFile(fileName) { string.toStringReadChannel() }
+        withGlobalWritingFilesCounter {
+            val string = writeBytes.invoke().toByteArray().encodeBase64()
+            writeTextFile(fileName) { string.toStringReadChannel() }
+        }
     }
 
     override suspend fun listFiles(): List<String> {
-        val defer = CompletableDeferred<List<String>>()
-        listAllKeysInIndexedDB {
-            defer.complete(it.split("\u0000"))
-        }
-        return defer.await()
+        return awaitCallback { listAllKeysInIndexedDB { complete(it.split("\u0000")) } }
     }
 
     override suspend fun deleteFile(fileName: String): Boolean {
-        return CompletableDeferred<Boolean>().apply {
-            deleteFromIndexedDB(fileName) { complete(it) }
-        }.await()
+        return awaitCallback { deleteFromIndexedDB(fileName) { complete(it) } }
     }
 
     override fun syncPreference(preferences: Preferences) {

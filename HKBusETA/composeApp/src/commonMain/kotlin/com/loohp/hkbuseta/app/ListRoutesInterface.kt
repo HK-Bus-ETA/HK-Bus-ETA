@@ -759,7 +759,7 @@ fun ListRouteInterfaceInternal(
     var activeSortMode by activeSortModeState
     val sortedByModeProvider = { routes.bySortModes(instance, recentSort, listType != RouteListType.RECENT, activeSortMode.filterTimetableActive, proximitySortOrigin).asImmutableMap() }
     var sortedByMode by remember { mutableStateOf(sortedByModeProvider.invoke()) }
-    val sortedResults by remember(sortedByMode, activeSortMode) { derivedStateOf { (sortedByMode[activeSortMode.routeSortMode]?: routes).asImmutableList() } }
+    val sortedResults by remember { derivedStateOf { (sortedByMode[activeSortMode.routeSortMode]?: routes).asImmutableList() } }
     var init by remember { mutableStateOf(false) }
 
     LaunchedEffect (routes, lastLookupRoutes, listType, proximitySortOrigin, activeSortMode.filterTimetableActive) {
@@ -813,7 +813,7 @@ fun ListRouteInterfaceInternal(
     val etaUpdateTimesState = remember { etaUpdateTimes.asImmutableState() }
 
     val routeNumberWidth by if (Shared.language == "en") "249M".renderedSize(30F.sp) else "機場快線".renderedSize(22F.sp)
-    val reorderEnabled by remember(reorderable, activeSortMode, filterDirections) { derivedStateOf { reorderable != null && activeSortMode.isDefault && filterDirections == null } }
+    val reorderEnabled by remember(reorderable) { derivedStateOf { reorderable != null && activeSortMode.isDefault && filterDirections == null } }
 
     if (pipMode && pipModeListName != null) {
         PipModeInterface(
@@ -1335,7 +1335,7 @@ fun PipModeInterface(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         var size by remember { mutableStateOf(IntSize(599, 336)) }
-        val factor by remember(size) { derivedStateOf { size.height / 336F } }
+        val factor by remember { derivedStateOf { size.height / 336F } }
 
         Column(
             modifier = Modifier
@@ -1456,17 +1456,17 @@ fun PipETADisplay(
     val updating by remember(lines) { derivedStateOf { lines == null } }
     var freshness by remember { mutableStateOf(true) }
 
-    val hasPrefix by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.second.isNotEmpty() } } }
-    val hasClockTime by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.clockTime.isNotEmpty() } } }
-    val hasPlatform by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.platform.isNotEmpty() } } }
-    val hasRouteNumber by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.routeNumber.isNotEmpty() } } }
-    val hasDestination by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.destination.isNotEmpty() } } }
-    val hasCarts by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.carts.isNotEmpty() } } }
-    val hasTime by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.time.isNotEmpty() } } }
-    val hasOperator by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.operator.isNotEmpty() } } }
-    val hasRemark by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.remark.isNotEmpty() } } }
+    val hasPrefix by remember { derivedStateOf { resolvedText.any { it.value.second.isNotEmpty() } } }
+    val hasClockTime by remember { derivedStateOf { resolvedText.any { it.value.third.clockTime.isNotEmpty() } } }
+    val hasPlatform by remember { derivedStateOf { resolvedText.any { it.value.third.platform.isNotEmpty() } } }
+    val hasRouteNumber by remember { derivedStateOf { resolvedText.any { it.value.third.routeNumber.isNotEmpty() } } }
+    val hasDestination by remember { derivedStateOf { resolvedText.any { it.value.third.destination.isNotEmpty() } } }
+    val hasCarts by remember { derivedStateOf { resolvedText.any { it.value.third.carts.isNotEmpty() } } }
+    val hasTime by remember { derivedStateOf { resolvedText.any { it.value.third.time.isNotEmpty() } } }
+    val hasOperator by remember { derivedStateOf { resolvedText.any { it.value.third.operator.isNotEmpty() } } }
+    val hasRemark by remember { derivedStateOf { resolvedText.any { it.value.third.remark.isNotEmpty() } } }
 
-    val columns by remember(resolvedText) { derivedStateOf {
+    val columns by remember { derivedStateOf {
         buildImmutableList {
             if (hasPrefix) {
                 add(DataColumn(

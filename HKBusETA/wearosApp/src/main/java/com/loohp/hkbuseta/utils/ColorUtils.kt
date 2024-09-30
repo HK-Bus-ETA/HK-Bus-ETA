@@ -50,6 +50,11 @@ fun Color.withAlpha(alpha: Int): Color {
     return Color(value or alphaShifted)
 }
 
+fun Color.adjustAlpha(percentage: Float): Color {
+    val alpha = (alpha * percentage).coerceIn(0F, 1F)
+    return copy(alpha = alpha)
+}
+
 fun Color.toHexString(): String {
     return "#${(this.toArgb() and 0xFFFFFF).toString(16).padStart(6, '0')}"
 }

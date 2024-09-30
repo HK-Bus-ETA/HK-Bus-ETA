@@ -128,11 +128,11 @@ struct ListStopsView: AppScreenView {
             .onChange(of: scrollTarget) { scrollTarget in
                 if !scrolled && scrollTarget != nil {
                     scrolled = true
-                    withAnimation() { () -> () in
+                    withAnimation() {
                         reader.scrollTo(scrollTarget!, anchor: .center)
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        withAnimation() { () -> () in
+                        withAnimation() {
                             reader.scrollTo(scrollTarget!, anchor: .center)
                         }
                     }

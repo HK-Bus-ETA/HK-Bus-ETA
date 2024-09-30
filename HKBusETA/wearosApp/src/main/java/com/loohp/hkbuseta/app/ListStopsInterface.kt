@@ -345,6 +345,15 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                 ) {
                     WearOSShared.MainTime()
                 }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Transparent),
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    WearOSShared.MainTime(scroll)
+                }
             }
         }
     }

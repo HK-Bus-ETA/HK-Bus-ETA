@@ -70,6 +70,7 @@ import com.loohp.hkbuseta.common.appcontext.FormFactor
 import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
@@ -144,23 +145,27 @@ open class AppContextWearOS internal constructor(
     }
 
     override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
-        AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
-            startWrite().use {
-                writeText.invoke().transferTo(it)
-                it.flush()
-                finishWrite(it)
+        withGlobalWritingFilesCounter {
+            AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
+                startWrite().use {
+                    writeText.invoke().transferTo(it)
+                    it.flush()
+                    finishWrite(it)
+                }
             }
         }
     }
 
     @OptIn(ExperimentalSerializationApi::class)
     override suspend fun <T> writeTextFile(fileName: String, json: Json, writeJson: () -> Pair<SerializationStrategy<T>, T>) {
-        AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
-            startWrite().use {
-                val (serializer, value) = writeJson.invoke()
-                json.encodeToStream(serializer, value, it)
-                it.flush()
-                finishWrite(it)
+        withGlobalWritingFilesCounter {
+            AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
+                startWrite().use {
+                    val (serializer, value) = writeJson.invoke()
+                    json.encodeToStream(serializer, value, it)
+                    it.flush()
+                    finishWrite(it)
+                }
             }
         }
     }
@@ -170,11 +175,13 @@ open class AppContextWearOS internal constructor(
     }
 
     override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
-        AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
-            startWrite().use {
-                writeBytes.invoke().copyTo(it)
-                it.flush()
-                finishWrite(it)
+        withGlobalWritingFilesCounter {
+            AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
+                startWrite().use {
+                    writeBytes.invoke().copyTo(it)
+                    it.flush()
+                    finishWrite(it)
+                }
             }
         }
     }

@@ -348,13 +348,13 @@ fun ListStopsEtaInterface(
     val routeBranches by remember(listRoute) { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion).asImmutableList() } }
     val selectedBranch by selectedBranchState
     var selectedStop by selectedStopState
-    val allStops by remember(listRoute, selectedBranch) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).asImmutableList() } }
+    val allStops by remember(listRoute) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).asImmutableList() } }
 
-    val rawLineColor by remember(co) { derivedStateOf { co.getLineColor(routeNumber, Color.Red) } }
+    val rawLineColor by remember { derivedStateOf { co.getLineColor(routeNumber, Color.Red) } }
     val lineColor by ComposeShared.rememberOperatorColor(rawLineColor, Operator.CTB.getOperatorColor(Color.Yellow).takeIf { isKmbCtbJoint })
 
-    val mtrStopsInterchange by remember(co, allStops, routeNumber) { derivedStateOf { if (co.isTrain) { allStops.asSequence().map { Registry.getInstance(instance).getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList() } else persistentListOf() } }
-    val routeLineData by remember(listRoute, allStops, selectedBranch, lineColor) { derivedStateOf { generateRouteLineData(instance, routeNumber, co, listRoute.route!!.lrtCircular != null, lineColor, allStops, selectedBranch).asImmutableState() } }
+    val mtrStopsInterchange by remember { derivedStateOf { if (co.isTrain) { allStops.asSequence().map { Registry.getInstance(instance).getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList() } else persistentListOf() } }
+    val routeLineData by remember(listRoute) { derivedStateOf { generateRouteLineData(instance, routeNumber, co, listRoute.route!!.lrtCircular != null, lineColor, allStops, selectedBranch).asImmutableState() } }
 
     val etaResults = remember { ConcurrentMap<Int, Registry.ETAQueryResult>().asImmutableState() }
     val etaUpdateTimes = remember { ConcurrentMap<Int, Long>().asImmutableState() }
@@ -367,8 +367,8 @@ fun ListStopsEtaInterface(
     var lrtDirectionMode by lrtDirectionModeState
 
     val optAlightReminderService by AlightReminderService.currentInstance.collectAsStateMultiplatform()
-    val alightReminderService by remember(optAlightReminderService) { derivedStateOf { optAlightReminderService.value } }
-    val isActiveReminderService by remember(alightReminderService) { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
+    val alightReminderService by remember { derivedStateOf { optAlightReminderService.value } }
+    val isActiveReminderService by remember { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
     val alightReminderHighlightBlinkState = remember { mutableStateOf(false) }
     val alightReminderCurrentStopState: MutableState<StopIdIndexed?> = remember { mutableStateOf(null) }
     val alightReminderStateState: MutableState<AlightReminderServiceState?> = remember { mutableStateOf(null) }
@@ -387,7 +387,7 @@ fun ListStopsEtaInterface(
     val sheetTypeState = rememberSaveable { mutableStateOf(BottomSheetType.NONE) }
     val sheetType by sheetTypeState
 
-    val alternateStopNames by remember(listRoute, isKmbCtbJoint) { derivedStateOf { if (isKmbCtbJoint) {
+    val alternateStopNames by remember(listRoute) { derivedStateOf { if (isKmbCtbJoint) {
         Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB).asImmutableList()
     } else {
         null
@@ -614,7 +614,7 @@ fun RouteBranchBar(
 ) {
     var selectedBranch by selectedBranchState
     val now by currentMinuteState.collectAsStateMultiplatform()
-    val branchStatus by remember(now) { derivedStateOf { routeBranches.currentBranchStatus(now, instance) } }
+    val branchStatus by remember { derivedStateOf { routeBranches.currentBranchStatus(now, instance) } }
     if (!co.isTrain && !co.isFerry && routeBranches.isNotEmpty() && type.showBranches) {
         var dropdownExpanded by remember { mutableStateOf(false) }
         val dropdownIconDegree by animateFloatAsState(
@@ -782,8 +782,8 @@ fun ListStopsBottomSheet(
     val favouriteRouteStops by Shared.favoriteRouteStops.collectAsStateMultiplatform()
 
     val optAlightReminderService by AlightReminderService.currentInstance.collectAsStateMultiplatform()
-    val alightReminderService by remember(optAlightReminderService) { derivedStateOf { optAlightReminderService.value } }
-    val isActiveReminderService by remember(alightReminderService) { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
+    val alightReminderService by remember { derivedStateOf { optAlightReminderService.value } }
+    val isActiveReminderService by remember { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
 
     val scope = rememberCoroutineScope()
     var sheetType by sheetTypeState
@@ -799,7 +799,7 @@ fun ListStopsBottomSheet(
     ) {
         val haptic = LocalHapticFeedback.current
         val stopData = allStops[selectedStop - 1]
-        val favouriteStopAlreadySet by remember(favouriteStops, favouriteRouteStops) { derivedStateOf { favouriteStops.contains(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
+        val favouriteStopAlreadySet by remember { derivedStateOf { favouriteStops.contains(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
         when (sheetType) {
             BottomSheetType.ACTIONS -> {
                 Scaffold(
@@ -951,7 +951,7 @@ fun ListStopsBottomSheet(
                 SetFavouriteInterface(instance, co, selectedStop, stopData)
             }
             BottomSheetType.NEARBY -> {
-                val origin by remember(selectedStop) { derivedStateOf { allStops[selectedStop - 1].stop.location } }
+                val origin by remember { derivedStateOf { allStops[selectedStop - 1].stop.location } }
                 var routes: ImmutableList<StopIndexedRouteSearchResultEntry>? by remember(origin) { mutableStateOf(null) }
 
                 LaunchedEffect (origin) {
@@ -1122,7 +1122,7 @@ fun StopEntryCard(
     val timesStartIndex by timesStartIndexState
 
     val optAlightReminderService by AlightReminderService.currentInstance.collectAsStateMultiplatform()
-    val alightReminderService by remember(optAlightReminderService) { derivedStateOf { optAlightReminderService.value } }
+    val alightReminderService by remember { derivedStateOf { optAlightReminderService.value } }
 
     val alightReminderHighlightBlink by alightReminderHighlightBlinkState
 
@@ -1410,15 +1410,15 @@ fun StopEntryExpansionEta(
     val favouriteRouteStops by Shared.favoriteRouteStops.collectAsStateMultiplatform()
 
     val optAlightReminderService by AlightReminderService.currentInstance.collectAsStateMultiplatform()
-    val alightReminderService by remember(optAlightReminderService) { derivedStateOf { optAlightReminderService.value } }
-    val isActiveReminderService by remember(alightReminderService) { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
+    val alightReminderService by remember { derivedStateOf { optAlightReminderService.value } }
+    val isActiveReminderService by remember { derivedStateOf { alightReminderService?.selectedRoute?.let { routeBranches.contains(it) } == true } }
 
     val togglingAlightReminder by togglingAlightReminderState
 
     var lrtDirectionMode by lrtDirectionModeState
-    val etaQueryOptions by remember(lrtDirectionMode) { derivedStateOf { Registry.EtaQueryOptions(lrtDirectionMode) } }
+    val etaQueryOptions by remember { derivedStateOf { Registry.EtaQueryOptions(lrtDirectionMode) } }
 
-    val favouriteStopAlreadySet by remember(favouriteStops, favouriteRouteStops) { derivedStateOf { favouriteStops.contains(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
+    val favouriteStopAlreadySet by remember { derivedStateOf { favouriteStops.contains(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
 
     val etaResults = etaResultsState.value
     val etaUpdateTimes = etaUpdateTimesState.value

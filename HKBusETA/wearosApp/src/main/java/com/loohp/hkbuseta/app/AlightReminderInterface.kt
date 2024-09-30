@@ -75,7 +75,7 @@ import com.loohp.hkbuseta.utils.scaledSize
 @Composable
 fun AlightReminderInterface(instance: AppActiveContext, isAmbient: Boolean) {
     val optService by WearOSShared.remoteAlightReminderService.collectAsStateWithLifecycle()
-    val alightReminderService by remember(optService) { derivedStateOf { optService.value } }
+    val alightReminderService by remember { derivedStateOf { optService.value } }
 
     LaunchedEffect (alightReminderService) {
         if (alightReminderService == null) {
