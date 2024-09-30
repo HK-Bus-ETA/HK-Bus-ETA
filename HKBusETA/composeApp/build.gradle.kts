@@ -123,6 +123,7 @@ kotlin {
             implementation(projects.shared)
             implementation(compose.desktop.currentOs)
             implementation(libs.commons.lang3)
+            implementation(libs.kotlinx.coroutines.swing)
             api(libs.compose.webview.multiplatform)
         }
         wasmJsMain.dependencies {

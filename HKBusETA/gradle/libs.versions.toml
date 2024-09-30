@@ -12,6 +12,7 @@ cupertino = "0.1.0-alpha04"
 glanceAppwidget = "1.1.0"
 glanceMaterial3 = "1.1.0"
 kotlinxCoroutinesGuava = "1.8.1"
+kotlinxCoroutinesSwing = "1.8.1"
 material3WindowSizeClassMultiplatform = "0.5.0"
 materialIconsExtended = "1.6.7"
 materialKolor = "1.5.1"
@@ -97,6 +98,7 @@ compose-webview-multiplatform = { module = "io.github.kevinnzou:compose-webview-
 cupertino = { module = "io.github.alexzhirkevich:cupertino", version.ref = "cupertino" }
 cupertino-native = { module = "io.github.alexzhirkevich:cupertino-native", version.ref = "cupertino" }
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "kotlinxCoroutinesGuava" }
+kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinxCoroutinesSwing" }
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 material3-window-size-clazz-multiplatform = { module = "dev.chrisbanes.material3:material3-window-size-class-multiplatform", version.ref = "material3WindowSizeClassMultiplatform" }
 xmlCore = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xmlCore" }
