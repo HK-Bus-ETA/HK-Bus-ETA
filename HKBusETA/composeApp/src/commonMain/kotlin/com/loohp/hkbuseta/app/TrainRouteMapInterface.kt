@@ -1055,7 +1055,7 @@ fun MTRETADisplayInterface(
                             }
                         )
                     } else {
-                        routes.forEachIndexed { index, item ->
+                        routes.forEachIndexed { index, (line, color) ->
                             PlatformTab(
                                 selected = index == pagerState.currentPage,
                                 onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
@@ -1063,8 +1063,8 @@ fun MTRETADisplayInterface(
                                     PlatformText(
                                         fontSize = 15F.sp,
                                         lineHeight = 1.1F.em,
-                                        color = item.second,
-                                        text = item.first
+                                        color = color,
+                                        text = line
                                     )
                                 }
                             )

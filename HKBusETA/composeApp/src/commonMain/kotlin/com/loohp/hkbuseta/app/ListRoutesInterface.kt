@@ -1456,17 +1456,17 @@ fun PipETADisplay(
     val updating by remember(lines) { derivedStateOf { lines == null } }
     var freshness by remember { mutableStateOf(true) }
 
-    val hasPrefix by remember { derivedStateOf { resolvedText.any { it.value.second.isNotEmpty() } } }
-    val hasClockTime by remember { derivedStateOf { resolvedText.any { it.value.third.clockTime.isNotEmpty() } } }
-    val hasPlatform by remember { derivedStateOf { resolvedText.any { it.value.third.platform.isNotEmpty() } } }
-    val hasRouteNumber by remember { derivedStateOf { resolvedText.any { it.value.third.routeNumber.isNotEmpty() } } }
-    val hasDestination by remember { derivedStateOf { resolvedText.any { it.value.third.destination.isNotEmpty() } } }
-    val hasCarts by remember { derivedStateOf { resolvedText.any { it.value.third.carts.isNotEmpty() } } }
-    val hasTime by remember { derivedStateOf { resolvedText.any { it.value.third.time.isNotEmpty() } } }
-    val hasOperator by remember { derivedStateOf { resolvedText.any { it.value.third.operator.isNotEmpty() } } }
-    val hasRemark by remember { derivedStateOf { resolvedText.any { it.value.third.remark.isNotEmpty() } } }
+    val hasPrefix by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.second.isNotEmpty() } } }
+    val hasClockTime by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.clockTime.isNotEmpty() } } }
+    val hasPlatform by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.platform.isNotEmpty() } } }
+    val hasRouteNumber by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.routeNumber.isNotEmpty() } } }
+    val hasDestination by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.destination.isNotEmpty() } } }
+    val hasCarts by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.carts.isNotEmpty() } } }
+    val hasTime by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.time.isNotEmpty() } } }
+    val hasOperator by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.operator.isNotEmpty() } } }
+    val hasRemark by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.remark.isNotEmpty() } } }
 
-    val columns by remember { derivedStateOf {
+    val columns by remember(resolvedText) { derivedStateOf {
         buildImmutableList {
             if (hasPrefix) {
                 add(DataColumn(
