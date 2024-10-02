@@ -34,6 +34,18 @@ class BranchedListEntry<K, V, B> private constructor(
     constructor(key: K, value: V, vararg branchIds: B) : this(key, value, persistentSetOf(*branchIds))
     constructor(key: K, value: V, branchIds: Collection<B>) : this(key, value, branchIds.toImmutableSet())
 
+    operator fun component1(): K {
+        return key
+    }
+
+    operator fun component2(): V {
+        return value
+    }
+
+    operator fun component3(): Set<B> {
+        return branchIds
+    }
+
     fun merge(value: V, vararg branchIds: B): BranchedListEntry<K, V, B> {
         return BranchedListEntry(key, value, this.branchIds + branchIds)
     }

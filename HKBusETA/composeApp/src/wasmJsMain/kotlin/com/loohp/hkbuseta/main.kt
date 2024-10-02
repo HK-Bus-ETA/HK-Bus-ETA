@@ -41,6 +41,7 @@ import com.loohp.hkbuseta.common.utils.asString
 import com.loohp.hkbuseta.common.utils.provideGzipBodyAsTextImpl
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.utils.awaitCallback
 import io.ktor.http.decodeURLPart
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
@@ -60,7 +61,7 @@ external fun setDownloadAppSheetVisible(isApple: Boolean, visible: Boolean, forc
 external fun isDownloadAppSheetVisible(): Boolean
 external fun isWasmSupported(callback: (Boolean) -> Unit)
 
-suspend fun isWasmSupported(): Boolean = CompletableDeferred<Boolean>().apply { isWasmSupported { complete(it) } }.await()
+suspend fun isWasmSupported(): Boolean = awaitCallback { isWasmSupported { complete(it) } }
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {

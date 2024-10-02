@@ -39,6 +39,7 @@ import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import com.loohp.hkbuseta.utils.awaitCallback
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.ktor.util.toByteArray
@@ -60,9 +61,6 @@ external fun writeFile(fileName: String, fileContent: String)
 external fun logFirebase(name: String, keyValues: String)
 external fun shareUrlMenu(url: String, title: String?)
 
-suspend inline fun <T> awaitCallback(block: CompletableDeferred<T>.() -> Unit): T {
-    return CompletableDeferred<T>().apply(block).await()
-}
 
 private var versionImpl: () -> Triple<String, String, Long> = { Triple("Unknown", "Unknown", -1) }
 

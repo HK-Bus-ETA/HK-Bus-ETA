@@ -190,7 +190,7 @@ private val urlRegex: Regex = "<a +href=\\\"([^\\\"]*)\\\">([^>]*)<\\/a>|((?:htt
 
 class FormattedTextBuilder(
     private val extractUrls: Boolean
-) {
+): CharSequence {
 
     private val content: MutableList<FormattedTextContent> = mutableListOf()
 
@@ -250,6 +250,23 @@ class FormattedTextBuilder(
 
     fun appendInlineContent(image: InlineImage, alternativeText: String) {
         append(alternativeText, InlineImageStyle(image))
+    }
+
+    override val length: Int get() = content.sumOf { it.string.length }
+
+    override fun get(index: Int): Char {
+        return content.asSequence()
+            .flatMap { it.string.asSequence() }
+            .drop(index)
+            .first()
+    }
+
+    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
+        return content.asSequence()
+            .flatMap { it.string.asSequence() }
+            .drop(startIndex)
+            .take(endIndex - startIndex)
+            .joinToString()
     }
 
     fun build(): FormattedText {

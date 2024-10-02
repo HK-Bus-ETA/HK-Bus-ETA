@@ -291,6 +291,40 @@ inline fun <T> Sequence<T>.any(threshold: Int, predicate: (T) -> Boolean): Boole
     return false
 }
 
+fun <T, K> Sequence<T>.distinctBy(selector: (T) -> K, equalityPredicate: (K, K) -> Boolean): Sequence<T> {
+    return DistinctEqualitySequence(this, selector, equalityPredicate)
+}
+
+private class DistinctEqualitySequence<T, K>(
+    private val source: Sequence<T>,
+    private val keySelector: (T) -> K,
+    private val equalityPredicate: (K, K) -> Boolean
+) : Sequence<T> {
+    override fun iterator(): Iterator<T> = DistinctEqualityIterator(source.iterator(), keySelector, equalityPredicate)
+}
+
+private class DistinctEqualityIterator<T, K>(
+    private val source: Iterator<T>,
+    private val keySelector: (T) -> K,
+    private val equalityPredicate: (K, K) -> Boolean
+) : AbstractIterator<T>() {
+    private val observed = HashSet<K>()
+
+    override fun computeNext() {
+        while (source.hasNext()) {
+            val next = source.next()
+            val key = keySelector(next)
+
+            if (observed.none { equalityPredicate.invoke(it, key) }) {
+                observed.add(key)
+                setNext(next)
+                return
+            }
+        }
+        done()
+    }
+}
+
 inline fun <reified R> Iterable<*>.firstIsInstanceOrNull(): R? {
     for (element in this) if (element is R) return element
     return null

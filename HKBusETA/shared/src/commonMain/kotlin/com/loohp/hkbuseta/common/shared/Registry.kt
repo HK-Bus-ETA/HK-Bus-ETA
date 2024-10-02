@@ -93,6 +93,7 @@ import com.loohp.hkbuseta.common.objects.lrtLineStatus
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
 import com.loohp.hkbuseta.common.objects.prependPdfViewerToUrl
 import com.loohp.hkbuseta.common.objects.prependTo
+import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.routeComparator
 import com.loohp.hkbuseta.common.objects.routeComparatorRouteNumberFirst
@@ -113,6 +114,7 @@ import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asAutoSortedList
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.buildFormattedString
+import com.loohp.hkbuseta.common.utils.cache
 import com.loohp.hkbuseta.common.utils.clearGlobalCache
 import com.loohp.hkbuseta.common.utils.commonElementPercentage
 import com.loohp.hkbuseta.common.utils.containsKeyAndNotNull
@@ -123,6 +125,7 @@ import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
 import com.loohp.hkbuseta.common.utils.dispatcherIO
+import com.loohp.hkbuseta.common.utils.distinctBy
 import com.loohp.hkbuseta.common.utils.doRetry
 import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.epochSeconds
@@ -141,6 +144,7 @@ import com.loohp.hkbuseta.common.utils.isNightRoute
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.common.utils.minus
 import com.loohp.hkbuseta.common.utils.nextLocalDateTimeAfter
+import com.loohp.hkbuseta.common.utils.nonNullEquals
 import com.loohp.hkbuseta.common.utils.optDouble
 import com.loohp.hkbuseta.common.utils.optInt
 import com.loohp.hkbuseta.common.utils.optJsonArray
@@ -1329,44 +1333,58 @@ class Registry {
     }
 
     fun getAllStops(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?): List<StopData> {
-        return try {
-            val lists: MutableList<Pair<MutableBranchedList<String, StopData, Route>, Int>> = mutableListOf()
-            for (route in getAllBranchRoutes(routeNumber, bound, co, gmbRegion)) {
-                val localStops: MutableBranchedList<String, StopData, Route> = MutableBranchedList(route)
-                val stops = route.stops[co]
-                val serviceType = route.serviceType.parseIntOr(1)
-                for ((index, stopId) in stops!!.withIndex()) {
-                    val fare = route.fares?.getOrNull(index)
-                    val holidayFare = route.faresHoliday?.getOrNull(index)
-                    localStops.add(stopId, StopData(stopId, serviceType, DATA!!.dataSheet.stopList[stopId]!!, route, fare = fare, holidayFare = holidayFare))
-                }
-                lists.add(localStops to serviceType)
-            }
-            if (lists.isEmpty()) {
-                emptyList()
-            } else {
-                lists.sortBy { it.second }
-                val result: MutableBranchedList<String, StopData, Route> = MutableBranchedList(lists.first().first.branchId) { a, b ->
-                    val aType = a.serviceType
-                    val bType = b.serviceType
-                    if (aType == bType) {
-                        val aGtfs = a.route.gtfsId.parseIntOr(Int.MAX_VALUE)
-                        val bGtfs = b.route.gtfsId.parseIntOr(Int.MAX_VALUE)
-                        if (aGtfs > bGtfs) b else a
-                    } else {
-                        if (aType > bType) b else a
+        return getAllStops(routeNumber, bound, co, gmbRegion, setOf(Operator.KMB))
+    }
+
+    fun getAllStops(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?, mergeDiffIdButSameNameOperators: Set<Operator>): List<StopData> {
+        return cache("getAllStops", routeNumber, bound, co, gmbRegion, mergeDiffIdButSameNameOperators) {
+            try {
+                val stopList = DATA!!.dataSheet.stopList
+                val mergeDiffIdButSameName = mergeDiffIdButSameNameOperators.contains(co)
+                val lists: MutableList<Pair<MutableBranchedList<String, StopData, Route>, Int>> = mutableListOf()
+                for (route in getAllBranchRoutes(routeNumber, bound, co, gmbRegion)) {
+                    val localStops: MutableBranchedList<String, StopData, Route> = MutableBranchedList(route)
+                    val stops = route.stops[co]
+                    val serviceType = route.serviceType.parseIntOr(1)
+                    for ((index, stopId) in stops!!.withIndex()) {
+                        val fare = route.fares?.getOrNull(index)
+                        val holidayFare = route.faresHoliday?.getOrNull(index)
+                        localStops.add(stopId, StopData(stopId, serviceType, stopList[stopId]!!, route, fare = fare, holidayFare = holidayFare))
                     }
+                    lists.add(localStops to serviceType)
                 }
-                val isMainBranchCircular = lists.firstOrNull()?.first?.branchId?.isCircular?: false
-                for ((first) in lists) {
-                    result.merge(first, isMainBranchCircular || !first.branchId.isCircular)
+                if (lists.isEmpty()) {
+                    emptyList()
+                } else {
+                    lists.sortBy { it.second }
+                    val result: MutableBranchedList<String, StopData, Route> = MutableBranchedList(
+                        branchId = lists.first().first.branchId,
+                        conflictResolve = { a, b ->
+                            val aType = a.serviceType
+                            val bType = b.serviceType
+                            if (aType == bType) {
+                                val aGtfs = a.route.gtfsId.parseIntOr(Int.MAX_VALUE)
+                                val bGtfs = b.route.gtfsId.parseIntOr(Int.MAX_VALUE)
+                                if (aGtfs > bGtfs) b else a
+                            } else {
+                                if (aType > bType) b else a
+                            }
+                        },
+                        equalityPredicate = { a, b ->
+                            a == b || (mergeDiffIdButSameName && stopList[a]?.name nonNullEquals stopList[b]?.name)
+                        }
+                    )
+                    val isMainBranchCircular = lists.firstOrNull()?.first?.branchId?.isCircular?: false
+                    for ((first) in lists) {
+                        result.merge(first, isMainBranchCircular || !first.branchId.isCircular)
+                    }
+                    result.asSequenceWithBranchIds()
+                        .map { (f, s) -> f.withBranchIds(s) }
+                        .toList()
                 }
-                result.asSequenceWithBranchIds()
-                    .map { (f, s) -> f.withBranchIds(s) }
-                    .toList()
+            } catch (e: Throwable) {
+                throw RuntimeException("Error occurred while getting stops for $routeNumber, $bound, $co, $gmbRegion: ${e.message}", e)
             }
-        } catch (e: Throwable) {
-            throw RuntimeException("Error occurred while getting stops for $routeNumber, $bound, $co, $gmbRegion: ${e.message}", e)
         }
     }
 
@@ -2023,7 +2041,7 @@ class Registry {
                 val typhoonInfo = currentTyphoonData.await()
                 when {
                     route.isKmbCtbJoint -> etaQueryKmbCtbJoint(this, typhoonInfo, stopId, stopIndex, co, route)
-                    co === Operator.KMB -> etaQueryKmb(typhoonInfo, stopId, stopIndex, co, route)
+                    co === Operator.KMB -> etaQueryKmb(typhoonInfo, stopId, stopIndex, co, route, context)
                     co === Operator.CTB -> etaQueryCtb(typhoonInfo, stopId, stopIndex, co, route)
                     co === Operator.NLB -> etaQueryNlb(typhoonInfo, stopId, co, route)
                     co === Operator.MTR_BUS -> etaQueryMtrBus(typhoonInfo, stopId, co, route)
@@ -2340,109 +2358,154 @@ class Registry {
         return ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, nextCo, lines)
     }
 
-    private suspend fun etaQueryKmb(typhoonInfo: TyphoonInfo, stopId: String, stopIndex: Int, co: Operator, route: Route): ETAQueryResult {
+    private suspend fun etaQueryKmb(typhoonInfo: TyphoonInfo, rawStopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext): ETAQueryResult {
+        val allStops = getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion, emptySet())
+        val stopData = allStops.first { it.stopId == rawStopId }
+        val sameStops = allStops
+            .asSequence()
+            .filter { it.stop.name == stopData.stop.name && it.stop.location.distance(stopData.stop.location) < 0.1 }
+            .distinctBy(
+                selector = { it.branchIds },
+                equalityPredicate = { a, b -> a.intersect(b).isNotEmpty() }
+            )
+            .groupBy { it.stopId }
+        val stopIds = if (sameStops.size > 1) {
+            sameStops.asSequence()
+                .map { (k, v) -> k to if (k == rawStopId) "" else (v.asSequence()
+                    .flatMap { it.branchIds.asSequence() }
+                    .map { b -> b.resolveSpecialRemark(context)[Shared.language] }
+                    .filter { r -> r.isNotEmpty() }
+                    .distinct()
+                    .joinToString(separator = "/")
+                    .takeIf { r -> r.isNotEmpty() }
+                    ?: "")
+                }
+                .toList()
+        } else {
+            listOf(rawStopId to "")
+        }
         val lines: MutableMap<Int, ETALineEntry> = mutableMapOf()
         val isMtrEndOfLine = false
         val language = Shared.language
         lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(language, null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
         val isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-        val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
-        val buses = data!!.optJsonArray("data")!!
-        val stopSequences: MutableSet<Int> = HashSet()
-        for (u in 0 until buses.size) {
-            val bus = buses.optJsonObject(u)!!
-            if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
-                val routeNumber = bus.optString("route")
-                val bound = bus.optString("dir")
-                if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB]) {
-                    stopSequences.add(bus.optInt("seq"))
+        val unsortedLines: MutableList<ETALineEntry> = mutableListOf()
+        var suspendedMessage: ETALineEntry? = null
+        for ((stopId, branchRemark) in stopIds) {
+            val special = branchRemark.isNotEmpty()
+            val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
+            val buses = data!!.optJsonArray("data")!!
+            val stopSequences: MutableSet<Int> = HashSet()
+            for (u in 0 until buses.size) {
+                val bus = buses.optJsonObject(u)!!
+                if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
+                    val routeNumber = bus.optString("route")
+                    val bound = bus.optString("dir")
+                    if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB]) {
+                        stopSequences.add(bus.optInt("seq"))
+                    }
                 }
             }
-        }
-        val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
-        var counter = 0
-        val usedRealSeq: MutableSet<Int> = HashSet()
-        for (u in 0 until buses.size) {
-            val bus = buses.optJsonObject(u)!!
-            if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
-                val routeNumber = bus.optString("route")
-                val bound = bus.optString("dir")
-                val stopSeq = bus.optInt("seq")
-                if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq) {
-                    if (usedRealSeq.add(bus.optInt("eta_seq"))) {
-                        val eta = bus.optString("eta")
-                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
-                        if (mins.isFinite() && mins < -10) continue
-                        val seq = ++counter
-                        val minsRounded = mins.roundToInt()
-                        var timeMessage = "".asFormattedText()
-                        var remarkMessage = "".asFormattedText()
-                        if (language == "en") {
-                            if (minsRounded > 0) {
-                                timeMessage = buildFormattedString {
-                                    append(minsRounded.toString(), BoldStyle)
-                                    append(" Min.", SmallSize)
-                                }
-                            } else if (minsRounded > -60) {
-                                timeMessage = buildFormattedString {
-                                    append("-", BoldStyle)
-                                    append(" Min.", SmallSize)
-                                }
-                            }
-                            if (bus.optString("rmk_en").isNotEmpty()) {
-                                remarkMessage += buildFormattedString {
-                                    if (timeMessage.isEmpty()) {
-                                        append(bus.optString("rmk_en"))
-                                    } else {
-                                        append(" (${bus.optString("rmk_en")})", SmallSize)
+            val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
+            val usedRealSeq: MutableSet<Int> = HashSet()
+            for (u in 0 until buses.size) {
+                val bus = buses.optJsonObject(u)!!
+                if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
+                    val routeNumber = bus.optString("route")
+                    val bound = bus.optString("dir")
+                    val stopSeq = bus.optInt("seq")
+                    if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq) {
+                        if (usedRealSeq.add(bus.optInt("eta_seq"))) {
+                            val eta = bus.optString("eta")
+                            val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
+                            if (mins.isFinite() && mins < -10) continue
+                            val minsRounded = mins.roundToInt()
+                            var timeMessage = "".asFormattedText()
+                            var remarkMessage = "".asFormattedText()
+                            if (language == "en") {
+                                if (minsRounded > 0) {
+                                    timeMessage = buildFormattedString {
+                                        append(minsRounded.toString(), BoldStyle)
+                                        append(" Min.", SmallSize)
+                                    }
+                                } else if (minsRounded > -60) {
+                                    timeMessage = buildFormattedString {
+                                        append("-", BoldStyle)
+                                        append(" Min.", SmallSize)
                                     }
                                 }
-                            }
-                        } else {
-                            if (minsRounded > 0) {
-                                timeMessage = buildFormattedString {
-                                    append(minsRounded.toString(), BoldStyle)
-                                    append(" 分鐘", SmallSize)
-                                }
-                            } else if (minsRounded > -60) {
-                                timeMessage = buildFormattedString {
-                                    append("-", BoldStyle)
-                                    append(" 分鐘", SmallSize)
-                                }
-                            }
-                            if (bus.optString("rmk_tc").isNotEmpty()) {
-                                remarkMessage += buildFormattedString {
-                                    if (timeMessage.isEmpty()) {
-                                        append(bus.optString("rmk_tc")
-                                            .replace("原定", "預定")
-                                            .replace("最後班次", "尾班車")
-                                            .replace("尾班車已過", "尾班車已過本站"))
-                                    } else {
-                                        append(" (${bus.optString("rmk_tc")
-                                            .replace("原定", "預定")
-                                            .replace("最後班次", "尾班車")
-                                            .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
+                                if (bus.optString("rmk_en").isNotEmpty()) {
+                                    remarkMessage += buildFormattedString {
+                                        if (timeMessage.isEmpty()) {
+                                            append(bus.optString("rmk_en"))
+                                        } else {
+                                            if (branchRemark.isNotEmpty()) {
+                                                append(" - ", SmallSize)
+                                                append(branchRemark, SmallSize, BoldStyle)
+                                            }
+                                            append(" (${bus.optString("rmk_en")})", SmallSize)
+                                        }
                                     }
                                 }
-                            }
-                        }
-                        remarkMessage = if ((timeMessage.isEmpty() && remarkMessage.isEmpty()) || typhoonInfo.isAboveTyphoonSignalEight && (remarkMessage strEq "ETA service suspended" || remarkMessage strEq "暫停預報")) {
-                            if (seq == 1) {
-                                getNoScheduledDepartureMessage(language, remarkMessage, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
                             } else {
-                                buildFormattedString {
-                                    append("", BoldStyle)
-                                    append("-")
+                                if (minsRounded > 0) {
+                                    timeMessage = buildFormattedString {
+                                        append(minsRounded.toString(), BoldStyle)
+                                        append(" 分鐘", SmallSize)
+                                    }
+                                } else if (minsRounded > -60) {
+                                    timeMessage = buildFormattedString {
+                                        append("-", BoldStyle)
+                                        append(" 分鐘", SmallSize)
+                                    }
+                                }
+                                if (bus.optString("rmk_tc").isNotEmpty()) {
+                                    remarkMessage += buildFormattedString {
+                                        if (timeMessage.isEmpty()) {
+                                            append(bus.optString("rmk_tc")
+                                                .replace("原定", "預定")
+                                                .replace("最後班次", "尾班車")
+                                                .replace("尾班車已過", "尾班車已過本站"))
+                                        } else {
+                                            if (branchRemark.isNotEmpty()) {
+                                                append(" - ", SmallSize)
+                                                append(branchRemark, SmallSize, BoldStyle)
+                                            }
+                                            append(" (${bus.optString("rmk_tc")
+                                                .replace("原定", "預定")
+                                                .replace("最後班次", "尾班車")
+                                                .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
+                                        }
+                                    }
                                 }
                             }
-                        } else {
-                            "".asFormattedText(BoldStyle) + remarkMessage
+                            if ((timeMessage.isEmpty() && remarkMessage.isEmpty()) || typhoonInfo.isAboveTyphoonSignalEight && (remarkMessage strEq "ETA service suspended" || remarkMessage strEq "暫停預報")) {
+                                if (!special) {
+                                    remarkMessage = getNoScheduledDepartureMessage(language, remarkMessage, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                    suspendedMessage = ETALineEntry.etaEntry(ETALineEntryText.bus(timeMessage, remarkMessage), toShortText(language, minsRounded.toLong(), 0), routeNumber, mins, minsRounded.toLong())
+                                }
+                            } else {
+                                remarkMessage = "".asFormattedText(BoldStyle) + remarkMessage
+                                val entry = ETALineEntry.etaEntry(ETALineEntryText.bus(timeMessage, remarkMessage), toShortText(language, minsRounded.toLong(), 0, special), routeNumber, mins, minsRounded.toLong())
+                                if (entry.eta >= 0 || stopId == rawStopId) {
+                                    unsortedLines.add(entry)
+                                }
+                            }
                         }
-                        lines[seq] = ETALineEntry.etaEntry(ETALineEntryText.bus(timeMessage, remarkMessage), toShortText(language, minsRounded.toLong(), 0), routeNumber, mins, minsRounded.toLong())
                     }
                 }
             }
         }
+        if (unsortedLines.isEmpty()) {
+            if (suspendedMessage != null) {
+                lines[1] = suspendedMessage
+            }
+        } else {
+            unsortedLines.asSequence().sortedBy { it.eta.takeIf { d -> d >= 0 }?: Double.POSITIVE_INFINITY }.forEachIndexed { i, entry ->
+                lines[i + 1] = entry
+            }
+        }
+
         return ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, co, lines)
     }
 
@@ -3388,10 +3451,11 @@ class Registry {
         return ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, co, lines)
     }
 
-    private fun toShortText(language: String, minsRounded: Long, arrivingThreshold: Long): ETAShortText {
+    private fun toShortText(language: String, minsRounded: Long, arrivingThreshold: Long, special: Boolean = false): ETAShortText {
         return ETAShortText(
-            if (minsRounded <= arrivingThreshold) "-" else minsRounded.toString(),
-            if (language == "en") "Min." else "分鐘"
+            first = if (minsRounded <= arrivingThreshold) "-" else minsRounded.toString(),
+            second = if (language == "en") "Min." else "分鐘",
+            special = special
         )
     }
 
@@ -3661,36 +3725,18 @@ class Registry {
     }
 
     @Immutable
-    class ETAShortText(val first: String, val second: String) {
-
+    data class ETAShortText(
+        val first: String,
+        val second: String
+    ) {
         companion object {
             val EMPTY = ETAShortText("", "")
         }
-
-        operator fun component1(): String {
-            return first
-        }
-
-        operator fun component2(): String {
-            return second
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other == null || this::class != other::class) return false
-
-            other as ETAShortText
-
-            if (first != other.first) return false
-            return second == other.second
-        }
-
-        override fun hashCode(): Int {
-            var result = first.hashCode()
-            result = 31 * result + second.hashCode()
-            return result
-        }
-
+        constructor(
+            first: String,
+            second: String,
+            special: Boolean
+        ): this(if (special) "*$first" else first, second)
     }
 
     @Immutable
