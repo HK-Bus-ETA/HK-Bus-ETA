@@ -39,25 +39,6 @@ jobs:
         run: |
           du -sb data.json.gz | cut -f -1 > size.gz.dat
           du -sb data_full.json.gz | cut -f -1 > size_full.gz.dat
-      - name: Update resources
-        uses: test-room-7/action-update-file@v1
-        with:
-            file-path: |
-              data.json
-              data_formatted.json
-              data_full.json
-              data_full_formatted.json
-              checksum.md5
-              size.dat
-              data.json.gz
-              size.gz.dat
-              size_full.dat
-              data_full.json.gz
-              size_full.gz.dat
-              last_updated.txt
-            commit-msg: Update resources
-            github-token: ${{ secrets.GITHUB_TOKEN }}
-            branch: data
       - name: Group resources to folder
         run: |
           mkdir data
@@ -73,6 +54,13 @@ jobs:
           mv data_full.json.gz data/
           mv size_full.gz.dat data/
           mv last_updated.txt data/
+      - name: Update resources
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+            folder: data
+            commit-message: Update resources
+            branch: data
+            clean: false
       - name: Push to wear.hkbus.app
         uses: cpina/github-action-push-to-another-repository@main
         env:
