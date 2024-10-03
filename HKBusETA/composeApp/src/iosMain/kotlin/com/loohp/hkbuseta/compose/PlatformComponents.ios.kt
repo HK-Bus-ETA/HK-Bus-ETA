@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.LocationDisabled
 import androidx.compose.material.icons.filled.NoTransfer
 import androidx.compose.material.icons.outlined.BrokenImage
+import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.RippleTheme
@@ -243,6 +244,7 @@ actual inline val PlatformIcons.Filled.Palette: Painter @Composable get() = reme
 actual inline val PlatformIcons.Outlined.Add: Painter @Composable get() = rememberSystemImagePainter("plus")
 actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = rememberSystemImagePainter("moon")
 actual inline val PlatformIcons.Outlined.Bolt: Painter @Composable get() = rememberSystemImagePainter("bolt")
+actual inline val PlatformIcons.Outlined.Code: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Code)
 actual inline val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get() = rememberSystemImagePainter("dollarsign.arrow.circlepath")
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberSystemImagePainter("trash")
 actual inline val PlatformIcons.Outlined.DeleteForever: Painter @Composable get() = rememberSystemImagePainter("trash")

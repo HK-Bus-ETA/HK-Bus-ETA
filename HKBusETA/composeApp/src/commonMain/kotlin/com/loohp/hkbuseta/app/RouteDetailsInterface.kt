@@ -163,6 +163,7 @@ import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
+import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.pixelsToDp
@@ -421,7 +422,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                         PlatformText(
                             modifier = Modifier.applyIf(lineCount == 1) { alignByBaseline() },
                             text = co.getListDisplayRouteNumber(routeNumber, true),
-                            fontSize = 30.dp.sp,
+                            fontSize = 30.dp.sp.clamp(max = 33.dp),
                             lineHeight = 1.1F.em
                         )
                         Spacer(modifier = Modifier.size(4.dp))

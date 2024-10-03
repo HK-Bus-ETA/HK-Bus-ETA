@@ -308,7 +308,7 @@ object Shared {
         }
     }
 
-    private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 50
+    private const val LAST_LOOKUP_ROUTES_MEM_SIZE = 100
     private val lastLookupRouteLock: Lock = Lock()
     val lastLookupRoutes: MutableNonNullStateFlowList<LastLookupRoute> = MutableStateFlow(emptyList<LastLookupRoute>()).wrapList()
 

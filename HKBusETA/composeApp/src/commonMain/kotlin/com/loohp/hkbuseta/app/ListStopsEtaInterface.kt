@@ -182,6 +182,7 @@ import com.loohp.hkbuseta.common.utils.floorToInt
 import com.loohp.hkbuseta.compose.Add
 import com.loohp.hkbuseta.compose.ArrowDropDown
 import com.loohp.hkbuseta.compose.AutoResizeText
+import com.loohp.hkbuseta.compose.Code
 import com.loohp.hkbuseta.compose.DeleteDialog
 import com.loohp.hkbuseta.compose.DeleteForever
 import com.loohp.hkbuseta.compose.EmojiFlags
@@ -249,6 +250,7 @@ import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.checkNotificationPermission
 import com.loohp.hkbuseta.utils.clearColors
+import com.loohp.hkbuseta.utils.copyToClipboard
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.fontScaledDp
@@ -943,6 +945,23 @@ fun ListStopsBottomSheet(
                                     }.asAnnotatedString()
                                 )
                             }
+                            ActionRow(
+                                onClick = {
+                                    scope.launch {
+                                        val result = copyToClipboard(stopData.stopId)
+                                        sheetState.hide()
+                                        sheetType = BottomSheetType.NONE
+                                        instance.showToastText(if (result) {
+                                            if (Shared.language == "en") "Copied to clipboard" else "已複製到剪貼簿"
+                                        } else {
+                                            if (Shared.language == "en") "Failed to copy to clipboard" else "無法複製到剪貼簿"
+                                        }, ToastDuration.SHORT)
+                                    }
+                                },
+                                icon = PlatformIcons.Outlined.Code,
+                                text = (if (Shared.language == "en") "Copy Stop ID" else "複製 Stop ID").asAnnotatedString(),
+                                subText = stopData.stopId.asAnnotatedString()
+                            )
                         }
                     }
                 )
@@ -1667,11 +1686,11 @@ fun StopEntryExpansionTimes(
                     ?.takeIf { it.averageInterval >= 0 }
                     ?.let {
                         if (it.isLoading) {
-                            if (Shared.language == "en") "Journey Times: Loading... (Beta)" else "車程: 載入中... (測試版)"
+                            if (Shared.language == "en") "Journey Times: Loading..." else "車程: 載入中..."
                         } else {
                             buildString {
                                 val interval = (it.averageInterval / 60).coerceAtLeast(1)
-                                append(if (Shared.language == "en") "Journey Times: $interval Minutes (Beta)" else "車程: ${interval}分鐘 (測試版)")
+                                append(if (Shared.language == "en") "Journey Times: $interval Minutes (Ref. Only)" else "車程: ${interval}分鐘 (只供參考)")
                                 it.currentHourlyInterval?.let { hourTime ->
                                     val intervalHour = (hourTime / 60).coerceAtLeast(1)
                                     append("\n")
@@ -1680,7 +1699,7 @@ fun StopEntryExpansionTimes(
                             }
                         }
                     }
-                    ?: if (Shared.language == "en") "Unable to provide Journey Times (Beta)" else "未能提供車程 (測試版)"
+                    ?: if (Shared.language == "en") "Unable to provide Journey Times" else "未能提供車程"
                 PlatformText(
                     modifier = Modifier.fillMaxWidth(),
                     overflow = TextOverflow.Ellipsis,
@@ -1782,12 +1801,12 @@ fun StopEntryExpansionAlightReminder(
                 ?.let { (it / 60).coerceAtLeast(1) }
                 ?.let {
                     if (it > 1000) {
-                        if (Shared.language == "en") "Journey Times Remaining:\nLoading... (Beta)" else "剩餘車程: 載入中... (測試版)"
+                        if (Shared.language == "en") "Journey Times Remaining:\nLoading..." else "剩餘車程: 載入中..."
                     } else {
-                        if (Shared.language == "en") "Journey Times Remaining:\n$it Minutes (Beta)" else "剩餘車程: ${it}分鐘 (測試版)"
+                        if (Shared.language == "en") "Journey Times Remaining:\n$it Minutes (Ref. Only)" else "剩餘車程: ${it}分鐘 (只供參考)"
                     }
                 }
-                ?: if (Shared.language == "en") "Unable to provide\nJourney Times (Beta)" else "未能提供車程 (測試版)"
+                ?: if (Shared.language == "en") "Unable to provide\nJourney Times" else "未能提供車程"
             PlatformText(
                 modifier = Modifier
                     .fillMaxWidth()

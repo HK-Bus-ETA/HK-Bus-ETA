@@ -74,6 +74,7 @@ import androidx.compose.material.icons.filled.WrongLocation
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.CurrencyExchange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
@@ -238,6 +239,7 @@ actual inline val PlatformIcons.Filled.Palette: Painter @Composable get() = reme
 actual inline val PlatformIcons.Outlined.Add: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Add)
 actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Bedtime)
 actual inline val PlatformIcons.Outlined.Bolt: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Bolt)
+actual inline val PlatformIcons.Outlined.Code: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Code)
 actual inline val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.CurrencyExchange)
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Delete)
 actual inline val PlatformIcons.Outlined.DeleteForever: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DeleteForever)
