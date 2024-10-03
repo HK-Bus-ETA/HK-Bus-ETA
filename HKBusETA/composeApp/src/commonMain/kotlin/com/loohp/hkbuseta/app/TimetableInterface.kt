@@ -130,6 +130,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                 if (distinctTimes.size <= 1) {
                     val circular = if (hasJourneyTimeBranches.keys.any { it.isCircular }) (if (Shared.language == "en") " (One way)" else " (單向)") else ""
                     PlatformText(
+                        modifier = Modifier.iosExtraHeight(),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold.takeIf { currentBranches.isNotEmpty() },
                         text = if (Shared.language == "en") "Full Journey Time: ${distinctTimes.first()} Min.$circular" else "全程車程: ${distinctTimes.first()}分鐘$circular"
@@ -139,11 +140,14 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         PlatformText(
+                            modifier = Modifier.iosExtraHeight(),
                             fontSize = 16.sp,
                             text = if (Shared.language == "en") "Full Journey Times" else "全程車程"
                         )
                         PlatformText(
-                            modifier = Modifier.weight(1F),
+                            modifier = Modifier
+                                .iosExtraHeight()
+                                .weight(1F),
                             textAlign = TextAlign.End,
                             fontSize = 16.sp,
                             text = if (Shared.language == "en") "Times (Min.)" else "車程(分鐘)"
@@ -159,14 +163,18 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             PlatformText(
-                                modifier = Modifier.weight(1F),
+                                modifier = Modifier
+                                    .iosExtraHeight()
+                                    .weight(1F),
                                 fontSize = 16.sp,
                                 fontWeight = weight,
                                 textAlign = TextAlign.Start,
                                 text = "${remark[Shared.language]}$circular"
                             )
                             PlatformText(
-                                modifier = Modifier.padding(start = 5.dp),
+                                modifier = Modifier
+                                    .iosExtraHeight()
+                                    .padding(start = 5.dp),
                                 fontSize = 16.sp,
                                 fontWeight = weight,
                                 text = journeyTime.toString()
@@ -210,6 +218,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         PlatformText(
+                            modifier = Modifier.iosExtraHeight(),
                             textAlign = TextAlign.Start,
                             fontSize = 16.sp,
                             fontWeight = style,
@@ -231,6 +240,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                     ) {
                         PlatformText(
                             modifier = Modifier
+                                .iosExtraHeight()
                                 .onSizeChanged { rightWidth = it.width }
                                 .layout { measurable, constraints ->
                                     val placeable = measurable.measure(constraints)
@@ -335,6 +345,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         PlatformText(
+                                            modifier = Modifier.iosExtraHeight(),
                                             fontSize = 16.sp,
                                             text = entry.timeString
                                         )
@@ -349,6 +360,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                                         }
                                     }
                                     PlatformText(
+                                        modifier = Modifier.iosExtraHeight(),
                                         fontSize = 16.sp,
                                         text = entry.intervalString
                                     )
@@ -362,10 +374,12 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             PlatformText(
+                                                modifier = Modifier.iosExtraHeight(),
                                                 fontSize = 14.sp,
                                                 text = subEntry.timeString
                                             )
                                             PlatformText(
+                                                modifier = Modifier.iosExtraHeight(),
                                                 fontSize = 14.sp,
                                                 text = subEntry.intervalString
                                             )
@@ -381,7 +395,9 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
             for ((remark, pair) in remarks) {
                 val (entries, denote) = pair
                 PlatformText(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .iosExtraHeight(),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold.takeIf { entries.any { e -> currentBranches.contains(e.route) } },
                     text = specialDenoteChar(denote) + remark[Shared.language]
@@ -397,3 +413,7 @@ data class TimetableDisplayEntries(
     val intervalString: AnnotatedString,
     val subDisplayEntries: List<TimetableDisplayEntries>? = null
 )
+
+private fun Modifier.iosExtraHeight(): Modifier {
+    return applyIf(composePlatform.applePlatform) { padding(vertical = 2.dp) }
+}

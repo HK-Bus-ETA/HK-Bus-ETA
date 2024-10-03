@@ -48,8 +48,6 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.LocationDisabled
 import androidx.compose.material.icons.filled.NoTransfer
@@ -175,25 +173,29 @@ import androidx.compose.material3.LocalTextStyle as LocalMaterialTextStyle
 inline val unknownImagePlaceholderPainter: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.BrokenImage)
 
 @Composable
-inline fun rememberImagePainter(name: String): Painter {
-    return UIImage.imageNamed(name)?.asPainter(isIcon = true)?: unknownImagePlaceholderPainter
-}
-@Composable
-inline fun rememberImagePainter(name: String, vararg fallbacks: String): Painter {
-    return (sequenceOf(name) + fallbacks.asSequence())
-        .firstNotNullOfOrNull { UIImage.imageNamed(it) }
-        ?.asPainter(isIcon = true)
+inline fun rememberImagePainter(name: String, scaleX: Float = 1F, scaleY: Float = scaleX): Painter {
+    return UIImage.imageNamed(name)
+        ?.asPainter(isIcon = true, scaleX = scaleX, scaleY = scaleY)
         ?: unknownImagePlaceholderPainter
 }
 @Composable
-inline fun rememberSystemImagePainter(name: String): Painter {
-    return UIImage.systemImageNamed(name)?.asPainter(isIcon = true)?: unknownImagePlaceholderPainter
+inline fun rememberImagePainter(name: String, vararg fallbacks: String, scaleX: Float = 1F, scaleY: Float = scaleX): Painter {
+    return (sequenceOf(name) + fallbacks.asSequence())
+        .firstNotNullOfOrNull { UIImage.imageNamed(it) }
+        ?.asPainter(isIcon = true, scaleX = scaleX, scaleY = scaleY)
+        ?: unknownImagePlaceholderPainter
 }
 @Composable
-inline fun rememberSystemImagePainter(name: String, vararg fallbacks: String): Painter {
+inline fun rememberSystemImagePainter(name: String, scaleX: Float = 1F, scaleY: Float = scaleX): Painter {
+    return UIImage.systemImageNamed(name)
+        ?.asPainter(isIcon = true, scaleX = scaleX, scaleY = scaleY)
+        ?: unknownImagePlaceholderPainter
+}
+@Composable
+inline fun rememberSystemImagePainter(name: String, vararg fallbacks: String, scaleX: Float = 1F, scaleY: Float = scaleX): Painter {
     return (sequenceOf(name) + fallbacks.asSequence())
         .firstNotNullOfOrNull { UIImage.systemImageNamed(it) }
-        ?.asPainter(isIcon = true)
+        ?.asPainter(isIcon = true, scaleX = scaleX, scaleY = scaleY)
         ?: unknownImagePlaceholderPainter
 }
 @Composable
@@ -215,7 +217,7 @@ actual inline val PlatformIcons.Filled.ChevronLeft: Painter @Composable get() = 
 actual inline val PlatformIcons.Filled.ChevronRight: Painter @Composable get() = rememberSystemImagePainter("chevron.right")
 actual inline val PlatformIcons.Filled.FirstPage: Painter @Composable get() = rememberSystemImagePainter("arrow.left.to.line")
 actual inline val PlatformIcons.Filled.LastPage: Painter @Composable get() = rememberSystemImagePainter("arrow.right.to.line")
-actual inline val PlatformIcons.Filled.ArrowDropDown: Painter @Composable get() = rememberSystemImagePainter("chevron.down")
+actual inline val PlatformIcons.Filled.ArrowDropDown: Painter @Composable get() = rememberSystemImagePainter("arrowtriangle.down.fill", 0.5F)
 actual inline val PlatformIcons.Filled.Close: Painter @Composable get() = rememberSystemImagePainter("xmark")
 actual inline val PlatformIcons.Filled.Dangerous: Painter @Composable get() = rememberSystemImagePainter("xmark.octagon")
 actual inline val PlatformIcons.Filled.DarkMode: Painter @Composable get() = rememberSystemImagePainter("moon.fill")

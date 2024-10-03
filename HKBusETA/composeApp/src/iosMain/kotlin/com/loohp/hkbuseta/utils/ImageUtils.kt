@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -49,17 +50,32 @@ import kotlin.math.roundToInt
 
 
 @Composable
-inline fun UIImage.asPainter(isIcon: Boolean = false, filterQuality: FilterQuality = FilterQuality.Low) : Painter {
-    return remember(this, filterQuality) { UIImagePainter(this, isIcon, filterQuality) }
+inline fun UIImage.asPainter(
+    isIcon: Boolean = false,
+    scaleX: Float = 1F,
+    scaleY: Float = scaleX,
+    filterQuality: FilterQuality = FilterQuality.Low
+): Painter {
+    return remember(this, filterQuality) {
+        UIImagePainter(
+            uiImage = this,
+            isIcon = isIcon,
+            scaleX = scaleX,
+            scaleY = scaleY,
+            filterQuality = filterQuality
+        )
+    }
 }
 
 class UIImagePainter(
     private val uiImage: UIImage,
     val isIcon: Boolean,
+    val scaleX: Float = 1F,
+    val scaleY: Float = scaleX,
     private val filterQuality: FilterQuality = FilterQuality.Low
 ): Painter() {
 
-    private val size: IntSize by lazy { uiImage.toImageBitmap().let { IntSize(it.width, it.height) } }
+    private val size: IntSize by lazy { uiImage.toImageBitmap().let { IntSize((it.width * scaleX).roundToInt(), (it.height * scaleY).roundToInt()) } }
     private var alpha: Float = 1F
     private var colorFilter: ColorFilter? = null
 
@@ -67,7 +83,8 @@ class UIImagePainter(
         val (nativeWidth, nativeHeight) = size / drawContext.density.density
         drawImage(
             image = uiImage.resize(nativeWidth.toDouble(), nativeHeight.toDouble()).toImageBitmap(),
-            dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+            dstSize = IntSize((size.width * scaleX).roundToInt(), (size.height * scaleY).roundToInt()),
+            dstOffset = IntOffset((size.width * ((1F - scaleX) / 2)).roundToInt(), (size.height * ((1F - scaleY) / 2)).roundToInt()),
             alpha = alpha,
             colorFilter = colorFilter,
             filterQuality = filterQuality
