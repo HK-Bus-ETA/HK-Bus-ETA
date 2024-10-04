@@ -75,7 +75,9 @@ function isMobileDevice() {
 function shareUrlMenu(url, title) {
     if (navigator.share) {
         navigator.share({title: title, url: url});
+        return true;
     }
+    return false;
 }
 
 async function decompressBase64GzipToBase64(inputBase64) {

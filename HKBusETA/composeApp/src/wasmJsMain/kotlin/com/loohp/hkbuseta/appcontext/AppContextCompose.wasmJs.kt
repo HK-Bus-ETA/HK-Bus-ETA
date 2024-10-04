@@ -36,10 +36,12 @@ import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.StringReadChannel
+import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
 import com.loohp.hkbuseta.utils.awaitCallback
+import com.loohp.hkbuseta.utils.copyToClipboard
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.ktor.util.toByteArray
@@ -47,7 +49,9 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import kotlinx.browser.window
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlin.math.roundToInt
 
@@ -59,7 +63,7 @@ external fun deleteFromIndexedDB(key: String, callback: (Boolean) -> Unit)
 external fun readFile(callback: (String) -> Unit)
 external fun writeFile(fileName: String, fileContent: String)
 external fun logFirebase(name: String, keyValues: String)
-external fun shareUrlMenu(url: String, title: String?)
+external fun shareUrlMenu(url: String, title: String?): Boolean
 
 
 private var versionImpl: () -> Triple<String, String, Long> = { Triple("Unknown", "Unknown", -1) }
@@ -252,7 +256,9 @@ class AppActiveContextComposeWeb internal constructor(
     }
 
     override fun shareUrl(url: String, title: String?) {
-        shareUrlMenu(url, title)
+        if (!shareUrlMenu(url, title)) {
+            CoroutineScope(dispatcherIO).launch { copyToClipboard(url) }
+        }
     }
 
     override fun switchActivity(appIntent: AppIntent) {
