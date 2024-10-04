@@ -37,6 +37,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -210,25 +211,27 @@ fun GoogleMapRouteInterface(
                 )
             }
         }
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            uiSettings = MapUiSettings(
-                zoomControlsEnabled = false,
-                mapToolbarEnabled = false,
-            ),
-            googleMapOptionsFactory = { GoogleMapOptions().backgroundColor(backgroundColor) },
-            properties = MapProperties(
-                isMyLocationEnabled = gpsEnabled,
-                isBuildingEnabled = true,
-                isIndoorEnabled = true
-            ),
-            cameraPositionState = cameraPositionState,
-            mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
-            onMapLoaded = { init = currentTimeMillis() }
-        ) {
-            StopMarkers(waypoints, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap, shouldShowStopIndex)
-            WaypointPaths(waypoints)
-        }
+        //key(waypoints) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                uiSettings = MapUiSettings(
+                    zoomControlsEnabled = false,
+                    mapToolbarEnabled = false,
+                ),
+                googleMapOptionsFactory = { GoogleMapOptions().backgroundColor(backgroundColor) },
+                properties = MapProperties(
+                    isMyLocationEnabled = gpsEnabled,
+                    isBuildingEnabled = true,
+                    isIndoorEnabled = true
+                ),
+                cameraPositionState = cameraPositionState,
+                mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
+                onMapLoaded = { init = currentTimeMillis() }
+            ) {
+                StopMarkers(waypoints, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap, shouldShowStopIndex)
+                WaypointPaths(waypoints)
+            }
+        //}
     }
 }
 
@@ -244,25 +247,27 @@ fun StopMarkers(
     indexMap: ImmutableList<Int>,
     shouldShowStopIndex: Boolean
 ) {
-    var selectedStop by selectedStopState
-    for ((i, stop) in waypoints.stops.withIndex()) {
-        val stopIndex = indexMap[i] + 1
-        val title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(stopIndex - 1)?.stop?: stop).name[Shared.language]
-        val markerState = rememberStopMarkerState(stop)
-        ChangedEffect (selectedStop) {
-            if (selectedStop == stopIndex) {
-                markerState.showInfoWindow()
+    key(waypoints) {
+        var selectedStop by selectedStopState
+        for ((i, stop) in waypoints.stops.withIndex()) {
+            val stopIndex = indexMap[i] + 1
+            val title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(stopIndex - 1)?.stop?: stop).name[Shared.language]
+            val markerState = rememberStopMarkerState(stop)
+            ChangedEffect (selectedStop) {
+                if (selectedStop == stopIndex) {
+                    markerState.showInfoWindow()
+                }
             }
+            Marker(
+                state = markerState,
+                title = if (shouldShowStopIndex) "${stopIndex}. $title" else title,
+                snippet = stop.remark?.get(Shared.language),
+                icon = BitmapDescriptorFactory.fromBitmap(icon),
+                anchor = anchor,
+                onClick = { selectedStop = stopIndex; false },
+                zIndex = 3F
+            )
         }
-        Marker(
-            state = markerState,
-            title = if (shouldShowStopIndex) "${stopIndex}. $title" else title,
-            snippet = stop.remark?.get(Shared.language),
-            icon = BitmapDescriptorFactory.fromBitmap(icon),
-            anchor = anchor,
-            onClick = { selectedStop = stopIndex; false },
-            zIndex = 3F
-        )
     }
 }
 
