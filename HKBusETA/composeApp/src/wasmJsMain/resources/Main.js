@@ -1,6 +1,6 @@
 function isWasmSupported(callback) {
     try {
-        if (typeof WebAssembly === "object"  && typeof WebAssembly.instantiate === "function") {
+        if (typeof WebAssembly === "object" && typeof WebAssembly.instantiate === "function") {
             const module = new WebAssembly.Module(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
             if (module instanceof WebAssembly.Module) {
                 if (new WebAssembly.Instance(module) instanceof WebAssembly.Instance) {
@@ -45,7 +45,7 @@ function setDownloadAppSheetVisible(isApple, visible, forceDarkMode, wasmSupport
         document.getElementById("continue-button").innerHTML = "繼續使用瀏覽器<br>Continue in Browser";
         document.getElementById("continue-button").disabled = false;
     } else if (wasmSupported === false) {
-        document.getElementById("continue-button").innerHTML = "您的瀏覽器不支援WASM<br>Your browser does not support WASM";
+        document.getElementById("continue-button").innerHTML = "您的瀏覽器不支援WASM GC<br>Your browser does not support WASM GC";
         document.getElementById("continue-button").disabled = true;
     } else {
         document.getElementById("continue-button").innerHTML = "正在檢查您的瀏覽器<br>Checking your Browser";
@@ -108,9 +108,7 @@ function canDecodeGzip() {
 }
 
 function decodeGzip(data, callback) {
-    decompressBase64GzipToBase64(data).then((plain) => {
-        callback(plain);
-    });
+    decompressBase64GzipToBase64(data).then((plain) => callback(plain));
 }
 
 function readFromIndexedDB(key, callback) {
