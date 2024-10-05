@@ -312,6 +312,8 @@ val lrtRouteDisplayModeItems = listOf(
 )
 
 private val routeMapSearchSelectedTabIndexState: MutableStateFlow<Int> = MutableStateFlow(0)
+private val mtrLineServiceDisruptionState: MutableStateFlow<Map<String, TrainServiceStatus>> = MutableStateFlow(emptyMap())
+private val mtrLineServiceDisruptionAvailableState: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -376,8 +378,8 @@ fun RouteMapSearchInterface(
         }
     }
 
-    val mtrLineServiceDisruption: SnapshotStateMap<String, TrainServiceStatus> = remember { mutableStateMapOf() }
-    var mtrLineServiceDisruptionAvailable by remember { mutableStateOf(false) }
+    var mtrLineServiceDisruption by mtrLineServiceDisruptionState.collectAsStateMultiplatform()
+    var mtrLineServiceDisruptionAvailable by mtrLineServiceDisruptionAvailableState.collectAsStateMultiplatform()
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
     var lrtRedAlert: Pair<String, String?>? by remember { mutableStateOf(null) }
 
@@ -391,8 +393,7 @@ fun RouteMapSearchInterface(
                 mtrLineServiceDisruptionAvailable = false
             } else {
                 mtrLineServiceDisruptionAvailable = true
-                mtrLineServiceDisruption.clear()
-                mtrLineServiceDisruption.putAll(result)
+                mtrLineServiceDisruption = result
             }
             delay(180000)
         }

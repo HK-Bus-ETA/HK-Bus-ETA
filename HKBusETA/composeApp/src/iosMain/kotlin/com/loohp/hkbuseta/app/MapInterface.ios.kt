@@ -62,7 +62,6 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.radians
 import com.loohp.hkbuseta.common.utils.withLock
-import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.LocationOff
 import com.loohp.hkbuseta.compose.PlatformFilledTonalIconToggleButton
 import com.loohp.hkbuseta.compose.PlatformIcons

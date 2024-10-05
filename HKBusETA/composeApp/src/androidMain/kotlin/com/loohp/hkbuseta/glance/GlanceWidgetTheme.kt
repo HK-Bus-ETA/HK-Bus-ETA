@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.glance.GlanceTheme
 import androidx.glance.color.ColorProviders
 import androidx.glance.material3.ColorProviders
+import androidx.glance.unit.ColorProvider
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.theme.DarkColors
 import com.loohp.hkbuseta.theme.LightColors
@@ -53,11 +54,18 @@ fun resolveWidgetColorScheme(context: Context): ColorProviders {
     )
 }
 
-fun ColorScheme.forGlance(): ColorScheme {
+@Suppress("NOTHING_TO_INLINE")
+inline fun ColorScheme.forGlance(): ColorScheme {
     return copy(background = background.adjustAlpha(0.925F))
 }
 
-fun ColorProviders.isDark(context: Context): Boolean {
+@Suppress("NOTHING_TO_INLINE")
+inline fun Color.forGlance(): ColorProvider {
+    return ColorProvider(this)
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun ColorProviders.isDark(context: Context): Boolean {
     return background.getColor(context).luminance() < 0.5F
 }
 

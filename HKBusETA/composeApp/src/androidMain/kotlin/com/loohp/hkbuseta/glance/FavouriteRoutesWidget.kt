@@ -81,14 +81,14 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextDefaults
-import androidx.glance.unit.ColorProvider
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.loohp.hkbuseta.MainActivity
 import com.loohp.hkbuseta.R
-import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.appcontext.nonActiveAppContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
+import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
@@ -103,6 +103,9 @@ import com.loohp.hkbuseta.common.objects.getDisplayFormattedName
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
+import com.loohp.hkbuseta.common.objects.idBound
+import com.loohp.hkbuseta.common.objects.isBus
+import com.loohp.hkbuseta.common.objects.isNightRouteLazyMethod
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
@@ -115,11 +118,13 @@ import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.ColorContentStyle
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.asImmutableState
+import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.firstIsInstanceOrNull
 import com.loohp.hkbuseta.common.utils.indexOf
+import com.loohp.hkbuseta.common.utils.isNightRoute
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.utils.Small
@@ -246,6 +251,7 @@ fun FirstInstallWidgetContent() {
     }
 }
 
+@OptIn(ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
 @Composable
 fun FavouriteRoutesWidgetContent(instance: AppContext) {
     val groupNameZh = currentState(groupNameZhKey)
@@ -308,7 +314,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                     modifier = GlanceModifier
                         .size(24.dp)
                         .clickable(actionRunCallback<UpdateFavouriteRoutesCallback>()),
-                    color = ColorProvider(Color(0xFFF9DE09))
+                    color = Color(0xFFF9DE09).forGlance()
                 )
             } else {
                 Image(
@@ -353,6 +359,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                 val gmbRegion = route.route!!.gmbRegion
                 val displayRouteNumber = co.getListDisplayRouteNumber(routeNumber, true)
                 val dest = route.route!!.resolvedDest(false)[Shared.language]
+                val isNightRoute = (co.isBus && routeNumber.isNightRouteLazyMethod) || (routeNumber.lastOrNull() == 'S' && Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).isNightRoute())
                 val secondLine = if (route.stopInfo != null) route.stopInfo!!.data!!.name[Shared.language] else null
                 val coSpecialRemark = if (co == Operator.NLB) {
                     if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出"
@@ -361,7 +368,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                 } else {
                     null
                 }
-                val color = co.getColor(routeNumber, Color.White).adjustBrightness(if (GlanceTheme.colors.isDark(instance.compose.context)) 1F else 0.7F)
+                val color = co.getColor(routeNumber, Color.White).adjustBrightness(if (GlanceTheme.colors.isDark(instance.context)) 1F else 0.7F)
                 val specialRouteAlerts = route.route!!.getSpecialRouteAlerts(instance)
                 val otherDests = specialRouteAlerts.firstIsInstanceOrNull<SpecialRouteAlerts.SpecialDest>()?.routes?.mapNotNull {
                     if (it == route.route) {
@@ -389,9 +396,12 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
+                                modifier = GlanceModifier
+                                    .cornerRadius(4.dp)
+                                    .background(if (isNightRoute && !GlanceTheme.colors.isDark(instance.context)) Color.Black else Color.Transparent),
                                 text = displayRouteNumber,
                                 style = TextDefaults.defaultTextStyle.copy(
-                                    color = GlanceTheme.colors.onBackground,
+                                    color = if (isNightRoute) (if (GlanceTheme.colors.isDark(instance.context)) Color.Yellow else Color.White).forGlance() else GlanceTheme.colors.onBackground,
                                     fontSize = if (co == Operator.MTR && Shared.language != "en") {
                                         21F.sp
                                     } else {
@@ -409,7 +419,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                                         .filterIsInstance<ColorContentStyle>()
                                         .firstOrNull()
                                         ?.color
-                                        ?.run { ColorProvider(Color(this).adjustBrightness(if (GlanceTheme.colors.isDark(instance.compose.context)) 1F else 0.7F)) }
+                                        ?.run { Color(this).adjustBrightness(if (GlanceTheme.colors.isDark(instance.context)) 1F else 0.7F).forGlance() }
                                         ?: GlanceTheme.colors.onBackground
                                     Text(
                                         text = it.string,
@@ -452,7 +462,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                                 )
                             }
                             if (otherDests.isNotNullAndNotEmpty()) {
-                                otherDests?.let { otherDests ->
+                                otherDests.let { otherDests ->
                                     for ((otherRoute, otherDest) in otherDests) {
                                         Row(
                                             modifier = GlanceModifier.wrapContentSize(),
@@ -485,7 +495,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                                     modifier = GlanceModifier.wrapContentWidth(),
                                     text = coSpecialRemark,
                                     style = TextDefaults.defaultTextStyle.copy(
-                                        color = ColorProvider(color),
+                                        color = color.forGlance(),
                                         fontSize = 14F.sp
                                     )
                                 )
@@ -548,7 +558,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                         modifier = GlanceModifier.size(25.dp),
                         contentDescription = route.route!!.endOfLineText[Shared.language],
                         provider = ImageProvider(R.drawable.baseline_line_end_circle_24),
-                        colorFilter = ColorFilter.tint(ColorProvider(etaColor(instance.context)))
+                        colorFilter = ColorFilter.tint(etaColor(instance.context).forGlance())
                     )
                 } else if (eta.isTyphoonSchedule) {
                     val typhoonInfo by remember { Registry.getInstance(instance).typhoonInfo }.collectAsStateMultiplatform()
@@ -562,7 +572,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                         modifier = GlanceModifier.size(25.dp),
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         provider = ImageProvider(R.drawable.baseline_schedule_24),
-                        colorFilter = ColorFilter.tint(ColorProvider(etaColor(instance.context)))
+                        colorFilter = ColorFilter.tint(etaColor(instance.context).forGlance())
                     )
                 }
             } else {
@@ -574,7 +584,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                             text = text1,
                             style = TextDefaults.defaultTextStyle.copy(
                                 fontSize = 22F.sp,
-                                color = ColorProvider(etaColor(instance.context)),
+                                color = etaColor(instance.context).forGlance(),
                                 textAlign = TextAlign.End
                             )
                         )
@@ -583,7 +593,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                             text = text2,
                             style = TextDefaults.defaultTextStyle.copy(
                                 fontSize = 8F.sp,
-                                color = ColorProvider(etaColor(instance.context)),
+                                color = etaColor(instance.context).forGlance(),
                                 textAlign = TextAlign.End
                             )
                         )
@@ -600,7 +610,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                                 text = this,
                                 style = TextDefaults.defaultTextStyle.copy(
                                     fontSize = 10F.sp,
-                                    color = ColorProvider(etaSecondColor(instance.context)),
+                                    color = etaSecondColor(instance.context).forGlance(),
                                     textAlign = TextAlign.End
                                 )
                             )
@@ -614,7 +624,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                             style = TextDefaults.defaultTextStyle.copy(
                                 fontSize = 17F.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = ColorProvider(etaColor(instance.context)),
+                                color = etaColor(instance.context).forGlance(),
                                 textAlign = TextAlign.End
                             )
                         )
@@ -626,7 +636,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                                     text = eText1,
                                     style = TextDefaults.defaultTextStyle.copy(
                                         fontSize = 13F.sp,
-                                        color = ColorProvider(etaSecondColor(instance.context)),
+                                        color = etaSecondColor(instance.context).forGlance(),
                                         textAlign = TextAlign.End
                                     )
                                 )
@@ -648,7 +658,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                                 style = TextDefaults.defaultTextStyle.copy(
                                     fontSize = 17F.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = ColorProvider(etaColor(instance.context)),
+                                    color = etaColor(instance.context).forGlance(),
                                     textAlign = TextAlign.End
                                 )
                             )
@@ -663,7 +673,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                                 style = TextDefaults.defaultTextStyle.copy(
                                     fontSize = 17F.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = ColorProvider(etaColor(instance.context)),
+                                    color = etaColor(instance.context).forGlance(),
                                     textAlign = TextAlign.End
                                 )
                             )
@@ -672,7 +682,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                                 text = text3,
                                 style = TextDefaults.defaultTextStyle.copy(
                                     fontSize = 10F.sp,
-                                    color = ColorProvider(etaColor(instance.context)),
+                                    color = etaColor(instance.context).forGlance(),
                                     textAlign = TextAlign.End
                                 )
                             )
@@ -692,7 +702,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                                         text = eText1,
                                         style = TextDefaults.defaultTextStyle.copy(
                                             fontSize = 13F.sp,
-                                            color = ColorProvider(etaSecondColor(instance.context)),
+                                            color = etaSecondColor(instance.context).forGlance(),
                                             textAlign = TextAlign.End
                                         )
                                     )
@@ -706,7 +716,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                                         text = eText2,
                                         style = TextDefaults.defaultTextStyle.copy(
                                             fontSize = 13F.sp,
-                                            color = ColorProvider(etaColor(instance.context)),
+                                            color = etaColor(instance.context).forGlance(),
                                             textAlign = TextAlign.End
                                         )
                                     )
@@ -715,7 +725,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                                         text = eText3,
                                         style = TextDefaults.defaultTextStyle.copy(
                                             fontSize = 8F.sp,
-                                            color = ColorProvider(etaColor(instance.context)),
+                                            color = etaColor(instance.context).forGlance(),
                                             textAlign = TextAlign.End
                                         )
                                     )

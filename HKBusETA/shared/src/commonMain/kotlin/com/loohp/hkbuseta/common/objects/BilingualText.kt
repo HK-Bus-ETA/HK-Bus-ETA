@@ -79,7 +79,7 @@ class BilingualText(
         return BilingualText(this.zh + other, this.en + other)
     }
 
-    infix fun anyEquals(other: BilingualText): Boolean {
+    inline infix fun anyEquals(other: BilingualText): Boolean {
         return zh == other.zh || en == other.en
     }
 
@@ -117,19 +117,19 @@ class BilingualText(
 
 }
 
-infix fun String.withEn(en: String): BilingualText {
+inline infix fun String.withEn(en: String): BilingualText {
     return BilingualText(this, en)
 }
 
-infix fun String.withZh(zh: String): BilingualText {
+inline infix fun String.withZh(zh: String): BilingualText {
     return BilingualText(zh, this)
 }
 
-fun String.asBilingualText(): BilingualText {
+inline fun String.asBilingualText(): BilingualText {
     return this withEn this
 }
 
-infix fun String.anyEquals(other: BilingualText): Boolean {
+inline infix fun String.anyEquals(other: BilingualText): Boolean {
     return this == other.zh || this == other.en
 }
 

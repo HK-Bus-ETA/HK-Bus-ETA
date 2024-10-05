@@ -182,7 +182,7 @@ open class FormattedText(
 
 }
 
-infix fun FormattedText.strEq(other: String): Boolean {
+inline infix fun FormattedText.strEq(other: String): Boolean {
     return string == other
 }
 

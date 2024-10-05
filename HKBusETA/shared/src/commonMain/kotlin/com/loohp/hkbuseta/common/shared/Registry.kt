@@ -86,6 +86,7 @@ import com.loohp.hkbuseta.common.objects.getTitle
 import com.loohp.hkbuseta.common.objects.hkkfStopCode
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyStopCo
+import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isNightRouteLazyMethod
 import com.loohp.hkbuseta.common.objects.isTrain
@@ -1222,11 +1223,7 @@ class Registry {
                     for ((k) in ks) {
                         val routeNumber = k.route!!.routeNumber
                         getOrPut(k.routeKey) {
-                            when {
-                                routeNumber.isNightRouteLazyMethod -> true
-                                routeNumber.lastOrNull() == 'S' -> v!!.createTimetable(serviceMap) { null }.isNightRoute()
-                                else -> false
-                            }
+                            (k.co.isBus && routeNumber.isNightRouteLazyMethod) || (routeNumber.lastOrNull() == 'S' && v!!.createTimetable(serviceMap) { null }.isNightRoute())
                         }
                     }
                 }

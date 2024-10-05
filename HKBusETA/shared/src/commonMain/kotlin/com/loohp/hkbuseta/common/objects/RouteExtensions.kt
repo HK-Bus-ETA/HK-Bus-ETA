@@ -80,6 +80,7 @@ inline val Operator.isFerry: Boolean get() = when (this) {
     Operator.SUNFERRY, Operator.HKKF, Operator.FORTUNEFERRY -> true
     else -> false
 }
+inline val Operator.isBus: Boolean get() = !(isTrain || isFerry)
 
 fun Route.idBound(co: Operator): String = when (co) {
     Operator.CTB -> if (isCtbIsCircular || (bound[co]?.length?: 0) > 1) "OI" else bound[co]

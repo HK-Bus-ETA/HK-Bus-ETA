@@ -92,6 +92,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
@@ -124,6 +125,8 @@ import com.loohp.hkbuseta.appcontext.newScreenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
+import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.BilingualFormattedText
 import com.loohp.hkbuseta.common.objects.Coordinates
@@ -150,9 +153,12 @@ import com.loohp.hkbuseta.common.objects.getFare
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
+import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
+import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isDefault
 import com.loohp.hkbuseta.common.objects.isFerry
+import com.loohp.hkbuseta.common.objects.isNightRouteLazyMethod
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
@@ -171,11 +177,13 @@ import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.asImmutableSet
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.buildImmutableList
+import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.firstIsInstanceOrNull
 import com.loohp.hkbuseta.common.utils.floorToInt
+import com.loohp.hkbuseta.common.utils.isNightRoute
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.transformColors
 import com.loohp.hkbuseta.compose.ArrowUpward
@@ -198,6 +206,7 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.Schedule
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Sort
+import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.combinedClickable
@@ -999,7 +1008,7 @@ fun LazyItemScope.RouteEntry(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
 @Composable
 fun RouteRow(
     key: String,
@@ -1022,6 +1031,9 @@ fun RouteRow(
     val gmbRegion = route.route!!.gmbRegion
     val secondLineCoColor = co.getColor(routeNumber, Color.White).adjustBrightness(if (Shared.theme.isDarkMode) 1F else 0.7F)
     val localContentColor = LocalContentColor.current
+    val isNightRoute = remember(route, routeNumber, co) {
+        (co.isBus && routeNumber.isNightRouteLazyMethod) || (routeNumber.lastOrNull() == 'S' && Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).isNightRoute())
+    }
     val secondLine = remember(route, co, kmbCtbJoint, routeNumber, dest, secondLineCoColor, listType, localContentColor) { buildList {
         if (listType == RouteListType.RECENT) {
             add(instance.formatDateTime((Shared.findLookupRouteTime(route.routeKey)?: 0).toLocalDateTime(), true).asAnnotatedString(SpanStyle(color = localContentColor.adjustAlpha(0.6F))))
@@ -1073,25 +1085,103 @@ fun RouteRow(
             modifier = Modifier.requiredWidth(routeNumberWidth.equivalentDp),
             verticalArrangement = Arrangement.Center
         ) {
-            if (specialRouteAlerts?.contains(SpecialRouteAlerts.CheckDest) == true) {
-                val contentColor = platformLocalContentColor
-                Box(
-                    modifier = Modifier
-                        .padding(bottom = 4.sp.dp)
-                        .drawBehind {
-                            drawRoundRect(
-                                topLeft = Offset(-3.sp.toPx(), 1.sp.toPx()),
-                                size = Size(size.width + 6.sp.toPx(), size.height + 2.sp.toPx()),
-                                cornerRadius = CornerRadius(4.sp.toPx()),
-                                color = contentColor,
-                                style = Stroke(width = 2.sp.toPx())
-                            )
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    PlatformText(
+            val darkMode = Shared.theme.isDarkMode
+            when {
+                specialRouteAlerts?.contains(SpecialRouteAlerts.CheckDest) == true -> {
+                    val contentColor = platformLocalContentColor
+                    Box(
                         modifier = Modifier
-                            .offset(y = (-2).sp.dp),
+                            .padding(bottom = 4.sp.dp)
+                            .drawBehind {
+                                drawRoundRect(
+                                    topLeft = Offset(-3.sp.toPx(), 1.sp.toPx()),
+                                    size = Size(size.width + 6.sp.toPx(), size.height + 2.sp.toPx()),
+                                    cornerRadius = CornerRadius(4.sp.toPx()),
+                                    color = if (isNightRoute && !darkMode) Color.Black else contentColor,
+                                    style = if (isNightRoute && !darkMode) Fill else Stroke(width = 2.sp.toPx())
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        PlatformText(
+                            modifier = Modifier.offset(y = (-2).sp.dp),
+                            textAlign = TextAlign.Start,
+                            fontSize = if ((co == Operator.MTR || co.isFerry) && Shared.language != "en") {
+                                22F.sp
+                            } else {
+                                30F.sp
+                            },
+                            lineHeight = 1.1F.em,
+                            maxLines = 1,
+                            color = if (isNightRoute) (if (darkMode) Color.Yellow else Color.White) else Color.Unspecified,
+                            text = routeNumberDisplay
+                        )
+                        PlatformText(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .offset(y = 2.sp.dp),
+                            textAlign = TextAlign.Start,
+                            fontSize = 8.sp,
+                            lineHeight = 8.sp,
+                            maxLines = 1,
+                            color = if (isNightRoute && !darkMode) Color.White else contentColor,
+                            text = if (Shared.language == "en") "Check Dest" else "留意目的地"
+                        )
+                    }
+                }
+                specialRouteAlerts?.contains(SpecialRouteAlerts.AlightingStop) == true -> {
+                    Box(
+                        modifier = Modifier.padding(bottom = 10.sp.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        PlatformText(
+                            modifier = Modifier
+                                .offset(y = (-2).sp.dp)
+                                .applyIf(isNightRoute && !darkMode) {
+                                    drawBehind {
+                                        drawRoundRect(
+                                            topLeft = Offset(-2.sp.toPx(), 2.sp.toPx()),
+                                            size = Size(size.width + 4.sp.toPx(), size.height - 5.sp.toPx()),
+                                            cornerRadius = CornerRadius(4.sp.toPx()),
+                                            color = Color.Black
+                                        )
+                                    }
+                                },
+                            textAlign = TextAlign.Start,
+                            fontSize = if ((co == Operator.MTR || co.isFerry) && Shared.language != "en") {
+                                18F.sp
+                            } else {
+                                26F.sp
+                            },
+                            lineHeight = 1.1F.em,
+                            maxLines = 1,
+                            color = if (isNightRoute) (if (darkMode) Color.Yellow else Color.White) else Color.Unspecified,
+                            text = routeNumberDisplay
+                        )
+                        PlatformText(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .offset(y = 10.sp.dp),
+                            textAlign = TextAlign.Start,
+                            fontSize = 12.sp,
+                            lineHeight = 12.sp,
+                            maxLines = 1,
+                            text = if (Shared.language == "en") "Alighting" else "落客站"
+                        )
+                    }
+                }
+                else -> {
+                    PlatformText(
+                        modifier = Modifier.applyIf(isNightRoute && !darkMode) {
+                            drawBehind {
+                                drawRoundRect(
+                                    topLeft = Offset(-3.sp.toPx(), 1.sp.toPx()),
+                                    size = Size(size.width + 6.sp.toPx(), size.height - (if (composePlatform.applePlatform) 2 else 3).sp.toPx()),
+                                    cornerRadius = CornerRadius(4.sp.toPx()),
+                                    color = Color.Black
+                                )
+                            }
+                        },
                         textAlign = TextAlign.Start,
                         fontSize = if ((co == Operator.MTR || co.isFerry) && Shared.language != "en") {
                             22F.sp
@@ -1100,60 +1190,10 @@ fun RouteRow(
                         },
                         lineHeight = 1.1F.em,
                         maxLines = 1,
+                        color = if (isNightRoute) (if (darkMode) Color.Yellow else Color.White) else Color.Unspecified,
                         text = routeNumberDisplay
                     )
-                    PlatformText(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .offset(y = 2.sp.dp),
-                        textAlign = TextAlign.Start,
-                        fontSize = 8.sp,
-                        lineHeight = 8.sp,
-                        maxLines = 1,
-                        text = if (Shared.language == "en") "Check Dest" else "留意目的地"
-                    )
                 }
-            } else if (specialRouteAlerts?.contains(SpecialRouteAlerts.AlightingStop) == true) {
-                Box(
-                    modifier = Modifier.padding(bottom = 10.sp.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    PlatformText(
-                        modifier = Modifier
-                            .offset(y = (-2).sp.dp),
-                        textAlign = TextAlign.Start,
-                        fontSize = if ((co == Operator.MTR || co.isFerry) && Shared.language != "en") {
-                            18F.sp
-                        } else {
-                            26F.sp
-                        },
-                        lineHeight = 1.1F.em,
-                        maxLines = 1,
-                        text = routeNumberDisplay
-                    )
-                    PlatformText(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .offset(y = 10.sp.dp),
-                        textAlign = TextAlign.Start,
-                        fontSize = 12.sp,
-                        lineHeight = 12.sp,
-                        maxLines = 1,
-                        text = if (Shared.language == "en") "Alighting" else "落客站"
-                    )
-                }
-            } else {
-                PlatformText(
-                    textAlign = TextAlign.Start,
-                    fontSize = if ((co == Operator.MTR || co.isFerry) && Shared.language != "en") {
-                        22F.sp
-                    } else {
-                        30F.sp
-                    },
-                    lineHeight = 1.1F.em,
-                    maxLines = 1,
-                    text = routeNumberDisplay
-                )
             }
             PlatformText(
                 textAlign = TextAlign.Start,

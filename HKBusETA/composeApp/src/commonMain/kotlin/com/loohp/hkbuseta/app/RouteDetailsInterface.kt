@@ -63,6 +63,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -79,6 +83,7 @@ import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.ScreenState
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
+import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.appcontext.newScreenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
@@ -107,7 +112,9 @@ import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.idBound
+import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isFerry
+import com.loohp.hkbuseta.common.objects.isNightRouteLazyMethod
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
@@ -125,10 +132,12 @@ import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.awaitWithTimeout
+import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.getCircledNumber
+import com.loohp.hkbuseta.common.utils.isNightRoute
 import com.loohp.hkbuseta.compose.AdaptiveTopBottomLayout
 import com.loohp.hkbuseta.compose.AltRoute
 import com.loohp.hkbuseta.compose.ArrowBack
@@ -165,6 +174,7 @@ import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clearColors
+import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.pixelsToDp
 import com.loohp.hkbuseta.utils.sp
@@ -264,6 +274,9 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val co by remember { derivedStateOf { route.co } }
     val bound by remember { derivedStateOf { route.route!!.idBound(co) } }
     val gmbRegion by remember { derivedStateOf { route.route!!.gmbRegion } }
+    val isNightRoute by remember { derivedStateOf {
+        (co.isBus && routeNumber.isNightRouteLazyMethod) || (routeNumber.lastOrNull() == 'S' && Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).isNightRoute())
+    } }
 
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
     var ctbHasTwoWaySectionFare by remember { mutableStateOf(false) }
@@ -391,6 +404,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
+        val darkMode = Shared.theme.isDarkMode
         PlatformTopAppBar(
             title = {
                 @Suppress("RemoveExplicitTypeArguments")
@@ -420,10 +434,22 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                         val autoResizeFontState = rememberAutoResizeFontState(FontSizeRange(max = 22.dp.sp, step = 0.5F.sp))
                         var lineCount by remember { mutableIntStateOf(1) }
                         PlatformText(
-                            modifier = Modifier.applyIf(lineCount == 1) { alignByBaseline() },
+                            modifier = Modifier
+                                .applyIf(lineCount == 1) { alignByBaseline() }
+                                .applyIf(isNightRoute && !darkMode) {
+                                    padding(horizontal = if (isNightRoute && !darkMode) 3.sp.dp else 0.dp).drawBehind {
+                                        drawRoundRect(
+                                            topLeft = Offset(-3.sp.toPx(), 1.sp.toPx()),
+                                            size = Size(size.width + 6.sp.toPx(), size.height - (if (composePlatform.applePlatform) 2 else 3).sp.toPx()),
+                                            cornerRadius = CornerRadius(4.sp.toPx()),
+                                            color = Color.Black
+                                        )
+                                    }
+                                },
                             text = co.getListDisplayRouteNumber(routeNumber, true),
                             fontSize = 30.dp.sp.clamp(max = 33.dp),
-                            lineHeight = 1.1F.em
+                            lineHeight = 1.1F.em,
+                            color = if (isNightRoute) (if (darkMode) Color.Yellow else Color.White) else Color.Unspecified
                         )
                         Spacer(modifier = Modifier.size(4.dp))
                         if (route.route!!.shouldPrependTo()) {
