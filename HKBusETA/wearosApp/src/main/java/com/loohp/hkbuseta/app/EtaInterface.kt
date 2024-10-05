@@ -94,12 +94,17 @@ import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isTrain
+import com.loohp.hkbuseta.common.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.dispatcherIO
+import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
@@ -121,6 +126,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
+import kotlin.math.absoluteValue
 
 
 @OptIn(ExperimentalWearMaterialApi::class, ExperimentalWearFoundationApi::class, ExperimentalFoundationApi::class)
@@ -133,6 +139,20 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
     var swiping by remember { mutableStateOf(swipe.offset.value != 0F) }
 
     val routeNumber = route.routeNumber
+
+    val stopList = remember { Registry.getInstance(instance).getAllStops(routeNumber, route.idBound(co), co, route.gmbRegion).asImmutableList() }
+    val stopData = remember { stopList.getOrNull(stopList.indexesOf { it.stopId == stopId }.minByOrNull { (it - index).absoluteValue }?: -1) }
+    val branches = remember { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.idBound(co), co, route.gmbRegion) }
+    val currentBranch = remember { branches.currentBranchStatus(currentLocalDateTime(), instance, false).asSequence().sortedByDescending { it.value.activeness }.first().key }
+    val resolvedDestName = remember {
+        if (co.isTrain) {
+            Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true)
+        } else if (stopData?.branchIds?.contains(currentBranch) != false) {
+            route.resolvedDestWithBranch(true, currentBranch)
+        } else {
+            route.resolvedDest(true)
+        }
+    }
 
     if (swipe.currentValue) {
         instance.runOnUiThread {
@@ -160,8 +180,6 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
     } else if (swipe.offset.value.sameValueAs(0F)) {
         swiping = false
     }
-
-    val stopList = remember { Registry.getInstance(instance).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion).asImmutableList() }
 
     val focusRequester = rememberActiveFocusRequester()
     var currentOffset by remember { mutableFloatStateOf(offsetStart * instance.screenHeight.toFloat()) }
@@ -284,7 +302,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
 
                 Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
                 Title(ambientMode, index, stop.name, lat, lng, routeNumber, co, instance)
-                SubTitle(ambientMode, Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), lat, lng, routeNumber, co, instance)
+                SubTitle(ambientMode, resolvedDestName, lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(9.scaledSize(instance).dp))
                 EtaText(ambientMode, eta, 1, etaDisplayMode, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))

@@ -24,6 +24,7 @@ struct EtaView: AppScreenView {
     @State private var route: Route
     @State private var offsetStart: Int
     
+    @State private var resolvedDestName: BilingualText
     @State private var stopList: [Registry.StopData]
     @State private var etaDisplayMode: ETADisplayMode
     @State private var lrtDirectionMode: Bool
@@ -34,16 +35,30 @@ struct EtaView: AppScreenView {
     
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
-        self.stopId = data["stopId"] as! String
+        let stopId = data["stopId"] as! String
+        self.stopId = stopId
         let co = data["co"] as! Operator
         self.co = co
-        self.index = data["index"] as! Int
+        let index = data["index"] as! Int
+        self.index = index
         self.stop = data["stop"] as! Stop
         let route = data["route"] as! Route
         self.route = route
         self.offsetStart = data["offsetStart"] as? Int ?? 0
-        
-        self.stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
+        let stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
+        self.stopList = stopList
+        let stopData = stopList.enumerated().filter { $0.element.stopId == stopId }.min(by: { abs($0.offset - index) < abs($1.offset - index) })?.element
+        let branches = registry(appContext).getAllBranchRoutes(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
+        let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
+        self.resolvedDestName = {
+            if co.isTrain {
+                return registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
+            } else if stopData?.branchIds.contains(currentBranch) != false {
+                return route.resolvedDestWithBranch(prependTo: true, branch: currentBranch)
+            } else {
+                return route.resolvedDest(prependTo: true)
+            }
+        }()
         self.etaDisplayMode = Shared().etaDisplayMode
         self.lrtDirectionMode = Shared().lrtDirectionMode
         self.freshness = true
@@ -57,8 +72,7 @@ struct EtaView: AppScreenView {
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(2)
                 .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
-            let destName = registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
-            Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + destName.get(language: Shared().language))
+            Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + resolvedDestName.get(language: Shared().language))
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(1)
                 .autoResizing(maxSize: 12.scaled(appContext, true))

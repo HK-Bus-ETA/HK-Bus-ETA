@@ -23,7 +23,6 @@ package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
-import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.shared.BASE_URL
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
@@ -31,6 +30,7 @@ import com.loohp.hkbuseta.common.utils.Colored
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.FormattingTextContentStyle
 import com.loohp.hkbuseta.common.utils.RouteBranchStatus
+import com.loohp.hkbuseta.common.utils.ServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asFormattedText
@@ -556,7 +556,7 @@ inline fun Collection<Operator>.firstCo(): Operator? {
 }
 
 enum class RemarkType {
-    RAW, LABEL_MAIN_BRANCH, LABEL_ALL, LABEL_ALL_EXCEPT_MAIN
+    RAW, LABEL_MAIN_BRANCH, LABEL_ALL, LABEL_ALL_AND_MAIN
 }
 
 sealed interface RouteDifference {
@@ -699,20 +699,15 @@ fun Route.findDifference(mainRoute: Route, stopList: Map<String, Stop>, definiti
     }
 }
 
-@OptIn(ReduceDataPossiblyOmitted::class)
 fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = RemarkType.RAW): BilingualText {
     return cache("resolveSpecialRemark", this, labelType) {
         val co = bound.keys.firstCo()?: throw RuntimeException()
         val bound = idBound(co)
         val (routeList, stopList) = Registry.getInstance(context).let { it.getAllBranchRoutes(routeNumber, bound, co, gmbRegion) to it.getStopList() }
         val allStops by lazy { Registry.getInstance(context).getAllStops(routeNumber, bound, co, gmbRegion).map { it.stopId } }
-        val timetable = if (Registry.getInstance(context).hasServiceDayMap()) {
-            routeList.createTimetable(Registry.getInstance(context).getServiceDayMap()) { BilingualText.EMPTY }
-        } else {
-            null
-        }
+        val timetable = routeList.createTimetable(Registry.getInstance(context).getServiceDayMap()) { BilingualText.EMPTY }
         val mainRoute = routeList.first()
-        val proportions = timetable?.takeIf { co == Operator.KMB || co == Operator.CTB }?.getRouteProportions()?: mapOf(mainRoute to 1F)
+        val proportions = timetable.takeIf { co == Operator.KMB || co == Operator.CTB }?.getRouteProportions()?: mapOf(mainRoute to 1F)
         if (proportions[mainRoute]?.let { it > 0.4F } == true) {
             val remark = (if (this != mainRoute) findDifference(mainRoute, stopList, true) else RouteDifferenceMain).displayText(stopList)
             when (labelType) {
@@ -724,30 +719,20 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
                         "正常路線" withEn "Normal Route"
                     }
                 }
-                RemarkType.LABEL_ALL -> remark.let {
+                RemarkType.LABEL_ALL, RemarkType.LABEL_ALL_AND_MAIN -> remark.let {
                     if (it.zh.isNotBlank()) {
-                        val entries = timetable?.values?.flatten()?.filter { e -> e.route == this }
+                        val entries = timetable.values.asSequence().flatten().filter { e -> e.route == this }.toList()
                         it + when {
-                            entries == null -> " - 特別班" withEn " - Special"
                             entries.isNotEmpty() && entries.all { l -> l.within(LocalTime(5, 0), LocalTime(10, 0)) } -> " - 早上繁忙時間特別班" withEn " - Morning Peak Special"
                             entries.isNotEmpty() && entries.all { l -> l.within(LocalTime(16, 30), LocalTime(21, 0)) } -> " - 下午繁忙時間特別班" withEn " - Evening Peak Special"
                             else -> " - 特別班" withEn " - Special"
                         }
                     } else {
-                        "正常路線" withEn "Normal Route"
-                    }
-                }
-                RemarkType.LABEL_ALL_EXCEPT_MAIN -> remark.let {
-                    if (it.zh.isNotBlank()) {
-                        val entries = timetable?.values?.flatten()?.filter { e -> e.route == this }
-                        when {
-                            entries == null -> "特別班 " withEn "Special "
-                            entries.isNotEmpty() && entries.all { l -> l.within(LocalTime(5, 0), LocalTime(10, 0)) } -> "早上繁忙時間特別班 " withEn "Morning Peak Special "
-                            entries.isNotEmpty() && entries.all { l -> l.within(LocalTime(16, 30), LocalTime(21, 0)) } -> "下午繁忙時間特別班 " withEn "Evening Peak Special "
-                            else -> "特別班 " withEn "Special "
-                        } + it
-                    } else {
-                        it
+                        if (labelType == RemarkType.LABEL_ALL) {
+                            "正常路線" withEn "Normal Route"
+                        } else {
+                            resolvedDest(true) + (" - 正常路線" withEn " - Normal Route")
+                        }
                     }
                 }
             }
@@ -761,24 +746,19 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
             }.displayText(allStops, stopList)
             when (labelType) {
                 RemarkType.RAW -> remark
-                RemarkType.LABEL_MAIN_BRANCH, RemarkType.LABEL_ALL, RemarkType.LABEL_ALL_EXCEPT_MAIN -> remark.let {
+                RemarkType.LABEL_MAIN_BRANCH, RemarkType.LABEL_ALL, RemarkType.LABEL_ALL_AND_MAIN -> remark.let {
                     val extra = if (routeList.size != 2) {
                         BilingualText.EMPTY
                     } else {
-                        val entries = timetable?.values?.flatten()?.filter { e -> e.route == this }
+                        val entries = timetable.values.asSequence().flatten().filter { e -> e.route == this }.toList()
                         when {
-                            entries == null -> BilingualText.EMPTY
                             entries.isNotEmpty() && entries.all { l -> l.within(LocalTime(5, 0), LocalTime(13, 0)) } -> "上午班次" withEn "AM Service"
                             entries.isNotEmpty() && entries.all { l -> l.within(LocalTime(11, 30), LocalTime(1, 0)) } -> "下午班次" withEn "PM Service"
                             else -> BilingualText.EMPTY
                         }
                     }
                     if (it.zh.isNotBlank()) {
-                        if (labelType == RemarkType.LABEL_ALL_EXCEPT_MAIN) {
-                            extra.let { e -> if (e.zh.isBlank()) e else e + " ".asBilingualText() } + it
-                        } else {
-                            it + extra.let { e -> if (e.zh.isBlank()) e else " - ".asBilingualText() + e }
-                        }
+                        it + extra.let { e -> if (e.zh.isBlank()) e else " - ".asBilingualText() + e }
                     } else {
                         extra
                     }
@@ -816,7 +796,6 @@ fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext)
     }
 }
 
-@OptIn(ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
 fun Route.getSpecialRouteAlerts(context: AppContext): Set<SpecialRouteAlerts> {
     if (co.firstCo()!!.let { it.isTrain || it.isFerry }) return emptySet()
     val branches = cache("getSpecialRouteAlerts", routeGroupKey) {
@@ -1068,8 +1047,11 @@ fun List<StopIndexedRouteSearchResultEntry>.identifyGeneralDirections(context: A
     return result.asSequence().sortedBy { (k) -> k }.associate { (k, v) -> k to v }
 }
 
-inline val String.isNightRouteLazyMethod: Boolean get() {
-    return this[0] == 'N' || this == "270S" || this == "271S" || this == "293S" || this == "701S" || this == "796S"
+fun calculateServiceTimeCategory(routeNumber: String, co: Operator, timetableCalculate: () -> ServiceTimeCategory): ServiceTimeCategory {
+    if (co.isBus) {
+        if (routeNumber.firstOrNull() == 'N' || routeNumber.lastOrNull() == 'N') return ServiceTimeCategory.NIGHT
+    }
+    return timetableCalculate.invoke()
 }
 
 val airportExpressExclusiveStations = setOf("AIR", "AWE")

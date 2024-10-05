@@ -93,7 +93,7 @@ class MutableBranchedList<K, V, B> private constructor(
         addAll(selfIndex, other.subList(0, otherIndex))
         val newOther = other.subList(otherIndex + 1, other.size)
         if (newOther.isNotEmpty()) {
-            merge(newOther, selfIndex + 1, mergeToFrontIfNotFound, mergeToFrontIfNotFound)
+            merge(newOther, selfIndex + otherIndex + 1, mergeToFrontIfNotFound, mergeToFrontIfNotFound)
         }
     }
 

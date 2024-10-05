@@ -147,3 +147,19 @@ extension View {
     }
     
 }
+
+struct CheckboxView: View {
+    @Binding var isChecked: Bool
+
+    var body: some View {
+        Button(action: {
+            isChecked.toggle()
+        }) {
+            Image(systemName: isChecked ? "checkmark.square.fill" : "square")
+                .foregroundColor(isChecked ? .purple : .gray)
+                .font(.system(size: 20))
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding()
+    }
+}

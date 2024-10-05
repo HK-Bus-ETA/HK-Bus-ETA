@@ -54,6 +54,7 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.MutableNullableStateFlow
+import com.loohp.hkbuseta.common.utils.RouteBranchStatus
 import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.isReachable
 import com.loohp.hkbuseta.common.utils.mapToMutableMap
@@ -613,4 +614,8 @@ fun getGeneralDirectionExtendedDisplayName(generalDirection: GeneralDirection?):
 
 fun nextGeneralDirection(generalDirection: GeneralDirection?, availableDirections: List<GeneralDirection>): GeneralDirection? {
     return generalDirection.next(availableDirections)
+}
+
+fun Map<Route, RouteBranchStatus>.findMostActiveRoute(): Route {
+    return asSequence().sortedByDescending { it.value.activeness }.first().key
 }

@@ -22,7 +22,6 @@
 package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
-import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Stable
@@ -109,7 +108,6 @@ fun List<RouteSearchResultEntry>.toStopIndexed(instance: AppContext): List<StopI
     return map { it.toStopIndexed(instance) }
 }
 
-@OptIn(ReduceDataPossiblyOmitted::class)
 fun List<StopIndexedRouteSearchResultEntry>.bySortModes(
     context: AppContext,
     recentSortMode: RecentSortMode,
@@ -118,7 +116,7 @@ fun List<StopIndexedRouteSearchResultEntry>.bySortModes(
     proximitySortOrigin: Coordinates? = null
 ): Map<RouteSortMode, List<StopIndexedRouteSearchResultEntry>> {
     val registry = Registry.getInstance(context)
-    val activeRoutes = if (prioritizeWithTimetable && registry.hasServiceDayMap()) {
+    val activeRoutes = if (prioritizeWithTimetable) {
         val now = currentLocalDateTime()
         val serviceDayMap = registry.getServiceDayMap()
         val holidayMap = registry.getHolidays()

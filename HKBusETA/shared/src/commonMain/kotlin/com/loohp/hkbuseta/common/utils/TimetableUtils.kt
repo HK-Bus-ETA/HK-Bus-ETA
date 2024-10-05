@@ -22,8 +22,6 @@
 package com.loohp.hkbuseta.common.utils
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
-import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
-import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
@@ -305,7 +303,7 @@ fun List<TimetableEntry>.currentEntry(
     if (isEmpty()) return emptyList()
     if (all { it is TimetableSpecialEntry }) return listOf(0)
     val singleEntryWindow = singleEntryActivePreWindowMinutes.minutes
-    val compareMidnight = if (isNightRoute()) nightServiceMidnight else dayServiceMidnight
+    val compareMidnight = if (getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
     val compareTime = compareMidnight.atDate(time.date).let { if (it > time) it - 1.days else it }
     val searchStart = time + searchPreWindow.first.minutes
     val searchEnd = time + searchPreWindow.last.minutes
@@ -360,14 +358,31 @@ private fun LocalTime.minIntervalMinutes(other: LocalTime): Int {
     return min(forwardDiff, backwardDiff)
 }
 
-fun Map<OperatingWeekdays, List<TimetableEntry>>.isNightRoute(): Boolean {
-    return DayOfWeek.entries.asSequence().mapNotNull { weekday ->
-        asSequence().firstOrNull { it.key.contains(weekday) }?.value
-    }.flatten().toList().isNightRoute()
+enum class ServiceTimeCategory(
+    val day: Boolean = false,
+    val night: Boolean = false
+) {
+    DAY(
+        day = true,
+    ),
+    NIGHT(
+        night = true
+    ),
+    TWENTY_FOUR_HOURS(
+        day = true,
+        night = true
+    )
 }
 
-fun Collection<TimetableEntry>.isNightRoute(): Boolean {
-    if (all { it is TimetableSpecialEntry }) return false
+fun Map<OperatingWeekdays, List<TimetableEntry>>.getServiceTimeCategory(): ServiceTimeCategory {
+    return DayOfWeek.entries.asSequence().mapNotNull { weekday ->
+        asSequence().firstOrNull { it.key.contains(weekday) }?.value
+    }.flatten().toList().getServiceTimeCategory()
+}
+
+fun Collection<TimetableEntry>.getServiceTimeCategory(): ServiceTimeCategory {
+    if (all { it is TimetableSpecialEntry }) return ServiceTimeCategory.DAY
+
     val diff = (0 until 24).associateWith { h ->
         val time = LocalTime(h, 0)
         minOf { when (it) {
@@ -377,7 +392,12 @@ fun Collection<TimetableEntry>.isNightRoute(): Boolean {
         } }
     }
     val minDiff = diff.values.min()
-    return diff.asSequence().filter { it.value == minDiff }.all { it.key in 0..6 }
+    val minDiffHours = diff.filter { it.value == minDiff }
+    return when {
+        minDiffHours.any { it.key in 7..23 } && minDiffHours.any { it.key in 2..4 } -> ServiceTimeCategory.TWENTY_FOUR_HOURS
+        minDiffHours.all { it.key in 0..6 } -> ServiceTimeCategory.NIGHT
+        else -> ServiceTimeCategory.DAY
+    }
 }
 
 fun Map<OperatingWeekdays, List<TimetableEntry>>.getRouteProportions(
@@ -475,7 +495,7 @@ class TimetableEntryMapBuilder(
         if (current?.first?.isNotEmpty() == true) {
             merged[OperatingWeekdays(current.first)] = current.second
         }
-        val compareMidnight = if (merged.values.flatten().isNightRoute()) nightServiceMidnight else dayServiceMidnight
+        val compareMidnight = if (merged.values.flatten().getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
         return merged.mapValues { (_, v) -> v.sortedWith { self, other -> when {
             self.compareTime == null -> -1
             other.compareTime == null -> 1
@@ -515,8 +535,6 @@ inline fun buildTimetableEntryMap(
     builder: (TimetableEntryMapBuilder).() -> Unit
 ): Map<OperatingWeekdays, List<TimetableEntry>> = TimetableEntryMapBuilder(defaultRoute).apply(builder).build()
 
-@ReduceDataOmitted
-@ReduceDataPossiblyOmitted
 fun Collection<Route>.createTimetable(context: AppContext): Map<OperatingWeekdays, List<TimetableEntry>> {
     return createTimetable(Registry.getInstance(context).getServiceDayMap()) {
         it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() }
@@ -545,8 +563,10 @@ fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>,
     }
 }
 
-@ReduceDataOmitted
-@ReduceDataPossiblyOmitted
+operator fun <T> Map<OperatingWeekdays, T>.get(week: DayOfWeek): T? {
+    return asSequence().firstOrNull { it.key.contains(week) }?.value
+}
+
 fun Collection<Route>.isTimetableActive(time: LocalDateTime, context: AppContext): Boolean {
     val registry = Registry.getInstance(context)
     return isTimetableActive(time, registry.getServiceDayMap(), registry.getHolidays())
@@ -555,15 +575,13 @@ fun Collection<Route>.isTimetableActive(time: LocalDateTime, context: AppContext
 fun Collection<Route>.isTimetableActive(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>): Boolean {
     if (isEmpty()) throw IllegalArgumentException("Route list is empty")
     val timetable = createTimetable(serviceDayMap) { null }
-    val compareMidnight = if (timetable.isNightRoute()) nightServiceMidnight else dayServiceMidnight
+    val compareMidnight = if (timetable.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
     val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return false
     val jt = maxOf { it.journeyTimeCircular?: 0 }
     return entries.currentEntry(time, 60, (-jt)..60, 1).isNotEmpty()
 }
 
-@ReduceDataOmitted
-@ReduceDataPossiblyOmitted
 fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): List<Route> {
     val registry = Registry.getInstance(context)
     val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() } }) else ({ null })
@@ -574,7 +592,7 @@ fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, serviceDayMa
     if (isEmpty()) throw IllegalArgumentException("Route list is empty")
     if (size == 1) return toList()
     val timetable = createTimetable(serviceDayMap, resolveSpecialRemark)
-    val compareMidnight = if (timetable.isNightRoute()) nightServiceMidnight else dayServiceMidnight
+    val compareMidnight = if (timetable.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
     val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return toList()
     val current = entries.currentEntry(time).takeIf { it.isNotEmpty() }?: return toList()
@@ -596,8 +614,6 @@ enum class RouteBranchStatus(
     NO_TIMETABLE(0)
 }
 
-@ReduceDataOmitted
-@ReduceDataPossiblyOmitted
 fun Collection<Route>.currentBranchStatus(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): Map<Route, RouteBranchStatus> {
     val registry = Registry.getInstance(context)
     val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() } }) else ({ null })
@@ -607,7 +623,7 @@ fun Collection<Route>.currentBranchStatus(time: LocalDateTime, context: AppConte
 fun Collection<Route>.currentBranchStatus(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): Map<Route, RouteBranchStatus> {
     if (isEmpty()) return emptyMap()
     val timetable = createTimetable(serviceDayMap, resolveSpecialRemark)
-    val compareMidnight = if (timetable.isNightRoute()) nightServiceMidnight else dayServiceMidnight
+    val compareMidnight = if (timetable.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
     val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return associateWith { RouteBranchStatus.INACTIVE }
     if (entries.all { it is TimetableSpecialEntry }) return associateWith { RouteBranchStatus.NO_TIMETABLE }

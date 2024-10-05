@@ -86,12 +86,19 @@ import com.loohp.hkbuseta.common.objects.getByName
 import com.loohp.hkbuseta.common.objects.getDeepLink
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getHKBusAppLink
+import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.indexOfName
+import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.remove
+import com.loohp.hkbuseta.common.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.indexOf
+import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
@@ -104,7 +111,7 @@ import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
+import kotlin.math.absoluteValue
 
 
 @OptIn(ExperimentalWearFoundationApi::class)
@@ -120,6 +127,20 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
         val routeNumber = route.routeNumber
         val lat = stop.location.lat
         val lng = stop.location.lng
+
+        val stopList = remember { Registry.getInstance(instance).getAllStops(routeNumber, route.idBound(co), co, route.gmbRegion).asImmutableList() }
+        val stopData = remember { stopList.getOrNull(stopList.indexesOf { it.stopId == stopId }.minByOrNull { (it - index).absoluteValue }?: -1) }
+        val branches = remember { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.idBound(co), co, route.gmbRegion) }
+        val currentBranch = remember { branches.currentBranchStatus(currentLocalDateTime(), instance, false).asSequence().sortedByDescending { it.value.activeness }.first().key }
+        val resolvedDestName = remember {
+            if (co.isTrain) {
+                Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true)
+            } else if (stopData?.branchIds?.contains(currentBranch) != false) {
+                route.resolvedDestWithBranch(true, currentBranch)
+            } else {
+                route.resolvedDest(true)
+            }
+        }
 
         LazyColumn (
             modifier = Modifier
@@ -137,7 +158,7 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             }
             item {
                 Title(index, stop.name, stop.remark, routeNumber, co, instance)
-                SubTitle(Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true), routeNumber, co, instance)
+                SubTitle(resolvedDestName, routeNumber, co, instance)
             }
             item {
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))

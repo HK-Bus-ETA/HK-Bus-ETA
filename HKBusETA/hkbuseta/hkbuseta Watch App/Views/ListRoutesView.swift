@@ -35,7 +35,7 @@ struct ListRoutesView: AppScreenView {
     @State var routeGroupedByDirections: [GeneralDirection: [StopIndexedRouteSearchResultEntry]]
     @State var filterDirections: GeneralDirection?
     
-    @State var activeSortMode: RouteSortMode
+    @State var activeSortMode: RouteSortPreference
     @State var sortedByMode: [RouteSortMode: [StopIndexedRouteSearchResultEntry]]
     @State var sortedResults: [StopIndexedRouteSearchResultEntry]
     
@@ -93,16 +93,24 @@ struct ListRoutesView: AppScreenView {
         let proximitySortOrigin = data["proximitySortOrigin"] as? Coordinates
         self.proximitySortOrigin = proximitySortOrigin
         self.allowAmbient = data["allowAmbient"] as? Bool ?? false
-        let activeSortMode = recentSort.forcedMode ? recentSort.defaultSortMode : {
-            let preferred = Shared().routeSortModePreference[listType]
-            if preferred == nil {
-                return RouteSortMode.normal
+        let activeSortMode = {
+            if (recentSort.forcedMode) {
+                return RouteSortPreference(routeSortMode: recentSort.defaultSortMode, filterTimetableActive: false)
             } else {
-                if preferred!.routeSortMode.isLegalMode(allowRecentSort: recentSort == RecentSortMode.choice, allowProximitySort: proximitySortOrigin != nil) {
-                    return preferred!.routeSortMode
+                let preference = Shared().routeSortModePreference[listType]
+                let preferred = preference?.routeSortMode
+                let routeSortMode: RouteSortMode
+                if preferred == nil {
+                    routeSortMode = RouteSortMode.normal
                 } else {
-                    return RouteSortMode.normal
+                    if preferred!.isLegalMode(allowRecentSort: recentSort == RecentSortMode.choice, allowProximitySort: proximitySortOrigin != nil) {
+                        routeSortMode = preferred!
+                    } else {
+                        routeSortMode = RouteSortMode.normal
+                    }
                 }
+                let filterTimetableActive = preference?.filterTimetableActive == true
+                return RouteSortPreference(routeSortMode: routeSortMode, filterTimetableActive: filterTimetableActive)
             }
         }()
         let routeGroupedByDirectionsRaw = RouteExtensionsKt.identifyGeneralDirections(casedResult, context: appContext)
@@ -113,7 +121,7 @@ struct ListRoutesView: AppScreenView {
         self.mtrSearch = data["mtrSearch"] as? String
         let sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(casedResult, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: false, proximitySortOrigin: proximitySortOrigin)
         self.sortedByMode = sortedByMode
-        self.sortedResults = sortedByMode[activeSortMode]!
+        self.sortedResults = sortedByMode[activeSortMode.routeSortMode]!
         self.secondLineHeights = [:]
         self._lastLookupRoutes = StateObject(wrappedValue: StateFlowListObservable(stateFlow: Shared().lastLookupRoutes, initSubscribe: listType == RouteListType.Companion().RECENT))
     }
@@ -138,12 +146,27 @@ struct ListRoutesView: AppScreenView {
                             .ignoresSafeArea(.all)
                         } else if recentSort == RecentSortMode.choice || proximitySortOrigin != nil {
                             Button(action: {
-                                activeSortMode = activeSortMode.nextMode(allowRecentSort: recentSort == RecentSortMode.choice, allowProximitySort: proximitySortOrigin != nil)
+                                activeSortMode = RouteSortPreference(routeSortMode: activeSortMode.routeSortMode.nextMode(allowRecentSort: recentSort == RecentSortMode.choice, allowProximitySort: proximitySortOrigin != nil), filterTimetableActive: activeSortMode.filterTimetableActive)
                             }) {
                                 HStack {
                                     Image(systemName: "slider.horizontal.3")
                                         .font(.system(size: 17.scaled(appContext, true)))
-                                    Text(activeSortMode.extendedTitle.get(language: Shared().language))
+                                    Text(activeSortMode.routeSortMode.extendedTitle.get(language: Shared().language))
+                                        .font(.system(size: 17.scaled(appContext, true)))
+                                }
+                            }
+                            .font(.system(size: 17.scaled(appContext), weight: .bold))
+                            .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .ignoresSafeArea(.all)
+                            Button(action: {
+                                activeSortMode = RouteSortPreference(routeSortMode: activeSortMode.routeSortMode, filterTimetableActive: !activeSortMode.filterTimetableActive)
+                            }) {
+                                HStack {
+                                    CheckboxView(isChecked: .constant(activeSortMode.filterTimetableActive))
+                                        .frame(fixedSize: 17.scaled(appContext, true))
+                                        .allowsHitTesting(false)
+                                    Text((Shared().language == "en" ? "Prioritize In Service" : "現正服務優先"))
                                         .font(.system(size: 17.scaled(appContext, true)))
                                 }
                             }
@@ -254,25 +277,44 @@ struct ListRoutesView: AppScreenView {
                     return []
                 }
             }()
-            sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(filteredRoutes, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: false, proximitySortOrigin: proximitySortOrigin)
+            sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(filteredRoutes, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: activeSortMode.filterTimetableActive, proximitySortOrigin: proximitySortOrigin)
             withAnimation() {
-                sortedResults = sortedByMode[activeSortMode]!
+                sortedResults = sortedByMode[activeSortMode.routeSortMode]!
             }
         }
-        .onChange(of: activeSortMode) { _ in
+        .onChange(of: activeSortMode.filterTimetableActive) { _ in
+            let filteredRoutes: [StopIndexedRouteSearchResultEntry] = {
+                if routeGroupedByDirections.isEmpty || filterDirections == nil {
+                    return result
+                } else if let grouped = routeGroupedByDirections[filterDirections!] {
+                    return grouped
+                } else {
+                    return []
+                }
+            }()
+            sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(filteredRoutes, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: activeSortMode.filterTimetableActive, proximitySortOrigin: proximitySortOrigin)
             let preferred = Shared().routeSortModePreference[listType]
             if preferred == nil || activeSortMode != preferred {
-                registry(appContext).setRouteSortModePreference(context: appContext, listType: listType, sortMode: activeSortMode)
+                registry(appContext).setRouteSortModePreference(context: appContext, listType: listType, sortPreference: activeSortMode)
             }
             withAnimation() {
-                sortedResults = sortedByMode[activeSortMode]!
+                sortedResults = sortedByMode[activeSortMode.routeSortMode]!
+            }
+        }
+        .onChange(of: activeSortMode.routeSortMode) { _ in
+            let preferred = Shared().routeSortModePreference[listType]
+            if preferred == nil || activeSortMode != preferred {
+                registry(appContext).setRouteSortModePreference(context: appContext, listType: listType, sortPreference: activeSortMode)
+            }
+            withAnimation() {
+                sortedResults = sortedByMode[activeSortMode.routeSortMode]!
             }
         }
         .onChange(of: lastLookupRoutes.state) { _ in
-            let sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(result, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: false, proximitySortOrigin: proximitySortOrigin)
+            let sortedByMode = StopIndexedRouteSearchResultEntryKt.bySortModes(result, context: appContext, recentSortMode: recentSort, includeFavouritesInRecent: listType != RouteListType.Companion().RECENT, prioritizeWithTimetable: activeSortMode.filterTimetableActive, proximitySortOrigin: proximitySortOrigin)
             self.sortedByMode = sortedByMode
             withAnimation() {
-                self.sortedResults = sortedByMode[activeSortMode]!
+                self.sortedResults = sortedByMode[activeSortMode.routeSortMode]!
             }
         }
         .onChange(of: isLuminanceReduced) { _ in
@@ -283,7 +325,7 @@ struct ListRoutesView: AppScreenView {
         }
     }
     
-    func RouteRow(route: StopIndexedRouteSearchResultEntry) -> some View {
+    @ViewBuilder func RouteRow(route: StopIndexedRouteSearchResultEntry) -> some View {
         let kmbCtbJoint = route.route!.isKmbCtbJoint
         let gmbRegion = route.route!.gmbRegion
         let color = operatorColor(route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
@@ -308,7 +350,7 @@ struct ListRoutesView: AppScreenView {
             return list
         }()
         
-        return Button(action: {
+        Button(action: {
             registry(appContext).addLastLookupRoute(routeKey: route.routeKey, context: appContext)
             if let stopId = mtrSearch {
                 if !stopId.isEmpty {

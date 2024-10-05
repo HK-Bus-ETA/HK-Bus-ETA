@@ -43,9 +43,10 @@ struct ListStopsView: AppScreenView {
     @State private var origName: BilingualText
     @State private var destName: BilingualText
     @State private var resolvedDestName: BilingualText
+    @State private var currentBranch: Route
+    @State private var specialRoutesRemarks: [Route: (BilingualText, BilingualText)]
     @State private var specialRoutes: [BilingualText]
     @State private var stopList: [Registry.StopData]
-    @State private var lowestServiceType: Int32
     @State private var mtrStopsInterchange: [Registry.MTRInterchangeData]
     @State private var mtrLineSectionData: [MTRStopSectionData]
     @State private var alternateStopNames: [Registry.NearbyStopSearchResult]?
@@ -75,15 +76,8 @@ struct ListStopsView: AppScreenView {
         self.origName = origName
         let destName = route.route!.dest
         self.destName = destName
-        self.resolvedDestName = route.route!.resolvedDest(prependTo: true)
-        self.specialRoutes = registry(appContext).getAllBranchRoutes(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion).map {
-            $0.resolveSpecialRemark(context: appContext, labelType: registry(appContext).hasServiceDayMap() ? RemarkType.labelAllExceptMain : RemarkType.raw)
-        }.filter {
-            !$0.zh.trimmingCharacters(in: .whitespaces).isEmpty
-        }
         let stopList = registry(appContext).getAllStops(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         self.stopList = stopList
-        self.lowestServiceType = stopList.min { $0.serviceType < $1.serviceType }!.serviceType
         if co.isTrain {
             let mtrStopsInterchange = stopList.map { registry(appContext).getMtrStationInterchange(stopId: $0.stopId, lineName: routeNumber) }
             self.mtrStopsInterchange = mtrStopsInterchange
@@ -98,6 +92,27 @@ struct ListStopsView: AppScreenView {
             self.alternateStopNames = nil
         }
         self.closestIndex = 0
+        let branches = registry(appContext).getAllBranchRoutes(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
+        let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
+        self.currentBranch = currentBranch
+        self.resolvedDestName = route.route!.resolvedDestWithBranch(prependTo: true, branch: currentBranch)
+        let specialRoutesRemarks: [Route: (BilingualText, BilingualText)] = Dictionary(
+            uniqueKeysWithValues: branches.map { branch in
+                (branch, (
+                    branch.resolveSpecialRemark(context: appContext, labelType: .labelAllAndMain),
+                    branch.resolveSpecialRemark(context: appContext, labelType: .labelAll)
+                ))
+            }
+        )
+        self.specialRoutesRemarks = specialRoutesRemarks
+        self.specialRoutes = {
+            if specialRoutesRemarks.count > 1 {
+                return specialRoutesRemarks
+                    .filter { $0.key != currentBranch }
+                    .map { $0.value.0 }
+            }
+            return []
+        }()
     }
     
     var body: some View {
@@ -218,10 +233,29 @@ struct ListStopsView: AppScreenView {
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
-                .autoResizing(maxSize: 13.scaled(appContext, true))
+                .autoResizing(maxSize: 15.scaled(appContext, true))
+            if !co.isTrain && !co.isFerry {
+                if let it = specialRoutesRemarks[currentBranch]?.1 {
+                    if !it.zh.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Text(it.get(language: Shared().language))
+                            .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .autoResizing(maxSize: 13.scaled(appContext, true))
+                    }
+                }
+            }
+            if let journeyTime = currentBranch.journeyTime {
+                let circular = currentBranch.isCircular ? (Shared().language == "en" ? " (One way)" : " (單向)") : ""
+                Text(Shared().language == "en" ? "Full Journey Time: \(journeyTime.intValue) Min.\(circular)" : "全程車程: \(journeyTime.intValue)分鐘\(circular)")
+                    .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .autoResizing(maxSize: 13.scaled(appContext, true))
+            }
             if !co.isTrain && !co.isFerry && !specialRoutes.isEmpty {
                 CrossfadeText(
-                    textList: registry(appContext).hasServiceDayMap() ? (specialRoutes.map { $0.get(language: Shared().language).asAttributedString() }) : (specialRoutes.map { ((Shared().language == "en" ? "Special " : "特別班 ") + $0.get(language: Shared().language)).asAttributedString() }),
+                    textList: specialRoutes.map { $0.get(language: Shared().language).asAttributedString() },
                     state: specialAnimationTick
                 )
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.65).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
@@ -238,7 +272,7 @@ struct ListStopsView: AppScreenView {
         let stopData = stopList[index]
         let stopNumber = index + 1
         let isClosest = closestIndex == stopNumber
-        let brightness = stopData.serviceType == lowestServiceType ? 1 : 0.65
+        let brightness = stopData.branchIds.contains(currentBranch) ? 1 : 0.65
         let coColor = operatorColor(co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
         let color = (isClosest ? coColor : Color.white).adjustBrightness(percentage: brightness)
         return Button(action: {

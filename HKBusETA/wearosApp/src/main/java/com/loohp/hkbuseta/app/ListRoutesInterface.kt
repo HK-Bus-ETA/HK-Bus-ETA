@@ -20,7 +20,6 @@
 
 package com.loohp.hkbuseta.app
 
-import android.annotation.SuppressLint
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearEasing
@@ -56,6 +55,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -71,6 +71,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
@@ -102,6 +103,7 @@ import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSortMode
+import com.loohp.hkbuseta.common.objects.RouteSortPreference
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
@@ -196,24 +198,28 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
             }
         } }
 
-        var activeSortMode by remember { mutableStateOf(if (recentSort.forcedMode) {
-            recentSort.defaultSortMode
-        } else {
-            Shared.routeSortModePreference[listType]?.routeSortMode?.let { if (it.isLegalMode(
-                    recentSort == RecentSortMode.CHOICE,
-                    proximitySortOrigin != null
-            )) it else null }?: RouteSortMode.NORMAL
-        }) }
-        val sortTask = remember { {
-            filterRoutesProvider.invoke().bySortModes(instance, recentSort, listType != RouteListType.RECENT, false, proximitySortOrigin).asImmutableMap()
-        } }
-        @SuppressLint("MutableCollectionMutableState")
-        var sortedByMode by remember { mutableStateOf(sortTask.invoke()) }
-        val sortedResults by remember { derivedStateOf { sortedByMode[activeSortMode]?: filterRoutesProvider.invoke() } }
+        val routeSortPreferenceProvider by remember(listType, recentSort, proximitySortOrigin) { derivedStateOf { {
+            if (recentSort.forcedMode) {
+                RouteSortPreference(recentSort.defaultSortMode, false)
+            } else {
+                val preference = Shared.routeSortModePreference[listType]
+                val routeSortMode = preference?.routeSortMode?.let { if (it.isLegalMode(
+                        allowRecentSort = recentSort == RecentSortMode.CHOICE,
+                        allowProximitySort = proximitySortOrigin != null
+                    )) it else null }?: RouteSortMode.NORMAL
+                val filterTimetableActive = preference?.filterTimetableActive == true
+                RouteSortPreference(routeSortMode, filterTimetableActive)
+            }
+        } } }
+        var activeSortMode by remember { mutableStateOf(routeSortPreferenceProvider.invoke()) }
+
+        val sortedByModeProvider = { filterRoutesProvider.invoke().bySortModes(instance, recentSort, listType != RouteListType.RECENT, activeSortMode.filterTimetableActive, proximitySortOrigin).asImmutableMap() }
+        var sortedByMode by remember { mutableStateOf(sortedByModeProvider.invoke()) }
+        val sortedResults by remember { derivedStateOf { (sortedByMode[activeSortMode.routeSortMode]?: filterRoutesProvider.invoke()).asImmutableList() } }
 
         LaunchedEffect (Unit) {
             CoroutineScope(dispatcherIO).launch {
-                val newSorted = sortTask.invoke()
+                val newSorted = sortedByModeProvider.invoke()
                 if (newSorted != sortedByMode) {
                     withContext(Dispatchers.Main) { sortedByMode = newSorted }
                     hapticsController.enabled = false
@@ -232,7 +238,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
             }
         }
         RestartEffect {
-            val newSorted = sortTask.invoke()
+            val newSorted = sortedByModeProvider.invoke()
             if (newSorted != sortedByMode) {
                 sortedByMode = newSorted
                 hapticsController.enabled = false
@@ -246,7 +252,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
             }
         }
         LaunchedEffect (lastLookupRoutes) {
-            val newSorted = sortTask.invoke()
+            val newSorted = sortedByModeProvider.invoke()
             if (newSorted != sortedByMode) {
                 sortedByMode = newSorted
                 if (scroll.firstVisibleItemIndex in 0..2) {
@@ -279,7 +285,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                     .composed {
                         LaunchedEffect (activeSortMode) {
                             Shared.routeSortModePreference[listType].let {
-                                if (activeSortMode != it?.routeSortMode) {
+                                if (activeSortMode != it) {
                                     Registry.getInstance(instance).setRouteSortModePreference(instance, listType, activeSortMode)
                                 }
                             }
@@ -325,9 +331,11 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                             ) {
                                 Button(
                                     onClick = {
-                                        activeSortMode = activeSortMode.nextMode(
-                                            recentSort == RecentSortMode.CHOICE,
-                                            proximitySortOrigin != null
+                                        activeSortMode = activeSortMode.copy(
+                                            routeSortMode = activeSortMode.routeSortMode.nextMode(
+                                                allowRecentSort = recentSort == RecentSortMode.CHOICE,
+                                                allowProximitySort = proximitySortOrigin != null
+                                            )
                                         )
                                     },
                                     modifier = Modifier
@@ -346,14 +354,48 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                                             Icon(
                                                 modifier = Modifier.size(17F.scaledSize(instance).sp.clamp(max = 17.dp).dp),
                                                 painter = painterResource(R.drawable.baseline_sort_24),
-                                                contentDescription = activeSortMode.sortPrefixedTitle[Shared.language],
+                                                contentDescription = activeSortMode.routeSortMode.sortPrefixedTitle[Shared.language],
                                                 tint = MaterialTheme.colors.primary,
                                             )
                                             Text(
                                                 textAlign = TextAlign.Center,
                                                 color = MaterialTheme.colors.primary,
                                                 fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
-                                                text = activeSortMode.extendedTitle[Shared.language]
+                                                text = activeSortMode.routeSortMode.extendedTitle[Shared.language]
+                                            )
+                                        }
+                                    }
+                                )
+                                Button(
+                                    onClick = {
+                                        activeSortMode = activeSortMode.copy(
+                                            filterTimetableActive = !activeSortMode.filterTimetableActive
+                                        )
+                                        sortedByMode = sortedByModeProvider.invoke()
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.8F)
+                                        .height(35.scaledSize(instance).dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = MaterialTheme.colors.secondary,
+                                        contentColor = Color(0xFFFFFFFF)
+                                    ),
+                                    content = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(0.9F),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(
+                                                modifier = Modifier.scale(14F.scaledSize(instance).sp.clamp(max = 17.dp).dp / 20.dp),
+                                                checked = activeSortMode.filterTimetableActive,
+                                                onCheckedChange = null
+                                            )
+                                            Text(
+                                                textAlign = TextAlign.Center,
+                                                color = MaterialTheme.colors.primary,
+                                                fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                                text = if (Shared.language == "en") "Prioritize In Service" else "現正服務優先"
                                             )
                                         }
                                     }
@@ -362,7 +404,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                                     Button(
                                         onClick = {
                                             filterDirections = filterDirections.next(routeGroupedByDirections.keys)
-                                            sortedByMode = sortTask.invoke()
+                                            sortedByMode = sortedByModeProvider.invoke()
                                         },
                                         modifier = Modifier
                                             .fillMaxWidth(0.8F)

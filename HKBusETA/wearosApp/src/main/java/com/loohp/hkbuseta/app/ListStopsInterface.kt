@@ -86,6 +86,7 @@ import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.OriginData
 import com.loohp.hkbuseta.common.objects.RemarkType
+import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.StopEntry
 import com.loohp.hkbuseta.common.objects.endOfLineText
@@ -93,18 +94,22 @@ import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getLineColor
 import com.loohp.hkbuseta.common.objects.idBound
+import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
-import com.loohp.hkbuseta.common.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MTRStopSectionData
 import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.AutoResizeDrawPhaseColorText
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -135,6 +140,7 @@ import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.spToDp
 import com.loohp.hkbuseta.utils.spToPixels
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
@@ -144,6 +150,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.collections.set
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalWearFoundationApi::class)
@@ -161,18 +168,21 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
         val co = remember { route.co }
         val bound = remember { route.route!!.idBound(co) }
         val gmbRegion = remember { route.route!!.gmbRegion }
-        val resolvedDestName = remember { route.route!!.resolvedDest(true) }
-        val specialRoutes = remember { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion)
-            .asSequence()
-            .map { it.resolveSpecialRemark(instance, labelType = if (Registry.getInstance(instance).hasServiceDayMap()) RemarkType.LABEL_ALL_EXCEPT_MAIN else RemarkType.RAW) }
-            .filter { it.zh.isNotBlank() }
-            .toImmutableList()
+
+        val branches = remember { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) }
+        val currentBranch = remember { branches.currentBranchStatus(currentLocalDateTime(), instance, false).asSequence().sortedByDescending { it.value.activeness }.first().key }
+
+        val resolvedDestName = remember { route.route!!.resolvedDestWithBranch(true, currentBranch) }
+        val specialRoutesRemarks = remember { branches
+            .associateWith {
+                it.resolveSpecialRemark(instance, labelType = RemarkType.LABEL_ALL_AND_MAIN) to it.resolveSpecialRemark(instance, labelType = RemarkType.LABEL_ALL)
+            }
+            .asImmutableMap()
         }
 
         val coColor = remember { co.getColor(routeNumber, Color.White) }
 
         val stopsList = remember { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion).asImmutableList() }
-        val lowestServiceType = remember { stopsList.minOf { it.serviceType } }
         val mtrStopsInterchange = remember { if (co.isTrain) {
             stopsList.asSequence().map { Registry.getInstance(instance).getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
         } else persistentListOf() }
@@ -286,7 +296,8 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                         gmbRegion = gmbRegion,
                         coColor = coColor,
                         destName = resolvedDestName,
-                        specialRoutes = specialRoutes,
+                        currentBranch = currentBranch,
+                        specialRoutesRemarks = specialRoutesRemarks,
                         alternateStopNames = alternateStopNames,
                         instance = instance
                     )
@@ -300,7 +311,6 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                         co = co,
                         showEta = showEta,
                         kmbCtbJoint = kmbCtbJoint,
-                        lowestServiceType = lowestServiceType,
                         coColor = coColor,
                         alternateStopNames = alternateStopNames,
                         mtrLineSectionsData = mtrLineSectionsData,
@@ -308,6 +318,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                         padding = padding,
                         stopList = stopsList,
                         route = route,
+                        currentBranch = currentBranch,
                         etaTextWidth = etaTextWidth,
                         etaResults = etaResults,
                         etaUpdateTimes = etaUpdateTimes,
@@ -368,10 +379,20 @@ fun HeaderElement(
     gmbRegion: GMBRegion?,
     coColor: Color,
     destName: BilingualText,
-    specialRoutes: ImmutableList<BilingualText>,
+    currentBranch: Route,
+    specialRoutesRemarks: ImmutableMap<Route, Pair<BilingualText, BilingualText>>,
     alternateStopNames: ImmutableList<Registry.NearbyStopSearchResult>?,
     instance: AppActiveContext
 ) {
+    val specialRoutes = remember { specialRoutesRemarks
+        .takeIf { it.size > 1 }
+        ?.asSequence()
+        ?.filter { it.key != currentBranch }
+        ?.map { it.value.first }
+        ?.toList()
+        ?.asImmutableList()
+        ?: persistentListOf()
+    }
     var alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle { Registry.getInstance(instance).setAlternateStopNames(it, instance) }
     Column(
         modifier = Modifier
@@ -413,12 +434,43 @@ fun HeaderElement(
                 .padding(10.dp, 0.dp),
             textAlign = TextAlign.Center,
             fontSizeRange = FontSizeRange(
-                max = 11F.scaledSize(instance).sp
+                max = 13F.scaledSize(instance).sp
             ),
             color = Color(0xFFFFFFFF).adjustBrightness(if (ambientMode) 0.7F else 1F),
             maxLines = 2,
             text = destName[Shared.language]
         )
+        if (!co.isTrain && !co.isFerry) {
+            specialRoutesRemarks[currentBranch]?.second?.takeIf { it.zh.isNotBlank() }?.let {
+                AutoResizeText(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(5.dp, 0.dp),
+                    textAlign = TextAlign.Center,
+                    fontSizeRange = FontSizeRange(
+                        max = 11F.scaledSize(instance).sp
+                    ),
+                    color = Color(0xFFFFFFFF).adjustBrightness(if (ambientMode) 0.7F else 1F),
+                    maxLines = 2,
+                    text = it[Shared.language]
+                )
+            }
+        }
+        currentBranch.journeyTime?.let {
+            val circular = if (currentBranch.isCircular) (if (Shared.language == "en") " (One way)" else " (單向)") else ""
+            AutoResizeText(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp, 0.dp),
+                textAlign = TextAlign.Center,
+                fontSizeRange = FontSizeRange(
+                    max = 11F.scaledSize(instance).sp
+                ),
+                color = Color(0xFFFFFFFF).adjustBrightness(if (ambientMode) 0.7F else 1F),
+                maxLines = 1,
+                text = if (Shared.language == "en") "Full Journey Time: $it Min.$circular" else "全程車程: ${it}分鐘$circular"
+            )
+        }
         if (!co.isTrain && !co.isFerry && specialRoutes.isNotEmpty()) {
             val infiniteTransition = rememberInfiniteTransition(label = "SpecialBranchesCrossFade")
             val animatedCurrentLine by infiniteTransition.animateValue(
@@ -447,15 +499,7 @@ fun HeaderElement(
                     ),
                     maxLines = 2,
                     color = Color(0xFFFFFFFF).adjustBrightness(0.65F).adjustBrightness(if (ambientMode) 0.7F else 1F),
-                    text = if (Registry.getInstance(instance).hasServiceDayMap()) {
-                        specialRoutes[it.coerceIn(specialRoutes.indices)][Shared.language]
-                    } else {
-                        if (Shared.language == "en") {
-                            "Special ${specialRoutes[it.coerceIn(specialRoutes.indices)].en}"
-                        } else {
-                            "特別班 ${specialRoutes[it.coerceIn(specialRoutes.indices)].zh}"
-                        }
-                    }
+                    text = specialRoutes[it.coerceIn(specialRoutes.indices)][Shared.language]
                 )
             }
         }
@@ -471,7 +515,6 @@ fun LazyItemScope.StopRowElement(
     co: Operator,
     showEta: Boolean,
     kmbCtbJoint: Boolean,
-    lowestServiceType: Int,
     coColor: Color,
     alternateStopNames: ImmutableList<Registry.NearbyStopSearchResult>?,
     mtrLineSectionsData: ImmutableList<MTRStopSectionData>?,
@@ -479,6 +522,7 @@ fun LazyItemScope.StopRowElement(
     padding: Float,
     stopList: ImmutableList<Registry.StopData>,
     route: RouteSearchResultEntry,
+    currentBranch: Route,
     etaTextWidth: Float,
     etaResults: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimes: ImmutableState<out MutableMap<Int, Long>>,
@@ -491,7 +535,7 @@ fun LazyItemScope.StopRowElement(
     val isClosest = closestIndex == stopNumber
     val stopId = entry.stopId
     val stop = entry.stop
-    val brightness = if (entry.serviceType == lowestServiceType || co.isTrain) 1F else 0.65F
+    val brightness = if (entry.branchIds.contains(currentBranch) || co.isTrain) 1F else 0.65F
     val rawColor = (if (isClosest) coColor else Color.White).adjustBrightness(brightness)
     val stopStr = if (alternateStopNamesShowing && alternateStopNames != null) {
         alternateStopNames[index].stop

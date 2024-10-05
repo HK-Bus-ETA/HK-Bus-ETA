@@ -57,8 +57,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
-import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
-import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.objects.RemarkType
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.isCircular
@@ -74,7 +72,7 @@ import com.loohp.hkbuseta.common.utils.currentEntry
 import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.common.utils.dayOfWeek
 import com.loohp.hkbuseta.common.utils.dayServiceMidnight
-import com.loohp.hkbuseta.common.utils.isNightRoute
+import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.nightServiceMidnight
 import com.loohp.hkbuseta.common.utils.toDisplayText
 import com.loohp.hkbuseta.compose.ArrowDropDown
@@ -97,12 +95,12 @@ fun specialDenoteChar(index: Int): String {
     return specialDenoteChars[index % specialDenoteChars.size].repeat((index / specialDenoteChars.size) + 1)
 }
 
-@OptIn(ExperimentalLayoutApi::class, ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>) {
     val now by currentMinuteState.collectAsStateMultiplatform()
     val timetableData = remember(routes) { routes.createTimetable(instance) }
-    val compareMidnight = remember(timetableData) { if (timetableData.isNightRoute()) nightServiceMidnight else dayServiceMidnight }
+    val compareMidnight = remember(timetableData) { if (timetableData.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight }
     val weekday by remember(timetableData, compareMidnight) { derivedStateOf { now.dayOfWeek(Registry.getInstance(instance).getHolidays(), compareMidnight) } }
     val timetableKeysSorted by remember(timetableData) { derivedStateOf { timetableData.keys.sorted() } }
     val timetableCurrentEntries by remember(timetableData) { derivedStateOf { timetableKeysSorted.associateWith { if (it.contains(weekday)) timetableData[it]!!.currentEntry(now) else emptyList() } } }

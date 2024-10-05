@@ -88,8 +88,6 @@ import com.loohp.hkbuseta.appcontext.newScreenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
-import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
-import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.OriginData
@@ -103,6 +101,7 @@ import com.loohp.hkbuseta.common.objects.SpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.asOriginData
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
+import com.loohp.hkbuseta.common.objects.calculateServiceTimeCategory
 import com.loohp.hkbuseta.common.objects.defaultWaypoints
 import com.loohp.hkbuseta.common.objects.findReverse
 import com.loohp.hkbuseta.common.objects.findSimilarRoutes
@@ -114,7 +113,6 @@ import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isFerry
-import com.loohp.hkbuseta.common.objects.isNightRouteLazyMethod
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
@@ -128,6 +126,7 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.LocationPriority
+import com.loohp.hkbuseta.common.utils.ServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
@@ -137,7 +136,7 @@ import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.getCircledNumber
-import com.loohp.hkbuseta.common.utils.isNightRoute
+import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
 import com.loohp.hkbuseta.compose.AdaptiveTopBottomLayout
 import com.loohp.hkbuseta.compose.AltRoute
 import com.loohp.hkbuseta.compose.ArrowBack
@@ -257,7 +256,7 @@ fun listStopsTabItem(co: Operator): List<ListStopsTabItem> {
 
 expect fun updateBrowserState(title: String, url: String)
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ReduceDataOmitted::class, ReduceDataPossiblyOmitted::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RouteDetailsInterface(instance: AppActiveContext) {
     val route by remember(instance) { derivedStateOf { when (val r = instance.compose.data["route"]) {
@@ -274,9 +273,9 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val co by remember { derivedStateOf { route.co } }
     val bound by remember { derivedStateOf { route.route!!.idBound(co) } }
     val gmbRegion by remember { derivedStateOf { route.route!!.gmbRegion } }
-    val isNightRoute by remember { derivedStateOf {
-        (co.isBus && routeNumber.isNightRouteLazyMethod) || (routeNumber.lastOrNull() == 'S' && Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).isNightRoute())
-    } }
+    val isNightRoute by remember { derivedStateOf { co.isBus && calculateServiceTimeCategory(routeNumber, co) {
+        Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).getServiceTimeCategory()
+    } == ServiceTimeCategory.NIGHT } }
 
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
     var ctbHasTwoWaySectionFare by remember { mutableStateOf(false) }

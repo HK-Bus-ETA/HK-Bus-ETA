@@ -37,7 +37,6 @@ import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppShortcutIcon
 import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
-import com.loohp.hkbuseta.common.appcontext.ReduceDataPossiblyOmitted
 import com.loohp.hkbuseta.common.appcontext.primaryThemeColor
 import com.loohp.hkbuseta.common.branchedlist.MutableBranchedList
 import com.loohp.hkbuseta.common.objects.BilingualText
@@ -72,6 +71,7 @@ import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.objects.TrafficNews
 import com.loohp.hkbuseta.common.objects.TrainServiceStatus
 import com.loohp.hkbuseta.common.objects.asStop
+import com.loohp.hkbuseta.common.objects.calculateServiceTimeCategory
 import com.loohp.hkbuseta.common.objects.defaultOperatorNotices
 import com.loohp.hkbuseta.common.objects.endOfLineText
 import com.loohp.hkbuseta.common.objects.fetchOperatorNotices
@@ -86,9 +86,7 @@ import com.loohp.hkbuseta.common.objects.getTitle
 import com.loohp.hkbuseta.common.objects.hkkfStopCode
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyStopCo
-import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isCircular
-import com.loohp.hkbuseta.common.objects.isNightRouteLazyMethod
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.lrtLineStatus
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
@@ -133,6 +131,7 @@ import com.loohp.hkbuseta.common.utils.epochSeconds
 import com.loohp.hkbuseta.common.utils.getCircledNumber
 import com.loohp.hkbuseta.common.utils.getCompletedOrNull
 import com.loohp.hkbuseta.common.utils.getJSONResponse
+import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.getTextResponse
 import com.loohp.hkbuseta.common.utils.getTextResponseWithPercentageCallback
 import com.loohp.hkbuseta.common.utils.getXMLResponse
@@ -141,7 +140,6 @@ import com.loohp.hkbuseta.common.utils.hongKongTimeZone
 import com.loohp.hkbuseta.common.utils.ifFalse
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.indexesOf
-import com.loohp.hkbuseta.common.utils.isNightRoute
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.common.utils.minus
 import com.loohp.hkbuseta.common.utils.nextLocalDateTimeAfter
@@ -761,13 +759,8 @@ class Registry {
         return DATA!!.dataSheet.stopList
     }
 
-    fun hasServiceDayMap(): Boolean {
-        return DATA!!.dataSheet.serviceDayMap != null
-    }
-
-    @ReduceDataPossiblyOmitted
     internal fun getServiceDayMap(): Map<String, List<String>?> {
-        return DATA!!.dataSheet.serviceDayMap!!
+        return DATA!!.dataSheet.serviceDayMap
     }
 
     @ReduceDataOmitted
@@ -1113,7 +1106,6 @@ class Registry {
         return getNearbyRoutes(origin, 0.3, excludedRouteNumbers, isInterchangeSearch)
     }
 
-    @OptIn(ReduceDataPossiblyOmitted::class)
     suspend fun getNearbyRoutes(origin: Coordinates, radius: Double, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): NearbyRoutesResult {
         val nearbyStops: MutableList<StopInfo> = mutableListOf()
         var closestStop: Stop? = null
@@ -1223,7 +1215,7 @@ class Registry {
                     for ((k) in ks) {
                         val routeNumber = k.route!!.routeNumber
                         getOrPut(k.routeKey) {
-                            (k.co.isBus && routeNumber.isNightRouteLazyMethod) || (routeNumber.lastOrNull() == 'S' && v!!.createTimetable(serviceMap) { null }.isNightRoute())
+                            calculateServiceTimeCategory(routeNumber, k.co) { v!!.createTimetable(serviceMap) { null }.getServiceTimeCategory() }.night
                         }
                     }
                 }
@@ -1246,7 +1238,7 @@ class Registry {
                 } else if (bound.containsKey(Operator.MTR)) {
                     na += if (isInterchangeSearch) -2000 else 2000
                 }
-                if (nightRouteByTimetable[a.routeKey]?: routeNumber.isNightRouteLazyMethod) {
+                if (nightRouteByTimetable[a.routeKey] == true) {
                     na -= (if (isNight) 1 else -1) * 10000
                 }
                 if (sa == "S" && routeNumber != "89S" && routeNumber != "796S") {

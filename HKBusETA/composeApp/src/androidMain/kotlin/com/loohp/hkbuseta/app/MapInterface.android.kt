@@ -211,27 +211,25 @@ fun GoogleMapRouteInterface(
                 )
             }
         }
-        //key(waypoints) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                uiSettings = MapUiSettings(
-                    zoomControlsEnabled = false,
-                    mapToolbarEnabled = false,
-                ),
-                googleMapOptionsFactory = { GoogleMapOptions().backgroundColor(backgroundColor) },
-                properties = MapProperties(
-                    isMyLocationEnabled = gpsEnabled,
-                    isBuildingEnabled = true,
-                    isIndoorEnabled = true
-                ),
-                cameraPositionState = cameraPositionState,
-                mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
-                onMapLoaded = { init = currentTimeMillis() }
-            ) {
-                StopMarkers(waypoints, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap, shouldShowStopIndex)
-                WaypointPaths(waypoints)
-            }
-        //}
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            uiSettings = MapUiSettings(
+                zoomControlsEnabled = false,
+                mapToolbarEnabled = false,
+            ),
+            googleMapOptionsFactory = { GoogleMapOptions().backgroundColor(backgroundColor) },
+            properties = MapProperties(
+                isMyLocationEnabled = gpsEnabled,
+                isBuildingEnabled = true,
+                isIndoorEnabled = true
+            ),
+            cameraPositionState = cameraPositionState,
+            mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
+            onMapLoaded = { init = currentTimeMillis() }
+        ) {
+            StopMarkers(waypoints, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap, shouldShowStopIndex)
+            WaypointPaths(waypoints)
+        }
     }
 }
 
@@ -247,7 +245,7 @@ fun StopMarkers(
     indexMap: ImmutableList<Int>,
     shouldShowStopIndex: Boolean
 ) {
-    key(waypoints) {
+    key(waypoints, indexMap) {
         var selectedStop by selectedStopState
         for ((i, stop) in waypoints.stops.withIndex()) {
             val stopIndex = indexMap[i] + 1
