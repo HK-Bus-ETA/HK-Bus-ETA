@@ -237,12 +237,6 @@ def strip_data_sheet(data):
             del route_data["fares"]
         if "faresHoliday" in route_data:
             del route_data["faresHoliday"]
-        if "freq" in route_data:
-            del route_data["freq"]
-        if "jt" in route_data:
-            del route_data["jt"]
-    if "serviceDayMap" in data:
-        del data["serviceDayMap"]
 
 
 def download_and_process_data_sheet():
