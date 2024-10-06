@@ -70,6 +70,10 @@ object HistoryStack {
         last?.completeFinishCallback()
     }
 
+    fun clearAll() {
+        historyStack.value = listOf(initialScreen())
+    }
+
 }
 
 fun AppActiveContext.isOnStack(): Boolean {

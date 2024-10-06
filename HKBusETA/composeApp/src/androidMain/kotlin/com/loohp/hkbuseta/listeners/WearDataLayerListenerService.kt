@@ -27,6 +27,9 @@ import com.google.android.gms.wearable.WearableListenerService
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
 import com.loohp.hkbuseta.MainActivity
+import com.loohp.hkbuseta.appcontext.HistoryStack
+import com.loohp.hkbuseta.appcontext.componentActivityInternal
+import com.loohp.hkbuseta.appcontext.componentActivityPaused
 import com.loohp.hkbuseta.appcontext.nonActiveAppContext
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.services.AlightReminderService
@@ -99,12 +102,23 @@ class WearDataLayerListenerService : WearableListenerService() {
             }
             Shared.INVALIDATE_CACHE_ID -> {
                 runBlocking(Dispatchers.Main) {
-                    Registry.invalidateCache(nonActiveAppContext)
-                    Registry.clearInstance()
-                    delay(500)
-                    val intent = Intent(this@WearDataLayerListenerService, MainActivity::class.java)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    startActivity(intent)
+                    if (componentActivityInternal == null) {
+                        Registry.invalidateCache(nonActiveAppContext)
+                        Registry.clearInstance()
+                        delay(500)
+                        val intent = Intent(this@WearDataLayerListenerService, MainActivity::class.java)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        startActivity(intent)
+                    } else {
+                        Registry.invalidateCache(nonActiveAppContext)
+                        Registry.clearInstance()
+                        HistoryStack.clearAll()
+                        if (componentActivityPaused == true) {
+                            val intent = Intent(this@WearDataLayerListenerService, MainActivity::class.java)
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            startActivity(intent)
+                        }
+                    }
                 }
             }
         }

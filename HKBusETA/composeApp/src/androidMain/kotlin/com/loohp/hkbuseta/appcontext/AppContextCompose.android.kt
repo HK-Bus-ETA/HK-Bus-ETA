@@ -476,6 +476,7 @@ fun setApplicationContext(context: Context) {
 actual val applicationAppContext: AppContextCompose get() = applicationAppContextInternal ?: throw RuntimeException()
 
 internal var componentActivityInternal: ComponentActivity? = null
+internal var componentActivityPaused: Boolean? = null
 
 fun setComponentActivity(activity: ComponentActivity) {
     componentActivityInternal = activity
@@ -483,7 +484,7 @@ fun setComponentActivity(activity: ComponentActivity) {
 
 val Context.nonActiveAppContext: AppContextComposeAndroid get() = AppContextComposeAndroid(this)
 
-val componentActivity: ComponentActivity get() = componentActivityInternal ?: throw RuntimeException()
+val componentActivity: ComponentActivity get() = componentActivityInternal?: throw RuntimeException()
 actual fun handleEmptyStack(stack: MutableList<AppActiveContextCompose>) { componentActivityInternal?.finish()?.apply { componentActivityInternal = null } }
 actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeAndroid(AppScreen.MAIN, mutableMapOf(), emptySet())
 

@@ -13,6 +13,7 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
 import com.loohp.hkbuseta.appcontext.HistoryStack
+import com.loohp.hkbuseta.appcontext.componentActivityPaused
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.appcontext.setApplicationContext
 import com.loohp.hkbuseta.appcontext.setComponentActivity
@@ -85,6 +86,16 @@ class MainActivity : ComponentActivity() {
                 shareLaunch(instance, true)
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        componentActivityPaused = true
+    }
+
+    override fun onResume() {
+        super.onResume()
+        componentActivityPaused = false
     }
 }
 
