@@ -186,7 +186,7 @@ inline infix fun FormattedText.strEq(other: String): Boolean {
     return string == other
 }
 
-private val urlRegex: Regex = "<a +href=\\\"([^\\\"]*)\\\">([^>]*)<\\/a>|((?:https?:\\/\\/)?(?:www.)?[a-z0-9]+\\.[a-z]+[0-9a-zA-Z&=+\\-\$~`*@|?\\\\#_%/,.:;]*)".toRegex()
+private val urlRegex: Regex = "<a +href=\\\"([^\\\"]*)\\\">([^>]*)<\\/a>|((?:https?:\\/\\/)?(?:www.)?[a-z0-9-]+\\.[a-z]+[0-9a-zA-Z&=+\\-\$~`*@|?\\\\#_%/,.:;]*)".toRegex()
 
 class FormattedTextBuilder(
     private val extractUrls: Boolean

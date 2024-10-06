@@ -550,9 +550,10 @@ fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>,
                     f.forEach { (k, v) ->
                         val weekdays = OperatingWeekdays.fromBinaryStrings(serviceDayMap[k]!!)
                         val entries = v.map { (start, list) ->
-                            when (list) {
-                                null -> TimetableSingleEntry(it, start.parseLocalTime(), remark)
-                                else -> TimetableIntervalEntry(it, start.parseLocalTime(), list[0].parseLocalTime(), list[1].parseInterval().asRange(), remark)
+                            if (list == null || start == list[0]) {
+                                TimetableSingleEntry(it, start.parseLocalTime(), remark)
+                            } else {
+                                TimetableIntervalEntry(it, start.parseLocalTime(), list[0].parseLocalTime(), list[1].parseInterval().asRange(), remark)
                             }
                         }
                         insert(weekdays, entries)
