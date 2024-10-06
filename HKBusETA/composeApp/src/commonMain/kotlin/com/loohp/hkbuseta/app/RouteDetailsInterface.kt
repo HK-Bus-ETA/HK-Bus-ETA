@@ -141,6 +141,7 @@ import com.loohp.hkbuseta.compose.AdaptiveTopBottomLayout
 import com.loohp.hkbuseta.compose.AltRoute
 import com.loohp.hkbuseta.compose.ArrowBack
 import com.loohp.hkbuseta.compose.AutoResizeText
+import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.ConditionalComposable
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.Fullscreen
@@ -309,7 +310,9 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
 
     val listStopsTabItem by remember { derivedStateOf { listStopsTabItem(co) } }
 
-    val pagerState = rememberPagerState { listStopsTabItem.size }
+    val pagerState = rememberPagerState(
+        initialPage = (instance.compose.data["page"] as? Int?: 0).coerceAtMost(listStopsTabItem.size - 1)
+    ) { listStopsTabItem.size }
     val scope = rememberCoroutineScope()
     val pagerScrollEnabled = remember { mutableStateOf(true) }
 
@@ -332,6 +335,9 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
         nav = platformSurfaceContainerColor
     )
 
+    ChangedEffect (pagerState.currentPage) {
+        instance.compose.data["page"] = pagerState.currentPage
+    }
     LaunchedEffect (showingSimilarRoutes) {
         ScreenState.hasInterruptElement.value = showingSimilarRoutes
     }

@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.loohp.hkbuseta.app.DummyInterface
 import com.loohp.hkbuseta.app.MainLoading
+import com.loohp.hkbuseta.app.PdfViewerInterface
 import com.loohp.hkbuseta.app.RecentInterface
 import com.loohp.hkbuseta.app.RouteDetailsInterface
 import com.loohp.hkbuseta.app.TitleInterface
@@ -153,12 +154,13 @@ fun AppActiveContextCompose.newScreen() {
         AppScreen.LIST_STOPS, AppScreen.ETA, AppScreen.ETA_MENU -> RouteDetailsInterface(this)
         AppScreen.DUMMY -> DummyInterface(this)
         AppScreen.RECENT -> RecentInterface(this)
+        AppScreen.PDF -> PdfViewerInterface(this)
         else -> MainLoading(this, stopId = null, co = null, index = null, stop = ImmutableState(null), route = ImmutableState(null), listStopRoute = ImmutableState(null), listStopScrollToStop = null, listStopShowEta = null, listStopIsAlightReminder = null, queryKey = null, queryRouteNumber = null, queryBound = null, queryCo = null, queryDest = null, queryGMBRegion = null, queryStop = null, queryStopIndex = 0, queryStopDirectLaunch = false)
     }
 }
 
 enum class AppScreenGroup {
-    UNKNOWN, MAIN, TITLE, ROUTE_STOPS, DUMMY, RECENT
+    UNKNOWN, MAIN, TITLE, ROUTE_STOPS, DUMMY, RECENT, PDF
 }
 
 fun AppActiveContextCompose.newScreenGroup(): AppScreenGroup {
@@ -168,6 +170,7 @@ fun AppActiveContextCompose.newScreenGroup(): AppScreenGroup {
         AppScreen.LIST_STOPS, AppScreen.ETA, AppScreen.ETA_MENU -> AppScreenGroup.ROUTE_STOPS
         AppScreen.DUMMY -> AppScreenGroup.DUMMY
         AppScreen.RECENT -> AppScreenGroup.RECENT
+        AppScreen.PDF -> AppScreenGroup.PDF
         else -> AppScreenGroup.UNKNOWN
     }
 }

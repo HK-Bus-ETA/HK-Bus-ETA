@@ -43,6 +43,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.RouteNotice
 import com.loohp.hkbuseta.common.objects.RouteNoticeExternal
@@ -77,8 +80,10 @@ import com.loohp.hkbuseta.compose.combinedClickable
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
+import com.loohp.hkbuseta.utils.copyToClipboard
 import com.loohp.hkbuseta.utils.getOperatorColor
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,6 +100,7 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
         var showNoticeText: FormattedText? by remember { mutableStateOf(null) }
 
         val scroll = rememberScrollState()
+        val scope = rememberCoroutineScope()
         val sheetState = rememberPlatformModalBottomSheetState(skipPartiallyExpanded = true)
         val haptic = LocalHapticFeedback.current
 
@@ -127,13 +133,29 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                         }
                         .combinedClickable(
                             onClick = when (notice) {
-                                is RouteNoticeExternal -> instance.handleWebpages(notice.url, false, haptic.common)
-                                is RouteNoticeText -> { { showNoticeText = notice.display } }
-                                else -> { { /* do nothing */} }
+                                is RouteNoticeExternal -> if (notice.isPdf) ({
+                                    instance.startActivity(AppIntent(instance, AppScreen.PDF).apply {
+                                        putExtra("title", notice.title)
+                                        putExtra("url", notice.url)
+                                    })
+                                }) else {
+                                    instance.handleWebpages(notice.url, false, haptic.common)
+                                }
+                                is RouteNoticeText -> ({ showNoticeText = notice.display })
+                                else -> ({ /* do nothing */})
                             },
                             onLongClick = when (notice) {
-                                is RouteNoticeExternal -> { { instance.showToastText(notice.url, ToastDuration.SHORT) } }
-                                else -> { { /* do nothing */} }
+                                is RouteNoticeExternal -> ({
+                                    scope.launch {
+                                        val result = copyToClipboard(notice.url)
+                                        instance.showToastText(if (result) {
+                                            if (Shared.language == "en") "Copied to clipboard" else "已複製到剪貼簿"
+                                        } else {
+                                            if (Shared.language == "en") "Failed to copy to clipboard" else "無法複製到剪貼簿"
+                                        }, ToastDuration.SHORT)
+                                    }
+                                })
+                                else -> ({ /* do nothing */})
                             }
                         )
                         .fillMaxWidth()

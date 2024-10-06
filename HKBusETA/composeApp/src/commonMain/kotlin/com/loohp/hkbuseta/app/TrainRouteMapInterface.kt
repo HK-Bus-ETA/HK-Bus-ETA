@@ -505,7 +505,14 @@ fun RouteMapSearchInterface(
                             .align(Alignment.BottomEnd)
                             .padding(10.dp)
                             .graphicsLayer { translationY = offset.toPx() },
-                        onClick = instance.handleWebpages(statusNotice.url, false, LocalHapticFeedback.current.common),
+                        onClick = if (statusNotice.isPdf) ({
+                            instance.startActivity(AppIntent(instance, AppScreen.PDF).apply {
+                                putExtra("title", statusNotice.title)
+                                putExtra("url", statusNotice.url)
+                            })
+                        }) else {
+                            instance.handleWebpages(statusNotice.url, false, LocalHapticFeedback.current.common)
+                        },
                     ) {
                         Row(
                             modifier = Modifier
@@ -1374,7 +1381,12 @@ fun MTRRouteMapOptionsInterface(
             }
         )
         PlatformButton(
-            onClick = instance.handleWebpages(stopId.getMTRStationLayoutUrl(), false, haptic.common),
+            onClick = {
+                instance.startActivity(AppIntent(instance, AppScreen.PDF).apply {
+                    putExtra("title", if (Shared.language == "en") "${stop.name.en} Station Layout Map" else "${stop.name.zh}站位置圖")
+                    putExtra("url", stopId.getMTRStationLayoutUrl())
+                })
+            },
             content = {
                 PlatformIcon(
                     modifier = Modifier.padding(end = 5.dp),
@@ -1388,7 +1400,12 @@ fun MTRRouteMapOptionsInterface(
             }
         )
         PlatformButton(
-            onClick = instance.handleWebpages(stopId.getMTRStationStreetMapUrl(), false, haptic.common),
+            onClick = {
+                instance.startActivity(AppIntent(instance, AppScreen.PDF).apply {
+                    putExtra("title", if (Shared.language == "en") "${stop.name.en} Station Street Map" else "${stop.name.zh}站街道圖")
+                    putExtra("url", stopId.getMTRStationStreetMapUrl())
+                })
+            },
             content = {
                 PlatformIcon(
                     modifier = Modifier.padding(end = 5.dp),

@@ -90,7 +90,6 @@ import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.lrtLineStatus
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
-import com.loohp.hkbuseta.common.objects.prependPdfViewerToUrl
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
 import com.loohp.hkbuseta.common.objects.resolvedDest
@@ -1777,7 +1776,7 @@ class Registry {
                                             title = title,
                                             co = Operator.LRT,
                                             important = RouteNoticeImportance.IMPORTANT,
-                                            url = url.prependPdfViewerToUrl(),
+                                            url = url,
                                             sort = 0
                                         ))
                                     }?: run {

@@ -85,6 +85,7 @@ kotlin {
             implementation(libs.androidx.work.runtime.ktx)
             implementation(libs.androidx.concurrent.futures.ktx)
             implementation(libs.androidx.browser)
+            implementation(libs.android.pdf.viewer)
             implementation(libs.kotlinx.coroutines.guava)
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.analytics)
@@ -147,7 +148,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 869
+        versionCode = 870
         versionName = "2.3.6"
     }
     packaging {

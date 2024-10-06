@@ -1,8 +1,8 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2023. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2023. Contributors
+ * Copyright (C) 2024. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2024. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,36 +19,20 @@
  *
  */
 
-package com.loohp.hkbuseta.common.appcontext
+package com.loohp.hkbuseta.app
 
-enum class AppScreen {
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.loohp.hkbuseta.appcontext.common
+import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 
-    DISMISSIBLE_TEXT_DISPLAY,
-    FATAL_ERROR,
-    ETA,
-    ETA_MENU,
-    FAV,
-    FAV_ROUTE_LIST_VIEW,
-    LIST_ROUTES,
-    LIST_STOPS,
-    MAIN,
-    NEARBY,
-    SEARCH,
-    SEARCH_TRAIN,
-    TITLE,
-    URL_IMAGE,
-    ALIGHT_REMINDER_SERVICE,
-    ETA_TILE_CONFIGURE,
-    ETA_TILE_LIST,
-    RECENT,
-    SETTINGS,
-    PDF,
-    DUMMY;
 
-    companion object {
-        fun valueOfNullable(value: String): AppScreen? {
-            return entries.firstOrNull { it.name.equals(value, true) }
-        }
+@Composable
+actual fun PdfViewerInterface(title: String, url: String, instance: AppActiveContext) {
+    val haptics = LocalHapticFeedback.current
+    LaunchedEffect (Unit) {
+        instance.handleWebpages(url, false, haptics.common).invoke()
+        instance.finish()
     }
-
 }

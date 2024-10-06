@@ -844,11 +844,11 @@ infix fun Route?.similarTo(other: Route?): Boolean {
 }
 
 fun String.getMTRStationStreetMapUrl(): String {
-    return "https://docs.google.com/gview?embedded=true&url=https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/maps/${lowercase()}.pdf"
+    return "https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/maps/${lowercase()}.pdf"
 }
 
 fun String.getMTRStationLayoutUrl(): String {
-    return "https://docs.google.com/gview?embedded=true&url=https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/layouts/${lowercase()}.pdf"
+    return "https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/layouts/${lowercase()}.pdf"
 }
 
 fun Route.getDeepLink(context: AppContext, stopId: String?, stopIndex: Int?): String {

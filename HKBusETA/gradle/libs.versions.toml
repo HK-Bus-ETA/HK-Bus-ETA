@@ -1,6 +1,7 @@
 [versions]
 activityCompose = "1.9.0"
 agp = "8.2.2"
+androidPdfViewer = "3.2.0-beta.3"
 browser = "1.8.0"
 coilCompose = "3.0.0-alpha06"
 colormath = "3.5.0"
@@ -60,6 +61,7 @@ googleDevToolsKsp = "1.9.24-1.0.20"
 firebase-bom = "33.1.2"
 
 [libraries]
+android-pdf-viewer = { module = "com.github.mhiew:android-pdf-viewer", version.ref = "androidPdfViewer" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 androidx-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "composeFoundation" }

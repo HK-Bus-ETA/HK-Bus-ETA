@@ -68,7 +68,9 @@ class RouteNoticeExternal(
     val url: String,
     sort: Int = Int.MAX_VALUE,
     possibleTwoWaySectionFareInfo: Boolean = false
-): RouteNotice(title, co, important, sort, possibleTwoWaySectionFareInfo)
+): RouteNotice(title, co, important, sort, possibleTwoWaySectionFareInfo) {
+    val isPdf: Boolean = url.endsWith(".pdf")
+}
 
 @Immutable
 class RouteNoticeText(
@@ -113,7 +115,7 @@ val mtrRouteMapNotice: RouteNoticeExternal get() {
         title = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖",
         co = Operator.MTR,
         important = RouteNoticeImportance.NORMAL,
-        url = "https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/routemap.pdf".prependPdfViewerToUrl()
+        url = "https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/routemap.pdf"
     )
 }
 
@@ -122,7 +124,7 @@ val lrtRouteMapNotice: RouteNoticeExternal get() {
         title = if (Shared.language == "en") "Light Rail Route Map" else "輕鐵路綫圖",
         co = Operator.LRT,
         important = RouteNoticeImportance.NORMAL,
-        url = "https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/LR_routemap.pdf".prependPdfViewerToUrl()
+        url = "https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/LR_routemap.pdf"
     )
 }
 
@@ -375,10 +377,6 @@ fun SpecialTrafficNewsEntry.getBody(instance: AppContext): String {
     return "${if (Shared.language == "en") engText else chinText}\n\n${if (Shared.language == "en") "Last Updated" else "更新時間"}: $time"
 }
 
-fun String.prependPdfViewerToUrl(): String {
-    return if (endsWith(".pdf")) "https://docs.google.com/gview?embedded=true&url=$this" else this
-}
-
 private val ctbNoticePattern = "onclick=\\\"javascript:window\\.open\\('([^']+)'\\).*?<br>(.*?)</td>".toRegex()
 
 private val operatorNoticeFetchers: Map<Operator, suspend Route.(MutableList<RouteNotice>) -> Unit> = buildMap {
@@ -387,7 +385,7 @@ private val operatorNoticeFetchers: Map<Operator, suspend Route.(MutableList<Rou
         val notices = data.optJsonArray("data")!!
         for ((index, obj) in notices.withIndex()) {
             val notice = obj.jsonObject
-            val url = "https://search.kmb.hk/KMBWebSite/AnnouncementPicture.ashx?url=${notice.optString("kpi_noticeimageurl")}".prependPdfViewerToUrl()
+            val url = "https://search.kmb.hk/KMBWebSite/AnnouncementPicture.ashx?url=${notice.optString("kpi_noticeimageurl")}"
             val title = notice.optString(if (Shared.language == "en") "kpi_title" else "kpi_title_chi")
             list.add(RouteNoticeExternal(
                 title = title,
@@ -406,7 +404,7 @@ private val operatorNoticeFetchers: Map<Operator, suspend Route.(MutableList<Rou
                 title = match.groupValues[2],
                 co = Operator.CTB,
                 important = RouteNoticeImportance.IMPORTANT,
-                url = match.groupValues[1].prependPdfViewerToUrl(),
+                url = match.groupValues[1],
                 sort = index
             ))
         }
@@ -419,7 +417,7 @@ private val operatorNoticeFetchers: Map<Operator, suspend Route.(MutableList<Rou
                     title = title,
                     co = Operator.LRT,
                     important = RouteNoticeImportance.IMPORTANT,
-                    url = url.prependPdfViewerToUrl(),
+                    url = url,
                     sort = 0
                 ))
             }?: run {
