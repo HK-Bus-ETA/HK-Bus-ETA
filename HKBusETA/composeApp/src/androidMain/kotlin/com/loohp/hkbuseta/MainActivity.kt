@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -97,6 +98,12 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         componentActivityPaused = false
     }
+
+    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean, newConfig: Configuration) {
+        recreate()
+        super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig)
+    }
+
 }
 
 internal fun Intent.extractUrl(): String? {

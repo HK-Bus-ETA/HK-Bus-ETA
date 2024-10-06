@@ -219,8 +219,10 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
     val state by searchState.collectAsStateMultiplatform()
     val keyPressFocus = remember { FocusRequester() }
     var size by remember { mutableStateOf(IntSize(instance.screenWidth, instance.screenHeight)) }
+    var sizeInit by remember { mutableStateOf(false) }
 
     val keyboardOffsetState = floatingKeyboardState.collectAsStateMultiplatform()
+    var keyboardHidden by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect (visible, state.categories) {
         if (visible) {
@@ -244,15 +246,23 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
     }
 
     AdaptiveTopBottomLayout(
-        modifier = Modifier.onSizeChanged { size = it },
+        modifier = Modifier.onSizeChanged {
+            size = it
+            if (!sizeInit) {
+                sizeInit = true
+            }
+        },
         context = instance,
         mode = AdaptiveTopBottomMode.BottomToFloating(
             alignment = Alignment.BottomStart,
             aspectRatio = 4F / 3F,
             offsetState = keyboardOffsetState
         ),
+        animateSize = sizeInit,
         bottomSize = {
-            if (it.isNarrow) {
+            if (keyboardHidden) {
+                0.dp
+            } else if (it.isNarrow) {
                 (size.height / 11F * 4F).pixelsToDp(instance).dp.coerceIn(178.dp, 248.dp)
             } else {
                 min(412F, (size.width / 2F).pixelsToDp(instance)).dp
@@ -274,7 +284,12 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                             .fillMaxWidth()
                             .height(65.dp)
                             .clip(platformExtraLargeShape)
-                            .background(platformPrimaryContainerColor),
+                            .background(platformPrimaryContainerColor)
+                            .clickable {
+                                keyboardHidden = !keyboardHidden
+                                keyPressFocus.requestFocus()
+                            }
+                            .plainTooltip(if (Shared.language == "en") "Toggle Keyboard" else "顯示/隱藏鍵盤"),
                         contentAlignment = Alignment.Center
                     ) {
                         PlatformText(

@@ -394,8 +394,8 @@ fun Collection<TimetableEntry>.getServiceTimeCategory(): ServiceTimeCategory {
     val minDiff = diff.values.min()
     val minDiffHours = diff.filter { it.value == minDiff }
     return when {
-        minDiffHours.any { it.key in 7..23 } && minDiffHours.any { it.key in 2..4 } -> ServiceTimeCategory.TWENTY_FOUR_HOURS
-        minDiffHours.all { it.key in 0..6 } -> ServiceTimeCategory.NIGHT
+        minDiffHours.any { it.key in 7..20 } && minDiffHours.any { it.key in 2..4 } -> ServiceTimeCategory.TWENTY_FOUR_HOURS
+        minDiffHours.all { it.key in 22..24 || it.key in 0..6 } -> ServiceTimeCategory.NIGHT
         else -> ServiceTimeCategory.DAY
     }
 }
