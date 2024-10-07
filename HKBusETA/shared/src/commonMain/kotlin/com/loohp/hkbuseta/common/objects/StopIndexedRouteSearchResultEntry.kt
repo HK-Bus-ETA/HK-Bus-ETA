@@ -92,14 +92,19 @@ class StopIndexedRouteSearchResultEntry(
 }
 
 fun RouteSearchResultEntry.toStopIndexed(instance: AppContext): StopIndexedRouteSearchResultEntry {
+    if (this is StopIndexedRouteSearchResultEntry) return this
     val stopIndexed = StopIndexedRouteSearchResultEntry.fromRouteSearchResultEntry(this)
     val route = this.route
     val co = this.co
     val stopInfo = this.stopInfo
     if (route != null && stopInfo != null) {
-        val allStops = Registry.getInstance(instance).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion)
-        stopIndexed.cachedAllStops = allStops
-        stopIndexed.stopInfoIndex = allStops.indexOfFirst { i -> i.stopId == stopInfo.stopId }
+        if (stopInfo.stopIndex != null) {
+            stopIndexed.stopInfoIndex = stopInfo.stopIndex
+        } else {
+            val allStops = Registry.getInstance(instance).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion)
+            stopIndexed.cachedAllStops = allStops
+            stopIndexed.stopInfoIndex = allStops.indexOfFirst { i -> i.stopId == stopInfo.stopId } + 1
+        }
     }
     return stopIndexed
 }

@@ -28,6 +28,7 @@ import com.loohp.hkbuseta.common.utils.Stable
 import com.loohp.hkbuseta.common.utils.Strippable
 import com.loohp.hkbuseta.common.utils.optBoolean
 import com.loohp.hkbuseta.common.utils.optDouble
+import com.loohp.hkbuseta.common.utils.optInt
 import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.common.utils.readNullable
@@ -40,6 +41,7 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.core.BytePacketBuilder
 import io.ktor.utils.io.core.writeDouble
+import io.ktor.utils.io.core.writeInt
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -172,8 +174,13 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
 }
 
 @Stable
-class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co: Operator) : JSONSerializable,
-    IOSerializable, Strippable {
+data class StopInfo(
+    val stopId: String,
+    var data: Stop?,
+    val distance: Double,
+    val co: Operator,
+    val stopIndex: Int? = null
+): JSONSerializable, IOSerializable, Strippable {
 
     companion object {
 
@@ -182,7 +189,8 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
             val data = if (json.contains("data")) Stop.deserialize(json.optJsonObject("data")!!) else null
             val distance = json.optDouble("distance")
             val co = Operator.valueOf(json.optString("co"))
-            return StopInfo(stopId, data, distance, co)
+            val stopIndex = if (json.contains("stopIndex")) json.optInt("stopIndex") else null
+            return StopInfo(stopId, data, distance, co, stopIndex)
         }
 
         suspend fun deserialize(input: ByteReadChannel): StopInfo {
@@ -190,7 +198,8 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
             val data = input.readNullable { Stop.deserialize(it) }
             val distance = input.readDouble()
             val co = Operator.valueOf(input.readString(UTF_8))
-            return StopInfo(stopId, data, distance, co)
+            val stopIndex = input.readNullable { it.readInt() }
+            return StopInfo(stopId, data, distance, co, stopIndex)
         }
     }
 
@@ -206,6 +215,9 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
             }
             put("distance", distance)
             put("co", co.name)
+            if (stopIndex != null) {
+                put("stopIndex", stopIndex)
+            }
         }
     }
 
@@ -214,26 +226,8 @@ class StopInfo(val stopId: String, var data: Stop?, val distance: Double, val co
         out.writeNullable(data) { o, v -> v.serialize(o) }
         out.writeDouble(distance)
         out.writeString(co.name, UTF_8)
+        out.writeNullable(stopIndex) { o, v -> o.writeInt(v) }
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is StopInfo) return false
-
-        if (stopId != other.stopId) return false
-        if (data != other.data) return false
-        if (distance != other.distance) return false
-        return co == other.co
-    }
-
-    override fun hashCode(): Int {
-        var result = stopId.hashCode()
-        result = 31 * result + (data?.hashCode() ?: 0)
-        result = 31 * result + distance.hashCode()
-        result = 31 * result + co.hashCode()
-        return result
-    }
-
 }
 
 fun AppIntent.putExtra(key: String, value: Sequence<RouteSearchResultEntry>) {

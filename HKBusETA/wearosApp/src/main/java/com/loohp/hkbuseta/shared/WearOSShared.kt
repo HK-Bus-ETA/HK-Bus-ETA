@@ -141,7 +141,7 @@ object WearOSShared {
         val globalWritingFilesCounter by globalWritingFilesCounterState.collectAsStateWithLifecycle()
         var globalWritingFiles by globalWritingFilesState.collectAsStateWithLifecycle()
         val globalWritingFilesIndicatorAlpha by animateFloatAsState(
-            targetValue = if (globalWritingFiles) 1F else 0F,
+            targetValue = if (globalWritingFiles && globalWritingFilesCounter > 0) 1F else 0F,
             animationSpec = tween(300),
             label = "GlobalWritingFilesIndicatorAlpha"
         )

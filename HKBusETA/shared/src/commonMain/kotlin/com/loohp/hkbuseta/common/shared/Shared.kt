@@ -485,14 +485,19 @@ object Shared {
                         Registry.getInstance(instance).addLastLookupRoute(it.routeKey, instance)
 
                         if (queryStop != null) {
+                            val stops = Registry.getInstance(instance).getAllStops(queryRouteNumber!!, queryBound!!, queryCo!!, queryGMBRegion)
+                            val stopIndexed = stops.asSequence().withIndex().filter { it.value.stopId == queryStop }.minByOrNull { (queryStopIndex - it.index).absoluteValue }
+
                             val intent2 = AppIntent(instance, AppScreen.LIST_STOPS)
                             intent2.putExtra("route", it)
                             intent2.putExtra("scrollToStop", queryStop)
+                            if (stopIndexed != null) {
+                                intent2.putExtra("stopIndex", stopIndexed.index + 1)
+                            }
                             instance.startActivity(intent2)
 
                             if (queryStopDirectLaunch) {
-                                val stops = Registry.getInstance(instance).getAllStops(queryRouteNumber!!, queryBound!!, queryCo!!, queryGMBRegion)
-                                stops.withIndex().filter { it.value.stopId == queryStop }.minByOrNull { (queryStopIndex - it.index).absoluteValue }?.let { (i, stopData) ->
+                                stopIndexed?.let { (i, stopData) ->
                                     val intent3 = AppIntent(instance, AppScreen.ETA)
                                     intent3.putExtra("stopId", stopData.stopId)
                                     intent3.putExtra("co", queryCo)

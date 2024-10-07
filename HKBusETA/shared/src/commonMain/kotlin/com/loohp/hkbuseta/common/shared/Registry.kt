@@ -77,6 +77,7 @@ import com.loohp.hkbuseta.common.objects.endOfLineText
 import com.loohp.hkbuseta.common.objects.fetchOperatorNotices
 import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.getBody
+import com.loohp.hkbuseta.common.objects.getCircularPivotIndex
 import com.loohp.hkbuseta.common.objects.getColor
 import com.loohp.hkbuseta.common.objects.getDeepLink
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
@@ -1125,77 +1126,79 @@ class Registry {
             }
         }
         val serviceMap = DATA!!.dataSheet.serviceDayMap
-        if (serviceMap != null) {
-            nearbyStops.sortBy { it.distance }
-        }
+        nearbyStops.sortBy { it.distance }
         val now = currentLocalDateTime()
-        val nearbyRoutes: MutableMap<String, Pair<MutableList<Pair<RouteSearchResultEntry, Int>>, MutableList<Route>?>> = mutableMapOf()
+        val nearbyRoutes: MutableMap<String, Pair<Array<RouteSearchResultEntry?>, MutableList<Route>?>> = mutableMapOf()
         val allStopsCache: MutableMap<String, List<StopData>> = mutableMapOf()
-        for (nearbyStop in nearbyStops) {
-            val stopId = nearbyStop.stopId
+        for (nearbyStopOriginal in nearbyStops) {
+            val stopId = nearbyStopOriginal.stopId
             for ((key, branchStopIndex) in DATA!!.dataSheet.routeKeysByStopId.await()[stopId]?: emptyList()) {
                 val data = DATA!!.dataSheet.routeList[key]!!
                 val co = if (data.isKmbCtbJoint) {
                     val alternateStopName = Shared.alternateStopNamesShowingState.value
-                    if (alternateStopName && nearbyStop.co === Operator.KMB) continue
-                    if (!alternateStopName && nearbyStop.co === Operator.CTB) continue
+                    if (alternateStopName && nearbyStopOriginal.co === Operator.KMB) continue
+                    if (!alternateStopName && nearbyStopOriginal.co === Operator.CTB) continue
                     Operator.KMB
                 } else {
-                    nearbyStop.co
+                    nearbyStopOriginal.co
                 }
-                if (!data.co.contains(nearbyStop.co)) continue
+                if (!data.co.contains(nearbyStopOriginal.co)) continue
                 if (excludedRouteNumbers.contains(data.routeNumber)) continue
                 if (data.isCtbIsCircular) continue
                 val routeGroupKey = data.routeGroupKey(co)
                 val allStops = allStopsCache.getOrPut(routeGroupKey) { getAllStops(data.routeNumber, data.idBound, data.co.firstCo()!!, data.gmbRegion) }
                 val stopIndex = allStops.indexesOf { it.stopId == stopId }.minByOrNull { (it - branchStopIndex).absoluteValue }?: -1
-                if (nearbyRoutes.containsKey(routeGroupKey)) {
-                    val (existingNearbyRoutes, routeSet) = nearbyRoutes[routeGroupKey]!!
-                    if (serviceMap != null) {
-                        routeSet!!.apply {
-                            if (!contains(data)) {
-                                add(data)
-                                if (size > 1) {
-                                    val status = currentBranchStatus(now, serviceMap, getHolidays()) { null }
-                                    sortWith(compareByDescending<Route> { status[it]?.activeness?: 0 }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) })
-                                }
-                            }
+                val nearbyStop = nearbyStopOriginal.copy(stopIndex = stopIndex + 1)
+                if (!nearbyRoutes.containsKey(routeGroupKey)) {
+                    nearbyRoutes[routeGroupKey] = arrayOfNulls<RouteSearchResultEntry?>(2) to mutableListOf()
+                }
+                val (existingNearbyRoutes, routeSet) = nearbyRoutes[routeGroupKey]!!
+                routeSet!!.apply {
+                    if (!contains(data)) {
+                        add(data)
+                        if (size > 1) {
+                            val status = currentBranchStatus(now, serviceMap, getHolidays()) { null }
+                            sortWith(compareByDescending<Route> { status[it]?.activeness?: 0 }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) })
                         }
                     }
-                    val (existingNearbyRoute, existingStopIndex) = existingNearbyRoutes.first()
-                    val match = if (serviceMap == null) {
-                        if (existingNearbyRoute.stopInfo!!.distance > nearbyStop.distance) {
-                            true
-                        } else if (existingNearbyRoute.stopInfo!!.distance != nearbyStop.distance) {
-                            false
+                }
+                val routeSetActive = routeSet.first()
+                val middleIndex = routeSetActive.getCircularPivotIndex(allStops)
+                if (routeSetActive == data) {
+                    if (!routeSetActive.isCircular || stopIndex + 1 < middleIndex) {
+                        val existingNearbyRoute = existingNearbyRoutes[0]
+                        if (existingNearbyRoute == null) {
+                            existingNearbyRoutes[0] = RouteSearchResultEntry(key, data, co, nearbyStop, origin, isInterchangeSearch)
                         } else {
-                            val s1 = existingNearbyRoute.route!!.serviceType.parseIntOr(Int.MAX_VALUE)
-                            val s2 = data.serviceType.parseIntOr(Int.MAX_VALUE)
-                            s1 > s2 || (s1 == s2 && existingNearbyRoute.route!!.gtfsId.parseIntOr(Int.MAX_VALUE) > data.gtfsId.parseIntOr(Int.MAX_VALUE))
+                            val match = (existingNearbyRoute.stopInfo!!.distance > nearbyStop.distance || existingNearbyRoute.route != routeSetActive)
+                            if (match) {
+                                existingNearbyRoute.routeKey = key
+                                existingNearbyRoute.stopInfo = nearbyStop
+                                existingNearbyRoute.route = data
+                                existingNearbyRoute.co = co
+                                existingNearbyRoute.origin = origin
+                                existingNearbyRoute.isInterchangeSearch = isInterchangeSearch
+                            }
+                        }
+                        if (!routeSetActive.isCircular) {
+                            existingNearbyRoutes[1] = null
                         }
                     } else {
-                        val routeSetActive = routeSet!!.first()
-                        routeSetActive == data && (existingNearbyRoute.stopInfo!!.distance > nearbyStop.distance || existingNearbyRoute.route != routeSetActive)
-                    }
-                    if (match) {
-                        existingNearbyRoute.routeKey = key
-                        existingNearbyRoute.stopInfo = nearbyStop
-                        existingNearbyRoute.route = data
-                        existingNearbyRoute.co = co
-                        existingNearbyRoute.origin = origin
-                        existingNearbyRoute.isInterchangeSearch = isInterchangeSearch
-                        if (serviceMap != null) {
-                            existingNearbyRoutes.removeAll { it.first.route != data }
-                        }
-                    } else if (serviceMap != null && ((match || existingNearbyRoutes.any { it.first.route == data }) && (data.isCircular || existingNearbyRoutes.size > 1))) {
-                        if (match || existingNearbyRoute.stopInfo!!.data!!.location.distance(nearbyStop.data!!.location) < 0.2) {
-                            if ((stopIndex - existingStopIndex).absoluteValue > 1) {
-                                existingNearbyRoutes.add(RouteSearchResultEntry(key, data, co, nearbyStop, origin, isInterchangeSearch) to stopIndex)
+                        val existingNearbyRoute = existingNearbyRoutes[1]
+                        if (existingNearbyRoute == null) {
+                            existingNearbyRoutes[1] = RouteSearchResultEntry(key, data, co, nearbyStop, origin, isInterchangeSearch)
+                        } else {
+                            val match = (existingNearbyRoute.stopInfo!!.distance > nearbyStop.distance || existingNearbyRoute.route != routeSetActive)
+                            if (match) {
+                                existingNearbyRoute.routeKey = key
+                                existingNearbyRoute.stopInfo = nearbyStop
+                                existingNearbyRoute.route = data
+                                existingNearbyRoute.co = co
+                                existingNearbyRoute.origin = origin
+                                existingNearbyRoute.isInterchangeSearch = isInterchangeSearch
                             }
                         }
                     }
-                } else {
-                    nearbyRoutes[routeGroupKey] = mutableListOf(RouteSearchResultEntry(key, data, co, nearbyStop, origin, isInterchangeSearch) to stopIndex) to if (serviceMap == null) null else mutableListOf(data)
                 }
             }
         }
@@ -1208,10 +1211,10 @@ class Registry {
         val weekday = hongKongTime.dayOfWeek
         val date = hongKongTime.date
         val isHoliday = weekday == DayOfWeek.SATURDAY || isPublicHoliday(date)
-        val nightRouteByTimetable = if (serviceMap != null) {
-            buildMap {
-                for ((ks, v) in nearbyRoutes.values) {
-                    for ((k) in ks) {
+        val nightRouteByTimetable = buildMap {
+            for ((ks, v) in nearbyRoutes.values) {
+                for (k in ks) {
+                    if (k != null) {
                         val routeNumber = k.route!!.routeNumber
                         getOrPut(k.routeKey) {
                             calculateServiceTimeCategory(routeNumber, k.co) { v!!.createTimetable(serviceMap) { null }.getServiceTimeCategory() }.night
@@ -1219,12 +1222,9 @@ class Registry {
                     }
                 }
             }
-        } else {
-            emptyMap()
         }
         return NearbyRoutesResult(nearbyRoutes.values.asSequence()
-            .flatMap { it.first.asSequence().sortedBy { (r) -> r.stopInfo!!.distance }.take(2) }
-            .map { it.first }
+            .flatMap { it.first.asSequence().filterNotNull() }
             .sortedWith(compareBy<RouteSearchResultEntry> { a ->
                 val route = a.route!!
                 val routeNumber = route.routeNumber
@@ -1303,7 +1303,12 @@ class Registry {
                 for (i in parameters.indices) {
                     val co = parameters[i].co
                     val list = lists[i]
-                    list.sortWith(compareBy<Route> { it.gtfsId.parseIntOr(Int.MAX_VALUE) }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) })
+                    list.sortWith(
+                        when (co) {
+                            Operator.GMB, Operator.NLB -> compareBy<Route> { it.gtfsId.parseIntOr(Int.MAX_VALUE) }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) }
+                            else -> compareBy<Route> { it.serviceType.parseIntOr(Int.MAX_VALUE) }.thenBy { it.gtfsId.parseIntOr(Int.MAX_VALUE) }
+                        }
+                    )
                     add(list.distinctBy { it.stops[co] to it.freq })
                 }
             }
@@ -2033,7 +2038,7 @@ class Registry {
                     co === Operator.CTB -> etaQueryCtb(typhoonInfo, stopId, stopIndex, co, route)
                     co === Operator.NLB -> etaQueryNlb(typhoonInfo, stopId, co, route)
                     co === Operator.MTR_BUS -> etaQueryMtrBus(typhoonInfo, stopId, co, route)
-                    co === Operator.GMB -> etaQueryGmb(typhoonInfo, stopId, stopIndex, co, route)
+                    co === Operator.GMB -> etaQueryGmb(typhoonInfo, stopId, stopIndex, co, route, context)
                     co === Operator.LRT -> etaQueryLrt(typhoonInfo, stopId, stopIndex, co, route, options)
                     co === Operator.MTR -> etaQueryMtr(typhoonInfo, stopId, co, route)
                     co === Operator.SUNFERRY -> etaQuerySunFerry(typhoonInfo, stopId, co, route)
@@ -2799,21 +2804,34 @@ class Registry {
         return ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, co, lines)
     }
 
-    private suspend fun etaQueryGmb(typhoonInfo: TyphoonInfo, stopId: String, stopIndex: Int, co: Operator, route: Route): ETAQueryResult {
+    data class GMBETAEntry(
+        val stopSeq: Int,
+        val mins: Double,
+        val jsonObject: JsonObject,
+        val branch: Route
+    )
+
+    private suspend fun etaQueryGmb(typhoonInfo: TyphoonInfo, stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext): ETAQueryResult {
+        val allStops = getAllStops(route.routeNumber, route.idBound(Operator.GMB), Operator.GMB, route.gmbRegion)
+        val branches = allStops.indexesOf { it.stopId == stopId }
+            .minByOrNull { (it - stopIndex).absoluteValue }
+            ?.let { allStops[it].branchIds.associateBy { b -> b.gtfsId } }
+            ?: mapOf(route.gtfsId to route)
         val lines: MutableMap<Int, ETALineEntry> = mutableMapOf()
         val isMtrEndOfLine = false
         val language = Shared.language
         lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(language, null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
         val isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
         val data = getJSONResponse<JsonObject>("https://data.etagmb.gov.hk/eta/stop/$stopId")
-        val stopSequences: MutableSet<Int> = HashSet()
-        val busList: MutableList<Triple<Int, Double, JsonObject>> = mutableListOf()
+        val stopSequences: MutableMap<String, MutableSet<Int>> = mutableMapOf()
+        val busList: MutableList<GMBETAEntry> = mutableListOf()
         for (i in 0 until data!!.optJsonArray("data")!!.size) {
             val routeData = data.optJsonArray("data")!!.optJsonObject(i)!!
             val buses = routeData.optJsonArray("eta")
             val bound = if (routeData.optInt("route_seq") <= 1) "O" else "I"
             val routeId = routeData.optString("route_id")
-            if (route.bound[co] == bound && route.gtfsId == routeId && buses != null) {
+            val branch = branches[routeId]
+            if (route.bound[co] == bound && branch != null && buses != null) {
                 val routeNumber = route.routeNumber
                 val stopSeq = routeData.optInt("stop_seq")
                 for (u in 0 until buses.size) {
@@ -2821,20 +2839,23 @@ class Registry {
                     if (routeNumber == route.routeNumber) {
                         val eta = bus.optString("timestamp")
                         val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.toInstant().epochSeconds - currentEpochSeconds) / 60.0
-                        stopSequences.add(stopSeq)
-                        busList.add(Triple(stopSeq, mins, bus))
+                        stopSequences.getOrPut(branch.gtfsId) { mutableSetOf() }.add(stopSeq)
+                        busList.add(GMBETAEntry(stopSeq, mins, bus, branch))
                     }
                 }
             }
         }
-        if (stopSequences.size > 1) {
-            val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
-            busList.removeAll { it.first != matchingSeq }
+        for ((r, s) in stopSequences) {
+            if (s.size > 1) {
+                val matchingSeq = s.minByOrNull { (it - stopIndex).absoluteValue }?: -1
+                busList.removeAll { it.branch.gtfsId == r && it.stopSeq != matchingSeq }
+            }
         }
-        busList.sortBy { it.second }
+        val sortedBusList = busList.asSequence()
+            .sortedBy { it.mins }
+            .distinctBy({ it }, { (_, m1, _, b1), (_, m2, _, b2) -> (m1 - m2).absoluteValue < 0.33 && b1 != b2 })
         var counter = 0
-        for (i in busList.indices) {
-            val (_, mins, bus) = busList[i]
+        for ((_, mins, bus) in sortedBusList) {
             if (mins.isFinite() && mins < -10.0) continue
             val seq = ++counter
             var remark = if (language == "en") bus.optString("remarks_en") else bus.optString("remarks_tc")

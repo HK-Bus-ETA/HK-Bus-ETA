@@ -99,7 +99,7 @@ fun Route.idBoundWithRegion(co: Operator): String = when (co) {
 
 inline val Route.idBoundWithRegion: String get() = idBoundWithRegion(co.firstCo()!!)
 
-fun Route.routeGroupKey(co: Operator): String = routeNumber + "," + co.name + "," + idBoundWithRegion(co)
+fun Route.routeGroupKey(co: Operator): String = "$routeNumber,${co.name},${idBoundWithRegion(co)}"
 
 inline val Route.routeGroupKey: String get() = routeGroupKey(co.firstCo()!!)
 
@@ -328,6 +328,23 @@ fun Route.shouldPrependTo(): Boolean {
     return lrtCircular == null
 }
 
+fun Route.getCircularPivotIndex(stops: List<Registry.StopData>): Int {
+    if (!isCircular) return -1
+    val circularMiddle = dest.zh.remove("(循環線)").trim()
+    return stops.asSequence()
+        .mapIndexedNotNull { i, s ->
+            val name = s.stop.name.zh.trim()
+            if (name.eitherContains(circularMiddle)) {
+                (i + 1) to name
+            } else {
+                null
+            }
+        }
+        .minByOrNull { (_, n) -> n.editDistance(circularMiddle) }
+        ?.first
+        ?: -1
+}
+
 fun Route.resolvedDest(prependTo: Boolean): BilingualText {
     return lrtCircular?: dest.let { if (prependTo) it.prependTo() else it }
 }
@@ -340,12 +357,11 @@ fun StopIndexedRouteSearchResultEntry.resolvedDest(prependTo: Boolean, context: 
     return if (stopInfo == null || (co !== Operator.KMB && co !== Operator.GMB) || !route!!.isCircular) {
         route!!.resolvedDest(prependTo)
     } else {
-        val circularMiddle = route!!.dest.zh.remove("(循環線)").trim()
         val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
-        val middleIndex = stops.indexOfFirst { it.stop.name.zh.trim().eitherContains(circularMiddle) }
+        val middleIndex = route!!.getCircularPivotIndex(stops)
         if (middleIndex >= 0) {
             val stopIndex = stops.indexesOf { it.stopId == stopInfo!!.stopId }.minByOrNull { (it - stopInfoIndex).absoluteValue }
-            if (stopIndex != null && stopIndex >= middleIndex) {
+            if (stopIndex != null && stopIndex + 1 >= middleIndex) {
                 var dest = stops.last().stop.name
                 if (co === Operator.GMB) {
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
@@ -365,12 +381,11 @@ fun StopIndexedRouteSearchResultEntry.resolvedDestFormatted(prependTo: Boolean, 
     return if (stopInfo == null || (co !== Operator.KMB && co !== Operator.GMB) || !route!!.isCircular) {
         route!!.resolvedDestFormatted(prependTo, *style)
     } else {
-        val circularMiddle = route!!.dest.zh.remove("(循環線)").trim()
         val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
-        val middleIndex = stops.indexOfFirst { it.stop.name.zh.trim().eitherContains(circularMiddle) }
+        val middleIndex = route!!.getCircularPivotIndex(stops)
         if (middleIndex >= 0) {
             val stopIndex = stops.indexesOf { it.stopId == stopInfo!!.stopId }.minByOrNull { (it - stopInfoIndex).absoluteValue }
-            if (stopIndex != null && stopIndex >= middleIndex) {
+            if (stopIndex != null && stopIndex + 1 >= middleIndex) {
                 var dest = stops.last().stop.name
                 if (co === Operator.GMB) {
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
@@ -399,12 +414,11 @@ fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop
     return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular) {
         resolvedDestWithBranch(prependTo, branch)
     } else {
-        val circularMiddle = branch.dest.zh.remove("(循環線)").trim()
         val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)
-        val middleIndex = stops.indexOfFirst { it.stop.name.zh.trim().eitherContains(circularMiddle) }
+        val middleIndex = branch.getCircularPivotIndex(stops)
         if (middleIndex >= 0) {
             val stopIndex = stops.indexesOf { it.stopId == selectedStopId }.minByOrNull { (it - selectedStop).absoluteValue }
-            if (stopIndex != null && stopIndex >= middleIndex) {
+            if (stopIndex != null && stopIndex + 1 >= middleIndex) {
                 var dest = stops.last().stop.name
                 if (co === Operator.GMB) {
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
@@ -425,12 +439,11 @@ fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, sel
     return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular) {
         resolvedDestWithBranchFormatted(prependTo, branch, *style)
     } else {
-        val circularMiddle = branch.dest.zh.remove("(循環線)").trim()
         val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)
-        val middleIndex = stops.indexOfFirst { it.stop.name.zh.trim().eitherContains(circularMiddle) }
+        val middleIndex = branch.getCircularPivotIndex(stops)
         if (middleIndex >= 0) {
             val stopIndex = stops.indexesOf { it.stopId == selectedStopId }.minByOrNull { (it - selectedStop).absoluteValue }
-            if (stopIndex != null && stopIndex >= middleIndex) {
+            if (stopIndex != null && stopIndex + 1 >= middleIndex) {
                 var dest = stops.last().stop.name
                 if (co === Operator.GMB) {
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
@@ -499,7 +512,11 @@ fun BilingualText.asFormattedText(vararg style: FormattingTextContentStyle): Bil
 }
 
 inline val RouteSearchResultEntry.uniqueKey: String get() {
-    return stopInfo?.let { "$routeKey:${it.stopId}:${favouriteStopMode.toString()}" }?: routeKey
+    return when {
+        this is StopIndexedRouteSearchResultEntry -> stopInfo?.let { "$routeKey:${it.stopId}:${stopInfoIndex}:${favouriteStopMode.toString()}" }?: routeKey
+        stopInfo?.stopIndex != null -> stopInfo?.let { "$routeKey:${it.stopId}:${it.stopIndex}:${favouriteStopMode.toString()}" }?: routeKey
+        else -> stopInfo?.let { "$routeKey:${it.stopId}:${favouriteStopMode.toString()}" }?: routeKey
+    }
 }
 
 inline val CharSequence.operator: Operator get() = Operator.valueOf(toString())
@@ -706,8 +723,8 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
         val (routeList, stopList) = Registry.getInstance(context).let { it.getAllBranchRoutes(routeNumber, bound, co, gmbRegion) to it.getStopList() }
         val allStops by lazy { Registry.getInstance(context).getAllStops(routeNumber, bound, co, gmbRegion).map { it.stopId } }
         val timetable = routeList.createTimetable(Registry.getInstance(context).getServiceDayMap()) { BilingualText.EMPTY }
-        val mainRoute = routeList.first()
-        val proportions = timetable.takeIf { co == Operator.KMB || co == Operator.CTB }?.getRouteProportions()?: mapOf(mainRoute to 1F)
+        val proportions = timetable.takeIf { co == Operator.KMB || co == Operator.CTB }?.getRouteProportions()?: mapOf(routeList.first() to 1F)
+        val mainRoute = proportions.maxBy { it.value }.takeIf { (_, v) -> v > 0.9F }?.key?: routeList.first()
         if (proportions[mainRoute]?.let { it > 0.4F } == true) {
             val remark = (if (this != mainRoute) findDifference(mainRoute, stopList, true) else RouteDifferenceMain).displayText(stopList)
             when (labelType) {
@@ -783,7 +800,13 @@ fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext)
         val branches = allStops.asSequence().flatMap { it.branchIds }.toSet()
         val branchStops = branches.associateWith { b -> allStops.filter { it.branchIds.contains(b) } }
         branchStops.values.all {
-            it.size <= stopInfoIndex + 1 || (it.getOrNull(stopInfoIndex)?.stop?.name nonNullEquals it.getOrNull(stopInfoIndex + 1)?.stop?.name) && it.size <= stopInfoIndex + 2
+            if (it.size <= stopInfoIndex) {
+                true
+            } else {
+                val stop = it.getOrNull(stopInfoIndex - 1)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
+                val nextStop = it.getOrNull(stopInfoIndex)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
+                stop nonNullEquals nextStop
+            }
         }
     }
     return if (isAlightingStop) {

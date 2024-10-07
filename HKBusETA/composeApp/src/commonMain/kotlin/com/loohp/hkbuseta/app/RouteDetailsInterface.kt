@@ -137,6 +137,7 @@ import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.getCircledNumber
 import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
+import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.compose.AdaptiveTopBottomLayout
 import com.loohp.hkbuseta.compose.AltRoute
 import com.loohp.hkbuseta.compose.ArrowBack
@@ -185,6 +186,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.absoluteValue
 import kotlin.math.min
 
 
@@ -290,8 +292,9 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val selectedStop = remember { mutableIntStateOf(
         ((instance.compose.data["scrollToStop"] as? String)?: (instance.compose.data["stopId"] as? String))
             ?.let { id ->
+                val stopIndex = instance.compose.data["stopIndex"] as? Int?: 0
                 val allStops = Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion)
-                val index = allStops.indexOfFirst { it.stopId == id }
+                val index = allStops.indexesOf { it.stopId == id }.minBy { (it - stopIndex).absoluteValue }
                 if (index >= 0) {
                     index + 1
                 } else if (route.route!!.isKmbCtbJoint) {

@@ -115,7 +115,6 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.compose
@@ -167,7 +166,6 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.Colored
-import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.ServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.asFormattedText
@@ -268,15 +266,6 @@ private val etaUpdateScope: CoroutineDispatcher = dispatcherIO.limitedParallelis
 
 private val etaColor: Color @Composable get() = if (Shared.theme.isDarkMode) Color(0xFFAAC3D5) else Color(0xFF2582C4)
 private val etaSecondColor: Color @Composable get() = if (Shared.theme.isDarkMode) Color(0xFFCCCCCC) else Color(0xFF444444)
-
-@Immutable
-data class RouteListScrollPosition(
-    val routes: ImmutableList<StopIndexedRouteSearchResultEntry>,
-    val itemIndex: Int,
-    val itemOffset: Int
-)
-
-private val scrollPositions: MutableMap<RouteListType, RouteListScrollPosition> = ConcurrentMutableMap()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -754,10 +743,9 @@ fun ListRouteInterfaceInternal(
     pipModeListName: BilingualFormattedText?
 ) {
     val haptics = LocalHapticFeedback.current
-    val initialScrollPosition = remember { scrollPositions[listType]?.takeIf { it.routes == routes } }
     val scroll = rememberLazyListState(
-        initialFirstVisibleItemIndex = initialScrollPosition?.itemIndex?: 0,
-        initialFirstVisibleItemScrollOffset = initialScrollPosition?.itemOffset?: 0
+        initialFirstVisibleItemIndex = instance.compose.data["listRoutesInitialFirstVisibleItemIndex"] as? Int?: 0,
+        initialFirstVisibleItemScrollOffset = instance.compose.data["listRoutesInitialFirstVisibleItemScrollOffset"] as? Int?: 0
     )
     val scope = rememberCoroutineScope()
     val lastLookupRoutes by if (listType == RouteListType.RECENT) Shared.lastLookupRoutes.collectAsStateMultiplatform() else remember { mutableStateOf(emptyList()) }
@@ -779,12 +767,9 @@ fun ListRouteInterfaceInternal(
             }
         }
     }
-    LaunchedEffect (scroll.firstVisibleItemIndex, scroll.firstVisibleItemScrollOffset) {
-        scrollPositions[listType] = RouteListScrollPosition(
-            routes = routes,
-            itemIndex = scroll.firstVisibleItemIndex,
-            itemOffset = scroll.firstVisibleItemScrollOffset
-        )
+    ChangedEffect (scroll.firstVisibleItemIndex, scroll.firstVisibleItemScrollOffset) {
+        instance.compose.data["listRoutesInitialFirstVisibleItemIndex"] = scroll.firstVisibleItemIndex
+        instance.compose.data["listRoutesInitialFirstVisibleItemScrollOffset"] = scroll.firstVisibleItemScrollOffset
     }
     LaunchedEffect (routes, sortedByMode) {
         if (init) {
@@ -983,6 +968,7 @@ fun LazyItemScope.RouteEntry(
                         if (route.stopInfo != null) {
                             intent.putExtra("stopId", route.stopInfo!!.stopId)
                         }
+                        intent.putExtra("stopIndex", route.stopInfoIndex)
                         if (HistoryStack.historyStack.value.last().newScreenGroup() == AppScreenGroup.ROUTE_STOPS) {
                             instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
                             delay(300)

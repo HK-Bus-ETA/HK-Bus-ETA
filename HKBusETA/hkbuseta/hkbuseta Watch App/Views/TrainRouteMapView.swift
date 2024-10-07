@@ -85,7 +85,7 @@ struct TrainRouteMapView: AppScreenView {
                             (Shared().MTR_ROUTE_FILTER(r).boolValue && r.stops[Operator.Companion().MTR]?.contains(stopId!) == true).asKt()
                         }
                         result.forEach {
-                            $0.stopInfo = StopInfo(stopId: stopId!, data: stop, distance: 0, co: Operator.Companion().MTR)
+                            $0.stopInfo = StopInfo(stopId: stopId!, data: stop, distance: 0, co: Operator.Companion().MTR, stopIndex: nil)
                         }
                         data["result"] = StopIndexedRouteSearchResultEntryKt.toStopIndexed(result, instance: appContext)
                         data["listType"] = RouteListType.Companion().NORMAL
@@ -126,7 +126,7 @@ struct TrainRouteMapView: AppScreenView {
                             (RouteExtensionsKt.firstCo(r.co) == Operator.Companion().LRT && r.stops[Operator.Companion().LRT]?.contains(stopId!) == true).asKt()
                         }
                         result.forEach {
-                            $0.stopInfo = StopInfo(stopId: stopId!, data: stop, distance: 0, co: Operator.Companion().LRT)
+                            $0.stopInfo = StopInfo(stopId: stopId!, data: stop, distance: 0, co: Operator.Companion().LRT, stopIndex: nil)
                         }
                         data["result"] = StopIndexedRouteSearchResultEntryKt.toStopIndexed(result, instance: appContext)
                         data["listType"] = RouteListType.Companion().NORMAL
