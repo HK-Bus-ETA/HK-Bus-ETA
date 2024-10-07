@@ -242,7 +242,7 @@ def strip_data_sheet(data):
 def download_and_process_data_sheet():
     global DATA_SHEET
     global BUS_ROUTE
-    url = "https://data.hkbus.app/routeFareList.min.json"
+    url = "https://crawling-data.hkbuseta.com/routeFareList.min.json"
     response = requests.get(url)
     DATA_SHEET = response.json()
     clean_data_sheet(DATA_SHEET)
