@@ -16,6 +16,7 @@ KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
 MTR_DATA = {}
 MTR_BARRIER_FREE_MAPPING = {}
 LRT_DATA = {}
+TRAFFIC_SNAPSHOTS = []
 
 DATA_SHEET_FILE_NAME = "data.json"
 DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
@@ -752,6 +753,36 @@ def download_and_process_mtr_data():
             }
 
 
+def download_and_process_traffic_snapshot():
+    global TRAFFIC_SNAPSHOTS
+    traffic_snapshots_zh = get_web_text("https://static.data.gov.hk/td/traffic-snapshot-images/code/Traffic_Camera_Locations_Tc.csv").splitlines()[1:]
+    traffic_snapshots_en = get_web_text("https://static.data.gov.hk/td/traffic-snapshot-images/code/Traffic_Camera_Locations_En.csv").splitlines()[1:]
+    en_names = {}
+    for entry in traffic_snapshots_en:
+        row = entry.split("\t")
+        key = row[0].strip('"')
+        name_en = row[3].strip('"')
+        en_names[key] = name_en
+    for entry in traffic_snapshots_zh:
+        row = entry.split("\t")
+        key = row[0].strip('"')
+        name_zh = row[3].strip('"')
+        name_en = en_names[key] if key in en_names else ""
+        lat = float(row[6].strip('"'))
+        lng = float(row[7].strip('"'))
+        TRAFFIC_SNAPSHOTS.append({
+            "key": key,
+            "name": {
+                "zh": name_zh,
+                "en": name_en
+            },
+            "location": {
+                "lat": lat,
+                "lng": lng
+            }
+        })
+
+
 print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
 print("Downloading & Processing CTB Routes")
@@ -766,6 +797,8 @@ print("Downloading & Processing MTR-Bus Data")
 download_and_process_mtr_bus_data()
 print("Downloading & Processing MTR & LRT Data")
 download_and_process_mtr_data()
+print("Downloading & Processing Traffic Snapshots")
+download_and_process_traffic_snapshot()
 print("Capitalizing KMB English Names")
 capitalize_english_names()
 print("Listing KMB Subsidiary Routes")
@@ -782,7 +815,8 @@ output = {
     "kmbSubsidiary": {key: sorted(value) for key, value in KMB_SUBSIDIARY_ROUTES.items()},
     "mtrData": MTR_DATA,
     "mtrBarrierFreeMapping": MTR_BARRIER_FREE_MAPPING,
-    "lrtData": LRT_DATA
+    "lrtData": LRT_DATA,
+    "trafficSnapshot": TRAFFIC_SNAPSHOTS
 }
 
 mtr_data = requests.get("https://mtrdata.hkbuseta.com/mtr_data.json").json()
@@ -805,6 +839,7 @@ del output["mtrData"]
 del output["mtrBarrierFreeMapping"]
 del output["lrtData"]
 del output["splashEntries"]
+del output["trafficSnapshot"]
 
 with open(DATA_SHEET_FILE_NAME, "w", encoding="utf-8") as f:
     json.dump(output, f, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
