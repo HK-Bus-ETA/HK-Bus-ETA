@@ -41,7 +41,7 @@ import com.loohp.hkbuseta.common.utils.SideSpurLineType
 
 @Composable
 fun MTRLineSection(sectionData: MTRStopSectionData, highlight: RouteHighlightType = RouteHighlightType.NORMAL) {
-    val (mainLine, spurLine, _, _, co, rawColor, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, _, context) = sectionData
+    val (mainLine, spurLine, _, _, co, rawColor, isLrtCircular, interchangeData, hasOutOfStation, stopByBranchId, _) = sectionData
     val color = Color(rawColor)
     Canvas(
         modifier = Modifier.fillMaxSize()
@@ -319,7 +319,7 @@ fun MTRLineSection(sectionData: MTRStopSectionData, highlight: RouteHighlightTyp
 
 @Composable
 fun MTRLineSectionExtension(sectionData: MTRStopSectionData) {
-    val (mainLine, spurLine, _, _, _, rawColor, _, _, hasOutOfStation, stopByBranchId, requireExtension, context) = sectionData
+    val (mainLine, spurLine, _, _, _, rawColor, _, _, hasOutOfStation, stopByBranchId, requireExtension) = sectionData
     val color = Color(rawColor)
     Canvas(
         modifier = Modifier.fillMaxSize()

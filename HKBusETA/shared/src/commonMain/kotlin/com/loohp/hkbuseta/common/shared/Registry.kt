@@ -69,12 +69,14 @@ import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.StopInfo
 import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.objects.TrafficNews
+import com.loohp.hkbuseta.common.objects.TrafficSnapshotPoint
 import com.loohp.hkbuseta.common.objects.TrainServiceStatus
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.calculateServiceTimeCategory
 import com.loohp.hkbuseta.common.objects.defaultOperatorNotices
 import com.loohp.hkbuseta.common.objects.endOfLineText
 import com.loohp.hkbuseta.common.objects.fetchOperatorNotices
+import com.loohp.hkbuseta.common.objects.findPointsWithinDistanceOrdered
 import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.getBody
 import com.loohp.hkbuseta.common.objects.getCircularPivotIndex
@@ -87,6 +89,7 @@ import com.loohp.hkbuseta.common.objects.getTitle
 import com.loohp.hkbuseta.common.objects.hkkfStopCode
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyStopCo
+import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.lrtLineStatus
@@ -97,6 +100,7 @@ import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.routeComparator
 import com.loohp.hkbuseta.common.objects.routeComparatorRouteNumberFirst
 import com.loohp.hkbuseta.common.objects.routeGroupKey
+import com.loohp.hkbuseta.common.objects.splitByClosestPoints
 import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.objects.waypointsId
 import com.loohp.hkbuseta.common.objects.withEn
@@ -339,19 +343,12 @@ class Registry {
                         val oldRoute = favouriteRoute.route
                         var stopId = favouriteRoute.stopId
                         val co = favouriteRoute.co
-                        val newRoutes = findRoutes(oldRoute.routeNumber, true) { r ->
-                            if (!r.bound.containsKey(co)) {
-                                return@findRoutes false
-                            }
-                            if (co === Operator.GMB) {
-                                if (r.gmbRegion != oldRoute.gmbRegion) {
-                                    return@findRoutes false
-                                }
-                            } else if (co === Operator.NLB) {
-                                return@findRoutes r.nlbId == oldRoute.nlbId
-                            }
-                            r.bound[co] == oldRoute.bound[co]
-                        }
+                        val newRoutes = findRoutes(
+                            input = oldRoute.routeNumber,
+                            exact = true,
+                            sorted = false,
+                            predicate = { it.bound.containsKey(co) && it.idBound(co) == oldRoute.idBound(co) && it.gmbRegion == oldRoute.gmbRegion }
+                        )
                         if (newRoutes.isEmpty()) {
                             return@mapNotNull null
                         }
@@ -878,19 +875,7 @@ class Registry {
                                         input = oldRoute.routeNumber,
                                         exact = true,
                                         sorted = false,
-                                        predicate = { r ->
-                                            if (!r.bound.containsKey(co)) {
-                                                return@findRoutes false
-                                            }
-                                            if (co === Operator.GMB) {
-                                                if (r.gmbRegion != oldRoute.gmbRegion) {
-                                                    return@findRoutes false
-                                                }
-                                            } else if (co === Operator.NLB) {
-                                                return@findRoutes r.nlbId == oldRoute.nlbId
-                                            }
-                                            r.bound[co] == oldRoute.bound[co]
-                                        }
+                                        predicate = { it.bound.containsKey(co) && it.idBound(co) == oldRoute.idBound(co) && it.gmbRegion == oldRoute.gmbRegion }
                                     )
                                     when {
                                         newRoutes.isEmpty() -> null
@@ -1993,6 +1978,7 @@ class Registry {
     }
 
     private val cachedWaypoints: MutableMap<String, RouteWaypoints> = ConcurrentMutableMap()
+    private val cachedTrafficSnapshots: MutableMap<RouteWaypoints, Array<out List<TrafficSnapshotPoint>>> = ConcurrentMutableMap()
 
     fun getRouteWaypoints(route: Route, context: AppContext, provideStops: List<Stop>?): Deferred<RouteWaypoints> {
         val id = route.waypointsId
@@ -2010,10 +1996,45 @@ class Registry {
                     ?.optJsonObject("geometry")
                     ?.optJsonArray("coordinates")
                     ?.let {
-                        RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, it.map { l -> l.jsonArray.map { e -> Coordinates.fromJsonArray(e.jsonArray, true) } })
+                        val path = it.map { l -> l.jsonArray.map { e -> Coordinates.fromJsonArray(e.jsonArray, true) } }.run {
+                            if (size == 1 && stops.size > 2) {
+                                var path = first()
+                                val firstStopLocation = stops.first().location
+                                if (path.first().distance(firstStopLocation) > path.last().distance(firstStopLocation)) {
+                                    path = path.reversed()
+                                }
+                                path.splitByClosestPoints(stops.map { s -> s.location })
+                            } else {
+                                this
+                            }
+                        }
+                        RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, path)
                     }
                     ?: RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, listOf(stops.map { it.location }))
             }
+        }
+    }
+
+    @ReduceDataOmitted
+    fun getRouteTrafficSnapshots(waypoints: RouteWaypoints): Array<out List<TrafficSnapshotPoint>>? {
+        if (!waypoints.isHighRes && waypoints.co.isBus) return null
+        return cachedTrafficSnapshots.getOrPut(waypoints) {
+            val result: Array<MutableList<TrafficSnapshotPoint>> = Array(waypoints.stops.size) { mutableListOf() }
+            val usedTrafficSnapshots: MutableSet<TrafficSnapshotPoint> = mutableSetOf()
+            for (i in waypoints.paths.indices) {
+                val path = waypoints.paths[i]
+                val trafficSnapshots = path.findPointsWithinDistanceOrdered(
+                    items = DATA!!.trafficSnapshot!!,
+                    itemLocation = { location },
+                    threshold = 0.05
+                )
+                for (trafficSnapshot in trafficSnapshots) {
+                    if (usedTrafficSnapshots.add(trafficSnapshot)) {
+                        result.getOrElse(i.coerceAtMost(waypoints.stops.size - 2)) { result.last() }.add(trafficSnapshot)
+                    }
+                }
+            }
+            result
         }
     }
 
@@ -2804,6 +2825,7 @@ class Registry {
         return ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, co, lines)
     }
 
+    @Immutable
     data class GMBETAEntry(
         val stopSeq: Int,
         val mins: Double,

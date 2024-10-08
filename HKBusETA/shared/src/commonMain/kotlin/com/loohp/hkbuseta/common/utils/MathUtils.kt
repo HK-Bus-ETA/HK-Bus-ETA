@@ -93,6 +93,19 @@ inline fun findDistance(lat1: Double, lng1: Double, lat2: Double, lng2: Double):
     return c * 6371
 }
 
+inline fun findDistanceToSegment(latP: Double, lngP: Double, lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
+    val a = findDistance(latP, lngP, lat1, lng1)
+    val b = findDistance(latP, lngP, lat2, lng2)
+    val c = findDistance(lat1, lng1, lat2, lng2)
+
+    val s = (a + b + c) / 2
+    val area = sqrt(s * (s - a) * (s - b) * (s - c))
+
+    val distanceToLine = (2 * area) / c
+
+    return distanceToLine
+}
+
 inline fun findBearing(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
     val dLon = lng2 - lng1
 

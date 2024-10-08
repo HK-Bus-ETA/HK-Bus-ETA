@@ -68,6 +68,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -88,6 +89,7 @@ import com.loohp.hkbuseta.appcontext.newScreenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.OriginData
@@ -97,8 +99,10 @@ import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteNotice
 import com.loohp.hkbuseta.common.objects.RouteNoticeImportance
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.SpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.TrafficSnapshotPoint
 import com.loohp.hkbuseta.common.objects.asOriginData
 import com.loohp.hkbuseta.common.objects.bilingualToPrefix
 import com.loohp.hkbuseta.common.objects.calculateServiceTimeCategory
@@ -142,11 +146,16 @@ import com.loohp.hkbuseta.compose.AdaptiveTopBottomLayout
 import com.loohp.hkbuseta.compose.AltRoute
 import com.loohp.hkbuseta.compose.ArrowBack
 import com.loohp.hkbuseta.compose.AutoResizeText
+import com.loohp.hkbuseta.compose.CalendarClock
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.ConditionalComposable
+import com.loohp.hkbuseta.compose.DepartureBoard
+import com.loohp.hkbuseta.compose.DirectionsBoat
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.Fullscreen
 import com.loohp.hkbuseta.compose.FullscreenExit
+import com.loohp.hkbuseta.compose.NotificationImportant
+import com.loohp.hkbuseta.compose.PhotoCamera
 import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformFilledTonalIconToggleButton
 import com.loohp.hkbuseta.compose.PlatformIcon
@@ -157,6 +166,7 @@ import com.loohp.hkbuseta.compose.PlatformTabRow
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.PlatformTopAppBar
 import com.loohp.hkbuseta.compose.RightToLeftRow
+import com.loohp.hkbuseta.compose.Timer
 import com.loohp.hkbuseta.compose.UTurnRight
 import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
@@ -170,6 +180,7 @@ import com.loohp.hkbuseta.compose.rememberAutoResizeFontState
 import com.loohp.hkbuseta.compose.rememberIsInPipMode
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.compose.userMarquee
+import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
@@ -186,35 +197,47 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.painterResource
 import kotlin.math.absoluteValue
 import kotlin.math.min
 
 
 enum class StopsTabItemType {
-    STOPS, TIMES, NOTICES, TIMETABLE
+    STOPS, TIMES, TRAFFIC_SNAPSHOTS, NOTICES, TIMETABLE
 }
 
 @Immutable
 data class ListStopsTabItem(
     val title: BilingualText,
+    val icon: @Composable () -> Painter,
+    val color: Color? = null,
     val type: StopsTabItemType
 )
 
 val busListStopsTabItem = listOf(
     ListStopsTabItem(
         title = "巴士站" withEn "Stops",
+        icon = { PlatformIcons.Outlined.DepartureBoard },
         type = StopsTabItemType.STOPS
     ),
     ListStopsTabItem(
         title = "車程" withEn "Times",
+        icon = { PlatformIcons.Outlined.Timer },
         type = StopsTabItemType.TIMES
     ),
     ListStopsTabItem(
+        title = "快拍" withEn "Traffic",
+        icon = { PlatformIcons.Filled.PhotoCamera },
+        type = StopsTabItemType.TRAFFIC_SNAPSHOTS
+    ),
+    ListStopsTabItem(
         title = "公告" withEn "Notices",
+        icon = { PlatformIcons.Outlined.NotificationImportant },
         type = StopsTabItemType.NOTICES
     ),
     ListStopsTabItem(
         title = "時間表" withEn "Timetable",
+        icon = { PlatformIcons.Outlined.CalendarClock },
         type = StopsTabItemType.TIMETABLE
     )
 )
@@ -222,14 +245,18 @@ val busListStopsTabItem = listOf(
 val trainListStopsTabItem = listOf(
     ListStopsTabItem(
         title = "車站" withEn "Stations",
+        icon = { painterResource(DrawableResource("mtr_vector.xml")) },
+        color = Color(0xFFAC2E44),
         type = StopsTabItemType.STOPS
     ),
     ListStopsTabItem(
         title = "車程" withEn "Times",
+        icon = { PlatformIcons.Outlined.Timer },
         type = StopsTabItemType.TIMES
     ),
     ListStopsTabItem(
         title = "公告" withEn "Notices",
+        icon = { PlatformIcons.Outlined.NotificationImportant },
         type = StopsTabItemType.NOTICES
     ),
 )
@@ -237,14 +264,17 @@ val trainListStopsTabItem = listOf(
 val ferryListStopsTabItem = listOf(
     ListStopsTabItem(
         title = "航班" withEn "Route",
+        icon = { PlatformIcons.Outlined.DirectionsBoat },
         type = StopsTabItemType.STOPS
     ),
     ListStopsTabItem(
         title = "公告" withEn "Notices",
+        icon = { PlatformIcons.Outlined.NotificationImportant },
         type = StopsTabItemType.NOTICES
     ),
     ListStopsTabItem(
         title = "時間表" withEn "Timetable",
+        icon = { PlatformIcons.Outlined.CalendarClock },
         type = StopsTabItemType.TIMETABLE
     )
 )
@@ -259,7 +289,7 @@ fun listStopsTabItem(co: Operator): List<ListStopsTabItem> {
 
 expect fun updateBrowserState(title: String, url: String)
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ReduceDataOmitted::class)
 @Composable
 fun RouteDetailsInterface(instance: AppActiveContext) {
     val route by remember(instance) { derivedStateOf { when (val r = instance.compose.data["route"]) {
@@ -288,7 +318,8 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val alertCheckRoute by remember { derivedStateOf { route.route!!.getSpecialRouteAlerts(instance).contains(SpecialRouteAlerts.CheckRoute) } }
 
     val routeBranches by remember { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) } }
-    val selectedBranch = remember { mutableStateOf(routeBranches.currentBranchStatus(currentLocalDateTime(), instance).asSequence().sortedByDescending { it.value.activeness }.first().key) }
+    val selectedBranchState = remember { mutableStateOf(routeBranches.currentBranchStatus(currentLocalDateTime(), instance).asSequence().sortedByDescending { it.value.activeness }.first().key) }
+    var selectedBranch by selectedBranchState
     val selectedStop = remember { mutableIntStateOf(
         ((instance.compose.data["scrollToStop"] as? String)?: (instance.compose.data["stopId"] as? String))
             ?.let { id ->
@@ -333,6 +364,23 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
 
     val alternateStopNamesShowing = Shared.alternateStopNamesShowingState.collectAsStateMultiplatform { Registry.getInstance(instance).setAlternateStopNames(it, instance) }
 
+    val waypointStops by remember { derivedStateOf { (if (co.isTrain) allStops else allStops.filter { it.branchIds.contains(selectedBranch) }).map { it.stop } } }
+    var waypoints by remember { mutableStateOf(if (co.isTrain) route.defaultWaypoints(instance) else selectedBranch.defaultWaypoints(instance)) }
+    var trafficSnapshots: Array<out List<TrafficSnapshotPoint>>? by remember { mutableStateOf(null) }
+
+    LaunchedEffect (selectedBranch, waypointStops) {
+        CoroutineScope(dispatcherIO).launch {
+            val waypointsAsync = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, instance, waypointStops).await()
+            withContext(Dispatchers.Main) {
+                waypoints = waypointsAsync
+            }
+            val asyncTrafficSnapshots = Registry.getInstance(instance).getRouteTrafficSnapshots(waypointsAsync)
+            withContext(Dispatchers.Main) {
+                trafficSnapshots = asyncTrafficSnapshots
+            }
+        }
+    }
+
     instance.compose.setStatusNavBarColor(
         status = platformPrimaryContainerColor,
         nav = platformSurfaceContainerColor
@@ -348,7 +396,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
         if (isActiveReminderService) {
             while (true) {
                 alightReminderService?.let {
-                    selectedBranch.value = it.selectedRoute
+                    selectedBranch = it.selectedRoute
                     selectedStop.value = it.currentStop.index
                 }
                 delay(1000)
@@ -399,11 +447,10 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             }
         }
     }
-    LaunchedEffect (route, selectedBranch.value, selectedStop.intValue) {
+    LaunchedEffect (route, selectedBranch, selectedStop.intValue) {
         val stopIndex = selectedStop.intValue
         val stop = allStops[stopIndex - 1]
-        val branch = selectedBranch.value
-        updateBrowserState("${co.getDisplayName(routeNumber, branch.isKmbCtbJoint, gmbRegion, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${branch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${stopIndex}." else ""} ${stop.stop.name[Shared.language]}", branch.getDeepLink(instance, stop.stopId, stopIndex))
+        updateBrowserState("${co.getDisplayName(routeNumber, selectedBranch.isKmbCtbJoint, gmbRegion, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${selectedBranch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${stopIndex}." else ""} ${stop.stop.name[Shared.language]}", selectedBranch.getDeepLink(instance, stop.stopId, stopIndex))
     }
     DisposableEffect (Unit) {
         onDispose { updateBrowserState("", BASE_URL) }
@@ -417,7 +464,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             title = {
                 @Suppress("RemoveExplicitTypeArguments")
                 ConditionalComposable<RowScope>(
-                    condition = composePlatform.applePlatform && similarRoutes[selectedBranch.value] != null,
+                    condition = composePlatform.applePlatform && similarRoutes[selectedBranch] != null,
                     ifTrue = { content ->
                         PlatformButton(
                             modifier = Modifier
@@ -475,7 +522,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                 .alignByBaseline()
                                 .userMarquee(),
                             overflow = TextOverflow.Ellipsis,
-                            text = route.route!!.resolvedDestWithBranchFormatted(false, selectedBranch.value, selectedStop.intValue, allStops[selectedStop.intValue - 1].stopId, instance)[Shared.language].asContentAnnotatedString().annotatedString,
+                            text = route.route!!.resolvedDestWithBranchFormatted(false, selectedBranch, selectedStop.intValue, allStops[selectedStop.intValue - 1].stopId, instance)[Shared.language].asContentAnnotatedString().annotatedString,
                             autoResizeTextState = autoResizeFontState,
                             lineHeight = 1.1F.em,
                             maxLines = 2,
@@ -545,7 +592,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                             )
                         }
                     }
-                    if (!composePlatform.applePlatform && similarRoutes[selectedBranch.value] != null) {
+                    if (!composePlatform.applePlatform && similarRoutes[selectedBranch] != null) {
                         PlatformButton(
                             modifier = Modifier
                                 .size(45.dp)
@@ -571,7 +618,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             iosDivider = { /* do nothing */ }
         )
         val autoFontSizeState = rememberAutoResizeFontState(
-            fontSizeRange = FontSizeRange(min = 11F.sp, max = 16F.sp),
+            fontSizeRange = FontSizeRange(min = 11F.dp.sp, max = 16F.sp),
             preferSingleLine = true
         )
         PlatformTabRow(
@@ -579,21 +626,37 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                 .applyIf(composePlatform.applePlatform) { platformHorizontalDividerShadow() },
             selectedTabIndex = pagerState.currentPage
         ) {
-            listStopsTabItem.forEachIndexed { index, item ->
+            listStopsTabItem.forEachIndexed { index, (title, icon, color, type) ->
                 PlatformTab(
                     selected = index == pagerState.currentPage,
                     onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                    text = {
-                        AutoResizeText(
-                            modifier = Modifier.applyIf(composePlatform.applePlatform) { padding(horizontal = 5.dp) },
-                            autoResizeTextState = autoFontSizeState,
-                            lineHeight = 1.1F.em,
-                            text = if (index == 2 && importantNoticeCount > 0) {
-                                "${item.title[Shared.language]} ${importantNoticeCount.getCircledNumber()}"
-                            } else {
-                                item.title[Shared.language]
-                            }
+                    icon = {
+                        PlatformIcon(
+                            modifier = Modifier.size(18F.sp.dp),
+                            painter = icon.invoke(),
+                            tint = color,
+                            contentDescription = title[Shared.language]
                         )
+                    },
+                    text = {
+                        Row(
+                            modifier = Modifier.applyIf(composePlatform.applePlatform) { padding(horizontal = 5.dp) },
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AutoResizeText(
+                                autoResizeTextState = autoFontSizeState,
+                                lineHeight = 1.1F.em,
+                                text = title[Shared.language]
+                            )
+                            if (type == StopsTabItemType.NOTICES && importantNoticeCount > 0) {
+                                AutoResizeText(
+                                    autoResizeTextState = autoFontSizeState,
+                                    lineHeight = 1.1F.em,
+                                    text = importantNoticeCount.getCircledNumber()
+                                )
+                            }
+                        }
                     }
                 )
             }
@@ -608,8 +671,9 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             ) {
                 val item = listStopsTabItem[it]
                 when (item.type) {
-                    StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranch, possibleBidirectionalSectionFare, alertCheckRoute, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing)
-                    StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranch, alternateStopNamesShowing, timesStartIndexState = timesStartIndexState, timesInitState = timesInitState)
+                    StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranchState, waypoints, possibleBidirectionalSectionFare, alertCheckRoute, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing)
+                    StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranchState, alternateStopNamesShowing, timesStartIndexState = timesStartIndexState, timesInitState = timesInitState)
+                    StopsTabItemType.TRAFFIC_SNAPSHOTS -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TRAFFIC_SNAPSHOTS, location, route, selectedStop, selectedBranchState, alternateStopNamesShowing, waypoints = waypoints, trafficSnapshots = trafficSnapshots)
                     StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.asImmutableList(), possibleBidirectionalSectionFare)
                     StopsTabItemType.TIMETABLE -> TimetableInterface(instance, routeBranches.asImmutableList())
                 }
@@ -644,7 +708,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                     Box(
                         modifier = Modifier.padding(padding)
                     ) {
-                        ListRoutesInterface(instance, similarRoutes[selectedBranch.value]?: persistentListOf(), false, RouteListType.NORMAL, false, RecentSortMode.DISABLED, null, true)
+                        ListRoutesInterface(instance, similarRoutes[selectedBranch]?: persistentListOf(), false, RouteListType.NORMAL, false, RecentSortMode.DISABLED, null, true)
                     }
                 }
             )
@@ -660,6 +724,7 @@ fun MapStopsInterface(
     listRoute: RouteSearchResultEntry,
     selectedStopState: MutableIntState,
     selectedBranchState: MutableState<Route>,
+    waypoints: RouteWaypoints,
     possibleBidirectionalSectionFare: Boolean,
     alertCheckRoute: Boolean,
     isActiveReminderService: Boolean,
@@ -667,7 +732,6 @@ fun MapStopsInterface(
     alternateStopNamesShowingState: MutableState<Boolean>
 ) {
     var mapExpanded by remember { mutableStateOf(false) }
-    val selectedBranch by selectedBranchState
 
     val routeNumber by remember(listRoute) { derivedStateOf { listRoute.route!!.routeNumber } }
     val co by remember(listRoute) { derivedStateOf { listRoute.co } }
@@ -675,29 +739,17 @@ fun MapStopsInterface(
     val gmbRegion by remember(listRoute) { derivedStateOf { listRoute.route!!.gmbRegion } }
     val isKmbCtbJoint by remember(listRoute) { derivedStateOf { listRoute.route!!.isKmbCtbJoint } }
     val allStops by remember(listRoute) { derivedStateOf { Registry.getInstance(instance).getAllStops(routeNumber, bound, co, gmbRegion) } }
-    val stops by remember { derivedStateOf { (if (co.isTrain) allStops else allStops.filter { it.branchIds.contains(selectedBranch) }).map { it.stop } } }
 
     val alternateStopNamesShowing by alternateStopNamesShowingState
 
     val pipMode = rememberIsInPipMode(instance)
 
     if (Shared.showRouteMap && !pipMode) {
-        var waypoints by remember { mutableStateOf(if (co.isTrain) listRoute.defaultWaypoints(instance) else selectedBranch.defaultWaypoints(instance)) }
-
         val alternateStopNames by remember(listRoute, isKmbCtbJoint) { derivedStateOf { if (isKmbCtbJoint) {
             Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB).asImmutableList()
         } else {
             null
         }.asImmutableState() } }
-
-        LaunchedEffect (selectedBranch, stops) {
-            CoroutineScope(dispatcherIO).launch {
-                val waypointsAsync = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, instance, stops).await()
-                withContext(Dispatchers.Main) {
-                    waypoints = waypointsAsync
-                }
-            }
-        }
 
         AdaptiveTopBottomLayout(
             modifier = Modifier.fillMaxWidth(),

@@ -113,6 +113,8 @@ kotlin {
             implementation(libs.serialization.xml)
             implementation(libs.material3.window.size.clazz.multiplatform)
             implementation(libs.material.kolor)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
         }
         iosMain.dependencies {
             implementation(projects.shared)
@@ -148,8 +150,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 884
-        versionName = "2.3.7"
+        versionCode = 893
+        versionName = "2.4.0"
     }
     packaging {
         resources {
@@ -179,7 +181,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.loohp.hkbuseta"
-            packageVersion = "2.3.7"
+            packageVersion = "2.4.0"
         }
 
         buildTypes.release.proguard {

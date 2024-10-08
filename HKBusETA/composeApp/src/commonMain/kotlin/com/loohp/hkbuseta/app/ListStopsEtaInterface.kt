@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -67,6 +68,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
 import androidx.compose.runtime.Composable
@@ -89,8 +91,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -109,6 +113,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import coil3.compose.SubcomposeAsyncImage
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.ScreenState
 import com.loohp.hkbuseta.appcontext.applicationAppContext
@@ -134,7 +139,9 @@ import com.loohp.hkbuseta.common.objects.RemarkType
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.TrafficSnapshotPoint
 import com.loohp.hkbuseta.common.objects.WearableConnectionState
 import com.loohp.hkbuseta.common.objects.add
 import com.loohp.hkbuseta.common.objects.anyEquals
@@ -152,6 +159,7 @@ import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.indexOfName
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
+import com.loohp.hkbuseta.common.objects.mapTrafficSnapshots
 import com.loohp.hkbuseta.common.objects.remove
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
 import com.loohp.hkbuseta.common.objects.resolvedDest
@@ -173,10 +181,12 @@ import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.floorToInt
+import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.compose.Add
 import com.loohp.hkbuseta.compose.ArrowDropDown
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -192,7 +202,9 @@ import com.loohp.hkbuseta.compose.MoreHoriz
 import com.loohp.hkbuseta.compose.MoreVert
 import com.loohp.hkbuseta.compose.NotificationsActive
 import com.loohp.hkbuseta.compose.NotificationsOff
+import com.loohp.hkbuseta.compose.PhotoCamera
 import com.loohp.hkbuseta.compose.PlatformButton
+import com.loohp.hkbuseta.compose.PlatformCircularProgressIndicator
 import com.loohp.hkbuseta.compose.PlatformFilledTonalIconButton
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
@@ -279,6 +291,7 @@ import org.jetbrains.compose.resources.painterResource
 enum class ListStopsInterfaceType(val showBranches: Boolean, val canChangeBranch: Boolean) {
     ETA(true, true),
     TIMES(false, false),
+    TRAFFIC_SNAPSHOTS(false, false),
     ALIGHT_REMINDER(true, false)
 }
 
@@ -337,7 +350,9 @@ fun ListStopsEtaInterface(
     alertCheckRoute: Boolean = false,
     floatingActions: (@Composable BoxScope.(LazyListState) -> Unit)? = null,
     timesStartIndexState: MutableIntState = remember { mutableIntStateOf(1) },
-    timesInitState: MutableState<Boolean> = remember { mutableStateOf(false) }
+    timesInitState: MutableState<Boolean> = remember { mutableStateOf(false) },
+    waypoints: RouteWaypoints? = null,
+    trafficSnapshots: Array<out List<TrafficSnapshotPoint>>? = null
 ) {
     val routeNumber by remember(listRoute) { derivedStateOf { listRoute.route!!.routeNumber } }
     val co by remember(listRoute) { derivedStateOf { listRoute.co } }
@@ -393,6 +408,8 @@ fun ListStopsEtaInterface(
         null
     }.asImmutableState() } }
 
+    val trafficSnapshotsByAllStops by remember(waypoints, trafficSnapshots) { derivedStateOf { allStops.mapTrafficSnapshots(waypoints, trafficSnapshots) } }
+
     val pipMode = rememberIsInPipMode(instance)
 
     LaunchedEffect (isActiveReminderService) {
@@ -443,7 +460,7 @@ fun ListStopsEtaInterface(
                         timesInit = true
                     }
                 }
-                ListStopsInterfaceType.ALIGHT_REMINDER -> { /* do nothing */ }
+                else -> { /* do nothing */ }
             }
         }
     }
@@ -566,6 +583,7 @@ fun ListStopsEtaInterface(
                                 sheetTypeState = sheetTypeState,
                                 togglingAlightReminderState = togglingAlightReminderState,
                                 alternateStopNamesShowingState = alternateStopNamesShowingState,
+                                trafficSnapshots = trafficSnapshotsByAllStops.getOrNull(i),
                                 sticky = sticky
                             )
                             if (sticky) {
@@ -1037,6 +1055,7 @@ fun StopEntry(
     sheetTypeState: MutableState<BottomSheetType>,
     togglingAlightReminderState: MutableState<Boolean>,
     alternateStopNamesShowingState: MutableState<Boolean>,
+    trafficSnapshots: List<TrafficSnapshotPoint>?,
     sticky: Boolean
 ) {
     val selectedBranch by selectedBranchState
@@ -1044,7 +1063,7 @@ fun StopEntry(
 
     val timesStartIndex by timesStartIndexState
 
-    val expanded = (selectedStop == index || (type == ListStopsInterfaceType.TIMES && timesStartIndex == index)) && (type == ListStopsInterfaceType.ETA || co.isTrain || stopData.branchIds.contains(selectedBranch))
+    val expanded = type == ListStopsInterfaceType.TRAFFIC_SNAPSHOTS || ((selectedStop == index || (type == ListStopsInterfaceType.TIMES && timesStartIndex == index)) && (type == ListStopsInterfaceType.ETA || co.isTrain || stopData.branchIds.contains(selectedBranch)))
 
     Column(
         modifier = Modifier
@@ -1104,7 +1123,8 @@ fun StopEntry(
                     etaResultsState = etaResultsState,
                     etaUpdateTimesState = etaUpdateTimesState,
                     sheetTypeState = sheetTypeState,
-                    togglingAlightReminderState = togglingAlightReminderState
+                    togglingAlightReminderState = togglingAlightReminderState,
+                    trafficSnapshots = trafficSnapshots
                 )
             }
         }
@@ -1128,7 +1148,7 @@ fun StopEntryCard(
     co: Operator,
     gmbRegion: GMBRegion?,
     alightReminderHighlightBlinkState: MutableState<Boolean>,
-    alternateStopNamesShowingState: MutableState<Boolean>
+    alternateStopNamesShowingState: MutableState<Boolean>,
 ) {
     val i = index - 1
     val selectedBranch by selectedBranchState
@@ -1218,6 +1238,7 @@ fun StopEntryCard(
                 }
             }
             Row(
+                modifier = Modifier.weight(1F),
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1235,7 +1256,7 @@ fun StopEntryCard(
                 }
                 AutoResizeText(
                     modifier = Modifier
-                        .weight(1F)
+                        .weight(1F, false)
                         .padding(end = 5.dp)
                         .alignByBaseline(),
                     onTextLayout = { lineCount = it.lineCount },
@@ -1249,41 +1270,44 @@ fun StopEntryCard(
                     color = platformLocalContentColor.adjustAlpha(if (onSelectedBranch || co.isTrain) 1F else 0.5F)
                 )
             }
-            if (type == ListStopsInterfaceType.ALIGHT_REMINDER) {
-                val service = alightReminderService
-                when {
-                    service == null -> { /* do nothing */ }
-                    service.currentStop.index == index -> {
-                        PlatformIcon(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .padding(end = 5.dp),
-                            tint = Color(0xff199fff),
-                            painter = PlatformIcons.Outlined.LocationOn,
-                            contentDescription = if (Shared.language == "en") "Current Stop" else "本站"
-                        )
+            when (type) {
+                ListStopsInterfaceType.ALIGHT_REMINDER -> {
+                    val service = alightReminderService
+                    when {
+                        service == null -> { /* do nothing */ }
+                        service.currentStop.index == index -> {
+                            PlatformIcon(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .padding(end = 5.dp),
+                                tint = Color(0xff199fff),
+                                painter = PlatformIcons.Outlined.LocationOn,
+                                contentDescription = if (Shared.language == "en") "Current Stop" else "本站"
+                            )
+                        }
+                        service.destinationStopId.index == index -> {
+                            PlatformIcon(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .padding(end = 5.dp),
+                                tint = Color.Red,
+                                painter = PlatformIcons.Outlined.EmojiFlags,
+                                contentDescription = if (Shared.language == "en") "Destination" else "目的地"
+                            )
+                        }
+                        service.currentStop.index < index && service.destinationStopId.index >= index -> {
+                            PlatformIcon(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .padding(end = 5.dp),
+                                painter = PlatformIcons.Outlined.MoreVert,
+                                contentDescription = if (Shared.language == "en") "Remaining Stops" else "剩餘中途站"
+                            )
+                        }
+                        else -> { /* do nothing*/ }
                     }
-                    service.destinationStopId.index == index -> {
-                        PlatformIcon(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .padding(end = 5.dp),
-                            tint = Color.Red,
-                            painter = PlatformIcons.Outlined.EmojiFlags,
-                            contentDescription = if (Shared.language == "en") "Destination" else "目的地"
-                        )
-                    }
-                    service.currentStop.index < index && service.destinationStopId.index >= index -> {
-                        PlatformIcon(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .padding(end = 5.dp),
-                            painter = PlatformIcons.Outlined.MoreVert,
-                            contentDescription = if (Shared.language == "en") "Remaining Stops" else "剩餘中途站"
-                        )
-                    }
-                    else -> { /* do nothing*/ }
                 }
+                else -> { /* do nothing */ }
             }
         }
         HorizontalDivider()
@@ -1318,11 +1342,23 @@ fun StopEntryExpansion(
     etaResultsState: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
     sheetTypeState: MutableState<BottomSheetType>,
-    togglingAlightReminderState: MutableState<Boolean>
+    togglingAlightReminderState: MutableState<Boolean>,
+    trafficSnapshots: List<TrafficSnapshotPoint>?
 ) {
     val i = index - 1
     val density = LocalDensity.current
-    var height by remember(density.density, density.fontScale) { mutableIntStateOf(0) }
+    var screenWidth by remember { mutableIntStateOf(instance.screenWidth) }
+    var screenHeight by remember { mutableIntStateOf(instance.screenHeight) }
+    var height by remember(density.density, density.fontScale, screenWidth, screenHeight) { mutableIntStateOf(0) }
+
+    LaunchedEffect (Unit) {
+        while (true) {
+            screenWidth = instance.screenWidth
+            screenHeight = instance.screenHeight
+            delay(100)
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1374,6 +1410,10 @@ fun StopEntryExpansion(
                 index = index,
                 timesStartIndexState = timesStartIndexState,
                 times = times[index]
+            )
+            ListStopsInterfaceType.TRAFFIC_SNAPSHOTS -> StopEntryExpansionTrafficSnapshots(
+                instance = instance,
+                trafficSnapshots = trafficSnapshots
             )
             ListStopsInterfaceType.ALIGHT_REMINDER -> StopEntryExpansionAlightReminder(
                 instance = instance,
@@ -1701,6 +1741,8 @@ fun StopEntryExpansionTimes(
                     modifier = Modifier.fillMaxWidth(),
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Start,
+                    fontSize = 16.sp,
+                    lineHeight = 1.1F.em,
                     text = timesText
                 )
             }
@@ -1708,6 +1750,8 @@ fun StopEntryExpansionTimes(
                 PlatformText(
                     textAlign = TextAlign.Start,
                     maxLines = 1,
+                    fontSize = 16.sp,
+                    lineHeight = 1.1F.em,
                     text = if (Shared.language == "en") "Set as Origin" else "已設定為起點"
                 )
             }
@@ -1715,6 +1759,8 @@ fun StopEntryExpansionTimes(
                 PlatformText(
                     textAlign = TextAlign.Start,
                     maxLines = 1,
+                    fontSize = 16.sp,
+                    lineHeight = 1.1F.em,
                     text = if (Shared.language == "en") "Origin is set at a later stop" else "起點在後面"
                 )
             }
@@ -1733,6 +1779,8 @@ fun StopEntryExpansionTimes(
             content = {
                 PlatformText(
                     maxLines = 1,
+                    fontSize = 16.sp,
+                    lineHeight = 1.1F.em,
                     text = if (timesStartIndex == index) {
                         if (Shared.language == "en") "Set as Origin" else "已設定為起點"
                     } else {
@@ -1741,6 +1789,102 @@ fun StopEntryExpansionTimes(
                 )
             }
         )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun StopEntryExpansionTrafficSnapshots(
+    instance: AppActiveContext,
+    trafficSnapshots: List<TrafficSnapshotPoint>?
+) {
+    if (trafficSnapshots.isNotNullAndNotEmpty()) {
+        FlowRow(
+            modifier = Modifier.padding(top = 10.dp, bottom = 10.dp, end = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            val haptics = LocalHapticFeedback.current
+            for ((key, name) in trafficSnapshots) {
+                var expanded by rememberSaveable { mutableStateOf(false) }
+                OutlinedCard(
+                    modifier = Modifier
+                        .width(400.dp)
+                        .padding(5.dp)
+                        .clip(platformLargeShape)
+                        .clickable { expanded = true },
+                    shape = platformLargeShape
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        PlatformIcon(
+                            modifier = Modifier.size(20.dp),
+                            painter = PlatformIcons.Filled.PhotoCamera,
+                            contentDescription = if (Shared.language == "en") "Traffic Snapshot" else "交通快拍"
+                        )
+                        PlatformText(
+                            fontSize = 16.sp,
+                            lineHeight = 1.1F.em,
+                            text = name[Shared.language]
+                        )
+                    }
+                    Box(
+                        modifier = Modifier.animateContentSize(
+                            animationSpec = spring(
+                                stiffness = Spring.StiffnessHigh
+                            )
+                        )
+                    ) {
+                        if (expanded) {
+                            val url = "https://tdcctv.data.one.gov.hk/$key.JPG?_=${currentEpochSeconds / 300}"
+                            SubcomposeAsyncImage(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(onClick = instance.handleWebpages(url, false, haptics.common)),
+                                model = url,
+                                contentScale = ContentScale.FillWidth,
+                                loading = {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(4F / 3F)
+                                            .background(Color.Gray.adjustAlpha(0.5F)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        PlatformCircularProgressIndicator(
+                                            modifier = Modifier.requiredSize(30.dp),
+                                            color = Color(0xFFF9DE09),
+                                            strokeWidth = 3.dp,
+                                            trackColor = Color(0xFF797979),
+                                            strokeCap = StrokeCap.Round,
+                                        )
+                                    }
+                                },
+                                error = {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(4F / 3F)
+                                            .background(Color.Gray.adjustAlpha(0.5F)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        PlatformText(
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            lineHeight = 1.1F.em,
+                                            text = if (Shared.language == "en") "Click to view" else "點擊查看"
+                                        )
+                                    }
+                                },
+                                contentDescription = name[Shared.language]
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

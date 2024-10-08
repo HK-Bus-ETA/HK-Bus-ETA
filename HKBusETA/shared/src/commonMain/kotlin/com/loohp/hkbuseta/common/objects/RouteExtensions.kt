@@ -802,10 +802,12 @@ fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext)
         branchStops.values.all {
             if (it.size <= stopInfoIndex) {
                 true
-            } else {
+            } else if (co === Operator.KMB && !route!!.isCircular) {
                 val stop = it.getOrNull(stopInfoIndex - 1)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
                 val nextStop = it.getOrNull(stopInfoIndex)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
                 stop nonNullEquals nextStop
+            } else {
+                false
             }
         }
     }
@@ -1186,4 +1188,19 @@ inline val Stop.hkkfStopCode: String get() = when {
     name.zh.contains("沙螺灣") -> "SLW"
     name.zh.contains("大澳") -> "TO"
     else -> "CL"
+}
+
+fun List<Registry.StopData>.mapTrafficSnapshots(waypoints: RouteWaypoints?, trafficSnapshots: Array<out List<TrafficSnapshotPoint>>?): Array<out List<TrafficSnapshotPoint>> {
+    return if (waypoints == null || trafficSnapshots == null) {
+        Array(size) { emptyList() }
+    } else {
+        val array = Array(size) { emptyList<TrafficSnapshotPoint>() }
+        var currentIndex = 0
+        for ((i, s) in this@mapTrafficSnapshots.withIndex()) {
+            if (waypoints.stops.getOrNull(currentIndex) nonNullEquals s.stop) {
+                array[i] = trafficSnapshots.getOrElse(currentIndex++) { emptyList() }
+            }
+        }
+        array
+    }
 }

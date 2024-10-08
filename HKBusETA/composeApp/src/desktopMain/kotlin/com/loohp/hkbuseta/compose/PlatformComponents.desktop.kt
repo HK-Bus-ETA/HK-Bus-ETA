@@ -68,6 +68,7 @@ import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.NearMeDisabled
 import androidx.compose.material.icons.filled.NoTransfer
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.Search
@@ -85,6 +86,8 @@ import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.CurrencyExchange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.DepartureBoard
+import androidx.compose.material.icons.outlined.DirectionsBoat
 import androidx.compose.material.icons.outlined.DoubleArrow
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Edit
@@ -103,6 +106,7 @@ import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.NearMe
+import androidx.compose.material.icons.outlined.NotificationImportant
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.Paid
@@ -163,6 +167,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.ProgressIndicatorDefaults
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SheetState
@@ -183,6 +188,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
@@ -191,6 +198,7 @@ import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -205,14 +213,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImagePainter
+import coil3.compose.EqualityDelegate
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageScope
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.equivalentDp
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 
 actual inline val PlatformIcons.AutoMirrored.Filled.ArrowBack: Painter @Composable get() = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack)
@@ -246,6 +256,7 @@ actual inline val PlatformIcons.Filled.NearMe: Painter @Composable get() = remem
 actual inline val PlatformIcons.Filled.NearMeDisabled: Painter @Composable get() = rememberVectorPainter(Icons.Filled.NearMeDisabled)
 actual inline val PlatformIcons.Filled.NoTransfer: Painter @Composable get() = rememberVectorPainter(Icons.Filled.NoTransfer)
 actual inline val PlatformIcons.Filled.PinDrop: Painter @Composable get() = rememberVectorPainter(Icons.Filled.PinDrop)
+actual inline val PlatformIcons.Filled.PhotoCamera: Painter @Composable get() = rememberVectorPainter(Icons.Filled.PhotoCamera)
 actual inline val PlatformIcons.Filled.PriorityHigh: Painter @Composable get() = rememberVectorPainter(Icons.Filled.PriorityHigh)
 actual inline val PlatformIcons.Filled.Search: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Search)
 actual inline val PlatformIcons.Filled.Settings: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Settings)
@@ -258,10 +269,13 @@ actual inline val PlatformIcons.Filled.Palette: Painter @Composable get() = reme
 actual inline val PlatformIcons.Outlined.Add: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Add)
 actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Bedtime)
 actual inline val PlatformIcons.Outlined.Bolt: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Bolt)
+actual inline val PlatformIcons.Outlined.CalendarClock: Painter @Composable get() = painterResource(DrawableResource("baseline_calendar_clock_24.xml"))
 actual inline val PlatformIcons.Outlined.Code: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Code)
 actual inline val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.CurrencyExchange)
+actual inline val PlatformIcons.Outlined.DepartureBoard: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DepartureBoard)
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Delete)
 actual inline val PlatformIcons.Outlined.DeleteForever: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DeleteForever)
+actual inline val PlatformIcons.Outlined.DirectionsBoat: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DirectionsBoat)
 actual inline val PlatformIcons.Outlined.DoubleArrow: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DoubleArrow)
 actual inline val PlatformIcons.Outlined.Download: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Download)
 actual inline val PlatformIcons.Outlined.Edit: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Edit)
@@ -279,6 +293,7 @@ actual inline val PlatformIcons.Outlined.MoreHoriz: Painter @Composable get() = 
 actual inline val PlatformIcons.Outlined.MoreVert: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MoreVert)
 actual inline val PlatformIcons.Outlined.MyLocation: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MyLocation)
 actual inline val PlatformIcons.Outlined.NearMe: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.NearMe)
+actual inline val PlatformIcons.Outlined.NotificationImportant: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.NotificationImportant)
 actual inline val PlatformIcons.Outlined.NotificationsActive: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.NotificationsActive)
 actual inline val PlatformIcons.Outlined.NotificationsOff: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.NotificationsOff)
 actual inline val PlatformIcons.Outlined.Paid: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Paid)
@@ -618,18 +633,27 @@ actual fun PlatformTab(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier,
+    interactionSource: MutableInteractionSource,
     text: @Composable (() -> Unit)?,
-    icon: @Composable (() -> Unit)?,
-    interactionSource: MutableInteractionSource
+    icon: @Composable (() -> Unit)?
 ) {
+    val styledContent: @Composable (() -> Unit)? = text?.let {
+        @Composable {
+            val style = MaterialTheme.typography.titleSmall.copy(textAlign = TextAlign.Center)
+            ProvideTextStyle(style, content = text)
+        }
+    }
     Tab(
         selected = selected,
         onClick = onClick,
         modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
-        text = text,
-        icon = icon,
         interactionSource = interactionSource
-    )
+    ) {
+        TabBaselineLayout(
+            text = styledContent,
+            icon = icon
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

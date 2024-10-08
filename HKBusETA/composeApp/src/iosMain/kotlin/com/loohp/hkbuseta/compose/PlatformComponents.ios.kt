@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.LocationDisabled
 import androidx.compose.material.icons.filled.NoTransfer
 import androidx.compose.material.icons.outlined.BrokenImage
 import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.DepartureBoard
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.RippleTheme
@@ -96,6 +97,8 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -106,6 +109,7 @@ import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -127,10 +131,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImagePainter
+import coil3.compose.EqualityDelegate
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageScope
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.theme.AppTheme
+import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.UIImagePainter
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asPainter
@@ -163,6 +172,7 @@ import io.github.alexzhirkevich.cupertino.ProvideTextStyle
 import io.github.alexzhirkevich.cupertino.theme.CupertinoColors
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
 import io.github.alexzhirkevich.cupertino.theme.systemGray5
+import org.jetbrains.compose.resources.painterResource
 import platform.UIKit.UIImage
 import platform.UIKit.UIImageConfiguration
 import kotlin.math.max
@@ -234,6 +244,7 @@ actual inline val PlatformIcons.Filled.NearMe: Painter @Composable get() = remem
 actual inline val PlatformIcons.Filled.NearMeDisabled: Painter @Composable get() = rememberSystemImagePainter("location.slash.fill")
 actual inline val PlatformIcons.Filled.NoTransfer: Painter @Composable get() = rememberVectorPainter(Icons.Filled.NoTransfer)
 actual inline val PlatformIcons.Filled.PinDrop: Painter @Composable get() = rememberSystemImagePainter("mappin.circle.fill")
+actual inline val PlatformIcons.Filled.PhotoCamera: Painter @Composable get() = rememberSystemImagePainter("camera.fill")
 actual inline val PlatformIcons.Filled.PriorityHigh: Painter @Composable get() = rememberSystemImagePainter("exclamationmark")
 actual inline val PlatformIcons.Filled.Search: Painter @Composable get() = rememberSystemImagePainter("magnifyingglass")
 actual inline val PlatformIcons.Filled.Settings: Painter @Composable get() = rememberSystemImagePainter("gearshape.fill")
@@ -246,10 +257,13 @@ actual inline val PlatformIcons.Filled.Palette: Painter @Composable get() = reme
 actual inline val PlatformIcons.Outlined.Add: Painter @Composable get() = rememberSystemImagePainter("plus")
 actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = rememberSystemImagePainter("moon")
 actual inline val PlatformIcons.Outlined.Bolt: Painter @Composable get() = rememberSystemImagePainter("bolt")
+actual inline val PlatformIcons.Outlined.CalendarClock: Painter @Composable get() = painterResource(DrawableResource("baseline_calendar_clock_24.xml"))
 actual inline val PlatformIcons.Outlined.Code: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Code)
 actual inline val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get() = rememberSystemImagePainter("dollarsign.arrow.circlepath")
+actual inline val PlatformIcons.Outlined.DepartureBoard: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DepartureBoard)
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberSystemImagePainter("trash")
 actual inline val PlatformIcons.Outlined.DeleteForever: Painter @Composable get() = rememberSystemImagePainter("trash")
+actual inline val PlatformIcons.Outlined.DirectionsBoat: Painter @Composable get() = rememberSystemImagePainter("ferry")
 actual inline val PlatformIcons.Outlined.DoubleArrow: Painter @Composable get() = rememberSystemImagePainter("chevron.right.2")
 actual inline val PlatformIcons.Outlined.Download: Painter @Composable get() = rememberSystemImagePainter("arrow.down.to.line")
 actual inline val PlatformIcons.Outlined.Edit: Painter @Composable get() = rememberSystemImagePainter("pencil")
@@ -267,6 +281,7 @@ actual inline val PlatformIcons.Outlined.MoreHoriz: Painter @Composable get() = 
 actual inline val PlatformIcons.Outlined.MoreVert: Painter @Composable get() = rememberSystemImagePainter("arrow.down")
 actual inline val PlatformIcons.Outlined.MyLocation: Painter @Composable get() = rememberSystemImagePainter("dot.scope", "scope")
 actual inline val PlatformIcons.Outlined.NearMe: Painter @Composable get() = rememberSystemImagePainter("location")
+actual inline val PlatformIcons.Outlined.NotificationImportant: Painter @Composable get() = rememberSystemImagePainter("bell.badge")
 actual inline val PlatformIcons.Outlined.NotificationsActive: Painter @Composable get() = rememberSystemImagePainter("bell")
 actual inline val PlatformIcons.Outlined.NotificationsOff: Painter @Composable get() = rememberSystemImagePainter("bell.slash")
 actual inline val PlatformIcons.Outlined.Paid: Painter @Composable get() = rememberSystemImagePainter("dollarsign.circle")
@@ -683,16 +698,21 @@ actual fun PlatformTab(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier,
+    interactionSource: MutableInteractionSource,
     text: @Composable (() -> Unit)?,
-    icon: @Composable (() -> Unit)?,
-    interactionSource: MutableInteractionSource
+    icon: @Composable (() -> Unit)?
 ) {
     CupertinoSegmentedControlTab(
         isSelected = selected,
         onClick = onClick,
-        modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
+        modifier = modifier
+            .applyIfNotNull(icon) { padding(bottom = 3.dp, top = 5.dp) }
+            .pointerHoverIcon(PointerIcon.Hand),
         content = {
-            Column {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 icon?.invoke()
                 text?.invoke()
             }

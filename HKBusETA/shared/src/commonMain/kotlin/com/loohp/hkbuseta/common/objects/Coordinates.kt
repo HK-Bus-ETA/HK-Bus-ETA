@@ -25,6 +25,7 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.JSONSerializable
 import com.loohp.hkbuseta.common.utils.findBearing
 import com.loohp.hkbuseta.common.utils.findDistance
+import com.loohp.hkbuseta.common.utils.findDistanceToSegment
 import com.loohp.hkbuseta.common.utils.optDouble
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.core.BytePacketBuilder
@@ -36,6 +37,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlin.math.min
 
 @Serializable
 @Immutable
@@ -122,4 +124,18 @@ open class Coordinates(
         return "Coordinates(lat=$lat, lng=$lng)"
     }
 
+}
+
+infix fun List<Coordinates>.distance(point: Coordinates): Double {
+    val (lat, lng) = point
+    var minDistance = Double.POSITIVE_INFINITY
+
+    for (i in 0 until size - 1) {
+        val (lat1, lng1) = this[i]
+        val (lat2, lng2) = this[i + 1]
+        val distance = findDistanceToSegment(lat, lng, lat1, lng1, lat2, lng2)
+        minDistance = min(minDistance, distance)
+    }
+
+    return minDistance
 }

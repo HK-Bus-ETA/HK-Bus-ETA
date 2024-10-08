@@ -57,12 +57,18 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.DefaultAlpha
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope.Companion.DefaultFilterQuality
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -77,6 +83,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImagePainter.Companion.DefaultTransform
+import coil3.compose.AsyncImagePainter.State
+import coil3.compose.DefaultModelEqualityDelegate
+import coil3.compose.EqualityDelegate
+import coil3.compose.SubcomposeAsyncImageScope
 
 
 object PlatformIcons {
@@ -121,6 +132,7 @@ expect val PlatformIcons.Filled.NearMe: Painter @Composable get
 expect val PlatformIcons.Filled.NearMeDisabled: Painter @Composable get
 expect val PlatformIcons.Filled.NoTransfer: Painter @Composable get
 expect val PlatformIcons.Filled.PinDrop: Painter @Composable get
+expect val PlatformIcons.Filled.PhotoCamera: Painter @Composable get
 expect val PlatformIcons.Filled.PriorityHigh: Painter @Composable get
 expect val PlatformIcons.Filled.Search: Painter @Composable get
 expect val PlatformIcons.Filled.Settings: Painter @Composable get
@@ -133,10 +145,13 @@ expect val PlatformIcons.Filled.Palette: Painter @Composable get
 expect val PlatformIcons.Outlined.Add: Painter @Composable get
 expect val PlatformIcons.Outlined.Bedtime: Painter @Composable get
 expect val PlatformIcons.Outlined.Bolt: Painter @Composable get
+expect val PlatformIcons.Outlined.CalendarClock: Painter @Composable get
 expect val PlatformIcons.Outlined.Code: Painter @Composable get
 expect val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get
+expect val PlatformIcons.Outlined.DepartureBoard: Painter @Composable get
 expect val PlatformIcons.Outlined.Delete: Painter @Composable get
 expect val PlatformIcons.Outlined.DeleteForever: Painter @Composable get
+expect val PlatformIcons.Outlined.DirectionsBoat: Painter @Composable get
 expect val PlatformIcons.Outlined.DoubleArrow: Painter @Composable get
 expect val PlatformIcons.Outlined.Download: Painter @Composable get
 expect val PlatformIcons.Outlined.Edit: Painter @Composable get
@@ -154,6 +169,7 @@ expect val PlatformIcons.Outlined.MoreHoriz: Painter @Composable get
 expect val PlatformIcons.Outlined.MoreVert: Painter @Composable get
 expect val PlatformIcons.Outlined.MyLocation: Painter @Composable get
 expect val PlatformIcons.Outlined.NearMe: Painter @Composable get
+expect val PlatformIcons.Outlined.NotificationImportant: Painter @Composable get
 expect val PlatformIcons.Outlined.NotificationsActive: Painter @Composable get
 expect val PlatformIcons.Outlined.NotificationsOff: Painter @Composable get
 expect val PlatformIcons.Outlined.Paid: Painter @Composable get
@@ -348,9 +364,9 @@ expect fun PlatformTab(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     text: @Composable (() -> Unit)? = null,
-    icon: @Composable (() -> Unit)? = null,
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
+    icon: @Composable (() -> Unit)? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -20,21 +20,14 @@
  */
 package com.loohp.hkbuseta.common.objects
 
-import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
 import com.loohp.hkbuseta.common.utils.Immutable
-import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import kotlinx.serialization.Serializable
+
 
 @Serializable
 @Immutable
-data class DataContainer(
-    val dataSheet: DataSheet,
-    val mtrBusStopAlias: Map<String, List<String>>,
-    val kmbSubsidiary: Map<KMBSubsidiary, List<String>>,
-    @ReduceDataOmitted val lrtData: Map<String, StationInfo>? = null,
-    @ReduceDataOmitted val mtrData: Map<String, StationInfo>? = null,
-    @ReduceDataOmitted val mtrBarrierFreeMapping: StationBarrierFreeMapping? = null,
-    @ReduceDataOmitted val splashEntries: List<SplashEntry>? = null,
-    @ReduceDataOmitted val trafficSnapshot: List<TrafficSnapshotPoint>? = null,
-    val updatedTime: Long = currentTimeMillis()
+data class TrafficSnapshotPoint(
+    val key: String,
+    val name: BilingualText,
+    val location: Coordinates
 )
