@@ -114,6 +114,7 @@ import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import com.loohp.hkbuseta.compose.isNarrow
 import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.compose.platformBackgroundColor
@@ -218,7 +219,8 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
     var language by rememberSaveable { mutableStateOf(Shared.language) }
     val state by searchState.collectAsStateMultiplatform()
     val keyPressFocus = remember { FocusRequester() }
-    var size by remember { mutableStateOf(IntSize(instance.screenWidth, instance.screenHeight)) }
+    val window = currentLocalWindowSize
+    var size by remember { mutableStateOf(window) }
     var sizeInit by remember { mutableStateOf(false) }
 
     val keyboardOffsetState = floatingKeyboardState.collectAsStateMultiplatform()

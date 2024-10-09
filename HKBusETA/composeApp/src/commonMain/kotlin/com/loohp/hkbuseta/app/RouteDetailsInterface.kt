@@ -170,6 +170,7 @@ import com.loohp.hkbuseta.compose.Timer
 import com.loohp.hkbuseta.compose.UTurnRight
 import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import com.loohp.hkbuseta.compose.isNarrow
 import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
@@ -261,6 +262,25 @@ val trainListStopsTabItem = listOf(
     ),
 )
 
+val lrtListStopsTabItem = listOf(
+    ListStopsTabItem(
+        title = "車站" withEn "Stops",
+        icon = { painterResource(DrawableResource("lrt_vector.xml")) },
+        color = Color(0xFFCDA410),
+        type = StopsTabItemType.STOPS
+    ),
+    ListStopsTabItem(
+        title = "車程" withEn "Times",
+        icon = { PlatformIcons.Outlined.Timer },
+        type = StopsTabItemType.TIMES
+    ),
+    ListStopsTabItem(
+        title = "公告" withEn "Notices",
+        icon = { PlatformIcons.Outlined.NotificationImportant },
+        type = StopsTabItemType.NOTICES
+    ),
+)
+
 val ferryListStopsTabItem = listOf(
     ListStopsTabItem(
         title = "航班" withEn "Route",
@@ -281,6 +301,7 @@ val ferryListStopsTabItem = listOf(
 
 fun listStopsTabItem(co: Operator): List<ListStopsTabItem> {
     return when {
+        co === Operator.LRT -> lrtListStopsTabItem
         co.isTrain -> trainListStopsTabItem
         co.isFerry -> ferryListStopsTabItem
         else -> busListStopsTabItem
@@ -733,6 +754,8 @@ fun MapStopsInterface(
 ) {
     var mapExpanded by remember { mutableStateOf(false) }
 
+    val window = currentLocalWindowSize
+
     val routeNumber by remember(listRoute) { derivedStateOf { listRoute.route!!.routeNumber } }
     val co by remember(listRoute) { derivedStateOf { listRoute.co } }
     val bound by remember(listRoute) { derivedStateOf { listRoute.route!!.idBound(co) } }
@@ -756,9 +779,9 @@ fun MapStopsInterface(
             context = instance,
             animateSize = true,
             bottomSize = { when {
-                !it.isNarrow -> min(412F, (instance.screenWidth / 2F).pixelsToDp(instance)).dp
+                !it.isNarrow -> min(412F, (window.width / 2F).pixelsToDp(instance)).dp
                 mapExpanded -> 200.dp
-                else -> (instance.screenHeight.toFloat() / 11 * 6).pixelsToDp(instance).dp
+                else -> (window.height / 11F * 6F).pixelsToDp(instance).dp
             } },
             top = { screenSize ->
                 Column(

@@ -138,6 +138,9 @@ actual fun MapRouteInterface(
         Operator.MTR_BUS -> "bus_mtrbus"
         Operator.LRT -> "mtr_stop"
         Operator.MTR -> "mtr_stop"
+        Operator.HKKF -> "bus_nlb"
+        Operator.SUNFERRY -> "bus_nlb"
+        Operator.FORTUNEFERRY -> "bus_nlb"
         else -> "bus_kmb"
     } }
     val shouldShowStopIndex = remember { !waypoints.co.run { isTrain || isFerry } }

@@ -211,7 +211,6 @@ fun TitleInterface(instance: AppActiveContext) {
         preferSingleLine = true
     )
     AdaptiveNavBar(
-        context = instance,
         itemCount = titleTabItems.size,
         items = { index ->
             val item = titleTabItems[index]

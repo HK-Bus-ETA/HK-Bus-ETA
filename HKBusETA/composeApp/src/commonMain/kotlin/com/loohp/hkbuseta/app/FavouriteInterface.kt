@@ -64,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -117,6 +118,7 @@ import com.loohp.hkbuseta.compose.PlatformTab
 import com.loohp.hkbuseta.compose.PlatformTabRow
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.Reorder
+import com.loohp.hkbuseta.compose.Route
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Signal
 import com.loohp.hkbuseta.compose.TextInputDialog
@@ -132,9 +134,11 @@ import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
+import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.coordinatesNullableStateSaver
+import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.renderedSizes
@@ -146,14 +150,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.painterResource
 import sh.calvin.reorderable.ReorderableColumn
 
 
-data class FavouriteTabItem(val title: BilingualText)
+data class FavouriteTabItem(
+    val title: BilingualText,
+    val icon: @Composable () -> Painter
+)
 
 val mainFavouriteTabItem = listOf(
-    FavouriteTabItem(title = "路線" withEn "Routes"),
-    FavouriteTabItem(title = "巴士站" withEn "Stops")
+    FavouriteTabItem(
+        title = "路線" withEn "Routes",
+        icon = { PlatformIcons.Outlined.Route }
+    ),
+    FavouriteTabItem(
+        title = "巴士站" withEn "Stops",
+        icon = { painterResource(DrawableResource("bus_stop_vector.xml")) }
+    )
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -182,16 +196,23 @@ fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, sign
         modifier = Modifier.fillMaxWidth()
     ) {
         PlatformTabRow(selectedTabIndex = pagerState.currentPage) {
-            mainFavouriteTabItem.forEachIndexed { index, item ->
+            mainFavouriteTabItem.forEachIndexed { index, (title, icon) ->
                 PlatformTab(
                     selected = index == pagerState.currentPage,
                     onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                    icon = {
+                        PlatformIcon(
+                            modifier = Modifier.size(18F.sp.dp),
+                            painter = icon.invoke(),
+                            contentDescription = title[Shared.language]
+                        )
+                    },
                     text = {
                         PlatformText(
-                            fontSize = 15F.sp,
+                            fontSize = 16F.sp,
                             lineHeight = 1.1F.em,
                             maxLines = 1,
-                            text = item.title[Shared.language]
+                            text = title[Shared.language]
                         )
                     }
                 )
@@ -249,7 +270,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
     ) {
         val tabScrollable = remember(favouriteRouteStops) { mutableStateMapOf<Int, Boolean>() }
         val tabTexts = remember(favouriteRouteStops) { favouriteRouteStops.asSequence().map { it.name[Shared.language] }.toImmutableList() }
-        val renderSizes by tabTexts.renderedSizes(15F.sp, spanStyle = SpanStyle(fontWeight = FontWeight.Bold))
+        val renderSizes by tabTexts.renderedSizes(16F.sp, spanStyle = SpanStyle(fontWeight = FontWeight.Bold))
         AdvanceTabRow(
             modifier = Modifier.fillMaxWidth(),
             selectedTabIndex = pagerState.currentPage,
@@ -269,7 +290,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                     tabScrollable[index] = it.didOverflowWidth || it.didOverflowHeight
                                 }
                             },
-                            fontSize = 15F.sp,
+                            fontSize = 16F.sp,
                             lineHeight = 1.1F.em,
                             maxLines = 1,
                             text = item.name[Shared.language]
@@ -593,7 +614,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
         ) {
             val tabScrollable = remember(favouriteStops) { mutableStateMapOf<Int, Boolean>() }
             val tabTexts = remember(favouriteStops) { favouriteStops.asSequence().map { it.second.name[Shared.language] }.toImmutableList() }
-            val renderSizes by tabTexts.renderedSizes(15F.sp, spanStyle = SpanStyle(fontWeight = FontWeight.Bold))
+            val renderSizes by tabTexts.renderedSizes(16F.sp, spanStyle = SpanStyle(fontWeight = FontWeight.Bold))
             AdvanceTabRow(
                 modifier = Modifier.fillMaxWidth(),
                 selectedTabIndex = pagerState.currentPage.coerceAtMost(pagerState.pageCount - 1),
@@ -613,7 +634,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                         tabScrollable[index] = it.didOverflowWidth || it.didOverflowHeight
                                     }
                                 },
-                                fontSize = 15F.sp,
+                                fontSize = 16F.sp,
                                 lineHeight = 1.1F.em,
                                 maxLines = 1,
                                 text = item.second.name[Shared.language]

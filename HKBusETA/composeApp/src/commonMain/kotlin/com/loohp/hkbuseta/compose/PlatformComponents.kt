@@ -175,6 +175,7 @@ expect val PlatformIcons.Outlined.NotificationsOff: Painter @Composable get
 expect val PlatformIcons.Outlined.Paid: Painter @Composable get
 expect val PlatformIcons.Outlined.PinDrop: Painter @Composable get
 expect val PlatformIcons.Outlined.Reorder: Painter @Composable get
+expect val PlatformIcons.Outlined.Route: Painter @Composable get
 expect val PlatformIcons.Outlined.Schedule: Painter @Composable get
 expect val PlatformIcons.Outlined.Search: Painter @Composable get
 expect val PlatformIcons.Outlined.Settings: Painter @Composable get

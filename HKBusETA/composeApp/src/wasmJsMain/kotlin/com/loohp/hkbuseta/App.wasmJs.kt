@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import com.loohp.hkbuseta.compose.isNarrow
 import com.loohp.hkbuseta.utils.pixelsToDp
 import kotlinx.coroutines.delay
@@ -51,14 +52,9 @@ actual fun watchDataOverwriteWarningInitialValue(): Boolean = false
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 actual fun SnackbarInterface(instance: AppActiveContext, snackbarHostState: SnackbarHostState) {
-    var width by remember { mutableIntStateOf(0) }
+    val window = currentLocalWindowSize
     val windowSizeClass = calculateWindowSizeClass()
-    LaunchedEffect (Unit) {
-        while (true) {
-            width = instance.screenWidth
-            delay(200)
-        }
-    }
+
     when {
         windowSizeClass.isNarrow -> SnackbarHost(snackbarHostState)
         else -> Box(
@@ -66,7 +62,7 @@ actual fun SnackbarInterface(instance: AppActiveContext, snackbarHostState: Snac
             contentAlignment = Alignment.BottomStart
         ) {
             SnackbarHost(
-                modifier = Modifier.width(min(412F, (instance.screenWidth / 2F).pixelsToDp(instance)).dp),
+                modifier = Modifier.width(min(412F, (window.width / 2F).pixelsToDp(instance)).dp),
                 hostState = snackbarHostState
             )
         }

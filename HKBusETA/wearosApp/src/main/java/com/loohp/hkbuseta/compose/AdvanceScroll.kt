@@ -62,6 +62,7 @@ fun Modifier.fullPageVerticalScrollbar(
     indicatorColor: Color = Color.LightGray,
     alpha: Float = 0.8f,
 ): Modifier = composed {
+    val window = currentLocalWindowSize
     var scrollOffsetViewPort by remember { mutableFloatStateOf(0F) }
     val animatedScrollOffsetViewPort by animateFloatAsState(
         targetValue = scrollOffsetViewPort,
@@ -84,7 +85,7 @@ fun Modifier.fullPageVerticalScrollbar(
 
             if (context.isScreenRound()) {
                 val topLeft = Offset(halfIndicatorThicknessPx, halfIndicatorThicknessPx)
-                val size = Size(context.screenWidth - indicatorThicknessPx, context.screenHeight - indicatorThicknessPx)
+                val size = Size(window.width - indicatorThicknessPx, window.height - indicatorThicknessPx)
                 val style = Stroke(width = indicatorThicknessPx, cap = StrokeCap.Round)
                 drawArc(
                     startAngle = -30F,
@@ -108,7 +109,7 @@ fun Modifier.fullPageVerticalScrollbar(
                 )
             } else {
                 val cornerRadius = CornerRadius(indicatorThicknessPx / 2F)
-                val topLeft = Offset(context.screenWidth - indicatorThicknessPx, viewPortLength * 0.125F)
+                val topLeft = Offset(window.width - indicatorThicknessPx, viewPortLength * 0.125F)
                 val size = Size(indicatorThicknessPx, viewPortLength * 0.75F)
                 drawRoundRect(
                     color = Color.DarkGray,
@@ -148,6 +149,7 @@ fun Modifier.fullPageVerticalScrollbar(
         animationSpec = TweenSpec(durationMillis = 100, easing = LinearEasing),
         label = ""
     )
+    val window = currentLocalWindowSize
 
     drawWithContent {
         drawContent()
@@ -198,7 +200,7 @@ fun Modifier.fullPageVerticalScrollbar(
                 )
             } else {
                 val cornerRadius = CornerRadius(indicatorThicknessPx / 2F)
-                val topLeft = Offset(context.screenWidth - indicatorThicknessPx, viewPortLength * 0.125F)
+                val topLeft = Offset(window.width - indicatorThicknessPx, viewPortLength * 0.125F)
                 val size = Size(indicatorThicknessPx, viewPortLength * 0.75F)
                 val startHeight = (topLeft.y + animatedScrollOffsetViewPort * size.height).coerceIn(topLeft.y, topLeft.y + size.height)
                 drawRoundRect(

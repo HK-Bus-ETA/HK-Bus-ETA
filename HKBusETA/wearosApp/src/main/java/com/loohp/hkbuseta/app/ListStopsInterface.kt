@@ -118,6 +118,7 @@ import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.collectAsStateWithLifecycle
+import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.compose.userMarquee
@@ -160,6 +161,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
         val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
         val scope = rememberCoroutineScope()
+        val window = currentLocalWindowSize
 
         val padding by remember { derivedStateOf { 7.5F.scaledSize(instance) } }
 
@@ -220,7 +222,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                     }
                     if (index >= 0) {
                         scope.launch {
-                            scroll.animateScrollToItem(index + 2, (-instance.screenHeight / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
+                            scroll.animateScrollToItem(index + 2, (-window.height / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
                         }
                     }
                 } else if (origin != null) {
@@ -238,7 +240,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                         if (!origin.onlyInRange || it.distance <= 0.3) {
                             closestIndex = it.stopIndex
                             scope.launch {
-                                scroll.animateScrollToItem(it.stopIndex + 1, (-instance.screenHeight / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
+                                scroll.animateScrollToItem(it.stopIndex + 1, (-window.height / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
                             }
                         }
                     }

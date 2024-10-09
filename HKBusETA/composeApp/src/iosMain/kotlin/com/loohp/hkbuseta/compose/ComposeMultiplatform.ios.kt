@@ -40,7 +40,7 @@ actual fun BackButtonEffect(enabled: Boolean, onBack: () -> Unit) {
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
-actual val currentLocalWindowSize: IntSize
+actual inline val currentLocalWindowSize: IntSize
     @Composable get() = LocalWindowInfo.current.containerSize
 
 @Composable

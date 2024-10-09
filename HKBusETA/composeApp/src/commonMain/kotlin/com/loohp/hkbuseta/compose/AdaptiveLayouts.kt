@@ -58,8 +58,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -80,7 +80,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.loohp.hkbuseta.appcontext.composePlatform
-import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.utils.DrawableResource
@@ -171,15 +170,10 @@ fun AdaptiveTopBottomLayout(
     Box(
         modifier = modifier.fillMaxSize()
     ) {
-        var width by remember { mutableIntStateOf(0) }
+        val window = currentLocalWindowSize
         val windowSizeClass = calculateWindowSizeClass()
         val bottomSizeValue = bottomSize.invoke(windowSizeClass)
-        LaunchedEffect (Unit) {
-            while (true) {
-                width = context.screenWidth
-                delay(200)
-            }
-        }
+
         when {
             windowSizeClass.isNarrow -> {
                 Column(
@@ -263,7 +257,7 @@ fun AdaptiveTopBottomLayout(
                             offset = Offset(x, y)
                         } }
                         val transformableState = rememberTransformableState { _, offsetChange, _ -> updateOffset.invoke(offsetChange) }
-                        LaunchedEffect (width) {
+                        LaunchedEffect (window.width) {
                             updateOffset.invoke(Offset.Zero)
                         }
                         Box(
@@ -319,103 +313,98 @@ data class AdaptiveNavBarItem(
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun AdaptiveNavBar(
-    context: AppActiveContext,
     content: @Composable () -> Unit,
     itemCount: Int,
     items: @Composable (Int) -> AdaptiveNavBarItem
 ) {
-    var width by remember { mutableIntStateOf(0) }
-    var height by remember { mutableIntStateOf(0) }
-    val windowSizeClass = calculateWindowSizeClass()
-    LaunchedEffect (Unit) {
-        while (true) {
-            width = context.screenWidth
-            height = context.screenHeight
-            delay(200)
-        }
-    }
-    when {
-        windowSizeClass.isNarrow -> {
-            Scaffold(
-                content = {
-                    Box(
-                        modifier = Modifier.padding(it)
-                    ) {
-                        content.invoke()
-                    }
-                },
-                bottomBar = {
-                    PlatformNavigationBar {
-                        (0 until itemCount).forEach { index ->
-                            val (label, icon, colors, selected, onClick) = items.invoke(index)
-                            PlatformNavigationBarItem(
-                                selected = selected,
-                                onClick = onClick,
-                                label = label,
-                                icon = icon,
-                                colors = colors
-                            )
-                        }
-                    }
-                }
-            )
-        }
-        else -> {
-            Row {
-                NavigationRail(
-                    modifier = Modifier
-                        .width(80.dp)
-                        .fillMaxHeight()
-                        .platformVerticalDividerShadow(10.dp)
-                        .zIndex(10F),
-                    header = {
-                        if (windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact) {
-                            Image(
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .clip(RoundedCornerShape(5.dp))
-                                    .applyIfNotNull(platformShowDownloadAppBottomSheet) { clickable(onClick = it) },
-                                painter = painterResource(DrawableResource("icon.png")),
-                                contentDescription = "HK Bus ETA"
-                            )
+    val window = currentLocalWindowSize
+
+    key(window) {
+        val windowSizeClass = calculateWindowSizeClass()
+
+        when {
+            windowSizeClass.isNarrow -> {
+                Scaffold(
+                    content = {
+                        Box(
+                            modifier = Modifier.padding(it)
+                        ) {
+                            content.invoke()
                         }
                     },
-                    content = {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = if (windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact) {
-                                Arrangement.spacedBy(12.dp, Alignment.Bottom)
-                            } else {
-                                Arrangement.SpaceEvenly
-                            }
-                        ) {
+                    bottomBar = {
+                        PlatformNavigationBar {
                             (0 until itemCount).forEach { index ->
                                 val (label, icon, colors, selected, onClick) = items.invoke(index)
-                                NavigationRailItem(
-                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                                PlatformNavigationBarItem(
                                     selected = selected,
                                     onClick = onClick,
                                     label = label,
                                     icon = icon,
-                                    colors = colors?.run {
-                                        NavigationRailItemDefaults.colors(
-                                            selectedIconColor = selectedIconColor,
-                                            selectedTextColor = selectedTextColor,
-                                            unselectedIconColor = unselectedIconColor,
-                                            unselectedTextColor = unselectedTextColor,
-                                            disabledIconColor = disabledIconColor,
-                                            disabledTextColor = disabledTextColor
-                                        )
-                                    }?: NavigationRailItemDefaults.colors(),
+                                    colors = colors
                                 )
                             }
                         }
-                    },
+                    }
                 )
-                content.invoke()
+            }
+            else -> {
+                Row {
+                    NavigationRail(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .fillMaxHeight()
+                            .platformVerticalDividerShadow(10.dp)
+                            .zIndex(10F),
+                        header = {
+                            if (windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact) {
+                                Image(
+                                    modifier = Modifier
+                                        .padding(10.dp)
+                                        .clip(RoundedCornerShape(5.dp))
+                                        .applyIfNotNull(platformShowDownloadAppBottomSheet) { clickable(onClick = it) },
+                                    painter = painterResource(DrawableResource("icon.png")),
+                                    contentDescription = "HK Bus ETA"
+                                )
+                            }
+                        },
+                        content = {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = if (windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact) {
+                                    Arrangement.spacedBy(12.dp, Alignment.Bottom)
+                                } else {
+                                    Arrangement.SpaceEvenly
+                                }
+                            ) {
+                                (0 until itemCount).forEach { index ->
+                                    val (label, icon, colors, selected, onClick) = items.invoke(index)
+                                    NavigationRailItem(
+                                        modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                                        selected = selected,
+                                        onClick = onClick,
+                                        label = label,
+                                        icon = icon,
+                                        colors = colors?.run {
+                                            NavigationRailItemDefaults.colors(
+                                                selectedIconColor = selectedIconColor,
+                                                selectedTextColor = selectedTextColor,
+                                                unselectedIconColor = unselectedIconColor,
+                                                unselectedTextColor = unselectedTextColor,
+                                                disabledIconColor = disabledIconColor,
+                                                disabledTextColor = disabledTextColor
+                                            )
+                                        }?: NavigationRailItemDefaults.colors(),
+                                    )
+                                }
+                            }
+                        },
+                    )
+                    content.invoke()
+                }
             }
         }
     }

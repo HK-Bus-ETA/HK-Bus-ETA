@@ -110,6 +110,7 @@ import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.PauseEffect
 import com.loohp.hkbuseta.compose.RestartEffect
+import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -134,6 +135,7 @@ import kotlin.math.absoluteValue
 @Composable
 fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: AppActiveContext, schedule: (Boolean, (() -> Unit)?) -> Unit) {
     val haptic = LocalHapticFeedback.current
+    val window = currentLocalWindowSize
     val scope = rememberCoroutineScope()
     val swipe = rememberSwipeableState(initialValue = false)
     var swiping by remember { mutableStateOf(swipe.offset.value != 0F) }
@@ -182,7 +184,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
     }
 
     val focusRequester = rememberActiveFocusRequester()
-    var currentOffset by remember { mutableFloatStateOf(offsetStart * instance.screenHeight.toFloat()) }
+    var currentOffset by remember { mutableFloatStateOf(offsetStart * window.height.toFloat()) }
     var animatedOffsetTask: (Float) -> Unit by remember { mutableStateOf({}) }
     val animatedOffset by animateFloatAsState(
         targetValue = currentOffset,
@@ -220,21 +222,21 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                     state = swipe,
                     anchors = mapOf(
                         0F to false,
-                        -instance.screenHeight.toFloat() to true
+                        -window.height.toFloat() to true
                     ),
                     orientation = Orientation.Vertical
                 )
                 .onRotaryScrollEvent {
                     if (it.horizontalScrollPixels > 0) {
                         if (index < stopList.size) {
-                            currentOffset = -instance.screenWidth.toFloat()
+                            currentOffset = -window.width.toFloat()
                             animatedOffsetTask = { launchOtherStop(index + 1, co, stopList, true, 1, instance) }
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
                     } else {
                         if (index > 1) {
-                            currentOffset = instance.screenWidth.toFloat()
+                            currentOffset = window.width.toFloat()
                             animatedOffsetTask = { launchOtherStop(index - 1, co, stopList, true, -1, instance) }
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)

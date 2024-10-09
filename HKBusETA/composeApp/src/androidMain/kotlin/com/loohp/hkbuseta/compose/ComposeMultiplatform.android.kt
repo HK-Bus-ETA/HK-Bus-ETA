@@ -54,11 +54,10 @@ actual fun BackButtonEffect(enabled: Boolean, onBack: () -> Unit) {
     BackHandler(enabled, onBack)
 }
 
-actual val currentLocalWindowSize: IntSize @Composable get() = with (LocalDensity.current) {
-    LocalConfiguration.current.let {
-        IntSize(it.screenWidthDp.dp.toPx().roundToInt(), it.screenHeightDp.dp.toPx().roundToInt())
+actual inline val currentLocalWindowSize: IntSize
+    @Composable get() = LocalConfiguration.current.run {
+        with (LocalDensity.current) { IntSize(screenWidthDp.dp.toPx().roundToInt(), screenHeightDp.dp.toPx().roundToInt()) }
     }
-}
 
 @Composable
 actual fun rememberIsInPipMode(context: AppActiveContext): Boolean {

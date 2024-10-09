@@ -98,6 +98,9 @@ actual fun MapRouteInterface(
         Operator.MTR_BUS -> "bus_mtr-bus.svg"
         Operator.LRT -> "mtr.svg"
         Operator.MTR -> "mtr.svg"
+        Operator.HKKF -> "bus_nlb.svg"
+        Operator.SUNFERRY -> "bus_nlb.svg"
+        Operator.FORTUNEFERRY -> "bus_nlb.svg"
         else -> "bus_kmb.svg"
     } }
     val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }

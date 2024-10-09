@@ -226,6 +226,7 @@ import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.combinedClickable
+import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import com.loohp.hkbuseta.compose.enterPipMode
 import com.loohp.hkbuseta.compose.itemsIndexedPossiblySticky
 import com.loohp.hkbuseta.compose.plainTooltip
@@ -1347,17 +1348,8 @@ fun StopEntryExpansion(
 ) {
     val i = index - 1
     val density = LocalDensity.current
-    var screenWidth by remember { mutableIntStateOf(instance.screenWidth) }
-    var screenHeight by remember { mutableIntStateOf(instance.screenHeight) }
-    var height by remember(density.density, density.fontScale, screenWidth, screenHeight) { mutableIntStateOf(0) }
-
-    LaunchedEffect (Unit) {
-        while (true) {
-            screenWidth = instance.screenWidth
-            screenHeight = instance.screenHeight
-            delay(100)
-        }
-    }
+    val window = currentLocalWindowSize
+    var height by remember(density.density, density.fontScale, window) { mutableIntStateOf(0) }
 
     Row(
         modifier = Modifier

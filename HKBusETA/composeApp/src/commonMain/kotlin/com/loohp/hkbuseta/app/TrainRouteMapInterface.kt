@@ -99,6 +99,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -190,6 +191,7 @@ import com.loohp.hkbuseta.compose.DarkMode
 import com.loohp.hkbuseta.compose.Error
 import com.loohp.hkbuseta.compose.Info
 import com.loohp.hkbuseta.compose.Map
+import com.loohp.hkbuseta.compose.NotificationImportant
 import com.loohp.hkbuseta.compose.Paid
 import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformFloatingActionButton
@@ -286,20 +288,27 @@ private val lightRailRouteMapLoaded: MutableStateFlow<Boolean> = MutableStateFlo
 @Immutable
 data class TrainRouteMapTabItem(
     val title: BilingualText,
+    val icon: @Composable () -> Painter,
+    val color: Color? = null,
     val shouldSaveTabPosition: Boolean
 )
 
 val trainRouteMapItems = listOf(
     TrainRouteMapTabItem(
         title = "港鐵" withEn "MTR",
+        icon = { painterResource(DrawableResource("mtr_vector.xml")) },
+        color = Color(0xFFAC2E44),
         shouldSaveTabPosition = true
     ),
     TrainRouteMapTabItem(
         title = "輕鐵" withEn "Light Rail",
+        icon = { painterResource(DrawableResource("lrt_vector.xml")) },
+        color = Color(0xFFCDA410),
         shouldSaveTabPosition = true
     ),
     TrainRouteMapTabItem(
         title = "公告" withEn "Notices",
+        icon = { PlatformIcons.Outlined.NotificationImportant },
         shouldSaveTabPosition = false
     )
 )
@@ -413,16 +422,24 @@ fun RouteMapSearchInterface(
             verticalAlignment = Alignment.CenterVertically
         ) {
             PlatformTabRow(selectedTabIndex = pagerState.currentPage) {
-                trainRouteMapItems.forEachIndexed { index, item ->
+                trainRouteMapItems.forEachIndexed { index, (title, icon, color) ->
                     PlatformTab(
                         selected = pagerState.currentPage == index,
                         onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                        icon = {
+                            PlatformIcon(
+                                modifier = Modifier.size(18F.sp.dp),
+                                painter = icon.invoke(),
+                                tint = color,
+                                contentDescription = title[Shared.language]
+                            )
+                        },
                         text = {
                             PlatformText(
-                                fontSize = 15F.sp,
+                                fontSize = 16F.sp,
                                 lineHeight = 1.1F.em,
                                 maxLines = 1,
-                                text = item.title[Shared.language]
+                                text = title[Shared.language]
                             )
                         }
                     )

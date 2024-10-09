@@ -22,28 +22,14 @@
 package com.loohp.hkbuseta.compose
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
-import com.loohp.hkbuseta.common.appcontext.AppActiveContext
-import kotlinx.coroutines.flow.StateFlow
-import kotlin.coroutines.CoroutineContext
+import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
-@Composable
-actual fun <T> StateFlow<T>.collectAsStateMultiplatform(context: CoroutineContext): State<T> = collectAsState(context)
 
-@Composable
-actual fun BackButtonEffect(enabled: Boolean, onBack: () -> Unit) {
-}
-
-@OptIn(ExperimentalComposeUiApi::class)
-actual inline val currentLocalWindowSize: IntSize
-    @Composable get() = LocalWindowInfo.current.containerSize
-
-@Composable
-actual fun rememberIsInPipMode(context: AppActiveContext): Boolean = false
-
-actual fun AppActiveContext.enterPipMode() {
-}
+inline val currentLocalWindowSize: IntSize
+    @Composable get() = LocalConfiguration.current.run {
+        with (LocalDensity.current) { IntSize(screenWidthDp.dp.toPx().roundToInt(), screenHeightDp.dp.toPx().roundToInt()) }
+    }

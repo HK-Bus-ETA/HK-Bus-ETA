@@ -168,6 +168,9 @@ fun GoogleMapRouteInterface(
         Operator.MTR_BUS -> R.mipmap.bus_mtrbus
         Operator.LRT -> R.mipmap.mtr
         Operator.MTR -> R.mipmap.mtr
+        Operator.HKKF -> R.mipmap.bus_nlb
+        Operator.SUNFERRY -> R.mipmap.bus_nlb
+        Operator.FORTUNEFERRY -> R.mipmap.bus_nlb
         else -> R.mipmap.bus_kmb
     }), 96, 96, false) }
     val shouldShowStopIndex = remember { !waypoints.co.run { isTrain || isFerry } }
@@ -358,6 +361,9 @@ fun rememberLeafletScript(
         Operator.MTR_BUS -> "bus_mtr-bus.svg"
         Operator.LRT -> "mtr.svg"
         Operator.MTR -> "mtr.svg"
+        Operator.HKKF -> "bus_nlb.svg"
+        Operator.SUNFERRY -> "bus_nlb.svg"
+        Operator.FORTUNEFERRY -> "bus_nlb.svg"
         else -> "bus_kmb.svg"
     } }
     val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
