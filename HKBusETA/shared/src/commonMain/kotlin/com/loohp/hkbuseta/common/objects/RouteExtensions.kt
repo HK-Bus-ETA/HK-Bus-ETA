@@ -50,6 +50,7 @@ import com.loohp.hkbuseta.common.utils.outOfOrderSequence
 import com.loohp.hkbuseta.common.utils.parseIntOr
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.common.utils.sequenceSimilarity
+import io.ktor.http.encodeURLPathPart
 import kotlinx.datetime.LocalTime
 import kotlin.math.absoluteValue
 import kotlin.math.max
@@ -877,7 +878,7 @@ fun String.getMTRStationLayoutUrl(): String {
 }
 
 fun Route.getDeepLink(context: AppContext, stopId: String?, stopIndex: Int?): String {
-    var link = "${BASE_URL}/route/${getRouteKey(context)}"
+    var link = "${BASE_URL}/route/${getRouteKey(context)?.encodeURLPathPart()}"
     if (stopId != null) {
         link += "/$stopId%2C${stopIndex?: 0}"
     }
@@ -885,7 +886,7 @@ fun Route.getDeepLink(context: AppContext, stopId: String?, stopIndex: Int?): St
 }
 
 fun RouteSearchResultEntry.getDeepLink(): String {
-    var link = "${BASE_URL}/route/$routeKey"
+    var link = "${BASE_URL}/route/${routeKey.encodeURLPathPart()}"
     if (stopInfo != null) {
         link += "/${stopInfo!!.stopId}"
     }
@@ -893,7 +894,7 @@ fun RouteSearchResultEntry.getDeepLink(): String {
 }
 
 fun StopIndexedRouteSearchResultEntry.getDeepLink(): String {
-    var link = "${BASE_URL}/route/$routeKey"
+    var link = "${BASE_URL}/route/${routeKey.encodeURLPathPart()}"
     if (stopInfo != null) {
         link += "/${stopInfo!!.stopId}%2C$stopInfoIndex"
     }
