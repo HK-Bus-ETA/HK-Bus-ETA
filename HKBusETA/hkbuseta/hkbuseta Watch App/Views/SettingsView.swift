@@ -189,7 +189,7 @@ struct SettingsView: AppScreenView {
                     Text("").frame(maxHeight: .infinity)
                     ZStack {
                         Circle()
-                            .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
+                            .fill(colorInt(0xFF3D3D3D).asColor())
                             .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                         let (image, isIcon) = icon()
                         if isIcon {

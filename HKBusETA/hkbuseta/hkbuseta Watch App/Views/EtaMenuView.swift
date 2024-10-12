@@ -118,6 +118,12 @@ struct EtaMenuView: AppScreenView {
                     }
                     .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
+                    .buttonStyle(PlainButtonStyle())
+                    .background {
+                        colorInt(0xFF1A1A1A)
+                            .asColor()
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                    }
                     Spacer().frame(fixedSize: 5.scaled(appContext))
                     AddThisStopFavButton()
                     Spacer().frame(fixedSize: 5.scaled(appContext))
@@ -142,7 +148,7 @@ struct EtaMenuView: AppScreenView {
                     Text("").frame(maxHeight: .infinity)
                     ZStack {
                         Circle()
-                            .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
+                            .fill(colorInt(0xFF3D3D3D).asColor())
                             .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                         Image(systemName: "map")
                             .resizable()
@@ -194,7 +200,7 @@ struct EtaMenuView: AppScreenView {
                     Text("").frame(maxHeight: .infinity)
                     ZStack {
                         Circle()
-                            .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
+                            .fill(colorInt(0xFF3D3D3D).asColor())
                             .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                         Image(systemName: "figure.walk")
                             .resizable()
@@ -248,7 +254,7 @@ struct EtaMenuView: AppScreenView {
                     Text("").frame(maxHeight: .infinity)
                     ZStack {
                         Circle()
-                            .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
+                            .fill(colorInt(0xFF3D3D3D).asColor())
                             .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                         Image(systemName: "bus.doubledecker")
                             .resizable()
@@ -313,7 +319,7 @@ struct EtaMenuView: AppScreenView {
                     Text("").frame(maxHeight: .infinity)
                     ZStack {
                         Circle()
-                            .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
+                            .fill(colorInt(0xFF3D3D3D).asColor())
                             .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                         Image(systemName: "star.fill")
                             .resizable()
@@ -361,7 +367,7 @@ struct EtaMenuView: AppScreenView {
                     Text("").frame(maxHeight: .infinity)
                     ZStack {
                         Circle()
-                            .fill(Color(red: 61/255, green: 61/255, blue: 61/255))
+                            .fill(colorInt(0xFF3D3D3D).asColor())
                             .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
                         Image(systemName: "star.fill")
                             .resizable()

@@ -40,7 +40,6 @@
 		8171F0912B5D51C7005B8F6A /* ShareExtensionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F0902B5D51C7005B8F6A /* ShareExtensionView.swift */; };
 		81812AB32B48CA000060A30B /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB22B48CA000060A30B /* FirebaseAnalytics */; };
 		81812AB52B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB42B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion */; };
-		81812AB72B48CA000060A30B /* FirebaseAnalyticsSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB62B48CA000060A30B /* FirebaseAnalyticsSwift */; };
 		81812AB92B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 81812AB82B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport */; };
 		81812ABB2B48CA000060A30B /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 81812ABA2B48CA000060A30B /* FirebaseAppCheck */; };
 		81812AC12B48D0400060A30B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 81812AC02B48D0400060A30B /* GoogleService-Info.plist */; };
@@ -295,7 +294,6 @@
 				818FD02B2B45C917008EE8AB /* Gzip in Frameworks */,
 				81812AB32B48CA000060A30B /* FirebaseAnalytics in Frameworks */,
 				81812AB52B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
-				81812AB72B48CA000060A30B /* FirebaseAnalyticsSwift in Frameworks */,
 				81812AB92B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
 				81812ABB2B48CA000060A30B /* FirebaseAppCheck in Frameworks */,
 			);
@@ -619,7 +617,6 @@
 				818FD02A2B45C917008EE8AB /* Gzip */,
 				81812AB22B48CA000060A30B /* FirebaseAnalytics */,
 				81812AB42B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion */,
-				81812AB62B48CA000060A30B /* FirebaseAnalyticsSwift */,
 				81812AB82B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport */,
 				81812ABA2B48CA000060A30B /* FirebaseAppCheck */,
 			);
@@ -1270,7 +1267,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 222;
+				BUILD_NUMBER = 224;
 				BUILD_VERSION = 2.4.1;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1302,6 +1299,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_DEBUG_DYLIB = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1337,7 +1335,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 222;
+				BUILD_NUMBER = 224;
 				BUILD_VERSION = 2.4.1;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1369,6 +1367,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_DEBUG_DYLIB = NO;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1619,7 +1618,7 @@
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 10.19.1;
+				minimumVersion = 11.3.0;
 			};
 		};
 		818FD0292B45C917008EE8AB /* XCRemoteSwiftPackageReference "GzipSwift" */ = {
@@ -1627,7 +1626,7 @@
 			repositoryURL = "https://github.com/1024jp/GzipSwift";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 6.0.1;
+				minimumVersion = 6.0.0;
 			};
 		};
 		81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */ = {
@@ -1660,11 +1659,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAnalyticsOnDeviceConversion;
-		};
-		81812AB62B48CA000060A30B /* FirebaseAnalyticsSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAnalyticsSwift;
 		};
 		81812AB82B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport */ = {
 			isa = XCSwiftPackageProductDependency;

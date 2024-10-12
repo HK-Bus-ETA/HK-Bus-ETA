@@ -105,6 +105,12 @@ struct EtaView: AppScreenView {
                     }
                     .frame(width: 25.scaled(appContext), height: 25.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
+                    .buttonStyle(PlainButtonStyle())
+                    .background {
+                        colorInt(0xFF1A1A1A)
+                            .asColor()
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                    }
                     .ignoresSafeArea(.all)
                     .disabled(index <= 1)
                     
@@ -122,6 +128,12 @@ struct EtaView: AppScreenView {
                         }
                         .frame(width: 25.scaled(appContext), height: 25.scaled(appContext))
                         .clipShape(RoundedRectangle(cornerRadius: 25))
+                        .buttonStyle(PlainButtonStyle())
+                        .background {
+                            colorInt(0xFF1A1A1A)
+                                .asColor()
+                                .clipShape(RoundedRectangle(cornerRadius: 25))
+                        }
                         .ignoresSafeArea(.all)
                     }
                     
@@ -139,6 +151,12 @@ struct EtaView: AppScreenView {
                     }
                     .frame(width: 65.scaled(appContext), height: 25.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
+                    .buttonStyle(PlainButtonStyle())
+                    .background {
+                        colorInt(0xFF1A1A1A)
+                            .asColor()
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                    }
                     .ignoresSafeArea(.all)
                     
                     Button(action: {
@@ -161,6 +179,12 @@ struct EtaView: AppScreenView {
                     }
                     .frame(width: 25.scaled(appContext), height: 25.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
+                    .buttonStyle(PlainButtonStyle())
+                    .background {
+                        colorInt(0xFF1A1A1A)
+                            .asColor()
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                    }
                     .ignoresSafeArea(.all)
                     .disabled(index >= stopList.count)
                 }

@@ -61,6 +61,12 @@ struct EtaTileConfigurationView: AppScreenView {
                         }
                         .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
                         .clipShape(RoundedRectangle(cornerRadius: 25))
+                        .buttonStyle(PlainButtonStyle())
+                        .background {
+                            colorInt(0xFF1A1A1A)
+                                .asColor()
+                                .clipShape(RoundedRectangle(cornerRadius: 25))
+                        }
                         Spacer().frame(fixedSize: 10.scaled(appContext))
                         let routeStops = FavouriteRouteGroupKt.getByName(favouriteRouteStops.state, name: selectedGroup)!.favouriteRouteStops
                         if routeStops.isEmpty {
@@ -95,7 +101,14 @@ struct EtaTileConfigurationView: AppScreenView {
                     }
                     .disabled(selectStates.isEmpty)
                     .frame(height: 35.scaled(appContext))
+                    .frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 25))
+                    .buttonStyle(PlainButtonStyle())
+                    .background {
+                        colorInt(0xFF1A1A1A)
+                            .asColor()
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                    }
                     Button(action: {
                         registryNoUpdate(appContext).clearEtaTileConfiguration(tileId: tileId.asInt32(), context: appContext)
                         appContext.finish()
@@ -108,6 +121,12 @@ struct EtaTileConfigurationView: AppScreenView {
                     }
                     .frame(width: 35.scaled(appContext), height: 35.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
+                    .buttonStyle(PlainButtonStyle())
+                    .background {
+                        colorInt(0xFF1A1A1A)
+                            .asColor()
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                    }
                 }
                 .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
             }
@@ -173,7 +192,7 @@ struct EtaTileConfigurationView: AppScreenView {
                         }
                     }
                 }
-                .padding(10)
+                .padding([.leading, .top, .bottom], 10)
                 VStack(alignment: .leading, spacing: 1.scaled(appContext)) {
                     let stopName = {
                         if (favouriteRouteStop.favouriteStopMode == FavouriteStopMode.fixed) {
@@ -232,7 +251,8 @@ struct EtaTileConfigurationView: AppScreenView {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                }.padding(.vertical, 5)
+                }
+                .padding(5)
             }
         }
         .disabled(!enabled)

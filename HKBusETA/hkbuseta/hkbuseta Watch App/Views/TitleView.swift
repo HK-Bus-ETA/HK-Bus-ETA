@@ -66,9 +66,15 @@ struct TitleView: AppScreenView {
                             .font(.system(size: min(22.scaled(appContext, true), 24.scaled(appContext)), weight: .bold))
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 50))
                 .frame(height: 53.0.scaled(appContext))
                 .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 50))
+                .buttonStyle(PlainButtonStyle())
+                .background {
+                    colorInt(0xFF1A1A1A)
+                        .asColor()
+                        .clipShape(RoundedRectangle(cornerRadius: 50))
+                }
                 Button(action: {
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.fav))
                 }) {
@@ -76,8 +82,14 @@ struct TitleView: AppScreenView {
                         .font(.system(size: min(22.scaled(appContext, true), 24.scaled(appContext))))
                         .foregroundColor(.yellow)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 50))
                 .frame(width: 55.0.scaled(appContext), height: 53.0.scaled(appContext))
+                .clipShape(RoundedRectangle(cornerRadius: 50))
+                .buttonStyle(PlainButtonStyle())
+                .background {
+                    colorInt(0xFF1A1A1A)
+                        .asColor()
+                        .clipShape(RoundedRectangle(cornerRadius: 50))
+                }
                 if belowWidgetVersion {
                     Button(action: {
                         appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.etaTileList))
@@ -87,12 +99,20 @@ struct TitleView: AppScreenView {
                             .font(.system(size: min(21.scaled(appContext, true), 24.scaled(appContext))))
                             .foregroundColor(.red)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 50))
                     .frame(width: 55.0.scaled(appContext), height: 53.0.scaled(appContext))
+                    .clipShape(RoundedRectangle(cornerRadius: 50))
+                    .buttonStyle(PlainButtonStyle())
+                    .background {
+                        colorInt(0xFF1A1A1A)
+                            .asColor()
+                            .clipShape(RoundedRectangle(cornerRadius: 50))
+                    }
                 }
             }
-            Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報").font(.system(size: 12.scaled(appContext)))
-            Text("v\(appContext.versionName) (\(appContext.versionCode.description)) @loohpjames").font(.system(size: 12.scaled(appContext))).padding(.bottom)
+            Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報")
+                .font(.system(size: 12.scaled(appContext)))
+            Text("v\(appContext.versionName) (\(appContext.versionCode.description)) @loohpjames")
+                .font(.system(size: 11.scaled(appContext))).padding(.bottom)
         }
         .padding()
     }

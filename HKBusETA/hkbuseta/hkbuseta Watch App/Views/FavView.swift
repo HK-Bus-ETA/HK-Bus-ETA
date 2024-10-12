@@ -66,6 +66,12 @@ struct FavView: AppScreenView {
                         }
                         .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
                         .clipShape(RoundedRectangle(cornerRadius: 25))
+                        .buttonStyle(PlainButtonStyle())
+                        .background {
+                            colorInt(0xFF1A1A1A)
+                                .asColor()
+                                .clipShape(RoundedRectangle(cornerRadius: 25))
+                        }
                         .ignoresSafeArea(.all)
                         Spacer().frame(fixedSize: 5.scaled(appContext))
                     }
@@ -85,6 +91,12 @@ struct FavView: AppScreenView {
                     }
                     .frame(width: 160.scaled(appContext), height: 35.scaled(appContext))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
+                    .buttonStyle(PlainButtonStyle())
+                    .background {
+                        colorInt(0xFF1A1A1A)
+                            .asColor()
+                            .clipShape(RoundedRectangle(cornerRadius: 25))
+                    }
                     Spacer().frame(fixedSize: 5.scaled(appContext))
                     let routeStops = FavouriteRouteGroupKt.getByName(favouriteRouteStops.state, name: selectedGroup)!.favouriteRouteStops
                     if routeStops.isEmpty {

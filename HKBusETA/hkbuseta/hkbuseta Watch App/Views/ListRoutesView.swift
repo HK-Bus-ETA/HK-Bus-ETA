@@ -143,6 +143,12 @@ struct ListRoutesView: AppScreenView {
                             }
                             .frame(width: 45.scaled(appContext), height: 45.scaled(appContext))
                             .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .buttonStyle(PlainButtonStyle())
+                            .background {
+                                colorInt(0xFF1A1A1A)
+                                    .asColor()
+                                    .clipShape(RoundedRectangle(cornerRadius: 25))
+                            }
                             .ignoresSafeArea(.all)
                         } else if recentSort == RecentSortMode.choice || proximitySortOrigin != nil {
                             Button(action: {
@@ -158,6 +164,12 @@ struct ListRoutesView: AppScreenView {
                             .font(.system(size: 17.scaled(appContext), weight: .bold))
                             .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
                             .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .buttonStyle(PlainButtonStyle())
+                            .background {
+                                colorInt(0xFF1A1A1A)
+                                    .asColor()
+                                    .clipShape(RoundedRectangle(cornerRadius: 25))
+                            }
                             .ignoresSafeArea(.all)
                             Button(action: {
                                 activeSortMode = RouteSortPreference(routeSortMode: activeSortMode.routeSortMode, filterTimetableActive: !activeSortMode.filterTimetableActive)
@@ -173,6 +185,12 @@ struct ListRoutesView: AppScreenView {
                             .font(.system(size: 17.scaled(appContext), weight: .bold))
                             .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
                             .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .buttonStyle(PlainButtonStyle())
+                            .background {
+                                colorInt(0xFF1A1A1A)
+                                    .asColor()
+                                    .clipShape(RoundedRectangle(cornerRadius: 25))
+                            }
                             .ignoresSafeArea(.all)
                             if !routeGroupedByDirections.isEmpty {
                                 Button(action: {
@@ -188,6 +206,12 @@ struct ListRoutesView: AppScreenView {
                                 .font(.system(size: 17.scaled(appContext), weight: .bold))
                                 .frame(width: 170.scaled(appContext), height: 45.scaled(appContext))
                                 .clipShape(RoundedRectangle(cornerRadius: 25))
+                                .buttonStyle(PlainButtonStyle())
+                                .background {
+                                    colorInt(0xFF1A1A1A)
+                                        .asColor()
+                                        .clipShape(RoundedRectangle(cornerRadius: 25))
+                                }
                                 .ignoresSafeArea(.all)
                             }
                         }
@@ -203,8 +227,9 @@ struct ListRoutesView: AppScreenView {
                                 Text(Shared().language == "en" ? "MTR System Map" : "港鐵路綫圖")
                             }
                             .font(.system(size: 17.scaled(appContext), weight: .bold))
-                            .frame(width: 140.scaled(appContext), height: 35.scaled(appContext))
+                            .frame(width: 170.scaled(appContext), height: 35.scaled(appContext))
                             .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .buttonStyle(PlainButtonStyle())
                             .background {
                                 colorInt(0xFF001F50)
                                     .asColor()
@@ -219,8 +244,9 @@ struct ListRoutesView: AppScreenView {
                                 Text(Shared().language == "en" ? "LRT Route Map" : "輕鐵路綫圖")
                             }
                             .font(.system(size: 17.scaled(appContext), weight: .bold))
-                            .frame(width: 140.scaled(appContext), height: 35.scaled(appContext))
+                            .frame(width: 170.scaled(appContext), height: 35.scaled(appContext))
                             .clipShape(RoundedRectangle(cornerRadius: 25))
+                            .buttonStyle(PlainButtonStyle())
                             .background {
                                 Operator.Companion().LRT.getOperatorColor(elseColor: 0xFFFFFFFF as Int64)
                                     .asColor()
