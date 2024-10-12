@@ -39,7 +39,7 @@ sealed class ComposePlatform(
     val browserEnvironment: Boolean
 ) {
     @Immutable
-    data object AndroidPlatform: ComposePlatform(
+    class AndroidPlatform(tablet: Boolean): ComposePlatform(
         hasMouse = false,
         hasKeyboard = false,
         hasLocation = true,
@@ -49,7 +49,7 @@ sealed class ComposePlatform(
         applePlatform = false,
         appleEnvironment = false,
         isMobileAppRunningOnDesktop = false,
-        hasLargeScreen = false,
+        hasLargeScreen = tablet,
         browserEnvironment = false
     )
     @Immutable

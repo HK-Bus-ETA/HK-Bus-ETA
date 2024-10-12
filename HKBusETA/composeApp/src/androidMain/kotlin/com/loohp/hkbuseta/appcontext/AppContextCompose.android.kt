@@ -473,7 +473,7 @@ fun setApplicationContext(context: Context) {
     applicationAppContextInternal = AppContextComposeAndroid(context)
 }
 
-actual val applicationAppContext: AppContextCompose get() = applicationAppContextInternal ?: throw RuntimeException()
+actual val applicationAppContext: AppContextCompose get() = applicationAppContextInternal?: throw RuntimeException()
 
 internal var componentActivityInternal: ComponentActivity? = null
 internal var componentActivityPaused: Boolean? = null

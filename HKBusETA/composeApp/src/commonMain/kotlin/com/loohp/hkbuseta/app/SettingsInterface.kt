@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -557,7 +558,9 @@ fun ThemeColorPicker(instance: AppActiveContext, showingState: MutableState<Bool
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 ClassicColorPicker(
-                    modifier = Modifier.aspectRatio(1F),
+                    modifier = Modifier
+                        .weight(1F)
+                        .aspectRatio(1F),
                     colorPickerValueState = colorState,
                     showAlphaBar = false
                 )
@@ -567,7 +570,7 @@ fun ThemeColorPicker(instance: AppActiveContext, showingState: MutableState<Bool
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(50.dp)
+                            .requiredSize(50.dp)
                             .clip(CircleShape)
                             .background(color.toColor())
                             .border(0.5F.dp, MaterialTheme.colorScheme.outline, CircleShape)

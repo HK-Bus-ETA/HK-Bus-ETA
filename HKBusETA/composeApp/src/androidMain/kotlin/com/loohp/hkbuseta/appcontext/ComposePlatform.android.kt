@@ -21,4 +21,17 @@
 
 package com.loohp.hkbuseta.appcontext
 
-actual val composePlatform: ComposePlatform = ComposePlatform.AndroidPlatform
+actual val composePlatform: ComposePlatform = ComposePlatform.AndroidPlatform(isTablet())
+
+private fun isTablet(): Boolean {
+    return try {
+        applicationAppContext.screenWidth.toDp() >= 840 || applicationAppContext.screenHeight.toDp() >= 900
+    } catch (e: Throwable) {
+        e.printStackTrace()
+        false
+    }
+}
+
+private fun Int.toDp(): Float {
+    return this / applicationAppContext.density
+}
