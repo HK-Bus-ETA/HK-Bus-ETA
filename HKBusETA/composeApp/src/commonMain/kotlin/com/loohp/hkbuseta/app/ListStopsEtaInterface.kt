@@ -584,7 +584,7 @@ fun ListStopsEtaInterface(
                                 sheetTypeState = sheetTypeState,
                                 togglingAlightReminderState = togglingAlightReminderState,
                                 alternateStopNamesShowingState = alternateStopNamesShowingState,
-                                trafficSnapshots = trafficSnapshotsByAllStops.getOrNull(i),
+                                trafficSnapshots = trafficSnapshotsByAllStops?.getOrNull(i),
                                 sticky = sticky
                             )
                             if (sticky) {

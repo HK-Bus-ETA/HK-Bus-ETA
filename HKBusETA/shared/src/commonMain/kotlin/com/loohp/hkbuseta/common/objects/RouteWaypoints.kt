@@ -35,7 +35,7 @@ data class RouteWaypoints(
     val isKmbCtbJoint: Boolean,
     val stops: List<Stop>,
     val paths: List<List<Coordinates>> = listOf(stops.map { it.location }),
-    val isHighRes: Boolean = true,
+    val isHighRes: Boolean,
 ) {
     val simplifiedPaths: List<List<Coordinates>> by lazy { paths.map { it.simplified() } }
 }

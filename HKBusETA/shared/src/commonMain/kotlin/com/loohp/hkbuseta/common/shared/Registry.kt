@@ -2008,9 +2008,9 @@ class Registry {
                                 this
                             }
                         }
-                        RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, path)
+                        RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, path, true)
                     }
-                    ?: RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, listOf(stops.map { it.location }))
+                    ?: RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, listOf(stops.map { it.location }), false)
             }
         }
     }

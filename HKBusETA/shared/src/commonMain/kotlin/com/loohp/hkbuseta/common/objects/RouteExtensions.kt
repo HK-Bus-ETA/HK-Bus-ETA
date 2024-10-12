@@ -1191,9 +1191,9 @@ inline val Stop.hkkfStopCode: String get() = when {
     else -> "CL"
 }
 
-fun List<Registry.StopData>.mapTrafficSnapshots(waypoints: RouteWaypoints?, trafficSnapshots: Array<out List<TrafficSnapshotPoint>>?): Array<out List<TrafficSnapshotPoint>> {
+fun List<Registry.StopData>.mapTrafficSnapshots(waypoints: RouteWaypoints?, trafficSnapshots: Array<out List<TrafficSnapshotPoint>>?): Array<out List<TrafficSnapshotPoint>>? {
     return if (waypoints == null || trafficSnapshots == null) {
-        Array(size) { emptyList() }
+        null
     } else {
         val array = Array(size) { emptyList<TrafficSnapshotPoint>() }
         var currentIndex = 0

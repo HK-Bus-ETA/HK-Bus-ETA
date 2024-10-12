@@ -22,6 +22,10 @@
 package com.loohp.hkbuseta.app
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -33,10 +37,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredSizeIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -68,10 +75,12 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,6 +88,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.ScreenState
@@ -157,6 +167,7 @@ import com.loohp.hkbuseta.compose.FullscreenExit
 import com.loohp.hkbuseta.compose.NotificationImportant
 import com.loohp.hkbuseta.compose.PhotoCamera
 import com.loohp.hkbuseta.compose.PlatformButton
+import com.loohp.hkbuseta.compose.PlatformCircularProgressIndicator
 import com.loohp.hkbuseta.compose.PlatformFilledTonalIconToggleButton
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
@@ -188,6 +199,7 @@ import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.dp
+import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.pixelsToDp
 import com.loohp.hkbuseta.utils.sp
@@ -388,6 +400,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val waypointStops by remember { derivedStateOf { (if (co.isTrain) allStops else allStops.filter { it.branchIds.contains(selectedBranch) }).map { it.stop } } }
     var waypoints by remember { mutableStateOf(if (co.isTrain) route.defaultWaypoints(instance) else selectedBranch.defaultWaypoints(instance)) }
     var trafficSnapshots: Array<out List<TrafficSnapshotPoint>>? by remember { mutableStateOf(null) }
+    var trafficSnapshotsLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect (selectedBranch, waypointStops) {
         CoroutineScope(dispatcherIO).launch {
@@ -398,6 +411,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             val asyncTrafficSnapshots = Registry.getInstance(instance).getRouteTrafficSnapshots(waypointsAsync)
             withContext(Dispatchers.Main) {
                 trafficSnapshots = asyncTrafficSnapshots
+                trafficSnapshotsLoading = false
             }
         }
     }
@@ -660,8 +674,11 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                         )
                     },
                     text = {
+                        var height by remember { mutableIntStateOf(0) }
                         Row(
-                            modifier = Modifier.applyIf(composePlatform.applePlatform) { padding(horizontal = 5.dp) },
+                            modifier = Modifier
+                                .applyIf(composePlatform.applePlatform) { padding(horizontal = 5.dp) }
+                                .onSizeChanged { height = it.height },
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -670,12 +687,49 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                 lineHeight = 1.1F.em,
                                 text = title[Shared.language]
                             )
-                            if (type == StopsTabItemType.NOTICES && importantNoticeCount > 0) {
-                                AutoResizeText(
-                                    autoResizeTextState = autoFontSizeState,
-                                    lineHeight = 1.1F.em,
-                                    text = importantNoticeCount.getCircledNumber()
-                                )
+                            when (type) {
+                                StopsTabItemType.TRAFFIC_SNAPSHOTS -> {
+                                    androidx.compose.animation.AnimatedVisibility(
+                                        modifier = Modifier.requiredSizeIn(
+                                            maxWidth = height.equivalentDp,
+                                            maxHeight = height.equivalentDp
+                                        ),
+                                        visible = trafficSnapshotsLoading,
+                                        enter = fadeIn() + expandHorizontally(),
+                                        exit = shrinkHorizontally() + fadeOut(),
+                                    ) {
+                                        PlatformCircularProgressIndicator(
+                                            modifier = Modifier
+                                                .size(autoFontSizeState.value.fontSizeValue.sp.dp - 1.dp)
+                                                .zIndex(1F),
+                                            color = Color(0xFFF9DE09),
+                                            strokeWidth = autoFontSizeState.value.fontSizeValue.sp.dp / 8,
+                                            trackColor = Color(0xFF797979),
+                                            strokeCap = StrokeCap.Round,
+                                        )
+                                    }
+                                }
+                                StopsTabItemType.NOTICES -> {
+                                    androidx.compose.animation.AnimatedVisibility(
+                                        modifier = Modifier.requiredHeight(height.equivalentDp),
+                                        visible = importantNoticeCount > 0,
+                                        enter = fadeIn() + expandHorizontally(),
+                                        exit = shrinkHorizontally() + fadeOut(),
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxHeight(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            AutoResizeText(
+                                                modifier = Modifier.zIndex(1F),
+                                                autoResizeTextState = autoFontSizeState,
+                                                lineHeight = 1.1F.em,
+                                                text = importantNoticeCount.getCircledNumber()
+                                            )
+                                        }
+                                    }
+                                }
+                                else -> { /* do nothing */ }
                             }
                         }
                     }

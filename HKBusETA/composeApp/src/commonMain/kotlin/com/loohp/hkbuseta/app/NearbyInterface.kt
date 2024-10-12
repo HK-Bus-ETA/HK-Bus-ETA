@@ -85,6 +85,8 @@ import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.asBilingualText
+import com.loohp.hkbuseta.common.objects.joinToBilingualText
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
@@ -350,18 +352,31 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                             animationSpec = tween(durationMillis = 300)
                         )
                     ) {
-                        val extraStopsCount by remember { derivedStateOf { (nearbyRoutesResult?.result?.asSequence()
-                            ?.mapNotNull { r -> r.stopInfo?.stopId }
+                        val nearbyStops by remember { derivedStateOf { nearbyRoutesResult?.result?.asSequence()
+                            ?.filter { r -> r.stopInfo != null }
                             ?.distinct()
-                            ?.count()?: 0) - 1
+                            ?.toList()?: emptyList()
+                        } }
+                        val nearbyStopNames by remember { derivedStateOf { nearbyStops.asSequence()
+                            .distinctBy { it.stopInfo!!.data!!.name }
+                            .sortedBy { it.stopInfo!!.distance }
+                            .joinToBilingualText(
+                                separator = "\n".asBilingualText(),
+                                limit = 10,
+                                truncated = "\n...".asBilingualText(),
+                                transform = { it.stopInfo!!.data!!.name }
+                            )
                         } }
                         nearbyRoutesResult?.let {
                             PlatformText(
-                                modifier = Modifier.padding(top = 10.dp, start = 10.dp, end = 10.dp),
+                                modifier = Modifier
+                                    .padding(top = 10.dp, start = 10.dp, end = 10.dp)
+                                    .plainTooltip(nearbyStopNames[Shared.language]),
                                 color = ButtonDefaults.textButtonColors().contentColor,
                                 fontSize = 20.sp,
                                 text = buildAnnotatedString {
                                     appendFormatted(it.closestStop.remarkedName[Shared.language])
+                                    val extraStopsCount = nearbyStops.size - 1
                                     if (extraStopsCount > 1) {
                                         append(" ")
                                         append("(+$extraStopsCount)", SpanStyle(fontSize = TextUnit.Small))

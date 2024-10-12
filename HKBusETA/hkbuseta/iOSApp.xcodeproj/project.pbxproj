@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -672,7 +672,6 @@
 				};
 			};
 			buildConfigurationList = 81D16AAB2B33C21D003D9817 /* Build configuration list for PBXProject "iOSApp" */;
-			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -689,6 +688,7 @@
 				81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				81498CE62B7AF648005F0961 /* XCRemoteSwiftPackageReference "MKZoomLevel" */,
 			);
+			preferredProjectObjectVersion = 77;
 			productRefGroup = 81D16AAF2B33C21E003D9817 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1270,8 +1270,8 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 221;
-				BUILD_VERSION = 2.4.0;
+				BUILD_NUMBER = 222;
+				BUILD_VERSION = 2.4.1;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -1337,8 +1337,8 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 221;
-				BUILD_VERSION = 2.4.0;
+				BUILD_NUMBER = 222;
+				BUILD_VERSION = 2.4.1;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
