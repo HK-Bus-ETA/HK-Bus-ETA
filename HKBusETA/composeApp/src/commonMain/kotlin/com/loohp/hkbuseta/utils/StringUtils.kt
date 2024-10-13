@@ -21,32 +21,21 @@
 package com.loohp.hkbuseta.utils
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
 import com.loohp.hkbuseta.appcontext.isDarkMode
@@ -61,11 +50,10 @@ import com.loohp.hkbuseta.common.utils.InlineImage
 import com.loohp.hkbuseta.common.utils.InlineImageStyle
 import com.loohp.hkbuseta.common.utils.SmallContentStyle
 import com.loohp.hkbuseta.common.utils.URLContentStyle
-import com.loohp.hkbuseta.common.utils.asImmutableMap
-import com.loohp.hkbuseta.compose.PlatformText
+import com.loohp.hkbuseta.common.utils.buildImmutableMap
+import com.loohp.hkbuseta.compose.platformLocalTextStyle
 import kotlinx.collections.immutable.ImmutableCollection
 import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.persistentMapOf
 import org.jetbrains.compose.resources.painterResource
 
 val RESOURCE_RATIO: Map<String, Float> = mapOf(
@@ -179,70 +167,71 @@ fun FormattedText.asContentAnnotatedString(isDarkTheme: Boolean, spanStyle: Span
 }
 
 @Composable
-fun ImmutableCollection<String>.renderedSizes(fontSize: TextUnit, maxLines: Int = 1, spanStyle: SpanStyle? = null): State<ImmutableMap<String, IntSize?>> {
-    val result: MutableState<ImmutableMap<String, IntSize?>> = remember { mutableStateOf(persistentMapOf()) }
-    LaunchedEffect (this) {
-        result.value = result.value.toMutableMap().apply { keys.retainAll(this@renderedSizes) }.asImmutableMap()
-    }
-    for (string in this) {
-        val stringResult by string.renderedSize(fontSize, maxLines, spanStyle)
-        LaunchedEffect (string, stringResult) {
-            result.value = result.value.toMutableMap().apply { this[string] = stringResult }.asImmutableMap()
+fun ImmutableCollection<String>.renderedSizes(fontSize: TextUnit, maxLines: Int = 1, spanStyle: SpanStyle? = null): ImmutableMap<String, TextLayoutResult> {
+    val textMeasurer = rememberTextMeasurer()
+    val style = platformLocalTextStyle.copy(
+        fontSize = fontSize
+    )
+    return remember(this) {
+        buildImmutableMap {
+            for (string in this@renderedSizes) {
+                this[string] = textMeasurer.measure(
+                    text = string.asAnnotatedString(spanStyle),
+                    style = style,
+                    maxLines = maxLines
+                )
+            }
         }
     }
-    return result
 }
 
 @Composable
-fun ImmutableCollection<AnnotatedString>.renderedSizes(fontSize: TextUnit, maxLines: Int = 1): State<ImmutableMap<AnnotatedString, IntSize?>> {
-    val result: MutableState<ImmutableMap<AnnotatedString, IntSize?>> = remember { mutableStateOf(persistentMapOf()) }
-    LaunchedEffect (this) {
-        result.value = result.value.toMutableMap().apply { keys.retainAll(this@renderedSizes) }.asImmutableMap()
-    }
-    for (string in this) {
-        val stringResult by string.renderedSize(fontSize, maxLines)
-        LaunchedEffect (string, stringResult) {
-            result.value = result.value.toMutableMap().apply { this[string] = stringResult }.asImmutableMap()
+fun ImmutableCollection<AnnotatedString>.renderedSizes(fontSize: TextUnit, maxLines: Int = 1): ImmutableMap<AnnotatedString, TextLayoutResult> {
+    val textMeasurer = rememberTextMeasurer()
+    val style = platformLocalTextStyle.copy(
+        fontSize = fontSize
+    )
+    return remember(this) {
+        buildImmutableMap {
+            for (string in this@renderedSizes) {
+                this[string] = textMeasurer.measure(
+                    text = string,
+                    style = style,
+                    maxLines = maxLines
+                )
+            }
         }
     }
-    return result
 }
 
 @Composable
-fun String.renderedSize(fontSize: TextUnit, maxLines: Int = 1, spanStyle: SpanStyle? = null): State<IntSize?> {
-    return asAnnotatedString(spanStyle).renderedSize(fontSize, maxLines)
+fun String.renderedSize(fontSize: TextUnit, maxLines: Int = 1, spanStyle: SpanStyle? = null): TextLayoutResult {
+    val textMeasurer = rememberTextMeasurer()
+    val style = platformLocalTextStyle.copy(
+        fontSize = fontSize
+    )
+    return remember(this) {
+        textMeasurer.measure(
+            text = asAnnotatedString(spanStyle),
+            style = style,
+            maxLines = maxLines
+        )
+    }
 }
 
 @Composable
-fun AnnotatedString.renderedSize(fontSize: TextUnit, maxLines: Int = 1): State<IntSize?> {
-    val result: MutableState<IntSize?> = remember(this, fontSize) { mutableStateOf(null) }
-    val density = LocalDensity.current
-    var first by remember { mutableStateOf(true) }
-    LaunchedEffect (density.density, density.fontScale) {
-        if (first) {
-            first = false
-        } else {
-            result.value = null
-        }
+fun AnnotatedString.renderedSize(fontSize: TextUnit, maxLines: Int = 1): TextLayoutResult {
+    val textMeasurer = rememberTextMeasurer()
+    val style = platformLocalTextStyle.copy(
+        fontSize = fontSize
+    )
+    return remember(this) {
+        textMeasurer.measure(
+            text = this,
+            style = style,
+            maxLines = maxLines
+        )
     }
-    if (result.value == null) {
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState())
-        ) {
-            PlatformText(
-                modifier = Modifier.layout { measurable, constraints ->
-                    val placeable = measurable.measure(constraints)
-                    result.value = IntSize(placeable.width, placeable.height)
-                    layout(0, 0) { /* do nothing */ }
-                },
-                text = this@renderedSize,
-                maxLines = maxLines,
-                fontSize = fontSize,
-                overflow = TextOverflow.Visible
-            )
-        }
-    }
-    return result
 }
 
 fun <T> Iterable<T>.joinToAnnotatedString(separator: AnnotatedString = ", ".asAnnotatedString(), prefix: AnnotatedString = "".asAnnotatedString(), postfix: AnnotatedString = "".asAnnotatedString(), limit: Int = -1, truncated: AnnotatedString = "...".asAnnotatedString(), transform: ((T) -> AnnotatedString)? = null): AnnotatedString {

@@ -345,3 +345,67 @@ inline fun <K, V> Map<out K, V>?.isNotNullAndNotEmpty(): Boolean {
     }
     return !isNullOrEmpty()
 }
+
+@Immutable
+open class TransformedCollection<E, T>(
+    private val source: Collection<E>,
+    private val transform: (E) -> T
+): Collection<T> {
+    override val size: Int get() = source.size
+    override fun isEmpty(): Boolean = source.isEmpty()
+    override fun iterator(): Iterator<T> = object : Iterator<T> {
+        private val listIterator: Iterator<E> = source.iterator()
+        override fun hasNext(): Boolean = listIterator.hasNext()
+        override fun next(): T = transform.invoke(listIterator.next())
+    }
+    override fun containsAll(elements: Collection<T>): Boolean = source.map { transform.invoke(it) }.containsAll(elements)
+    override fun contains(element: T): Boolean = indexOf(element) >= 0
+}
+
+inline fun <E, T> Collection<E>.asTransformedView(noinline transform: (E) -> T): Collection<T> = TransformedCollection(this, transform)
+
+@Immutable
+class TransformedList<E, T>(
+    private val source: List<E>,
+    private val transform: (E) -> T
+): List<T> {
+    override val size: Int get() = source.size
+    override fun get(index: Int): T = transform.invoke(source[index])
+    override fun isEmpty(): Boolean = source.isEmpty()
+    override fun iterator(): Iterator<T> = listIterator(0)
+    override fun listIterator(): ListIterator<T> = listIterator(0)
+    override fun listIterator(index: Int): ListIterator<T> = object : ListIterator<T> {
+        private val listIterator: ListIterator<E> = source.listIterator(index)
+        override fun hasNext(): Boolean = listIterator.hasNext()
+        override fun hasPrevious(): Boolean = listIterator.hasPrevious()
+        override fun next(): T = transform.invoke(listIterator.next())
+        override fun nextIndex(): Int = listIterator.nextIndex()
+        override fun previous(): T = transform.invoke(listIterator.previous())
+        override fun previousIndex(): Int = listIterator.previousIndex()
+    }
+    override fun subList(fromIndex: Int, toIndex: Int): List<T> = TransformedList(source.subList(fromIndex, toIndex), transform)
+    override fun lastIndexOf(element: T): Int = source.indexOfLast { transform.invoke(it) == element }
+    override fun indexOf(element: T): Int = source.indexOf { transform.invoke(it) == element }
+    override fun containsAll(elements: Collection<T>): Boolean = source.map { transform.invoke(it) }.containsAll(elements)
+    override fun contains(element: T): Boolean = indexOf(element) >= 0
+}
+
+inline fun <E, T> List<E>.asTransformedView(noinline transform: (E) -> T): List<T> = TransformedList(this, transform)
+
+@Immutable
+class TransformedSet<E, T>(
+    private val source: Set<E>,
+    private val transform: (E) -> T
+): Set<T> {
+    override val size: Int get() = source.size
+    override fun isEmpty(): Boolean = source.isEmpty()
+    override fun iterator(): Iterator<T> = object : Iterator<T> {
+        private val listIterator: Iterator<E> = source.iterator()
+        override fun hasNext(): Boolean = listIterator.hasNext()
+        override fun next(): T = transform.invoke(listIterator.next())
+    }
+    override fun containsAll(elements: Collection<T>): Boolean = source.map { transform.invoke(it) }.containsAll(elements)
+    override fun contains(element: T): Boolean = indexOf(element) >= 0
+}
+
+inline fun <E, T> Set<E>.asTransformedView(noinline transform: (E) -> T): Set<T> = TransformedSet(this, transform)

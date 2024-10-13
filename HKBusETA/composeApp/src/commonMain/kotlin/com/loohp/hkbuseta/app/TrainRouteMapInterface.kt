@@ -2343,7 +2343,7 @@ fun LRTETADisplayByRouteInterface(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.Start)
                     ) {
-                        val size by "614P".renderedSize(19.sp)
+                        val size = "614P".renderedSize(19.sp)
                         PlatformText(
                             text = if (Shared.language == "en") "Route" else "路線",
                             fontSize = 21.sp
@@ -2351,13 +2351,13 @@ fun LRTETADisplayByRouteInterface(
                         Box(
                             modifier = Modifier
                                 .requiredSize(
-                                    width = size?.width?.equivalentDp?.plus(10.sp.dp)?: 0.dp,
-                                    height = size?.height?.equivalentDp?.plus(3.sp.dp)?: 0.dp,
+                                    width = size.size.width.equivalentDp + 10.sp.dp,
+                                    height = size.size.height.equivalentDp + 3.sp.dp,
                                 )
                                 .border(
                                     width = 3.sp.dp,
                                     color = Operator.LRT.getLineColor(routeNumber, Color.Unspecified),
-                                    shape = RoundedCornerShape(size?.width?.equivalentDp?: 40.sp.dp)
+                                    shape = RoundedCornerShape(size.size.width.equivalentDp)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {

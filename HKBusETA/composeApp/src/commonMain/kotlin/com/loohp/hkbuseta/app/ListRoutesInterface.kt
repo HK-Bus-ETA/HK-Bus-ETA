@@ -805,7 +805,7 @@ fun ListRouteInterfaceInternal(
     val etaResultsState = remember { etaResults.asImmutableState() }
     val etaUpdateTimesState = remember { etaUpdateTimes.asImmutableState() }
 
-    val routeNumberWidth by if (Shared.language == "en") "249M".renderedSize(30F.sp) else "機場快線".renderedSize(22F.sp)
+    val routeNumberWidth = if (Shared.language == "en") "249M".renderedSize(30F.sp) else "機場快線".renderedSize(22F.sp)
     val reorderEnabled by remember(reorderable) { derivedStateOf { reorderable != null && activeSortMode.isDefault && filterDirections == null } }
 
     if (pipMode && pipModeListName != null) {
@@ -833,7 +833,7 @@ fun ListRouteInterfaceInternal(
             ) {
                 itemsIndexed(sortedResults, key = { _, route -> route.uniqueKey }) { index, route ->
                     val uniqueKey = route.uniqueKey
-                    val width = routeNumberWidth?.width?: 0
+                    val width = routeNumberWidth.size.width
                     val deleteFunction = { Registry.getInstance(instance).removeLastLookupRoutes(route.routeKey, instance) }.takeIf { recentSort == RecentSortMode.FORCED }
                     if (reorderEnabled) {
                         ReorderableItem(

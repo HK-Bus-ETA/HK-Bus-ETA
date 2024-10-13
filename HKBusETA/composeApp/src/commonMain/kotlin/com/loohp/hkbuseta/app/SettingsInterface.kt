@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -56,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
@@ -559,8 +559,14 @@ fun ThemeColorPicker(instance: AppActiveContext, showingState: MutableState<Bool
             ) {
                 ClassicColorPicker(
                     modifier = Modifier
-                        .weight(1F)
-                        .aspectRatio(1F),
+                        .weight(1F, fill = false)
+                        .layout { measurable, constraints ->
+                            val adjusted = constraints.copy(maxHeight = constraints.maxWidth.coerceAtMost(constraints.maxHeight))
+                            val placeable = measurable.measure(adjusted)
+                            layout(placeable.width, placeable.height) {
+                                placeable.placeRelative(0, 0)
+                            }
+                        },
                     colorPickerValueState = colorState,
                     showAlphaBar = false
                 )

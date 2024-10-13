@@ -84,3 +84,7 @@ class DelegatedImmutableMap<K, V>(private val map: Map<K, V>): ImmutableMap<K, V
 inline fun <K, V> Map<K, V>.asImmutableMap(): ImmutableMap<K, V> {
     return if (this is ImmutableMap<K, V>) this else DelegatedImmutableMap(this)
 }
+
+inline fun <K, V> buildImmutableMap(builderAction: MutableMap<K, V>.() -> Unit): ImmutableMap<K, V> {
+    return buildMap(builderAction).asImmutableMap()
+}

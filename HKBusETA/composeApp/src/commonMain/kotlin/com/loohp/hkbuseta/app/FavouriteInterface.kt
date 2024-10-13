@@ -270,13 +270,13 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
     ) {
         val tabScrollable = remember(favouriteRouteStops) { mutableStateMapOf<Int, Boolean>() }
         val tabTexts = remember(favouriteRouteStops) { favouriteRouteStops.asSequence().map { it.name[Shared.language] }.toImmutableList() }
-        val renderSizes by tabTexts.renderedSizes(16F.sp, spanStyle = SpanStyle(fontWeight = FontWeight.Bold))
+        val renderSizes = tabTexts.renderedSizes(16F.sp, spanStyle = SpanStyle(fontWeight = FontWeight.Bold))
         AdvanceTabRow(
             modifier = Modifier.fillMaxWidth(),
             selectedTabIndex = pagerState.currentPage,
             totalTabSize = pagerState.pageCount,
             scrollable = tabScrollable.values.any { it },
-            widestTabWidth = renderSizes.maxOfOrNull { it.value?.width?: 1 }?.equivalentDp?: 1.dp
+            widestTabWidth = renderSizes.values.maxOfOrNull { it.size.width }?.equivalentDp?.plus(20.dp)?: 1.dp
         ) { scrollable ->
             favouriteRouteStops.forEachIndexed { index, item ->
                 PlatformTab(
@@ -284,7 +284,9 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                     text = {
                         PlatformText(
-                            modifier = Modifier.fillMaxWidth(0.9F),
+                            modifier = Modifier
+                                .fillMaxWidth(0.9F)
+                                .padding(horizontal = 10.dp),
                             onTextLayout = {
                                 if (!scrollable) {
                                     tabScrollable[index] = it.didOverflowWidth || it.didOverflowHeight
@@ -614,13 +616,13 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
         ) {
             val tabScrollable = remember(favouriteStops) { mutableStateMapOf<Int, Boolean>() }
             val tabTexts = remember(favouriteStops) { favouriteStops.asSequence().map { it.second.name[Shared.language] }.toImmutableList() }
-            val renderSizes by tabTexts.renderedSizes(16F.sp, spanStyle = SpanStyle(fontWeight = FontWeight.Bold))
+            val renderSizes = tabTexts.renderedSizes(16F.sp, spanStyle = SpanStyle(fontWeight = FontWeight.Bold))
             AdvanceTabRow(
                 modifier = Modifier.fillMaxWidth(),
                 selectedTabIndex = pagerState.currentPage.coerceAtMost(pagerState.pageCount - 1),
                 totalTabSize = pagerState.pageCount,
                 scrollable = tabScrollable.values.any { it },
-                widestTabWidth = renderSizes.maxOfOrNull { it.value?.width?: 1 }?.equivalentDp?: 1.dp
+                widestTabWidth = renderSizes.values.maxOfOrNull { it.size.width }?.equivalentDp?.plus(20.dp)?: 1.dp
             ) { scrollable ->
                 favouriteStops.forEachIndexed { index, item ->
                     PlatformTab(
@@ -628,7 +630,9 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                         onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                         text = {
                             PlatformText(
-                                modifier = Modifier.fillMaxWidth(0.9F),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.9F)
+                                    .padding(horizontal = 10.dp),
                                 onTextLayout = {
                                     if (!scrollable) {
                                         tabScrollable[index] = it.didOverflowWidth || it.didOverflowHeight
