@@ -66,7 +66,6 @@ import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ImmutableState
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
@@ -85,6 +84,7 @@ import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import dev.datlag.kcef.KCEF
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -100,7 +100,7 @@ inline fun KCEFWebContainer(crossinline content: @Composable () -> Unit) {
     var downloadingProgress by rememberSaveable { mutableFloatStateOf(0F) }
 
     LaunchedEffect (Unit) {
-        withContext(dispatcherIO) {
+        withContext(Dispatchers.IO) {
             KCEF.init(
                 builder = {
                     installDir(File("kcef-bundle"))
@@ -226,7 +226,7 @@ fun rememberLeafletScript(
         "\"<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "") + "\""
     } } }
     val stopsJsArray by remember(waypoints) { derivedStateOf { waypoints.stops.joinToString(",") { "[${it.location.lat}, ${it.location.lng}]" } } }
-    val pathsJsArray by remember(waypoints) { derivedStateOf { waypoints.simplifiedPaths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" } } }
+    val pathsJsArray by remember(waypoints) { derivedStateOf { waypoints.paths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" } } }
     val pathColor = remember { waypoints.co.getLineColor(waypoints.routeNumber, Color.Red) }
     val colorHex = remember { pathColor.toHexString() }
     val iconFile = remember { when (waypoints.co) {

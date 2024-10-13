@@ -100,10 +100,10 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -122,6 +122,7 @@ import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -278,7 +279,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 LaunchedEffect (Unit) {
                     schedule.invoke(false, null)
                     schedule.invoke(true) {
-                        val result = runBlocking(dispatcherIO) { Registry.getInstance(instance).getEta(stopId, index, co, route, instance, options).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+                        val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).getEta(stopId, index, co, route, instance, options).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
                         if (active) {
                             etaStateFlow.value = result
                         }

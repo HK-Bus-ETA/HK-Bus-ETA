@@ -42,12 +42,13 @@ import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.GPSLocation
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -132,7 +133,7 @@ actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): D
         if (permission) {
             val context = appContext.context
             val client = LocationServices.getFusedLocationProviderClient(context)
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 client.locationAvailability.addOnCompleteListener { task ->
                     if (task.isSuccessful && task.result.isLocationAvailable) {
                         client.getCurrentLocation(
@@ -147,7 +148,7 @@ actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): D
                         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
                         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, dispatcherIO.asExecutor()) { defer.complete(LocationResult.fromLocationNullable(it)) }
+                                locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, Dispatchers.IO.asExecutor()) { defer.complete(LocationResult.fromLocationNullable(it)) }
                             } else {
                                 @Suppress("DEPRECATION")
                                 locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, object : LocationListener {
@@ -161,7 +162,7 @@ actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): D
                             }
                         } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, dispatcherIO.asExecutor()) { defer.complete(LocationResult.fromLocationNullable(it)) }
+                                locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, Dispatchers.IO.asExecutor()) { defer.complete(LocationResult.fromLocationNullable(it)) }
                             } else {
                                 @Suppress("DEPRECATION")
                                 locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, object : LocationListener {
@@ -192,24 +193,24 @@ actual fun getGPSLocation(appContext: AppContext, interval: Long, listener: (Loc
         if (permission) {
             val context = appContext.context
             val client = LocationServices.getFusedLocationProviderClient(context)
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 client.locationAvailability.addOnCompleteListener { task ->
                     val callback: (Location) -> Unit = { listener.invoke(LocationResult.fromLocationNullable(it)) }
                     if (task.isSuccessful && task.result.isLocationAvailable) {
-                        client.requestLocationUpdates(com.google.android.gms.location.LocationRequest.Builder(interval).setMaxUpdateAgeMillis(2000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), dispatcherIO.asExecutor(), callback)
+                        client.requestLocationUpdates(com.google.android.gms.location.LocationRequest.Builder(interval).setMaxUpdateAgeMillis(2000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), Dispatchers.IO.asExecutor(), callback)
                         defer.complete { client.removeLocationUpdates(callback) }
                     } else {
                         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
                         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LocationRequest.Builder(interval).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).setMaxUpdateDelayMillis(2000).build(), dispatcherIO.asExecutor(), callback)
+                                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LocationRequest.Builder(interval).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).setMaxUpdateDelayMillis(2000).build(), Dispatchers.IO.asExecutor(), callback)
                             } else {
                                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0F, callback)
                             }
                             defer.complete { locationManager.removeUpdates(callback) }
                         } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LocationRequest.Builder(interval).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).setMaxUpdateDelayMillis(2000).build(), dispatcherIO.asExecutor(), callback)
+                                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LocationRequest.Builder(interval).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).setMaxUpdateDelayMillis(2000).build(), Dispatchers.IO.asExecutor(), callback)
                             } else {
                                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0F, callback)
                             }

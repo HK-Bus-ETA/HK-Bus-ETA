@@ -82,11 +82,11 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Splash
 import com.loohp.hkbuseta.common.shared.readImage
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformLinearProgressIndicator
 import com.loohp.hkbuseta.compose.PlatformText
@@ -164,7 +164,7 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                 }
             }
             Registry.State.ERROR -> {
-                CoroutineScope(dispatcherIO).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     val intent = AppIntent(instance, AppScreen.FATAL_ERROR)
                     intent.putExtra("zh", "發生錯誤\n請檢查您的網絡連接")
                     intent.putExtra("en", "Fatal Error\nPlease check your internet connection")
@@ -201,7 +201,7 @@ fun SplashScreen(instance: AppActiveContext, onSplashScreenDone: () -> Unit) {
     var isDone by remember { mutableStateOf(false) }
 
     LaunchedEffect (Unit) {
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             Splash.getRandomSplashEntry(instance)?.let {
                 val data = it to it.readImage(instance).toByteArray().toImageBitmap()
                 withContext(Dispatchers.Main) {

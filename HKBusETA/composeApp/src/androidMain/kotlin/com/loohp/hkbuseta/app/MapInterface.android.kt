@@ -277,7 +277,7 @@ fun StopMarkers(
 fun WaypointPaths(waypoints: RouteWaypoints) {
     val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
     val closeness by remember { derivedStateOf { max(pathColor.closenessTo(Color(0xFFFDE293)), pathColor.closenessTo(Color(0xFFAAD4FF))) } }
-    for (lines in waypoints.simplifiedPaths) {
+    for (lines in waypoints.paths) {
         val clearness = if (Shared.theme.isDarkMode) 0F else closeness
         if (clearness > 0.8F) {
             Polyline(
@@ -346,7 +346,7 @@ fun rememberLeafletScript(
         "\"<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "") + "\""
     } } }
     val stopsJsArray by remember(waypoints) { derivedStateOf { waypoints.stops.joinToString(",") { "[${it.location.lat}, ${it.location.lng}]" } } }
-    val pathsJsArray by remember(waypoints) { derivedStateOf { waypoints.simplifiedPaths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" } } }
+    val pathsJsArray by remember(waypoints) { derivedStateOf { waypoints.paths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" } } }
     val pathColor = remember { waypoints.co.getLineColor(waypoints.routeNumber, Color.Red) }
     val colorHex = remember { pathColor.toHexString() }
     val iconFile = remember { when (waypoints.co) {

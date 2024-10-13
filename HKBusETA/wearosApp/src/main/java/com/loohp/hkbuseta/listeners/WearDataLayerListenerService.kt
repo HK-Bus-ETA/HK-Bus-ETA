@@ -33,7 +33,6 @@ import com.loohp.hkbuseta.common.services.AlightReminderActiveState
 import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import kotlinx.coroutines.Dispatchers
@@ -67,7 +66,7 @@ class WearDataLayerListenerService : WearableListenerService() {
                 }
             }
             Shared.SYNC_PREFERENCES_ID -> {
-                runBlocking(dispatcherIO) {
+                runBlocking(Dispatchers.IO) {
                     try {
                         val json = String(event.data)
                         if (Registry.isNewInstall(appContext)) {

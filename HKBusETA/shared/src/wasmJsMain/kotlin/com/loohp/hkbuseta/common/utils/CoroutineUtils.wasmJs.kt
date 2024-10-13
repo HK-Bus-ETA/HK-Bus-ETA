@@ -23,7 +23,5 @@ package com.loohp.hkbuseta.common.utils
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 
-@OptIn(ExperimentalCoroutinesApi::class)
-actual val dispatcherIO: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(200)
+actual val Dispatchers.IO: CoroutineDispatcher get() = Default

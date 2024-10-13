@@ -102,6 +102,7 @@ import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MTRStopSectionData
 import com.loohp.hkbuseta.common.utils.asImmutableList
@@ -110,7 +111,6 @@ import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.AutoResizeDrawPhaseColorText
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.DrawPhaseColorText
@@ -145,6 +145,7 @@ import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -256,7 +257,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                 checkLocationPermission(instance) {
                     if (it) {
                         val future = getGPSLocation(instance)
-                        CoroutineScope(dispatcherIO).launch {
+                        CoroutineScope(Dispatchers.IO).launch {
                             try {
                                 val locationResult = future.await()
                                 if (locationResult?.isSuccess == true) {
@@ -635,7 +636,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             delay(etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
-            val result = runBlocking(dispatcherIO) { Registry.getInstance(instance).getEta(stopId, index, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+            val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).getEta(stopId, index, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
             etaStateFlow.value = result
             etaUpdateTimes.value[index] = System.currentTimeMillis()
             etaResults.value[index] = result

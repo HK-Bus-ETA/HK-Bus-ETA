@@ -31,7 +31,7 @@ import kotlinx.coroutines.withContext
 import java.util.zip.GZIPInputStream
 
 actual suspend fun HttpResponse.gzipBodyAsText(fallbackCharset: Charset): String {
-    return withContext(dispatcherIO) {
+    return withContext(Dispatchers.IO) {
         GZIPInputStream(bodyAsChannel().toInputStream())
             .bufferedReader(charset()?: fallbackCharset)
             .useLines { it.joinToString("") }

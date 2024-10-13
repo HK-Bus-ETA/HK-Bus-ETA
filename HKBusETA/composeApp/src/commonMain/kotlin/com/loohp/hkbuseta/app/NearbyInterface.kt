@@ -90,10 +90,10 @@ import com.loohp.hkbuseta.common.objects.joinToBilingualText
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.awaitWithTimeout
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.formatDecimalSeparator
 import com.loohp.hkbuseta.compose.DismissRequestType
 import com.loohp.hkbuseta.compose.Forest
@@ -247,7 +247,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
     }
     LaunchedEffect (customCenterPosition, location) {
         location?.let { loc ->
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 if (customCenterPosition == null) {
                     val result = Registry.getInstance(instance).getNearbyRoutes(loc, emptySet(), false)
                     val stopIndexed = result.result.toStopIndexed(instance).asImmutableList()
@@ -260,7 +260,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
         }
     }
     LaunchedEffect (customCenterPosition) {
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             customCenterPosition?.let {
                 val result = Registry.getInstance(instance).getNearbyRoutes(it, it.radius.toDouble(), emptySet(), false)
                 val stopIndexed = result.result.toStopIndexed(instance).asImmutableList()
@@ -515,7 +515,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
         var updating by remember { mutableStateOf(false) }
 
         LaunchedEffect (position) {
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 val stopsInRangeAsync = Registry.getInstance(instance).findNearbyStops(position, position.radius.toDouble())
                 val nearestStopAsync = Registry.getInstance(instance).findNearestStops(position)
                 withContext(Dispatchers.Main) {
@@ -645,7 +645,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                         .clickable {
                                             searchingLocation = false
                                             updating = true
-                                            CoroutineScope(dispatcherIO).launch {
+                                            CoroutineScope(Dispatchers.IO).launch {
                                                 val loc = it.resolveLocation().await()
                                                 val newPos = RadiusCenterPosition(loc.lat, loc.lng, position.radius)
                                                 withContext(Dispatchers.Main) {
@@ -684,7 +684,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                             colors = ButtonDefaults.clearColors(),
                             contentPadding = PaddingValues(0.dp),
                             onClick = {
-                                CoroutineScope(dispatcherIO).launch {
+                                CoroutineScope(Dispatchers.IO).launch {
                                     nearestStop?.let {
                                         val loc = it.stop.location
                                         val newPos = RadiusCenterPosition(loc.lat, loc.lng, position.radius)

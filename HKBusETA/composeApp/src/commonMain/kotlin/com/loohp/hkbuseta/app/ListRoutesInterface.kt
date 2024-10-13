@@ -166,6 +166,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.Colored
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.ServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.asFormattedText
@@ -177,7 +178,6 @@ import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.firstIsInstanceOrNull
 import com.loohp.hkbuseta.common.utils.floorToInt
 import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
@@ -262,7 +262,7 @@ import kotlin.random.Random
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
-private val etaUpdateScope: CoroutineDispatcher = dispatcherIO.limitedParallelism(8)
+private val etaUpdateScope: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(8)
 
 private val etaColor: Color @Composable get() = if (Shared.theme.isDarkMode) Color(0xFFAAC3D5) else Color(0xFF2582C4)
 private val etaSecondColor: Color @Composable get() = if (Shared.theme.isDarkMode) Color(0xFFCCCCCC) else Color(0xFF444444)
@@ -315,7 +315,7 @@ fun ListRoutesInterface(
     val pullToRefreshState = if (onPullToRefresh == null) null else rememberPullToRefreshState()
 
     LaunchedEffect (routes) {
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             val byDirections = routes.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
             withContext(Dispatchers.Main) {
                 routeGroupedByDirections = byDirections
@@ -760,7 +760,7 @@ fun ListRouteInterfaceInternal(
 
     LaunchedEffect (routes, lastLookupRoutes, listType, proximitySortOrigin, activeSortMode.filterTimetableActive) {
         delay(100)
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             val sorted = sortedByModeProvider.invoke()
             withContext(Dispatchers.Main) {
                 sortedByMode = sorted
@@ -961,7 +961,7 @@ fun LazyItemScope.RouteEntry(
             .background(platformComponentBackgroundColor)
             .combinedClickable(
                 onClick = {
-                    CoroutineScope(dispatcherIO).launch {
+                    CoroutineScope(Dispatchers.IO).launch {
                         Registry.getInstance(instance).addLastLookupRoute(route.routeKey, instance)
                         val intent = AppIntent(instance, AppScreen.LIST_STOPS)
                         intent.putExtra("route", route)
@@ -1053,7 +1053,7 @@ fun RouteRow(
 
     LaunchedEffect (route) {
         if (checkSpecialDest) {
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 val alerts = route.getSpecialRouteAlerts(instance)
                 withContext(Dispatchers.Main) { specialRouteAlerts = alerts }
             }

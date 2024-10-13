@@ -56,7 +56,6 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.asImmutableState
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.tiles.EtaTileServiceCommon
@@ -66,6 +65,7 @@ import com.loohp.hkbuseta.utils.optInt
 import com.loohp.hkbuseta.utils.optString
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -111,7 +111,7 @@ open class MainActivity : ComponentActivity() {
         val alightReminder = intent.extras?.optBoolean("alightReminder") == true
 
         setContent {
-            var watchDataOverwriteWarning by remember { mutableStateOf(runBlocking(dispatcherIO) { Registry.isNewInstall(appContext) }) }
+            var watchDataOverwriteWarning by remember { mutableStateOf(runBlocking(Dispatchers.IO) { Registry.isNewInstall(appContext) }) }
             if (watchDataOverwriteWarning) {
                 var requestSent by remember { mutableStateOf(false) }
 
@@ -156,7 +156,7 @@ open class MainActivity : ComponentActivity() {
                 MainLoading(appContext, stopId, co, index, stop.asImmutableState(), route.asImmutableState(), listStopRoute.asImmutableState(), listStopScrollToStop, listStopShowEta, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch, alightReminder)
             }
         }
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             intent.extractUrl()?.extractShareLink()?.apply {
                 delay(500)
                 shareLaunch(appContext, noAnimation = true, skipTitle = true)

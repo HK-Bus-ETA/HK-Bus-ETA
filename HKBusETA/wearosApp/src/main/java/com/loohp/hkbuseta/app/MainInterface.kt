@@ -69,13 +69,13 @@ import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ImmutableState
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -113,7 +113,7 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                 }
             }
             Registry.State.ERROR -> {
-                CoroutineScope(dispatcherIO).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     val intent = AppIntent(instance, AppScreen.FATAL_ERROR)
                     intent.putExtra("zh", "發生錯誤\n請檢查您的網絡連接")
                     intent.putExtra("en", "Fatal Error\nPlease check your internet connection")

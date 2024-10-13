@@ -100,6 +100,7 @@ import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.routeComparator
 import com.loohp.hkbuseta.common.objects.routeComparatorRouteNumberFirst
 import com.loohp.hkbuseta.common.objects.routeGroupKey
+import com.loohp.hkbuseta.common.objects.simplified
 import com.loohp.hkbuseta.common.objects.splitByClosestPoints
 import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.objects.waypointsId
@@ -109,6 +110,7 @@ import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.Colored
 import com.loohp.hkbuseta.common.utils.FormattedText
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.InlineImage
 import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
@@ -127,7 +129,6 @@ import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.distinctBy
 import com.loohp.hkbuseta.common.utils.doRetry
 import com.loohp.hkbuseta.common.utils.editDistance
@@ -283,7 +284,7 @@ class Registry {
     }
 
     private val syncPreferences: AtomicReference<Pair<AppContext, Preferences>?> = AtomicReference(null)
-    private val syncPreferencesJob: Job = CoroutineScope(dispatcherIO).launch {
+    private val syncPreferencesJob: Job = CoroutineScope(Dispatchers.IO).launch {
         while (true) {
             syncPreferences.value?.let { (context, preferences) ->
                 context.syncPreference(preferences)
@@ -316,7 +317,7 @@ class Registry {
         var preferences: Preferences? = null
         preferenceWriteLock.withLock {
             preferences = PREFERENCES!!.apply { lastSaved = currentTimeMillis() }
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 context.writeTextFile(PREFERENCES_FILE_NAME) { preferences!!.serialize().toString().toStringReadChannel() }
             }
         }
@@ -440,7 +441,7 @@ class Registry {
                 }
             }
             Shared.lastLookupRoutes.value.firstOrNull()?.let { (routeKey) ->
-                CoroutineScope(dispatcherIO).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     findRouteByKey(routeKey, null)?.let { route ->
                         val routeNumber = route.co.firstCo()!!.getDisplayRouteNumber(route.routeNumber)
                         val dest = route.resolvedDest(true)[Shared.language]
@@ -539,7 +540,7 @@ class Registry {
     fun setDownloadSplash(downloadSplash: Boolean, context: AppContext) {
         Shared.downloadSplash = downloadSplash
         PREFERENCES!!.downloadSplash = downloadSplash
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             if (downloadSplash) {
                 Splash.downloadMissingImages(context)
             } else {
@@ -641,7 +642,7 @@ class Registry {
     }
 
     private fun setRecentAppShortcut(routeKey: String, context: AppContext) {
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             findRouteByKey(routeKey, null)?.let { route ->
                 val routeNumber = route.co.firstCo()!!.getDisplayRouteNumber(route.routeNumber)
                 val dest = route.resolvedDest(true)[Shared.language]
@@ -694,7 +695,7 @@ class Registry {
         if (PREFERENCES != null && DATA != null) {
             return
         }
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             val files = context.listFiles()
             if (files.contains(PREFERENCES_FILE_NAME)) {
                 try {
@@ -780,7 +781,7 @@ class Registry {
         if (!suppressUpdateCheck) {
             lastUpdateCheckHolder.set(currentTimeMillis())
         }
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 val files = context.listFiles()
                 val hasConnection = context.hasConnection()
@@ -855,7 +856,7 @@ class Registry {
                             Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
                             getTextResponse(lastUpdatedUrl())?.string()?.toLong()?.apply { Shared.scheduleBackgroundUpdateService(context, this) }
                         }
-                        CoroutineScope(dispatcherIO).launch {
+                        CoroutineScope(Dispatchers.IO).launch {
                             context.writeTextFile(DATA_FILE_NAME, Json) { DataContainer.serializer() to DATA!! }
                             context.writeTextFile(CHECKSUM_FILE_NAME) { (checksum?: "").toStringReadChannel() }
                             PREFERENCES!!.referenceChecksum = checksum?: ""
@@ -1571,7 +1572,7 @@ class Registry {
         if (cache != TyphoonInfo.NO_DATA && currentTimeMillis() - cache.lastUpdated < 300000) {
             return CompletableDeferred(cache)
         }
-        return typhoonInfoDeferred.value.takeIf { it.isActive }?: CoroutineScope(dispatcherIO).async {
+        return typhoonInfoDeferred.value.takeIf { it.isActive }?: CoroutineScope(Dispatchers.IO).async {
             val data = getJSONResponse<JsonObject>("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=" + if (Shared.language == "en") "en" else "tc")
             if (data == null) {
                 return@async typhoonInfo.value
@@ -1680,12 +1681,12 @@ class Registry {
         private var locationCache: Coordinates? = null
         suspend fun resolveLocation(): Deferred<Coordinates> {
             if (locationCache != null) return CompletableDeferred(locationCache!!)
-            return CoroutineScope(dispatcherIO).async { locationProvider.invoke().apply { locationCache = this } }
+            return CoroutineScope(Dispatchers.IO).async { locationProvider.invoke().apply { locationCache = this } }
         }
     }
 
     fun searchLocation(query: String): Deferred<List<LocationSearchEntry>> {
-        return CoroutineScope(dispatcherIO).async {
+        return CoroutineScope(Dispatchers.IO).async {
             val result = mutableListOf<LocationSearchEntry>()
             try {
                 val data = getJSONResponse<JsonArray>("https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q=${query.encodeURLQueryComponent()}")!!
@@ -1710,7 +1711,7 @@ class Registry {
 
     suspend fun getMtrLineServiceDisruption(): Map<String, TrainServiceStatus>? {
         val now = currentTimeMillis()
-        return CoroutineScope(dispatcherIO).async {
+        return CoroutineScope(Dispatchers.IO).async {
             val map = mutableMapOf<String, TrainServiceStatus>()
             try {
                 val data = getXMLResponse<MTRStatus>("https://tnews.mtr.com.hk/alert/ryg_line_status.xml?_=$now")!!
@@ -1731,7 +1732,7 @@ class Registry {
     }
 
     suspend fun getLrtLineRedAlert(): Pair<String, String?>? {
-        return CoroutineScope(dispatcherIO).async {
+        return CoroutineScope(Dispatchers.IO).async {
             try {
                 val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
                 data.optString("red_alert_message_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.let {
@@ -1755,7 +1756,7 @@ class Registry {
                     co.contains(Operator.MTR) -> add(mtrLineStatus)
                     co.contains(Operator.LRT) -> add(lrtLineStatus)
                 }
-                CoroutineScope(dispatcherIO).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     try {
                         when {
                             co.contains(Operator.LRT) -> {
@@ -1832,7 +1833,7 @@ class Registry {
             mutableStateListOf<RouteNotice>().asAutoSortedList().apply {
                 routeNoticeCache[route] = Triple(this, now, Shared.language)
                 route.defaultOperatorNotices(this)
-                CoroutineScope(dispatcherIO).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     route.fetchOperatorNotices(this, this@apply)
                     launch {
                         try {
@@ -1880,7 +1881,7 @@ class Registry {
     }
 
     fun getCtbHasTwoWaySectionFare(routeNumber: String, callback: (Boolean) -> Unit) {
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 val data = Json.decodeFromString<JsonObject>(getTextResponse("https://www.citybus.com.hk/app/newfare/data/${routeNumber}.json")!!.string().remove("\uFEFF"))
                 callback.invoke(data.optJsonArray(routeNumber)!!.any { it.jsonObject.optString("two_way") == "true" })
@@ -1946,14 +1947,14 @@ class Registry {
     }
 
     fun getTimeBetweenStop(stopIds: List<Pair<String, Boolean>>, startIndex: Int, endIndex: Int, lookupHourly: Boolean): Deferred<TimeBetweenStopResult> {
-        return CoroutineScope(dispatcherIO).async {
+        return CoroutineScope(Dispatchers.IO).async {
             val intervals = buildList(stopIds.size) {
                 for ((index, value) in stopIds.withIndex()) {
                     val (stopId, inBranch) = value
                     if (inBranch && index in startIndex until endIndex) {
                         val (nextStopId, _) = stopIds.subList(index + 1, stopIds.size).firstOrNull { (_, b) -> b }?: break
                         val prefix = if (stopId.length < 3) stopId else stopId.substring(0, 2)
-                        add(CoroutineScope(dispatcherIO).async {
+                        add(CoroutineScope(Dispatchers.IO).async {
                             cacheTimeBetweenStopPrefix(prefix)
                             if (lookupHourly) cacheTimeBetweenStopPrefixHourly(prefix)
                             val cacheMap = cachedTimes.getOrPut(stopId) { ConcurrentMutableMap() }
@@ -1988,7 +1989,7 @@ class Registry {
         val co = route.co.firstCo()!!
         val isKmbCtbJoint = route.isKmbCtbJoint
         val stops = route.stops[co]!!.map { it.asStop(context)!! }
-        return CoroutineScope(dispatcherIO).async {
+        return CoroutineScope(Dispatchers.IO).async {
             return@async cachedWaypoints.getOrPut(id) {
                 getJSONResponse<JsonObject>("https://waypoints.hkbuseta.com/waypoints$gzipFolder/$id.json$gzipSuffix", gzip)
                     ?.optJsonArray("features")
@@ -1996,18 +1997,21 @@ class Registry {
                     ?.optJsonObject("geometry")
                     ?.optJsonArray("coordinates")
                     ?.let {
-                        val path = it.map { l -> l.jsonArray.map { e -> Coordinates.fromJsonArray(e.jsonArray, true) } }.run {
-                            if (size == 1 && stops.size > 2) {
-                                var path = first()
-                                val firstStopLocation = stops.first().location
-                                if (path.first().distance(firstStopLocation) > path.last().distance(firstStopLocation)) {
-                                    path = path.reversed()
+                        val path = it
+                            .map { l -> l.jsonArray.map { e -> Coordinates.fromJsonArray(e.jsonArray, true) } }
+                            .run {
+                                if (size == 1 && stops.size > 2) {
+                                    var path = first()
+                                    val firstStopLocation = stops.first().location
+                                    if (path.first().distance(firstStopLocation) > path.last().distance(firstStopLocation)) {
+                                        path = path.reversed()
+                                    }
+                                    path.splitByClosestPoints(stops.map { s -> s.location })
+                                } else {
+                                    this
                                 }
-                                path.splitByClosestPoints(stops.map { s -> s.location })
-                            } else {
-                                this
                             }
-                        }
+                            .map { p -> p.simplified() }
                         RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, path, true)
                     }
                     ?: RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, listOf(stops.map { it.location }), false)
@@ -2021,8 +2025,7 @@ class Registry {
         return cachedTrafficSnapshots.getOrPut(waypoints) {
             val result: Array<MutableList<TrafficSnapshotPoint>> = Array(waypoints.stops.size) { mutableListOf() }
             val usedTrafficSnapshots: MutableSet<TrafficSnapshotPoint> = mutableSetOf()
-            for (i in waypoints.paths.indices) {
-                val path = waypoints.paths[i]
+            for ((i, path) in waypoints.paths.withIndex()) {
                 val trafficSnapshots = path.findPointsWithinDistanceOrdered(
                     items = DATA!!.trafficSnapshot!!,
                     itemLocation = { location },
@@ -2050,7 +2053,7 @@ class Registry {
             putString("by_bound", route.routeNumber + "," + co.name + "," + route.bound[co])
             putString("by_route", route.routeNumber + "," + co.name)
         })
-        val pending = PendingETAQueryResult(context, co, CoroutineScope(dispatcherIO).async {
+        val pending = PendingETAQueryResult(context, co, CoroutineScope(Dispatchers.IO).async {
             try {
                 val typhoonInfo = currentTyphoonData.await()
                 when {
@@ -3567,7 +3570,7 @@ class Registry {
         }
 
         fun onComplete(timeout: Int, unit: DateTimeUnit.TimeBased, callback: (ETAQueryResult) -> Unit) {
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                try {
                    callback.invoke(withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() })
                } catch (e: Exception) {

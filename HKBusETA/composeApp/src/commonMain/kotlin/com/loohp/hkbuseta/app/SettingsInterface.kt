@@ -81,9 +81,9 @@ import com.loohp.hkbuseta.common.objects.WearableConnectionState
 import com.loohp.hkbuseta.common.shared.BASE_URL
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.Bolt
@@ -354,7 +354,7 @@ fun SettingsInterface(instance: AppActiveContext) {
                             val preferences = Preferences.deserialize(Json.decodeFromString(it)).apply {
                                 lastSaved = currentTimeMillis()
                             }
-                            CoroutineScope(dispatcherIO).launch {
+                            CoroutineScope(Dispatchers.IO).launch {
                                 Registry.getInstance(instance).syncPreference(instance, preferences, true)
                                 relaunch(instance)
                                 delay(1000)

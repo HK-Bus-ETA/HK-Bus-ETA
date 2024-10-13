@@ -27,6 +27,7 @@ import io.ktor.utils.io.core.readText
 import io.ktor.utils.io.jvm.javaio.copyTo
 import io.ktor.utils.io.jvm.javaio.toInputStream
 import io.ktor.utils.io.pool.ByteArrayPool
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -52,7 +53,7 @@ actual class StringBackedStringReadChannel actual constructor(
     override val inputStream: InputStream by lazy { ByteArrayInputStream(backingString.toByteArray(charset)) }
     override suspend fun string(): String = backingString
     override suspend fun transferTo(out: OutputStream) {
-        withContext(dispatcherIO) { out.write(backingString.toByteArray(charset)) }
+        withContext(Dispatchers.IO) { out.write(backingString.toByteArray(charset)) }
     }
 }
 

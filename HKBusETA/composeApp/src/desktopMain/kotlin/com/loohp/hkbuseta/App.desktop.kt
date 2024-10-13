@@ -27,7 +27,7 @@ import androidx.compose.runtime.Composable
 import com.loohp.hkbuseta.appcontext.applicationAppContext
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.shared.Registry
-import com.loohp.hkbuseta.common.utils.dispatcherIO
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlin.system.exitProcess
 
@@ -35,7 +35,7 @@ actual fun exitApp() {
     exitProcess(0)
 }
 
-actual fun watchDataOverwriteWarningInitialValue(): Boolean = runBlocking(dispatcherIO) { Registry.isNewInstall(applicationAppContext) }
+actual fun watchDataOverwriteWarningInitialValue(): Boolean = runBlocking(Dispatchers.IO) { Registry.isNewInstall(applicationAppContext) }
 
 @Composable
 actual fun SnackbarInterface(instance: AppActiveContext, snackbarHostState: SnackbarHostState) = SnackbarHost(snackbarHostState)

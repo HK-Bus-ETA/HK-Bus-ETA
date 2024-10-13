@@ -96,10 +96,10 @@ import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.awaitWithTimeout
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.Add
 import com.loohp.hkbuseta.compose.AdvanceTabRow
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -182,7 +182,7 @@ fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, sign
     LaunchedEffect (pagerState.currentPage, pagerState.isScrollInProgress) {
         if (!pagerState.isScrollInProgress) {
             val page = pagerState.currentPage
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 Registry.getInstance(instance).setViewFavTab(page, instance)
             }
         }
@@ -317,7 +317,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                 LaunchedEffect (favouriteRouteStop, isOnPage) {
                     val (name, routeStops) = favouriteRouteStop
                     if (isOnPage) {
-                        CoroutineScope(dispatcherIO).launch {
+                        CoroutineScope(Dispatchers.IO).launch {
                             val routeSearch = routeStops.toRouteSearchResult(instance, location).toStopIndexed(instance).asImmutableList()
                             withContext(Dispatchers.Main) {
                                 routes[name] = routeSearch
@@ -357,7 +357,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                             val newList = groups[groupIndex].let { (name, list) -> FavouriteRouteGroup(name, list.toMutableList().apply { add(to.index, removeAt(from.index)) }) }
                             groups[groupIndex] = newList
                             routes[name] = newList.favouriteRouteStops.toRouteSearchResult(instance, location).toStopIndexed(instance).asImmutableList()
-                            CoroutineScope(dispatcherIO).launch {
+                            CoroutineScope(Dispatchers.IO).launch {
                                 Registry.getInstance(instance).setFavouriteRouteGroups(groups, instance)
                             }
                         }, pipModeListName = name.asFormattedText())
@@ -656,7 +656,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     LaunchedEffect (data, isOnPage) {
                         val stop = data.second
                         if (isOnPage) {
-                            CoroutineScope(dispatcherIO).launch {
+                            CoroutineScope(Dispatchers.IO).launch {
                                 val nearbyRoutes = Registry.getInstance(instance).getNearbyRoutes(stop.location, emptySet(), false).result.toStopIndexed(instance).asImmutableList()
                                 withContext(Dispatchers.Main) {
                                     routes[stop] = nearbyRoutes

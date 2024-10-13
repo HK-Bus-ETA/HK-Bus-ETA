@@ -50,7 +50,6 @@ import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.ArrowBack
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
@@ -67,6 +66,7 @@ import com.loohp.hkbuseta.utils.sp
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSData
@@ -164,7 +164,7 @@ actual fun PdfViewerInterface(title: String, url: String, instance: AppActiveCon
                     val pdfView = remember { PDFView() }
 
                     LaunchedEffect (Unit) {
-                        CoroutineScope(dispatcherIO).launch {
+                        CoroutineScope(Dispatchers.IO).launch {
                             try {
                                 val data = NSData.dataWithContentsOfURL(url = URLWithString(url)!!)!!
                                 val pdfDocument = PDFDocument(data = data)

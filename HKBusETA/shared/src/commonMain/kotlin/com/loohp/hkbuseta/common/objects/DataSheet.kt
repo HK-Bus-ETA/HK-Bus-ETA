@@ -20,10 +20,11 @@
  */
 package com.loohp.hkbuseta.common.objects
 
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.Immutable
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -91,15 +92,15 @@ class DataSheet(
 
     val routeNumberList: Set<String> by lazy { routeList.values.asSequence().map { it.routeNumber }.toSet() }
     @Transient
-    val standardSortedRouteKeys: Deferred<List<String>> = CoroutineScope(dispatcherIO).async {
+    val standardSortedRouteKeys: Deferred<List<String>> = CoroutineScope(Dispatchers.IO).async {
         routeList.entries.asSequence().sortedWith(compareBy(routeComparator) { it.value }).map { it.key }.toList()
     }
     @Transient
-    val routeNumberFirstSortedRouteKeys: Deferred<List<String>> = CoroutineScope(dispatcherIO).async {
+    val routeNumberFirstSortedRouteKeys: Deferred<List<String>> = CoroutineScope(Dispatchers.IO).async {
         routeList.entries.asSequence().sortedWith(compareBy(routeComparatorRouteNumberFirst) { it.value }).map { it.key }.toList()
     }
     @Transient
-    val routeKeysByStopId: Deferred<Map<String, Set<Pair<String, Int>>>> = CoroutineScope(dispatcherIO).async {
+    val routeKeysByStopId: Deferred<Map<String, Set<Pair<String, Int>>>> = CoroutineScope(Dispatchers.IO).async {
         mutableMapOf<String, MutableSet<Pair<String, Int>>>().apply {
             for ((key, route) in routeList) {
                 for (stopIds in route.stops.values) {

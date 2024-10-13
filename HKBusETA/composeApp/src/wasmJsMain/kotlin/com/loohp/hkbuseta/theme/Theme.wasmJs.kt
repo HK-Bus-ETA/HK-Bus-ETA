@@ -37,8 +37,8 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.asImmutableList
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.utils.FontResource
 import com.materialkolor.dynamicColorScheme
 import kotlinx.collections.immutable.ImmutableList
@@ -79,7 +79,7 @@ fun rememberLoadFontFamily(environment: ResourceEnvironment): State<FontFamily?>
 
     LaunchedEffect (Unit) {
         for ((identity, weight) in webFonts) {
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 val font = Font(
                     identity = identity,
                     data = FontResource("fonts/$identity.ttf").readBytes(environment),

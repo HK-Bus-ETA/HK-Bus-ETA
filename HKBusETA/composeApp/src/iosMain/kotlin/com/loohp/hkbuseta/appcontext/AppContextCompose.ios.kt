@@ -48,7 +48,6 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.StringReadChannel
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.provideGzipBodyAsTextImpl
@@ -72,6 +71,7 @@ import kotlinx.cinterop.value
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -547,7 +547,7 @@ actual fun initialScreen(): AppActiveContextCompose = AppActiveContextComposeIOS
 actual fun handleEmptyStack(stack: MutableList<AppActiveContextCompose>) { stack.add(initialScreen()) }
 
 
-fun String.extractShareLinkAndLaunch() = runBlocking(dispatcherIO) { extractShareLink()?.apply {
+fun String.extractShareLinkAndLaunch() = runBlocking(Dispatchers.IO) { extractShareLink()?.apply {
     val instance = HistoryStack.historyStack.value.last()
     instance.startActivity(AppIntent(instance, AppScreen.MAIN))
     instance.finishAffinity()
@@ -556,7 +556,7 @@ fun String.extractShareLinkAndLaunch() = runBlocking(dispatcherIO) { extractShar
 } }
 
 fun syncPreference(context: AppContext, preferenceJson: String, sync: Boolean) {
-    runBlocking(dispatcherIO) {
+    runBlocking(Dispatchers.IO) {
         if (Registry.isNewInstall(applicationAppContext)) {
             Registry.writeRawPreference(preferenceJson, applicationAppContext)
         } else {
@@ -567,11 +567,11 @@ fun syncPreference(context: AppContext, preferenceJson: String, sync: Boolean) {
 }
 
 fun getRawPreference(context: AppContext): String {
-    return runBlocking(dispatcherIO) { Registry.getRawPreferences(context).toString() }
+    return runBlocking(Dispatchers.IO) { Registry.getRawPreferences(context).toString() }
 }
 
 fun isNewInstall(context: AppContext): Boolean {
-    return runBlocking(dispatcherIO) { Registry.isNewInstall(context) }
+    return runBlocking(Dispatchers.IO) { Registry.isNewInstall(context) }
 }
 
 const val START_ACTIVITY_ID = Shared.START_ACTIVITY_ID

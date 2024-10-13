@@ -22,6 +22,7 @@
 package com.loohp.hkbuseta.common.utils
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +47,7 @@ import kotlin.time.Duration.Companion.days
 
 
 private val minuteState: MutableStateFlow<LocalDateTime> = MutableStateFlow(currentLocalDateTime())
-private val minuteStateJob: Job = CoroutineScope(dispatcherIO).launch {
+private val minuteStateJob: Job = CoroutineScope(Dispatchers.IO).launch {
     while (true) {
         minuteState.value = currentLocalDateTime().let { LocalDateTime(it.year, it.month, it.dayOfMonth, it.hour, it.minute) }
         delay(1000)

@@ -116,11 +116,11 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.shared.TileUseState
 import com.loohp.hkbuseta.common.shared.Tiles
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.DrawPhaseColorText
@@ -145,6 +145,7 @@ import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -412,7 +413,7 @@ fun FavButton(numIndex: Int, favouriteRouteStop: FavouriteRouteStop, etaResults:
                     Registry.getInstance(instance).addLastLookupRoute(it, instance)
                 }
 
-                CoroutineScope(dispatcherIO).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     Registry.getInstance(instance).findRoutes(route.routeNumber, true) { it ->
                         val bound = it.bound
                         if (!bound.containsKey(co) || bound[co] != route.bound[co]) {
@@ -627,7 +628,7 @@ fun ETAElement(favouriteRouteStop: FavouriteRouteStop, resolvedStop: FavouriteRe
             delay(etaUpdateTimes.value[favoriteId]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, favoriteId) {
-            val result = runBlocking(dispatcherIO) { Registry.getInstance(instance).getEta(stopId, index, favouriteRouteStop.co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+            val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).getEta(stopId, index, favouriteRouteStop.co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
             etaStateFlow.value = result
             etaUpdateTimes.value[favoriteId] = System.currentTimeMillis()
             etaResults.value[favoriteId] = result
@@ -636,7 +637,7 @@ fun ETAElement(favouriteRouteStop: FavouriteRouteStop, resolvedStop: FavouriteRe
     LaunchedEffect (resolvedStop) {
         if (favouriteRouteStop.favouriteStopMode.isRequiresLocation) {
             schedule.invoke(true, favoriteId) {
-                val result = runBlocking(dispatcherIO) { Registry.getInstance(instance).getEta(stopId, index, favouriteRouteStop.co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+                val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).getEta(stopId, index, favouriteRouteStop.co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
                 etaStateFlow.value = result
                 etaUpdateTimes.value[favoriteId] = System.currentTimeMillis()
                 etaResults.value[favoriteId] = result

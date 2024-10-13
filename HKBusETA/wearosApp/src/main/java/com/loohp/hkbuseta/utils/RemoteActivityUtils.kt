@@ -28,10 +28,10 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.Wearable
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
@@ -42,13 +42,13 @@ class RemoteActivityUtils {
     companion object {
 
         fun intentToPhone(instance: Context, intent: Intent, noPhone: () -> Unit = {}, failed: () -> Unit = {}, success: () -> Unit = {}) {
-            val remoteActivityHelper = RemoteActivityHelper(instance, dispatcherIO.asExecutor())
+            val remoteActivityHelper = RemoteActivityHelper(instance, Dispatchers.IO.asExecutor())
             Wearable.getNodeClient(instance).connectedNodes.addOnCompleteListener { nodes ->
                 if (nodes.result.isEmpty()) {
                     noPhone.invoke()
                 } else {
                     val futures = nodes.result.map { node -> remoteActivityHelper.startRemoteActivity(intent, node.id) }
-                    CoroutineScope(dispatcherIO).launch {
+                    CoroutineScope(Dispatchers.IO).launch {
                         var isSuccess = false
                         for (future in futures) {
                             try {
@@ -85,7 +85,7 @@ class RemoteActivityUtils {
                             null
                         }
                     }
-                    CoroutineScope(dispatcherIO).launch {
+                    CoroutineScope(Dispatchers.IO).launch {
                         var isSuccess = false
                         for (future in futures) {
                             try {

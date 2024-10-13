@@ -81,6 +81,8 @@ import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -294,7 +296,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     }
 
     override fun hasConnection(): Boolean {
-        return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { isReachable(Registry.checksumUrl()) }
+        return runBlocking(Dispatchers.IO) { isReachable(Registry.checksumUrl()) }
     }
 
     override fun currentBackgroundRestrictions(): BackgroundRestrictionType {
@@ -461,7 +463,7 @@ fun createAppIntent(context: AppContext, screen: AppScreen, appDataContainer: Mu
 }
 
 fun dispatcherIO(task: () -> Unit) {
-    CoroutineScope(com.loohp.hkbuseta.common.utils.dispatcherIO).launch { task.invoke() }
+    CoroutineScope(Dispatchers.IO).launch { task.invoke() }
 }
 
 val HapticFeedbackType.native: WKHapticType get() = when (this) {
@@ -478,7 +480,7 @@ val hapticFeedback: HapticFeedback = object : HapticFeedback {
 }
 
 fun syncPreference(context: AppContext, preferenceJson: String, sync: Boolean) {
-    runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) {
+    runBlocking(Dispatchers.IO) {
         if (Registry.isNewInstall(applicationContext)) {
             Registry.writeRawPreference(preferenceJson, applicationContext)
         } else {
@@ -489,11 +491,11 @@ fun syncPreference(context: AppContext, preferenceJson: String, sync: Boolean) {
 }
 
 fun getRawPreference(context: AppContext): String {
-    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { Registry.getRawPreferences(context).toString() }
+    return runBlocking(Dispatchers.IO) { Registry.getRawPreferences(context).toString() }
 }
 
 fun isNewInstall(context: AppContext): Boolean {
-    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { Registry.isNewInstall(context) }
+    return runBlocking(Dispatchers.IO) { Registry.isNewInstall(context) }
 }
 
 fun invalidateCache(context: AppContext) {
@@ -510,7 +512,7 @@ fun receiveAlightReminderRemoteData(launch: Boolean, json: String?) {
         } else {
             remoteAlightReminderService.valueNullable = remoteData
             if (launch) {
-                CoroutineScope(com.loohp.hkbuseta.common.utils.dispatcherIO).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     while (Registry.getInstance(applicationContext).state.value.isProcessing) {
                         delay(100)
                     }
@@ -527,23 +529,23 @@ fun receiveAlightReminderRemoteData(launch: Boolean, json: String?) {
 }
 
 fun Registry.findRoutesBlocking(input: String, exact: Boolean): List<RouteSearchResultEntry> {
-    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { findRoutes(input, exact) }
+    return runBlocking(Dispatchers.IO) { findRoutes(input, exact) }
 }
 
 fun Registry.findRoutesBlocking(input: String, exact: Boolean, predicate: (Route) -> Boolean): List<RouteSearchResultEntry> {
-    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { findRoutes(input, exact, predicate) }
+    return runBlocking(Dispatchers.IO) { findRoutes(input, exact, predicate) }
 }
 
 fun Registry.findRoutesBlocking(input: String, exact: Boolean, coPredicate: (String, Route, Operator) -> Boolean): List<RouteSearchResultEntry> {
-    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { findRoutes(input, exact, coPredicate) }
+    return runBlocking(Dispatchers.IO) { findRoutes(input, exact, coPredicate) }
 }
 
 fun Registry.getNearbyRoutesBlocking(origin: Coordinates, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): Registry.NearbyRoutesResult {
-    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { getNearbyRoutes(origin, 0.3, excludedRouteNumbers, isInterchangeSearch) }
+    return runBlocking(Dispatchers.IO) { getNearbyRoutes(origin, 0.3, excludedRouteNumbers, isInterchangeSearch) }
 }
 
 fun Registry.getNearbyRoutesBlocking(origin: Coordinates, radius: Double, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): Registry.NearbyRoutesResult {
-    return runBlocking(com.loohp.hkbuseta.common.utils.dispatcherIO) { getNearbyRoutes(origin, radius, excludedRouteNumbers, isInterchangeSearch) }
+    return runBlocking(Dispatchers.IO) { getNearbyRoutes(origin, radius, excludedRouteNumbers, isInterchangeSearch) }
 }
 
 fun handleSearchInputLaunch(
@@ -555,9 +557,9 @@ fun handleSearchInputLaunch(
     launch: (List<RouteSearchResultEntry>) -> Unit,
     complete: () -> Unit
 ) {
-    CoroutineScope(com.loohp.hkbuseta.common.utils.dispatcherIO).launch {
+    CoroutineScope(Dispatchers.IO).launch {
         preRun.invoke()
-        val job = CoroutineScope(com.loohp.hkbuseta.common.utils.dispatcherIO).launch {
+        val job = CoroutineScope(Dispatchers.IO).launch {
             delay(500)
             loadingIndicator.invoke()
         }

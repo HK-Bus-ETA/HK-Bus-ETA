@@ -25,16 +25,16 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.loohp.hkbuseta.common.external.extractShareLink
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
 class SendToWatchActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             intent.extractUrl()?.extractShareLink()?.apply {
                 RemoteActivityUtils.dataToWatch(this@SendToWatchActivity, Shared.START_ACTIVITY_ID, this, {
                     runOnUiThread {

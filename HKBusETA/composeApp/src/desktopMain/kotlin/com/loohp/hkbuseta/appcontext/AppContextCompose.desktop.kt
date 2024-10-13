@@ -39,7 +39,6 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.StringReadChannel
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.isReachable
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
@@ -50,6 +49,7 @@ import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
@@ -178,7 +178,7 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     }
 
     override fun hasConnection(): Boolean {
-        return runBlocking(dispatcherIO) { isReachable(Registry.checksumUrl()) }
+        return runBlocking(Dispatchers.IO) { isReachable(Registry.checksumUrl()) }
     }
 
     override fun currentBackgroundRestrictions(): BackgroundRestrictionType {
@@ -290,7 +290,7 @@ class AppActiveContextComposeDesktop internal constructor(
     }
 
     override fun readFileFromFileChooser(fileType: String, read: (String) -> Unit) {
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
             val fileChooser = JFileChooser()
             fileChooser.dialogTitle = if (Shared.language == "en") "Import" else "匯人"
@@ -304,7 +304,7 @@ class AppActiveContextComposeDesktop internal constructor(
     }
 
     override fun writeFileToFileChooser(fileType: String, fileName: String, file: String, onSuccess: () -> Unit) {
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             val fileChooser = JFileChooser()
             fileChooser.selectedFile = File(fileName)
             fileChooser.dialogTitle = if (Shared.language == "en") "Export" else "匯出"

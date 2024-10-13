@@ -62,7 +62,6 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.shared.Tiles
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.getAndNegate
 import com.loohp.hkbuseta.common.utils.hongKongZoneId
 import com.loohp.hkbuseta.shared.WearOSShared
@@ -80,6 +79,7 @@ import com.loohp.hkbuseta.utils.spToDp
 import com.loohp.hkbuseta.utils.timeZone
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.future.asCompletableFuture
@@ -460,7 +460,7 @@ class EtaTileServiceCommon {
                 val eta = Registry.MergedETAQueryResult.merge(
                     favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { (favStop, resolved) ->
                         val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                        (resolved to favStop) to runBlocking(dispatcherIO) { Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+                        (resolved to favStop) to runBlocking(Dispatchers.IO) { Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
                     }
                 )
                 it.markLastUpdated()
@@ -690,7 +690,7 @@ class EtaTileServiceCommon {
                             it.cacheETAQueryResult(Registry.MergedETAQueryResult.merge(
                                 favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { (favStop, resolved) ->
                                     val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                                    (resolved to favStop) to runBlocking(dispatcherIO) { Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+                                    (resolved to favStop) to runBlocking(Dispatchers.IO) { Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
                                 }
                             ))
                             it.markLastUpdated()
@@ -720,6 +720,6 @@ class EtaTileServiceCommon {
 
 }
 
-inline fun <T, R> List<T>.parallelMapNotNull(dispatcher: CoroutineDispatcher = dispatcherIO, crossinline transform: (T) -> R?): List<R> {
-    return map { CoroutineScope(dispatcher).async { transform.invoke(it) } }.mapNotNull { runBlocking(dispatcherIO) { it.await() } }
+inline fun <T, R> List<T>.parallelMapNotNull(dispatcher: CoroutineDispatcher = Dispatchers.IO, crossinline transform: (T) -> R?): List<R> {
+    return map { CoroutineScope(dispatcher).async { transform.invoke(it) } }.mapNotNull { runBlocking(Dispatchers.IO) { it.await() } }
 }

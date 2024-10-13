@@ -26,8 +26,8 @@ import androidx.work.WorkerParameters
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.appcontext.nonActiveAppContext
 import com.loohp.hkbuseta.common.shared.Registry
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.guava.asListenableFuture
 import java.util.concurrent.TimeUnit
@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit
 class DailyUpdateWorker(private val context: Context, workerParams: WorkerParameters) : ListenableWorker(context, workerParams) {
 
     override fun startWork(): ListenableFuture<Result> {
-        return CoroutineScope(dispatcherIO).async {
+        return CoroutineScope(Dispatchers.IO).async {
             val registry = Registry.getInstance(context.nonActiveAppContext)
             while (registry.state.value.isProcessing) {
                 TimeUnit.MILLISECONDS.sleep(100)

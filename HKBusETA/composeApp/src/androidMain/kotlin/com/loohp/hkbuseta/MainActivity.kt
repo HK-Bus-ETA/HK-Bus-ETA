@@ -24,7 +24,6 @@ import com.loohp.hkbuseta.common.external.extractShareLink
 import com.loohp.hkbuseta.common.external.shareLaunch
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Tiles
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.glance.FavouriteRoutesWidget
 import com.loohp.hkbuseta.shared.AndroidShared
@@ -65,7 +64,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             App()
         }
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             intent.extractUrl()?.extractShareLink()?.apply {
                 val instance = HistoryStack.historyStack.value.last()
                 instance.startActivity(AppIntent(instance, AppScreen.MAIN))
@@ -78,7 +77,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             intent.extractUrl()?.extractShareLink()?.apply {
                 val instance = HistoryStack.historyStack.value.last()
                 instance.startActivity(AppIntent(instance, AppScreen.MAIN))

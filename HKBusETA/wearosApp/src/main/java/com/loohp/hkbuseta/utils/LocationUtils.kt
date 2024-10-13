@@ -41,11 +41,11 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.GPSLocation
 import com.loohp.hkbuseta.common.utils.LocationResult
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.future.asDeferred
 import kotlinx.coroutines.launch
@@ -208,7 +208,7 @@ fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
     val context = appContext.context
     val future = CompletableFuture<LocationResult?>()
     val client = LocationServices.getFusedLocationProviderClient(context)
-    CoroutineScope(dispatcherIO).launch {
+    CoroutineScope(Dispatchers.IO).launch {
         client.locationAvailability.addOnCompleteListener { task ->
             if (task.isSuccessful && task.result.isLocationAvailable) {
                 client.getCurrentLocation(CurrentLocationRequest.Builder().setMaxUpdateAgeMillis(6000).setDurationMillis(60000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), null).addOnCompleteListener { future.complete(
@@ -216,10 +216,10 @@ fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
             } else {
                 val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, dispatcherIO.asExecutor()) { future.complete(
+                    locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, Dispatchers.IO.asExecutor()) { future.complete(
                         LocationResult.fromLocationNullable(it)) }
                 } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                    locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, dispatcherIO.asExecutor()) { future.complete(
+                    locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, Dispatchers.IO.asExecutor()) { future.complete(
                         LocationResult.fromLocationNullable(it)) }
                 } else {
                     future.complete(LocationResult.FAILED_RESULT)

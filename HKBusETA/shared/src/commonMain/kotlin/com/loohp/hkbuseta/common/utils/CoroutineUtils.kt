@@ -23,11 +23,12 @@ package com.loohp.hkbuseta.common.utils
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.cancellation.CancellationException
 
-expect val dispatcherIO: CoroutineDispatcher
+expect val Dispatchers.IO: CoroutineDispatcher
 
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Deferred<T>.getCompletedOrNull(): T? {

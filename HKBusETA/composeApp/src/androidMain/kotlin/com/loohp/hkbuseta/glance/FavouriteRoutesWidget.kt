@@ -114,13 +114,13 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.ColorContentStyle
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.ServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.firstIsInstanceOrNull
 import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.indexOf
@@ -133,6 +133,7 @@ import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.spToDp
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -142,7 +143,7 @@ import kotlinx.datetime.DateTimeUnit
 val groupNameZhKey = stringPreferencesKey("groupName")
 
 @OptIn(ExperimentalCoroutinesApi::class)
-private val etaUpdateScope: CoroutineDispatcher = dispatcherIO.limitedParallelism(8)
+private val etaUpdateScope: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(8)
 
 class FavouriteRoutesWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = FavouriteRoutesWidget

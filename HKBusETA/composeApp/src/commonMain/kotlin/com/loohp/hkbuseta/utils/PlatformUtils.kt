@@ -21,16 +21,17 @@
 
 package com.loohp.hkbuseta.utils
 
-import com.loohp.hkbuseta.common.utils.dispatcherIO
+import com.loohp.hkbuseta.common.utils.IO
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlin.coroutines.CoroutineContext
 
 expect fun <T> runBlockingIfPossible(context: CoroutineContext, block: suspend CoroutineScope.() -> T, orElse: () -> T): T
 
 fun <T> runBlockingIfPossible(block: suspend CoroutineScope.() -> T, orElse: () -> T): T {
-    return runBlockingIfPossible(dispatcherIO, block, orElse)
+    return runBlockingIfPossible(Dispatchers.IO, block, orElse)
 }
 
 fun <T> runBlockingIfPossible(block: suspend CoroutineScope.() -> T): T? {
-    return runBlockingIfPossible(dispatcherIO, block) { null }
+    return runBlockingIfPossible(Dispatchers.IO, block) { null }
 }

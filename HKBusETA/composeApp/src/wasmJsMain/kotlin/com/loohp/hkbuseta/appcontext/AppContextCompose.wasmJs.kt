@@ -35,8 +35,8 @@ import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.StringReadChannel
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
@@ -51,6 +51,7 @@ import kotlinx.browser.window
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlin.math.roundToInt
@@ -257,7 +258,7 @@ class AppActiveContextComposeWeb internal constructor(
 
     override fun shareUrl(url: String, title: String?) {
         if (!shareUrlMenu(url, title)) {
-            CoroutineScope(dispatcherIO).launch { copyToClipboard(url) }
+            CoroutineScope(Dispatchers.IO).launch { copyToClipboard(url) }
         }
     }
 

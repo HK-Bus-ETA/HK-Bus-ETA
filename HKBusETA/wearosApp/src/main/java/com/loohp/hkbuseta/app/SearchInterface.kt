@@ -93,7 +93,6 @@ import com.loohp.hkbuseta.common.shared.Registry.PossibleNextCharResult
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.asImmutableState
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.ScrollBarConfig
@@ -105,6 +104,7 @@ import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
@@ -293,7 +293,7 @@ suspend fun handleInput(instance: AppActiveContext, state: MutableState<RouteKey
     val originalText = state.value.text
     if (input == '/' || input == '!' || input == '~' || (input == '<' && Shared.lastLookupRoutes.value.isNotEmpty() && originalText.isEmpty())) {
         state.value = state.value.copy(isLoading = true)
-        val job = CoroutineScope(dispatcherIO).launch {
+        val job = CoroutineScope(Dispatchers.IO).launch {
             delay(500)
             state.value = state.value.copy(showLoadingIndicator = true)
         }
@@ -357,13 +357,13 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, longContent: Char?
 
     AdvanceButton(
         onClick = {
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 handleInput(instance, state, content)
             }
         },
         onLongClick = {
             if (longContent != null && !isLookupButton) {
-                CoroutineScope(dispatcherIO).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     handleInput(instance, state, longContent)
                 }
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)

@@ -131,7 +131,6 @@ import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.buildImmutableList
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.DrawPhaseColorText
 import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
@@ -218,7 +217,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
         val sortedResults by remember { derivedStateOf { (sortedByMode[activeSortMode.routeSortMode]?: filterRoutesProvider.invoke()).asImmutableList() } }
 
         LaunchedEffect (Unit) {
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 val newSorted = sortedByModeProvider.invoke()
                 if (newSorted != sortedByMode) {
                     withContext(Dispatchers.Main) { sortedByMode = newSorted }
@@ -232,7 +231,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                     }
                 }
             }
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 val byDirection = result.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
                 withContext(Dispatchers.Main) { routeGroupedByDirections = byDirection }
             }
@@ -871,7 +870,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults
             delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, key) {
-            val result = runBlocking(dispatcherIO) { Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+            val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
             etaStateFlow.value = result
             etaUpdateTimes.value[key] = System.currentTimeMillis()
             etaResults.value[key] = result

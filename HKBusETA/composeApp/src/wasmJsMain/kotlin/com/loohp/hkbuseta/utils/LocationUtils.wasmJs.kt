@@ -22,12 +22,13 @@
 package com.loohp.hkbuseta.utils
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -55,7 +56,7 @@ actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): D
 }
 
 actual fun getGPSLocation(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit> {
-    val job = CoroutineScope(dispatcherIO).launch {
+    val job = CoroutineScope(Dispatchers.IO).launch {
         while (true) {
             getLocation(
                 callback = { lat, lng -> listener.invoke(LocationResult.of(lat, lng)) },

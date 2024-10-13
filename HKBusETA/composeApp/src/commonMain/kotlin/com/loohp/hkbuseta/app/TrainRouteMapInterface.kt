@@ -166,6 +166,7 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.FormattedText
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.asFormattedText
@@ -174,7 +175,6 @@ import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.awaitWithTimeout
 import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
@@ -242,6 +242,7 @@ import hkbuseta.composeapp.generated.resources.Res
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -966,7 +967,7 @@ fun MTRETADisplayInterface(
         for (route in routes.asSequence().flatMap { it.third }) {
             launch {
                while (true) {
-                   val result = CoroutineScope(dispatcherIO).async {
+                   val result = CoroutineScope(Dispatchers.IO).async {
                        Registry.getInstance(instance).getEta(stopId, 0, Operator.MTR, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                    }.await()
                    if (result.isConnectionError) {
@@ -1998,7 +1999,7 @@ fun LRTETADisplayInterface(
     LaunchedEffect (placeholderRoute) {
         placeholderRoute?.let { placeholderRoute ->
             while (true) {
-                val result = CoroutineScope(dispatcherIO).async {
+                val result = CoroutineScope(Dispatchers.IO).async {
                     Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                 }.await()
                 if (result.isConnectionError) {
@@ -2016,7 +2017,7 @@ fun LRTETADisplayInterface(
     }
     RestartEffect {
         placeholderRoute?.let { placeholderRoute ->
-            val result = CoroutineScope(dispatcherIO).async {
+            val result = CoroutineScope(Dispatchers.IO).async {
                 Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             }.await()
             if (result.isConnectionError) {

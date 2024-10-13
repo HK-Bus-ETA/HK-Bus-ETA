@@ -173,6 +173,7 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.FormattedText
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MTRStopSectionData
 import com.loohp.hkbuseta.common.utils.RouteBranchStatus
@@ -184,7 +185,6 @@ import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.floorToInt
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.compose.Add
@@ -319,7 +319,7 @@ val RouteBranchStatus?.description: BilingualText get() = when (this) {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-private val etaUpdateScope: CoroutineDispatcher = dispatcherIO.limitedParallelism(4)
+private val etaUpdateScope: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
 
 fun generateRouteLineData(instance: AppActiveContext, routeNumber: String, co: Operator, isLrtCircular: Boolean, lineColor: Color, stopsList: ImmutableList<Registry.StopData>, selectedBranch: Route): List<Any> {
     return if (co.isTrain) {
@@ -2695,7 +2695,7 @@ fun handleToggleAlightReminder(
                 if (result) {
                     togglingAlightReminderState.value = true
                     CoroutineScope(Dispatchers.Main).launch {
-                        val job = CoroutineScope(dispatcherIO).launch {
+                        val job = CoroutineScope(Dispatchers.IO).launch {
                             delay(500)
                             instance.showToastText(if (Shared.language == "en") "Getting alight reminder service ready..." else "正在啟動落車提示...", ToastDuration.LONG)
                         }

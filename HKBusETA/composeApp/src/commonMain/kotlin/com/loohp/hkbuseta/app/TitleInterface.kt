@@ -71,9 +71,9 @@ import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Splash
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.asImmutableList
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.AdaptiveNavBar
 import com.loohp.hkbuseta.compose.AdaptiveNavBarItem
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -95,6 +95,7 @@ import com.loohp.hkbuseta.compose.rememberAutoResizeFontState
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.utils.DrawableResource
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
@@ -200,7 +201,7 @@ fun TitleInterface(instance: AppActiveContext) {
     }
     LaunchedEffect (Unit) {
         if (Shared.downloadSplash) {
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 Splash.downloadMissingImages(instance)
             }
         }

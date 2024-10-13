@@ -36,9 +36,7 @@ data class RouteWaypoints(
     val stops: List<Stop>,
     val paths: List<List<Coordinates>> = listOf(stops.map { it.location }),
     val isHighRes: Boolean,
-) {
-    val simplifiedPaths: List<List<Coordinates>> by lazy { paths.map { it.simplified() } }
-}
+)
 
 fun Route.defaultWaypoints(context: AppContext): RouteWaypoints {
     val operator = co.firstCo()!!

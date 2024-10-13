@@ -94,10 +94,10 @@ import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.getPossibleNextChar
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.compose.AdaptiveTopBottomLayout
 import com.loohp.hkbuseta.compose.AdaptiveTopBottomMode
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -133,6 +133,7 @@ import com.loohp.hkbuseta.utils.pixelsToDp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -301,19 +302,19 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                                         val key = it.key
                                         return@onKeyEvent when {
                                             key == Key.Backspace || (key == Key.Back && composePlatform.isMobileAppRunningOnDesktop && composePlatform.applePlatform) -> {
-                                                CoroutineScope(dispatcherIO).launch {
+                                                CoroutineScope(Dispatchers.IO).launch {
                                                     handleInput(instance, '<')
                                                 }
                                                 true
                                             }
                                             key == Key.Delete -> {
-                                                CoroutineScope(dispatcherIO).launch {
+                                                CoroutineScope(Dispatchers.IO).launch {
                                                     handleInput(instance, '-')
                                                 }
                                                 true
                                             }
                                             key.keyString?.let { s -> state.nextCharResult.characters.contains(s[0]) } == true -> {
-                                                CoroutineScope(dispatcherIO).launch {
+                                                CoroutineScope(Dispatchers.IO).launch {
                                                     handleInput(instance, key.keyString!![0])
                                                 }
                                                 true
@@ -339,7 +340,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                         for (category in OperatorCategory.entries) {
                             PlatformButton(
                                 onClick = {
-                                    CoroutineScope(dispatcherIO).launch {
+                                    CoroutineScope(Dispatchers.IO).launch {
                                         updateSearchState(categories = state.categories.toggle(category))
                                     }
                                 },
@@ -508,7 +509,7 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, color: Color, icon
 
     PlatformButton(
         onClick = {
-            CoroutineScope(dispatcherIO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 handleInput(instance, content)
                 onClick.invoke()
             }

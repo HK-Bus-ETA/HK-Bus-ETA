@@ -62,7 +62,6 @@ import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.IOSerializable
 import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.currentBackgroundRestricted
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.getConnectionType
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
@@ -79,6 +78,7 @@ import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
@@ -194,7 +194,7 @@ open class AppContextComposeAndroid internal constructor(
 
     override fun requestPreferencesIfPossible(): Deferred<Boolean> {
         val defer = CompletableDeferred<Boolean>()
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             val result = RemoteActivityUtils.hasWatchApp(context).await()
             if (result) {
                 RemoteActivityUtils.dataToWatch(context, Shared.REQUEST_PREFERENCES_ID, null,

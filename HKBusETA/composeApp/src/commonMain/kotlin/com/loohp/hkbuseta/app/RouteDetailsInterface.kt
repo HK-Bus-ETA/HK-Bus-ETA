@@ -138,6 +138,7 @@ import com.loohp.hkbuseta.common.services.AlightReminderService
 import com.loohp.hkbuseta.common.shared.BASE_URL
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.ServiceTimeCategory
@@ -148,7 +149,6 @@ import com.loohp.hkbuseta.common.utils.awaitWithTimeout
 import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.common.utils.getCircledNumber
 import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.indexesOf
@@ -403,7 +403,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     var trafficSnapshotsLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect (selectedBranch, waypointStops) {
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             val waypointsAsync = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, instance, waypointStops).await()
             withContext(Dispatchers.Main) {
                 waypoints = waypointsAsync
@@ -463,7 +463,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
         }
     }
     LaunchedEffect (route) {
-        CoroutineScope(dispatcherIO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             launch {
                 val reverse = route.findReverse(instance)
                 withContext(Dispatchers.Main) { reverseRoute = reverse }
@@ -604,7 +604,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                             ),
                             contentPadding = PaddingValues(0.dp),
                             onClick = {
-                                CoroutineScope(dispatcherIO).launch {
+                                CoroutineScope(Dispatchers.IO).launch {
                                     reverseRoute?.let {
                                         Registry.getInstance(instance).addLastLookupRoute(it.routeKey, instance)
                                         val intent = AppIntent(instance, AppScreen.LIST_STOPS)

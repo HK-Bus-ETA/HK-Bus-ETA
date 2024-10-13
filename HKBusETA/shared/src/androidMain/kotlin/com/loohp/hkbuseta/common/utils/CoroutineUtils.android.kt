@@ -24,4 +24,5 @@ package com.loohp.hkbuseta.common.utils
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
-actual val dispatcherIO: CoroutineDispatcher = Dispatchers.IO
+@Suppress("EXTENSION_SHADOWED_BY_MEMBER")
+actual val Dispatchers.IO: CoroutineDispatcher get() = Dispatchers.IO

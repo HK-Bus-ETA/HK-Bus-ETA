@@ -35,9 +35,9 @@ import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
 import com.loohp.hkbuseta.common.services.AlightReminderService
 import com.loohp.hkbuseta.common.services.AlightReminderServiceState
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.common.utils.dispatcherIO
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -112,7 +112,7 @@ class AlightReminderForegroundService: Service() {
                 remoteData = currentRemoteData
             }
             if (it.isActive == AlightReminderActiveState.STOPPED) {
-                CoroutineScope(dispatcherIO).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     delay(500)
                     stopForeground(STOP_FOREGROUND_REMOVE)
                     terminate()

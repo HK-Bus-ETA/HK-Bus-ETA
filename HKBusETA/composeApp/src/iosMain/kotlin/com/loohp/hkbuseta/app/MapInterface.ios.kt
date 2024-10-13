@@ -202,7 +202,7 @@ actual fun MapRouteInterface(
                         location = stop.location
                     )
                 }
-                overlays = waypoints.simplifiedPaths.map { path ->
+                overlays = waypoints.paths.map { path ->
                     MKPolyline.polylineWithCoordinates(path.toAppleCoordinates(nativeHeap).apply { allocated.add(this) }, path.size.convert())
                 }
                 map.addAnnotations(annotations)
