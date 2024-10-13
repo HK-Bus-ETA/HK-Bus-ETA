@@ -174,6 +174,7 @@ sealed class TimetableEntry(
     val specialRouteRemark: BilingualText?,
     internal val compareTime: LocalTime?
 ) {
+    abstract val hasScheduledServices: Boolean
     abstract fun toString(language: String): String
     abstract fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean
     abstract infix fun overlap(other: TimetableEntry): Boolean
@@ -203,6 +204,7 @@ class TimetableIntervalEntry(
     subEntries: List<TimetableIntervalEntry>? = null
 ): TimetableEntry(route, specialRouteRemark, start) {
     val subEntries: List<TimetableIntervalEntry> = subEntries?: listOf(this)
+    override val hasScheduledServices: Boolean = true
     fun mergeAfter(entry: TimetableIntervalEntry): TimetableIntervalEntry {
         return TimetableIntervalEntry(route, start, entry.end, interval merge entry.interval, specialRouteRemark, subEntries + entry.subEntries)
     }
@@ -245,6 +247,7 @@ class TimetableSingleEntry(
     val time: LocalTime,
     specialRouteRemark: BilingualText?
 ): TimetableEntry(route, specialRouteRemark, time) {
+    override val hasScheduledServices: Boolean = true
     override fun toString(language: String): String {
         return "${time.hour.pad(2)}:${time.minute.pad(2)}"
     }
@@ -276,6 +279,7 @@ class TimetableSpecialEntry(
     val notice: BilingualText,
     specialRouteRemark: BilingualText?
 ): TimetableEntry(route, specialRouteRemark, null) {
+    override val hasScheduledServices: Boolean = false
     override fun toString(language: String): String = notice[language]
     override fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean = false
     override infix fun overlap(other: TimetableEntry): Boolean = false
@@ -381,11 +385,12 @@ fun Map<OperatingWeekdays, List<TimetableEntry>>.getServiceTimeCategory(): Servi
 }
 
 fun Collection<TimetableEntry>.getServiceTimeCategory(): ServiceTimeCategory {
-    if (all { it is TimetableSpecialEntry }) return ServiceTimeCategory.DAY
+    val filtered = filter { it.hasScheduledServices }
+    if (filtered.isEmpty()) return ServiceTimeCategory.DAY
 
     val diff = (0 until 24).associateWith { h ->
         val time = LocalTime(h, 0)
-        minOf { when (it) {
+        filtered.minOf { when (it) {
             is TimetableSingleEntry -> it.time.minIntervalMinutes(time)
             is TimetableIntervalEntry -> if (time.isBetweenInclusive(it.start, it.end)) 0 else min(it.start.minIntervalMinutes(time), it.end.minIntervalMinutes(time))
             else -> throw IllegalArgumentException("Invalid timetable entry type")
@@ -395,7 +400,7 @@ fun Collection<TimetableEntry>.getServiceTimeCategory(): ServiceTimeCategory {
     val minDiffHours = diff.filter { it.value == minDiff }
     return when {
         minDiffHours.any { it.key in 7..20 } && minDiffHours.any { it.key in 2..4 } -> ServiceTimeCategory.TWENTY_FOUR_HOURS
-        minDiffHours.all { it.key in 22..24 || it.key in 0..6 } -> ServiceTimeCategory.NIGHT
+        minDiffHours.all { it.key in 22..24 || it.key in 0..7 } && minDiffHours.any { it.key in 0..6 } -> ServiceTimeCategory.NIGHT
         else -> ServiceTimeCategory.DAY
     }
 }
