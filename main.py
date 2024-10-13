@@ -467,16 +467,24 @@ def download_and_process_data_sheet():
             co = "nlb"
         elif "mtr-bus" in bound:
             co = "mtr-bus"
+        elif "lrtfeeder" in bound:
+            co = "lrtfeeder"
         elif "gmb" in bound:
             co = "gmb"
         elif "lightRail" in bound:
             co = "lightRail"
         elif "mtr" in bound:
             co = "mtr"
+        elif "hkkf" in bound:
+            co = "hkkf"
+        elif "sunferry" in bound:
+            co = "sunferry"
+        elif "fortuneferry" in bound:
+            co = "fortuneferry"
         else:
             keys_to_remove.append(key)
-            break
-        if co not in data["stops"]:
+            continue
+        if co not in data["stops"] or len(data["stops"][co]) <= 0:
             keys_to_remove.append(key)
 
     for key in keys_to_remove:

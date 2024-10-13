@@ -2,3 +2,4 @@ data.json
 data_formatted.json
 checksum.md5
 .idea/
+.DS_Store
