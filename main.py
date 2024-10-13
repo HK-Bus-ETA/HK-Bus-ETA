@@ -476,7 +476,7 @@ def download_and_process_data_sheet():
         else:
             keys_to_remove.append(key)
             break
-        if co not in data["stops"]:
+        if co not in data["stops"] or len(data["stops"][co]) <= 0:
             keys_to_remove.append(key)
 
     for key in keys_to_remove:
