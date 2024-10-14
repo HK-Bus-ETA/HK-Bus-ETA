@@ -22,7 +22,10 @@
 package com.loohp.hkbuseta.compose
 
 import android.app.PictureInPictureParams
+import android.content.Context
+import android.content.ContextWrapper
 import android.util.Rational
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -32,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -61,7 +65,7 @@ actual inline val currentLocalWindowSize: IntSize
 
 @Composable
 actual fun rememberIsInPipMode(context: AppActiveContext): Boolean {
-    val activity = context.compose.context
+    val activity = LocalContext.current.findActivity()
     var pipMode by remember { mutableStateOf(activity.isInPictureInPictureMode) }
     DisposableEffect (activity) {
         val observer = Consumer<PictureInPictureModeChangedInfo> { info ->
@@ -73,8 +77,17 @@ actual fun rememberIsInPipMode(context: AppActiveContext): Boolean {
     return pipMode
 }
 
+internal fun Context.findActivity(): ComponentActivity {
+    var context = this
+    while (context is ContextWrapper) {
+        if (context is ComponentActivity) return context
+        context = context.baseContext
+    }
+    throw IllegalStateException("Picture in picture should be called in the context of an Activity")
+}
+
 actual fun AppActiveContext.enterPipMode() {
-    val activity = compose.context
+    val activity = compose.context.findActivity()
     if (!activity.isInPictureInPictureMode) {
         activity.enterPictureInPictureMode(PictureInPictureParams.Builder()
             .setAspectRatio(Rational(16, 9))
