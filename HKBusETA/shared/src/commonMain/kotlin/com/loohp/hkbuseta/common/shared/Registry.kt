@@ -2463,6 +2463,11 @@ class Registry {
                                             append(" (${bus.optString("rmk_en")})", SmallSize)
                                         }
                                     }
+                                } else if (branchRemark.isNotEmpty()) {
+                                    remarkMessage += buildFormattedString {
+                                        append(" - ", SmallSize)
+                                        append(branchRemark, SmallSize, BoldStyle)
+                                    }
                                 }
                             } else {
                                 if (minsRounded > 0) {
@@ -2493,6 +2498,11 @@ class Registry {
                                                 .replace("最後班次", "尾班車")
                                                 .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
                                         }
+                                    }
+                                } else if (branchRemark.isNotEmpty()) {
+                                    remarkMessage += buildFormattedString {
+                                        append(" - ", SmallSize)
+                                        append(branchRemark, SmallSize, BoldStyle)
                                     }
                                 }
                             }
