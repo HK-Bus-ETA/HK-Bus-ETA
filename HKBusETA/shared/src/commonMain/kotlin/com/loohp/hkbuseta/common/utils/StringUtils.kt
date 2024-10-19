@@ -41,7 +41,7 @@ inline fun CharSequence.count(value: String): Int {
 }
 
 inline fun CharSequence.eitherContains(other: CharSequence): Boolean {
-    return this.contains(other) || other.contains(this)
+    return this.eitherEquals(other) { a, b -> a.contains(b) }
 }
 
 fun String.editDistance(other: String): Int {

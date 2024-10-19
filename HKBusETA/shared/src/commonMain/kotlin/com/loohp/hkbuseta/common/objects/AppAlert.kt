@@ -19,17 +19,16 @@
  *
  */
 
-package com.loohp.hkbuseta.common.utils
+package com.loohp.hkbuseta.common.objects
 
+import kotlinx.serialization.Serializable
 
-inline infix fun Any?.nonNullEquals(other: Any?): Boolean {
-    return this != null && this == other
-}
-
-inline infix fun Any?.nonNullStrictEquals(other: Any?): Boolean {
-    return this !== null && this === other
-}
-
-inline fun <T> T.eitherEquals(other: T, predicate: (T, T) -> Boolean): Boolean {
-    return predicate.invoke(this, other) || predicate.invoke(other, this)
+@Serializable
+data class AppAlert(
+    val content: BilingualText? = null,
+    val url: String? = null
+) {
+    companion object {
+        val EMPTY = AppAlert(null, null)
+    }
 }

@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlendMode
@@ -47,8 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Button
@@ -65,6 +65,9 @@ import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.compose.AdvanceButton
+import com.loohp.hkbuseta.compose.AutoResizeText
+import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.checkLocationPermission
@@ -106,7 +109,7 @@ fun HKBusETAApp(instance: AppActiveContext) {
                 FavButton(instance)
             }
             Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
-            CreditVersionText(instance)
+            BottomText(instance)
         }
     }
 }
@@ -260,18 +263,44 @@ fun FavButton(instance: AppActiveContext) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CreditVersionText(instance: AppActiveContext) {
+fun BottomText(instance: AppActiveContext) {
     val haptic = LocalHapticFeedback.current
-    Text(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = instance.handleWebpages("https://play.google.com/store/apps/details?id=com.loohp.hkbuseta", false, haptic.common),
-                onLongClick = instance.handleWebpages("https://loohpjames.com", true, haptic.common)
+    val appAlert by WearOSShared.rememberAppAlert(instance)
+
+    appAlert?.let { alert ->
+        AutoResizeText(
+            modifier = Modifier
+                .padding(20.dp, 0.dp)
+                .fillMaxWidth()
+                .height(25.scaledSize(instance).dp)
+                .applyIfNotNull(alert.url) {
+                    combinedClickable(
+                        onClick = instance.handleWebpages(it, false, haptic.common),
+                        onLongClick = instance.handleWebpages(it, true, haptic.common)
+                    )
+                },
+            textAlign = TextAlign.Center,
+            color = Color(0xFFFF6161),
+            overflow = TextOverflow.Ellipsis,
+            fontSizeRange = FontSizeRange(
+                max = 16F.scaledSize(instance).sp,
+                min = 9F.scaledSize(instance).sp
             ),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        fontSize = TextUnit(1.5F.scaledSize(instance), TextUnitType.Em),
-        text = "${instance.getResourceString(R.string.app_name)} v${instance.versionName} (${instance.versionCode})\n@LoohpJames"
-    )
+            text = alert.content?.get(Shared.language)?: ""
+        )
+    }?: run {
+        Text(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(25.scaledSize(instance).dp)
+                .combinedClickable(
+                    onClick = instance.handleWebpages("https://play.google.com/store/apps/details?id=com.loohp.hkbuseta", false, haptic.common),
+                    onLongClick = instance.handleWebpages("https://loohpjames.com", true, haptic.common)
+                ),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary,
+            fontSize = 9F.scaledSize(instance).sp,
+            text = "${if (Shared.language == "en") "HK Bus ETA" else "香港巴士到站預報"} v${instance.versionName} (${instance.versionCode})\n@LoohpJames"
+        )
+    }
 }

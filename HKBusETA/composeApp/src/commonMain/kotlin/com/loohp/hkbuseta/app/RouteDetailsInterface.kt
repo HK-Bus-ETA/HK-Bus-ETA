@@ -845,8 +845,7 @@ fun MapStopsInterface(
             } },
             top = { screenSize ->
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     Box(
                         modifier = Modifier

@@ -69,7 +69,9 @@ import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.background.DailyUpdateWorker
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.globalWritingFilesCounterState
+import com.loohp.hkbuseta.common.objects.AppAlert
 import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
+import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.MutableNullableStateFlow
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
@@ -111,6 +113,19 @@ object WearOSShared {
         R.mipmap.lrv to 128F / 95F,
         R.mipmap.lrv_empty to 128F / 95F
     )
+
+    private val appAlertsState: MutableStateFlow<AppAlert?> = MutableStateFlow(null)
+
+    @Composable
+    fun rememberAppAlert(context: AppActiveContext): State<AppAlert?> {
+        LaunchedEffect (Unit) {
+            while (true) {
+                appAlertsState.value = Registry.getInstance(context).getAppAlerts().await()
+                delay(30000)
+            }
+        }
+        return appAlertsState.collectAsStateWithLifecycle()
+    }
 
     @Composable
     fun MainTime(lazyListState: LazyListState, modifier: Modifier = Modifier) {

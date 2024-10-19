@@ -335,15 +335,16 @@ fun Route.getCircularPivotIndex(stops: List<Registry.StopData>): Int {
     return stops.asSequence()
         .mapIndexedNotNull { i, s ->
             val name = s.stop.name.zh.trim()
-            if (name.eitherContains(circularMiddle)) {
-                (i + 1) to name
-            } else {
-                null
-            }
+            if (name.eitherContains(circularMiddle)) ((i + 1) to name) else null
         }
         .minByOrNull { (_, n) -> n.editDistance(circularMiddle) }
         ?.first
-        ?: -1
+        ?: stops.first().stop.location.let {
+            stops.asSequence()
+                .mapIndexed { i, s -> (i + 1) to s }
+                .maxBy { (_, s) -> s.stop.location.distance(it) }
+                .first
+        }
 }
 
 fun Route.resolvedDest(prependTo: Boolean): BilingualText {
@@ -731,14 +732,14 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
             when (labelType) {
                 RemarkType.RAW -> remark
                 RemarkType.LABEL_MAIN_BRANCH -> remark.let {
-                    if (it.zh.isNotBlank()) {
+                    if (it.isNotBlank()) {
                         it
                     } else {
                         "正常路線" withEn "Normal Route"
                     }
                 }
                 RemarkType.LABEL_ALL, RemarkType.LABEL_ALL_AND_MAIN -> remark.let {
-                    if (it.zh.isNotBlank()) {
+                    if (it.isNotBlank()) {
                         val entries = timetable.values.asSequence().flatten().filter { e -> e.route == this }.toList()
                         it + when {
                             entries.isNotEmpty() && entries.all { l -> l.within(LocalTime(5, 0), LocalTime(10, 0)) } -> " - 早上繁忙時間特別班" withEn " - Morning Peak Special"
@@ -775,8 +776,8 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
                             else -> BilingualText.EMPTY
                         }
                     }
-                    if (it.zh.isNotBlank()) {
-                        it + extra.let { e -> if (e.zh.isBlank()) e else " - ".asBilingualText() + e }
+                    if (it.isNotBlank()) {
+                        it + extra.let { e -> if (e.isBlank()) e else " - ".asBilingualText() + e }
                     } else {
                         extra
                     }

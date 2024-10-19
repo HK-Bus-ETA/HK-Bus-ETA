@@ -39,6 +39,7 @@ import com.loohp.hkbuseta.common.appcontext.AppShortcutIcon
 import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
 import com.loohp.hkbuseta.common.appcontext.primaryThemeColor
 import com.loohp.hkbuseta.common.branchedlist.MutableBranchedList
+import com.loohp.hkbuseta.common.objects.AppAlert
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.DataContainer
@@ -2038,6 +2039,16 @@ class Registry {
                 }
             }
             result
+        }
+    }
+
+    fun getAppAlerts(): Deferred<AppAlert?> {
+        return CoroutineScope(Dispatchers.IO).async {
+            try {
+                getJSONResponse<AppAlert>("https://app-alerts.hkbuseta.com/alert.json")
+            } catch (e: Throwable) {
+                null
+            }
         }
     }
 

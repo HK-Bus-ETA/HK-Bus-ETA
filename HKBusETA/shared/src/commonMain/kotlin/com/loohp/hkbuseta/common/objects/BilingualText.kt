@@ -117,6 +117,22 @@ class BilingualText(
 
 }
 
+inline fun BilingualText.isEmpty(): Boolean {
+    return !isNotEmpty()
+}
+
+inline fun BilingualText.isBlank(): Boolean {
+    return !isNotBlank()
+}
+
+inline fun BilingualText.isNotEmpty(): Boolean {
+    return zh.isNotEmpty() || en.isNotEmpty()
+}
+
+inline fun BilingualText.isNotBlank(): Boolean {
+    return zh.isNotBlank() || en.isNotBlank()
+}
+
 inline infix fun String.withEn(en: String): BilingualText {
     return BilingualText(this, en)
 }

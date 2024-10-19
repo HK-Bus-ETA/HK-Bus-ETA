@@ -33,6 +33,8 @@ import androidx.compose.animation.core.animateValue
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -223,6 +225,7 @@ import com.loohp.hkbuseta.compose.table.TableColumnWidth
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
 import com.loohp.hkbuseta.compose.verticalScrollBar
+import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustAlpha
@@ -286,6 +289,7 @@ fun ListRoutesInterface(
     onPullToRefresh: (suspend () -> Unit)? = null,
     pipModeListName: BilingualFormattedText? = null,
 ) {
+    val haptics = LocalHapticFeedback.current
     val routeSortPreferenceProvider by remember(listType, recentSort, proximitySortOrigin) { derivedStateOf { {
         if (recentSort.forcedMode) {
             RouteSortPreference(recentSort.defaultSortMode, false)
@@ -327,22 +331,29 @@ fun ListRoutesInterface(
     }
 
     val pipMode = rememberIsInPipMode(instance)
+    val appAlert by ComposeShared.rememberAppAlert(instance)
 
     Scaffold(
         modifier = Modifier.background(platformComponentBackgroundColor),
         topBar = {
-            ListRouteTopBar(
-                instance = instance,
-                routesEmpty = filterRoutes.isEmpty(),
-                listType = listType,
-                recentSort = recentSort,
-                filterDirectionsState = filterDirectionsState,
-                availableDirections = routeGroupedByDirections.keys.asImmutableSet(),
-                proximitySortOrigin = proximitySortOrigin,
-                extraActions = extraActions,
-                activeSortModeState = activeSortModeState,
-                pipModeAllowed = pipModeListName != null
-            )
+            Column {
+                ListRouteTopBar(
+                    instance = instance,
+                    routesEmpty = filterRoutes.isEmpty(),
+                    listType = listType,
+                    recentSort = recentSort,
+                    filterDirectionsState = filterDirectionsState,
+                    availableDirections = routeGroupedByDirections.keys.asImmutableSet(),
+                    proximitySortOrigin = proximitySortOrigin,
+                    extraActions = extraActions,
+                    activeSortModeState = activeSortModeState,
+                    pipModeAllowed = pipModeListName != null
+                )
+                ComposeShared.AnimatedVisibilityColumnAppAlert(
+                    context = instance,
+                    appAlert = appAlert
+                )
+            }
         },
         content = { padding ->
             Box(
@@ -420,9 +431,15 @@ fun ListRouteTopBar(
             enter = slideInVertically(
                 initialOffsetY = { -it },
                 animationSpec = tween(durationMillis = 300)
+            ) + expandVertically(
+                expandFrom = Alignment.Top,
+                animationSpec = tween(durationMillis = 300)
             ),
             exit = slideOutVertically(
                 targetOffsetY = { -it },
+                animationSpec = tween(durationMillis = 300)
+            ) + shrinkVertically(
+                shrinkTowards = Alignment.Top,
                 animationSpec = tween(durationMillis = 300)
             )
         ) {

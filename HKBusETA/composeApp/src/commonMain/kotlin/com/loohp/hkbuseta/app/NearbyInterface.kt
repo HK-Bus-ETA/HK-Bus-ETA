@@ -343,12 +343,14 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                             initialOffsetY = { -it },
                             animationSpec = tween(durationMillis = 300)
                         ) + expandVertically(
+                            expandFrom = Alignment.Top,
                             animationSpec = tween(durationMillis = 300)
                         ),
                         exit = slideOutVertically(
                             targetOffsetY = { -it },
                             animationSpec = tween(durationMillis = 300)
                         ) + shrinkVertically(
+                            shrinkTowards = Alignment.Top,
                             animationSpec = tween(durationMillis = 300)
                         )
                     ) {

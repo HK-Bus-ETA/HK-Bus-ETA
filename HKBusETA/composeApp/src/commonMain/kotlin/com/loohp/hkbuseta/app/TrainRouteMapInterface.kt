@@ -32,6 +32,8 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
@@ -226,6 +228,7 @@ import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.compose.zoomable.Zoomable
 import com.loohp.hkbuseta.compose.zoomable.ZoomableState
 import com.loohp.hkbuseta.compose.zoomable.rememberZoomableState
+import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
@@ -393,6 +396,8 @@ fun RouteMapSearchInterface(
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
     var lrtRedAlert: Pair<String, String?>? by remember { mutableStateOf(null) }
 
+    val appAlert by ComposeShared.rememberAppAlert(instance)
+
     LaunchedEffect (Unit) {
         notices = Registry.getInstance(instance).getOperatorNotices(setOf(Operator.MTR, Operator.LRT), instance)
     }
@@ -453,9 +458,15 @@ fun RouteMapSearchInterface(
             enter = slideInVertically(
                 initialOffsetY = { -it },
                 animationSpec = tween(durationMillis = 300)
+            ) + expandVertically(
+                expandFrom = Alignment.Top,
+                animationSpec = tween(durationMillis = 300)
             ),
             exit = slideOutVertically(
                 targetOffsetY = { -it },
+                animationSpec = tween(durationMillis = 300)
+            ) + shrinkVertically(
+                shrinkTowards = Alignment.Top,
                 animationSpec = tween(durationMillis = 300)
             )
         ) {
@@ -481,17 +492,20 @@ fun RouteMapSearchInterface(
             contentAlignment = Alignment.TopCenter,
         ) {
             if (visible || (pagerState.currentPage == 0 && mtrRouteMapLoaded.value) || (pagerState.currentPage == 1 && lightRailRouteMapLoaded.value) || pagerState.currentPage == 2) {
-                HorizontalPager(
-                    modifier = Modifier.fillMaxSize(),
-                    state = pagerState,
-                    userScrollEnabled = true,
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    when (it) {
-                        0 -> MTRRouteMapInterface(instance, location, stopLaunch, false)
-                        1 -> LRTRouteMapInterface(instance, location, stopLaunch, false)
-                        2 -> NoticeInterface(instance, notices?.asImmutableList(), false)
-                        else -> PlatformText(trainRouteMapItems[it].title[Shared.language])
+                Column {
+                    ComposeShared.AnimatedVisibilityColumnAppAlert(instance, appAlert, pagerState.currentPage.let { it == 0 || it == 1 })
+                    HorizontalPager(
+                        modifier = Modifier.fillMaxSize(),
+                        state = pagerState,
+                        userScrollEnabled = true,
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        when (it) {
+                            0 -> MTRRouteMapInterface(instance, location, stopLaunch, false)
+                            1 -> LRTRouteMapInterface(instance, location, stopLaunch, false)
+                            2 -> NoticeInterface(instance, notices?.asImmutableList(), false)
+                            else -> PlatformText(trainRouteMapItems[it].title[Shared.language])
+                        }
                     }
                 }
                 val offset by animateDpAsState(

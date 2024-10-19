@@ -10,7 +10,11 @@ import shared
 
 struct TitleView: AppScreenView {
     
+    let alertUpdateTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+    
     private let appContext: AppActiveContextWatchOS
+    
+    @State private var appAlert: AppAlert?
     
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
@@ -109,11 +113,40 @@ struct TitleView: AppScreenView {
                     }
                 }
             }
-            Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報")
-                .font(.system(size: 12.scaled(appContext)))
-            Text("v\(appContext.versionName) (\(appContext.versionCode.description)) @loohpjames")
-                .font(.system(size: 11.scaled(appContext))).padding(.bottom)
+            VStack {
+                if let alert = appAlert {
+                    if let url = alert.url {
+                        Text(alert.content?.get(language: Shared().language) ?? "")
+                            .lineLimit(2)
+                            .autoResizing(maxSize: 19.scaled(appContext, true), minSize: 12.scaled(appContext))
+                            .foregroundColor(colorInt(0xFFFF6161).asColor())
+                            .highPriorityGesture(
+                                TapGesture()
+                                    .onEnded { _ in
+                                        appContext.handleWebpages(url: url, longClick: false, haptics: hapticsFeedback())()
+                                    }
+                            )
+                    } else {
+                        Text(alert.content?.get(language: Shared().language) ?? "")
+                            .lineLimit(2)
+                            .autoResizing(maxSize: 19.scaled(appContext, true), minSize: 12.scaled(appContext))
+                            .foregroundColor(colorInt(0xFFFF6161).asColor())
+                    }
+                } else {
+                    Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報")
+                        .font(.system(size: 12.scaled(appContext)))
+                    Text("v\(appContext.versionName) (\(appContext.versionCode.description)) @loohpjames")
+                        .font(.system(size: 11.scaled(appContext))).padding(.bottom)
+                }
+            }
+            .frame(height: 35.scaled(appContext, true))
         }
         .padding()
+        .onAppear {
+            self.appAlert = AppContextWatchOSKt.getAppAlert(context: appContext)
+        }
+        .onReceive(alertUpdateTimer) { _ in
+            self.appAlert = AppContextWatchOSKt.getAppAlert(context: appContext)
+        }
     }
 }

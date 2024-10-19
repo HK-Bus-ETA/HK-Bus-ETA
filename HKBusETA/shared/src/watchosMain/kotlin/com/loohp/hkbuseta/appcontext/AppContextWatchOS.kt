@@ -35,6 +35,7 @@ import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
+import com.loohp.hkbuseta.common.objects.AppAlert
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.GeneralDirection
@@ -620,4 +621,8 @@ fun nextGeneralDirection(generalDirection: GeneralDirection?, availableDirection
 
 fun Map<Route, RouteBranchStatus>.findMostActiveRoute(): Route {
     return asSequence().sortedByDescending { it.value.activeness }.first().key
+}
+
+fun getAppAlert(context: AppContext): AppAlert? {
+    return runBlocking(Dispatchers.IO) { Registry.getInstance(context).getAppAlerts().await() }
 }

@@ -39,3 +39,7 @@ inline fun Modifier.applyIf(predicate: () -> Boolean, apply: Modifier.() -> Modi
 inline fun Modifier.applyIf(predicate: () -> Boolean, apply: Modifier.() -> Modifier, elseApply: Modifier.() -> Modifier): Modifier {
     return if (predicate.invoke()) apply.invoke(this) else elseApply.invoke(this)
 }
+
+inline fun <T> Modifier.applyIfNotNull(item: T?, apply: Modifier.(T) -> Modifier): Modifier {
+    return item?.let { apply.invoke(this, it) }?: this
+}

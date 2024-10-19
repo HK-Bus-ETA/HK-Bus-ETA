@@ -27,6 +27,7 @@ import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.firstCo
+import com.loohp.hkbuseta.common.objects.isNotBlank
 import com.loohp.hkbuseta.common.objects.joinBilingualText
 import com.loohp.hkbuseta.common.objects.journeyTimeCircular
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
@@ -542,7 +543,7 @@ inline fun buildTimetableEntryMap(
 
 fun Collection<Route>.createTimetable(context: AppContext): Map<OperatingWeekdays, List<TimetableEntry>> {
     return createTimetable(Registry.getInstance(context).getServiceDayMap()) {
-        it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() }
+        it.resolveSpecialRemark(context).takeIf { r -> r.isNotBlank() }
     }
 }
 
@@ -590,7 +591,7 @@ fun Collection<Route>.isTimetableActive(time: LocalDateTime, serviceDayMap: Map<
 
 fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): List<Route> {
     val registry = Registry.getInstance(context)
-    val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() } }) else ({ null })
+    val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.isNotBlank() } }) else ({ null })
     return currentFirstActiveBranch(time, registry.getServiceDayMap(), registry.getHolidays(), resolveRemark)
 }
 
@@ -622,7 +623,7 @@ enum class RouteBranchStatus(
 
 fun Collection<Route>.currentBranchStatus(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): Map<Route, RouteBranchStatus> {
     val registry = Registry.getInstance(context)
-    val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.zh.isNotBlank() } }) else ({ null })
+    val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.isNotBlank() } }) else ({ null })
     return currentBranchStatus(time, registry.getServiceDayMap(), registry.getHolidays(), resolveRemark)
 }
 

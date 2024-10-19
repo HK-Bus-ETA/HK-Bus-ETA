@@ -96,6 +96,7 @@ import com.loohp.hkbuseta.common.objects.getLineColor
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isFerry
+import com.loohp.hkbuseta.common.objects.isNotBlank
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
@@ -444,7 +445,7 @@ fun HeaderElement(
             text = destName[Shared.language]
         )
         if (!co.isTrain && !co.isFerry) {
-            specialRoutesRemarks[currentBranch]?.second?.takeIf { it.zh.isNotBlank() }?.let {
+            specialRoutesRemarks[currentBranch]?.second?.takeIf { it.isNotBlank() }?.let {
                 AutoResizeText(
                     modifier = Modifier
                         .fillMaxWidth()

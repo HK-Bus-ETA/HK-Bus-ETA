@@ -134,6 +134,7 @@ import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
+import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.clearColors
@@ -768,26 +769,33 @@ fun FavouriteTrainStationInterface(
     co: Operator,
     extraActions: (@Composable RowScope.() -> Unit)? = null
 ) {
-    when (co) {
-        Operator.MTR -> {
-            MTRETADisplayInterface(
-                stopId = stopId,
-                stop = stop,
-                sheetInfoTypeState = remember { mutableStateOf(StationInfoSheetType.NONE) },
-                isPreview = true,
-                instance = instance,
-                extraActions = extraActions
-            )
-        }
-        Operator.LRT -> {
-            LRTETADisplayInterface(
-                stopId = stopId,
-                stop = stop,
-                sheetInfoTypeState = remember { mutableStateOf(StationInfoSheetType.NONE) },
-                isPreview = true,
-                instance = instance,
-                extraActions = extraActions
-            )
+    val appAlert by ComposeShared.rememberAppAlert(instance)
+    Column {
+        ComposeShared.AnimatedVisibilityColumnAppAlert(
+            context = instance,
+            appAlert = appAlert
+        )
+        when (co) {
+            Operator.MTR -> {
+                MTRETADisplayInterface(
+                    stopId = stopId,
+                    stop = stop,
+                    sheetInfoTypeState = remember { mutableStateOf(StationInfoSheetType.NONE) },
+                    isPreview = true,
+                    instance = instance,
+                    extraActions = extraActions
+                )
+            }
+            Operator.LRT -> {
+                LRTETADisplayInterface(
+                    stopId = stopId,
+                    stop = stop,
+                    sheetInfoTypeState = remember { mutableStateOf(StationInfoSheetType.NONE) },
+                    isPreview = true,
+                    instance = instance,
+                    extraActions = extraActions
+                )
+            }
         }
     }
 }
