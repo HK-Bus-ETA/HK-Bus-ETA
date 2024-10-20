@@ -302,7 +302,7 @@ actual inline val PlatformIcons.Outlined.PhotoLibrary: Painter @Composable get()
 
 actual val Painter.shouldBeTintedForIcons: Boolean get() = this is VectorPainter || (this is UIImagePainter && isIcon)
 
-@OptIn(ExperimentalCupertinoApi::class)
+@OptIn(ExperimentalCupertinoApi::class, ExperimentalMaterial3Api::class)
 @Composable
 actual fun PlatformButton(
     onClick: () -> Unit,
@@ -316,29 +316,38 @@ actual fun PlatformButton(
     interactionSource: MutableInteractionSource,
     content: @Composable RowScope.() -> Unit
 ) {
-    CupertinoButton(
-        onClick = onClick,
-        modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
-        shape = shape,
-        colors = CupertinoButtonDefaults.plainButtonColors(
-            containerColor = colors.containerColor,
-            contentColor = colors.contentColor,
-            disabledContainerColor = colors.disabledContainerColor,
-            disabledContentColor = colors.disabledContentColor
-        ),
-        enabled = enabled,
-        border = border,
-        contentPadding = contentPadding,
-        interactionSource = interactionSource,
-        content = {
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                content.invoke(this)
+    val ripple = LocalRippleConfiguration.current
+    CompositionLocalProvider(
+        LocalRippleConfiguration provides null
+    ) {
+        CupertinoButton(
+            onClick = onClick,
+            modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
+            shape = shape,
+            colors = CupertinoButtonDefaults.plainButtonColors(
+                containerColor = colors.containerColor,
+                contentColor = colors.contentColor,
+                disabledContainerColor = colors.disabledContainerColor,
+                disabledContentColor = colors.disabledContentColor
+            ),
+            enabled = enabled,
+            border = border,
+            contentPadding = contentPadding,
+            interactionSource = interactionSource,
+            content = {
+                CompositionLocalProvider(
+                    LocalRippleConfiguration provides ripple
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        content.invoke(this)
+                    }
+                }
             }
-        }
-    )
+        )
+    }
 }
 
 @OptIn(ExperimentalCupertinoApi::class)

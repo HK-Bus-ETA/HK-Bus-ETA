@@ -27,6 +27,7 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleDevToolsKsp)
+    alias(libs.plugins.compose.compiler)
 }
 
 kotlin {

@@ -38,8 +38,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.union
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
@@ -240,7 +238,7 @@ fun rememberPlainTooltipPositionProvider(
 ): PopupPositionProvider {
     val density = LocalDensity.current
     val tooltipAnchorSpacing = with(density) { spacingBetweenTooltipAndAnchor.roundToPx() }
-    val topInsert = WindowInsets.safeContent.union(WindowInsets.systemBars).getTop(density)
+    val topInsert = WindowInsets.safeContent.getTop(density)
     return remember(tooltipAnchorSpacing) {
         object : PopupPositionProvider {
             override fun calculatePosition(

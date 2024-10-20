@@ -1546,13 +1546,14 @@ fun StopEntryExpansionEta(
         }
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start),
+            horizontalArrangement = Arrangement.Start,
             verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)
         ) {
             val haptic = LocalHapticFeedback.current
             if (co == Operator.LRT) {
                 PlatformFilledTonalIconButton(
                     modifier = Modifier
+                        .padding(end = 5.dp)
                         .size(42.dp, 32.dp)
                         .plainTooltip(if (Shared.language == "en") "Light Rail Display Mode" else "輕鐵路線顯示格式"),
                     onClick = {
@@ -1577,6 +1578,7 @@ fun StopEntryExpansionEta(
             stopData.stop.kmbBbiId?.let {
                 PlatformFilledTonalIconButton(
                     modifier = Modifier
+                        .padding(end = 5.dp)
                         .size(42.dp, 32.dp)
                         .plainTooltip(if (Shared.language == "en") "Open KMB BBI Layout Map" else "顯示九巴轉車站位置圖"),
                     onClick = instance.handleWebImages("https://app.kmb.hk/app1933/BBI/map/$it.jpg", false, haptic.common),
@@ -1592,6 +1594,7 @@ fun StopEntryExpansionEta(
             }
             PlatformFilledTonalIconButton(
                 modifier = Modifier
+                    .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
                     .plainTooltip(if (Shared.language == "en") "Nearby Routes" else "附近路線"),
                 onClick = { sheetType = BottomSheetType.NEARBY },
@@ -1607,6 +1610,7 @@ fun StopEntryExpansionEta(
             if (composePlatform.hasBackgroundLocation) {
                 PlatformFilledTonalIconButton(
                     modifier = Modifier
+                        .padding(end = 5.dp)
                         .size(42.dp, 32.dp)
                         .plainTooltip(if (Shared.language == "en") "Toggle Alight Reminder" else "開啟/關閉落車提示"),
                     enabled = !togglingAlightReminder,
@@ -1632,6 +1636,7 @@ fun StopEntryExpansionEta(
             }
             PlatformFilledTonalIconButton(
                 modifier = Modifier
+                    .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
                     .plainTooltip(if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站"),
                 onClick = { sheetType = BottomSheetType.FAV },
@@ -1647,6 +1652,7 @@ fun StopEntryExpansionEta(
             if (composePlatform.supportPip) {
                 PlatformFilledTonalIconButton(
                     modifier = Modifier
+                        .padding(end = 5.dp)
                         .size(42.dp, 32.dp)
                         .plainTooltip(if (Shared.language == "en") "Picture-in-picture Display Mode" else "畫中畫顯示模式"),
                     onClick = { instance.enterPipMode() },
@@ -1662,6 +1668,7 @@ fun StopEntryExpansionEta(
             } else {
                 PlatformFilledTonalIconButton(
                     modifier = Modifier
+                        .padding(end = 5.dp)
                         .size(42.dp, 32.dp)
                         .plainTooltip(if (Shared.language == "en") "Share Route" else "分享路線"),
                     onClick = { instance.compose.shareUrl(
@@ -1680,6 +1687,7 @@ fun StopEntryExpansionEta(
             }
             PlatformFilledTonalIconButton(
                 modifier = Modifier
+                    .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
                     .plainTooltip(if (Shared.language == "en") "More" else "更多"),
                 onClick = { sheetType = BottomSheetType.ACTIONS },
@@ -1995,13 +2003,14 @@ fun StopEntryExpansionAlightReminder(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(35.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start),
+            horizontalArrangement = Arrangement.Start,
             verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)
         ) {
             val haptic = LocalHapticFeedback.current
             stopData.stop.kmbBbiId?.let {
                 PlatformFilledTonalIconButton(
                     modifier = Modifier
+                        .padding(end = 5.dp)
                         .size(42.dp, 32.dp)
                         .plainTooltip(if (Shared.language == "en") "Open KMB BBI Layout Map" else "顯示九巴轉車站位置圖"),
                     onClick = instance.handleWebImages("https://app.kmb.hk/app1933/BBI/map/$it.jpg", false, haptic.common),
@@ -2017,6 +2026,7 @@ fun StopEntryExpansionAlightReminder(
             }
             PlatformFilledTonalIconButton(
                 modifier = Modifier
+                    .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
                     .plainTooltip(if (Shared.language == "en") "Nearby Routes" else "附近路線"),
                 onClick = { sheetType = BottomSheetType.NEARBY },
@@ -2032,6 +2042,7 @@ fun StopEntryExpansionAlightReminder(
             if (composePlatform.hasBackgroundLocation) {
                 PlatformFilledTonalIconButton(
                     modifier = Modifier
+                        .padding(end = 5.dp)
                         .size(42.dp, 32.dp)
                         .plainTooltip(if (Shared.language == "en") "Toggle Alight Reminder" else "開啟/關閉落車提示"),
                     enabled = !togglingAlightReminder,
@@ -2057,6 +2068,7 @@ fun StopEntryExpansionAlightReminder(
             }
             PlatformFilledTonalIconButton(
                 modifier = Modifier
+                    .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
                     .plainTooltip(if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站"),
                 onClick = { sheetType = BottomSheetType.FAV },
@@ -2071,6 +2083,7 @@ fun StopEntryExpansionAlightReminder(
             }
             PlatformFilledTonalIconButton(
                 modifier = Modifier
+                    .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
                     .plainTooltip(if (Shared.language == "en") "Share Route" else "分享路線"),
                 onClick = { instance.compose.shareUrl(
@@ -2088,6 +2101,7 @@ fun StopEntryExpansionAlightReminder(
             }
             PlatformFilledTonalIconButton(
                 modifier = Modifier
+                    .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
                     .plainTooltip(if (Shared.language == "en") "More" else "更多"),
                 onClick = { sheetType = BottomSheetType.ACTIONS },

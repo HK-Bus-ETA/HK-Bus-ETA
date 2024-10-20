@@ -43,8 +43,7 @@ class MutableHolder<T>(value: T? = null) {
             }
         }
 
-    @Suppress("NON_PUBLIC_CALL_FROM_PUBLIC_INLINE")
-    inline fun computeIfAbsent(compute: () -> T?) {
+    fun computeIfAbsent(compute: () -> T?) {
         lock.writeLock()
         try {
             if (value == null) {
@@ -55,8 +54,7 @@ class MutableHolder<T>(value: T? = null) {
         }
     }
 
-    @Suppress("NON_PUBLIC_CALL_FROM_PUBLIC_INLINE")
-    inline fun <O> ifPresent(compute: (T) -> O): O? {
+    fun <O> ifPresent(compute: (T) -> O): O? {
         lock.readLock()
         try {
             return value?.let { compute.invoke(it) }
@@ -65,8 +63,7 @@ class MutableHolder<T>(value: T? = null) {
         }
     }
 
-    @Suppress("NON_PUBLIC_CALL_FROM_PUBLIC_INLINE")
-    inline fun replace(replace: (T) -> T?): T? {
+    fun replace(replace: (T) -> T?): T? {
         lock.writeLock()
         try {
             return value?.let { replace.invoke(it) }.apply { value = this }

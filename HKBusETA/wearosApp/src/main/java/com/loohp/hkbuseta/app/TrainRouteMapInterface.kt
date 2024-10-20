@@ -185,7 +185,7 @@ fun MTRRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
     val imageSizeState = remember { mutableStateOf(IntSize(0, 0)) }
     val imageSize by imageSizeState
     var mtrRouteMapData by mtrRouteMapDataState.collectAsStateWithLifecycle()
-    var allStops by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
+    var allStops: Map<String, Stop?> by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
     var closestStop by closestStopState
 
@@ -411,7 +411,7 @@ fun LRTRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
     val imageSizeState = remember { mutableStateOf(IntSize(0, 0)) }
     val imageSize by imageSizeState
     var lrtRouteMapData by lightRailRouteMapDataState.collectAsStateWithLifecycle()
-    var allStops by remember { mutableStateOf(lrtRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
+    var allStops: Map<String, Stop?> by remember { mutableStateOf(lrtRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
     var closestStop by closestStopState
 
