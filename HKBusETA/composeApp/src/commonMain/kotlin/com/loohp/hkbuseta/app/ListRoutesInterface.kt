@@ -289,7 +289,6 @@ fun ListRoutesInterface(
     onPullToRefresh: (suspend () -> Unit)? = null,
     pipModeListName: BilingualFormattedText? = null,
 ) {
-    val haptics = LocalHapticFeedback.current
     val routeSortPreferenceProvider by remember(listType, recentSort, proximitySortOrigin) { derivedStateOf { {
         if (recentSort.forcedMode) {
             RouteSortPreference(recentSort.defaultSortMode, false)
@@ -967,7 +966,6 @@ fun ListRouteInterfaceInternal(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LazyItemScope.RouteEntry(
     modifier: Modifier,
@@ -983,10 +981,9 @@ fun LazyItemScope.RouteEntry(
     etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>,
     instance: AppActiveContext
 ) {
-    modifier
-        .fillParentMaxWidth()
     Box(
-        modifier = Modifier
+        modifier = modifier
+            .fillParentMaxWidth()
             .animateItem()
             .background(platformComponentBackgroundColor)
             .combinedClickable(
