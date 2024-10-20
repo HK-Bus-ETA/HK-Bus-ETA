@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "949231290501",
+    "project_id": "hkbuseta",
+    "storage_bucket": "hkbuseta.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:949231290501:android:2b11f9b8e4c0de3f8701ec",
+        "android_client_info": {
+          "package_name": "com.loohp.hkbuseta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzC7zELZdbrZVNdXW2U3nx70UxQLQwtoc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
