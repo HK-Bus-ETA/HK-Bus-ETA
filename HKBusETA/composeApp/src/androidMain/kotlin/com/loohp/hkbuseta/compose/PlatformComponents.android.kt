@@ -131,8 +131,6 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonElevation
-import androidx.compose.material3.CaretProperties
-import androidx.compose.material3.CaretScope
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -158,7 +156,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
@@ -198,6 +195,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import com.loohp.hkbuseta.utils.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -644,10 +642,9 @@ actual fun PlatformModalBottomSheet(
     shape: Shape,
     tonalElevation: Dp,
     scrimColor: Color,
-    windowInsets: WindowInsets,
     desktopCloseColor: Color?,
     properties: ModalBottomSheetProperties,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable (ColumnScope.() -> Unit)
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -657,7 +654,6 @@ actual fun PlatformModalBottomSheet(
         shape = shape,
         tonalElevation = tonalElevation,
         scrimColor = scrimColor,
-        windowInsets = windowInsets,
         properties = properties,
         content = content
     )
@@ -951,9 +947,9 @@ actual val platformShowDownloadAppBottomSheet: (() -> Unit)? = null
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-actual fun CaretScope.PlatformPlainTooltip(
+actual fun TooltipScope.PlatformPlainTooltip(
     modifier: Modifier,
-    caretProperties: CaretProperties?,
+    caretSize: DpSize,
     shape: Shape?,
     contentColor: Color?,
     containerColor: Color?,
@@ -963,7 +959,7 @@ actual fun CaretScope.PlatformPlainTooltip(
 ) {
     PlainTooltip(
         modifier = modifier,
-        caretProperties = caretProperties,
+        caretSize = caretSize,
         shape = shape?: TooltipDefaults.plainTooltipContainerShape,
         contentColor = contentColor?: TooltipDefaults.plainTooltipContentColor,
         containerColor = containerColor?: TooltipDefaults.plainTooltipContainerColor,

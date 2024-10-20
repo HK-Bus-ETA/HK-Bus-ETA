@@ -88,6 +88,14 @@ suspend inline fun <T> ByteReadChannel.readNullable(read: (ByteReadChannel) -> T
     return if (readBoolean()) read.invoke(this) else null
 }
 
+inline fun BytePacketBuilder.writeConditional(conditional: Boolean, write: (BytePacketBuilder) -> Unit) {
+    if (conditional) { writeBoolean(true); write.invoke(this) } else { writeBoolean(false) }
+}
+
+suspend inline fun ByteReadChannel.readConditional(read: (ByteReadChannel) -> Unit) {
+    if (readBoolean()) read.invoke(this)
+}
+
 inline fun <K, V> BytePacketBuilder.writeMap(map: Map<K, V>, write: (BytePacketBuilder, K, V) -> Unit) {
     writeInt(map.size)
     map.entries.forEach { write.invoke(this, it.key, it.value) }

@@ -536,7 +536,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                     HorizontalDivider(
                         modifier = Modifier
                             .padding(25.dp, 0.dp)
-                            .animateItemPlacement(),
+                            .animateItem(),
                         color = Color(0xFF333333).adjustBrightness(if (ambientMode) 0.5F else 1F)
                     )
                 }
@@ -602,7 +602,7 @@ fun LazyItemScope.RouteRow(
     val gmbRegion = route.route!!.gmbRegion
     val routeTextWidth = if (Shared.language != "en" && co == Operator.MTR) mtrTextWidth else defaultTextWidth
     val rawColor = co.getColor(route.route!!.routeNumber, Color.White)
-    val dest = route.route!!.resolvedDest(false)[Shared.language]
+    val dest = route.resolvedDest(false, instance)[Shared.language]
     val operatorName = remember(route, co, kmbCtbJoint) { co.getDisplayFormattedName(route.route!!.routeNumber, kmbCtbJoint, gmbRegion, Shared.language).asContentAnnotatedString().annotatedString }
 
     val secondLine = remember(route, co, kmbCtbJoint, routeNumber, rawColor, listType) { buildImmutableList {
@@ -624,12 +624,16 @@ fun LazyItemScope.RouteRow(
         modifier = Modifier
             .fillParentMaxWidth()
             .heightIn(min = 43F.scaledSize(instance).sp.dp)
-            .animateItemPlacement()
+            .animateItem()
             .clickable {
                 Registry.getInstance(instance).addLastLookupRoute(route.routeKey, instance)
                 if (mtrSearch.isNullOrEmpty()) {
                     val intent = AppIntent(instance, AppScreen.LIST_STOPS)
                     intent.putExtra("route", route)
+                    if (route.stopInfo != null) {
+                        intent.putExtra("stopId", route.stopInfo!!.stopId)
+                    }
+                    intent.putExtra("stopIndex", route.stopInfoIndex)
                     instance.startActivity(intent)
                 } else {
                     val stops = Registry.getInstance(instance).getAllStops(route.route!!.routeNumber, route.route!!.idBound(co), co, null)

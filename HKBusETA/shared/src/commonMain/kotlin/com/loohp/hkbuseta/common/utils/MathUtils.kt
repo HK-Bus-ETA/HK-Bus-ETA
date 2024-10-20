@@ -33,24 +33,25 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 
-private val chineseDigits = arrayOf("零", "一", "二", "三", "四", "五", "六", "七", "八", "九")
-private val chinesePositions = arrayOf("", "十", "百", "千", "萬", "十萬", "百萬", "千萬", "億", "十億", "百億", "千億")
+private val chineseDigits = listOf("零", "一", "二", "三", "四", "五", "六", "七", "八", "九")
+private val chinesePositions = listOf("", "十", "百", "千", "萬", "十萬", "百萬", "千萬", "億", "十億", "百億", "千億")
 
 fun Int.toChineseNumber(isQuantity: Boolean = false): String {
-    val charArray = toString().toCharArray()
-    var result = ""
+    val string = toString()
+    val stringBuilder = StringBuilder()
     var prevIsZero = false
-    for (i in charArray.indices) {
-        val ch = charArray[i].toString().toInt()
+    for (i in string.indices) {
+        val ch = string[i].toString().toInt()
         if (ch != 0 && !prevIsZero) {
-            result += chineseDigits[ch] + chinesePositions[charArray.size - i - 1]
+            stringBuilder.append(chineseDigits[ch] + chinesePositions[string.length - i - 1])
         } else if (ch == 0) {
             prevIsZero = true
         } else if (ch != 0) {
-            result += "零" + chineseDigits[ch] + chinesePositions[charArray.size - i - 1]
+            stringBuilder.append("零" + chineseDigits[ch] + chinesePositions[string.length - i - 1])
             prevIsZero = false
         }
     }
+    var result = stringBuilder.toString()
     if (this < 100) {
         result = result.replace("一十", "十")
     }

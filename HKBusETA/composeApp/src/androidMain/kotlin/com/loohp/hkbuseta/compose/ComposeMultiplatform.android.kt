@@ -47,7 +47,6 @@ import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
-import kotlin.math.roundToInt
 
 
 @Composable
@@ -60,7 +59,7 @@ actual fun BackButtonEffect(enabled: Boolean, onBack: () -> Unit) {
 
 actual inline val currentLocalWindowSize: IntSize
     @Composable get() = LocalConfiguration.current.run {
-        with (LocalDensity.current) { IntSize(screenWidthDp.dp.toPx().roundToInt(), screenHeightDp.dp.toPx().roundToInt()) }
+        with (LocalDensity.current) { IntSize(screenWidthDp.dp.roundToPx(), screenHeightDp.dp.roundToPx()) }
     }
 
 @Composable

@@ -42,6 +42,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -72,7 +73,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -99,7 +100,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -189,6 +189,7 @@ import com.loohp.hkbuseta.compose.ArrowUpward
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.Close
+import com.loohp.hkbuseta.compose.ConditionalComposable
 import com.loohp.hkbuseta.compose.DoubleArrow
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.Fullscreen
@@ -206,7 +207,6 @@ import com.loohp.hkbuseta.compose.Schedule
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Sort
 import com.loohp.hkbuseta.compose.applyIf
-import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.combinedClickable
 import com.loohp.hkbuseta.compose.enterPipMode
@@ -317,6 +317,8 @@ fun ListRoutesInterface(
     }
 
     val pullToRefreshState = if (onPullToRefresh == null) null else rememberPullToRefreshState()
+    var pullRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect (routes) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -356,10 +358,33 @@ fun ListRoutesInterface(
             }
         },
         content = { padding ->
-            Box(
-                modifier = Modifier
-                    .applyIfNotNull(pullToRefreshState) { nestedScroll(it.nestedScrollConnection) }
-                    .padding(padding)
+            @Suppress("RemoveExplicitTypeArguments")
+            ConditionalComposable<BoxScope>(
+                condition = pullToRefreshState != null && !pipMode,
+                ifTrue = {
+                    PullToRefreshBox(
+                        modifier = Modifier.padding(padding),
+                        state = pullToRefreshState?: rememberPullToRefreshState(),
+                        isRefreshing = pullRefreshing,
+                        onRefresh = {
+                            scope.launch {
+                                try {
+                                    pullRefreshing = true
+                                    onPullToRefresh?.invoke()
+                                } finally {
+                                    pullRefreshing = false
+                                }
+                            }
+                        },
+                        content = it
+                    )
+                },
+                ifFalse = {
+                    Box(
+                        modifier = Modifier.padding(padding),
+                        content = it
+                    )
+                }
             ) {
                 if (routes.isEmpty()) {
                     EmptyListRouteInterface(
@@ -386,19 +411,6 @@ fun ListRoutesInterface(
                         filterDirectionsState = filterDirectionsState,
                         pipMode = pipMode,
                         pipModeListName = pipModeListName
-                    )
-                }
-                if (pullToRefreshState != null && !pipMode) {
-                    if (pullToRefreshState.isRefreshing) {
-                        LaunchedEffect(true) {
-                            onPullToRefresh?.invoke()
-                            pullToRefreshState.endRefresh()
-                        }
-                    }
-                    PullToRefreshContainer(
-                        state = pullToRefreshState,
-                        modifier = Modifier
-                            .align(Alignment.TopCenter),
                     )
                 }
             }
@@ -971,10 +983,11 @@ fun LazyItemScope.RouteEntry(
     etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>,
     instance: AppActiveContext
 ) {
+    modifier
+        .fillParentMaxWidth()
     Box(
-        modifier = modifier
-            .fillParentMaxWidth()
-            .animateItemPlacement()
+        modifier = Modifier
+            .animateItem()
             .background(platformComponentBackgroundColor)
             .combinedClickable(
                 onClick = {

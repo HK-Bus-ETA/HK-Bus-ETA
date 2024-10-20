@@ -335,7 +335,11 @@ fun Route.getCircularPivotIndex(stops: List<Registry.StopData>): Int {
     return stops.asSequence()
         .mapIndexedNotNull { i, s ->
             val name = s.stop.name.zh.trim()
-            if (name.eitherContains(circularMiddle)) ((i + 1) to name) else null
+            val matches = when {
+                circularMiddle.contains("機場") -> name.contains("客運大樓")
+                else -> name.eitherContains(circularMiddle)
+            }
+            if (matches) ((i + 1) to name) else null
         }
         .minByOrNull { (_, n) -> n.editDistance(circularMiddle) }
         ?.first

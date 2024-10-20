@@ -32,16 +32,16 @@ import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
-import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.toCoordinates
+import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.ifFalse
 import com.loohp.hkbuseta.common.utils.mapToMutableList
 import com.loohp.hkbuseta.compose.ambientMode
 import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.shared.WearOSShared
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
@@ -64,34 +64,31 @@ class ListRoutesActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(appContext).ifFalse { return }
         WearOSShared.setDefaultExceptionHandler(this)
 
-        val result = Json.decodeFromString<JsonArray>(intent.extras!!.getString("result")!!).mapToMutableList { StopIndexedRouteSearchResultEntry.deserialize(it.jsonObject) }.also { list ->
-            list.removeAll {
-                if (it.route == null) {
-                    val route = Registry.getInstance(appContext).findRouteByKey(it.routeKey, null)
-                    if (route == null) {
-                        return@removeAll true
-                    } else {
-                        it.route = route
+        val result = Json.decodeFromString<JsonArray>(intent.extras!!.getString("result")!!)
+            .mapToMutableList { StopIndexedRouteSearchResultEntry.deserialize(it.jsonObject) }
+            .also { list ->
+                list.removeAll {
+                    if (it.route == null) {
+                        val route = Registry.getInstance(appContext).findRouteByKey(it.routeKey, null)
+                        if (route == null) {
+                            return@removeAll true
+                        } else {
+                            it.route = route
+                        }
                     }
-                }
-                if (it.stopInfo != null && it.stopInfo!!.data == null) {
-                    val stop = Registry.getInstance(appContext).getStopById(it.stopInfo!!.stopId)
-                    if (stop == null) {
-                        return@removeAll true
-                    } else {
-                        it.stopInfo!!.data = stop
+                    if (it.stopInfo != null && it.stopInfo!!.data == null) {
+                        val stop = Registry.getInstance(appContext).getStopById(it.stopInfo!!.stopId)
+                        if (stop == null) {
+                            return@removeAll true
+                        } else {
+                            it.stopInfo!!.data = stop
+                        }
                     }
+                    return@removeAll false
                 }
-                return@removeAll false
             }
-        }.onEach {
-            val route = it.route
-            val co = it.co
-            val stopInfo = it.stopInfo
-            if (route != null && stopInfo != null) {
-                it.stopInfoIndex = Registry.getInstance(appContext).getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion).indexOfFirst { i -> i.stopId == stopInfo.stopId }
-            }
-        }.toImmutableList()
+            .toStopIndexed(appContext)
+            .asImmutableList()
         val listType = intent.extras!!.getString("listType")?.let { RouteListType.valueOf(it) }?: RouteListType.NORMAL
         val showEta = intent.extras!!.getBoolean("showEta", false)
         val recentSort = RecentSortMode.entries[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]

@@ -23,8 +23,8 @@ package com.loohp.hkbuseta.compose
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.clickable
@@ -33,16 +33,26 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
-import androidx.compose.material3.BasicTooltipState
-import androidx.compose.material3.CaretScope
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TooltipState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +64,10 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.CacheDrawScope
 import androidx.compose.ui.draw.DrawResult
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
@@ -63,17 +77,23 @@ import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toOffset
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
@@ -138,32 +158,35 @@ inline fun Modifier.combinedClickable(
 @Composable
 fun Modifier.plainTooltip(
     tooltip: String,
-    positionProvider: PopupPositionProvider = rememberPlainTooltipPositionProvider(),
     state: TooltipState = rememberTooltipState(isPersistent = true),
     enableUserInput: Boolean = true
 ): Modifier = plainTooltip(
     tooltip = tooltip.asAnnotatedString(),
-    positionProvider = positionProvider,
     state = state,
     enableUserInput = enableUserInput,
 )
+
+interface TooltipScope {
+    fun Modifier.drawCaret(draw: CacheDrawScope.(LayoutCoordinates?) -> DrawResult): Modifier
+}
+
+internal class TooltipScopeImpl(val getAnchorBounds: () -> LayoutCoordinates?): TooltipScope {
+    override fun Modifier.drawCaret(
+        draw: CacheDrawScope.(LayoutCoordinates?) -> DrawResult
+    ): Modifier = this.drawWithCache { draw(getAnchorBounds()) }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Modifier.plainTooltip(
     tooltip: AnnotatedString,
-    positionProvider: PopupPositionProvider = rememberPlainTooltipPositionProvider(),
     state: TooltipState = rememberTooltipState(isPersistent = true),
     enableUserInput: Boolean = true
 ): Modifier {
-    var anchorBounds: LayoutCoordinates? by remember { mutableStateOf(null) }
-    val transition = updateTransition(state.transition, label = "tooltip transition")
+    val anchorBounds: MutableState<LayoutCoordinates?> = remember { mutableStateOf(null) }
+    val transition = rememberTransition(state.transition, label = "tooltip transition")
     val scope = rememberCoroutineScope()
-    val tooltipScope = remember { object : CaretScope {
-        override fun Modifier.drawCaret(draw: CacheDrawScope.(LayoutCoordinates?) -> DrawResult): Modifier {
-            return drawWithCache { draw(anchorBounds) }
-        }
-    } }
+    val tooltipScope = remember { TooltipScopeImpl { anchorBounds.value } }
     val alpha by transition.animateFloat(
         transitionSpec = {
             if (false isTransitioningTo true) {
@@ -179,10 +202,11 @@ fun Modifier.plainTooltip(
         onDispose { state.onDispose() }
     }
 
-    return onGloballyPositioned { anchorBounds = it }
+    return onGloballyPositioned { anchorBounds.value = it }
         .handleTooltipGestures(enableUserInput, state)
         .composed { apply {
             if (state.isVisible) {
+                val positionProvider = rememberPlainTooltipPositionProvider { anchorBounds.value }
                 Popup(
                     popupPositionProvider = positionProvider,
                     onDismissRequest = {
@@ -211,10 +235,12 @@ fun Modifier.plainTooltip(
 
 @Composable
 fun rememberPlainTooltipPositionProvider(
-    spacingBetweenTooltipAndAnchor: Dp = 4.dp
+    spacingBetweenTooltipAndAnchor: Dp = 4.dp,
+    getAnchorBounds: () -> LayoutCoordinates?
 ): PopupPositionProvider {
-    val tooltipAnchorSpacing = with(LocalDensity.current) { spacingBetweenTooltipAndAnchor.roundToPx() }
-    val topInsert = WindowInsets.safeContent.getTop(LocalDensity.current)
+    val density = LocalDensity.current
+    val tooltipAnchorSpacing = with(density) { spacingBetweenTooltipAndAnchor.roundToPx() }
+    val topInsert = WindowInsets.safeContent.union(WindowInsets.systemBars).getTop(density)
     return remember(tooltipAnchorSpacing) {
         object : PopupPositionProvider {
             override fun calculatePosition(
@@ -223,13 +249,26 @@ fun rememberPlainTooltipPositionProvider(
                 layoutDirection: LayoutDirection,
                 popupContentSize: IntSize
             ): IntOffset {
-                val x = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
-                var y = anchorBounds.top - topInsert - popupContentSize.height - tooltipAnchorSpacing
-                if (y < 0) {
-                    y = anchorBounds.bottom + tooltipAnchorSpacing
-                } else {
-                    y += topInsert
+                val layout = getAnchorBounds.invoke()?: return IntOffset.Zero
+
+                val offset = -layout.windowToLocal(anchorBounds.topLeft.toOffset()).round()
+                val contentWidth = layout.size.width
+                val heightInset = tooltipAnchorSpacing + topInsert
+
+                var x = anchorBounds.left + offset.x + contentWidth / 2 - popupContentSize.width / 2
+                if (x < 0) {
+                    x = 0
+                } else if (x + popupContentSize.width > windowSize.width) {
+                    x = windowSize.width - popupContentSize.width
                 }
+
+                var y = anchorBounds.top + offset.y - popupContentSize.height - tooltipAnchorSpacing
+                if (y < heightInset) {
+                    y = anchorBounds.bottom + offset.y + tooltipAnchorSpacing
+                } else if (y + popupContentSize.height > windowSize.height - heightInset) {
+                    y = windowSize.height - heightInset - popupContentSize.height
+                }
+
                 return IntOffset(x, y)
             }
         }
@@ -240,7 +279,7 @@ fun rememberPlainTooltipPositionProvider(
 @Composable
 private fun Modifier.handleTooltipGestures(
     enabled: Boolean,
-    state: BasicTooltipState
+    state: TooltipState
 ): Modifier {
     var hovering by remember { mutableStateOf(false) }
     var counter by remember { mutableIntStateOf(0) }
@@ -293,6 +332,132 @@ private fun Modifier.handleTooltipGestures(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+@ExperimentalMaterial3Api
+fun TooltipScope.PlainTooltip(
+    modifier: Modifier = Modifier,
+    caretSize: DpSize = DpSize.Unspecified,
+    shape: Shape = TooltipDefaults.plainTooltipContainerShape,
+    contentColor: Color = TooltipDefaults.plainTooltipContentColor,
+    containerColor: Color = TooltipDefaults.plainTooltipContainerColor,
+    tonalElevation: Dp = 0.dp,
+    shadowElevation: Dp = 0.dp,
+    content: @Composable () -> Unit
+) {
+    val drawCaretModifier =
+        if (caretSize.isSpecified) {
+            val density = LocalDensity.current
+            val windowContainerWidthInPx = currentLocalWindowSize.width
+            Modifier.drawCaret { anchorLayoutCoordinates ->
+                drawCaretWithPath(
+                    density,
+                    windowContainerWidthInPx,
+                    containerColor,
+                    caretSize,
+                    anchorLayoutCoordinates
+                )
+            }.then(modifier)
+        } else modifier
+
+    Surface(
+        modifier = drawCaretModifier,
+        shape = shape,
+        color = containerColor,
+        tonalElevation = tonalElevation,
+        shadowElevation = shadowElevation
+    ) {
+        Box(modifier = Modifier
+            .sizeIn(
+                minWidth = 40.dp,
+                maxWidth = 200.dp,
+                minHeight = 24.dp
+            )
+            .padding(PaddingValues(8.dp, 4.dp))
+        ) {
+            val textStyle = MaterialTheme.typography.bodySmall
+
+            CompositionLocalProvider(
+                LocalContentColor provides contentColor,
+                LocalTextStyle provides textStyle,
+                content = content
+            )
+        }
+    }
+}
+
+@ExperimentalMaterial3Api
+private fun CacheDrawScope.drawCaretWithPath(
+    density: Density,
+    windowContainerWidthInPx: Int,
+    containerColor: Color,
+    caretSize: DpSize,
+    anchorLayoutCoordinates: LayoutCoordinates?
+): DrawResult {
+    val path = Path()
+
+    if (anchorLayoutCoordinates != null) {
+        val caretHeightPx: Int
+        val caretWidthPx: Int
+        val tooltipAnchorSpacing: Int
+        with(density) {
+            caretHeightPx = caretSize.height.roundToPx()
+            caretWidthPx = caretSize.width.roundToPx()
+            tooltipAnchorSpacing = 4.dp.roundToPx()
+        }
+        val anchorBounds = anchorLayoutCoordinates.boundsInWindow()
+        val anchorLeft = anchorBounds.left
+        val anchorRight = anchorBounds.right
+        val anchorTop = anchorBounds.top
+        val anchorMid = (anchorRight + anchorLeft) / 2
+        val anchorWidth = anchorRight - anchorLeft
+        val tooltipWidth = this.size.width
+        val tooltipHeight = this.size.height
+        val isCaretTop = anchorTop - tooltipHeight - tooltipAnchorSpacing < 0
+        val caretY = if (isCaretTop) { 0f } else { tooltipHeight }
+
+        val position =
+            if (anchorMid + tooltipWidth / 2 > windowContainerWidthInPx) {
+                val anchorMidFromRightScreenEdge =
+                    windowContainerWidthInPx - anchorMid
+                val caretX = tooltipWidth - anchorMidFromRightScreenEdge
+                Offset(caretX, caretY)
+            } else {
+                val tooltipLeft =
+                    anchorLeft - (this.size.width / 2 - anchorWidth / 2)
+                val caretX = anchorMid - maxOf(tooltipLeft, 0f)
+                Offset(caretX, caretY)
+            }
+
+        if (isCaretTop) {
+            path.apply {
+                moveTo(x = position.x, y = position.y)
+                lineTo(x = position.x + caretWidthPx / 2, y = position.y)
+                lineTo(x = position.x, y = position.y - caretHeightPx)
+                lineTo(x = position.x - caretWidthPx / 2, y = position.y)
+                close()
+            }
+        } else {
+            path.apply {
+                moveTo(x = position.x, y = position.y)
+                lineTo(x = position.x + caretWidthPx / 2, y = position.y)
+                lineTo(x = position.x, y = position.y + caretHeightPx.toFloat())
+                lineTo(x = position.x - caretWidthPx / 2, y = position.y)
+                close()
+            }
+        }
+    }
+
+    return onDrawWithContent {
+        if (anchorLayoutCoordinates != null) {
+            drawContent()
+            drawPath(
+                path = path,
+                color = containerColor
+            )
         }
     }
 }

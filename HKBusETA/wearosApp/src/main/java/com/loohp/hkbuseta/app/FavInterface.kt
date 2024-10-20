@@ -230,7 +230,7 @@ fun FavElements(ambientMode: Boolean, instance: AppActiveContext, schedule: (Boo
                 if (routeStops.isNotEmpty()) {
                     itemsIndexed(routeStops, key = { _, r -> r.favouriteId }) { index, routeStop ->
                         Column (
-                            modifier = Modifier.animateItemPlacement()
+                            modifier = Modifier.animateItem()
                         ) {
                             FavButton(index + 1, routeStop, etaResults, etaUpdateTimes, origin, instance, schedule)
                             Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))

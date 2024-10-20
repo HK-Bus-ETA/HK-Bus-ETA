@@ -32,6 +32,8 @@ struct ListStopsView: AppScreenView {
     
     @State private var route: RouteSearchResultEntry
     @State private var scrollToStop: String?
+    @State private var stopId: String?
+    @State private var stopIndex: Int?
     @State private var showEta: Bool
     
     @State private var routeNumber: String
@@ -59,6 +61,10 @@ struct ListStopsView: AppScreenView {
         let route = data["route"] as! RouteSearchResultEntry
         self.route = route
         self.scrollToStop = data["scrollToStop"] as? String
+        let stopId = data["stopId"] as? String
+        self.stopId = stopId
+        let stopIndex = data["stopIndex"] as? Int
+        self.stopIndex = stopIndex
         self.showEta = data["showEta"] as? Bool ?? true
         
         let routeNumber = route.route!.routeNumber
@@ -91,7 +97,14 @@ struct ListStopsView: AppScreenView {
         } else {
             self.alternateStopNames = nil
         }
-        self.closestIndex = 0
+        if stopId != nil && stopIndex != nil {
+            self.closestIndex = stopList.enumerated()
+                .filter { $0.element.stopId == stopId! }
+                .map { $0.offset }
+                .min { abs($0 - stopIndex!) < abs($1 - stopIndex!) }! + 1
+        } else {
+            self.closestIndex = -1
+        }
         let branches = registry(appContext).getAllBranchRoutes(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
         let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
         self.currentBranch = currentBranch
@@ -181,7 +194,9 @@ struct ListStopsView: AppScreenView {
             }
         }
         .onAppear {
-            if let scrollToStop = self.scrollToStop {
+            if closestIndex >= 0 {
+                scrollTarget = closestIndex - 1
+            } else if let scrollToStop = self.scrollToStop {
                 var index = stopList.firstIndex(where: { $0.stopId == scrollToStop })
                 if index == nil && route.route!.isKmbCtbJoint {
                     let altStops = registry(appContext).findEquivalentStops(stopIds: stopList.map { $0.stopId }, co: Operator.Companion().CTB)
@@ -199,7 +214,7 @@ struct ListStopsView: AppScreenView {
             }
         }
         .onChange(of: locationManager.isLocationFetched) { _ in
-            if locationManager.location != nil {
+            if locationManager.location != nil && closestIndex < 0 {
                 let origin = locationManager.location!.toLocationResult().location!
                 let closest = stopList.indices.map { index in
                     let entry = stopList[index]

@@ -240,9 +240,9 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
         showNoticeText?.let {
             val sheetScroll = rememberScrollState()
             PlatformModalBottomSheet(
+                onDismissRequest = { showNoticeText = null },
                 modifier = Modifier
                     .fillMaxHeight(0.9F),
-                onDismissRequest = { showNoticeText = null },
                 sheetState = sheetState
             ) {
                 Column (

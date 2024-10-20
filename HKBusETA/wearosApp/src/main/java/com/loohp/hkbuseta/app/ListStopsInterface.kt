@@ -103,7 +103,6 @@ import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
-import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MTRStopSectionData
 import com.loohp.hkbuseta.common.utils.asImmutableList
@@ -112,6 +111,7 @@ import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
+import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.compose.AutoResizeDrawPhaseColorText
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.DrawPhaseColorText
@@ -154,11 +154,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalWearFoundationApi::class)
 @Composable
-fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route: RouteSearchResultEntry, showEta: Boolean, scrollToStop: String?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
+fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route: RouteSearchResultEntry, stopId: String?, stopIndex: Int?, showEta: Boolean, scrollToStop: String?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
         val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
@@ -215,14 +216,15 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
         } } }
 
         LaunchedEffect (Unit) {
-            val scrollTask: (OriginData?, String?) -> Unit = { origin, stopId ->
+            val scrollTask: (OriginData?, String?, Int?) -> Unit = { origin, stopId, stopIndex ->
                 if (stopId != null) {
-                    var index = stopsList.indexOfFirst { it.stopId == stopId }
+                    var index = stopsList.indexesOf { it.stopId == stopId }.minBy { (it - (stopIndex?: 0)).absoluteValue }
                     if (index < 0 && route.route!!.isKmbCtbJoint) {
                         val altStops = Registry.getInstance(instance).findEquivalentStops(stopsList.map { it.stopId }, Operator.CTB)
-                        index = altStops.indexOfFirst { it.stopId == stopId }
+                        index = altStops.indexesOf { it.stopId == stopId }.minBy { (it - (stopIndex?: 0)).absoluteValue }
                     }
                     if (index >= 0) {
+                        closestIndex = index + 1
                         scope.launch {
                             scroll.animateScrollToItem(index + 2, (-window.height / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
                         }
@@ -249,24 +251,31 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                 }
             }
 
-            if (scrollToStop != null) {
-                scrollTask.invoke(null, scrollToStop)
-            } else if (route.origin != null) {
-                val origin = route.origin!!
-                scrollTask.invoke(OriginData(origin.lat, origin.lng), null)
-            } else {
-                checkLocationPermission(instance) {
-                    if (it) {
-                        val future = getGPSLocation(instance)
-                        CoroutineScope(Dispatchers.IO).launch {
-                            try {
-                                val locationResult = future.await()
-                                if (locationResult?.isSuccess == true) {
-                                    val location = locationResult.location!!
-                                    scrollTask.invoke(OriginData(location.lat, location.lng, true), null)
+            when {
+                scrollToStop != null -> {
+                    scrollTask.invoke(null, scrollToStop, null)
+                }
+                stopId != null && stopIndex != null -> {
+                    scrollTask.invoke(null, stopId, stopIndex)
+                }
+                route.origin != null -> {
+                    val origin = route.origin!!
+                    scrollTask.invoke(OriginData(origin.lat, origin.lng), null, null)
+                }
+                else -> {
+                    checkLocationPermission(instance) {
+                        if (it) {
+                            val future = getGPSLocation(instance)
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    val locationResult = future.await()
+                                    if (locationResult?.isSuccess == true) {
+                                        val location = locationResult.location!!
+                                        scrollTask.invoke(OriginData(location.lat, location.lng, true), null, null)
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
                             }
                         }
                     }

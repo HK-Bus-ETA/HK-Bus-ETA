@@ -63,6 +63,7 @@ import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.takeOrNull
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.AutoResizeText
@@ -267,7 +268,7 @@ fun BottomText(instance: AppActiveContext) {
     val haptic = LocalHapticFeedback.current
     val appAlert by WearOSShared.rememberAppAlert(instance)
 
-    appAlert?.let { alert ->
+    appAlert?.takeOrNull()?.let { alert ->
         AutoResizeText(
             modifier = Modifier
                 .padding(20.dp, 0.dp)

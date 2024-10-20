@@ -54,14 +54,9 @@ import androidx.compose.material.icons.filled.NoTransfer
 import androidx.compose.material.icons.outlined.BrokenImage
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.DepartureBoard
-import androidx.compose.material.ripple.LocalRippleTheme
-import androidx.compose.material.ripple.RippleAlpha
-import androidx.compose.material.ripple.RippleTheme
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
-import androidx.compose.material3.CaretProperties
-import androidx.compose.material3.CaretScope
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -74,11 +69,11 @@ import androidx.compose.material3.FloatingActionButtonElevation
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconToggleButtonColors
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.NavigationBarItemColors
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
@@ -97,8 +92,6 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -109,7 +102,6 @@ import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -128,13 +120,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImagePainter
-import coil3.compose.EqualityDelegate
-import coil3.compose.SubcomposeAsyncImage
-import coil3.compose.SubcomposeAsyncImageScope
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.shared.Shared
@@ -732,10 +721,9 @@ actual fun PlatformModalBottomSheet(
     shape: Shape,
     tonalElevation: Dp,
     scrimColor: Color,
-    windowInsets: WindowInsets,
     desktopCloseColor: Color?,
     properties: ModalBottomSheetProperties,
-    content: @Composable ColumnScope.() -> Unit,
+    content: @Composable (ColumnScope.() -> Unit),
 ) {
     LaunchedEffect (Unit) {
         sheetState.show()
@@ -958,6 +946,7 @@ actual fun PlatformDropdownMenu(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 actual fun PlatformDropdownMenuItem(
     text: @Composable () -> Unit,
@@ -970,9 +959,9 @@ actual fun PlatformDropdownMenuItem(
     contentPadding: PaddingValues,
     interactionSource: MutableInteractionSource
 ) {
-    val ripple = LocalRippleTheme.current
+    val ripple = LocalRippleConfiguration.current
     CompositionLocalProvider(
-        LocalRippleTheme provides NoRippleTheme
+        LocalRippleConfiguration provides null
     ) {
         val pressed by interactionSource.collectIsPressedAsState()
         val animatedAlpha by animateFloatAsState(
@@ -985,7 +974,7 @@ actual fun PlatformDropdownMenuItem(
                         alpha = if (pressed) 0.33F else animatedAlpha
                     }
                 ) {
-                    CompositionLocalProvider(LocalRippleTheme provides ripple) {
+                    CompositionLocalProvider(LocalRippleConfiguration provides ripple) {
                         text.invoke()
                     }
                 }
@@ -1021,14 +1010,7 @@ actual fun PlatformSwitch(
     )
 }
 
-private object NoRippleTheme: RippleTheme {
-    @Composable
-    override fun defaultColor() = Color.Unspecified
-
-    @Composable
-    override fun rippleAlpha(): RippleAlpha = RippleAlpha(0.0f, 0.0f, 0.0f, 0.0f)
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 actual fun PlatformFloatingActionButton(
     onClick: () -> Unit,
@@ -1040,9 +1022,9 @@ actual fun PlatformFloatingActionButton(
     interactionSource: MutableInteractionSource,
     content: @Composable () -> Unit
 ) {
-    val ripple = LocalRippleTheme.current
+    val ripple = LocalRippleConfiguration.current
     CompositionLocalProvider(
-        LocalRippleTheme provides NoRippleTheme
+        LocalRippleConfiguration provides null
     ) {
         val pressed by interactionSource.collectIsPressedAsState()
         val animatedAlpha by animateFloatAsState(
@@ -1074,7 +1056,7 @@ actual fun PlatformFloatingActionButton(
                     contentAlignment = Alignment.Center,
                 ) {
                     CompositionLocalProvider(
-                        LocalRippleTheme provides ripple,
+                        LocalRippleConfiguration provides ripple,
                         androidx.compose.material3.LocalContentColor provides contentColor
                     ) {
                         content.invoke()
@@ -1085,6 +1067,7 @@ actual fun PlatformFloatingActionButton(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 actual fun PlatformExtendedFloatingActionButton(
     text: @Composable () -> Unit,
@@ -1098,9 +1081,9 @@ actual fun PlatformExtendedFloatingActionButton(
     elevation: FloatingActionButtonElevation,
     interactionSource: MutableInteractionSource,
 ) {
-    val ripple = LocalRippleTheme.current
+    val ripple = LocalRippleConfiguration.current
     CompositionLocalProvider(
-        LocalRippleTheme provides NoRippleTheme
+        LocalRippleConfiguration provides null
     ) {
         val pressed by interactionSource.collectIsPressedAsState()
         val animatedAlpha by animateFloatAsState(
@@ -1113,7 +1096,7 @@ actual fun PlatformExtendedFloatingActionButton(
                         alpha = if (pressed) 0.33F else animatedAlpha
                     }
                 ) {
-                    CompositionLocalProvider(LocalRippleTheme provides ripple) {
+                    CompositionLocalProvider(LocalRippleConfiguration provides ripple) {
                         text.invoke()
                     }
                 }
@@ -1124,7 +1107,7 @@ actual fun PlatformExtendedFloatingActionButton(
                         alpha = if (pressed) 0.33F else animatedAlpha
                     }
                 ) {
-                    CompositionLocalProvider(LocalRippleTheme provides ripple) {
+                    CompositionLocalProvider(LocalRippleConfiguration provides ripple) {
                         icon.invoke()
                     }
                 }
@@ -1145,6 +1128,7 @@ actual fun PlatformExtendedFloatingActionButton(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 actual fun PlatformFilledTonalIconToggleButton(
     checked: Boolean,
@@ -1156,9 +1140,9 @@ actual fun PlatformFilledTonalIconToggleButton(
     interactionSource: MutableInteractionSource,
     content: @Composable () -> Unit
 ) {
-    val ripple = LocalRippleTheme.current
+    val ripple = LocalRippleConfiguration.current
     CompositionLocalProvider(
-        LocalRippleTheme provides NoRippleTheme
+        LocalRippleConfiguration provides null
     ) {
         val pressed by interactionSource.collectIsPressedAsState()
         val animatedAlpha by animateFloatAsState(
@@ -1178,7 +1162,7 @@ actual fun PlatformFilledTonalIconToggleButton(
                         alpha = if (pressed) 0.33F else animatedAlpha
                     }
                 ) {
-                    CompositionLocalProvider(LocalRippleTheme provides ripple) {
+                    CompositionLocalProvider(LocalRippleConfiguration provides ripple) {
                         content.invoke()
                     }
                 }
@@ -1294,9 +1278,9 @@ actual val platformShowDownloadAppBottomSheet: (() -> Unit)? = null
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-actual fun CaretScope.PlatformPlainTooltip(
+actual fun TooltipScope.PlatformPlainTooltip(
     modifier: Modifier,
-    caretProperties: CaretProperties?,
+    caretSize: DpSize,
     shape: Shape?,
     contentColor: Color?,
     containerColor: Color?,
@@ -1306,7 +1290,7 @@ actual fun CaretScope.PlatformPlainTooltip(
 ) {
     PlainTooltip(
         modifier = modifier,
-        caretProperties = caretProperties,
+        caretSize = caretSize,
         shape = shape?: TooltipDefaults.plainTooltipContainerShape,
         contentColor = contentColor?: CupertinoTheme.colorScheme.label,
         containerColor = containerColor?: CupertinoColors.systemGray5,

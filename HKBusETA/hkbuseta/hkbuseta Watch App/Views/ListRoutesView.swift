@@ -74,16 +74,7 @@ struct ListRoutesView: AppScreenView {
             }
             return false
         })
-        casedResult.forEach {
-            let route = $0.route
-            let co = $0.co
-            let stopInfo = $0.stopInfo
-            if route != nil && stopInfo != nil {
-                $0.stopInfoIndex = registry(appContext).getAllStops(routeNumber: route!.routeNumber, bound: route!.idBound(co: co), co: co, gmbRegion: route!.gmbRegion).firstIndex(where: {
-                    $0.stopId == stopInfo!.stopId
-                })?.asInt32() ?? -1
-            }
-        }
+        casedResult = StopIndexedRouteSearchResultEntryKt.toStopIndexed(casedResult, instance: appContext)
         self.result = casedResult
         let listType = data["listType"] as? RouteListType ?? RouteListType.Companion().NORMAL
         self.listType = listType
@@ -355,7 +346,7 @@ struct ListRoutesView: AppScreenView {
         let kmbCtbJoint = route.route!.isKmbCtbJoint
         let gmbRegion = route.route!.gmbRegion
         let color = operatorColor(route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
-        let dest = route.route!.resolvedDest(prependTo: false).get(language: Shared().language)
+        let dest = route.resolvedDest(prependTo: false, context: appContext).get(language: Shared().language)
         let altSize = route.co == Operator.Companion().MTR && Shared().language != "en"
         let routeNumber = route.co.getListDisplayRouteNumber(routeNumber: route.route!.routeNumber, shortened: true)
         let operatorName = route.co.getDisplayFormattedName(routeNumber: route.route!.routeNumber, kmbCtbJoint: kmbCtbJoint, gmbRegion: gmbRegion, language: Shared().language, elseName: FormattedTextKt.asFormattedText("???", style: [].asKt()), elseColor: 0xFFFFFFFF as Int64)
@@ -395,6 +386,10 @@ struct ListRoutesView: AppScreenView {
             }
             let data = newAppDataConatiner()
             data["route"] = route
+            if route.stopInfo != nil {
+                data["stopId"] = route.stopInfo!.stopId
+            }
+            data["stopIndex"] = route.stopInfoIndex
             appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.listStops, data))
         }) {
             HStack(alignment: .center, spacing: 1.scaled(appContext)) {

@@ -35,6 +35,8 @@ import com.loohp.hkbuseta.common.utils.ifFalse
 import com.loohp.hkbuseta.compose.ambientMode
 import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.shared.WearOSShared
+import com.loohp.hkbuseta.utils.optInt
+import com.loohp.hkbuseta.utils.optString
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ExecutorService
@@ -56,8 +58,11 @@ class ListStopsActivity : ComponentActivity() {
         Shared.ensureRegistryDataAvailable(appContext).ifFalse { return }
         WearOSShared.setDefaultExceptionHandler(this)
 
-        val route = intent.extras!!.getByteArray("route")?.let { runBlocking(WearOSShared.CACHED_DISPATCHER) { RouteSearchResultEntry.deserialize(ByteReadChannel(it)) } }!!
+        val route = intent.extras!!.getByteArray("route")
+            ?.let { runBlocking(WearOSShared.CACHED_DISPATCHER) { RouteSearchResultEntry.deserialize(ByteReadChannel(it)) } }!!
         val scrollToStop = intent.extras!!.getString("scrollToStop")
+        val stopId = intent.extras!!.optString("stopId")
+        val stopIndex = intent.extras!!.optInt("stopIndex")
         val showEta = intent.extras!!.getBoolean("showEta", true)
 
         setContent {
@@ -66,7 +71,7 @@ class ListStopsActivity : ComponentActivity() {
                 Box (
                     modifier = Modifier.ambientMode(it)
                 ) {
-                    ListStopsMainElement(ambientMode, appContext, route, showEta, scrollToStop) { isAdd, index, task ->
+                    ListStopsMainElement(ambientMode, appContext, route, stopId, stopIndex, showEta, scrollToStop) { isAdd, index, task ->
                         sync.execute {
                             if (isAdd) {
                                 etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }

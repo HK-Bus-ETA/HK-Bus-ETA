@@ -143,10 +143,10 @@ struct TitleView: AppScreenView {
         }
         .padding()
         .onAppear {
-            self.appAlert = AppContextWatchOSKt.getAppAlert(context: appContext)
+            self.appAlert = AppContextWatchOSKt.getAppAlert(context: appContext)?.takeOrNull()
         }
         .onReceive(alertUpdateTimer) { _ in
-            self.appAlert = AppContextWatchOSKt.getAppAlert(context: appContext)
+            self.appAlert = AppContextWatchOSKt.getAppAlert(context: appContext)?.takeOrNull()
         }
     }
 }

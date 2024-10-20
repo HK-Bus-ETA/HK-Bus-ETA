@@ -217,7 +217,7 @@ fun SelectElements(tileId: Int, instance: AppActiveContext) {
             if (routeStops.isNotEmpty()) {
                 itemsIndexed(routeStops, key = { _, r -> r.favouriteId }) { index, routeStop ->
                     Column (
-                        modifier = Modifier.animateItemPlacement()
+                        modifier = Modifier.animateItem()
                     ) {
                         SelectButton(index + 1, routeStop, selectStates, instance)
                         Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))

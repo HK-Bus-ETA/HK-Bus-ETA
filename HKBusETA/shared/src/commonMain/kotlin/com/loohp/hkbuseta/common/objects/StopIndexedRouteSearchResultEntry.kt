@@ -57,7 +57,7 @@ class StopIndexedRouteSearchResultEntry(
             val origin = if (json.contains("origin")) Coordinates.deserialize(json.optJsonObject("origin")!!) else null
             val isInterchangeSearch = json.optBoolean("isInterchangeSearch")
             val favouriteStopMode = if (json.contains("favouriteStopMode")) FavouriteStopMode.valueOf(json.optString("favouriteStopMode")) else null
-            return StopIndexedRouteSearchResultEntry(routeKey, route, co, stop, 0, origin, isInterchangeSearch, favouriteStopMode)
+            return StopIndexedRouteSearchResultEntry(routeKey, route, co, stop, -1, origin, isInterchangeSearch, favouriteStopMode)
         }
 
         fun fromRouteSearchResultEntry(resultEntry: RouteSearchResultEntry): StopIndexedRouteSearchResultEntry {
@@ -66,7 +66,7 @@ class StopIndexedRouteSearchResultEntry(
                 route = resultEntry.route,
                 co = resultEntry.co,
                 stopInfo = resultEntry.stopInfo,
-                stopInfoIndex = 0,
+                stopInfoIndex = -1,
                 origin = resultEntry.origin,
                 isInterchangeSearch = resultEntry.isInterchangeSearch,
                 favouriteStopMode = resultEntry.favouriteStopMode
@@ -92,7 +92,7 @@ class StopIndexedRouteSearchResultEntry(
 }
 
 fun RouteSearchResultEntry.toStopIndexed(instance: AppContext): StopIndexedRouteSearchResultEntry {
-    if (this is StopIndexedRouteSearchResultEntry) return this
+    if (this is StopIndexedRouteSearchResultEntry && stopInfoIndex >= 0) return this
     val stopIndexed = StopIndexedRouteSearchResultEntry.fromRouteSearchResultEntry(this)
     val route = this.route
     val co = this.co

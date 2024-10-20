@@ -32,3 +32,7 @@ data class AppAlert(
         val EMPTY = AppAlert(null, null)
     }
 }
+
+fun AppAlert?.takeOrNull(): AppAlert? {
+    return this?.takeIf { it.content?.isNotBlank() == true }
+}

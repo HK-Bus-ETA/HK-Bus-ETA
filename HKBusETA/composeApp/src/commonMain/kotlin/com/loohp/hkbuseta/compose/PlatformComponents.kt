@@ -34,8 +34,6 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
-import androidx.compose.material3.CaretProperties
-import androidx.compose.material3.CaretScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -75,6 +73,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
@@ -369,10 +368,9 @@ expect fun PlatformModalBottomSheet(
     shape: Shape = BottomSheetDefaults.ExpandedShape,
     tonalElevation: Dp = BottomSheetDefaults.Elevation,
     scrimColor: Color = BottomSheetDefaults.ScrimColor,
-    windowInsets: WindowInsets = BottomSheetDefaults.windowInsets,
     desktopCloseColor: Color? = null,
-    properties: ModalBottomSheetProperties = ModalBottomSheetDefaults.properties(),
-    content: @Composable ColumnScope.() -> Unit,
+    properties: ModalBottomSheetProperties = ModalBottomSheetDefaults.properties,
+    content: @Composable (ColumnScope.() -> Unit),
 )
 
 @Composable
@@ -526,11 +524,10 @@ expect fun PlatformCircularProgressIndicator(
 
 expect val platformShowDownloadAppBottomSheet: (() -> Unit)?
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-expect fun CaretScope.PlatformPlainTooltip(
+expect fun TooltipScope.PlatformPlainTooltip(
     modifier: Modifier = Modifier,
-    caretProperties: CaretProperties? = null,
+    caretSize: DpSize = DpSize.Unspecified,
     shape: Shape? = null,
     contentColor: Color? = null,
     containerColor: Color? = null,

@@ -72,7 +72,6 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -282,55 +281,57 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(65.dp)
-                            .clip(platformExtraLargeShape)
-                            .background(platformPrimaryContainerColor)
-                            .clickable {
-                                keyboardHidden = !keyboardHidden
-                                keyPressFocus.requestFocus()
-                            }
-                            .plainTooltip(if (Shared.language == "en") "Toggle Keyboard" else "顯示/隱藏鍵盤"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        PlatformText(
+                    Box {
+                        Box(
                             modifier = Modifier
-                                .onKeyEvent {
-                                    if (it.type == KeyEventType.KeyDown) {
-                                        val key = it.key
-                                        return@onKeyEvent when {
-                                            key == Key.Backspace || (key == Key.Back && composePlatform.isMobileAppRunningOnDesktop && composePlatform.applePlatform) -> {
-                                                CoroutineScope(Dispatchers.IO).launch {
-                                                    handleInput(instance, '<')
+                                .fillMaxWidth()
+                                .height(65.dp)
+                                .plainTooltip(if (Shared.language == "en") "Toggle Keyboard" else "顯示/隱藏鍵盤")
+                                .clip(platformExtraLargeShape)
+                                .background(platformPrimaryContainerColor)
+                                .clickable {
+                                    keyboardHidden = !keyboardHidden
+                                    keyPressFocus.requestFocus()
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            PlatformText(
+                                modifier = Modifier
+                                    .onKeyEvent {
+                                        if (it.type == KeyEventType.KeyDown) {
+                                            val key = it.key
+                                            return@onKeyEvent when {
+                                                key == Key.Backspace || (key == Key.Back && composePlatform.isMobileAppRunningOnDesktop && composePlatform.applePlatform) -> {
+                                                    CoroutineScope(Dispatchers.IO).launch {
+                                                        handleInput(instance, '<')
+                                                    }
+                                                    true
                                                 }
-                                                true
-                                            }
-                                            key == Key.Delete -> {
-                                                CoroutineScope(Dispatchers.IO).launch {
-                                                    handleInput(instance, '-')
+                                                key == Key.Delete -> {
+                                                    CoroutineScope(Dispatchers.IO).launch {
+                                                        handleInput(instance, '-')
+                                                    }
+                                                    true
                                                 }
-                                                true
-                                            }
-                                            key.keyString?.let { s -> state.nextCharResult.characters.contains(s[0]) } == true -> {
-                                                CoroutineScope(Dispatchers.IO).launch {
-                                                    handleInput(instance, key.keyString!![0])
+                                                key.keyString?.let { s -> state.nextCharResult.characters.contains(s[0]) } == true -> {
+                                                    CoroutineScope(Dispatchers.IO).launch {
+                                                        handleInput(instance, key.keyString!![0])
+                                                    }
+                                                    true
                                                 }
-                                                true
+                                                else -> false
                                             }
-                                            else -> false
                                         }
+                                        false
                                     }
-                                    false
-                                }
-                                .focusRequester(keyPressFocus)
-                                .focusable(),
-                            textAlign = TextAlign.Center,
-                            fontSize = 30.sp,
-                            maxLines = 1,
-                            text = Shared.getMtrLineName(state.text).takeUnless { it.isEmpty() }?: if (Shared.language == "en") "Input Route" else "輸入路線"
-                        )
+                                    .focusRequester(keyPressFocus)
+                                    .focusable(),
+                                textAlign = TextAlign.Center,
+                                fontSize = 30.sp,
+                                maxLines = 1,
+                                text = Shared.getMtrLineName(state.text).takeUnless { it.isEmpty() }?: if (Shared.language == "en") "Input Route" else "輸入路線"
+                            )
+                        }
                     }
                     Row(
                         modifier = Modifier.height(40.dp),

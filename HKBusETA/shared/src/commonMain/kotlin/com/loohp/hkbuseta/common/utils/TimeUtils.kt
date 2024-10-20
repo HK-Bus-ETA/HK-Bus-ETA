@@ -155,4 +155,12 @@ fun LocalTime.isBetweenInclusive(start: LocalTime, end: LocalTime): Boolean {
     }
 }
 
+inline fun String.parseInstant(): Instant {
+    return Instant.parse(this)
+}
+
+inline fun String.parseLocalDateTime(): LocalDateTime {
+    return LocalDateTime.parse(this)
+}
+
 inline val DayOfWeek.sundayZeroDayNumber get() = isoDayNumber % 7
