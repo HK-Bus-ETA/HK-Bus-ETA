@@ -23,9 +23,9 @@ package com.loohp.hkbuseta.common.utils
 
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.core.BytePacketBuilder
-import io.ktor.utils.io.core.writeInt
-import io.ktor.utils.io.core.writeLong
+import io.ktor.utils.io.readInt
+import io.ktor.utils.io.readLong
+import kotlinx.io.Sink
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -154,7 +154,7 @@ open class FormattedText(
         }
     }
 
-    override fun serialize(out: BytePacketBuilder) {
+    override fun serialize(out: Sink) {
         out.writeInt(content.size)
         for (formattedTextContent in content) {
             out.writeString(formattedTextContent.string, UTF_8)
@@ -326,14 +326,14 @@ sealed class FormattingTextContentStyle(
 
     internal open fun serializeValues(): JsonObject? = null
 
-    internal open fun serializeValues(out: BytePacketBuilder) { }
+    internal open fun serializeValues(out: Sink) { }
 
     override fun serialize(): JsonObject = buildJsonObject {
         put("type", identifier)
         serializeValues()?.let { put("values", it) }
     }
 
-    override fun serialize(out: BytePacketBuilder) {
+    override fun serialize(out: Sink) {
         out.writeString(identifier, UTF_8)
         serializeValues(out)
     }
@@ -366,7 +366,7 @@ data class ColorContentStyle(
         put("darkThemeColor", darkThemeColor)
     }
 
-    override fun serializeValues(out: BytePacketBuilder) {
+    override fun serializeValues(out: Sink) {
         out.writeLong(color)
         out.writeLong(darkThemeColor)
     }
@@ -391,7 +391,7 @@ data class InlineImageStyle(
         put("image", image.name)
     }
 
-    override fun serializeValues(out: BytePacketBuilder) {
+    override fun serializeValues(out: Sink) {
         out.writeString(image.name, UTF_8)
     }
 
@@ -415,7 +415,7 @@ data class URLContentStyle(
         put("url", url)
     }
 
-    override fun serializeValues(out: BytePacketBuilder) {
+    override fun serializeValues(out: Sink) {
         out.writeString(url, UTF_8)
     }
 

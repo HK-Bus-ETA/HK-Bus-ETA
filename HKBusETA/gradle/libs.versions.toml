@@ -3,7 +3,7 @@ activityCompose = "1.9.3"
 agp = "8.2.2"
 androidPdfViewer = "3.2.0-beta.3"
 browser = "1.8.0"
-coilCompose = "3.0.0-alpha06"
+coilCompose = "3.0.0-rc01"
 colormath = "3.5.0"
 commonsLang3 = "3.14.0"
 composeMultiplatformLifecycleTracker = "1.0.0"
@@ -31,7 +31,7 @@ kotlinxCollectionsImmutable = "0.3.7"
 googleServices = "4.4.2"
 kotlinxDatetime = "0.6.0"
 kotlinxSerializationJson = "1.7.3"
-ktor = "3.0.0-wasm2"
+ktor = "3.0.0"
 legacySupportV4 = "1.0.0"
 lifecycleRuntimeKtx = "2.8.6"
 mapsCompose = "6.1.2"
@@ -91,7 +91,7 @@ androidx-wear-phone-interactions = { module = "androidx.wear:wear-phone-interact
 androidx-wear-remote-interactions = { module = "androidx.wear:wear-remote-interactions", version.ref = "wearOngoing" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
-coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor", version.ref = "coilCompose" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilCompose" }
 colormath = { module = "com.github.ajalt.colormath:colormath", version.ref = "colormath" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3" }
 compose-multiplatform-lifecycle-tracker = { module = "io.github.kevinnzou:compose-multiplatform-lifecycle-tracker", version.ref = "composeMultiplatformLifecycleTracker" }

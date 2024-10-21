@@ -30,9 +30,9 @@ import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.core.BytePacketBuilder
-import io.ktor.utils.io.core.writeLong
+import io.ktor.utils.io.readLong
 import kotlinx.datetime.LocalDateTime
+import kotlinx.io.Sink
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -80,7 +80,7 @@ class LastLookupRoute(
         }
     }
 
-    override fun serialize(out: BytePacketBuilder) {
+    override fun serialize(out: Sink) {
         out.writeString(routeKey, UTF_8)
         out.writeLong(time)
     }

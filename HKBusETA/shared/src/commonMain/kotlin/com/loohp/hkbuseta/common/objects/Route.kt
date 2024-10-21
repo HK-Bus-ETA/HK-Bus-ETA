@@ -34,6 +34,7 @@ import com.loohp.hkbuseta.common.utils.optBoolean
 import com.loohp.hkbuseta.common.utils.optJsonArray
 import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
+import com.loohp.hkbuseta.common.utils.readBoolean
 import com.loohp.hkbuseta.common.utils.readCollection
 import com.loohp.hkbuseta.common.utils.readMap
 import com.loohp.hkbuseta.common.utils.readNullable
@@ -47,8 +48,8 @@ import com.loohp.hkbuseta.common.utils.writeNullable
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.core.BytePacketBuilder
-import io.ktor.utils.io.core.writeInt
+import io.ktor.utils.io.readInt
+import kotlinx.io.Sink
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -161,7 +162,7 @@ class Route(
         }
     }
 
-    override fun serialize(out: BytePacketBuilder) {
+    override fun serialize(out: Sink) {
         out.writeString(routeNumber, UTF_8)
         out.writeMap(bound) { o, k, v -> o.writeString(k.name, UTF_8) to o.writeString(v, UTF_8) }
         out.writeCollection(co) { o, t -> o.writeString(t.name, UTF_8) }

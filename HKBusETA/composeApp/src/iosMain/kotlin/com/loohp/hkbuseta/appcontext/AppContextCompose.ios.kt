@@ -52,9 +52,9 @@ import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.provideGzipBodyAsTextImpl
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
-import io.ktor.util.toByteArray
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.toByteArray
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
@@ -91,11 +91,9 @@ import platform.Foundation.NSLocale
 import platform.Foundation.NSProcessInfo
 import platform.Foundation.NSString
 import platform.Foundation.NSURL
-import platform.Foundation.URLByAppendingPathComponent
 import platform.Foundation.create
 import platform.Foundation.currentLocale
 import platform.Foundation.isLowPowerModeEnabled
-import platform.Foundation.lastPathComponent
 import platform.Foundation.writeToURL
 import platform.MapKit.MKMapItem
 import platform.MapKit.MKPlacemark

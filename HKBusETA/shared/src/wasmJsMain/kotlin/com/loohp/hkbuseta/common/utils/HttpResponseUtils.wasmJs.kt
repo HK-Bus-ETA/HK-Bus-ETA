@@ -26,7 +26,8 @@ import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.charset
 import io.ktor.utils.io.charsets.Charset
-import io.ktor.utils.io.core.readBytes
+import io.ktor.utils.io.readRemaining
+import kotlinx.io.readByteArray
 
 private var gzipBodyAsTextImpl: (suspend (ByteArray, Charset) -> String)? = null
 
@@ -36,7 +37,7 @@ fun provideGzipBodyAsTextImpl(impl: (suspend (ByteArray, Charset) -> String)?) {
 
 actual suspend fun HttpResponse.gzipBodyAsText(fallbackCharset: Charset): String {
     return gzipBodyAsTextImpl
-        ?.invoke(this.bodyAsChannel().readRemaining().readBytes(), this.charset()?: fallbackCharset)
+        ?.invoke(this.bodyAsChannel().readRemaining().readByteArray(), this.charset()?: fallbackCharset)
         ?: throw RuntimeException("Unsupported Platform Operation")
 }
 

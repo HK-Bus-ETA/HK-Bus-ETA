@@ -26,13 +26,14 @@ import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.charset
 import io.ktor.utils.io.charsets.Charset
-import io.ktor.utils.io.core.readBytes
+import io.ktor.utils.io.readRemaining
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UnsafeNumber
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.usePinned
+import kotlinx.io.readByteArray
 import platform.Foundation.NSData
 import platform.Foundation.create
 
@@ -45,7 +46,7 @@ fun provideGzipBodyAsTextImpl(impl: ((NSData, String) -> String)?) {
 @OptIn(ExperimentalForeignApi::class, UnsafeNumber::class, BetaInteropApi::class)
 actual suspend fun HttpResponse.gzipBodyAsText(fallbackCharset: Charset): String {
     return gzipBodyAsTextImpl?.let { impl ->
-        this.bodyAsChannel().readRemaining().readBytes().let {
+        this.bodyAsChannel().readRemaining().readByteArray().let {
             it.usePinned { pinned ->
                 val nsData = NSData.create(bytes = pinned.addressOf(0), length = it.size.convert())
                 impl.invoke(nsData, (this.charset()?: fallbackCharset).toString())

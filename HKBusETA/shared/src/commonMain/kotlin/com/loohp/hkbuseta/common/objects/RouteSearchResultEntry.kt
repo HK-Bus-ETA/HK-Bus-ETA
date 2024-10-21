@@ -31,17 +31,19 @@ import com.loohp.hkbuseta.common.utils.optDouble
 import com.loohp.hkbuseta.common.utils.optInt
 import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
+import com.loohp.hkbuseta.common.utils.readBoolean
+import com.loohp.hkbuseta.common.utils.readDouble
 import com.loohp.hkbuseta.common.utils.readNullable
 import com.loohp.hkbuseta.common.utils.readString
 import com.loohp.hkbuseta.common.utils.toJsonArray
 import com.loohp.hkbuseta.common.utils.writeBoolean
+import com.loohp.hkbuseta.common.utils.writeDouble
 import com.loohp.hkbuseta.common.utils.writeNullable
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.core.BytePacketBuilder
-import io.ktor.utils.io.core.writeDouble
-import io.ktor.utils.io.core.writeInt
+import io.ktor.utils.io.readInt
+import kotlinx.io.Sink
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -137,7 +139,7 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
         }
     }
 
-    override fun serialize(out: BytePacketBuilder) {
+    override fun serialize(out: Sink) {
         out.writeString(routeKey, UTF_8)
         out.writeNullable(route) { o, v -> v.serialize(o) }
         out.writeString(co.name, UTF_8)
@@ -221,7 +223,7 @@ data class StopInfo(
         }
     }
 
-    override fun serialize(out: BytePacketBuilder) {
+    override fun serialize(out: Sink) {
         out.writeString(stopId, UTF_8)
         out.writeNullable(data) { o, v -> v.serialize(o) }
         out.writeDouble(distance)

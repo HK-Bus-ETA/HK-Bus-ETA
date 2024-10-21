@@ -38,8 +38,8 @@ import com.loohp.hkbuseta.common.utils.writeNullable
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.core.BytePacketBuilder
-import io.ktor.utils.io.core.writeInt
+import io.ktor.utils.io.readInt
+import kotlinx.io.Sink
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -114,7 +114,7 @@ data class Stop(
         }
     }
 
-    override fun serialize(out: BytePacketBuilder) {
+    override fun serialize(out: Sink) {
         location.serialize(out)
         name.serialize(out)
         out.writeNullable(remark) { o, v -> v.serialize(o) }

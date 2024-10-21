@@ -96,7 +96,7 @@ import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.toImageBitmap
-import io.ktor.util.toByteArray
+import io.ktor.utils.io.toByteArray
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

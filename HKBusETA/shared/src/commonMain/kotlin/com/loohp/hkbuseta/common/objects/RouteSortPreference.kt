@@ -26,12 +26,13 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.JSONSerializable
 import com.loohp.hkbuseta.common.utils.optBoolean
 import com.loohp.hkbuseta.common.utils.optString
+import com.loohp.hkbuseta.common.utils.readBoolean
 import com.loohp.hkbuseta.common.utils.readString
 import com.loohp.hkbuseta.common.utils.writeBoolean
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.core.BytePacketBuilder
+import kotlinx.io.Sink
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -74,7 +75,7 @@ data class RouteSortPreference(
         }
     }
 
-    override fun serialize(out: BytePacketBuilder) {
+    override fun serialize(out: Sink) {
         out.writeString(routeSortMode.name, UTF_8)
         out.writeBoolean(filterTimetableActive)
     }

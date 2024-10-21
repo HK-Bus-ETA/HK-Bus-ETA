@@ -44,9 +44,9 @@ import com.loohp.hkbuseta.utils.awaitCallback
 import com.loohp.hkbuseta.utils.copyToClipboard
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
-import io.ktor.util.toByteArray
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.toByteArray
 import kotlinx.browser.window
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope

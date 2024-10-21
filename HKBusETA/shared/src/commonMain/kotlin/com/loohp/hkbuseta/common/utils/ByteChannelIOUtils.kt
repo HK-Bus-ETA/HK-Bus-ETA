@@ -24,13 +24,15 @@ package com.loohp.hkbuseta.common.utils
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.charsets.Charsets
-import io.ktor.utils.io.core.BytePacketBuilder
 import io.ktor.utils.io.core.buildPacket
 import io.ktor.utils.io.core.readText
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.core.writeFully
-import io.ktor.utils.io.core.writeInt
+import io.ktor.utils.io.readByte
 import io.ktor.utils.io.readFully
+import io.ktor.utils.io.readInt
+import io.ktor.utils.io.readLong
+import kotlinx.io.Sink
 
 
 suspend inline fun ByteReadChannel.read(size: Int): ByteArray {
@@ -39,31 +41,31 @@ suspend inline fun ByteReadChannel.read(size: Int): ByteArray {
     return bytes
 }
 
-//suspend inline fun ByteReadChannel.readFloat(): Float {
-//    return Float.fromBits(readInt())
-//}
-//
-//suspend inline fun ByteWriteChannel.writeFloat(float: Float) {
-//    writeInt(float.toBits())
-//}
-//
-//suspend inline fun ByteReadChannel.readDouble(): Double {
-//    return Double.fromBits(readLong())
-//}
-//
-//suspend inline fun ByteWriteChannel.writeDouble(double: Double) {
-//    writeLong(double.toBits())
-//}
-//
-//suspend inline fun ByteReadChannel.readBoolean(): Boolean {
-//    return readByte() > 0
-//}
+suspend inline fun ByteReadChannel.readFloat(): Float {
+    return Float.fromBits(readInt())
+}
 
-inline fun BytePacketBuilder.writeBoolean(boolean: Boolean) {
+inline fun Sink.writeFloat(float: Float) {
+    writeInt(float.toBits())
+}
+
+suspend inline fun ByteReadChannel.readDouble(): Double {
+    return Double.fromBits(readLong())
+}
+
+inline fun Sink.writeDouble(double: Double) {
+    writeLong(double.toBits())
+}
+
+suspend inline fun ByteReadChannel.readBoolean(): Boolean {
+    return readByte() > 0
+}
+
+inline fun Sink.writeBoolean(boolean: Boolean) {
     writeByte(if (boolean) 1 else 0)
 }
 
-inline fun BytePacketBuilder.writeString(string: String, charset: Charset) {
+inline fun Sink.writeString(string: String, charset: Charset) {
     val bytes = string.toByteArray(charset)
     writeInt(bytes.size)
     writeFully(bytes)
@@ -80,7 +82,7 @@ inline fun ByteArray.asString(charset: Charset): String {
     }
 }
 
-inline fun <T> BytePacketBuilder.writeNullable(value: T?, write: (BytePacketBuilder, T) -> Unit) {
+inline fun <T> Sink.writeNullable(value: T?, write: (Sink, T) -> Unit) {
     value?.let { writeBoolean(true); write.invoke(this, it) }?: writeBoolean(false)
 }
 
@@ -88,7 +90,7 @@ suspend inline fun <T> ByteReadChannel.readNullable(read: (ByteReadChannel) -> T
     return if (readBoolean()) read.invoke(this) else null
 }
 
-inline fun BytePacketBuilder.writeConditional(conditional: Boolean, write: (BytePacketBuilder) -> Unit) {
+inline fun Sink.writeConditional(conditional: Boolean, write: (Sink) -> Unit) {
     if (conditional) { writeBoolean(true); write.invoke(this) } else { writeBoolean(false) }
 }
 
@@ -96,7 +98,7 @@ suspend inline fun ByteReadChannel.readConditional(read: (ByteReadChannel) -> Un
     if (readBoolean()) read.invoke(this)
 }
 
-inline fun <K, V> BytePacketBuilder.writeMap(map: Map<K, V>, write: (BytePacketBuilder, K, V) -> Unit) {
+inline fun <K, V> Sink.writeMap(map: Map<K, V>, write: (Sink, K, V) -> Unit) {
     writeInt(map.size)
     map.entries.forEach { write.invoke(this, it.key, it.value) }
 }
@@ -107,7 +109,7 @@ suspend inline fun <M: MutableMap<K, V>, K, V> ByteReadChannel.readMap(map: M, r
     return map
 }
 
-inline fun <T> BytePacketBuilder.writeCollection(collection: Collection<T>, write: (BytePacketBuilder, T) -> Unit) {
+inline fun <T> Sink.writeCollection(collection: Collection<T>, write: (Sink, T) -> Unit) {
     writeInt(collection.size)
     collection.forEach { write.invoke(this, it) }
 }

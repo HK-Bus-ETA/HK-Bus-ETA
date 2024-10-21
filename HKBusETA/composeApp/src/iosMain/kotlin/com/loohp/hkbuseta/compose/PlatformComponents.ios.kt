@@ -48,6 +48,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.LinearProgressIndicator as Material2LinearProgressIndicator
+import androidx.compose.material.CircularProgressIndicator as Material2CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.LocationDisabled
@@ -59,7 +61,6 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.CheckboxColors
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
@@ -68,7 +69,6 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.FloatingActionButtonElevation
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconToggleButtonColors
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuItemColors
@@ -130,7 +130,6 @@ import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.UIImagePainter
-import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asPainter
 import com.loohp.hkbuseta.utils.equivalentDp
@@ -1241,11 +1240,11 @@ actual fun PlatformLinearProgressIndicator(
     strokeCap: StrokeCap?
 ) {
     val indicatorColor = color?: LocalContentColor.current
-    LinearProgressIndicator(
+    Material2LinearProgressIndicator(
         modifier = modifier.height(15.dp),
         color = indicatorColor,
-        trackColor = trackColor?: indicatorColor.adjustBrightness(0.4F),
-        strokeCap = strokeCap?: StrokeCap.Round,
+        backgroundColor = trackColor?: indicatorColor.adjustBrightness(0.4F),
+        strokeCap = strokeCap?: StrokeCap.Round
     )
 }
 
@@ -1258,12 +1257,12 @@ actual fun PlatformLinearProgressIndicator(
     strokeCap: StrokeCap?
 ) {
     val indicatorColor = color?: LocalContentColor.current
-    LinearProgressIndicator(
-        progress = progress,
+    Material2LinearProgressIndicator(
+        progress = progress.invoke(),
         modifier = modifier.height(15.dp),
         color = indicatorColor,
-        trackColor = indicatorColor.adjustBrightness(0.4F),
-        strokeCap = strokeCap?: StrokeCap.Round,
+        backgroundColor = indicatorColor.adjustBrightness(0.4F),
+        strokeCap = strokeCap?: StrokeCap.Round
     )
 }
 
@@ -1276,11 +1275,11 @@ actual fun PlatformCircularProgressIndicator(
     strokeCap: StrokeCap?
 ) {
     val indicatorColor = color?: LocalContentColor.current
-    CircularProgressIndicator(
+    Material2CircularProgressIndicator(
         modifier = modifier,
         color = indicatorColor,
         strokeWidth = strokeWidth?: ProgressIndicatorDefaults.CircularStrokeWidth,
-        trackColor = indicatorColor.adjustBrightness(0.4F),
+        backgroundColor = indicatorColor.adjustBrightness(0.4F),
         strokeCap = strokeCap?: StrokeCap.Round,
     )
 }

@@ -27,7 +27,7 @@ import com.loohp.hkbuseta.common.utils.JSONSerializable
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.optJsonObject
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.core.BytePacketBuilder
+import kotlinx.io.Sink
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 
@@ -84,7 +84,7 @@ class BilingualFormattedText(val zh: FormattedText, val en: FormattedText) : JSO
         }
     }
 
-    override fun serialize(out: BytePacketBuilder) {
+    override fun serialize(out: Sink) {
         zh.serialize(out)
         en.serialize(out)
     }

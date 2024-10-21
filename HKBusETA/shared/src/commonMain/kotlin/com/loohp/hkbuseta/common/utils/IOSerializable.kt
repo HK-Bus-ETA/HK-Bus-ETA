@@ -20,18 +20,18 @@
  */
 package com.loohp.hkbuseta.common.utils
 
-import io.ktor.utils.io.core.BytePacketBuilder
 import io.ktor.utils.io.core.buildPacket
-import io.ktor.utils.io.core.readBytes
+import kotlinx.io.Sink
+import kotlinx.io.readByteArray
 
 interface IOSerializable {
 
     companion object;
 
-    fun serialize(out: BytePacketBuilder)
+    fun serialize(out: Sink)
 
     fun toByteArray(): ByteArray {
-        return buildPacket { serialize(this) }.readBytes()
+        return buildPacket { serialize(this) }.readByteArray()
     }
 
 }
