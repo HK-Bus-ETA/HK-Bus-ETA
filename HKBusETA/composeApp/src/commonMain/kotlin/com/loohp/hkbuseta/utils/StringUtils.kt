@@ -150,21 +150,21 @@ val InlineImage.resource: String get() = when (this) {
 @Composable
 fun FormattedText.asContentAnnotatedString(
     spanStyle: SpanStyle? = null,
-    handleUrls: ((String) -> Unit)? = null
+    onClickUrls: ((String) -> Unit)? = null
 ): ContentAnnotatedString {
-    return asContentAnnotatedString(Shared.theme.isDarkMode, spanStyle, handleUrls)
+    return asContentAnnotatedString(Shared.theme.isDarkMode, spanStyle, onClickUrls)
 }
 
 fun FormattedText.asContentAnnotatedString(
     isDarkTheme: Boolean,
     spanStyle: SpanStyle? = null,
-    handleUrls: ((String) -> Unit)? = null
+    onClickUrls: ((String) -> Unit)? = null
 ): ContentAnnotatedString {
     val inlineContents: MutableMap<String, String> = mutableMapOf()
     return buildAnnotatedString {
         content.forEach { (string, style) ->
             val url = style.firstNotNullOfOrNull { it as? URLContentStyle }
-            url?.let { link -> pushLink(LinkAnnotation.Clickable("url", null) { handleUrls?.invoke(link.url) }) }
+            url?.let { link -> pushLink(LinkAnnotation.Clickable("url", null) { onClickUrls?.invoke(link.url) }) }
             style.firstNotNullOfOrNull { it as? InlineImageStyle }?.let {
                 inlineContents[it.image.name] = it.image.resource
                 appendInlineContent(it.image.name, string)

@@ -1013,7 +1013,7 @@ actual fun PlatformCircularProgressIndicator(
         modifier = modifier,
         color = color?: ProgressIndicatorDefaults.circularColor,
         strokeWidth = strokeWidth?: ProgressIndicatorDefaults.CircularStrokeWidth,
-        trackColor = trackColor?: ProgressIndicatorDefaults.circularTrackColor,
+        trackColor = trackColor?: ProgressIndicatorDefaults.circularIndeterminateTrackColor,
         strokeCap = strokeCap?: ProgressIndicatorDefaults.CircularIndeterminateStrokeCap,
     )
 }

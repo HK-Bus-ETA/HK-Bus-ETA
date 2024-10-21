@@ -35,8 +35,10 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
@@ -78,6 +80,7 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Density
@@ -95,6 +98,7 @@ import androidx.compose.ui.unit.toOffset
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -237,8 +241,13 @@ fun rememberPlainTooltipPositionProvider(
     getAnchorBounds: () -> LayoutCoordinates?
 ): PopupPositionProvider {
     val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
     val tooltipAnchorSpacing = with(density) { spacingBetweenTooltipAndAnchor.roundToPx() }
-    val topInsert = WindowInsets.safeContent.getTop(density)
+    val safeDrawingTop = WindowInsets.safeDrawing.getTop(density)
+    val safeDrawingBottom = WindowInsets.safeDrawing.getBottom(density)
+    val safeDrawingLeft = WindowInsets.safeDrawing.getLeft(density, layoutDirection)
+    val safeDrawingRight = WindowInsets.safeDrawing.getRight(density, layoutDirection)
+    val topInsert = WindowInsets.safeContent.getTop(density) - safeDrawingTop
     return remember(tooltipAnchorSpacing) {
         object : PopupPositionProvider {
             override fun calculatePosition(
@@ -253,18 +262,18 @@ fun rememberPlainTooltipPositionProvider(
                 val contentWidth = layout.size.width
                 val heightInset = tooltipAnchorSpacing + topInsert
 
-                var x = anchorBounds.left + offset.x + contentWidth / 2 - popupContentSize.width / 2
-                if (x < 0) {
-                    x = 0
-                } else if (x + popupContentSize.width > windowSize.width) {
-                    x = windowSize.width - popupContentSize.width
+                var x = anchorBounds.left + offset.x + contentWidth / 2 - popupContentSize.width / 2 - safeDrawingLeft
+                if (x < -safeDrawingLeft) {
+                    x = -safeDrawingLeft
+                } else if (x + popupContentSize.width > windowSize.width + safeDrawingRight) {
+                    x = windowSize.width + safeDrawingRight - popupContentSize.width
                 }
 
-                var y = anchorBounds.top + offset.y - popupContentSize.height - tooltipAnchorSpacing
-                if (y < heightInset) {
-                    y = anchorBounds.bottom + offset.y + tooltipAnchorSpacing
-                } else if (y + popupContentSize.height > windowSize.height - heightInset) {
-                    y = windowSize.height - heightInset - popupContentSize.height
+                var y = anchorBounds.top + offset.y - popupContentSize.height - tooltipAnchorSpacing - safeDrawingTop
+                if (y < heightInset - safeDrawingTop) {
+                    y = anchorBounds.bottom + offset.y + tooltipAnchorSpacing - safeDrawingTop
+                } else if (y + popupContentSize.height > windowSize.height - heightInset + safeDrawingBottom) {
+                    y = windowSize.height - heightInset - popupContentSize.height + safeDrawingBottom
                 }
 
                 return IntOffset(x, y)

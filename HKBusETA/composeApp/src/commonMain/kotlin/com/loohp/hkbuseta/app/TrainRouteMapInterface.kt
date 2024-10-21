@@ -124,7 +124,7 @@ import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
-import com.loohp.hkbuseta.appcontext.newScreenGroup
+import com.loohp.hkbuseta.appcontext.screenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
@@ -1215,7 +1215,7 @@ fun MTRRouteMapETAInterface(
                             val intent = AppIntent(instance, AppScreen.LIST_STOPS)
                             intent.putExtra("route", route)
                             intent.putExtra("stopId", stopId)
-                            if (HistoryStack.historyStack.value.last().newScreenGroup() == AppScreenGroup.ROUTE_STOPS) {
+                            if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                                 instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
                                 delay(300)
                             }
@@ -2985,7 +2985,7 @@ fun TrainETADisplay(
                                 val intent = AppIntent(instance, AppScreen.LIST_STOPS)
                                 intent.putExtra("route", route)
                                 intent.putExtra("stopId", stopId)
-                                if (HistoryStack.historyStack.value.last().newScreenGroup() == AppScreenGroup.ROUTE_STOPS) {
+                                if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                                     instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
                                     delay(300)
                                 }

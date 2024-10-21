@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -237,11 +238,11 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
             val sheetScroll = rememberScrollState()
             PlatformModalBottomSheet(
                 onDismissRequest = { showNoticeText = null },
-                modifier = Modifier.fillMaxHeight(0.9F),
                 sheetState = sheetState
             ) {
                 Column (
                     modifier = Modifier
+                        .fillMaxHeight(0.9F)
                         .verticalScrollWithScrollbar(
                             state = sheetScroll,
                             flingBehavior = ScrollableDefaults.flingBehavior(),
@@ -255,7 +256,7 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                     verticalArrangement = Arrangement.Top
                 ) {
                     val text = it.asContentAnnotatedString(
-                        handleUrls = { instance.handleWebpages(it, false, haptic.common).invoke() }
+                        onClickUrls = { instance.handleWebpages(it, false, haptic.common).invoke() }
                     ).annotatedString
                     SelectionContainer {
                         PlatformText(

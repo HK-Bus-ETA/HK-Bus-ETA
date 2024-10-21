@@ -502,9 +502,9 @@ class AppActiveContextComposeIOS internal constructor(
         HistoryStack.historyStack.value = stack
         if (removed) {
             finishCallback?.invoke(result)
-            val currentKey = newScreenGroup()
+            val currentKey = screenGroup
             val lastScreen = stack.lastOrNull()
-            if (currentKey != AppScreenGroup.MAIN && lastScreen?.newScreenGroup() == currentKey) {
+            if (currentKey != AppScreenGroup.MAIN && lastScreen?.screenGroup == currentKey) {
                 lastScreen.finish()
             }
         }
@@ -522,9 +522,9 @@ class AppActiveContextComposeIOS internal constructor(
         }
         HistoryStack.historyStack.value = stack
         finishCallback?.invoke(result)
-        val currentKey = newScreenGroup()
+        val currentKey = screenGroup
         val lastScreen = stack.lastOrNull()
-        if (currentKey != AppScreenGroup.MAIN && lastScreen?.newScreenGroup() == currentKey) {
+        if (currentKey != AppScreenGroup.MAIN && lastScreen?.screenGroup == currentKey) {
             lastScreen.finish()
         }
     }

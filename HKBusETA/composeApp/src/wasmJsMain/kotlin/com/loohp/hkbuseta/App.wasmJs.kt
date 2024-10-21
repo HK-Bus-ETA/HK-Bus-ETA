@@ -68,3 +68,6 @@ actual fun SnackbarInterface(instance: AppActiveContext, snackbarHostState: Snac
         }
     }
 }
+
+@Composable
+actual fun Modifier.consumePlatformWindowInsets(): Modifier = this

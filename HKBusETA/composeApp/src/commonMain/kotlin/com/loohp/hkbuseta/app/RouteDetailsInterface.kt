@@ -93,7 +93,7 @@ import com.loohp.hkbuseta.appcontext.ScreenState
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
-import com.loohp.hkbuseta.appcontext.newScreenGroup
+import com.loohp.hkbuseta.appcontext.screenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
@@ -608,7 +608,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                         Registry.getInstance(instance).addLastLookupRoute(it.routeKey, instance)
                                         val intent = AppIntent(instance, AppScreen.LIST_STOPS)
                                         intent.putExtra("route", it)
-                                        if (HistoryStack.historyStack.value.last().newScreenGroup() == AppScreenGroup.ROUTE_STOPS) {
+                                        if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                                             instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
                                             delay(300)
                                         }
