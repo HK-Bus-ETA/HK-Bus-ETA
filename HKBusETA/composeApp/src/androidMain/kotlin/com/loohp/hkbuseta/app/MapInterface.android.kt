@@ -152,7 +152,6 @@ fun GoogleMapRouteInterface(
     alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
 ) {
     val selectedStop by selectedStopState
-    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(stops[selectedStop - 1].stop.location.toGoogleLatLng(), 15F)
     }
@@ -230,7 +229,7 @@ fun GoogleMapRouteInterface(
             mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
             onMapLoaded = { init = currentTimeMillis() }
         ) {
-            StopMarkers(waypoints, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, indexMap, shouldShowStopIndex)
+            StopMarkers(waypoints, stops, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, shouldShowStopIndex)
             WaypointPaths(waypoints)
         }
     }
@@ -240,19 +239,20 @@ fun GoogleMapRouteInterface(
 @GoogleMapComposable
 fun StopMarkers(
     waypoints: RouteWaypoints,
+    stops: ImmutableList<Registry.StopData>,
     alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
     alternateStopNameShowing: Boolean,
     icon: Bitmap,
     anchor: Offset,
     selectedStopState: MutableIntState,
-    indexMap: ImmutableList<Int>,
     shouldShowStopIndex: Boolean
 ) {
-    key(waypoints, indexMap) {
+    key(waypoints, stops) {
+        val indexMap = remember { waypoints.buildStopListMapping(stops) }
         var selectedStop by selectedStopState
         for ((i, stop) in waypoints.stops.withIndex()) {
             val stopIndex = indexMap[i] + 1
-            val title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(stopIndex - 1)?.stop?: stop).name[Shared.language]
+            val title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.getOrNull(stopIndex - 1)?.stop?: stop).name[Shared.language]
             val markerState = rememberStopMarkerState(stop)
             ChangedEffect (selectedStop) {
                 if (selectedStop == stopIndex) {

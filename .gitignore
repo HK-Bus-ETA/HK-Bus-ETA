@@ -44,3 +44,5 @@ HKBusETA/composeApp/preferences.json
 
 *.aab
 .kotlin
+local.defaults.properties
+secrets.properties
