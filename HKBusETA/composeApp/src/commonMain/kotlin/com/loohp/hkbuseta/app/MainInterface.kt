@@ -91,6 +91,7 @@ import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformLinearProgressIndicator
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.consumePlatformWindowInsets
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.dp
@@ -263,6 +264,7 @@ fun SplashScreen(instance: AppActiveContext, onSplashScreenDone: () -> Unit) {
         }
         Column(
             modifier = Modifier
+                .consumePlatformWindowInsets()
                 .padding(30.dp)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.Start,
@@ -325,6 +327,7 @@ fun UpdatingElements(instance: AppActiveContext) {
 
     Column(
         modifier = Modifier
+            .consumePlatformWindowInsets()
             .fillMaxSize()
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Bottom),
@@ -356,6 +359,7 @@ fun LoadingElements(instance: AppActiveContext) {
 
     Column (
         modifier = Modifier
+            .consumePlatformWindowInsets()
             .fillMaxSize()
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Bottom),

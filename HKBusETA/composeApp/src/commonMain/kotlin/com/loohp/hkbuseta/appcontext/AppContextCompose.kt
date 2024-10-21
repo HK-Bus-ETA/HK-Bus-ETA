@@ -167,7 +167,7 @@ enum class AppScreenGroup {
     UNKNOWN, MAIN, TITLE, ROUTE_STOPS, DUMMY, RECENT, PDF
 }
 
-fun AppActiveContextCompose.newScreenGroup(): AppScreenGroup {
+val AppActiveContextCompose.screenGroup: AppScreenGroup get() {
     return when (screen) {
         AppScreen.MAIN -> AppScreenGroup.MAIN
         AppScreen.TITLE, AppScreen.LIST_ROUTES, AppScreen.FAV, AppScreen.FAV_ROUTE_LIST_VIEW, AppScreen.NEARBY, AppScreen.SEARCH, AppScreen.SEARCH_TRAIN, AppScreen.SETTINGS -> AppScreenGroup.TITLE
@@ -176,6 +176,13 @@ fun AppActiveContextCompose.newScreenGroup(): AppScreenGroup {
         AppScreen.RECENT -> AppScreenGroup.RECENT
         AppScreen.PDF -> AppScreenGroup.PDF
         else -> AppScreenGroup.UNKNOWN
+    }
+}
+
+val AppActiveContextCompose.shouldConsumePlatformWindowInsetsOnRoot: Boolean get() {
+    return when (screenGroup) {
+        AppScreenGroup.MAIN -> false
+        else -> true
     }
 }
 

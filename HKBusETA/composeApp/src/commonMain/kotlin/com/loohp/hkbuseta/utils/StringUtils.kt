@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
@@ -147,16 +148,23 @@ val InlineImage.resource: String get() = when (this) {
 }
 
 @Composable
-fun FormattedText.asContentAnnotatedString(spanStyle: SpanStyle? = null): ContentAnnotatedString {
-    return asContentAnnotatedString(Shared.theme.isDarkMode, spanStyle)
+fun FormattedText.asContentAnnotatedString(
+    spanStyle: SpanStyle? = null,
+    onClickUrls: ((String) -> Unit)? = null
+): ContentAnnotatedString {
+    return asContentAnnotatedString(Shared.theme.isDarkMode, spanStyle, onClickUrls)
 }
 
-fun FormattedText.asContentAnnotatedString(isDarkTheme: Boolean, spanStyle: SpanStyle? = null): ContentAnnotatedString {
+fun FormattedText.asContentAnnotatedString(
+    isDarkTheme: Boolean,
+    spanStyle: SpanStyle? = null,
+    onClickUrls: ((String) -> Unit)? = null
+): ContentAnnotatedString {
     val inlineContents: MutableMap<String, String> = mutableMapOf()
     return buildAnnotatedString {
         content.forEach { (string, style) ->
             val url = style.firstNotNullOfOrNull { it as? URLContentStyle }
-            url?.let { pushStringAnnotation("url", it.url) }
+            url?.let { link -> pushLink(LinkAnnotation.Clickable("url", null) { onClickUrls?.invoke(link.url) }) }
             style.firstNotNullOfOrNull { it as? InlineImageStyle }?.let {
                 inlineContents[it.image.name] = it.image.resource
                 appendInlineContent(it.image.name, string)

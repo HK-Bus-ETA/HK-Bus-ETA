@@ -35,7 +35,8 @@ import com.loohp.hkbuseta.appcontext.applicationAppContext
 import com.loohp.hkbuseta.appcontext.hasWatchAppInstalled
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.appcontext.newScreen
-import com.loohp.hkbuseta.appcontext.newScreenGroup
+import com.loohp.hkbuseta.appcontext.screenGroup
+import com.loohp.hkbuseta.appcontext.shouldConsumePlatformWindowInsetsOnRoot
 import com.loohp.hkbuseta.appcontext.snackbar
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppBundle
@@ -53,6 +54,7 @@ import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformScaffold
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.RightToLeftRow
+import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.theme.AppTheme
@@ -60,7 +62,11 @@ import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.dp
 import kotlinx.coroutines.delay
 
+@Composable
+expect fun Modifier.consumePlatformWindowInsets(): Modifier
+
 expect fun exitApp()
+
 expect fun watchDataOverwriteWarningInitialValue(): Boolean
 
 @Composable
@@ -157,10 +163,12 @@ fun App(onReady: (() -> Unit)? = null) {
                         )
                     },
                     content = {
-                        Box {
+                        Box(
+                            modifier = Modifier.applyIf(instance.shouldConsumePlatformWindowInsetsOnRoot) { consumePlatformWindowInsets() }
+                        ) {
                             AnimatedContent(
                                 targetState = instance,
-                                contentKey = { it.newScreenGroup() }
+                                contentKey = { it.screenGroup }
                             ) {
                                 it.newScreen()
                             }

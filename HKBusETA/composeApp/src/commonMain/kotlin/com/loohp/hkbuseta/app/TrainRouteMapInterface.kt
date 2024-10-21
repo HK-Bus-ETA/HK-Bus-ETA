@@ -124,7 +124,7 @@ import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
-import com.loohp.hkbuseta.appcontext.newScreenGroup
+import com.loohp.hkbuseta.appcontext.screenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
@@ -241,7 +241,6 @@ import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.renderedSize
 import com.loohp.hkbuseta.utils.withAlpha
-import hkbuseta.composeapp.generated.resources.Res
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.CoroutineScope
@@ -254,8 +253,9 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
-import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.InternalResourceApi
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.readResourceBytes
 
 @Immutable
 data class RouteMapData(
@@ -263,9 +263,9 @@ data class RouteMapData(
     val stations: Map<String, Offset>
 ) {
     companion object {
-        @OptIn(ExperimentalResourceApi::class)
+        @OptIn(InternalResourceApi::class)
         suspend fun fromFile(file: String): RouteMapData {
-            val lines = Res.readBytes(file).decodeToString()
+            val lines = readResourceBytes(file).decodeToString()
             val json = Json.decodeFromString<JsonObject>(lines)
             val dimension = json.optJsonObject("properties")!!.optJsonArray("dimension")!!.let { Size(it.optDouble(0).toFloat(), it.optDouble(1).toFloat()) }
             val stops = json.optJsonObject("stops")!!.mapToMutableMap { it.jsonArray.let { a -> Offset(a.optDouble(0).toFloat(), a.optDouble(1).toFloat()) } }
@@ -710,7 +710,7 @@ fun MTRRouteMapInterface(
     val imageSizeState = remember { mutableStateOf(IntSize.Zero) }
     val imageSize by imageSizeState
     var mtrRouteMapData by mtrRouteMapDataState.collectAsStateMultiplatform()
-    var allStops by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
+    var allStops: Map<String, Stop?> by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
     var closestStop by closestStopState
 
@@ -1215,7 +1215,7 @@ fun MTRRouteMapETAInterface(
                             val intent = AppIntent(instance, AppScreen.LIST_STOPS)
                             intent.putExtra("route", route)
                             intent.putExtra("stopId", stopId)
-                            if (HistoryStack.historyStack.value.last().newScreenGroup() == AppScreenGroup.ROUTE_STOPS) {
+                            if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                                 instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
                                 delay(300)
                             }
@@ -1745,7 +1745,7 @@ fun LRTRouteMapInterface(
     val imageSizeState = remember { mutableStateOf(IntSize(0, 0)) }
     val imageSize by imageSizeState
     var lightRailRouteMapData by lightRailRouteMapDataState.collectAsStateMultiplatform()
-    var allStops by remember { mutableStateOf(lightRailRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
+    var allStops: Map<String, Stop?> by remember { mutableStateOf(lightRailRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
     var closestStop by closestStopState
 
@@ -2985,7 +2985,7 @@ fun TrainETADisplay(
                                 val intent = AppIntent(instance, AppScreen.LIST_STOPS)
                                 intent.putExtra("route", route)
                                 intent.putExtra("stopId", stopId)
-                                if (HistoryStack.historyStack.value.last().newScreenGroup() == AppScreenGroup.ROUTE_STOPS) {
+                                if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                                     instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
                                     delay(300)
                                 }

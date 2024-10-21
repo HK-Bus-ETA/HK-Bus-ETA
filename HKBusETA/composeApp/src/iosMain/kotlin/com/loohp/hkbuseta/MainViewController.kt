@@ -22,21 +22,6 @@
 package com.loohp.hkbuseta
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.exclude
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContent
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -48,8 +33,6 @@ import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.multiplatform.lifecycle.LifecycleTracker
 import com.multiplatform.lifecycle.LocalLifecycleTracker
 import com.multiplatform.lifecyle.LifecycleComposeUIVCDelegate
-import platform.Foundation.NSProcessInfo
-import platform.Foundation.isiOSAppOnMac
 import platform.UIKit.UIViewController
 
 
@@ -63,28 +46,10 @@ fun MainViewController(): UIViewController {
         ) {
             val navColor by navColorState.collectAsStateMultiplatform()
             Box(
-                modifier = Modifier
-                    .drawBehind { drawRect(navColor?: Color.Transparent) }
-                    .consumeWindowInsets(WindowInsets.safeContent.exclude(WindowInsets.ime))
-                    .padding(WindowInsets.safeDrawing.detectKeepSafeAreaSides().asPaddingValues())
+                modifier = Modifier.drawBehind { drawRect(navColor?: Color.Transparent) }
             ) {
                 App()
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
-@Composable
-fun WindowInsets.detectKeepSafeAreaSides(): WindowInsets {
-    return if (NSProcessInfo.processInfo.isiOSAppOnMac()) {
-        WindowInsets(0, 0, 0, 0)
-    } else {
-        val windowSize = calculateWindowSizeClass()
-        if (windowSize.heightSizeClass == WindowHeightSizeClass.Compact || windowSize.widthSizeClass == WindowWidthSizeClass.Expanded) {
-            only(WindowInsetsSides.Top + WindowInsetsSides.Left + WindowInsetsSides.Right)
-        } else {
-            this
         }
     }
 }

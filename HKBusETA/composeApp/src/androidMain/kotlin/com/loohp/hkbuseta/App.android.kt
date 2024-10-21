@@ -24,6 +24,7 @@ package com.loohp.hkbuseta
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.loohp.hkbuseta.appcontext.applicationAppContext
 import com.loohp.hkbuseta.appcontext.componentActivity
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -39,3 +40,6 @@ actual fun watchDataOverwriteWarningInitialValue(): Boolean = runBlocking(Dispat
 
 @Composable
 actual fun SnackbarInterface(instance: AppActiveContext, snackbarHostState: SnackbarHostState) = SnackbarHost(snackbarHostState)
+
+@Composable
+actual fun Modifier.consumePlatformWindowInsets(): Modifier = this

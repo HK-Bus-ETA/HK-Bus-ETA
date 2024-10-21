@@ -32,12 +32,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -241,12 +238,11 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
             val sheetScroll = rememberScrollState()
             PlatformModalBottomSheet(
                 onDismissRequest = { showNoticeText = null },
-                modifier = Modifier
-                    .fillMaxHeight(0.9F),
                 sheetState = sheetState
             ) {
                 Column (
                     modifier = Modifier
+                        .fillMaxHeight(0.9F)
                         .verticalScrollWithScrollbar(
                             state = sheetScroll,
                             flingBehavior = ScrollableDefaults.flingBehavior(),
@@ -259,20 +255,14 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                     horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.Top
                 ) {
-                    val text = it.asContentAnnotatedString().annotatedString
+                    val text = it.asContentAnnotatedString(
+                        onClickUrls = { instance.handleWebpages(it, false, haptic.common).invoke() }
+                    ).annotatedString
                     SelectionContainer {
-                        ClickableText(
+                        PlatformText(
                             modifier = Modifier.fillMaxWidth(),
-                            style = LocalTextStyle.current.copy(
-                                fontSize = 17.sp,
-                                color = LocalContentColor.current
-                            ),
-                            text = text,
-                            onClick = {
-                                text.getStringAnnotations("url", it, it).firstOrNull()?.apply {
-                                    instance.handleWebpages(item, false, haptic.common).invoke()
-                                }
-                            }
+                            fontSize = 17.sp,
+                            text = text
                         )
                     }
                 }

@@ -122,7 +122,7 @@ import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
-import com.loohp.hkbuseta.appcontext.newScreenGroup
+import com.loohp.hkbuseta.appcontext.screenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
@@ -996,7 +996,7 @@ fun LazyItemScope.RouteEntry(
                             intent.putExtra("stopId", route.stopInfo!!.stopId)
                         }
                         intent.putExtra("stopIndex", route.stopInfoIndex)
-                        if (HistoryStack.historyStack.value.last().newScreenGroup() == AppScreenGroup.ROUTE_STOPS) {
+                        if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                             instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
                             delay(300)
                         }

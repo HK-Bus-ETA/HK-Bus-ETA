@@ -21,7 +21,6 @@
 
 package com.loohp.hkbuseta.compose
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -264,7 +263,6 @@ fun AutoResizeText(
     val windowSize = currentLocalWindowSize
     var textRefresh by remember { mutableStateOf(true) }
     var lastTextLayoutResult: TextLayoutResult? by remember { mutableStateOf(null) }
-    var first = remember { false }
 
     ImmediateEffect (Unit) {
         state = state.subscribe(id)
@@ -280,14 +278,10 @@ fun AutoResizeText(
             }
         }
     }
-    LaunchedEffect (density.fontScale, density.density, windowSize, text, state.fontSizeRange) {
+    ChangedEffect (density.fontScale, density.density, windowSize, text, state.fontSizeRange) {
         if (state.readyToDraw(id) && textRefresh) {
-            if (first) {
-                first = false
-            } else {
-                state = state.setFontSizeValue(id, null).setReadyToDraw(id, false)
-                textRefresh = false
-            }
+            state = state.setFontSizeValue(id, null).setReadyToDraw(id, false)
+            textRefresh = false
         }
     }
     LaunchedEffect (textRefresh) {
@@ -362,9 +356,9 @@ data class AutoResizeFontState(
 ) {
     val readyToDraw: Boolean = subscribers.all { readyToDrawSubscribers.contains(it) }
     fun readyToDraw(id: Uuid) = readyToDrawSubscribers.contains(id)
-    fun subscribe(id: Uuid): AutoResizeFontState = copy(subscribers = subscribers.toMutableSet().apply { add(id) })
-    fun unsubscribe(id: Uuid): AutoResizeFontState = copy(subscribers = subscribers.toMutableSet().apply { remove(id) })
-    fun setReadyToDraw(id: Uuid, readyToDraw: Boolean): AutoResizeFontState = copy(readyToDrawSubscribers = readyToDrawSubscribers.toMutableSet().apply { if (readyToDraw) add(id) else remove(id) })
+    fun subscribe(id: Uuid): AutoResizeFontState = copy(subscribers = subscribers + id)
+    fun unsubscribe(id: Uuid): AutoResizeFontState = copy(subscribers = subscribers - id)
+    fun setReadyToDraw(id: Uuid, readyToDraw: Boolean): AutoResizeFontState = copy(readyToDrawSubscribers = readyToDrawSubscribers.run { if (readyToDraw) this + id else this - id })
     val fontSizeValue: Float = fontSizeValueSubscribers.values.minOrNull()?: fontSizeRange.max.value
     fun fontSizeValue(id: Uuid): Float = fontSizeValueSubscribers[id]?: fontSizeValue
     fun setFontSizeValue(id: Uuid, fontSizeValue: Float?): AutoResizeFontState = copy(fontSizeValueSubscribers = fontSizeValueSubscribers.toMutableMap().apply { if (fontSizeValue == null) remove(id) else this[id] = fontSizeValue })
@@ -376,13 +370,12 @@ fun rememberAutoResizeFontState(
     preferSingleLine: Boolean = false
 ): MutableState<AutoResizeFontState> {
     val state = remember { mutableStateOf(AutoResizeFontState(fontSizeRange, preferSingleLine)) }
-    LaunchedEffect (fontSizeRange, preferSingleLine) {
+    ChangedEffect (fontSizeRange, preferSingleLine) {
         state.value = AutoResizeFontState(fontSizeRange, preferSingleLine)
     }
     return state
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 fun Modifier.userMarquee(): Modifier {
     return if (Shared.disableMarquee) this else basicMarquee(Int.MAX_VALUE)
 }
