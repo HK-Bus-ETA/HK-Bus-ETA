@@ -25,28 +25,37 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.JSONSerializable
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.buildFormattedString
+import com.loohp.hkbuseta.common.utils.mapToSet
+import com.loohp.hkbuseta.common.utils.optJsonArray
 import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
+import com.loohp.hkbuseta.common.utils.readCollection
 import com.loohp.hkbuseta.common.utils.readNullable
 import com.loohp.hkbuseta.common.utils.readString
+import com.loohp.hkbuseta.common.utils.toJsonArray
+import com.loohp.hkbuseta.common.utils.writeCollection
 import com.loohp.hkbuseta.common.utils.writeNullable
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.core.BytePacketBuilder
+import io.ktor.utils.io.core.writeInt
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 @Serializable
 @Immutable
-class Stop(
+data class Stop(
     val location: Coordinates,
     val name: BilingualText,
     val remark: BilingualText? = null,
-    val kmbBbiId: String? = null
-) : JSONSerializable, IOSerializable {
+    val kmbBbiId: String? = null,
+    val mtrIds: Set<Int>? = null
+): JSONSerializable, IOSerializable {
 
     companion object {
 
@@ -55,7 +64,8 @@ class Stop(
             val name = BilingualText.deserialize(json.optJsonObject("name")!!)
             val remark = if (json.contains("remark")) BilingualText.deserialize(json.optJsonObject("remark")!!) else null
             val kmbBbiId = if (json.contains("kmbBbiId")) json.optString("kmbBbiId") else null
-            return Stop(location, name, remark, kmbBbiId)
+            val mtrIds = if (json.contains("mtrIds")) json.optJsonArray("mtrIds")!!.mapToSet { it.jsonPrimitive.int } else null
+            return Stop(location, name, remark, kmbBbiId, mtrIds)
         }
 
         suspend fun deserialize(input: ByteReadChannel): Stop {
@@ -63,7 +73,8 @@ class Stop(
             val name = BilingualText.deserialize(input)
             val remark = input.readNullable { BilingualText.deserialize(it) }
             val kmbBbiId = input.readNullable { it.readString(UTF_8) }
-            return Stop(location, name, remark, kmbBbiId)
+            val mtrIds = input.readNullable { it.readCollection(mutableSetOf()) { i -> i.readInt() } }
+            return Stop(location, name, remark, kmbBbiId, mtrIds)
         }
 
     }
@@ -97,6 +108,9 @@ class Stop(
             if (kmbBbiId != null) {
                 put("kmbBbiId", kmbBbiId)
             }
+            if (mtrIds != null) {
+                put("mtrIds", mtrIds.toJsonArray())
+            }
         }
     }
 
@@ -105,24 +119,7 @@ class Stop(
         name.serialize(out)
         out.writeNullable(remark) { o, v -> v.serialize(o) }
         out.writeNullable(kmbBbiId) { o, v -> o.writeString(v, UTF_8) }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Stop) return false
-
-        if (location != other.location) return false
-        if (name != other.name) return false
-        if (remark != other.remark) return false
-        return kmbBbiId == other.kmbBbiId
-    }
-
-    override fun hashCode(): Int {
-        var result = location.hashCode()
-        result = 31 * result + name.hashCode()
-        result = 31 * result + (remark?.hashCode() ?: 0)
-        result = 31 * result + (kmbBbiId?.hashCode() ?: 0)
-        return result
+        out.writeNullable(mtrIds) { o, v -> o.writeCollection(v) { o1, v1 -> o1.writeInt(v1) } }
     }
 
 }
