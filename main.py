@@ -660,6 +660,7 @@ def download_and_process_mtr_data():
     MTR_BARRIER_FREE_MAPPING["items"] = {}
     all_mtr_stations = get_web_text("https://opendata.mtr.com.hk/data/mtr_lines_and_stations.csv").splitlines()[1:]
     station_id_to_code = {70: "RAC"}
+    station_code_to_id = {"RAC": {70}}
     MTR_DATA["RAC"] = {"fares": {}, "barrier_free": {}}
     for line in all_mtr_stations:
         try:
@@ -667,12 +668,20 @@ def download_and_process_mtr_data():
             station_id = int(row[3].strip('"'))
             station_code = row[2].strip('"')
             station_id_to_code[station_id] = station_code
+            if station_code not in station_code_to_id:
+                station_code_to_id[station_code] = {station_id}
+            else:
+                station_code_to_id[station_code].add(station_id)
             MTR_DATA[station_code] = {
                 "fares": {},
                 "barrier_free": {}
             }
         except ValueError:
             pass
+    for key, stop in DATA_SHEET["stopList"].items():
+        if key in station_code_to_id:
+            station_ids = station_code_to_id[key]
+            stop["mtrIds"] = sorted(station_ids)
     mtr_fares = get_web_text("https://opendata.mtr.com.hk/data/mtr_lines_fares.csv").splitlines()[1:]
     for line in mtr_fares:
         row = line.split(",")
