@@ -21,22 +21,28 @@
 
 package com.loohp.hkbuseta.app
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateValue
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -357,60 +363,68 @@ fun ListRoutesInterface(
             }
         },
         content = { padding ->
-            @Suppress("RemoveExplicitTypeArguments")
-            ConditionalComposable<BoxScope>(
-                condition = pullToRefreshState != null && !pipMode,
-                ifTrue = {
-                    PullToRefreshBox(
-                        modifier = Modifier.padding(padding),
-                        state = pullToRefreshState?: rememberPullToRefreshState(),
-                        isRefreshing = pullRefreshing,
-                        onRefresh = {
-                            scope.launch {
-                                try {
-                                    pullRefreshing = true
-                                    onPullToRefresh?.invoke()
-                                } finally {
-                                    pullRefreshing = false
-                                }
-                            }
-                        },
-                        content = it
-                    )
-                },
-                ifFalse = {
-                    Box(
-                        modifier = Modifier.padding(padding),
-                        content = it
-                    )
+            AnimatedContent(
+                modifier = Modifier.padding(padding),
+                targetState = filterRoutes to showEmptyText,
+                contentKey = { (routesList, showEmpty) -> routesList.isEmpty() to showEmpty },
+                transitionSpec = {
+                    fadeIn(spring(stiffness = Spring.StiffnessMediumLow))
+                        .togetherWith(fadeOut(spring(stiffness = Spring.StiffnessMediumLow)))
                 }
-            ) {
-                if (routes.isEmpty()) {
-                    EmptyListRouteInterface(
-                        instance = instance,
-                        showEta = showEta,
-                        recentSort = recentSort,
-                        showEmptyText = showEmptyText,
-                        pipMode = pipMode,
-                        pipModeListName = pipModeListName
-                    )
-                } else {
-                    ListRouteInterfaceInternal(
-                        instance = instance,
-                        routes = filterRoutes,
-                        checkSpecialDest = checkSpecialDest,
-                        listType = listType,
-                        showEta = showEta,
-                        recentSort = recentSort,
-                        proximitySortOrigin = proximitySortOrigin,
-                        maintainScrollPosition = maintainScrollPosition,
-                        bottomExtraSpace = bottomExtraSpace,
-                        reorderable = reorderable,
-                        activeSortModeState = activeSortModeState,
-                        filterDirectionsState = filterDirectionsState,
-                        pipMode = pipMode,
-                        pipModeListName = pipModeListName
-                    )
+            ) { (routesList, showEmpty) ->
+                @Suppress("RemoveExplicitTypeArguments")
+                ConditionalComposable<BoxScope>(
+                    condition = pullToRefreshState != null && !pipMode,
+                    ifTrue = {
+                        PullToRefreshBox(
+                            state = pullToRefreshState?: rememberPullToRefreshState(),
+                            isRefreshing = pullRefreshing,
+                            onRefresh = {
+                                scope.launch {
+                                    try {
+                                        pullRefreshing = true
+                                        onPullToRefresh?.invoke()
+                                    } finally {
+                                        pullRefreshing = false
+                                    }
+                                }
+                            },
+                            content = it
+                        )
+                    },
+                    ifFalse = {
+                        Box(
+                            content = it
+                        )
+                    }
+                ) {
+                    if (routesList.isEmpty()) {
+                        EmptyListRouteInterface(
+                            instance = instance,
+                            showEta = showEta,
+                            recentSort = recentSort,
+                            showEmptyText = showEmpty,
+                            pipMode = pipMode,
+                            pipModeListName = pipModeListName
+                        )
+                    } else {
+                        ListRouteInterfaceInternal(
+                            instance = instance,
+                            routes = routesList,
+                            checkSpecialDest = checkSpecialDest,
+                            listType = listType,
+                            showEta = showEta,
+                            recentSort = recentSort,
+                            proximitySortOrigin = proximitySortOrigin,
+                            maintainScrollPosition = maintainScrollPosition,
+                            bottomExtraSpace = bottomExtraSpace,
+                            reorderable = reorderable,
+                            activeSortModeState = activeSortModeState,
+                            filterDirectionsState = filterDirectionsState,
+                            pipMode = pipMode,
+                            pipModeListName = pipModeListName
+                        )
+                    }
                 }
             }
         }
