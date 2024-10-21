@@ -34,6 +34,8 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
+import androidx.compose.material3.CheckboxColors
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -48,10 +50,13 @@ import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItemColors
+import androidx.compose.material3.RadioButtonColors
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -61,6 +66,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -406,23 +412,36 @@ expect fun PlatformAlertDialog(
 expect fun Modifier.platformHorizontalDividerShadow(elevation: Dp = 5.dp): Modifier
 expect fun Modifier.platformVerticalDividerShadow(elevation: Dp = 5.dp): Modifier
 
+expect sealed interface PlatformDropdownMenuScope
+
 @Composable
 expect fun PlatformDropdownMenu(
     modifier: Modifier = Modifier,
     expanded: Boolean,
     onDismissRequest: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable PlatformDropdownMenuScope.() -> Unit
 )
 
 @Composable
-expect fun PlatformDropdownMenuItem(
-    text: @Composable () -> Unit,
+expect fun PlatformDropdownMenuScope.PlatformDropdownMenuTitle(
+    modifier: Modifier = Modifier,
+    title: @Composable (PaddingValues, TextUnit, Color) -> Unit
+)
+
+@Composable
+expect fun PlatformDropdownMenuScope.PlatformDropdownMenuDivider(
+    modifier: Modifier = Modifier
+)
+
+@Composable
+expect fun PlatformDropdownMenuScope.PlatformDropdownMenuItem(
+    text: @Composable (TextUnit) -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     enabled: Boolean = true,
-    colors: MenuItemColors = MenuDefaults.itemColors(),
+    colors: MenuItemColors? = null,
     contentPadding: PaddingValues = MenuDefaults.DropdownMenuItemContentPadding,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 )
@@ -534,4 +553,24 @@ expect fun TooltipScope.PlatformPlainTooltip(
     tonalElevation: Dp = 0.dp,
     shadowElevation: Dp = 0.dp,
     content: @Composable () -> Unit
+)
+
+@Composable
+expect fun PlatformCheckbox(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: CheckboxColors? = null,
+    interactionSource: MutableInteractionSource? = null
+)
+
+@Composable
+expect fun PlatformRadioButton(
+    selected: Boolean,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: RadioButtonColors? = null,
+    interactionSource: MutableInteractionSource? = null
 )

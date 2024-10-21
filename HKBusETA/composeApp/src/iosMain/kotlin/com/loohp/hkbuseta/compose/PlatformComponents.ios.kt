@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
@@ -57,9 +58,8 @@ import androidx.compose.material.icons.outlined.DepartureBoard
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
+import androidx.compose.material3.CheckboxColors
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
@@ -75,6 +75,7 @@ import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.material3.ProgressIndicatorDefaults
+import androidx.compose.material3.RadioButtonColors
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TooltipDefaults
@@ -124,12 +125,11 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.theme.AppTheme
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.UIImagePainter
+import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asPainter
 import com.loohp.hkbuseta.utils.equivalentDp
@@ -140,9 +140,13 @@ import io.github.alexzhirkevich.cupertino.CupertinoAlertDialog
 import io.github.alexzhirkevich.cupertino.CupertinoBorderedTextField
 import io.github.alexzhirkevich.cupertino.CupertinoButton
 import io.github.alexzhirkevich.cupertino.CupertinoButtonDefaults
+import io.github.alexzhirkevich.cupertino.CupertinoCheckBox
+import io.github.alexzhirkevich.cupertino.CupertinoCheckboxDefaults
 import io.github.alexzhirkevich.cupertino.CupertinoDividerDefaults
+import io.github.alexzhirkevich.cupertino.CupertinoDropdownMenu
 import io.github.alexzhirkevich.cupertino.CupertinoDropdownMenuDefaults
 import io.github.alexzhirkevich.cupertino.CupertinoIcon
+import io.github.alexzhirkevich.cupertino.CupertinoMenuScope
 import io.github.alexzhirkevich.cupertino.CupertinoNavigationBar
 import io.github.alexzhirkevich.cupertino.CupertinoNavigationBarDefaults
 import io.github.alexzhirkevich.cupertino.CupertinoNavigationBarItem
@@ -157,6 +161,9 @@ import io.github.alexzhirkevich.cupertino.CupertinoTextFieldDefaults
 import io.github.alexzhirkevich.cupertino.CupertinoTopAppBar
 import io.github.alexzhirkevich.cupertino.CupertinoTopAppBarDefaults
 import io.github.alexzhirkevich.cupertino.ExperimentalCupertinoApi
+import io.github.alexzhirkevich.cupertino.MenuAction
+import io.github.alexzhirkevich.cupertino.MenuDivider
+import io.github.alexzhirkevich.cupertino.MenuTitle
 import io.github.alexzhirkevich.cupertino.ProvideTextStyle
 import io.github.alexzhirkevich.cupertino.theme.CupertinoColors
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
@@ -933,71 +940,65 @@ actual fun Modifier.platformVerticalDividerShadow(elevation: Dp): Modifier = com
     }
 }
 
+actual typealias PlatformDropdownMenuScope = CupertinoMenuScope
+
+@OptIn(ExperimentalCupertinoApi::class)
 @Composable
 actual fun PlatformDropdownMenu(
     modifier: Modifier,
     expanded: Boolean,
     onDismissRequest: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable PlatformDropdownMenuScope.() -> Unit
 ) {
-    DropdownMenu(
-        modifier = modifier.background(CupertinoDropdownMenuDefaults.ContainerColor),
+    CupertinoDropdownMenu(
         expanded = expanded,
-        onDismissRequest = if (composePlatform.isMobileAppRunningOnDesktop) ({ /* do nothing */ }) else onDismissRequest,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
         content = {
-            AppTheme(
-                useDarkTheme = Shared.theme.isDarkMode,
-                customColor = Shared.color?.let { Color(it) }
-            ) {
-                content.invoke(this)
-            }
+            content.invoke(this)
         }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-actual fun PlatformDropdownMenuItem(
-    text: @Composable () -> Unit,
+actual fun PlatformDropdownMenuScope.PlatformDropdownMenuTitle(
+    modifier: Modifier,
+    title: @Composable (PaddingValues, TextUnit, Color) -> Unit
+) {
+    MenuTitle(
+        modifier = modifier,
+        title = { title.invoke(PaddingValues(horizontal = 0.dp), 16.sp, platformLocalContentColor) }
+    )
+}
+
+@Composable
+actual fun PlatformDropdownMenuScope.PlatformDropdownMenuDivider(
+    modifier: Modifier
+) {
+    MenuDivider(
+        modifier = modifier
+    )
+}
+
+@Composable
+actual fun PlatformDropdownMenuScope.PlatformDropdownMenuItem(
+    text: @Composable (TextUnit) -> Unit,
     onClick: () -> Unit,
     modifier: Modifier,
     leadingIcon: @Composable (() -> Unit)?,
     trailingIcon: @Composable (() -> Unit)?,
     enabled: Boolean,
-    colors: MenuItemColors,
+    colors: MenuItemColors?,
     contentPadding: PaddingValues,
     interactionSource: MutableInteractionSource
 ) {
-    val ripple = LocalRippleConfiguration.current
-    CompositionLocalProvider(
-        LocalRippleConfiguration provides null
-    ) {
-        val pressed by interactionSource.collectIsPressedAsState()
-        val animatedAlpha by animateFloatAsState(
-            targetValue = if (pressed) 0.33F else 1f
-        )
-        DropdownMenuItem(
-            text = {
-                Box(
-                    modifier = Modifier.graphicsLayer {
-                        alpha = if (pressed) 0.33F else animatedAlpha
-                    }
-                ) {
-                    CompositionLocalProvider(LocalRippleConfiguration provides ripple) {
-                        text.invoke()
-                    }
-                }
-            },
-            onClick = onClick,
-            modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
-            leadingIcon = leadingIcon,
-            trailingIcon = trailingIcon,
-            enabled = enabled,
-            colors = colors,
-            contentPadding = contentPadding,
-            interactionSource = interactionSource
-        )
-    }
+    MenuAction(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        contentColor = colors?.textColor?: CupertinoDropdownMenuDefaults.ContentColor,
+        title = { text.invoke(18.sp) }
+    )
 }
 
 @Composable
@@ -1314,4 +1315,66 @@ actual fun TooltipScope.PlatformPlainTooltip(
             }
         }
     )
+}
+
+@Composable
+actual fun PlatformCheckbox(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier,
+    enabled: Boolean,
+    colors: CheckboxColors?,
+    interactionSource: MutableInteractionSource?
+) {
+    CupertinoCheckBox(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier.padding(end = 3.dp),
+        enabled = enabled,
+        colors = colors?.run {
+            CupertinoCheckboxDefaults.colors(
+                checkedCheckmarkColor = checkedCheckmarkColor,
+                uncheckedCheckmarkColor = uncheckedCheckmarkColor,
+                checkedBoxColor = checkedBoxColor,
+                uncheckedBoxColor = uncheckedBoxColor,
+                disabledCheckedBoxColor = disabledCheckedBoxColor,
+                disabledUncheckedBoxColor = disabledUncheckedBoxColor,
+                disabledIndeterminateBoxColor = disabledIndeterminateBoxColor,
+                checkedBorderColor = checkedBorderColor,
+                uncheckedBorderColor = uncheckedBorderColor,
+                disabledBorderColor = disabledBorderColor,
+                disabledUncheckedBorderColor = disabledUncheckedBorderColor,
+                disabledIndeterminateBorderColor = disabledIndeterminateBorderColor
+            )
+        }?: CupertinoCheckboxDefaults.colors(),
+        interactionSource = interactionSource?: remember { MutableInteractionSource() }
+    )
+}
+
+@Composable
+actual fun PlatformRadioButton(
+    selected: Boolean,
+    onClick: (() -> Unit)?,
+    modifier: Modifier,
+    enabled: Boolean,
+    colors: RadioButtonColors?,
+    interactionSource: MutableInteractionSource?
+) {
+    Box(
+        modifier = Modifier
+            .padding(end = 3.dp)
+            .size(20.dp)
+            .clickable(
+                enabled = onClick != null && enabled,
+                onClick = { onClick?.invoke() }
+            )
+    ) {
+        if (selected) {
+            PlatformIcon(
+                modifier = Modifier.matchParentSize(),
+                painter = rememberSystemImagePainter("checkmark"),
+                contentDescription = null
+            )
+        }
+    }
 }

@@ -73,11 +73,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -202,11 +200,15 @@ import com.loohp.hkbuseta.compose.Fullscreen
 import com.loohp.hkbuseta.compose.LineEndCircle
 import com.loohp.hkbuseta.compose.NoTransfer
 import com.loohp.hkbuseta.compose.PlatformButton
+import com.loohp.hkbuseta.compose.PlatformCheckbox
 import com.loohp.hkbuseta.compose.PlatformDropdownMenu
+import com.loohp.hkbuseta.compose.PlatformDropdownMenuDivider
 import com.loohp.hkbuseta.compose.PlatformDropdownMenuItem
+import com.loohp.hkbuseta.compose.PlatformDropdownMenuTitle
 import com.loohp.hkbuseta.compose.PlatformFloatingActionButton
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
+import com.loohp.hkbuseta.compose.PlatformRadioButton
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.Schedule
@@ -534,30 +536,32 @@ fun ListRouteTopBar(
                                         expanded = expandFilterDirectionDropdown,
                                         onDismissRequest = { expandFilterDirectionDropdown = false }
                                     ) {
-                                        PlatformText(
-                                            modifier = Modifier.padding(horizontal = 10.dp),
-                                            fontSize = 17.sp,
-                                            color = platformLocalContentColor.adjustAlpha(0.5F),
-                                            text = if (Shared.language == "en") "Filter by Direction" else "按方向過濾"
-                                        )
-                                        HorizontalDivider(modifier = Modifier.padding(horizontal = 7.dp))
-                                        for (direction in setOf(null) + availableDirections) {
+                                        PlatformDropdownMenuTitle { padding, fontSize, color ->
+                                            PlatformText(
+                                                modifier = Modifier.padding(padding),
+                                                fontSize = fontSize,
+                                                color = color,
+                                                text = if (Shared.language == "en") "Filter by Direction" else "按方向過濾"
+                                            )
+                                        }
+                                        PlatformDropdownMenuDivider()
+                                        for (direction in sequenceOf(null) + availableDirections.asSequence()) {
                                             PlatformDropdownMenuItem(
                                                 onClick = {
                                                     expandFilterDirectionDropdown = false
                                                     filterDirections = direction
                                                 },
-                                                text = {
+                                                text = { fontSize ->
                                                     Row(
                                                         horizontalArrangement = Arrangement.spacedBy(5.sp.dp, Alignment.Start),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        RadioButton(
+                                                        PlatformRadioButton(
                                                             selected = direction == filterDirections,
                                                             onClick = null
                                                         )
                                                         PlatformText(
-                                                            fontSize = 20.sp,
+                                                            fontSize = fontSize,
                                                             text = direction.extendedDisplayName[Shared.language]
                                                         )
                                                     }
@@ -599,13 +603,15 @@ fun ListRouteTopBar(
                         expanded = expandSortModeDropdown,
                         onDismissRequest = { expandSortModeDropdown = false }
                     ) {
-                        PlatformText(
-                            modifier = Modifier.padding(horizontal = 10.dp),
-                            fontSize = 17.sp,
-                            color = platformLocalContentColor.adjustAlpha(0.5F),
-                            text = if (Shared.language == "en") "Sorting" else "排序"
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 7.dp))
+                        PlatformDropdownMenuTitle { padding, fontSize, color ->
+                            PlatformText(
+                                modifier = Modifier.padding(padding),
+                                fontSize = fontSize,
+                                color = color,
+                                text = if (Shared.language == "en") "Sorting" else "排序"
+                            )
+                        }
+                        PlatformDropdownMenuDivider()
                         for (mode in RouteSortMode.entries) {
                             if (mode.isLegalMode(recentSort == RecentSortMode.CHOICE, proximitySortOrigin != null)) {
                                 PlatformDropdownMenuItem(
@@ -620,17 +626,17 @@ fun ListRouteTopBar(
                                             }
                                         }
                                     },
-                                    text = {
+                                    text = { fontSize ->
                                         Row(
                                             horizontalArrangement = Arrangement.spacedBy(5.sp.dp, Alignment.Start),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            RadioButton(
+                                            PlatformRadioButton(
                                                 selected = activeSortMode.routeSortMode == mode,
                                                 onClick = null
                                             )
                                             PlatformText(
-                                                fontSize = 20.sp,
+                                                fontSize = fontSize,
                                                 text = mode.extendedTitle[Shared.language]
                                             )
                                         }
@@ -638,7 +644,7 @@ fun ListRouteTopBar(
                                 )
                             }
                         }
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 7.dp))
+                        PlatformDropdownMenuDivider()
                         PlatformDropdownMenuItem(
                             onClick = {
                                 scope.launch {
@@ -650,17 +656,17 @@ fun ListRouteTopBar(
                                     }
                                 }
                             },
-                            text = {
+                            text = { fontSize ->
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(5.sp.dp, Alignment.Start),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Checkbox(
+                                    PlatformCheckbox(
                                         checked = activeSortMode.filterTimetableActive,
                                         onCheckedChange = null
                                     )
                                     PlatformText(
-                                        fontSize = 20.sp,
+                                        fontSize = fontSize,
                                         text = if (Shared.language == "en") "Prioritize In Service" else "現正服務優先"
                                     )
                                 }

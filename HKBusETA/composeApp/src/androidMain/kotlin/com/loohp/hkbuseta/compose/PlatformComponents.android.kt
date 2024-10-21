@@ -23,10 +23,12 @@ package com.loohp.hkbuseta.compose
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -131,6 +133,9 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonElevation
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxColors
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -141,6 +146,7 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonElevation
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconToggleButtonColors
@@ -148,6 +154,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
@@ -158,6 +165,9 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonColors
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SheetState
@@ -172,6 +182,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -197,7 +208,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.utils.DrawableResource
+import com.loohp.hkbuseta.utils.adjustAlpha
 import org.jetbrains.compose.resources.painterResource
 
 actual inline val PlatformIcons.AutoMirrored.Filled.ArrowBack: Painter @Composable get() = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack)
@@ -721,41 +735,65 @@ actual fun PlatformAlertDialog(
 actual fun Modifier.platformHorizontalDividerShadow(elevation: Dp): Modifier = this.shadow(elevation)
 actual fun Modifier.platformVerticalDividerShadow(elevation: Dp): Modifier = this.shadow(elevation)
 
+actual sealed interface PlatformDropdownMenuScope {
+    data object Singleton: PlatformDropdownMenuScope
+}
+
 @Composable
 actual fun PlatformDropdownMenu(
     modifier: Modifier,
     expanded: Boolean,
     onDismissRequest: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable PlatformDropdownMenuScope.() -> Unit
 ) {
     DropdownMenu(
         modifier = modifier,
         expanded = expanded,
-        onDismissRequest = onDismissRequest,
-        content = content
-    )
+        onDismissRequest = onDismissRequest
+    ) {
+        content.invoke(PlatformDropdownMenuScope.Singleton)
+    }
 }
 
 @Composable
-actual fun PlatformDropdownMenuItem(
-    text: @Composable () -> Unit,
+actual fun PlatformDropdownMenuScope.PlatformDropdownMenuTitle(
+    modifier: Modifier,
+    title: @Composable (PaddingValues, TextUnit, Color) -> Unit
+) {
+    Box(
+        modifier = modifier
+    ) {
+        title.invoke(PaddingValues(horizontal = 10.dp), 17.sp, platformLocalContentColor.adjustAlpha(0.5F))
+    }
+}
+
+@Composable
+actual fun PlatformDropdownMenuScope.PlatformDropdownMenuDivider(
+    modifier: Modifier
+) {
+    HorizontalDivider(modifier = modifier.padding(horizontal = 7.dp))
+}
+
+@Composable
+actual fun PlatformDropdownMenuScope.PlatformDropdownMenuItem(
+    text: @Composable (TextUnit) -> Unit,
     onClick: () -> Unit,
     modifier: Modifier,
     leadingIcon: @Composable (() -> Unit)?,
     trailingIcon: @Composable (() -> Unit)?,
     enabled: Boolean,
-    colors: MenuItemColors,
+    colors: MenuItemColors?,
     contentPadding: PaddingValues,
     interactionSource: MutableInteractionSource
 ) {
     DropdownMenuItem(
-        text = text,
+        text = { text.invoke(20.sp) },
         onClick = onClick,
         modifier = modifier.pointerHoverIcon(PointerIcon.Hand),
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
         enabled = enabled,
-        colors = colors,
+        colors = colors?: MenuDefaults.itemColors(),
         contentPadding = contentPadding,
         interactionSource = interactionSource
     )
@@ -966,5 +1004,43 @@ actual fun TooltipScope.PlatformPlainTooltip(
         tonalElevation = tonalElevation,
         shadowElevation = shadowElevation,
         content = content
+    )
+}
+
+@Composable
+actual fun PlatformCheckbox(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier,
+    enabled: Boolean,
+    colors: CheckboxColors?,
+    interactionSource: MutableInteractionSource?
+) {
+    Checkbox(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier,
+        enabled = enabled,
+        colors = colors?: CheckboxDefaults.colors(),
+        interactionSource = null
+    )
+}
+
+@Composable
+actual fun PlatformRadioButton(
+    selected: Boolean,
+    onClick: (() -> Unit)?,
+    modifier: Modifier,
+    enabled: Boolean,
+    colors: RadioButtonColors?,
+    interactionSource: MutableInteractionSource?
+) {
+    RadioButton(
+        selected = selected,
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        colors = colors?: RadioButtonDefaults.colors(),
+        interactionSource = interactionSource
     )
 }
