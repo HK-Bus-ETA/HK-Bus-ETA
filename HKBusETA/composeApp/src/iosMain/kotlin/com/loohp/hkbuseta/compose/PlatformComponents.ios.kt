@@ -125,6 +125,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.utils.DrawableResource
@@ -952,7 +953,7 @@ actual fun PlatformDropdownMenu(
 ) {
     CupertinoDropdownMenu(
         expanded = expanded,
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = if (composePlatform.isMobileAppRunningOnDesktop) ({ /* do nothing */ }) else onDismissRequest,
         modifier = modifier,
         content = {
             content.invoke(this)
