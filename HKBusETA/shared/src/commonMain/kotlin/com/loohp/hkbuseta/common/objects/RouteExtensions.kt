@@ -1210,3 +1210,18 @@ fun List<Registry.StopData>.mapTrafficSnapshots(waypoints: RouteWaypoints?, traf
         array
     }
 }
+
+fun getRedirectToMTRJourneyPlannerUrl(startStopCode: String, endStopCode: String, context: AppContext): String {
+    // select language for MTR Journey Planner, either "en" or "ch"
+    val language = if (Shared.language == "en") "en" else "ch"
+
+    // convert startStop and endStop from code/ID to mtrIds
+    val startStopMTRId = startStopCode.asStop(context)?.mtrIds
+    val endStopMTRId = endStopCode.asStop(context)?.mtrIds
+
+    // get 1st element in mtrIds and convert to String
+    val startStopMtrIdString = startStopMTRId?.firstOrNull().toString()
+    val endStopMtrIdString = endStopMTRId?.firstOrNull().toString()
+    
+    return "https://www.mtr.com.hk/$language/customer/jp/index.php?oValue=$startStopMtrIdString&dValue=$endStopMtrIdString"
+}

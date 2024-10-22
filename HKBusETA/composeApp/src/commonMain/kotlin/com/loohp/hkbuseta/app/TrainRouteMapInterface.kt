@@ -20,7 +20,6 @@
  */
 
 package com.loohp.hkbuseta.app
-
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -158,6 +157,7 @@ import com.loohp.hkbuseta.common.objects.getMTRStationBarrierFree
 import com.loohp.hkbuseta.common.objects.getMTRStationLayoutUrl
 import com.loohp.hkbuseta.common.objects.getMTRStationStreetMapUrl
 import com.loohp.hkbuseta.common.objects.getMtrLineSortingIndex
+import com.loohp.hkbuseta.common.objects.getRedirectToMTRJourneyPlannerUrl
 import com.loohp.hkbuseta.common.objects.getStationBarrierFreeDetails
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isTrain
@@ -204,6 +204,7 @@ import com.loohp.hkbuseta.compose.PlatformTab
 import com.loohp.hkbuseta.compose.PlatformTabRow
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.RestartEffect
+import com.loohp.hkbuseta.compose.Route
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Signal
 import com.loohp.hkbuseta.compose.Star
@@ -1389,6 +1390,47 @@ fun MTRRouteMapOptionsInterface(
                 }
             )
         }
+        // show button that redirect to MTR Journey Planner if startingStation exists
+        if (startingStation != null) {
+            PlatformButton(
+                onClick = {
+                    // open browser with the prefilled url to MTR Journey Planner
+                    instance.handleWebpages(
+                        getRedirectToMTRJourneyPlannerUrl(startingStation!!, stopId, instance),
+                        false,
+                        haptic.common
+                    ).invoke()
+                },
+                content = {
+                    PlatformIcon(
+                        modifier = Modifier.padding(end = 5.dp),
+                        painter = PlatformIcons.Outlined.Route,
+                        contentDescription = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
+                    )
+                    PlatformText(
+                        fontSize = 17.sp,
+                        text = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
+                    )
+                }
+            )
+        } else {    // disable the button when startingStation is null
+            PlatformButton(
+                onClick = { },  // does nothing when the button is disabled
+                enabled = false,
+                content = {
+                    PlatformIcon(
+                        modifier = Modifier.padding(end = 5.dp),
+                        painter = PlatformIcons.Outlined.Route,
+                        contentDescription = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
+                    )
+                    PlatformText(
+                        fontSize = 17.sp,
+                        text = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
+                    )
+                }
+            )
+        }
+
         val favouriteStops by Shared.favoriteStops.collectAsStateMultiplatform()
         val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.contains(stopId) } }
         PlatformButton(
