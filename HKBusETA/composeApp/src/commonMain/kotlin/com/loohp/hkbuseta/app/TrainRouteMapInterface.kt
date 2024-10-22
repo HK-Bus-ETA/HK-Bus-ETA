@@ -20,6 +20,7 @@
  */
 
 package com.loohp.hkbuseta.app
+
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -329,7 +330,6 @@ private val routeMapSearchSelectedTabIndexState: MutableStateFlow<Int> = Mutable
 private val mtrLineServiceDisruptionState: MutableStateFlow<Map<String, TrainServiceStatus>> = MutableStateFlow(emptyMap())
 private val mtrLineServiceDisruptionAvailableState: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RouteMapSearchInterface(
     instance: AppActiveContext,
@@ -1330,106 +1330,70 @@ fun MTRRouteMapOptionsInterface(
             }?: if (Shared.language == "en") "Depending on Schedule of the Day" else "查看當天時間表"
         )
         Spacer(modifier = Modifier.size(30.dp))
-        if (startingStation != stopId) {
-            PlatformButton(
-                onClick = { startingStation = stopId },
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Start,
-                        contentDescription = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    )
-                }
-            )
-            PlatformButton(
-                onClick = { sheetInfoType = StationInfoSheetType.FARE },
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Paid,
-                        contentDescription = if (Shared.language == "en") "Fares" else "車費"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "Fares" else "車費"
-                    )
-                }
-            )
-            PlatformButton(
-                onClick = { sheetInfoType = StationInfoSheetType.OPENING_FIRST_LAST_TRAIN },
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Bedtime,
-                        contentDescription = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
-                    )
-                }
-            )
-        } else {
-            PlatformButton(
-                onClick = { startingStation = stopId },
-                enabled = false,
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Start,
-                        contentDescription = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    )
-                }
-            )
-        }
-        // show button that redirect to MTR Journey Planner if startingStation exists
-        if (startingStation != null) {
-            PlatformButton(
-                onClick = {
-                    // open browser with the prefilled url to MTR Journey Planner
-                    instance.handleWebpages(
-                        getRedirectToMTRJourneyPlannerUrl(startingStation!!, stopId, instance),
-                        false,
-                        haptic.common
-                    ).invoke()
-                },
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Route,
-                        contentDescription = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
-                    )
-                }
-            )
-        } else {    // disable the button when startingStation is null
-            PlatformButton(
-                onClick = { },  // does nothing when the button is disabled
-                enabled = false,
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Route,
-                        contentDescription = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
-                    )
-                }
-            )
-        }
+        PlatformButton(
+            onClick = { startingStation = stopId },
+            enabled = startingStation != stopId,
+            content = {
+                PlatformIcon(
+                    modifier = Modifier.padding(end = 5.dp),
+                    painter = PlatformIcons.Outlined.Start,
+                    contentDescription = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
+                )
+                PlatformText(
+                    fontSize = 17.sp,
+                    text = if (startingStation == stopId) {
+                        if (Shared.language == "en") "Starting Station" else "已設定為起點"
+                    } else {
+                        if (Shared.language == "en") "Set Starting Station" else "設定為起點"
+                    }
+                )
+            }
+        )
+        PlatformButton(
+            onClick = { sheetInfoType = StationInfoSheetType.FARE },
+            enabled = startingStation != null && startingStation != stopId,
+            content = {
+                PlatformIcon(
+                    modifier = Modifier.padding(end = 5.dp),
+                    painter = PlatformIcons.Outlined.Paid,
+                    contentDescription = if (Shared.language == "en") "Fares" else "車費"
+                )
+                PlatformText(
+                    fontSize = 17.sp,
+                    text = if (Shared.language == "en") "Fares" else "車費"
+                )
+            }
+        )
+        PlatformButton(
+            onClick = { sheetInfoType = StationInfoSheetType.OPENING_FIRST_LAST_TRAIN },
+            enabled = startingStation != null && startingStation != stopId,
+            content = {
+                PlatformIcon(
+                    modifier = Modifier.padding(end = 5.dp),
+                    painter = PlatformIcons.Outlined.Bedtime,
+                    contentDescription = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
+                )
+                PlatformText(
+                    fontSize = 17.sp,
+                    text = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
+                )
+            }
+        )
+        PlatformButton(
+            onClick = instance.handleWebpages(getRedirectToMTRJourneyPlannerUrl(startingStation, stopId, instance), false, haptic.common),
+            enabled = startingStation != null,
+            content = {
+                PlatformIcon(
+                    modifier = Modifier.padding(end = 5.dp),
+                    painter = PlatformIcons.Outlined.Route,
+                    contentDescription = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
+                )
+                PlatformText(
+                    fontSize = 17.sp,
+                    text = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
+                )
+            }
+        )
 
         val favouriteStops by Shared.favoriteStops.collectAsStateMultiplatform()
         val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.contains(stopId) } }
@@ -1549,59 +1513,67 @@ fun MTRRouteMapInfoSheetInterface(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)
             ) {
-                if (startingStation != stopId) {
-                    startingStation?.let { startingId ->
-                        val startingStop by remember(startingId) { derivedStateOf { startingId.asStop(instance)!! } }
-                        val fareTable by remember(startingId, stopId) { derivedStateOf { startingId.findMTRFares(stopId, instance) } }
-                        if (fareTable.containsKey(null)) {
+                startingStation?.takeIf { startingStation != stopId }?.let { startingId ->
+                    val startingStop by remember(startingId) { derivedStateOf { startingId.asStop(instance)!! } }
+                    val fareTable by remember(startingId, stopId) { derivedStateOf { startingId.findMTRFares(stopId, instance) } }
+                    if (fareTable.containsKey(null)) {
+                        PlatformText(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 19.sp,
+                            text = if (Shared.language == "en") {
+                                "${startingStop.name.en} to ${stop.name.en}"
+                            } else {
+                                "${startingStop.name.zh} 往 ${stop.name.zh}"
+                            }
+                        )
+                        TrainFareTableDisplay(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(platformPrimaryContainerColor)
+                                .padding(3.dp),
+                            fareTable = fareTable[null]!!.asImmutableMap()
+                        )
+                    } else {
+                        for ((viaStopId, optionFareTable) in fareTable) {
+                            val viaStation = viaStopId!!.asStop(instance)!!
                             PlatformText(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 19.sp,
                                 text = if (Shared.language == "en") {
-                                    "${startingStop.name.en} to ${stop.name.en}"
+                                    "${startingStop.name.en} to ${stop.name.en} (Via ${viaStation.name.en})"
                                 } else {
-                                    "${startingStop.name.zh} 往 ${stop.name.zh}"
+                                    "${startingStop.name.zh} 往 ${stop.name.zh} (經${viaStation.name.zh})"
                                 }
                             )
                             TrainFareTableDisplay(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(platformPrimaryContainerColor)
+                                    .background(Operator.MTR.getLineColor("AEL", Color.White).withAlpha(100))
                                     .padding(3.dp),
-                                fareTable = fareTable[null]!!.asImmutableMap()
+                                fareTable = optionFareTable.asImmutableMap()
                             )
-                        } else {
-                            for ((viaStopId, optionFareTable) in fareTable) {
-                                val viaStation = viaStopId!!.asStop(instance)!!
-                                PlatformText(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 19.sp,
-                                    text = if (Shared.language == "en") {
-                                        "${startingStop.name.en} to ${stop.name.en} (Via ${viaStation.name.en})"
-                                    } else {
-                                        "${startingStop.name.zh} 往 ${stop.name.zh} (經${viaStation.name.zh})"
-                                    }
-                                )
-                                TrainFareTableDisplay(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(Operator.MTR.getLineColor("AEL", Color.White).withAlpha(100))
-                                        .padding(3.dp),
-                                    fareTable = optionFareTable.asImmutableMap()
-                                )
-                            }
                         }
-                        PlatformText(
-                            modifier = Modifier.padding(horizontal = 20.dp),
-                            text = if (Shared.language == "en") {
-                                "One Single Journey Ticket is not valid for interchange between lines at Tsim Sha Tsui / East Tsim Sha Tsui station."
-                            } else {
-                                "持一張單程車票不可在尖沙咀/尖東站轉綫"
-                            },
-                            fontSize = 17.sp
-                        )
-                        Spacer(modifier = Modifier.size(10.dp))
                     }
+                    PlatformText(
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                        text = if (Shared.language == "en") {
+                            "One Single Journey Ticket is not valid for interchange between lines at Tsim Sha Tsui / East Tsim Sha Tsui station."
+                        } else {
+                            "持一張單程車票不可在尖沙咀/尖東站轉綫"
+                        },
+                        fontSize = 17.sp
+                    )
+                    Spacer(modifier = Modifier.size(10.dp))
+                }?: run {
+                    PlatformText(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 19.sp,
+                        text = if (Shared.language == "en") {
+                            "No starting station selected"
+                        } else {
+                            "未選擇起點"
+                        }
+                    )
                 }
             }
         }
@@ -1750,6 +1722,16 @@ fun MTRRouteMapInfoSheetInterface(
                     }
                     Spacer(modifier = Modifier.size(30.dp))
                 }
+            }?: run {
+                PlatformText(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 19.sp,
+                    text = if (Shared.language == "en") {
+                        "No starting station selected"
+                    } else {
+                        "未選擇起點"
+                    }
+                )
             }
         }
         StationInfoSheetType.BARRIER_FREE -> TrainStationBarrierFreeDisplay(
@@ -2464,66 +2446,71 @@ fun LRTETADisplayOptionsInterface(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)
     ) {
-        if (startingStation != stopId) {
-            PlatformButton(
-                onClick = { startingStation = stopId },
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Start,
-                        contentDescription = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    )
-                }
-            )
-            PlatformButton(
-                onClick = { sheetInfoType = StationInfoSheetType.FARE },
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Paid,
-                        contentDescription = if (Shared.language == "en") "Fares" else "車費"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "Fares" else "車費"
-                    )
-                }
-            )
-            PlatformButton(
-                onClick = { sheetInfoType = StationInfoSheetType.OPENING_FIRST_LAST_TRAIN },
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Bedtime,
-                        contentDescription = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
-                    )
-                }
-            )
-        } else {
-            PlatformButton(
-                onClick = { startingStation = stopId },
-                enabled = false,
-                content = {
-                    PlatformIcon(
-                        modifier = Modifier.padding(end = 5.dp),
-                        painter = PlatformIcons.Outlined.Start,
-                        contentDescription = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    )
-                    PlatformText(
-                        fontSize = 17.sp,
-                        text = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    )
-                }
-            )
-        }
+        PlatformButton(
+            onClick = { startingStation = stopId },
+            enabled = startingStation != stopId,
+            content = {
+                PlatformIcon(
+                    modifier = Modifier.padding(end = 5.dp),
+                    painter = PlatformIcons.Outlined.Start,
+                    contentDescription = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
+                )
+                PlatformText(
+                    fontSize = 17.sp,
+                    text = if (startingStation == stopId) {
+                        if (Shared.language == "en") "Starting Station" else "已設定為起點"
+                    } else {
+                        if (Shared.language == "en") "Set Starting Station" else "設定為起點"
+                    }
+                )
+            }
+        )
+        PlatformButton(
+            onClick = { sheetInfoType = StationInfoSheetType.FARE },
+            enabled = startingStation != null && startingStation != stopId,
+            content = {
+                PlatformIcon(
+                    modifier = Modifier.padding(end = 5.dp),
+                    painter = PlatformIcons.Outlined.Paid,
+                    contentDescription = if (Shared.language == "en") "Fares" else "車費"
+                )
+                PlatformText(
+                    fontSize = 17.sp,
+                    text = if (Shared.language == "en") "Fares" else "車費"
+                )
+            }
+        )
+        PlatformButton(
+            onClick = { sheetInfoType = StationInfoSheetType.OPENING_FIRST_LAST_TRAIN },
+            enabled = startingStation != null && startingStation != stopId,
+            content = {
+                PlatformIcon(
+                    modifier = Modifier.padding(end = 5.dp),
+                    painter = PlatformIcons.Outlined.Bedtime,
+                    contentDescription = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
+                )
+                PlatformText(
+                    fontSize = 17.sp,
+                    text = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
+                )
+            }
+        )
+        PlatformButton(
+            onClick = instance.handleWebpages(getRedirectToMTRJourneyPlannerUrl(startingStation, stopId, instance), false, haptic.common),
+            enabled = startingStation != null,
+            content = {
+                PlatformIcon(
+                    modifier = Modifier.padding(end = 5.dp),
+                    painter = PlatformIcons.Outlined.Route,
+                    contentDescription = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
+                )
+                PlatformText(
+                    fontSize = 17.sp,
+                    text = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
+                )
+            }
+        )
+
         val favouriteStops by Shared.favoriteStops.collectAsStateMultiplatform()
         val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.contains(stopId) } }
         PlatformButton(
@@ -2590,38 +2577,46 @@ fun LRTETADisplayInfoSheetInterface(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)
             ) {
-                if (startingStation != stopId) {
-                    startingStation?.let { startingId ->
-                        val startingStop by remember(startingId) { derivedStateOf { startingId.asStop(instance)!! } }
-                        val fareTable by remember(startingId, stopId) { derivedStateOf { startingId.findLRTFares(stopId, instance) } }
-                        PlatformText(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 19.sp,
-                            text = if (Shared.language == "en") {
-                                "${startingStop.name.en} to ${stop.name.en}"
-                            } else {
-                                "${startingStop.name.zh} 往 ${stop.name.zh}"
-                            }
-                        )
-                        TrainFareTableDisplay(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(platformPrimaryContainerColor)
-                                .padding(3.dp),
-                            fareTable = fareTable.asImmutableMap()
-                        )
-                        PlatformText(
-                            modifier = Modifier.padding(horizontal = 20.dp),
-                            text = if (Shared.language == "en") {
-                                "Each Octopus or single journey ticket is valid for a single journey from the stop where the Octopus is validated or ticket is issued to one other stop in a single direction without repeating any stop.\n" +
-                                        "A passenger is required to re-validate Octopus or buy another appropriate single journey ticket for return or another journey (including all circular routes)."
-                            } else {
-                                "已確認之八達通或單程車票祇適用於從確認入站或購票車站起，作單一方向乘車前往另一車站，期間不可重複車站\n乘客在回程或再乘車時(包括所有循環路綫)，必須重新確認八達通或另外購買合適車票"
-                            },
-                            fontSize = 17.sp
-                        )
-                        Spacer(modifier = Modifier.size(10.dp))
-                    }
+                startingStation?.takeIf { startingStation != stopId }?.let { startingId ->
+                    val startingStop by remember(startingId) { derivedStateOf { startingId.asStop(instance)!! } }
+                    val fareTable by remember(startingId, stopId) { derivedStateOf { startingId.findLRTFares(stopId, instance) } }
+                    PlatformText(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 19.sp,
+                        text = if (Shared.language == "en") {
+                            "${startingStop.name.en} to ${stop.name.en}"
+                        } else {
+                            "${startingStop.name.zh} 往 ${stop.name.zh}"
+                        }
+                    )
+                    TrainFareTableDisplay(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(platformPrimaryContainerColor)
+                            .padding(3.dp),
+                        fareTable = fareTable.asImmutableMap()
+                    )
+                    PlatformText(
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                        text = if (Shared.language == "en") {
+                            "Each Octopus or single journey ticket is valid for a single journey from the stop where the Octopus is validated or ticket is issued to one other stop in a single direction without repeating any stop.\n" +
+                                    "A passenger is required to re-validate Octopus or buy another appropriate single journey ticket for return or another journey (including all circular routes)."
+                        } else {
+                            "已確認之八達通或單程車票祇適用於從確認入站或購票車站起，作單一方向乘車前往另一車站，期間不可重複車站\n乘客在回程或再乘車時(包括所有循環路綫)，必須重新確認八達通或另外購買合適車票"
+                        },
+                        fontSize = 17.sp
+                    )
+                    Spacer(modifier = Modifier.size(10.dp))
+                }?: run {
+                    PlatformText(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 19.sp,
+                        text = if (Shared.language == "en") {
+                            "No starting station selected"
+                        } else {
+                            "未選擇起點"
+                        }
+                    )
                 }
             }
         }
@@ -2769,6 +2764,16 @@ fun LRTETADisplayInfoSheetInterface(
                     }
                     Spacer(modifier = Modifier.size(30.dp))
                 }
+            }?: run {
+                PlatformText(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 19.sp,
+                    text = if (Shared.language == "en") {
+                        "No starting station selected"
+                    } else {
+                        "未選擇起點"
+                    }
+                )
             }
         }
         else -> PlatformText(sheetInfoType.name)

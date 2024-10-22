@@ -1211,17 +1211,26 @@ fun List<Registry.StopData>.mapTrafficSnapshots(waypoints: RouteWaypoints?, traf
     }
 }
 
-fun getRedirectToMTRJourneyPlannerUrl(startStopCode: String, endStopCode: String, context: AppContext): String {
-    // select language for MTR Journey Planner, either "en" or "ch"
-    val language = if (Shared.language == "en") "en" else "ch"
+fun getRedirectToMTRJourneyPlannerUrl(startingStationId: String?, destinationStationId: String?, context: AppContext): String {
+    val url = "https://www.mtr.com.hk/${if (Shared.language == "en") "en" else "ch"}/customer/jp/index.php"
 
-    // convert startStop and endStop from code/ID to mtrIds
-    val startStopMTRId = startStopCode.asStop(context)?.mtrIds
-    val endStopMTRId = endStopCode.asStop(context)?.mtrIds
+    val startingStationIsLightRail = startingStationId?.identifyStopCo()?.contains(Operator.LRT) == true
+    val startingStationTypeId = if (startingStationIsLightRail) "LRStation" else "HRStation"
+    val startingStationMtrId = if (startingStationIsLightRail) startingStationId?.substring(2)?.toInt() else startingStationId?.asStop(context)?.mtrIds?.firstOrNull()
 
-    // get 1st element in mtrIds and convert to String
-    val startStopMtrIdString = startStopMTRId?.firstOrNull().toString()
-    val endStopMtrIdString = endStopMTRId?.firstOrNull().toString()
-    
-    return "https://www.mtr.com.hk/$language/customer/jp/index.php?oValue=$startStopMtrIdString&dValue=$endStopMtrIdString"
+    val destinationStationIsLightRail = destinationStationId?.identifyStopCo()?.contains(Operator.LRT) == true
+    val destinationStationTypeId = if (destinationStationIsLightRail) "LRStation" else "HRStation"
+    val destinationStationMtrId = if (destinationStationIsLightRail) destinationStationId?.substring(2)?.toInt() else destinationStationId?.asStop(context)?.mtrIds?.firstOrNull()
+
+    val args = buildList {
+        if (startingStationMtrId != null) {
+            add("oValue=$startingStationMtrId&oType=$startingStationTypeId")
+        }
+
+        if (destinationStationMtrId != null) {
+            add("dValue=$destinationStationMtrId&dType=$destinationStationTypeId")
+        }
+    }
+
+    return if (args.isEmpty()) url else url + args.joinToString(prefix = "?", separator = "&")
 }
