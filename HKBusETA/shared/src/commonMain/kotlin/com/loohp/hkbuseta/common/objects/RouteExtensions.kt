@@ -1210,3 +1210,27 @@ fun List<Registry.StopData>.mapTrafficSnapshots(waypoints: RouteWaypoints?, traf
         array
     }
 }
+
+fun getRedirectToMTRJourneyPlannerUrl(startingStationId: String?, destinationStationId: String?, context: AppContext): String {
+    val url = "https://www.mtr.com.hk/${if (Shared.language == "en") "en" else "ch"}/customer/jp/index.php"
+
+    val startingStationIsLightRail = startingStationId?.identifyStopCo()?.contains(Operator.LRT) == true
+    val startingStationTypeId = if (startingStationIsLightRail) "LRStation" else "HRStation"
+    val startingStationMtrId = if (startingStationIsLightRail) startingStationId?.substring(2)?.toInt() else startingStationId?.asStop(context)?.mtrIds?.firstOrNull()
+
+    val destinationStationIsLightRail = destinationStationId?.identifyStopCo()?.contains(Operator.LRT) == true
+    val destinationStationTypeId = if (destinationStationIsLightRail) "LRStation" else "HRStation"
+    val destinationStationMtrId = if (destinationStationIsLightRail) destinationStationId?.substring(2)?.toInt() else destinationStationId?.asStop(context)?.mtrIds?.firstOrNull()
+
+    val args = buildList {
+        if (startingStationMtrId != null) {
+            add("oValue=$startingStationMtrId&oType=$startingStationTypeId")
+        }
+
+        if (destinationStationMtrId != null) {
+            add("dValue=$destinationStationMtrId&dType=$destinationStationTypeId")
+        }
+    }
+
+    return if (args.isEmpty()) url else url + args.joinToString(prefix = "?", separator = "&")
+}
