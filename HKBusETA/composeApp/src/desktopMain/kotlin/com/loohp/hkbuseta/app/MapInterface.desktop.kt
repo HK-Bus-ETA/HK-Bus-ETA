@@ -67,6 +67,7 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.DATA_FOLDER
 import com.loohp.hkbuseta.common.utils.ImmutableState
+import com.loohp.hkbuseta.common.utils.KCEF_FOLDER
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.ImmediateEffect
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
@@ -115,9 +116,9 @@ fun KCEFWebContainer(content: @Composable () -> Unit) {
             try {
                 KCEF.init(
                     builder = {
-                        installDir(File("hkbuseta-kcef"))
+                        installDir(KCEF_FOLDER)
                         settings {
-                            cachePath = File(DATA_FOLDER, "cache").absolutePath
+                            cachePath = File(DATA_FOLDER, "kcef-cache").absolutePath
                             backgroundColor = CefSettings().ColorType(
                                 (background.alpha * 255).roundToInt(),
                                 (background.red * 255).roundToInt(),

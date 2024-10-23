@@ -206,8 +206,22 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.loohp.hkbuseta"
+            packageName = "HK Bus ETA"
             packageVersion = "2.4.3"
+
+            macOS {
+                iconFile.set(project.file("icon.icns"))
+            }
+            windows {
+                perUserInstall = true
+                upgradeUuid = "20ce294a-f7d4-484a-87c0-d26d8950ab5e"
+                iconFile.set(project.file("icon.ico"))
+            }
+            linux {
+                packageName = "hk-bus-eta"
+                appRelease = packageVersion
+                iconFile.set(project.file("icon.png"))
+            }
         }
 
         buildTypes.release.proguard {

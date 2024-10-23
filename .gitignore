@@ -32,7 +32,8 @@ render.experimental.xml
 *.xcuserstate
 
 CURRENT
-HKBusETA/composeApp/hkbuseta-kcef/*
+HKBusETA/composeApp/hkbuseta-kcef
+HKBusETA/composeApp/hkbuseta-data
 
 */secrets.*
 *.lock
