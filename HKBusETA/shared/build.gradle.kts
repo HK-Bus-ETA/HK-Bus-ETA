@@ -84,6 +84,7 @@ kotlin {
         }
         desktopMain.dependencies {
             implementation(libs.ktor.client.java)
+            implementation(libs.appdirs)
         }
         wasmJsMain.dependencies {
             implementation(libs.ktor.client.js)

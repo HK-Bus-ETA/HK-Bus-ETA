@@ -32,12 +32,7 @@ render.experimental.xml
 *.xcuserstate
 
 CURRENT
-HKBusETA/composeApp/cache/*
-HKBusETA/composeApp/checksum.json
-HKBusETA/composeApp/data.json
-HKBusETA/composeApp/kcef-bundle/*
-HKBusETA/composeApp/preferences.json
-
+HKBusETA/composeApp/hkbuseta-kcef/*
 
 */secrets.*
 *.lock

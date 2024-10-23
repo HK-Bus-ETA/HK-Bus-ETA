@@ -327,6 +327,8 @@ const val baseHtml: String = """
         var layer = L.layerGroup();
         map.addLayer(layer);
         
+        var stopMarkers = [];
+        
         var polylines = [];
         var polylinesOutline = [];
     </script>
@@ -384,7 +386,7 @@ fun rememberLeafletScript(
         var stopNames = [$stopNames];
         var indexMap = [${indexMap.joinToString(separator = ",")}];
 
-        var stopMarkers = stops.map(function(point, index) {
+        stopMarkers = stops.map(function(point, index) {
             var title;
             if ("$shouldShowStopIndex" == "true") {
                 title = "<div style='text-align: center;'><b>" + (indexMap[index] + 1) + ". </b>" + stopNames[index] + "<div>";
@@ -483,8 +485,8 @@ fun DefaultMapRouteInterface(
         val index = indexMap.indexOf(selectedStop - 1)
         if (index >= 0) {
             webViewNavigator.evaluateJavaScript("""
-            stopMarkers[$index].openPopup()
-        """.trimIndent())
+                stopMarkers[$index].openPopup();
+            """.trimIndent())
         }
     }
 

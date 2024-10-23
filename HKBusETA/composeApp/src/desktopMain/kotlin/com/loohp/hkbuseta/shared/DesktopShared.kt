@@ -39,4 +39,8 @@ object DesktopShared {
         }
     }
 
+    fun setSystemFormatProviders() {
+        System.setProperty("java.locale.providers", "HOST")
+    }
+
 }

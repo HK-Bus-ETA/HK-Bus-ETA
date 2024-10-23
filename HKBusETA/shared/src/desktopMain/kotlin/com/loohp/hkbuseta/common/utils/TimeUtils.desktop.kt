@@ -21,4 +21,9 @@
 
 package com.loohp.hkbuseta.common.utils
 
+import java.util.Locale
+
+
 actual val hongKongZoneId: String = "Asia/Hong_Kong"
+
+val timeFormatLocale: Locale get() = Locale.getDefault(Locale.Category.FORMAT)

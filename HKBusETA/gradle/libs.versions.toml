@@ -2,12 +2,13 @@
 activityCompose = "1.9.3"
 agp = "8.2.2"
 androidPdfViewer = "3.2.0-beta.3"
+appdirs = "1.2.2"
 browser = "1.8.0"
 coilCompose = "3.0.0-rc01"
 colormath = "3.5.0"
-commonsLang3 = "3.14.0"
+commonsLang3 = "3.16.0"
 composeMultiplatformLifecycleTracker = "1.0.0"
-composeWebviewMultiplatform = "1.9.40-alpha03"
+composeWebviewMultiplatform = "1.9.40-alpha04"
 concurrentFuturesKtx = "1.2.0"
 cupertino = "0.2.0-alpha05"
 glanceAppwidget = "1.1.1"
@@ -90,6 +91,7 @@ androidx-wear-ongoing = { module = "androidx.wear:wear-ongoing", version.ref = "
 androidx-wear-phone-interactions = { module = "androidx.wear:wear-phone-interactions", version.ref = "wearPhoneInteractions" }
 androidx-wear-remote-interactions = { module = "androidx.wear:wear-remote-interactions", version.ref = "wearOngoing" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
+appdirs = { module = "net.harawata:appdirs", version.ref = "appdirs" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilCompose" }
 colormath = { module = "com.github.ajalt.colormath:colormath", version.ref = "colormath" }

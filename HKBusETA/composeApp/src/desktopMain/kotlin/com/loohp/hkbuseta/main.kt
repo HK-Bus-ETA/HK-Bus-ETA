@@ -37,14 +37,16 @@ import com.loohp.hkbuseta.compose.ImmediateEffect
 import com.loohp.hkbuseta.shared.DesktopShared
 import java.awt.Dimension
 
+
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() = application {
+    DesktopShared.setSystemFormatProviders()
     DesktopShared.setDefaultExceptionHandler()
     setVersionImpl { Triple("HKBusETA", "2.4.3", 26) }
     Window(
         onCloseRequest = ::exitApplication,
         title = if (Shared.language == "en") "HK Bus ETA" else "香港巴士到站預報",
-        icon = painterResource("icon_full_smaller.png"),
+        icon = @Suppress("DEPRECATION") painterResource("icon_full_smaller.png"),
         state = rememberWindowState(size = DpSize(1200.dp, 800.dp)),
     ) {
         val composeWindow = LocalWindowInfo.current.containerSize

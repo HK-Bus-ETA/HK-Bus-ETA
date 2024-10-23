@@ -65,8 +65,10 @@ import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.DATA_FOLDER
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.compose.ChangedEffect
+import com.loohp.hkbuseta.compose.ImmediateEffect
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.shared.ComposeShared
@@ -84,9 +86,9 @@ import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import dev.datlag.kcef.KCEF
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.max
 
@@ -99,32 +101,43 @@ inline fun KCEFWebContainer(crossinline content: @Composable () -> Unit) {
     var kcefLoadState by rememberSaveable { mutableStateOf(KCEFLoadState.NOT_INITIALIZED) }
     var downloadingProgress by rememberSaveable { mutableFloatStateOf(0F) }
 
-    LaunchedEffect (Unit) {
-        withContext(Dispatchers.IO) {
-            KCEF.init(
-                builder = {
-                    installDir(File("kcef-bundle"))
-                    progress {
-                        onDownloading {
-                            kcefLoadState = KCEFLoadState.DOWNLOADING
-                            downloadingProgress = max(it / 100F, 0F)
+    ImmediateEffect (Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            var success = true
+            try {
+                KCEF.init(
+                    builder = {
+                        installDir(File("hkbuseta-kcef"))
+                        settings {
+                            cachePath = File(DATA_FOLDER, "cache").absolutePath
                         }
-                        onInitialized {
-                            kcefLoadState = KCEFLoadState.INITIALIZED
+                        progress {
+                            onDownloading {
+                                kcefLoadState = KCEFLoadState.DOWNLOADING
+                                downloadingProgress = max(it / 100F, 0F)
+                            }
+                            onInitialized {
+                                kcefLoadState = KCEFLoadState.INITIALIZED
+                            }
                         }
+                    },
+                    onError = {
+                        success = false
+                        kcefLoadState = KCEFLoadState.ERROR
+                        it?.printStackTrace()
+                    },
+                    onRestartRequired = {
+                        success = false
+                        kcefLoadState = KCEFLoadState.RESTART_REQUIRED
                     }
-                    settings {
-                        cachePath = File("cache").absolutePath
-                    }
-                },
-                onError = {
-                    kcefLoadState = KCEFLoadState.ERROR
-                    it?.printStackTrace()
-                },
-                onRestartRequired = {
-                    kcefLoadState = KCEFLoadState.RESTART_REQUIRED
-                }
-            )
+                )
+            } catch (e: Throwable) {
+                success = false
+                e.printStackTrace()
+            }
+            if (success) {
+                kcefLoadState = KCEFLoadState.INITIALIZED
+            }
         }
     }
 
@@ -207,6 +220,8 @@ const val baseHtml: String = """
         var layer = L.layerGroup();
         map.addLayer(layer);
         
+        var stopMarkers = [];
+        
         var polylines = [];
         var polylinesOutline = [];
     </script>
@@ -264,17 +279,33 @@ fun rememberLeafletScript(
         var stopNames = [$stopNames];
         var indexMap = [${indexMap.joinToString(separator = ",")}];
 
-        var stopMarkers = stops.map(function(point, index) {
+        stopMarkers = stops.map(function(point, index) {
             var title;
             if ("$shouldShowStopIndex" == "true") {
                 title = "<div style='text-align: center;'><b>" + (indexMap[index] + 1) + ". </b>" + stopNames[index] + "<div>";
             } else {
                 title = "<div style='text-align: center;'>" + stopNames[index] + "<div>";
             }
-            return L.marker(point, {icon: stopIcon})
-                .addTo(layer)
+            var marker = L.marker(point, {icon: stopIcon})
+                .addTo(this.layer)
                 .bindPopup(title, { offset: L.point(0, -22), closeButton: false })
-                .on('click', () => window.kmpJsBridge.callNative("SelectStop", index.toString(), null));
+                .on('click', () => {
+                    window.kmpJsBridge.callNative("SelectStop", index.toString(), null);
+                    clicked = true;
+                    marker.openPopup();
+                });
+                marker.on('mouseover', () => {
+                    if (!marker.getPopup().isOpen()) {
+                        clicked = false;
+                        marker.openPopup();
+                    }
+                });
+                marker.on('mouseout', () => {
+                    if (!clicked) {
+                        marker.closePopup();
+                    }
+                });
+            return marker;
         });
         
         var paths = [$pathsJsArray];
@@ -367,7 +398,7 @@ actual fun MapRouteInterface(
             val index = indexMap.indexOf(selectedStop - 1)
             if (index >= 0) {
                 webViewNavigator.evaluateJavaScript("""
-                    stopMarkers[$index].openPopup()
+                    stopMarkers[$index].openPopup();
                 """.trimIndent())
             }
         }

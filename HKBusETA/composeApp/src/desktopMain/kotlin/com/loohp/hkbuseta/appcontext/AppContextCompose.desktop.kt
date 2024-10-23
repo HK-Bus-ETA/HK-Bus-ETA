@@ -38,9 +38,11 @@ import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
+import com.loohp.hkbuseta.common.utils.DATA_FOLDER
 import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.isReachable
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
+import com.loohp.hkbuseta.common.utils.timeFormatLocale
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
@@ -125,12 +127,12 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     override val formFactor: FormFactor = FormFactor.NORMAL
 
     override suspend fun readTextFile(fileName: String, charset: Charset): StringReadChannel {
-        return File(fileName).inputStream().toStringReadChannel(charset)
+        return File(DATA_FOLDER, fileName).inputStream().toStringReadChannel(charset)
     }
 
     override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
         withGlobalWritingFilesCounter {
-            File(fileName).outputStream().use {
+            File(DATA_FOLDER, fileName).outputStream().use {
                 writeText.invoke().transferTo(it)
                 it.flush()
             }
@@ -140,7 +142,7 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     @OptIn(ExperimentalSerializationApi::class)
     override suspend fun <T> writeTextFile(fileName: String, json: Json, serializer: SerializationStrategy<T>, writeJson: () -> T) {
         withGlobalWritingFilesCounter {
-            File(fileName).outputStream().use {
+            File(DATA_FOLDER, fileName).outputStream().use {
                 val value = writeJson.invoke()
                 json.encodeToStream(serializer, value, it)
                 it.flush()
@@ -149,12 +151,12 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     }
 
     override suspend fun readRawFile(fileName: String): ByteReadChannel {
-        return File(fileName).inputStream().toByteReadChannel()
+        return File(DATA_FOLDER, fileName).inputStream().toByteReadChannel()
     }
 
     override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
         withGlobalWritingFilesCounter {
-            File(fileName).outputStream().use {
+            File(DATA_FOLDER, fileName).outputStream().use {
                 writeBytes.invoke().copyTo(it)
                 it.flush()
             }
@@ -162,11 +164,11 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     }
 
     override suspend fun listFiles(): List<String> {
-        return File(".").listFiles()?.map { it.name }?: emptyList()
+        return DATA_FOLDER.listFiles()?.map { it.name }?: emptyList()
     }
 
     override suspend fun deleteFile(fileName: String): Boolean {
-        return File(fileName).delete()
+        return File(DATA_FOLDER, fileName).delete()
     }
 
     override fun syncPreference(preferences: Preferences) {
@@ -208,13 +210,13 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     }
 
     override fun formatTime(localDateTime: LocalDateTime): String {
-        val dateFormat = DateFormat.getTimeInstance(DateFormat.SHORT)
+        val dateFormat = DateFormat.getTimeInstance(DateFormat.SHORT, timeFormatLocale)
         val pattern = (dateFormat as? SimpleDateFormat)?.toPattern()?: "HH:mm"
         return localDateTime.time.toJavaLocalTime().format(DateTimeFormatter.ofPattern(pattern))
     }
 
     override fun formatDateTime(localDateTime: LocalDateTime, includeTime: Boolean): String {
-        val dateFormat = DateFormat.getDateInstance(DateFormat.DEFAULT)
+        val dateFormat = DateFormat.getDateInstance(DateFormat.DEFAULT, timeFormatLocale)
         val pattern = (dateFormat as? SimpleDateFormat)?.toPattern()?: "dd/MM/yyyy"
         return localDateTime.toJavaLocalDateTime().format(DateTimeFormatter.ofPattern(pattern)) + (if (includeTime) " " + formatTime(localDateTime) else "")
     }
