@@ -45,6 +45,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import nl.adaptivity.xmlutil.serialization.XML
+import nl.adaptivity.xmlutil.xmlStreaming
 
 
 val urlHasSchemeRegex: Regex = "^[0-9a-zA-Z]+://.*".toRegex()
@@ -156,7 +157,7 @@ suspend inline fun <reified T> getJSONResponse(link: String, gzip: Boolean): T? 
             }
         }.let {
             if (it.status == HttpStatusCode.OK) {
-                Json.decodeFromStringReadChannel<T>(if (gzip) it.gzipBodyAsStringReadChannel(Charsets.UTF_8) else it.bodyAsStringReadChannel(Charsets.UTF_8))
+                Json.decodeFromStringReadChannel(if (gzip) it.gzipBodyAsStringReadChannel(Charsets.UTF_8) else it.bodyAsStringReadChannel(Charsets.UTF_8))
             } else {
                 null
             }
@@ -181,7 +182,7 @@ suspend inline fun <reified I, reified T> postJSONResponse(link: String, body: I
             }
         }.let {
             if (it.status == HttpStatusCode.OK) {
-                Json.decodeFromStringReadChannel<T>(it.bodyAsStringReadChannel(Charsets.UTF_8))
+                Json.decodeFromStringReadChannel(it.bodyAsStringReadChannel(Charsets.UTF_8))
             } else {
                 null
             }
@@ -208,7 +209,13 @@ suspend inline fun <reified T: Any> getXMLResponse(link: String, gzip: Boolean):
             }
         }.let {
             if (it.status == HttpStatusCode.OK) {
-                XML.decodeFromString<T>(if (gzip) it.gzipBodyAsText(Charsets.UTF_8) else it.bodyAsText(Charsets.UTF_8))
+                val text = if (gzip) it.gzipBodyAsText(Charsets.UTF_8) else it.bodyAsText(Charsets.UTF_8)
+                try {
+                    XML.decodeFromString(text)
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                    XML.decodeFromReader(xmlStreaming.newGenericReader(text))
+                }
             } else {
                 null
             }
