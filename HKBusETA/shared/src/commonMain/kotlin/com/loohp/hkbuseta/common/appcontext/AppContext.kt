@@ -88,9 +88,9 @@ interface AppContext {
 
     suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel)
 
-    suspend fun <T> writeTextFile(fileName: String, json: Json = Json, writeJson: () -> Pair<SerializationStrategy<T>, T>) {
+    suspend fun <T> writeTextFile(fileName: String, json: Json = Json, serializer: SerializationStrategy<T>, writeJson: () -> T) {
         writeTextFile(fileName) {
-            val (serializer, value) = writeJson.invoke()
+            val value = writeJson.invoke()
             json.encodeToString(serializer, value).toStringReadChannel(Charsets.UTF_8)
         }
     }

@@ -36,10 +36,6 @@ object Splash {
 
     private val splashEntries: MutableList<SplashEntry> = ConcurrentMutableList()
 
-    fun platformDomainSplashUrl(): String {
-        return "https://splash.hkbuseta.com"
-    }
-
     suspend fun load(context: AppContext) {
         if (splashEntries.isEmpty() && context.listFiles().contains("splash.json")) {
             val splashEntries = JsonIgnoreUnknownKeys.decodeFromStringReadChannel<List<SplashEntry>>(context.readTextFile("splash.json"))
@@ -53,7 +49,7 @@ object Splash {
             removedEntries.forEach { context.deleteFile(it.imageName) }
             this.splashEntries.clear()
             this.splashEntries.addAll(splashEntries)
-            context.writeTextFile("splash.json", Json) { SplashEntry.serializer().forList() to splashEntries }
+            context.writeTextFile("splash.json", Json, SplashEntry.serializer().forList()) { splashEntries }
         }
     }
 
@@ -61,7 +57,7 @@ object Splash {
         val files = context.listFiles()
         splashEntries.forEach {
             if (!files.contains(it.imageName)) {
-                getRawResponse("${platformDomainSplashUrl()}/${it.imageName}")?.apply {
+                getRawResponse("${Shared.SPLASH_DOMAIN}/${it.imageName}")?.apply {
                     context.writeRawFile(it.imageName) { this }
                 }
             }

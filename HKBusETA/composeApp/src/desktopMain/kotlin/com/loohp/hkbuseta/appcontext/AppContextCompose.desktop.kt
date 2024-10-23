@@ -138,10 +138,10 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    override suspend fun <T> writeTextFile(fileName: String, json: Json, writeJson: () -> Pair<SerializationStrategy<T>, T>) {
+    override suspend fun <T> writeTextFile(fileName: String, json: Json, serializer: SerializationStrategy<T>, writeJson: () -> T) {
         withGlobalWritingFilesCounter {
             File(fileName).outputStream().use {
-                val (serializer, value) = writeJson.invoke()
+                val value = writeJson.invoke()
                 json.encodeToStream(serializer, value, it)
                 it.flush()
             }

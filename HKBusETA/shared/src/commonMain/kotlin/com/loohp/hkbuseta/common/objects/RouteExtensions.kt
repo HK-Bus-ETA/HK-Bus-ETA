@@ -47,7 +47,7 @@ import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.common.utils.mergeSequences
 import com.loohp.hkbuseta.common.utils.nonNullEquals
 import com.loohp.hkbuseta.common.utils.outOfOrderSequence
-import com.loohp.hkbuseta.common.utils.parseIntOr
+import com.loohp.hkbuseta.common.utils.toIntOrElse
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.common.utils.sequenceSimilarity
 import io.ktor.http.encodeURLPathPart
@@ -107,7 +107,7 @@ inline val Route.routeGroupKey: String get() = routeGroupKey(co.firstCo()!!)
 val mtrLines: List<String> = listOf("AEL", "TCL", "DRL", "EAL", "TML", "SIL", "ISL", "KTL", "TWL", "TKL")
 
 fun String.getMtrLineSortingIndex(): Int {
-    return mtrLines.indexOf(this).takeIf { it >= 0 }?: (substring(0, 3.coerceAtMost(length)).parseIntOr(Int.MAX_VALUE) * 10 + length)
+    return mtrLines.indexOf(this).takeIf { it >= 0 }?: (substring(0, 3.coerceAtMost(length)).toIntOrElse(Int.MAX_VALUE) * 10 + length)
 }
 
 fun String.getMtrLineName(orElse: () -> BilingualText = { asBilingualText() }): BilingualText {
@@ -799,23 +799,27 @@ sealed interface SpecialRouteAlerts {
 }
 
 fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext): Set<SpecialRouteAlerts> {
-    val isAlightingStop = if (stopInfo?.data?.name?.zh?.contains("落客") == true) {
-        true
-    } else {
-        val allStops = cachedAllStops?: Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
-        val branches = allStops.asSequence().flatMap { it.branchIds }.toSet()
-        val branchStops = branches.associateWith { b -> allStops.filter { it.branchIds.contains(b) } }
-        branchStops.values.all {
-            if (it.size <= stopInfoIndex) {
-                true
-            } else if (co === Operator.KMB && !route!!.isCircular) {
-                val stop = it.getOrNull(stopInfoIndex - 1)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
-                val nextStop = it.getOrNull(stopInfoIndex)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
-                stop nonNullEquals nextStop
-            } else {
-                false
+    val isAlightingStop = if (co.isBus) {
+        if (stopInfo?.data?.name?.zh?.contains("落客") == true) {
+            true
+        } else {
+            val allStops = cachedAllStops?: Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
+            val branches = allStops.asSequence().flatMap { it.branchIds }.toSet()
+            val branchStops = branches.associateWith { b -> allStops.filter { it.branchIds.contains(b) } }
+            branchStops.values.all {
+                if (it.size <= stopInfoIndex) {
+                    true
+                } else if (co === Operator.KMB && !route!!.isCircular) {
+                    val stop = it.getOrNull(stopInfoIndex - 1)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
+                    val nextStop = it.getOrNull(stopInfoIndex)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
+                    stop nonNullEquals nextStop
+                } else {
+                    false
+                }
             }
         }
+    } else {
+        false
     }
     return if (isAlightingStop) {
         buildSet {
@@ -942,11 +946,11 @@ val routeComparatorRouteNumberFirst: Comparator<Route> = compareBy<Route, String
 }.thenBy {
     it.co.firstCo()!!
 }.thenBy {
-    if (it.co.firstCo() === Operator.NLB) it.nlbId.parseIntOr() else 0
+    if (it.co.firstCo() === Operator.NLB) it.nlbId.toIntOrElse() else 0
 }.thenBy {
-    if (it.co.firstCo() === Operator.GMB) it.gtfsId.parseIntOr() else 0
+    if (it.co.firstCo() === Operator.GMB) it.gtfsId.toIntOrElse() else 0
 }.thenBy {
-    it.serviceType.parseIntOr()
+    it.serviceType.toIntOrElse()
 }.thenByDescending {
     if (it.co.firstCo() !== Operator.CTB) it.bound[it.co.firstCo()!!] else ""
 }
@@ -962,11 +966,11 @@ val routeComparator: Comparator<Route> = compareBy<Route> {
 }.thenBy {
     it.routeNumber
 }.thenBy {
-    if (it.co.firstCo() === Operator.NLB) it.nlbId.parseIntOr() else 0
+    if (it.co.firstCo() === Operator.NLB) it.nlbId.toIntOrElse() else 0
 }.thenBy {
-    if (it.co.firstCo() === Operator.GMB) it.gtfsId.parseIntOr() else 0
+    if (it.co.firstCo() === Operator.GMB) it.gtfsId.toIntOrElse() else 0
 }.thenBy {
-    it.serviceType.parseIntOr()
+    it.serviceType.toIntOrElse()
 }.thenByDescending {
     if (it.co.firstCo() !== Operator.CTB) it.bound[it.co.firstCo()!!] else ""
 }

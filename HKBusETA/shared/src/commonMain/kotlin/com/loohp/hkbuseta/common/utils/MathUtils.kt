@@ -37,44 +37,39 @@ private val chineseDigits = listOf("零", "一", "二", "三", "四", "五", "�
 private val chinesePositions = listOf("", "十", "百", "千", "萬", "十萬", "百萬", "千萬", "億", "十億", "百億", "千億")
 
 fun Int.toChineseNumber(isQuantity: Boolean = false): String {
-    val string = toString()
-    val stringBuilder = StringBuilder()
-    var prevIsZero = false
-    for (i in string.indices) {
-        val ch = string[i].toString().toInt()
-        if (ch != 0 && !prevIsZero) {
-            stringBuilder.append(chineseDigits[ch] + chinesePositions[string.length - i - 1])
-        } else if (ch == 0) {
-            prevIsZero = true
-        } else if (ch != 0) {
-            stringBuilder.append("零" + chineseDigits[ch] + chinesePositions[string.length - i - 1])
-            prevIsZero = false
+    return when {
+        this == 0 -> "零"
+        isQuantity && this == 2 -> "兩"
+        else -> {
+            val string = toString()
+            val stringBuilder = StringBuilder()
+            var prevIsZero = false
+            for (i in string.indices) {
+                val ch = string[i].toString().toInt()
+                if (ch != 0 && !prevIsZero) {
+                    stringBuilder.append(chineseDigits[ch] + chinesePositions[string.length - i - 1])
+                } else if (ch == 0) {
+                    prevIsZero = true
+                } else if (ch != 0) {
+                    stringBuilder.append("零" + chineseDigits[ch] + chinesePositions[string.length - i - 1])
+                    prevIsZero = false
+                }
+            }
+            if (this < 100) {
+                stringBuilder.toString().replace("一十", "十")
+            } else {
+                stringBuilder.toString()
+            }
         }
     }
-    var result = stringBuilder.toString()
-    if (this < 100) {
-        result = result.replace("一十", "十")
-    }
-    if (isQuantity && result == "二") {
-        result = "兩"
-    }
-    return result
 }
 
-fun String?.parseIntOr(otherwise: Int = 0): Int {
-    return try {
-        this?.toIntOrNull()?: otherwise
-    } catch (e: NumberFormatException) {
-        otherwise
-    }
+inline fun String?.toIntOrElse(otherwise: Int = 0): Int {
+    return this?.toIntOrNull()?: otherwise
 }
 
-fun String?.parseLongOr(otherwise: Long = 0): Long {
-    return try {
-        this?.toLongOrNull()?: otherwise
-    } catch (e: NumberFormatException) {
-        otherwise
-    }
+inline fun String?.toLongOrElse(otherwise: Long = 0): Long {
+    return this?.toLongOrNull()?: otherwise
 }
 
 inline val Double.radians: Double get() = this / 180.0 * PI

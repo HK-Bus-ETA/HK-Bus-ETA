@@ -151,11 +151,11 @@ open class AppContextComposeAndroid internal constructor(
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    override suspend fun <T> writeTextFile(fileName: String, json: Json, writeJson: () -> Pair<SerializationStrategy<T>, T>) {
+    override suspend fun <T> writeTextFile(fileName: String, json: Json, serializer: SerializationStrategy<T>, writeJson: () -> T) {
         withGlobalWritingFilesCounter {
             AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
                 startWrite().use {
-                    val (serializer, value) = writeJson.invoke()
+                    val value = writeJson.invoke()
                     json.encodeToStream(serializer, value, it)
                     it.flush()
                     finishWrite(it)

@@ -91,6 +91,9 @@ expect val JOINT_OPERATED_COLOR_REFRESH_RATE: Long
 @Immutable
 object Shared {
 
+    const val DATA_DOMAIN = "https://data.hkbuseta.com"
+    const val SPLASH_DOMAIN = "https://splash.hkbuseta.com"
+
     const val ETA_UPDATE_INTERVAL: Int = 15000
     const val ETA_FRESHNESS: Int = 60000
 

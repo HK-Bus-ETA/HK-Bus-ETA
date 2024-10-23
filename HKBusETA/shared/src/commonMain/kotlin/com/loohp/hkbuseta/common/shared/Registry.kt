@@ -157,9 +157,9 @@ import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.parseInstant
-import com.loohp.hkbuseta.common.utils.parseIntOr
+import com.loohp.hkbuseta.common.utils.toIntOrElse
 import com.loohp.hkbuseta.common.utils.parseLocalDateTime
-import com.loohp.hkbuseta.common.utils.parseLongOr
+import com.loohp.hkbuseta.common.utils.toLongOrElse
 import com.loohp.hkbuseta.common.utils.plus
 import com.loohp.hkbuseta.common.utils.postJSONResponse
 import com.loohp.hkbuseta.common.utils.remove
@@ -214,24 +214,20 @@ class Registry {
         const val CHECKSUM_FILE_NAME = "checksum.json"
         const val DATA_FILE_NAME = "data.json"
 
-        fun platformDomainDataUrl(): String {
-            return "https://data.hkbuseta.com"
-        }
-
         fun checksumUrl(): String {
-            return "${platformDomainDataUrl()}/checksum.md5"
+            return "${Shared.DATA_DOMAIN}/checksum.md5"
         }
 
         fun dataLengthUrl(full: Boolean, gzip: Boolean = gzipSupported()): String {
-            return "${platformDomainDataUrl()}/size${if (full) "_full" else ""}${if (gzip) ".gz" else ""}.dat"
+            return "${Shared.DATA_DOMAIN}/size${if (full) "_full" else ""}${if (gzip) ".gz" else ""}.dat"
         }
 
         fun dataUrl(full: Boolean, gzip: Boolean = gzipSupported()): String {
-            return "${platformDomainDataUrl()}/data${if (full) "_full" else ""}.json${if (gzip) ".gz" else ""}"
+            return "${Shared.DATA_DOMAIN}/data${if (full) "_full" else ""}.json${if (gzip) ".gz" else ""}"
         }
 
         fun lastUpdatedUrl(): String {
-            return "${platformDomainDataUrl()}/last_updated.txt"
+            return "${Shared.DATA_DOMAIN}/last_updated.txt"
         }
 
         private val INSTANCE: AtomicReference<Registry?> = AtomicReference(null)
@@ -853,14 +849,14 @@ class Registry {
                                 checksum = checksumFetcher.invoke(true)
                             }
                             val gzip = gzipSupported()
-                            val length = getTextResponse(dataLengthUrl(!context.formFactor.reduceData, gzip))?.string().parseLongOr(-1)
+                            val length = getTextResponse(dataLengthUrl(!context.formFactor.reduceData, gzip))?.string().toLongOrElse(-1)
                             val textResponse = getTextResponseWithPercentageCallback(dataUrl(!context.formFactor.reduceData, gzip), length, gzip) { p -> updatePercentageState.value = p * 0.85f + percentageOffset }?: throw RuntimeException("Error downloading bus data")
                             DATA = JsonIgnoreUnknownKeys.decodeFromStringReadChannel(textResponse)
                             Shared.setKmbSubsidiary(DATA!!.kmbSubsidiary)
                             getTextResponse(lastUpdatedUrl())?.string()?.toLong()?.apply { Shared.scheduleBackgroundUpdateService(context, this) }
                         }
                         CoroutineScope(Dispatchers.IO).launch {
-                            context.writeTextFile(DATA_FILE_NAME, Json) { DataContainer.serializer() to DATA!! }
+                            context.writeTextFile(DATA_FILE_NAME, Json, DataContainer.serializer()) { DATA!! }
                             context.writeTextFile(CHECKSUM_FILE_NAME) { (checksum?: "").toStringReadChannel() }
                             PREFERENCES!!.referenceChecksum = checksum?: ""
                             savePreferences(context)
@@ -947,7 +943,7 @@ class Registry {
     fun getRouteKey(route: Route?): String? {
         return DATA!!.dataSheet.routeList.entries.asSequence()
             .filter{ (_, value) -> value == route }
-            .firstOrNull()?.let { (key, _) -> key }
+            .firstOrNull()?.let { (key) -> key }
     }
 
     fun findRouteByKey(lookupKey: String, routeNumber: String?): Route? {
@@ -1069,8 +1065,8 @@ class Registry {
                             existingMatchingRoute.route = data
                             existingMatchingRoute.co = co
                         } else if (type == matchingType) {
-                            val gtfs = data.gtfsId.parseIntOr(Int.MAX_VALUE)
-                            val matchingGtfs = existingMatchingRoute.route!!.gtfsId.parseIntOr(Int.MAX_VALUE)
+                            val gtfs = data.gtfsId.toIntOrElse(Int.MAX_VALUE)
+                            val matchingGtfs = existingMatchingRoute.route!!.gtfsId.toIntOrElse(Int.MAX_VALUE)
                             if (gtfs < matchingGtfs) {
                                 existingMatchingRoute.routeKey = key
                                 existingMatchingRoute.route = data
@@ -1147,7 +1143,7 @@ class Registry {
                         add(data)
                         if (size > 1) {
                             val status = currentBranchStatus(now, serviceMap, getHolidays()) { null }
-                            sortWith(compareByDescending<Route> { status[it]?.activeness?: 0 }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) })
+                            sortWith(compareByDescending<Route> { status[it]?.activeness?: 0 }.thenBy { it.serviceType.toIntOrElse(Int.MAX_VALUE) })
                         }
                     }
                 }
@@ -1220,7 +1216,7 @@ class Registry {
                 val bound = route.bound
                 val pa = routeNumber[0].toString()
                 val sa = routeNumber[routeNumber.length - 1].toString()
-                var na = routeNumber.remove("[^0-9]".toRegex()).parseIntOr()
+                var na = routeNumber.remove("[^0-9]".toRegex()).toIntOrElse()
                 if (bound.containsKey(Operator.GMB)) {
                     na += 1000
                 } else if (bound.containsKey(Operator.MTR)) {
@@ -1238,7 +1234,7 @@ class Registry {
                 na
             }
             .thenBy { a -> a.route!!.routeNumber }
-            .thenBy { a -> a.route!!.serviceType.parseIntOr() }
+            .thenBy { a -> a.route!!.serviceType.toIntOrElse() }
             .thenBy { a -> a.co }
             .thenBy { a ->
                 val route = a.route!!
@@ -1294,8 +1290,8 @@ class Registry {
                     val list = lists[i]
                     list.sortWith(
                         when (co) {
-                            Operator.GMB, Operator.NLB -> compareBy<Route> { it.gtfsId.parseIntOr(Int.MAX_VALUE) }.thenBy { it.serviceType.parseIntOr(Int.MAX_VALUE) }
-                            else -> compareBy<Route> { it.serviceType.parseIntOr(Int.MAX_VALUE) }.thenBy { it.gtfsId.parseIntOr(Int.MAX_VALUE) }
+                            Operator.GMB, Operator.NLB -> compareBy<Route> { it.gtfsId.toIntOrElse(Int.MAX_VALUE) }.thenBy { it.serviceType.toIntOrElse(Int.MAX_VALUE) }
+                            else -> compareBy<Route> { it.serviceType.toIntOrElse(Int.MAX_VALUE) }.thenBy { it.gtfsId.toIntOrElse(Int.MAX_VALUE) }
                         }
                     )
                     add(list.distinctBy { it.stops[co] to it.freq })
@@ -1327,7 +1323,7 @@ class Registry {
                 for (route in getAllBranchRoutes(routeNumber, bound, co, gmbRegion)) {
                     val localStops: MutableBranchedList<String, StopData, Route> = MutableBranchedList(route)
                     val stops = route.stops[co]
-                    val serviceType = route.serviceType.parseIntOr(1)
+                    val serviceType = route.serviceType.toIntOrElse(1)
                     for ((index, stopId) in stops!!.withIndex()) {
                         val fare = route.fares?.getOrNull(index)
                         val holidayFare = route.faresHoliday?.getOrNull(index)
@@ -1345,8 +1341,8 @@ class Registry {
                             val aType = a.serviceType
                             val bType = b.serviceType
                             if (aType == bType) {
-                                val aGtfs = a.route.gtfsId.parseIntOr(Int.MAX_VALUE)
-                                val bGtfs = b.route.gtfsId.parseIntOr(Int.MAX_VALUE)
+                                val aGtfs = a.route.gtfsId.toIntOrElse(Int.MAX_VALUE)
+                                val bGtfs = b.route.gtfsId.toIntOrElse(Int.MAX_VALUE)
                                 if (aGtfs > bGtfs) b else a
                             } else {
                                 if (aType > bType) b else a
