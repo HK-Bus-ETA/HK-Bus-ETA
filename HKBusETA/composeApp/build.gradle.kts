@@ -68,7 +68,13 @@ kotlin {
         }
     }
     
-    jvm("desktop")
+    jvm("desktop") {
+        tasks.withType<KotlinJvmCompile>().configureEach {
+            compilerOptions {
+                jvmTarget.set(JvmTarget.JVM_17)
+            }
+        }
+    }
     
     listOf(
         iosX64(),
@@ -203,10 +209,6 @@ android {
 compose.desktop {
     application {
         mainClass = "com.loohp.hkbuseta.MainKt"
-
-        java {
-            version = JavaVersion.VERSION_17
-        }
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
