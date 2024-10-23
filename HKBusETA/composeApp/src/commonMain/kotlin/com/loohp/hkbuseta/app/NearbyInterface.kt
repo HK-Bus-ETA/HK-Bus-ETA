@@ -301,7 +301,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                             EmptyBackgroundInterface(
                                 instance = instance,
                                 icon = PlatformIcons.Filled.NearMeDisabled,
-                                text = if (Shared.language == "en") "Device not supported" else "裝置不支援"
+                                text = if (Shared.language == "en") "Device does not support location" else "裝置不支援定位位置"
                             )
                         }
                         LocationPermissionState.DENIED -> {
