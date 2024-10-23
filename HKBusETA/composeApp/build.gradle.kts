@@ -204,6 +204,10 @@ compose.desktop {
     application {
         mainClass = "com.loohp.hkbuseta.MainKt"
 
+        java {
+            version = JavaVersion.VERSION_17
+        }
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "HK Bus ETA"
