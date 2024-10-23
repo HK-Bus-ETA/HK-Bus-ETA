@@ -735,37 +735,39 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                     pxPerKm = 256F * 2F.pow(zoom) / 12742F
                                 }
                             )
-                            Canvas(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clipToBounds()
-                            ) {
-                                val radius = pxPerKm * position.radius
-                                val maxRadius = size.maxDimension * 0.75F
-                                drawCircle(
-                                    color = Color(0xff199fff),
-                                    radius = radius.coerceAtMost(maxRadius),
-                                    center = size.center,
-                                    alpha = 0.3F,
-                                    style = Fill
-                                )
-                                if (radius < maxRadius) {
+                            if (!isMapOverlayAlwaysOnTop) {
+                                Canvas(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .clipToBounds()
+                                ) {
+                                    val radius = pxPerKm * position.radius
+                                    val maxRadius = size.maxDimension * 0.75F
                                     drawCircle(
                                         color = Color(0xff199fff),
-                                        radius = radius,
+                                        radius = radius.coerceAtMost(maxRadius),
                                         center = size.center,
-                                        style = Stroke(
-                                            width = 3.dp.toPx()
-                                        )
+                                        alpha = 0.3F,
+                                        style = Fill
                                     )
+                                    if (radius < maxRadius) {
+                                        drawCircle(
+                                            color = Color(0xff199fff),
+                                            radius = radius,
+                                            center = size.center,
+                                            style = Stroke(
+                                                width = 3.dp.toPx()
+                                            )
+                                        )
+                                    }
                                 }
+                                PlatformIcon(
+                                    modifier = Modifier.size(30.dp),
+                                    painter = PlatformIcons.Outlined.MyLocation,
+                                    tint = Color(0xff199fff),
+                                    contentDescription = if (Shared.language == "en") "Custom Location" else "自訂位置"
+                                )
                             }
-                            PlatformIcon(
-                                modifier = Modifier.size(30.dp),
-                                painter = PlatformIcons.Outlined.MyLocation,
-                                tint = Color(0xff199fff),
-                                contentDescription = if (Shared.language == "en") "Custom Location" else "自訂位置"
-                            )
                         }
                         PlatformSlider(
                             value = position.radius,

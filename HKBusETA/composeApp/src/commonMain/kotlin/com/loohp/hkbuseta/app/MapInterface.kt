@@ -53,6 +53,8 @@ expect fun MapSelectInterface(
     onMove: (Coordinates, Float) -> Unit
 )
 
+expect val isMapOverlayAlwaysOnTop: Boolean
+
 fun RouteWaypoints.buildStopListMapping(allStops: List<Registry.StopData>): ImmutableList<Int> {
     return buildImmutableList {
         var waypointStopIndex = 0

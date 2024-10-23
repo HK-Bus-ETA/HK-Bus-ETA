@@ -230,6 +230,8 @@ inline fun WebMapContainer(webMap: WebMap) {
     )
 }
 
+actual val isMapOverlayAlwaysOnTop: Boolean = true
+
 @Stable
 external class WebMap(language: String, darkMode: Boolean): JsAny {
     val valid: Boolean

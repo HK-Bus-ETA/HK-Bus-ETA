@@ -493,3 +493,5 @@ inline val MKMapView.zoom: Double get() {
     val spanStraight = width * region.useContents { span.longitudeDelta } / (width * cos(angleRad) + height * sin(angleRad))
     return log2(360.0 * ((width / 128.0) / spanStraight)) - 1.0
 }
+
+actual val isMapOverlayAlwaysOnTop: Boolean = false

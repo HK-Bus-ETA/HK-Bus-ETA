@@ -71,6 +71,7 @@ import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.ImmediateEffect
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.closenessTo
 import com.loohp.hkbuseta.utils.getLineColor
@@ -88,18 +89,25 @@ import dev.datlag.kcef.KCEF
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.cef.CefSettings
 import java.io.File
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 enum class KCEFLoadState {
     INITIALIZED, DOWNLOADING, RESTART_REQUIRED, ERROR, NOT_INITIALIZED
 }
 
 @Composable
-inline fun KCEFWebContainer(crossinline content: @Composable () -> Unit) {
+fun KCEFWebContainer(content: @Composable () -> Unit) {
+    val scope = rememberCoroutineScope()
     var kcefLoadState by rememberSaveable { mutableStateOf(KCEFLoadState.NOT_INITIALIZED) }
     var downloadingProgress by rememberSaveable { mutableFloatStateOf(0F) }
+    val background = platformBackgroundColor
+    var waitOneSecond by remember { mutableStateOf(false) }
 
     ImmediateEffect (Unit) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -110,25 +118,33 @@ inline fun KCEFWebContainer(crossinline content: @Composable () -> Unit) {
                         installDir(File("hkbuseta-kcef"))
                         settings {
                             cachePath = File(DATA_FOLDER, "cache").absolutePath
+                            backgroundColor = CefSettings().ColorType(
+                                (background.alpha * 255).roundToInt(),
+                                (background.red * 255).roundToInt(),
+                                (background.green * 255).roundToInt(),
+                                (background.blue * 255).roundToInt()
+                            )
                         }
                         progress {
                             onDownloading {
-                                kcefLoadState = KCEFLoadState.DOWNLOADING
-                                downloadingProgress = max(it / 100F, 0F)
+                                scope.launch {
+                                    kcefLoadState = KCEFLoadState.DOWNLOADING
+                                    downloadingProgress = max(it / 100F, 0F)
+                                }
                             }
                             onInitialized {
-                                kcefLoadState = KCEFLoadState.INITIALIZED
+                                scope.launch { kcefLoadState = KCEFLoadState.INITIALIZED }
                             }
                         }
                     },
                     onError = {
                         success = false
-                        kcefLoadState = KCEFLoadState.ERROR
                         it?.printStackTrace()
+                        scope.launch { kcefLoadState = KCEFLoadState.ERROR }
                     },
                     onRestartRequired = {
                         success = false
-                        kcefLoadState = KCEFLoadState.RESTART_REQUIRED
+                        scope.launch { kcefLoadState = KCEFLoadState.RESTART_REQUIRED }
                     }
                 )
             } catch (e: Throwable) {
@@ -136,9 +152,13 @@ inline fun KCEFWebContainer(crossinline content: @Composable () -> Unit) {
                 e.printStackTrace()
             }
             if (success) {
-                kcefLoadState = KCEFLoadState.INITIALIZED
+                withContext(Dispatchers.Main) { kcefLoadState = KCEFLoadState.INITIALIZED }
             }
         }
+    }
+    LaunchedEffect (Unit) {
+        delay(1000)
+        waitOneSecond = true
     }
 
     Surface (
@@ -149,11 +169,13 @@ inline fun KCEFWebContainer(crossinline content: @Composable () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             when (kcefLoadState) {
-                KCEFLoadState.NOT_INITIALIZED -> Text(
-                    fontSize = 25.sp,
-                    textAlign = TextAlign.Center,
-                    text = if (Shared.language == "en") "Loading Map..." else "地圖載入中..."
-                )
+                KCEFLoadState.NOT_INITIALIZED -> if (waitOneSecond) {
+                    Text(
+                        fontSize = 25.sp,
+                        textAlign = TextAlign.Center,
+                        text = if (Shared.language == "en") "Loading Map..." else "地圖載入中..."
+                    )
+                }
                 KCEFLoadState.RESTART_REQUIRED -> Text(
                     fontSize = 25.sp,
                     textAlign = TextAlign.Center,
@@ -340,8 +362,12 @@ actual fun MapRouteInterface(
         val script by rememberLeafletScript(waypoints, alternateStopNameShowing, alternateStopNames, indexMap)
         val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
         val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
+        val background = platformBackgroundColor
         val scope = rememberCoroutineScope()
 
+        ImmediateEffect (Unit) {
+            webViewState.webSettings.backgroundColor = background
+        }
         LaunchedEffect (script, webViewState.loadingState) {
             if (webViewState.loadingState == LoadingState.Finished) {
                 webViewNavigator.evaluateJavaScript(script)
@@ -429,8 +455,12 @@ actual fun MapSelectInterface(
         val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
         var position by remember { mutableStateOf(initialPosition) }
         var init by remember { mutableStateOf(false) }
+        val background = platformBackgroundColor
         val scope = rememberCoroutineScope()
 
+        ImmediateEffect (Unit) {
+            webViewState.webSettings.backgroundColor = background
+        }
         LaunchedEffect (Unit) {
             webViewJsBridge.register(object : IJsMessageHandler {
                 override fun methodName(): String = "MoveCenter"
@@ -467,16 +497,16 @@ actual fun MapSelectInterface(
             }
         }
         LaunchedEffect (position, currentRadius, webViewState.loadingState) {
-            if (webViewState.loadingState == LoadingState.Finished) {
+            if (webViewState.loadingState == LoadingState.Finished && init) {
                 webViewNavigator.evaluateJavaScript("""
-                    layer.clearLayers();
-                    var marker = L.marker([lat, lng]).addTo(layer);
-                    var circle = L.circle([lat, lng], {
+                    this.layer.clearLayers();
+                    L.marker([${position.lat}, ${position.lng}]).addTo(this.layer);
+                    L.circle([${position.lat}, ${position.lng}], {
                         color: '#199fff',
                         fillColor: '#199fff',
                         fillOpacity: 0.3,
-                        radius: radius
-                    }).addTo(layer);
+                        radius: ${currentRadius * 1000F}
+                    }).addTo(this.layer);
                 """.trimIndent())
             }
         }
@@ -506,3 +536,5 @@ actual fun MapSelectInterface(
         }
     }
 }
+
+actual val isMapOverlayAlwaysOnTop: Boolean = true

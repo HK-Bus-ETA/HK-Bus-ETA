@@ -66,7 +66,6 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.loohp.hkbuseta.R
-import com.loohp.hkbuseta.appcontext.ScreenState
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -84,12 +83,13 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.compose.ChangedEffect
+import com.loohp.hkbuseta.compose.ImmediateEffect
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.LocationOff
 import com.loohp.hkbuseta.compose.PlatformFilledTonalIconToggleButton
 import com.loohp.hkbuseta.compose.PlatformIcons
-import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.plainTooltip
+import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.closenessTo
@@ -427,8 +427,11 @@ fun DefaultMapRouteInterface(
     val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
     val script by rememberLeafletScript(waypoints, alternateStopNameShowing, alternateStopNames, indexMap)
     val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
-    val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
+    val background = platformBackgroundColor
 
+    ImmediateEffect (Unit) {
+        webViewState.webSettings.backgroundColor = background
+    }
     LaunchedEffect (script, webViewState.loadingState) {
         if (webViewState.loadingState == LoadingState.Finished) {
             webViewNavigator.evaluateJavaScript(script)
@@ -490,15 +493,13 @@ fun DefaultMapRouteInterface(
         }
     }
 
-    if (!shouldHide) {
-        WebView(
-            modifier = Modifier.fillMaxSize(),
-            state = webViewState,
-            navigator = webViewNavigator,
-            webViewJsBridge = webViewJsBridge,
-            captureBackPresses = false
-        )
-    }
+    WebView(
+        modifier = Modifier.fillMaxSize(),
+        state = webViewState,
+        navigator = webViewNavigator,
+        webViewJsBridge = webViewJsBridge,
+        captureBackPresses = false
+    )
 }
 
 @Composable
@@ -595,10 +596,13 @@ fun DefaultMapSelectInterface(
     val webViewState = rememberWebViewStateWithHTMLData(baseHtml)
     val webViewNavigator = rememberWebViewNavigator()
     val webViewJsBridge = rememberWebViewJsBridge()
-    val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
     var position by remember { mutableStateOf(initialPosition) }
     var init by remember { mutableStateOf(false) }
+    val background = platformBackgroundColor
 
+    ImmediateEffect (Unit) {
+        webViewState.webSettings.backgroundColor = background
+    }
     LaunchedEffect (Unit) {
         webViewJsBridge.register(object : IJsMessageHandler {
             override fun methodName(): String = "MoveCenter"
@@ -661,15 +665,13 @@ fun DefaultMapSelectInterface(
         }
     }
 
-    if (!shouldHide) {
-        WebView(
-            modifier = Modifier.fillMaxSize(),
-            state = webViewState,
-            navigator = webViewNavigator,
-            webViewJsBridge = webViewJsBridge,
-            captureBackPresses = false
-        )
-    }
+    WebView(
+        modifier = Modifier.fillMaxSize(),
+        state = webViewState,
+        navigator = webViewNavigator,
+        webViewJsBridge = webViewJsBridge,
+        captureBackPresses = false
+    )
 }
 
 @Suppress("NOTHING_TO_INLINE")
@@ -681,3 +683,5 @@ inline fun Coordinates.toGoogleLatLng(): LatLng {
 inline fun Collection<Coordinates>.toGoogleLatLng(): List<LatLng> {
     return map { it.toGoogleLatLng() }
 }
+
+actual val isMapOverlayAlwaysOnTop: Boolean = false
