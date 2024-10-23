@@ -232,6 +232,7 @@ compose.desktop {
 
         buildTypes.release.proguard {
             configurationFiles.from("compose-desktop.pro")
+            version.set("7.5.0")
         }
 
         jvmArgs("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
