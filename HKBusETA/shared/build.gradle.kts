@@ -53,13 +53,7 @@ kotlin {
         }
     }
 
-    jvm("desktop") {
-        tasks.withType<KotlinJvmCompile>().configureEach {
-            compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_11)
-            }
-        }
-    }
+    jvm("desktop")
 
     listOf(
         iosX64(),

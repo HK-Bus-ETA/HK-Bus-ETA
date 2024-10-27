@@ -40,12 +40,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.interop.UIKitView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
+import androidx.compose.ui.viewinterop.UIKitView
 import androidx.compose.ui.zIndex
 import co.touchlab.stately.concurrency.Lock
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -112,7 +116,7 @@ import kotlin.math.cos
 import kotlin.math.log2
 import kotlin.math.sin
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
 @Composable
 actual fun MapRouteInterface(
     instance: AppActiveContext,
@@ -259,18 +263,24 @@ actual fun MapRouteInterface(
             }
         }
         UIKitView(
-            modifier = Modifier
-                .fillMaxSize()
-                .drawWithContent { if (init) drawContent() },
             factory = {
                 @Suppress("USELESS_CAST")
                 map as UIView
-            }
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .drawWithContent { if (init) drawContent() },
+            properties = UIKitInteropProperties(
+                interactionMode = UIKitInteropInteractionMode.NonCooperative,
+                isNativeAccessibilityEnabled = true
+            )
         )
     }
 }
 
-@OptIn(ExperimentalForeignApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalComposeUiApi::class
+)
 @Composable
 actual fun MapSelectInterface(
     instance: AppActiveContext,
@@ -355,13 +365,17 @@ actual fun MapSelectInterface(
             }
         }
         UIKitView(
-            modifier = Modifier
-                .fillMaxSize()
-                .drawWithContent { if (init) drawContent() },
             factory = {
                 @Suppress("USELESS_CAST")
                 map as UIView
-            }
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .drawWithContent { if (init) drawContent() },
+            properties = UIKitInteropProperties(
+                interactionMode = UIKitInteropInteractionMode.NonCooperative,
+                isNativeAccessibilityEnabled = true
+            )
         )
     }
 }

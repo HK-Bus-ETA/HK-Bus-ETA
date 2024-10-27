@@ -68,13 +68,7 @@ kotlin {
         }
     }
     
-    jvm("desktop") {
-        tasks.withType<KotlinJvmCompile>().configureEach {
-            compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_17)
-            }
-        }
-    }
+    jvm("desktop")
     
     listOf(
         iosX64(),
@@ -182,8 +176,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 929
-        versionName = "2.4.3"
+        versionCode = 931
+        versionName = "2.4.4"
     }
     packaging {
         resources {
@@ -213,7 +207,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "HK Bus ETA"
-            packageVersion = "2.4.3"
+            packageVersion = "2.4.4"
 
             macOS {
                 iconFile.set(project.file("icon.icns"))

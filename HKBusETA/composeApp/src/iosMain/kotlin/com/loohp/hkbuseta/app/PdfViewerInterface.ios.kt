@@ -21,6 +21,7 @@
 
 package com.loohp.hkbuseta.app
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,16 +37,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.interop.UIKitView
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
+import androidx.compose.ui.viewinterop.UIKitView
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -63,7 +67,7 @@ import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.utils.sp
-import kotlinx.cinterop.ExperimentalForeignApi
+import io.github.alexzhirkevich.cupertino.toUIColor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -76,7 +80,7 @@ import platform.PDFKit.PDFDocument
 import platform.PDFKit.PDFView
 import platform.UIKit.UIView
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 actual fun PdfViewerInterface(title: String, url: String, instance: AppActiveContext) {
     val haptics = LocalHapticFeedback.current
@@ -162,8 +166,12 @@ actual fun PdfViewerInterface(title: String, url: String, instance: AppActiveCon
                     contentAlignment = Alignment.Center
                 ) {
                     val pdfView = remember { PDFView() }
+                    val backgroundColor = platformBackgroundColor
 
                     LaunchedEffect (Unit) {
+                        withContext(Dispatchers.Main) {
+                            pdfView.backgroundColor = backgroundColor.toUIColor()
+                        }
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
                                 val data = NSData.dataWithContentsOfURL(url = URLWithString(url)!!)!!
@@ -183,12 +191,17 @@ actual fun PdfViewerInterface(title: String, url: String, instance: AppActiveCon
                     }
 
                     UIKitView(
-                        modifier = Modifier.fillMaxSize(),
                         factory = {
                             @Suppress("USELESS_CAST")
                             pdfView as UIView
                         },
-                        background = platformBackgroundColor
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(backgroundColor),
+                        properties = UIKitInteropProperties(
+                            interactionMode = UIKitInteropInteractionMode.NonCooperative,
+                            isNativeAccessibilityEnabled = true
+                        )
                     )
 
                     if (state == PdfLoadState.LOADING) {
