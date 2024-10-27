@@ -436,9 +436,7 @@ class AppActiveContextComposeIOS internal constructor(
                 UINotificationFeedbackGenerator().notificationOccurred(UINotificationFeedbackType.UINotificationFeedbackTypeSuccess)
             }
             val nsUrl = NSURL(string = url.normalizeUrlScheme())
-            if (UIApplication.sharedApplication.canOpenURL(nsUrl)) {
-                UIApplication.sharedApplication.openURL(nsUrl)
-            }
+            UIApplication.sharedApplication.openURL(nsUrl, emptyMap<Any?, Any>(), null)
         }
     }
 
