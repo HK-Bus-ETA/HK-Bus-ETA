@@ -142,7 +142,6 @@ import kotlinx.datetime.DateTimeUnit
 
 val groupNameZhKey = stringPreferencesKey("groupName")
 
-@OptIn(ExperimentalCoroutinesApi::class)
 private val etaUpdateScope: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(8)
 
 class FavouriteRoutesWidgetReceiver : GlanceAppWidgetReceiver() {

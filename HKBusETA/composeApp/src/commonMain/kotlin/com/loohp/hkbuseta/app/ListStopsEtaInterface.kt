@@ -318,7 +318,6 @@ val RouteBranchStatus?.description: BilingualText get() = when (this) {
     else -> "沒有表定班次" withEn "No scheduled services"
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
 private val etaUpdateScope: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
 
 fun generateRouteLineData(instance: AppActiveContext, routeNumber: String, co: Operator, isLrtCircular: Boolean, lineColor: Color, stopsList: ImmutableList<Registry.StopData>, selectedBranch: Route): List<Any> {

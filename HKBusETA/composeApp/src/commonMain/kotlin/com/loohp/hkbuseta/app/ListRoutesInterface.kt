@@ -257,7 +257,6 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
@@ -272,7 +271,6 @@ import kotlin.math.roundToInt
 import kotlin.random.Random
 
 
-@OptIn(ExperimentalCoroutinesApi::class)
 private val etaUpdateScope: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(8)
 
 private val etaColor: Color @Composable get() = if (Shared.theme.isDarkMode) Color(0xFFAAC3D5) else Color(0xFF2582C4)
