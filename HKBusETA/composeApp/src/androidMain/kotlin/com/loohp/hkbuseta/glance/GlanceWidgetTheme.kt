@@ -43,10 +43,10 @@ import com.materialkolor.dynamicColorScheme
 fun resolveWidgetColorScheme(context: Context): ColorProviders {
     val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val lightColors = Shared.color
-        ?.let { dynamicColorScheme(Color(it), isDark = false) }
+        ?.let { dynamicColorScheme(Color(it), isDark = false, isAmoled = true) }
         ?: if (dynamicColor) dynamicLightColorScheme(context) else LightColors
     val darkColors = Shared.color
-        ?.let { dynamicColorScheme(Color(it), isDark = true) }
+        ?.let { dynamicColorScheme(Color(it), isDark = true, isAmoled = true) }
         ?: if (dynamicColor) dynamicDarkColorScheme(context) else DarkColors
     return ColorProviders(
         light = lightColors.forGlance(),

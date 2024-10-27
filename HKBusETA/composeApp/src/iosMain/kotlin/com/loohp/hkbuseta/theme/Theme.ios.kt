@@ -33,7 +33,7 @@ import io.github.alexzhirkevich.cupertino.theme.lightColorScheme
 @Composable
 fun resolveColorScheme(useDarkTheme: Boolean, customColor: Color?): ColorScheme {
     return when {
-        customColor != null -> dynamicColorScheme(customColor, useDarkTheme)
+        customColor != null -> dynamicColorScheme(customColor, useDarkTheme, true)
         useDarkTheme -> DarkColors
         else -> LightColors
     }

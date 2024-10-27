@@ -37,7 +37,7 @@ fun resolveColorScheme(useDarkTheme: Boolean, customColor: Color?): ColorScheme 
     return when {
         dynamicColor && useDarkTheme && customColor == null -> dynamicDarkColorScheme(LocalContext.current)
         dynamicColor && !useDarkTheme && customColor == null -> dynamicLightColorScheme(LocalContext.current)
-        customColor != null -> dynamicColorScheme(customColor, useDarkTheme)
+        customColor != null -> dynamicColorScheme(customColor, useDarkTheme, true)
         useDarkTheme -> DarkColors
         else -> LightColors
     }
