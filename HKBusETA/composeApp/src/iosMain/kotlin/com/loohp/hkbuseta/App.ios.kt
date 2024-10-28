@@ -33,21 +33,15 @@ import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Color
 import com.loohp.hkbuseta.appcontext.applicationAppContext
-import com.loohp.hkbuseta.appcontext.navColorState
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.utils.IO
-import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.calculateWindowSizeClass
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import platform.Foundation.NSProcessInfo
@@ -70,7 +64,6 @@ actual fun Modifier.consumePlatformWindowInsets(): Modifier {
         .padding(WindowInsets.safeDrawing.detectKeepSafeAreaSides().asPaddingValues())
 }
 
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun WindowInsets.detectKeepSafeAreaSides(): WindowInsets {
     return if (NSProcessInfo.processInfo.isiOSAppOnMac()) {

@@ -27,6 +27,8 @@ import android.content.ContextWrapper
 import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
@@ -65,6 +67,7 @@ actual inline val currentLocalWindowSize: IntSize
 @Composable
 actual fun rememberIsInPipMode(context: AppActiveContext): Boolean {
     val activity = LocalContext.current.findActivity()
+        ?: throw IllegalStateException("Picture in picture should be called in the context of an Activity")
     var pipMode by remember { mutableStateOf(activity.isInPictureInPictureMode) }
     DisposableEffect (activity) {
         val observer = Consumer<PictureInPictureModeChangedInfo> { info ->
@@ -76,20 +79,29 @@ actual fun rememberIsInPipMode(context: AppActiveContext): Boolean {
     return pipMode
 }
 
-internal fun Context.findActivity(): ComponentActivity {
+internal fun Context.findActivity(): ComponentActivity? {
     var context = this
     while (context is ContextWrapper) {
         if (context is ComponentActivity) return context
         context = context.baseContext
     }
-    throw IllegalStateException("Picture in picture should be called in the context of an Activity")
+    return null
 }
 
 actual fun AppActiveContext.enterPipMode() {
     val activity = compose.context.findActivity()
+        ?: throw IllegalStateException("Picture in picture should be called in the context of an Activity")
     if (!activity.isInPictureInPictureMode) {
         activity.enterPictureInPictureMode(PictureInPictureParams.Builder()
             .setAspectRatio(Rational(16, 9))
             .build())
     }
+}
+
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+@Composable
+actual fun calculateWindowSizeClass(): WindowSizeClass {
+    val activity = LocalContext.current.findActivity()
+        ?: throw IllegalStateException("Unable to find current activity")
+    return androidx.compose.material3.windowsizeclass.calculateWindowSizeClass(activity)
 }

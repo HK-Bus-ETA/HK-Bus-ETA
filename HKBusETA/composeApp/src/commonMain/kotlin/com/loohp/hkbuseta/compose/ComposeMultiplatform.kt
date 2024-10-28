@@ -25,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -108,3 +109,6 @@ expect val currentLocalWindowSize: IntSize @Composable get
 expect fun rememberIsInPipMode(context: AppActiveContext): Boolean
 
 expect fun AppActiveContext.enterPipMode()
+
+@Composable
+expect fun calculateWindowSizeClass(): WindowSizeClass

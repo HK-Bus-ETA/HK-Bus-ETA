@@ -26,22 +26,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.compose.calculateWindowSizeClass
 import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import com.loohp.hkbuseta.compose.isNarrow
 import com.loohp.hkbuseta.utils.pixelsToDp
-import kotlinx.coroutines.delay
 import kotlin.math.min
 
 actual fun exitApp() {
@@ -49,7 +42,6 @@ actual fun exitApp() {
 
 actual fun watchDataOverwriteWarningInitialValue(): Boolean = false
 
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 actual fun SnackbarInterface(instance: AppActiveContext, snackbarHostState: SnackbarHostState) {
     val window = currentLocalWindowSize

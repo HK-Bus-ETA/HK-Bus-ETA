@@ -137,7 +137,7 @@ kotlin {
             implementation(libs.reorderable)
             implementation(libs.xmlCore)
             implementation(libs.serialization.xml)
-            implementation(libs.material3.window.size.clazz.multiplatform)
+            implementation(libs.material3.window.size.clazz)
             implementation(libs.material.kolor)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
@@ -176,7 +176,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 933
+        versionCode = 935
         versionName = "2.4.4"
     }
     packaging {

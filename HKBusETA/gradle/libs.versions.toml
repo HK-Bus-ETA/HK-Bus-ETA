@@ -14,7 +14,6 @@ glanceAppwidget = "1.1.1"
 glanceMaterial3 = "1.1.1"
 kotlinxCoroutinesGuava = "1.9.0"
 kotlinxCoroutinesSwing = "1.9.0"
-material3WindowSizeClassMultiplatform = "0.5.0"
 materialIconsExtended = "1.7.4"
 materialKolor = "2.0.0"
 xmlCore = "0.90.2"
@@ -101,7 +100,7 @@ cupertino-native = { module = "io.github.alexzhirkevich:cupertino-native", versi
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "kotlinxCoroutinesGuava" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinxCoroutinesSwing" }
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
-material3-window-size-clazz-multiplatform = { module = "dev.chrisbanes.material3:material3-window-size-class-multiplatform", version.ref = "material3WindowSizeClassMultiplatform" }
+material3-window-size-clazz = { module = "org.jetbrains.compose.material3:material3-window-size-class", version.ref = "compose-plugin" }
 xmlCore = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xmlCore" }
 horologist-compose-layout = { module = "com.google.android.horologist:horologist-compose-layout", version.ref = "horologistComposeLayout" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

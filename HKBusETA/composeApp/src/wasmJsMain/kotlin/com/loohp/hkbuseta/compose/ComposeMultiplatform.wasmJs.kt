@@ -21,6 +21,8 @@
 
 package com.loohp.hkbuseta.compose
 
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -46,4 +48,10 @@ actual inline val currentLocalWindowSize: IntSize
 actual fun rememberIsInPipMode(context: AppActiveContext): Boolean = false
 
 actual fun AppActiveContext.enterPipMode() {
+}
+
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+@Composable
+actual fun calculateWindowSizeClass(): WindowSizeClass {
+    return androidx.compose.material3.windowsizeclass.calculateWindowSizeClass()
 }
