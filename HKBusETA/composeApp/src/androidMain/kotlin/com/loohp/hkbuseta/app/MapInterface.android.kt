@@ -251,7 +251,9 @@ fun StopMarkers(
         val indexMap = remember { waypoints.buildStopListMapping(stops) }
         var selectedStop by selectedStopState
         for ((i, stop) in waypoints.stops.withIndex()) {
-            val stopIndex = indexMap[i] + 1
+            val stopIndex = indexMap.getOrElse(i) {
+                throw RuntimeException("Error creating StopMarkers for route ${waypoints.co.name} ${waypoints.routeNumber}")
+            } + 1
             val title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.getOrNull(stopIndex - 1)?.stop?: stop).name[Shared.language]
             val markerState = rememberStopMarkerState(stop)
             ChangedEffect (selectedStop) {
