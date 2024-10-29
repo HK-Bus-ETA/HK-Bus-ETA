@@ -245,6 +245,12 @@ class Registry {
             }
         }
 
+        fun getInstanceReadOnly(context: AppContext): Registry {
+            INSTANCE_LOCK.withLock {
+                return INSTANCE.value?: Registry(context, true, readOnlyMode = true).apply { INSTANCE.value = this }
+            }
+        }
+
         fun hasInstanceCreated(): Boolean {
             INSTANCE_LOCK.withLock {
                 return INSTANCE.value != null
@@ -296,6 +302,8 @@ class Registry {
     private var PREFERENCES: Preferences? = null
     private var DATA: DataContainer? = null
 
+    private val readOnlyMode: Boolean
+
     val typhoonInfo: MutableNonNullStateFlow<TyphoonInfo> = MutableStateFlow(TyphoonInfo.NO_DATA).wrap()
     private val typhoonInfoDeferred: AtomicReference<Deferred<TyphoonInfo>> = AtomicReference(CompletableDeferred(TyphoonInfo.NO_DATA))
     val state: MutableNonNullStateFlow<State> = MutableStateFlow(State.LOADING).wrap()
@@ -306,22 +314,25 @@ class Registry {
     private val objectCache: MutableMap<String, Any> = ConcurrentMutableMap()
 
     @Suppress("ConvertSecondaryConstructorToPrimary")
-    private constructor(context: AppContext, suppressUpdateCheck: Boolean) {
+    private constructor(context: AppContext, suppressUpdateCheck: Boolean, readOnlyMode: Boolean = false) {
+        this.readOnlyMode = readOnlyMode
         ensureData(context, suppressUpdateCheck)
     }
 
     val lastUpdateCheck: Long get() = lastUpdateCheckHolder.get()
 
     private fun savePreferences(context: AppContext, sync: Boolean = true) {
-        var preferences: Preferences? = null
-        preferenceWriteLock.withLock {
-            preferences = PREFERENCES!!.apply { lastSaved = currentTimeMillis() }
-            CoroutineScope(Dispatchers.IO).launch {
-                context.writeTextFile(PREFERENCES_FILE_NAME) { preferences!!.serialize().toString().toStringReadChannel() }
+        if (!readOnlyMode) {
+            var preferences: Preferences? = null
+            preferenceWriteLock.withLock {
+                preferences = PREFERENCES!!.apply { lastSaved = currentTimeMillis() }
+                CoroutineScope(Dispatchers.IO).launch {
+                    context.writeTextFile(PREFERENCES_FILE_NAME) { preferences!!.serialize().toString().toStringReadChannel() }
+                }
             }
-        }
-        if (sync) {
-            preferences?.apply { syncPreferences.value = context to this@apply }
+            if (sync) {
+                preferences?.apply { syncPreferences.value = context to this@apply }
+            }
         }
     }
 
@@ -695,47 +706,7 @@ class Registry {
             return
         }
         CoroutineScope(Dispatchers.IO).launch {
-            val files = context.listFiles()
-            if (files.contains(PREFERENCES_FILE_NAME)) {
-                try {
-                    PREFERENCES = Preferences.deserialize(Json.decodeFromStringReadChannel<JsonObject>(context.readTextFile(PREFERENCES_FILE_NAME)))
-                } catch (e: Throwable) {
-                    e.printStackTrace()
-                }
-            }
-            if (PREFERENCES == null) {
-                PREFERENCES = Preferences.createDefault()
-                savePreferences(context, false)
-            }
-            Shared.language = PREFERENCES!!.language
-            Shared.etaDisplayMode = PREFERENCES!!.etaDisplayMode
-            Shared.viewFavTab = PREFERENCES!!.viewFavTab
-            Shared.lrtDirectionMode = PREFERENCES!!.lrtDirectionMode
-            Shared.theme = PREFERENCES!!.theme
-            Shared.color = PREFERENCES!!.color
-            Shared.downloadSplash = PREFERENCES!!.downloadSplash
-            Shared.alternateStopNamesShowingState.value = PREFERENCES!!.alternateStopName
-            Shared.lastNearbyLocation = PREFERENCES!!.lastNearbyLocation
-            Shared.disableMarquee = PREFERENCES!!.disableMarquee
-            Shared.disableBoldDest = PREFERENCES!!.disableBoldDest
-            Shared.historyEnabled = PREFERENCES!!.historyEnabled
-            Shared.showRouteMap = PREFERENCES!!.showRouteMap
-            Shared.disableNavBarQuickActions = PREFERENCES!!.disableNavBarQuickActions
-            Shared.updateFavoriteStops {
-                it.value = PREFERENCES!!.favouriteStops.toImmutableList()
-            }
-            Shared.updateFavoriteRouteStops {
-                it.value = PREFERENCES!!.favouriteRouteStops.toImmutableList()
-            }
-            Tiles.updateEtaTileConfigurations {
-                it.clear()
-                it.putAll(PREFERENCES!!.etaTileConfigurations)
-            }
-            Shared.clearLookupRoute()
-            PREFERENCES!!.lastLookupRoutes.reversed().forEach { Shared.addLookupRoute(it) }
-            Shared.routeSortModePreference as MutableMap
-            Shared.routeSortModePreference.clear()
-            Shared.routeSortModePreference.putAll(PREFERENCES!!.routeSortModePreference)
+            loadPreferences(context)
             checkUpdate(context, suppressUpdateCheck)
         }
     }
@@ -756,8 +727,16 @@ class Registry {
         return DATA!!.dataSheet.stopList
     }
 
+    internal fun getStopMap(): Map<String, List<Pair<Operator, String>>> {
+        return DATA!!.dataSheet.stopMap
+    }
+
     internal fun getServiceDayMap(): Map<String, List<String>?> {
         return DATA!!.dataSheet.serviceDayMap
+    }
+
+    internal fun getMtrBusStopAlias(): Map<String, List<String>?> {
+        return DATA!!.mtrBusStopAlias
     }
 
     @ReduceDataOmitted
@@ -773,6 +752,50 @@ class Registry {
     @ReduceDataOmitted
     internal fun getMTRBarrierFreeMapping(): StationBarrierFreeMapping {
         return DATA!!.mtrBarrierFreeMapping?: StationBarrierFreeMapping.EMPTY_MAPPING
+    }
+
+    suspend fun loadPreferences(context: AppContext) {
+        val files = context.listFiles()
+        if (files.contains(PREFERENCES_FILE_NAME)) {
+            try {
+                PREFERENCES = Preferences.deserialize(Json.decodeFromStringReadChannel<JsonObject>(context.readTextFile(PREFERENCES_FILE_NAME)))
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+        }
+        if (PREFERENCES == null) {
+            PREFERENCES = Preferences.createDefault()
+            savePreferences(context, false)
+        }
+        Shared.language = PREFERENCES!!.language
+        Shared.etaDisplayMode = PREFERENCES!!.etaDisplayMode
+        Shared.viewFavTab = PREFERENCES!!.viewFavTab
+        Shared.lrtDirectionMode = PREFERENCES!!.lrtDirectionMode
+        Shared.theme = PREFERENCES!!.theme
+        Shared.color = PREFERENCES!!.color
+        Shared.downloadSplash = PREFERENCES!!.downloadSplash
+        Shared.alternateStopNamesShowingState.value = PREFERENCES!!.alternateStopName
+        Shared.lastNearbyLocation = PREFERENCES!!.lastNearbyLocation
+        Shared.disableMarquee = PREFERENCES!!.disableMarquee
+        Shared.disableBoldDest = PREFERENCES!!.disableBoldDest
+        Shared.historyEnabled = PREFERENCES!!.historyEnabled
+        Shared.showRouteMap = PREFERENCES!!.showRouteMap
+        Shared.disableNavBarQuickActions = PREFERENCES!!.disableNavBarQuickActions
+        Shared.updateFavoriteStops {
+            it.value = PREFERENCES!!.favouriteStops.toImmutableList()
+        }
+        Shared.updateFavoriteRouteStops {
+            it.value = PREFERENCES!!.favouriteRouteStops.toImmutableList()
+        }
+        Tiles.updateEtaTileConfigurations {
+            it.clear()
+            it.putAll(PREFERENCES!!.etaTileConfigurations)
+        }
+        Shared.clearLookupRoute()
+        PREFERENCES!!.lastLookupRoutes.reversed().forEach { Shared.addLookupRoute(it) }
+        Shared.routeSortModePreference as MutableMap
+        Shared.routeSortModePreference.clear()
+        Shared.routeSortModePreference.putAll(PREFERENCES!!.routeSortModePreference)
     }
 
     fun checkUpdate(context: AppContext, suppressUpdateCheck: Boolean) {
@@ -856,8 +879,10 @@ class Registry {
                             getTextResponse(lastUpdatedUrl())?.string()?.toLong()?.apply { Shared.scheduleBackgroundUpdateService(context, this) }
                         }
                         CoroutineScope(Dispatchers.IO).launch {
-                            context.writeTextFile(DATA_FILE_NAME, Json, DataContainer.serializer()) { DATA!! }
-                            context.writeTextFile(CHECKSUM_FILE_NAME) { (checksum?: "").toStringReadChannel() }
+                            if (!readOnlyMode) {
+                                context.writeTextFile(DATA_FILE_NAME, Json, DataContainer.serializer()) { DATA!! }
+                                context.writeTextFile(CHECKSUM_FILE_NAME) { (checksum?: "").toStringReadChannel() }
+                            }
                             PREFERENCES!!.referenceChecksum = checksum?: ""
                             savePreferences(context)
                         }

@@ -623,7 +623,6 @@ fun runDailyUpdate(onComplete: () -> Unit) {
     onComplete.invoke()
 }
 
-@OptIn(BetaInteropApi::class)
 val String.ns get() = NSString.create(string = this)
 
 val AppShortcutIcon.iosSystemImageName: String get() = when (this) {

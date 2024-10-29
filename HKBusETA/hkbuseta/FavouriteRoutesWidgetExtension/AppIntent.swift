@@ -34,6 +34,8 @@ struct FavouriteRoute: AppEntity {
     let coSpecialRemark: String?
     let secondLine: String?
     let deeplink: String
+    let useRelativeTime: Bool
+    let precomputedData: String
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "type.display.representation"
     static var defaultQuery = FavouriteRouteQuery()

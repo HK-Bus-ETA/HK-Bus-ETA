@@ -71,6 +71,10 @@ extension Color {
         return UIColor(self).adjustBrightness(percentage: percentage).toColor()
     }
     
+    func adjustAlpha(percentage: CGFloat) -> Color {
+        return opacity(percentage)
+    }
+    
     func withAlpha(alpha: Int) -> Color {
         return UIColor(self).withAlpha(alpha: alpha).toColor()
     }

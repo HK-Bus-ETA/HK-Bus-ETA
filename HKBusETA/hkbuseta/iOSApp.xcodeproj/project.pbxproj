@@ -82,6 +82,8 @@
 		81DF853D2BD182E500248852 /* MathUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81DF853A2BD182E500248852 /* MathUtils.swift */; };
 		81DF85472BD1A24E00248852 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 81DF85432BD18E4B00248852 /* Localizable.strings */; };
 		81DF85482BD1A26600248852 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 81498CF02B7B07B5005F0961 /* InfoPlist.strings */; };
+		81EC35B72CD426FA005D67E0 /* DateUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81EC35B62CD426FA005D67E0 /* DateUtils.swift */; };
+		81EC35BB2CD43952005D67E0 /* WidgetProcessUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81EC35BA2CD43952005D67E0 /* WidgetProcessUtils.swift */; };
 		81F9F1782BCF25D600BCA6E2 /* ArrayUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81F9F1772BCF25D600BCA6E2 /* ArrayUtils.swift */; };
 		81F9F17A2BCF39B200BCA6E2 /* ViewUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81F9F1792BCF39B200BCA6E2 /* ViewUtils.swift */; };
 /* End PBXBuildFile section */
@@ -248,6 +250,8 @@
 		81DF85442BD18E5200248852 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		81DF85452BD18E5400248852 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		81DF85462BD18E6300248852 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		81EC35B62CD426FA005D67E0 /* DateUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateUtils.swift; sourceTree = "<group>"; };
+		81EC35BA2CD43952005D67E0 /* WidgetProcessUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetProcessUtils.swift; sourceTree = "<group>"; };
 		81F9F1772BCF25D600BCA6E2 /* ArrayUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrayUtils.swift; sourceTree = "<group>"; };
 		81F9F1792BCF39B200BCA6E2 /* ViewUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewUtils.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -511,6 +515,8 @@
 				81DF85352BD15A8600248852 /* RouteUtils.swift */,
 				81DF853B2BD182E500248852 /* ColorUtils.swift */,
 				81DF853A2BD182E500248852 /* MathUtils.swift */,
+				81EC35B62CD426FA005D67E0 /* DateUtils.swift */,
+				81EC35BA2CD43952005D67E0 /* WidgetProcessUtils.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -628,6 +634,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 81DF85322BD157DC00248852 /* Build configuration list for PBXNativeTarget "FavouriteRoutesWidgetExtensionExtension" */;
 			buildPhases = (
+				8104FC932CD19AB000647290 /* Run Script */,
 				81DF851E2BD157DA00248852 /* Sources */,
 				81DF851F2BD157DA00248852 /* Frameworks */,
 				81DF85202BD157DA00248852 /* Resources */,
@@ -760,6 +767,24 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		8104FC932CD19AB000647290 /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
+		};
 		814374772B6AB629007C823A /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -880,8 +905,10 @@
 				81DF853C2BD182E500248852 /* ColorUtils.swift in Sources */,
 				81DF85292BD157DA00248852 /* FavouriteRoutesWidgetExtension.swift in Sources */,
 				81DF853D2BD182E500248852 /* MathUtils.swift in Sources */,
+				81EC35B72CD426FA005D67E0 /* DateUtils.swift in Sources */,
 				81DF852B2BD157DA00248852 /* AppIntent.swift in Sources */,
 				81DF85372BD15ADA00248852 /* RouteUtils.swift in Sources */,
+				81EC35BB2CD43952005D67E0 /* WidgetProcessUtils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -963,6 +990,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = alightreminderliveactivity/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = alightreminderliveactivity;
@@ -995,6 +1023,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				EXCLUDED_ARCHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = alightreminderliveactivity/Info.plist;
@@ -1029,6 +1058,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = tileswidget;
@@ -1059,6 +1089,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = tileswidget;
@@ -1084,7 +1115,6 @@
 		8171F0702B5C81F4005B8F6A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = hkbuseta/hkbuseta.entitlements;
@@ -1141,7 +1171,6 @@
 		8171F0712B5C81F4005B8F6A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = hkbuseta/hkbuseta.entitlements;
@@ -1204,6 +1233,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = shareextension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = shareextension;
@@ -1235,6 +1265,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				EXCLUDED_ARCHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = shareextension/Info.plist;
@@ -1267,7 +1298,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 238;
+				BUILD_NUMBER = 253;
 				BUILD_VERSION = 2.4.5;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1335,7 +1366,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 238;
+				BUILD_NUMBER = 253;
 				BUILD_VERSION = 2.4.5;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1392,7 +1423,6 @@
 		81D16AC52B33C21F003D9817 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1434,7 +1464,6 @@
 		81D16AC62B33C21F003D9817 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1483,6 +1512,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FavouriteRoutesWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FavouriteRoutesWidgetExtension;
@@ -1513,7 +1547,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				EXCLUDED_ARCHS = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FavouriteRoutesWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FavouriteRoutesWidgetExtension;

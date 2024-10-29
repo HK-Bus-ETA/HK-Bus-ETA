@@ -42,7 +42,7 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate {
         FirebaseApp.configure()
 
         BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.loohp.hkbuseta.dailyrefresh", using: nil) { task in
-             handleAppRefresh(task: task as! BGAppRefreshTask)
+             handleAppRefresh(task: task as! BGProcessingTask)
         }
         scheduleAppRefresh()
 
@@ -94,7 +94,8 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate {
 }
 
 func scheduleAppRefresh(time: Int64? = nil) {
-    let request = BGAppRefreshTaskRequest(identifier: "com.loohp.hkbuseta.dailyrefresh")
+    let request = BGProcessingTaskRequest(identifier: "com.loohp.hkbuseta.dailyrefresh")
+    request.requiresNetworkConnectivity = true
     let updateTime = time ?? AppContextCompose_iosKt.nextScheduledDataUpdateMillis()
     request.earliestBeginDate = Date(timeIntervalSince1970: TimeInterval(updateTime))
     if time == nil {
@@ -116,7 +117,7 @@ func scheduleAppRefresh(time: Int64? = nil) {
     }
 }
 
-func handleAppRefresh(task: BGAppRefreshTask) {
+func handleAppRefresh(task: BGProcessingTask) {
     scheduleAppRefresh()
     AppContextCompose_iosKt.runDailyUpdate {
         task.setTaskCompleted(success: true)

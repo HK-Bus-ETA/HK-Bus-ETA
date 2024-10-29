@@ -36,12 +36,24 @@ data class CacheKey(
     val hashed: String = keys.joinToString(",", "$id-$type") { it.hashCode().toString(16) }
 }
 
-val globalCache: ConcurrentMutableMap<String, Pair<CacheKey, Any?>> = ConcurrentMutableMap()
+var globalCache: ConcurrentMutableMap<String, Pair<CacheKey, Any?>>? = ConcurrentMutableMap()
 
-inline fun clearGlobalCache() = globalCache.clear()
+fun toggleCache(cache: Boolean) {
+    if (cache) {
+        if (globalCache == null) {
+            globalCache = ConcurrentMutableMap()
+        }
+    } else {
+        globalCache = null
+    }
+}
+
+inline fun clearGlobalCache() = globalCache?.clear()
 
 inline fun <reified T> cache(function: String, vararg keys: Any?, block: () -> T): T {
-    val key = CacheKey(function, CacheType.FUNCTION, keys.asList())
-    globalCache[key.hashed]?.let { (k, v) -> if (key.keys == k.keys && v is T) return v }
-    return block.invoke().apply { globalCache[key.hashed] = key to this }
+    return globalCache?.run {
+        val key = CacheKey(function, CacheType.FUNCTION, keys.asList())
+        this[key.hashed]?.let { (k, v) -> if (key.keys == k.keys && v is T) return v }
+        block.invoke().apply { this@run[key.hashed] = key to this }
+    }?: block.invoke()
 }

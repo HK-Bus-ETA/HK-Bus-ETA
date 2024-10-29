@@ -321,9 +321,9 @@ fun Operator.getDisplayFormattedName(routeNumber: String, kmbCtbJoint: Boolean, 
     }
 }
 
-private val bracketsRemovalRegex: Regex = " *\\([^)]*\\) *".toRegex()
-private val busTerminusZhRegex: Regex = " *(?:巴士)?總站".toRegex()
-private val busTerminusEnRegex: Regex = "(?i) *(?:Bus )?Terminus".toRegex()
+val bracketsRemovalRegex: Regex = " *\\([^)]*\\) *".toRegex()
+val busTerminusZhRegex: Regex = " *(?:巴士)?總站".toRegex()
+val busTerminusEnRegex: Regex = "(?i) *(?:Bus )?Terminus".toRegex()
 
 fun Route.shouldPrependTo(): Boolean {
     return lrtCircular == null
