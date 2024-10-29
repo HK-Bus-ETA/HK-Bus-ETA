@@ -42,7 +42,7 @@ import java.awt.Dimension
 fun main() = application {
     DesktopShared.setSystemFormatProviders()
     DesktopShared.setDefaultExceptionHandler()
-    setVersionImpl { Triple("HKBusETA", "2.4.4", 26) }
+    setVersionImpl { Triple("HKBusETA", "2.4.5", 26) }
     Window(
         onCloseRequest = ::exitApplication,
         title = if (Shared.language == "en") "HK Bus ETA" else "香港巴士到站預報",

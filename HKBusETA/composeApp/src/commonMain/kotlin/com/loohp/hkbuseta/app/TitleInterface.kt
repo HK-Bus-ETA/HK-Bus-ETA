@@ -24,7 +24,6 @@ package com.loohp.hkbuseta.app
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -158,7 +157,7 @@ val titleTabItems = listOf(
     )
 )
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TitleInterface(instance: AppActiveContext) {
     val pagerState = rememberPagerState(
@@ -253,8 +252,7 @@ fun TitleInterface(instance: AppActiveContext) {
         },
         content = {
             HorizontalPager(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 state = pagerState,
                 userScrollEnabled = true
             ) {

@@ -27,7 +27,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -321,7 +320,7 @@ fun listStopsTabItem(co: Operator): List<ListStopsTabItem> {
 
 expect fun updateBrowserState(title: String, url: String)
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ReduceDataOmitted::class)
+@OptIn(ExperimentalMaterial3Api::class, ReduceDataOmitted::class)
 @Composable
 fun RouteDetailsInterface(instance: AppActiveContext) {
     val route by remember(instance) { derivedStateOf { when (val r = instance.compose.data["route"]) {

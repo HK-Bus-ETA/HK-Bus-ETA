@@ -9,30 +9,30 @@ import SwiftUI
 import shared
 
 struct EtaView: AppScreenView {
-    
+
     @State private var eta: Registry.ETAQueryResult? = nil
     let etaTimer = Timer.publish(every: Double(Shared().ETA_UPDATE_INTERVAL) / 1000, on: .main, in: .common).autoconnect()
-    
+
     let freshnessTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
-    
+
     @Environment(\.isLuminanceReduced) var ambientMode
-    
+
     @State private var stopId: String
     @State private var co: Operator
     @State private var index: Int
     @State private var stop: Stop
     @State private var route: Route
     @State private var offsetStart: Int
-    
+
     @State private var resolvedDestName: BilingualText
     @State private var stopList: [Registry.StopData]
     @State private var etaDisplayMode: ETADisplayMode
     @State private var lrtDirectionMode: Bool
-    
+
     @State private var freshness: Bool
-    
+
     private let appContext: AppActiveContextWatchOS
-    
+
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
         let stopId = data["stopId"] as! String
@@ -63,7 +63,7 @@ struct EtaView: AppScreenView {
         self.lrtDirectionMode = Shared().lrtDirectionMode
         self.freshness = true
     }
-    
+
     var body: some View {
         VStack(alignment: .center, spacing: 3.scaled(appContext)) {
             Spacer().frame(fixedSize: 3.scaled(appContext))
@@ -113,7 +113,7 @@ struct EtaView: AppScreenView {
                     }
                     .ignoresSafeArea(.all)
                     .disabled(index <= 1)
-                    
+
                     if co == Operator.Companion().LRT {
                         Button(action: {
                             registry(appContext).setLrtDirectionMode(lrtDirectionMode: !lrtDirectionMode, context: appContext)
@@ -136,7 +136,7 @@ struct EtaView: AppScreenView {
                         }
                         .ignoresSafeArea(.all)
                     }
-                    
+
                     Button(action: {
                         let data = newAppDataConatiner()
                         data["stopId"] = stopId
@@ -158,7 +158,7 @@ struct EtaView: AppScreenView {
                             .clipShape(RoundedRectangle(cornerRadius: 25))
                     }
                     .ignoresSafeArea(.all)
-                    
+
                     Button(action: {
                         let data = newAppDataConatiner()
                         let newStopData = stopList[index]
@@ -210,7 +210,7 @@ struct EtaView: AppScreenView {
                 }
         )
     }
-    
+
     func ETALine(lines: Registry.ETAQueryResult?, seq: Int) -> some View {
         let baseSize = lines?.nextCo == Operator.Companion().LRT && Shared().lrtDirectionMode ? 17.5 : 20.0
         let text = Shared().getResolvedText(lines, seq: seq.asInt32(), etaDisplayMode: etaDisplayMode, context: appContext).asAttributedString(defaultFontSize: max(baseSize.scaled(appContext), baseSize.scaled(appContext, seq == 1)))

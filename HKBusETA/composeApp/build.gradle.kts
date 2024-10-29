@@ -176,8 +176,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 935
-        versionName = "2.4.4"
+        versionCode = 936
+        versionName = "2.4.5"
     }
     packaging {
         resources {
@@ -207,7 +207,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "HK Bus ETA"
-            packageVersion = "2.4.4"
+            packageVersion = "2.4.5"
 
             macOS {
                 iconFile.set(project.file("icon.icns"))

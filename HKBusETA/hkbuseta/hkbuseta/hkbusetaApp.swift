@@ -19,7 +19,7 @@ import LinkPresentation
 import WidgetKit
 
 class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate {
-    
+
     override init() {
         super.init()
         if WCSession.isSupported() {
@@ -28,7 +28,7 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate {
             session.activate()
         }
     }
-    
+
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
         if let shortcutItem = options.shortcutItem {
             quickActionLaunchData.url = shortcutItem.userInfo?["url"] as? String
@@ -37,22 +37,22 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate {
         configuration.delegateClass = SceneDelegate.self
         return configuration
     }
-    
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
-        
+
         BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.loohp.hkbuseta.dailyrefresh", using: nil) { task in
              handleAppRefresh(task: task as! BGAppRefreshTask)
         }
         scheduleAppRefresh()
-        
+
         if let shortcutItem = launchOptions?[UIApplication.LaunchOptionsKey.shortcutItem] as? UIApplicationShortcutItem {
             quickActionLaunchData.url = shortcutItem.userInfo?["url"] as? String
         }
-        
+
         return true
     }
-    
+
     func applicationWillTerminate(_ application: UIApplication) {
         let semaphore = DispatchSemaphore(value: 0)
         Task.detached {
@@ -66,31 +66,31 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate {
         }
         semaphore.wait()
     }
-    
+
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        
+
     }
-    
+
     func sessionDidBecomeInactive(_ session: WCSession) {
-        
+
     }
-    
+
     func sessionDidDeactivate(_ session: WCSession) {
-        
+
     }
-    
+
     func session(_ session: WCSession, didReceiveMessage payload: [String: Any]) {
         handleDataFromWatch(payload: payload)
     }
-    
+
     func session(_ session: WCSession, didReceiveMessage payload: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
         handleDataFromWatch(payload: payload)
     }
-    
+
     func session(_ session: WCSession, didReceiveApplicationContext payload: [String : Any]) {
         handleDataFromWatch(payload: payload)
     }
-    
+
 }
 
 func scheduleAppRefresh(time: Int64? = nil) {
@@ -124,21 +124,21 @@ func handleAppRefresh(task: BGAppRefreshTask) {
 }
 
 class QuickActionLaunchData: ObservableObject {
-    
+
     @Published var url: String?
-    
+
 }
 
 let quickActionLaunchData = QuickActionLaunchData()
 
 class SceneDelegate: NSObject, UIWindowSceneDelegate {
-    
+
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         if let shortcutItem = connectionOptions.shortcutItem {
             quickActionLaunchData.url = shortcutItem.userInfo?["url"] as? String
         }
     }
-    
+
     func windowScene(_ windowScene: UIWindowScene, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
         quickActionLaunchData.url = shortcutItem.userInfo?["url"] as? String
         completionHandler(true)
@@ -147,13 +147,13 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate {
 
 struct TextDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.text] }
-    
+
     var text: String
-    
+
     init(text: String) {
         self.text = text
     }
-    
+
     init(configuration: ReadConfiguration) throws {
         if let data = configuration.file.regularFileContents,
            let string = String(data: data, encoding: .utf8) {
@@ -162,7 +162,7 @@ struct TextDocument: FileDocument {
             text = ""
         }
     }
-    
+
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         let data = text.data(using: .utf8)!
         return .init(regularFileWithContents: data)
@@ -170,22 +170,22 @@ struct TextDocument: FileDocument {
 }
 
 class FileImportExportData: ObservableObject {
-    
+
     @Published var importingFile: Bool = false
     @Published var importingFileCallback: ((String) -> KotlinUnit)? = nil
-    
+
     @Published var exportingFile: Bool = false
     @Published var exportingFileName: String? = nil
     @Published var exportingFileDocument: TextDocument = TextDocument(text: "")
     @Published var exportingFileCallback: (() -> KotlinUnit)? = nil
-    
+
 }
 
 struct ShareUrlView: UIViewControllerRepresentable {
-    
+
     let url: String
     let title: String?
-    
+
     init(url: String, title: String?) {
         self.url = url
         self.title = title
@@ -199,24 +199,24 @@ struct ShareUrlView: UIViewControllerRepresentable {
 }
 
 class ShareUrlItemSource: NSObject, UIActivityItemSource {
-    
+
     let url: String
     let title: String?
-    
+
     init(url: String, title: String?) {
         self.url = url
         self.title = title
         super.init()
     }
-    
+
     func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
         return url
     }
-    
+
     func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
         return url
     }
-    
+
     func activityViewController(_ activityViewController: UIActivityViewController, subjectForActivityType activityType: UIActivity.ActivityType?) -> String {
         return title ?? ""
     }
@@ -232,10 +232,10 @@ class ShareUrlItemSource: NSObject, UIActivityItemSource {
 }
 
 class ShareUrlData: ObservableObject, Identifiable {
-    
+
     @Published var url: String = ""
     @Published var title: String? = nil
-    
+
 }
 
 struct AlightReminderLiveActivityAttributes: ActivityAttributes {
@@ -257,18 +257,18 @@ var alightReminderLastRemote: String? = nil
 
 @main
 struct hkbusetaApp: App {
-    
+
     @UIApplicationDelegateAdaptor(ApplicationDelegate.self) var delegate
-    
+
     @ObservedObject private var fileImportExport = FileImportExportData()
     @ObservedObject private var quickActionLaunch = quickActionLaunchData
     @ObservedObject private var shareUrlData = ShareUrlData()
     @State private var shareUrlDataShowing = false
-    
+
     init() {
         initImpl()
     }
-    
+
     private func initImpl() {
         AppContextCompose_iosKt.setTilesUpdateImpl {
             WidgetCenter.shared.reloadAllTimelines()
@@ -355,14 +355,14 @@ struct hkbusetaApp: App {
                         if alightReminderActivity == nil {
                             do {
                                 let initialState = AlightReminderLiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, stopsRemaining: data!.stopsRemaining, titleLeading: data!.titleLeading, titleTrailing: data!.titleTrailing, content: data!.content, color: data!.color, url: data!.url)
-                                
+
                                 alightReminderActivity = try Activity.request(
                                     attributes: AlightReminderLiveActivityAttributes(),
                                     content: .init(state: initialState, staleDate: nil),
                                     pushType: nil)
-                                
+
                                 alightReminderLastState = data!.state
-                                
+
                                 if data!.state == 2 {
                                     Task { await alightReminderActivity?.end(dismissalPolicy: .default) }
                                 }
@@ -403,7 +403,7 @@ struct hkbusetaApp: App {
             }
         }
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ComposeView()
@@ -466,7 +466,7 @@ struct hkbusetaApp: App {
             }
         }
     }
-    
+
 }
 
 func encoding(from charsetName: String) -> String.Encoding {

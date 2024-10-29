@@ -805,16 +805,19 @@ fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext)
         } else {
             val allStops = cachedAllStops?: Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
             val branches = allStops.asSequence().flatMap { it.branchIds }.toSet()
-            val branchStops = branches.associateWith { b -> allStops.filter { it.branchIds.contains(b) } }
+            val branchStops = branches.associateWith { b ->
+                allStops.mapIndexedNotNull { i, e -> if (e.branchIds.contains(b)) ((i + 1) to e) else null }
+            }
             branchStops.values.all {
-                if (it.size <= stopInfoIndex) {
-                    true
-                } else if (co === Operator.KMB && !route!!.isCircular) {
-                    val stop = it.getOrNull(stopInfoIndex - 1)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
-                    val nextStop = it.getOrNull(stopInfoIndex)?.stop?.name?.zh?.remove(bracketsRemovalRegex)
-                    stop nonNullEquals nextStop
-                } else {
-                    false
+                when {
+                    it.last().first == stopInfoIndex -> true
+                    co === Operator.KMB && !route!!.isCircular -> {
+                        val stopIndex = it.indexOfFirst { (i) -> i == stopInfoIndex }
+                        val stopName = it.getOrNull(stopIndex)?.second?.stop?.name?.zh?.remove(bracketsRemovalRegex)
+                        val nextStopName = it.getOrNull(stopIndex + 1)?.second?.stop?.name?.zh?.remove(bracketsRemovalRegex)
+                        stopName nonNullEquals nextStopName
+                    }
+                    else -> false
                 }
             }
         }
@@ -1001,10 +1004,10 @@ fun RouteSearchResultEntry.findReverse(context: AppContext): RouteSearchResultEn
         route!!.lrtCircular == null -> {
             val result = Registry.getInstance(context).findRoutes(route!!.routeNumber, true) { _, r, c -> co == c && (co != Operator.GMB || r.gmbRegion == route!!.gmbRegion) }
             val byBound = result.filter { it.route!!.bound[co] != route!!.bound[co] }
-            if (byBound.isEmpty()) {
+            if (byBound.isEmpty() && co === Operator.GMB) {
                 result.firstOrNull { it.routeKey != routeKey }
             } else {
-                byBound.first()
+                byBound.firstOrNull()
             }
         }
         else -> {

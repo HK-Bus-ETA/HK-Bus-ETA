@@ -18,10 +18,10 @@ struct ComposeUIView: UIViewControllerRepresentable {
 }
 
 struct ComposeView: View {
-    
+
     @Environment(\.verticalSizeClass) var verticalSizeClass
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
-    
+
     var body: some View {
         GeometryReader { geometry in
             ComposeUIView()

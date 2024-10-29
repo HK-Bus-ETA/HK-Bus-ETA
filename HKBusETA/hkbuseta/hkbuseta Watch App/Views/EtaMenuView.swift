@@ -9,11 +9,11 @@ import SwiftUI
 import shared
 
 struct EtaMenuView: AppScreenView {
-    
+
     @StateObject private var jointOperatedColorFraction = StateFlowObservable(stateFlow: Shared().jointOperatedColorFractionState)
-    
+
     @StateObject private var favouriteRouteStops = StateFlowListObservable(stateFlow: Shared().favoriteRouteStops)
-    
+
     @State private var stopId: String
     @State private var co: Operator
     @State private var index: Int
@@ -21,13 +21,13 @@ struct EtaMenuView: AppScreenView {
     @State private var route: Route
     @State private var resolvedDestName: BilingualText
     @State private var offsetStart: Int
-    
+
     @State private var stopList: [Registry.StopData]
-    
+
     @State private var selectedGroup: BilingualText
-    
+
     private let appContext: AppActiveContextWatchOS
-    
+
     init(appContext: AppActiveContextWatchOS, data: [String: Any], storage: KotlinMutableDictionary<NSString, AnyObject>) {
         self.appContext = appContext
         let stopId = data["stopId"] as! String
@@ -58,7 +58,7 @@ struct EtaMenuView: AppScreenView {
         self.stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
         self.selectedGroup = typedValue(Shared().favoriteRouteStops).first!.name
     }
-    
+
     var body: some View {
         ScrollViewReader { value in
             ScrollView(.vertical) {
@@ -140,7 +140,7 @@ struct EtaMenuView: AppScreenView {
             favouriteRouteStops.unsubscribe()
         }
     }
-    
+
     func OpenOnMapsButton(stopName: BilingualText, lat: Double, lng: Double) -> some View {
         Button(action: { /* do nothing */ }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
@@ -192,7 +192,7 @@ struct EtaMenuView: AppScreenView {
                 }
         )
     }
-    
+
     func KmbBbiButton(kmbBbiId: String) -> some View {
         Button(action: { /* do nothing */ }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
@@ -246,7 +246,7 @@ struct EtaMenuView: AppScreenView {
                 }
         )
     }
-    
+
     func SearchNearbyButton() -> some View {
         Button(action: { /* do nothing */ }) {
             HStack(alignment: .center, spacing: 2.scaled(appContext)) {
@@ -309,7 +309,7 @@ struct EtaMenuView: AppScreenView {
                 }
         )
     }
-    
+
     func AddThisStopFavButton() -> some View {
         let same = FavouriteRouteGroupKt.getByName(favouriteRouteStops.state, name: selectedGroup)!.findSame(stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route)
         let alreadySet = same.contains { $0.favouriteStopMode == FavouriteStopMode.fixed }
@@ -357,7 +357,7 @@ struct EtaMenuView: AppScreenView {
                 }
         )
     }
-    
+
     func AddAnyStopFavButton() -> some View {
         let same = FavouriteRouteGroupKt.getByName(favouriteRouteStops.state, name: selectedGroup)!.findSame(stopId: stopId, co: co, index: index.asInt32(), stop: stop, route: route)
         let alreadySet = same.contains { $0.favouriteStopMode == FavouriteStopMode.closest }
@@ -405,5 +405,5 @@ struct EtaMenuView: AppScreenView {
                 }
         )
     }
-    
+
 }
