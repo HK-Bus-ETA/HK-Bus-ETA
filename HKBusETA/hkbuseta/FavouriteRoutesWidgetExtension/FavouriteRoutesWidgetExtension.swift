@@ -100,26 +100,26 @@ struct FavouriteRoutesWidgetExtensionEntryView : View {
                         HStack(alignment: .lastTextBaseline, spacing: 0) {
                             Text(route.routeNumber)
                                 .padding(.trailing, 5.dynamicSize())
-                                .font(.system(size: 25.dynamicSize(), weight: .bold))
+                                .font(.system(size: 14.dynamicSize(), weight: .bold))
                                 .minimumScaleFactor(0.1)
                             if let prependTo = route.prependTo {
                                 Text(prependTo)
-                                    .font(.system(size: 13.dynamicSize()))
+                                    .font(.system(size: 9.dynamicSize()))
                                     .minimumScaleFactor(0.1)
                             }
                             Text(entry.extendedData?.resolvedDestName ?? route.dest)
-                                .font(.system(size: 17.dynamicSize(), weight: .bold))
+                                .font(.system(size: 13.dynamicSize(), weight: .bold))
                                 .minimumScaleFactor(0.1)
                         }
                         if let coSpecialRemark = route.coSpecialRemark {
                             Text(coSpecialRemark)
-                                .font(.system(size: 15.dynamicSize()))
+                                .font(.system(size: 11.dynamicSize()))
                                 .minimumScaleFactor(0.1)
                                 .multilineTextAlignment(.leading)
                         }
                         let secondLine = route.secondLine ?? ((entry.extendedData?.resolvedStopName ?? "") + (entry.extendedData?.closestStopLabel ?? ""))
                         Text(secondLine)
-                            .font(.system(size: 15.dynamicSize()))
+                            .font(.system(size: 11.dynamicSize()))
                             .minimumScaleFactor(0.1)
                             .multilineTextAlignment(.leading)
                         if let etaLines = etaLines {
@@ -129,13 +129,11 @@ struct FavouriteRoutesWidgetExtensionEntryView : View {
                                     if let date = etaLine.date {
                                         Text(date.toFormattedDate())
                                             .font(.system(size: 20.dynamicSize(), weight: index == 0 && entry.extendedData?.hasServices == true ? .bold : .regular))
-                                            .foregroundColor(.primary.adjustAlpha(percentage: entry.extendedData?.hasServices == true ? 1 : 0.5))
                                             .minimumScaleFactor(0.1)
                                             .lineLimit(1)
                                     } else {
                                         Text(etaLine.text ?? "")
                                             .font(.system(size: 20.dynamicSize(), weight: index == 0 && entry.extendedData?.hasServices == true ? .bold : .regular))
-                                            .foregroundColor(.primary.adjustAlpha(percentage: entry.extendedData?.hasServices == true ? 1 : 0.5))
                                             .minimumScaleFactor(0.1)
                                             .lineLimit(1)
                                     }
