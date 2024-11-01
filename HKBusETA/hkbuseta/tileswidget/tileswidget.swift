@@ -67,5 +67,6 @@ struct tileswidget: Widget {
                 tileswidgetEntryView(entry: entry)
             }
         }
+        .configurationDisplayName("widget.name")
     }
 }

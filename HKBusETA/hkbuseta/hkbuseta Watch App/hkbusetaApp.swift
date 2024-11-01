@@ -9,6 +9,7 @@ import SwiftUI
 import shared
 import Gzip
 import FirebaseCore
+import WidgetKit
 import WatchKit
 import WatchConnectivity
 
@@ -77,6 +78,12 @@ struct hkbuseta_Watch_AppApp: App {
             let decompressedData: Data = data.isGzipped ? try! data.gunzipped() : data
             return String(data: decompressedData, encoding: encoding(from: charset))!
         })
+        AppContextWatchOSKt.setTilesUpdateImpl {
+            if #available(watchOS 9.0, *) {
+                WidgetCenter.shared.invalidateConfigurationRecommendations()
+                WidgetCenter.shared.reloadAllTimelines()
+            }
+        }
         AppContextWatchOSKt.setOpenMapsImpl(handler: { lat, lng, label, longClick, haptics in
             if Bool(truncating: longClick) {
                 haptics.performHapticFeedback(hapticFeedbackType: HapticFeedbackType.longpress)
@@ -204,6 +211,8 @@ struct hkbuseta_Watch_AppApp: App {
                     data["launch"] = "etaTile"
                     context.startActivity(appIntent: newAppIntent(context, AppScreen.main, data))
                     context.finishAffinity()
+                } else {
+                    AppContextWatchOSKt.extractAndLaunchShareLink(url: url.absoluteString, instance: context, noAnimation: false, skipTitle: false)
                 }
             }
         }

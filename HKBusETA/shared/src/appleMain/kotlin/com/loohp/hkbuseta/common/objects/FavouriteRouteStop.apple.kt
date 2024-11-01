@@ -1,27 +1,6 @@
-/*
- * This file is part of HKBusETA.
- *
- * Copyright (C) 2024. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2024. Contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.a
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- */
-
 package com.loohp.hkbuseta.common.objects
 
-import com.loohp.hkbuseta.common.appcontext.applicationBaseAppContext
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ColorContentStyle
@@ -74,11 +53,12 @@ actual val FavouriteRouteStop.platformDisplayInfo: JsonObject? get() = buildJson
     if (favouriteStopMode == FavouriteStopMode.FIXED) {
         put("secondLine", if (co.isTrain) stop.name[Shared.language] else "${index}. ${stop.name[Shared.language]}")
     }
-    put("deeplink", route.getDeepLink(applicationBaseAppContext!!, stopId, index))
+    put("deeplink", route.getDeepLink(appContextForWidget, stopId, index))
     gzipSupported()
     put("precomputedData", JsonWidgetPrecomputedData.encodeToString(buildWidgetPrecomputedData()))
 }
 
+expect val appContextForWidget: AppContext
 
 val JsonWidgetPrecomputedData: Json = Json {
     encodeDefaults = false
@@ -87,7 +67,7 @@ val JsonWidgetPrecomputedData: Json = Json {
 }
 
 fun FavouriteRouteStop.buildWidgetPrecomputedData(): WidgetPrecomputedData {
-    val registry = Registry.getInstanceNoUpdateCheck(applicationBaseAppContext!!)
+    val registry = Registry.getInstanceNoUpdateCheck(appContextForWidget)
     val allBranches = registry.getAllBranchRoutes(route.routeNumber, route.idBound(co), co, route.gmbRegion)
     val allStops = registry.getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion)
     val usedServiceDayKeys = allBranches.asSequence().mapNotNull { it.freq?.keys }.flatten().toSet()

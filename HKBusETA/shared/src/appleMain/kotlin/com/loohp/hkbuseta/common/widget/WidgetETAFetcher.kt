@@ -1,4 +1,4 @@
-package com.loohp.hkbuseta.common.utils.widget
+package com.loohp.hkbuseta.common.widget
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.collections.ConcurrentMutableSet
@@ -55,7 +55,7 @@ data class WidgetETAResult(
     val hasServices: Boolean
 )
 
-fun getEta(stopId: String, stopIndex: Int, co: Operator, route: Route, precomputedData: WidgetPrecomputedData): WidgetETAResult {
+fun getEtaWidget(stopId: String, stopIndex: Int, co: Operator, route: Route, precomputedData: WidgetPrecomputedData): WidgetETAResult {
     return runBlocking {
         try {
             when {

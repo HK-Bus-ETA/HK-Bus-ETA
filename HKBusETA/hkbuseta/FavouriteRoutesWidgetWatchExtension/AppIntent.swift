@@ -1,8 +1,8 @@
 //
 //  AppIntent.swift
-//  FavouriteRoutesWidgetExtension
+//  FavouriteRoutesWidgetWatchExtensionExtension
 //
-//  Created by LOOHP on 18/4/2024.
+//  Created by LOOHP on 1/11/2024.
 //
 
 import WidgetKit
@@ -39,6 +39,10 @@ struct FavouriteRoute: AppEntity {
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "type.display.representation"
     static var defaultQuery = FavouriteRouteQuery()
+    
+    var displayName: String {
+        "\(groupName) - \(routeNumber) \(prependTo ?? "")\(dest)\n\(secondLine ?? "*")"
+    }
             
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(groupName) - \(routeNumber) \(prependTo ?? "")\(dest)\n\(secondLine ?? "*")")

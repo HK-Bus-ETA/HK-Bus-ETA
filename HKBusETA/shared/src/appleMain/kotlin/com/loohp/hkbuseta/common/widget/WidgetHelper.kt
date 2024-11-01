@@ -1,4 +1,4 @@
-package com.loohp.hkbuseta.common.utils.widget
+package com.loohp.hkbuseta.common.widget
 
 import co.touchlab.stately.collections.ConcurrentMutableList
 import com.loohp.hkbuseta.common.objects.BilingualText
@@ -31,6 +31,8 @@ import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.common.utils.toggleCache
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.UnsafeNumber
+import kotlinx.cinterop.convert
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
@@ -159,48 +161,55 @@ fun LocalDateTime.formatTimeWidget(): String {
     return toNSDateComponents().formatTimeWidget()
 }
 
+@OptIn(UnsafeNumber::class, ExperimentalForeignApi::class)
 fun NSDateComponents.formatTimeWidget(): String {
     return NSCalendar.currentCalendar.dateFromComponents(this)?.let {
         NSDateFormatter().apply {
             locale = NSLocale.currentLocale
-            dateStyle = NSDateFormatterNoStyle
-            timeStyle = NSDateFormatterShortStyle
+            dateStyle = NSDateFormatterNoStyle.convert()
+            timeStyle = NSDateFormatterShortStyle.convert()
         }.stringFromDate(it)
-    }?: "${hour.toInt().pad(2)}:${minute.toInt().pad(2)}"
+    }?: "${hour.convert<Int>().pad(2)}:${minute.convert<Int>().pad(2)}"
 }
 
-private fun getGPSLocation(priority: LocationPriority = LocationPriority.ACCURATE): Deferred<Coordinates?> {
+expect fun CLLocationManager.authorizedForWidgetUpdates(): Boolean
+
+private fun getGPSLocationAppleWidget(priority: LocationPriority = LocationPriority.ACCURATE): Deferred<Coordinates?> {
     val defer = CompletableDeferred<Coordinates?>()
     val objectPreferenceStore: MutableList<Any> = ConcurrentMutableList()
     when (CLLocationManager.authorizationStatus()) {
         kCLAuthorizationStatusAuthorizedWhenInUse, kCLAuthorizationStatusAuthorizedAlways -> {
             val locationManager = CLLocationManager()
 
-            val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
-                override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {
-                    val location = didUpdateLocations.lastOrNull() as? CLLocation
-                    if (location != null) {
-                        defer.complete(location.toCoordinates())
-                    } else {
-                        defer.complete(null)
+            if (locationManager.authorizedForWidgetUpdates()) {
+                val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
+                    override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {
+                        val location = didUpdateLocations.lastOrNull() as? CLLocation
+                        if (location != null) {
+                            defer.complete(location.toCoordinates())
+                        } else {
+                            defer.complete(null)
+                        }
+                        locationManager.stopUpdatingLocation()
+                        objectPreferenceStore.remove(locationManager)
+                        objectPreferenceStore.remove(this)
                     }
-                    locationManager.stopUpdatingLocation()
-                    objectPreferenceStore.remove(locationManager)
-                    objectPreferenceStore.remove(this)
+
+                    override fun locationManager(manager: CLLocationManager, didFailWithError: NSError) {
+                        defer.complete(null)
+                        objectPreferenceStore.remove(locationManager)
+                        objectPreferenceStore.remove(this)
+                    }
                 }
 
-                override fun locationManager(manager: CLLocationManager, didFailWithError: NSError) {
-                    defer.complete(null)
-                    objectPreferenceStore.remove(locationManager)
-                    objectPreferenceStore.remove(this)
-                }
+                locationManager.delegate = delegate
+                locationManager.desiredAccuracy = priority.toCLLocationAccuracy()
+                locationManager.requestLocation()
+                objectPreferenceStore.add(locationManager)
+                objectPreferenceStore.add(delegate)
+            } else {
+                defer.complete(null)
             }
-
-            locationManager.delegate = delegate
-            locationManager.desiredAccuracy = priority.toCLLocationAccuracy()
-            locationManager.requestLocation()
-            objectPreferenceStore.add(locationManager)
-            objectPreferenceStore.add(delegate)
         }
         else -> defer.complete(null)
     }
@@ -256,11 +265,7 @@ fun buildWidgetData(precomputedData: String): ExtendedWidgetData {
         GC.collect()
         val language = widgetPrecomputedData.language
         val resolved = widgetPrecomputedData.fav.resolveStopWidget(widgetPrecomputedData.allStops, widgetPrecomputedData.allBranches) {
-            if (CLLocationManager().authorizedForWidgetUpdates) {
-                runBlocking { getGPSLocation().await() }
-            } else {
-                null
-            }
+            runBlocking { getGPSLocationAppleWidget().await() }
         }
         val route = resolved.route
         val resolvedStopName = if (widgetPrecomputedData.co.isBus) {
@@ -277,7 +282,7 @@ fun buildWidgetData(precomputedData: String): ExtendedWidgetData {
         GC.collect()
         val resolvedDestName = route.resolvedDestWithBranchWidget(false, currentBranch, resolved.index, resolved.stopId, widgetPrecomputedData.allStops)[language]
         GC.collect()
-        val widgetResults = getEta(resolved.stopId, resolved.index, widgetPrecomputedData.co, route, widgetPrecomputedData)
+        val widgetResults = getEtaWidget(resolved.stopId, resolved.index, widgetPrecomputedData.co, route, widgetPrecomputedData)
         val etaLines = widgetResults.lines.takeIf { it.isNotEmpty() }?: listOf((if (language == "en") "No scheduled departures" else "沒有預定班次").toWidgetLineEntry())
         val hasServices = widgetResults.hasServices
         val closestStopLabel = if (language == "en") " - Closest" else " - 最近"

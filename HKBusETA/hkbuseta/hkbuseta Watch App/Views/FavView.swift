@@ -244,7 +244,7 @@ struct FavView: AppScreenView {
                     VStack(alignment: .leading, spacing: 0) {
                         UserMarqueeText(
                             text: mainText,
-                            font: UIFont.systemFont(ofSize: 19.scaled(appContext, true), weight: .bold),
+                            font: UIFont.systemFont(ofSize: 19.scaled(appContext, true), weight: Shared().disableBoldDest ? .regular : .bold),
                             marqueeStartDelay: 2,
                             marqueeAlignment: .bottomLeading
                         )
@@ -263,9 +263,9 @@ struct FavView: AppScreenView {
                             }
                             UserMarqueeText(
                                 text: routeText,
-                                font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: .bold),
+                                font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: Shared().disableBoldDest ? .regular : .bold),
                                 marqueeStartDelay: 2,
-                                marqueeAlignment: .bottomLeading
+                                marqueeAlignment: .leadingFirstTextBaseline
                             )
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -275,7 +275,7 @@ struct FavView: AppScreenView {
                             text: subText,
                             font: UIFont.systemFont(ofSize: 14.scaled(appContext, true)),
                             marqueeStartDelay: 2,
-                            marqueeAlignment: .bottomLeading
+                            marqueeAlignment: .leadingFirstTextBaseline
                         )
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, alignment: .leading)

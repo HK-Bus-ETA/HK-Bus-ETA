@@ -35,6 +35,8 @@ import com.loohp.hkbuseta.common.appcontext.HapticFeedback
 import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
+import com.loohp.hkbuseta.common.external.extractShareLink
+import com.loohp.hkbuseta.common.external.shareLaunch
 import com.loohp.hkbuseta.common.objects.AppAlert
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
@@ -50,6 +52,7 @@ import com.loohp.hkbuseta.common.services.AlightReminderActiveState
 import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
@@ -182,6 +185,10 @@ fun setSyncPreferencesImpl(handler: (String) -> Unit) {
     syncPreferencesImpl = handler
 }
 
+fun setTilesUpdateImpl(handler: () -> Unit) {
+    Tiles.providePlatformUpdate(handler)
+}
+
 @OptIn(ExperimentalForeignApi::class, UnsafeNumber::class, BetaInteropApi::class)
 open class AppContextWatchOS internal constructor() : AppContext {
 
@@ -215,8 +222,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
     override val formFactor: FormFactor = FormFactor.WATCH
 
     override suspend fun readTextFile(fileName: String, charset: Charset): StringReadChannel {
-        return NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
-            dir as NSURL
+        return NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
             val fileURL = dir.URLByAppendingPathComponent(fileName)!!
             val text = NSString.create(contentsOfURL = fileURL)
             text.toString().toStringReadChannel(charset)
@@ -225,18 +231,16 @@ open class AppContextWatchOS internal constructor() : AppContext {
 
     override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
         withGlobalWritingFilesCounter {
-            NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
-                dir as NSURL
+            NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
                 val fileURL = dir.URLByAppendingPathComponent(fileName)!!
-                val text = NSString.create(string = writeText.invoke().string())
-                text.writeToURL(fileURL, atomically = false)
+                val text = writeText.invoke().string().ns
+                text.writeToURL(fileURL, atomically = true)
             }
         }
     }
 
     override suspend fun readRawFile(fileName: String): ByteReadChannel {
-        return NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
-            dir as NSURL
+        return NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
             val fileURL = dir.URLByAppendingPathComponent(fileName)!!
             val data = NSData.create(contentsOfURL = fileURL)!!
             ByteReadChannel(ByteArray(data.length.toInt()).apply {
@@ -247,8 +251,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
 
     override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
         withGlobalWritingFilesCounter {
-            NSFileManager.defaultManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
-                dir as NSURL
+            NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
                 val fileURL = dir.URLByAppendingPathComponent(fileName)!!
                 val array = writeBytes.invoke().toByteArray()
                 val data = memScoped { NSData.create(bytes = allocArrayOf(array), length = array.size.convert()) }
@@ -257,10 +260,10 @@ open class AppContextWatchOS internal constructor() : AppContext {
         }
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     override suspend fun listFiles(): List<String> {
         val fileManager = NSFileManager.defaultManager
-        return fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
-            dir as NSURL
+        return fileManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
             fileManager.contentsOfDirectoryAtURL(dir, includingPropertiesForKeys = null, options = 0u, error = null)?.mapNotNull {
                 it as NSURL
                 it.lastPathComponent
@@ -268,10 +271,10 @@ open class AppContextWatchOS internal constructor() : AppContext {
         }
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     override suspend fun deleteFile(fileName: String): Boolean {
         val fileManager = NSFileManager.defaultManager
-        return fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first().let { dir ->
-            dir as NSURL
+        return fileManager.containerURLForSecurityApplicationGroupIdentifier("group.com.loohp.hkbuseta")!!.let { dir ->
             val fileURL = dir.URLByAppendingPathComponent(fileName)!!
             if (fileManager.fileExistsAtPath(fileURL.path!!)) {
                 fileManager.removeItemAtURL(fileURL, error = null)
@@ -453,6 +456,9 @@ class AppActiveContextWatchOS internal constructor(
 
 }
 
+@OptIn(BetaInteropApi::class)
+val String.ns get() = NSString.create(string = this)
+
 fun createMutableAppDataContainer(): MutableMap<String, Any?> {
     return mutableMapOf()
 }
@@ -623,4 +629,15 @@ fun Map<Route, RouteBranchStatus>.findMostActiveRoute(): Route {
 
 fun getAppAlert(context: AppContext): AppAlert? {
     return runBlocking(Dispatchers.IO) { Registry.getInstance(context).getAppAlerts().await() }
+}
+
+fun extractAndLaunchShareLink(url: String, instance: AppActiveContext, noAnimation: Boolean, skipTitle: Boolean) {
+    CoroutineScope(Dispatchers.IO).launch {
+        val registry = Registry.getInstance(instance)
+        while (registry.state.value.isProcessing) {
+            delay(100)
+        }
+        delay(1000)
+        url.extractShareLink()?.apply { shareLaunch(instance, noAnimation, skipTitle) }
+    }
 }

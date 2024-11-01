@@ -26,7 +26,6 @@
 		8171F01C2B52EC4E005B8F6A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0182B44C403008EE8AB /* SwiftUI.framework */; };
 		8171F01F2B52EC4E005B8F6A /* tileswidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F01E2B52EC4E005B8F6A /* tileswidget.swift */; };
 		8171F0232B52EC4F005B8F6A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8171F0222B52EC4F005B8F6A /* Assets.xcassets */; };
-		8171F0272B52EC4F005B8F6A /* TilesWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8171F01A2B52EC4E005B8F6A /* TilesWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8171F02D2B53155F005B8F6A /* EtaTileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F02C2B53155F005B8F6A /* EtaTileListView.swift */; };
 		8171F02F2B531D5D005B8F6A /* EtaTileConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F02E2B531D5D005B8F6A /* EtaTileConfigurationView.swift */; };
 		8171F0312B53C732005B8F6A /* AppScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8171F0302B53C732005B8F6A /* AppScreenView.swift */; };
@@ -48,6 +47,11 @@
 		81AB3D8A2BFA96BD00DB74C6 /* TrainRouteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81AB3D892BFA96BC00DB74C6 /* TrainRouteMapView.swift */; };
 		81AB3D8D2BFAB3EB00DB74C6 /* mtr_system_map.json in Resources */ = {isa = PBXBuildFile; fileRef = 81AB3D8B2BFAB3EB00DB74C6 /* mtr_system_map.json */; };
 		81AB3D8E2BFAB3EB00DB74C6 /* light_rail_system_map.json in Resources */ = {isa = PBXBuildFile; fileRef = 81AB3D8C2BFAB3EB00DB74C6 /* light_rail_system_map.json */; };
+		81AE54DD2CD4FB0E00B6847E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0162B44C403008EE8AB /* WidgetKit.framework */; };
+		81AE54DE2CD4FB0E00B6847E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0182B44C403008EE8AB /* SwiftUI.framework */; };
+		81AE55052CD5110000B6847E /* TilesWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8171F01A2B52EC4E005B8F6A /* TilesWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		81AE550B2CD5110B00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 81AE54DC2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		81AE55172CD52C4000B6847E /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 81AE55162CD52C4000B6847E /* Localizable.strings */; };
 		81CA25E72BCB2BA90081A5C5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CA25E62BCB2BA90081A5C5 /* SettingsView.swift */; };
 		81D16ABE2B33C21F003D9817 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16ABD2B33C21F003D9817 /* Assets.xcassets */; };
 		81D16AC12B33C21F003D9817 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81D16AC02B33C21F003D9817 /* Preview Assets.xcassets */; };
@@ -103,19 +107,26 @@
 			remoteGlobalIDString = 81498D0A2B7EAD21005F0961;
 			remoteInfo = alightreminderliveactivityExtension;
 		};
-		8171F0252B52EC4F005B8F6A /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 81D16AA82B33C21D003D9817 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 8171F0192B52EC4E005B8F6A;
-			remoteInfo = tileswidgetExtension;
-		};
 		8171F0882B5D4F11005B8F6A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 81D16AA82B33C21D003D9817 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 8171F07F2B5D4F11005B8F6A;
 			remoteInfo = shareextension;
+		};
+		81AE55062CD5110000B6847E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 81D16AA82B33C21D003D9817 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8171F0192B52EC4E005B8F6A;
+			remoteInfo = TilesWidgetExtension;
+		};
+		81AE550C2CD5110B00B6847E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 81D16AA82B33C21D003D9817 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 81AE54DB2CD4FB0E00B6847E;
+			remoteInfo = FavouriteRoutesWidgetWatchExtensionExtension;
 		};
 		81DF852F2BD157DB00248852 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -151,13 +162,14 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		818FD0282B44C405008EE8AB /* Embed Foundation Extensions */ = {
+		81AE55082CD5110000B6847E /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				8171F0272B52EC4F005B8F6A /* TilesWidgetExtension.appex in Embed Foundation Extensions */,
+				81AE550B2CD5110B00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.appex in Embed Foundation Extensions */,
+				81AE55052CD5110000B6847E /* TilesWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -213,6 +225,13 @@
 		81AB3D892BFA96BC00DB74C6 /* TrainRouteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainRouteMapView.swift; sourceTree = "<group>"; };
 		81AB3D8B2BFAB3EB00DB74C6 /* mtr_system_map.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = mtr_system_map.json; sourceTree = "<group>"; };
 		81AB3D8C2BFAB3EB00DB74C6 /* light_rail_system_map.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = light_rail_system_map.json; sourceTree = "<group>"; };
+		81AE54DC2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FavouriteRoutesWidgetWatchExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		81AE55032CD50ADB00B6847E /* TilesWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TilesWidgetExtension.entitlements; sourceTree = "<group>"; };
+		81AE55042CD50AEC00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FavouriteRoutesWidgetWatchExtensionExtension.entitlements; sourceTree = "<group>"; };
+		81AE55122CD52C4000B6847E /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = "zh-HK.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		81AE55132CD52C4000B6847E /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		81AE55142CD52C4000B6847E /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		81AE55152CD52C4000B6847E /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		81CA25E62BCB2BA90081A5C5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		81D16AB42B33C21E003D9817 /* HKBusETA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HKBusETA.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		81D16ABD2B33C21F003D9817 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -256,6 +275,27 @@
 		81F9F1792BCF39B200BCA6E2 /* ViewUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewUtils.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		81AE54EA2CD4FB1100B6847E /* Exceptions for "FavouriteRoutesWidgetWatchExtension" folder in "FavouriteRoutesWidgetWatchExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 81AE54DB2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		81AE54DF2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				81AE54EA2CD4FB1100B6847E /* Exceptions for "FavouriteRoutesWidgetWatchExtension" folder in "FavouriteRoutesWidgetWatchExtensionExtension" target */,
+			);
+			path = FavouriteRoutesWidgetWatchExtension;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		81498D082B7EAD21005F0961 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -288,6 +328,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		81AE54D92CD4FB0E00B6847E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				81AE54DE2CD4FB0E00B6847E /* SwiftUI.framework in Frameworks */,
+				81AE54DD2CD4FB0E00B6847E /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -339,6 +388,7 @@
 		8171F01D2B52EC4E005B8F6A /* tileswidget */ = {
 			isa = PBXGroup;
 			children = (
+				81AE55162CD52C4000B6847E /* Localizable.strings */,
 				8171F01E2B52EC4E005B8F6A /* tileswidget.swift */,
 				8171F0222B52EC4F005B8F6A /* Assets.xcassets */,
 				8171F0242B52EC4F005B8F6A /* Info.plist */,
@@ -382,6 +432,8 @@
 		81D16AA72B33C21D003D9817 = {
 			isa = PBXGroup;
 			children = (
+				81AE55042CD50AEC00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.entitlements */,
+				81AE55032CD50ADB00B6847E /* TilesWidgetExtension.entitlements */,
 				81DF85382BD162D200248852 /* FavouriteRoutesWidgetExtensionExtension.entitlements */,
 				814687AC2B81141F00D105EC /* AlightReminderLiveActivityExtension.entitlements */,
 				814687AB2B81141F00D105EC /* ShareExtension.entitlements */,
@@ -391,6 +443,7 @@
 				8171F01D2B52EC4E005B8F6A /* tileswidget */,
 				81498D0E2B7EAD21005F0961 /* alightreminderliveactivity */,
 				81DF85252BD157DA00248852 /* FavouriteRoutesWidgetExtension */,
+				81AE54DF2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtension */,
 				81D16AAF2B33C21E003D9817 /* Products */,
 				81D16B202B363B01003D9817 /* Frameworks */,
 			);
@@ -405,6 +458,7 @@
 				8171F0802B5D4F11005B8F6A /* ShareExtension.appex */,
 				81498D0B2B7EAD21005F0961 /* AlightReminderLiveActivityExtension.appex */,
 				81DF85222BD157DA00248852 /* FavouriteRoutesWidgetExtensionExtension.appex */,
+				81AE54DC2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -603,6 +657,29 @@
 			productReference = 8171F0802B5D4F11005B8F6A /* ShareExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		81AE54DB2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 81AE54EB2CD4FB1100B6847E /* Build configuration list for PBXNativeTarget "FavouriteRoutesWidgetWatchExtensionExtension" */;
+			buildPhases = (
+				81AE54EE2CD4FBB900B6847E /* Run Script */,
+				81AE54D82CD4FB0E00B6847E /* Sources */,
+				81AE54D92CD4FB0E00B6847E /* Frameworks */,
+				81AE54DA2CD4FB0E00B6847E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				81AE54DF2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtension */,
+			);
+			name = FavouriteRoutesWidgetWatchExtensionExtension;
+			packageProductDependencies = (
+			);
+			productName = FavouriteRoutesWidgetWatchExtensionExtension;
+			productReference = 81AE54DC2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		81D16AB32B33C21E003D9817 /* HKBusETA Watch App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 81D16AC42B33C21F003D9817 /* Build configuration list for PBXNativeTarget "HKBusETA Watch App" */;
@@ -611,12 +688,13 @@
 				81D16AB02B33C21E003D9817 /* Sources */,
 				81D16AB12B33C21E003D9817 /* Frameworks */,
 				81D16AB22B33C21E003D9817 /* Resources */,
-				818FD0282B44C405008EE8AB /* Embed Foundation Extensions */,
+				81AE55082CD5110000B6847E /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				8171F0262B52EC4F005B8F6A /* PBXTargetDependency */,
+				81AE55072CD5110000B6847E /* PBXTargetDependency */,
+				81AE550D2CD5110B00B6847E /* PBXTargetDependency */,
 			);
 			name = "HKBusETA Watch App";
 			packageProductDependencies = (
@@ -655,7 +733,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1510;
+				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1510;
 				TargetAttributes = {
 					81498D0A2B7EAD21005F0961 = {
@@ -666,6 +744,9 @@
 					};
 					8171F07F2B5D4F11005B8F6A = {
 						CreatedOnToolsVersion = 15.1;
+					};
+					81AE54DB2CD4FB0E00B6847E = {
+						CreatedOnToolsVersion = 16.0;
 					};
 					81D16AB32B33C21E003D9817 = {
 						CreatedOnToolsVersion = 15.1;
@@ -703,6 +784,7 @@
 				8171F07F2B5D4F11005B8F6A /* ShareExtension */,
 				81D16AB32B33C21E003D9817 /* HKBusETA Watch App */,
 				8171F0192B52EC4E005B8F6A /* TilesWidgetExtension */,
+				81AE54DB2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -721,6 +803,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8171F0232B52EC4F005B8F6A /* Assets.xcassets in Resources */,
+				81AE55172CD52C4000B6847E /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -736,6 +819,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8171F07E2B5D4F11005B8F6A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		81AE54DA2CD4FB0E00B6847E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -802,6 +892,24 @@
 			shellPath = /bin/sh;
 			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
 		};
+		81AE54EE2CD4FBB900B6847E /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode -x :shared:syncComposeResourcesForIos\n";
+		};
 		81D16AD22B33CC85003D9817 /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -857,6 +965,13 @@
 			files = (
 				8171F0912B5D51C7005B8F6A /* ShareExtensionView.swift in Sources */,
 				8171F0832B5D4F11005B8F6A /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		81AE54D82CD4FB0E00B6847E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -926,16 +1041,21 @@
 			target = 81498D0A2B7EAD21005F0961 /* AlightReminderLiveActivityExtension */;
 			targetProxy = 81498D182B7EAD23005F0961 /* PBXContainerItemProxy */;
 		};
-		8171F0262B52EC4F005B8F6A /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 8171F0192B52EC4E005B8F6A /* TilesWidgetExtension */;
-			targetProxy = 8171F0252B52EC4F005B8F6A /* PBXContainerItemProxy */;
-		};
 		8171F0892B5D4F11005B8F6A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			platformFilter = ios;
 			target = 8171F07F2B5D4F11005B8F6A /* ShareExtension */;
 			targetProxy = 8171F0882B5D4F11005B8F6A /* PBXContainerItemProxy */;
+		};
+		81AE55072CD5110000B6847E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8171F0192B52EC4E005B8F6A /* TilesWidgetExtension */;
+			targetProxy = 81AE55062CD5110000B6847E /* PBXContainerItemProxy */;
+		};
+		81AE550D2CD5110B00B6847E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 81AE54DB2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension */;
+			targetProxy = 81AE550C2CD5110B00B6847E /* PBXContainerItemProxy */;
 		};
 		81DF85302BD157DB00248852 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -965,6 +1085,17 @@
 				81498CFB2B7B088C005F0961 /* zh-Hant */,
 			);
 			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		81AE55162CD52C4000B6847E /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				81AE55122CD52C4000B6847E /* Localizable.strings */,
+				81AE55132CD52C4000B6847E /* Localizable.strings */,
+				81AE55142CD52C4000B6847E /* Localizable.strings */,
+				81AE55152CD52C4000B6847E /* Localizable.strings */,
+			);
+			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 		81DF85432BD18E4B00248852 /* Localizable.strings */ = {
@@ -1054,6 +1185,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = TilesWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
@@ -1085,6 +1217,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = TilesWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
@@ -1292,13 +1425,84 @@
 			};
 			name = Release;
 		};
+		81AE54EC2CD4FB1100B6847E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				BUILD_NUMBER = $BUILD_NUMBER;
+				BUILD_VERSION = $BUILD_VERSION;
+				CODE_SIGN_ENTITLEMENTS = FavouriteRoutesWidgetWatchExtensionExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = $BUILD_NUMBER;
+				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FavouriteRoutesWidgetWatchExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FavouriteRoutesWidgetWatchExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = $BUILD_VERSION;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.FavouriteRoutesWidgetWatchExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
+			};
+			name = Debug;
+		};
+		81AE54ED2CD4FB1100B6847E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				BUILD_NUMBER = $BUILD_NUMBER;
+				BUILD_VERSION = $BUILD_VERSION;
+				CODE_SIGN_ENTITLEMENTS = FavouriteRoutesWidgetWatchExtensionExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = $BUILD_NUMBER;
+				DEVELOPMENT_TEAM = 5Z2275W445;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FavouriteRoutesWidgetWatchExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FavouriteRoutesWidgetWatchExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = $BUILD_VERSION;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.FavouriteRoutesWidgetWatchExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
+			};
+			name = Release;
+		};
 		81D16AC22B33C21F003D9817 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 255;
+				BUILD_NUMBER = 257;
 				BUILD_VERSION = 2.4.5;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1366,7 +1570,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 255;
+				BUILD_NUMBER = 257;
 				BUILD_VERSION = 2.4.5;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1610,6 +1814,15 @@
 			buildConfigurations = (
 				8171F08C2B5D4F11005B8F6A /* Debug */,
 				8171F08D2B5D4F11005B8F6A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		81AE54EB2CD4FB1100B6847E /* Build configuration list for PBXNativeTarget "FavouriteRoutesWidgetWatchExtensionExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				81AE54EC2CD4FB1100B6847E /* Debug */,
+				81AE54ED2CD4FB1100B6847E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

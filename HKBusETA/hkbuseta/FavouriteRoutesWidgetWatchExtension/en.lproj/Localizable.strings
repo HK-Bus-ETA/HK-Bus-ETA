@@ -1,0 +1,13 @@
+/* 
+  Localizable.strings
+  iOSApp
+
+  Created by LOOHP on 18/4/2024.
+  
+*/
+"selected.route" = "Select Favoruite Route";
+"configuration.title" = "Favourite Route Widget Configuration";
+"configuration.description" = "Config which favourite route to this in the widget.";
+"type.display.representation" = "Favourite Route";
+"widget.name" = "Favourite Route";
+"widget.description" = "Display the favourite route of your choice on a widget.\nClick to quick launch the route.";
