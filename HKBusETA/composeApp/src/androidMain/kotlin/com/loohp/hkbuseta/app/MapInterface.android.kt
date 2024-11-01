@@ -159,7 +159,7 @@ fun GoogleMapRouteInterface(
         Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {
             KMBSubsidiary.KMB -> if (waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_kmb else R.mipmap.bus_kmb
             KMBSubsidiary.LWB -> if (waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_lwb else R.mipmap.bus_lwb
-            KMBSubsidiary.SUNB -> R.mipmap.bus_kmb
+            else -> R.mipmap.bus_kmb
         }
         Operator.CTB -> R.mipmap.bus_ctb
         Operator.NLB -> R.mipmap.bus_nlb
@@ -357,7 +357,7 @@ fun rememberLeafletScript(
         Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {
             KMBSubsidiary.KMB -> if (waypoints.isKmbCtbJoint) "bus_jointly_kmb.svg" else "bus_kmb.svg"
             KMBSubsidiary.LWB -> if (waypoints.isKmbCtbJoint) "bus_jointly_lwb.svg" else "bus_lwb.svg"
-            KMBSubsidiary.SUNB -> "bus_kmb.svg"
+            else -> "bus_kmb.svg"
         }
         Operator.CTB -> "bus_ctb.svg"
         Operator.NLB -> "bus_nlb.svg"

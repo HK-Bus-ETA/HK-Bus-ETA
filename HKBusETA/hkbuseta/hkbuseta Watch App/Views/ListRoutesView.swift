@@ -363,6 +363,8 @@ struct ListRoutesView: AppScreenView {
                 list.append((Shared().language == "en" ? "From \(route.route!.orig.en)" : "從\(route.route!.orig.zh)開出").asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
             } else if route.co == Operator.Companion().KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.sunb {
                 list.append((Shared().language == "en" ? ("Sun Bus (NR\(route.route!.routeNumber))") : ("陽光巴士 (NR\(route.route!.routeNumber))")).asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
+            } else if route.co == Operator.Companion().KMB && RouteExtensionsKt.isPetBus(routeNumber) {
+                list.append((Shared().language == "en" ? ("Pet Bus 🐾") : ("寵物巴士 🐾")).asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
             }
             return list
         }()

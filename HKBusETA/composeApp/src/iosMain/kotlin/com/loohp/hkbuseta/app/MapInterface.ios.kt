@@ -134,7 +134,7 @@ actual fun MapRouteInterface(
         Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {
             KMBSubsidiary.KMB -> if (waypoints.isKmbCtbJoint) "bus_jointly_kmb" else "bus_kmb"
             KMBSubsidiary.LWB -> if (waypoints.isKmbCtbJoint) "bus_jointly_lwb" else "bus_lwb"
-            KMBSubsidiary.SUNB -> "bus_kmb"
+            else -> "bus_kmb"
         }
         Operator.CTB -> "bus_ctb"
         Operator.NLB -> "bus_nlb"

@@ -90,7 +90,7 @@ actual fun MapRouteInterface(
         Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {
             KMBSubsidiary.KMB -> if (waypoints.isKmbCtbJoint) "bus_jointly_kmb.svg" else "bus_kmb.svg"
             KMBSubsidiary.LWB -> if (waypoints.isKmbCtbJoint) "bus_jointly_lwb.svg" else "bus_lwb.svg"
-            KMBSubsidiary.SUNB -> "bus_kmb.svg"
+            else -> "bus_kmb.svg"
         }
         Operator.CTB -> "bus_ctb.svg"
         Operator.NLB -> "bus_nlb.svg"

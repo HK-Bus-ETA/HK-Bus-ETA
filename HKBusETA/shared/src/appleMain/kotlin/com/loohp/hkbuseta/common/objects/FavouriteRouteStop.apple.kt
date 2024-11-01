@@ -43,11 +43,19 @@ actual val FavouriteRouteStop.platformDisplayInfo: JsonObject? get() = buildJson
         } else {
             put("coSpecialRemark", "從${route.orig.zh}開出")
         }
-    } else if (co == Operator.KMB && route.routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
-        if (Shared.language == "en") {
-            put("coSpecialRemark", "Sun Bus (NR${route.routeNumber})")
-        } else {
-            put("coSpecialRemark", "陽光巴士 (NR${route.routeNumber})")
+    } else if (co == Operator.KMB) {
+        if (route.routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
+            if (Shared.language == "en") {
+                put("coSpecialRemark", "Sun Bus (NR${route.routeNumber})")
+            } else {
+                put("coSpecialRemark", "陽光巴士 (NR${route.routeNumber})")
+            }
+        } else if (route.routeNumber.isPetBus()) {
+            if (Shared.language == "en") {
+                put("coSpecialRemark", "Pet Bus \uD83D\uDC3E")
+            } else {
+                put("coSpecialRemark", "寵物巴士 \uD83D\uDC3E")
+            }
         }
     }
     if (favouriteStopMode == FavouriteStopMode.FIXED) {

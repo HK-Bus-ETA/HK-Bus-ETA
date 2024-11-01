@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -54,7 +55,7 @@ import org.jetbrains.compose.resources.getFontResourceBytes
 import org.jetbrains.compose.resources.rememberResourceEnvironment
 
 
-private data class WebFontEntry(
+data class WebFontEntry(
     val identity: String,
     val weight: FontWeight
 )
@@ -67,18 +68,22 @@ private val webFonts = listOf(
     WebFontEntry("NotoSansHK-Light", FontWeight.Light),
     WebFontEntry("NotoSansHK-Medium", FontWeight.Medium),
     WebFontEntry("NotoSansHK-SemiBold", FontWeight.SemiBold),
-    WebFontEntry("NotoSansHK-Thin", FontWeight.Thin)
+    WebFontEntry("NotoSansHK-Thin", FontWeight.Thin),
+)
+
+private val emojiFont = listOf(
+    WebFontEntry("NotoColorEmoji-Regular", FontWeight.Normal)
 )
 
 @OptIn(ExperimentalResourceApi::class)
 @Composable
-fun rememberLoadFontFamily(environment: ResourceEnvironment): State<FontFamily?> {
+fun rememberLoadFontFamily(environment: ResourceEnvironment, fontEntries: Collection<WebFontEntry>): State<FontFamily?> {
     var fonts: ImmutableList<Font> by remember { mutableStateOf(persistentListOf()) }
     val fontFamilyState: MutableState<FontFamily?> = remember { mutableStateOf(null) }
     var fontFamily by fontFamilyState
 
     LaunchedEffect (Unit) {
-        for ((identity, weight) in webFonts) {
+        for ((identity, weight) in fontEntries) {
             CoroutineScope(Dispatchers.IO).launch {
                 val font = Font(
                     identity = identity,
@@ -145,11 +150,16 @@ actual fun AppTheme(
 ) {
     val environment = rememberResourceEnvironment()
     val platformTypography = MaterialTheme.typography
-    val loadedFontFamily by rememberLoadFontFamily(environment)
+    val loadedFontFamily by rememberLoadFontFamily(environment, webFonts)
+    val loadedEmoji by rememberLoadFontFamily(environment, emojiFont)
     var appliedTypography: Typography? by remember { mutableStateOf(null) }
+    val fontFamilyResolver = LocalFontFamilyResolver.current
 
     LaunchedEffect (loadedFontFamily) {
-        loadedFontFamily?.let { appliedTypography = platformTypography.applyFontFamily(it) }
+        loadedFontFamily?.apply { appliedTypography = platformTypography.applyFontFamily(this) }
+    }
+    LaunchedEffect (loadedEmoji) {
+        loadedEmoji?.apply { fontFamilyResolver.preload(this) }
     }
 
     appliedTypography?.let {

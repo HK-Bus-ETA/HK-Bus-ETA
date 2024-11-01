@@ -118,6 +118,7 @@ import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isFerry
+import com.loohp.hkbuseta.common.objects.isPetBus
 import com.loohp.hkbuseta.common.objects.next
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
@@ -613,10 +614,16 @@ fun LazyItemScope.RouteRow(
             val stop = route.stopInfo!!.data!!
             add(stop.name[Shared.language].asAnnotatedString())
         }
-        if (co == Operator.NLB || co.isFerry) {
-            add((if (Shared.language == "en") "From ".plus(route.route!!.orig.en) else "從".plus(route.route!!.orig.zh).plus("開出")).asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
-        } else if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
-            add((if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)").asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
+        when {
+            co == Operator.NLB || co.isFerry -> {
+                add((if (Shared.language == "en") "From ".plus(route.route!!.orig.en) else "從".plus(route.route!!.orig.zh).plus("開出")).asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
+            }
+            co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB -> {
+                add((if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)").asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
+            }
+            co == Operator.KMB && routeNumber.isPetBus() -> {
+                add((if (Shared.language == "en") "Pet Bus \uD83D\uDC3E" else "寵物巴士 \uD83D\uDC3E").asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
+            }
         }
     } }
 

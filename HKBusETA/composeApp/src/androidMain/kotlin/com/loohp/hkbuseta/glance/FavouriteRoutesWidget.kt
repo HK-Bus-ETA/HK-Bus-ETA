@@ -104,6 +104,7 @@ import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isBus
+import com.loohp.hkbuseta.common.objects.isPetBus
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
@@ -114,7 +115,6 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.ColorContentStyle
-import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.ServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.asImmutableState
@@ -134,7 +134,6 @@ import com.loohp.hkbuseta.utils.spToDp
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.datetime.DateTimeUnit
@@ -361,12 +360,11 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                     Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).getServiceTimeCategory()
                 } == ServiceTimeCategory.NIGHT
                 val secondLine = if (route.stopInfo != null) route.stopInfo!!.data!!.name[Shared.language] else null
-                val coSpecialRemark = if (co == Operator.NLB) {
-                    if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出"
-                } else if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
-                    if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)"
-                } else {
-                    null
+                val coSpecialRemark = when {
+                    co == Operator.NLB -> if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出"
+                    co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB -> if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)"
+                    co == Operator.KMB && routeNumber.isPetBus() -> if (Shared.language == "en") "Pet Bus \uD83D\uDC3E" else "寵物巴士 \uD83D\uDC3E"
+                    else -> null
                 }
                 val color = co.getColor(routeNumber, Color.White).adjustBrightness(if (GlanceTheme.colors.isDark(instance.context)) 1F else 0.7F)
                 val specialRouteAlerts = route.route!!.getSpecialRouteAlerts(instance)
