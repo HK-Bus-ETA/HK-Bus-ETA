@@ -282,18 +282,17 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     Box {
-                        Box(
+                        PlatformButton(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(65.dp)
-                                .plainTooltip(if (Shared.language == "en") "Toggle Keyboard" else "顯示/隱藏鍵盤")
-                                .clip(platformExtraLargeShape)
-                                .background(platformPrimaryContainerColor)
-                                .clickable {
-                                    keyboardHidden = !keyboardHidden
-                                    keyPressFocus.requestFocus()
-                                },
-                            contentAlignment = Alignment.Center
+                                .plainTooltip(if (Shared.language == "en") "Toggle Keyboard" else "顯示/隱藏鍵盤"),
+                            colors = ButtonDefaults.filledTonalButtonColors(),
+                            shape = platformExtraLargeShape,
+                            onClick = {
+                                keyboardHidden = !keyboardHidden
+                                keyPressFocus.requestFocus()
+                            }
                         ) {
                             PlatformText(
                                 modifier = Modifier
