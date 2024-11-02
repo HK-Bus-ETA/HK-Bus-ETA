@@ -120,7 +120,6 @@ fun List<Coordinates>.splitByClosestPoints(referencePoints: List<Coordinates>): 
             currentSegment = mutableListOf(this[closestSegmentStartIndex])
         }
 
-        currentSegment.add(refPoint)
         previousClosestIndex = closestSegmentStartIndex
     }
 
