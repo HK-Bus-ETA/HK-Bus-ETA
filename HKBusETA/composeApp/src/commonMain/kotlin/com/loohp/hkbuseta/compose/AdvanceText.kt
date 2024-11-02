@@ -279,7 +279,7 @@ fun AutoResizeText(
     ChangedEffect (text) {
         state = state.reset()
     }
-    LaunchedEffect (state) {
+    LaunchedEffect (state, lastTextLayoutResult) {
         if (state.isReady()) {
             lastTextLayoutResult?.let { onTextLayout?.invoke(it) }
         }
