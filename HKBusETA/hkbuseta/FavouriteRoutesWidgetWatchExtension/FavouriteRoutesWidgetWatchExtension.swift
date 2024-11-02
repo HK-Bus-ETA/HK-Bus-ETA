@@ -109,7 +109,7 @@ struct FavouriteRoutesWidgetWatchExtensionEntryView : View {
                             .minimumScaleFactor(0.1)
                             .lineLimit(1)
                         Text(" ").font(.system(size: 14.dynamicSize(), weight: .bold))
-                        HStack(alignment: .firstTextBaseline, spacing: 0) {
+                        HStack(alignment: .lastTextBaseline, spacing: 0) {
                             if let prependTo = route.prependTo {
                                 Text(prependTo).font(.system(size: 10.dynamicSize()))
                             }
@@ -169,9 +169,14 @@ struct FavouriteRoutesWidgetWatchExtensionEntryView : View {
                 .widgetURL(URL(string: route.deeplink))
             } else {
                 VStack(alignment: .center, spacing: 0) {
-                    Text("請設置小工具")
+                    Text("請重設小工具")
+                        .font(.system(size: 14.dynamicSize()))
                         .multilineTextAlignment(.center)
-                    Text("Please configure widget")
+                    Text("Please recreate widget")
+                        .font(.system(size: 14.dynamicSize()))
+                        .multilineTextAlignment(.center)
+                    Text("香港巴士到站預報 HK Bus ETA")
+                        .font(.system(size: 10.dynamicSize()))
                         .multilineTextAlignment(.center)
                         .padding(.top)
                 }

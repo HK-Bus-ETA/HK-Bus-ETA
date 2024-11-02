@@ -272,7 +272,9 @@ struct hkbusetaApp: App {
 
     private func initImpl() {
         AppContextCompose_iosKt.setTilesUpdateImpl {
-            WidgetCenter.shared.reloadAllTimelines()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                WidgetCenter.shared.reloadAllTimelines()
+            }
         }
         AppContextCompose_iosKt.provideBackgroundUpdateScheduler { c, t in
             scheduleAppRefresh(time: t.int64Value)
