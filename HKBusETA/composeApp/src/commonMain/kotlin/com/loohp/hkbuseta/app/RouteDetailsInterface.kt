@@ -77,6 +77,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -186,7 +187,7 @@ import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformLocalTextStyle
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
-import com.loohp.hkbuseta.compose.rememberAutoResizeFontState
+import com.loohp.hkbuseta.compose.rememberAutoResizeTextState
 import com.loohp.hkbuseta.compose.rememberIsInPipMode
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.compose.userMarquee
@@ -519,7 +520,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                         )
                     },
                     content = {
-                        val autoResizeFontState = rememberAutoResizeFontState(FontSizeRange(max = 22.dp.sp, step = 0.5F.sp))
+                        val autoResizeTextState = rememberAutoResizeTextState(FontSizeRange(max = 22.dp.sp, step = 0.5F.sp))
                         var lineCount by remember { mutableIntStateOf(1) }
                         PlatformText(
                             modifier = Modifier
@@ -545,7 +546,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                 modifier = Modifier.alignByBaseline(),
                                 textAlign = TextAlign.Start,
                                 lineHeight = 1.1F.em,
-                                autoResizeTextState = autoResizeFontState,
+                                autoResizeTextState = autoResizeTextState,
                                 maxLines = 1,
                                 text = bilingualToPrefix[Shared.language].asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))
                             )
@@ -556,7 +557,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                 .userMarquee(),
                             overflow = TextOverflow.Ellipsis,
                             text = route.route!!.resolvedDestWithBranchFormatted(false, selectedBranch, selectedStop.intValue, allStops[selectedStop.intValue - 1].stopId, instance)[Shared.language].asContentAnnotatedString().annotatedString,
-                            autoResizeTextState = autoResizeFontState,
+                            autoResizeTextState = autoResizeTextState,
                             lineHeight = 1.1F.em,
                             maxLines = 2,
                             onTextLayout = { lineCount = it.lineCount }
@@ -650,7 +651,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             },
             iosDivider = { /* do nothing */ }
         )
-        val autoFontSizeState = rememberAutoResizeFontState(
+        val autoFontSizeState = rememberAutoResizeTextState(
             fontSizeRange = FontSizeRange(min = 11F.dp.sp, max = 16F.sp),
             preferSingleLine = true
         )
@@ -689,10 +690,11 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                         enter = fadeIn() + expandHorizontally(),
                                         exit = shrinkHorizontally() + fadeOut(),
                                     ) {
+                                        val density = LocalDensity.current
                                         PlatformCircularProgressIndicator(
-                                            modifier = Modifier.size(autoFontSizeState.value.fontSizeValue.sp.dp - 1.dp),
+                                            modifier = Modifier.size(autoFontSizeState.value.fontSize(density).dp - 1.dp),
                                             color = Color(0xFFF9DE09),
-                                            strokeWidth = autoFontSizeState.value.fontSizeValue.sp.dp / 8,
+                                            strokeWidth = autoFontSizeState.value.fontSize(density).dp / 8,
                                             trackColor = Color(0xFF797979),
                                             strokeCap = StrokeCap.Round,
                                         )
@@ -704,10 +706,11 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                         enter = fadeIn() + expandHorizontally(),
                                         exit = shrinkHorizontally() + fadeOut(),
                                     ) {
+                                        val density = LocalDensity.current
                                         val textMeasurer = rememberTextMeasurer()
                                         val textToDraw = importantNoticeCount.getCircledNumber()
                                         val style = platformLocalTextStyle.copy(
-                                            fontSize = (autoFontSizeState.value.fontSizeValue - 0.5F).sp,
+                                            fontSize = with(density) { (autoFontSizeState.value.fontSize(density).toPx() - 0.5F.sp.toPx()).toSp() },
                                             color = platformLocalContentColor
                                         )
                                         val textLayoutResult = remember(title[Shared.language], textToDraw) {
@@ -716,7 +719,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                         Canvas(
                                             modifier = Modifier.size(
                                                 width = textLayoutResult.first.size.width.equivalentDp,
-                                                height = autoFontSizeState.value.fontSizeValue.sp.dp
+                                                height = autoFontSizeState.value.fontSize(density).dp
                                             ),
                                         ) {
                                             val (textLayout, controlLayout) = textLayoutResult

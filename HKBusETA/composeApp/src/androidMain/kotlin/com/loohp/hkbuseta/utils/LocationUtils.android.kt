@@ -33,7 +33,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
-import com.benasher44.uuid.Uuid
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -52,8 +51,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
+@OptIn(ExperimentalUuidApi::class)
 actual fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit) {
     val context = appContext.context
     if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(context,Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -62,7 +64,7 @@ actual fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Bool
     }
     if (askIfNotGranted && context is ComponentActivity) {
         var ref: ActivityResultLauncher<String>? = null
-        val launcher: ActivityResultLauncher<String> = context.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) {
+        val launcher: ActivityResultLauncher<String> = context.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) {
             callback.invoke(it)
             ref?.unregister()
         }
@@ -73,6 +75,7 @@ actual fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Bool
     }
 }
 
+@OptIn(ExperimentalUuidApi::class)
 actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit) {
     val context = appContext.context
     if ((ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -83,7 +86,7 @@ actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGra
         val activity = context as ComponentActivity
         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)) {
             var ref0: ActivityResultLauncher<String>? = null
-            val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
+            val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
                 callback.invoke(result0)
                 ref0?.unregister()
             }
@@ -95,10 +98,10 @@ actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGra
             }
         } else {
             var ref: ActivityResultLauncher<String>? = null
-            val launcher: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result: Boolean ->
+            val launcher: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) { result: Boolean ->
                 if (result) {
                     var ref0: ActivityResultLauncher<String>? = null
-                    val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
+                    val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
                         callback.invoke(result0)
                         ref0?.unregister()
                     }

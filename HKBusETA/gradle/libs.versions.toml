@@ -44,7 +44,6 @@ reorderable = "2.2.0"
 secretsGradlePlugin = "2.0.1"
 statelyConcurrency = "2.0.4"
 tiles = "1.4.1"
-uuid = "0.8.2"
 wear = "1.3.0"
 wearInput = "1.1.0"
 wearOngoing = "1.1.0-alpha01"
@@ -121,7 +120,6 @@ secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.se
 serialization-xml = { module = "io.github.pdvrieze.xmlutil:serialization", version.ref = "xmlCore" }
 stately-concurrency = { module = "co.touchlab:stately-concurrency", version.ref = "statelyConcurrency" }
 stately-concurrent-collections = { module = "co.touchlab:stately-concurrent-collections", version.ref = "statelyConcurrency" }
-uuid = { module = "com.benasher44:uuid", version.ref = "uuid" }
 zoomable = { module = "me.saket.telephoto:zoomable", version.ref = "zoomable" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }

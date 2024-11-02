@@ -29,7 +29,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
-import com.benasher44.uuid.Uuid
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -51,6 +50,8 @@ import kotlinx.coroutines.future.asDeferred
 import kotlinx.coroutines.launch
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean): Boolean {
@@ -61,6 +62,7 @@ fun checkLocationPermission(appContext: AppContext, callback: (Boolean) -> Unit)
     return checkLocationPermission(appContext, true, callback)
 }
 
+@OptIn(ExperimentalUuidApi::class)
 private fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit): Boolean {
     val context = appContext.context
     if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(context,Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -69,7 +71,7 @@ private fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boo
     }
     if (askIfNotGranted && context is ComponentActivity) {
         var ref: ActivityResultLauncher<String>? = null
-        val launcher: ActivityResultLauncher<String> = context.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) {
+        val launcher: ActivityResultLauncher<String> = context.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) {
             Firebase.analytics.logEvent("location_request_result", Bundle().apply {
                 putBoolean("value", it)
             })
@@ -92,6 +94,7 @@ fun checkBackgroundLocationPermission(appContext: AppContext, callback: (Boolean
     return checkBackgroundLocationPermission(appContext, true, callback)
 }
 
+@OptIn(ExperimentalUuidApi::class)
 private fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit): Boolean {
     val context = appContext.context
     if ((ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -102,7 +105,7 @@ private fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGr
         val activity = context as ComponentActivity
         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             var ref0: ActivityResultLauncher<String>? = null
-            val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
+            val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
                 Firebase.analytics.logEvent("background_location_request_result", Bundle().apply {
                     putBoolean("value", result0)
                 })
@@ -113,13 +116,13 @@ private fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGr
             launcher0.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
         } else {
             var ref: ActivityResultLauncher<String>? = null
-            val launcher: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result: Boolean ->
+            val launcher: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) { result: Boolean ->
                 Firebase.analytics.logEvent("location_request_result", Bundle().apply {
                     putBoolean("value", result)
                 })
                 if (result) {
                     var ref0: ActivityResultLauncher<String>? = null
-                    val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
+                    val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
                         Firebase.analytics.logEvent("background_location_request_result", Bundle().apply {
                             putBoolean("value", result0)
                         })
@@ -148,6 +151,7 @@ private fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGr
     return false
 }
 
+@OptIn(ExperimentalUuidApi::class)
 private fun checkLocationPermission(appActiveContext: AppActiveContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit): Boolean {
     val activity = appActiveContext.context
     if ((ActivityCompat.checkSelfPermission(activity,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) && ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -157,7 +161,7 @@ private fun checkLocationPermission(appActiveContext: AppActiveContext, askIfNot
     if (askIfNotGranted) {
         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             var ref0: ActivityResultLauncher<String>? = null
-            val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register<String, Boolean>(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
+            val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
                 Firebase.analytics.logEvent("background_location_request_result", Bundle().apply {
                     putBoolean("value", result0)
                 })
@@ -168,13 +172,13 @@ private fun checkLocationPermission(appActiveContext: AppActiveContext, askIfNot
             launcher0.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
         } else {
             var ref: ActivityResultLauncher<String>? = null
-            val launcher: ActivityResultLauncher<String> = activity.activityResultRegistry.register<String, Boolean>(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result: Boolean ->
+            val launcher: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) { result: Boolean ->
                 Firebase.analytics.logEvent("location_request_result", Bundle().apply {
                     putBoolean("value", result)
                 })
                 if (result) {
                     var ref0: ActivityResultLauncher<String>? = null
-                    val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register<String, Boolean>(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
+                    val launcher0: ActivityResultLauncher<String> = activity.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) { result0: Boolean ->
                         Firebase.analytics.logEvent("background_location_request_result", Bundle().apply {
                             putBoolean("value", result0)
                         })

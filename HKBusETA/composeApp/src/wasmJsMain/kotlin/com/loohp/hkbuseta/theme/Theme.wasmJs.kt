@@ -46,6 +46,8 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -60,7 +62,7 @@ data class WebFontEntry(
     val weight: FontWeight
 )
 
-private val webFonts = listOf(
+private val tcFonts = listOf(
     WebFontEntry("NotoSansHK-Regular", FontWeight.Normal),
     WebFontEntry("NotoSansHK-Bold", FontWeight.Bold),
     WebFontEntry("NotoSansHK-ExtraBold", FontWeight.ExtraBold),
@@ -71,13 +73,24 @@ private val webFonts = listOf(
     WebFontEntry("NotoSansHK-Thin", FontWeight.Thin),
 )
 
+private val scFonts = listOf(
+    WebFontEntry("NotoSansSC-Regular", FontWeight.Normal),
+    WebFontEntry("NotoSansSC-Bold", FontWeight.Bold),
+    WebFontEntry("NotoSansSC-ExtraBold", FontWeight.ExtraBold),
+    WebFontEntry("NotoSansSC-ExtraLight", FontWeight.ExtraLight),
+    WebFontEntry("NotoSansSC-Light", FontWeight.Light),
+    WebFontEntry("NotoSansSC-Medium", FontWeight.Medium),
+    WebFontEntry("NotoSansSC-SemiBold", FontWeight.SemiBold),
+    WebFontEntry("NotoSansSC-Thin", FontWeight.Thin),
+)
+
 private val emojiFont = listOf(
     WebFontEntry("NotoColorEmoji-Regular", FontWeight.Normal)
 )
 
 @OptIn(ExperimentalResourceApi::class)
 @Composable
-fun rememberLoadFontFamily(environment: ResourceEnvironment, fontEntries: Collection<WebFontEntry>): State<FontFamily?> {
+private fun rememberLoadFontFamilyEmitGradually(environment: ResourceEnvironment, fontEntries: Collection<WebFontEntry>): State<FontFamily?> {
     var fonts: ImmutableList<Font> by remember { mutableStateOf(persistentListOf()) }
     val fontFamilyState: MutableState<FontFamily?> = remember { mutableStateOf(null) }
     var fontFamily by fontFamilyState
@@ -98,6 +111,30 @@ fun rememberLoadFontFamily(environment: ResourceEnvironment, fontEntries: Collec
                 }
             }
         }
+    }
+
+    return fontFamilyState
+}
+
+@OptIn(ExperimentalResourceApi::class)
+@Composable
+private fun rememberLoadFontFamilyEmitOnComplete(environment: ResourceEnvironment, fontEntries: Collection<WebFontEntry>): State<FontFamily?> {
+    val fontFamilyState: MutableState<FontFamily?> = remember { mutableStateOf(null) }
+    var fontFamily by fontFamilyState
+
+    LaunchedEffect (Unit) {
+        val fonts = buildList {
+            for ((identity, weight) in fontEntries) {
+                add(CoroutineScope(Dispatchers.IO).async {
+                    Font(
+                        identity = identity,
+                        data = FontResource("fonts/$identity.ttf").readBytes(environment),
+                        weight = weight
+                    )
+                })
+            }
+        }.awaitAll()
+        fontFamily = FontFamily(fonts)
     }
 
     return fontFamilyState
@@ -149,17 +186,23 @@ actual fun AppTheme(
     content: @Composable () -> Unit
 ) {
     val environment = rememberResourceEnvironment()
-    val platformTypography = MaterialTheme.typography
-    val loadedFontFamily by rememberLoadFontFamily(environment, webFonts)
-    val loadedEmoji by rememberLoadFontFamily(environment, emojiFont)
-    var appliedTypography: Typography? by remember { mutableStateOf(null) }
     val fontFamilyResolver = LocalFontFamilyResolver.current
+    val platformTypography = MaterialTheme.typography
 
-    LaunchedEffect (loadedFontFamily) {
-        loadedFontFamily?.apply { appliedTypography = platformTypography.applyFontFamily(this) }
+    val loadedTcFont by rememberLoadFontFamilyEmitGradually(environment, tcFonts)
+    val loadedEmojiFont by rememberLoadFontFamilyEmitOnComplete(environment, emojiFont)
+    val loadedScFont by rememberLoadFontFamilyEmitOnComplete(environment, scFonts)
+
+    var appliedTypography: Typography? by remember { mutableStateOf(null) }
+
+    LaunchedEffect (loadedTcFont) {
+        loadedTcFont?.apply { appliedTypography = platformTypography.applyFontFamily(this) }
     }
-    LaunchedEffect (loadedEmoji) {
-        loadedEmoji?.apply { fontFamilyResolver.preload(this) }
+    LaunchedEffect (loadedEmojiFont) {
+        loadedEmojiFont?.apply { fontFamilyResolver.preload(this) }
+    }
+    LaunchedEffect (loadedScFont) {
+        loadedScFont?.apply { fontFamilyResolver.preload(this) }
     }
 
     appliedTypography?.let {

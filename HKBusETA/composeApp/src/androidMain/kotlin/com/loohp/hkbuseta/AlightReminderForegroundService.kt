@@ -29,7 +29,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.benasher44.uuid.uuid4
 import com.loohp.hkbuseta.common.services.AlightReminderActiveState
 import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
 import com.loohp.hkbuseta.common.services.AlightReminderService
@@ -40,6 +39,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 data class NotificationData(
@@ -49,9 +50,10 @@ data class NotificationData(
     val state: AlightReminderServiceState
 )
 
+@OptIn(ExperimentalUuidApi::class)
 class AlightReminderForegroundService: Service() {
 
-    private val listenerId = uuid4().toString()
+    private val listenerId = Uuid.random().toString()
     private var notificationData: NotificationData? = null
     private var remoteData: AlightReminderRemoteData? = null
 

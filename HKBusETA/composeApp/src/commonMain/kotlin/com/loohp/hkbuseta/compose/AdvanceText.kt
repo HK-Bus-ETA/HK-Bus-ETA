@@ -19,6 +19,8 @@
  *
  */
 
+@file:OptIn(ExperimentalUuidApi::class)
+
 package com.loohp.hkbuseta.compose
 
 import androidx.compose.foundation.basicMarquee
@@ -28,8 +30,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -48,15 +52,17 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import com.benasher44.uuid.Uuid
-import com.benasher44.uuid.uuid4
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 @Composable
@@ -148,7 +154,7 @@ fun AutoResizeText(
         softWrap = softWrap,
         maxLines = maxLines,
         style = style,
-        autoResizeTextState = rememberAutoResizeFontState(
+        autoResizeTextState = rememberAutoResizeTextState(
             fontSizeRange = fontSizeRange,
             preferSingleLine = preferSingleLine
         ),
@@ -191,7 +197,7 @@ fun AutoResizeText(
         softWrap = softWrap,
         maxLines = maxLines,
         style = style,
-        autoResizeTextState = rememberAutoResizeFontState(
+        autoResizeTextState = rememberAutoResizeTextState(
             fontSizeRange = fontSizeRange,
             preferSingleLine = preferSingleLine
         ),
@@ -215,7 +221,7 @@ fun AutoResizeText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     style: TextStyle = platformLocalTextStyle,
-    autoResizeTextState: MutableState<AutoResizeFontState>,
+    autoResizeTextState: MutableState<AutoResizeTextState>,
     onTextLayout: ((TextLayoutResult) -> Unit)? = null
 ) {
     AutoResizeText(
@@ -254,14 +260,13 @@ fun AutoResizeText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     style: TextStyle = platformLocalTextStyle,
-    autoResizeTextState: MutableState<AutoResizeFontState>,
+    autoResizeTextState: MutableState<AutoResizeTextState>,
     onTextLayout: ((TextLayoutResult) -> Unit)? = null
 ) {
-    val id = remember { uuid4() }
     var state by autoResizeTextState
+    val id = remember { Uuid.random() }
     val density = LocalDensity.current
-    val windowSize = currentLocalWindowSize
-    var textRefresh by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
     var lastTextLayoutResult: TextLayoutResult? by remember { mutableStateOf(null) }
 
     ImmediateEffect (Unit) {
@@ -271,30 +276,20 @@ fun AutoResizeText(
         onDispose { state = state.unsubscribe(id) }
     }
 
-    LaunchedEffect (state.readyToDraw, lastTextLayoutResult, state.fontSizeValue) {
-        if (state.readyToDraw) {
-            lastTextLayoutResult?.apply {
-                onTextLayout?.invoke(this)
-            }
-        }
+    ChangedEffect (text) {
+        state = state.reset()
     }
-    ChangedEffect (density.fontScale, density.density, windowSize, text, state.fontSizeRange) {
-        if (state.readyToDraw(id) && textRefresh) {
-            state = state.setFontSizeValue(id, null).setReadyToDraw(id, false)
-            textRefresh = false
-        }
-    }
-    LaunchedEffect (textRefresh) {
-        if (!textRefresh) {
-            textRefresh = true
+    LaunchedEffect (state) {
+        if (state.isReady()) {
+            lastTextLayoutResult?.let { onTextLayout?.invoke(it) }
         }
     }
 
-    if (textRefresh) {
+    key(state.isReady()) {
         PlatformText(
             text = text,
             color = color,
-            maxLines = if (!state.readyToDraw && state.preferSingleLine) 1 else maxLines,
+            maxLines = if (!state.isReady() && state.preferSingleLine) 1 else maxLines,
             fontStyle = fontStyle,
             fontWeight = fontWeight,
             fontFamily = fontFamily,
@@ -305,27 +300,30 @@ fun AutoResizeText(
             overflow = overflow,
             softWrap = softWrap,
             style = style,
-            fontSize = (if (state.readyToDraw(id)) state.fontSizeValue else state.fontSizeValue(id)).sp,
+            fontSize = state.fontSize(density),
             onTextLayout = {
-                if (it.didOverflowHeight || (state.preferSingleLine && (it.didOverflowWidth || it.lineCount > 1))) {
-                    if (state.readyToDraw(id)) {
-                        state = state.setReadyToDraw(id, false)
+                scope.launch {
+                    if (!state.isReady()) {
+                        if (it.didOverflowHeight || (state.preferSingleLine && (it.didOverflowWidth || it.lineCount > 1))) {
+                            with(density) {
+                                val nextFontSizePx = state.fontSize(density).toPx() - state.fontSizeRange.step.toPx()
+                                state = if (nextFontSizePx <= state.fontSizeRange.min.toPx()) {
+                                    // Reached minimum, set minimum font size and it's readyToDraw
+                                    state.fontSize(id, state.fontSizeRange.min).ready(id)
+                                } else {
+                                    // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
+                                    state.fontSize(id, nextFontSizePx.toSp())
+                                }
+                            }
+                        } else {
+                            // Text fits before reaching the minimum, it's readyToDraw
+                            state = state.ready(id)
+                        }
                     }
-                    val nextFontSizeValue = state.fontSizeValue.coerceAtMost(state.fontSizeRange.max.value) - state.fontSizeRange.step.value
-                    state = if (nextFontSizeValue <= state.fontSizeRange.min.value) {
-                        // Reached minimum, set minimum font size and it's readyToDraw
-                        state.setFontSizeValue(id, state.fontSizeRange.min.value).setReadyToDraw(id, true)
-                    } else {
-                        // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
-                        state.setFontSizeValue(id, nextFontSizeValue)
-                    }
-                } else {
-                    // Text fits before reaching the minimum, it's readyToDraw
-                    state = state.setReadyToDraw(id, true)
+                    lastTextLayoutResult = it
                 }
-                lastTextLayoutResult = it
             },
-            modifier = modifier.drawWithContent { if (state.readyToDraw(id)) drawContent() }
+            modifier = modifier.drawWithContent { if (state.isReady()) drawContent() }
         )
     }
 }
@@ -347,33 +345,52 @@ data class FontSizeRange(
 }
 
 @Immutable
-data class AutoResizeFontState(
+data class AutoResizeTextState(
     val fontSizeRange: FontSizeRange,
     val preferSingleLine: Boolean = false,
-    private val subscribers: Set<Uuid> = emptySet(),
-    private val fontSizeValueSubscribers: Map<Uuid, Float> = emptyMap(),
-    private val readyToDrawSubscribers: Set<Uuid> = emptySet(),
+    val subscribers: List<Uuid> = emptyList(),
+    val measuredFontSize: Map<Uuid, TextUnit> = emptyMap(),
+    val ready: Set<Uuid> = emptySet()
 ) {
-    val readyToDraw: Boolean = subscribers.all { readyToDrawSubscribers.contains(it) }
-    fun readyToDraw(id: Uuid) = readyToDrawSubscribers.contains(id)
-    fun subscribe(id: Uuid): AutoResizeFontState = copy(subscribers = subscribers + id)
-    fun unsubscribe(id: Uuid): AutoResizeFontState = copy(subscribers = subscribers - id)
-    fun setReadyToDraw(id: Uuid, readyToDraw: Boolean): AutoResizeFontState = copy(readyToDrawSubscribers = readyToDrawSubscribers.run { if (readyToDraw) this + id else this - id })
-    val fontSizeValue: Float = fontSizeValueSubscribers.values.minOrNull()?: fontSizeRange.max.value
-    fun fontSizeValue(id: Uuid): Float = fontSizeValueSubscribers[id]?: fontSizeValue
-    fun setFontSizeValue(id: Uuid, fontSizeValue: Float?): AutoResizeFontState = copy(fontSizeValueSubscribers = fontSizeValueSubscribers.toMutableMap().apply { if (fontSizeValue == null) remove(id) else this[id] = fontSizeValue })
+    fun isReady(): Boolean {
+        return ready.containsAll(subscribers)
+    }
+    fun fontSize(density: Density): TextUnit {
+        return with(density) { measuredFontSize.values.minByOrNull { it.toPx() }?: fontSizeRange.max }
+    }
+    fun fontSize(id: Uuid, fontSize: TextUnit): AutoResizeTextState {
+        return copy(measuredFontSize = measuredFontSize.toMutableMap().apply { this[id] = fontSize })
+    }
+    fun ready(id: Uuid): AutoResizeTextState {
+        return copy(ready = ready + id)
+    }
+    fun subscribe(id: Uuid): AutoResizeTextState {
+        return if (subscribers.contains(id)) this else copy(subscribers = subscribers + id).reset()
+    }
+    fun unsubscribe(id: Uuid): AutoResizeTextState {
+        return copy(subscribers = subscribers.toMutableList().apply { removeAll { it == id } })
+    }
+    fun reset(): AutoResizeTextState {
+        return copy(ready = emptySet(), measuredFontSize = emptyMap())
+    }
 }
 
 @Composable
-fun rememberAutoResizeFontState(
+fun rememberAutoResizeTextState(
     fontSizeRange: FontSizeRange,
     preferSingleLine: Boolean = false
-): MutableState<AutoResizeFontState> {
-    val state = remember { mutableStateOf(AutoResizeFontState(fontSizeRange, preferSingleLine)) }
-    ChangedEffect (fontSizeRange, preferSingleLine) {
-        state.value = AutoResizeFontState(fontSizeRange, preferSingleLine)
+): MutableState<AutoResizeTextState> {
+    val mutableState = remember { mutableStateOf(AutoResizeTextState(fontSizeRange, preferSingleLine)) }
+    var state by mutableState
+
+    val density = LocalDensity.current
+    val windowSize = currentLocalWindowSize
+
+    LaunchedEffect (density.fontScale, density.density, windowSize, state.fontSizeRange) {
+        state = state.reset()
     }
-    return state
+
+    return mutableState
 }
 
 fun Modifier.userMarquee(): Modifier {

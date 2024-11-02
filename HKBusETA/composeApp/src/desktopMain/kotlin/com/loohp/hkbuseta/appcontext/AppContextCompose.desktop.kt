@@ -23,7 +23,6 @@ package com.loohp.hkbuseta.appcontext
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
-import com.benasher44.uuid.uuid4
 import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
@@ -73,6 +72,8 @@ import javax.swing.JFileChooser
 import javax.swing.JOptionPane
 import javax.swing.UIManager
 import kotlin.math.roundToInt
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 private var versionImpl: () -> Triple<String, String, Long> = { Triple("Unknown", "Unknown", -1) }
@@ -235,6 +236,7 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
 
 }
 
+@OptIn(ExperimentalUuidApi::class)
 @Stable
 class AppActiveContextComposeDesktop internal constructor(
     override val screen: AppScreen,
@@ -243,7 +245,7 @@ class AppActiveContextComposeDesktop internal constructor(
     private val finishCallback: ((AppIntentResult) -> Unit)? = null
 ) : AppContextComposeDesktop(), AppActiveContextCompose {
 
-    val activeContextId = uuid4()
+    val activeContextId = Uuid.random()
     private var result: AppIntentResult = AppIntentResult.NORMAL
 
     override suspend fun readTextFile(fileName: String, charset: Charset): StringReadChannel {

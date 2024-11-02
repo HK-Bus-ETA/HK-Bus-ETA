@@ -21,7 +21,6 @@
 
 package com.loohp.hkbuseta.appcontext
 
-import com.benasher44.uuid.uuid4
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppContext
@@ -119,6 +118,8 @@ import platform.WatchKit.WKInterfaceDevice
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 import platform.posix.memcpy
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 object HistoryStack {
@@ -370,6 +371,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
 
 }
 
+@OptIn(ExperimentalUuidApi::class)
 class AppActiveContextWatchOS internal constructor(
     val screen: AppScreen,
     val data: Map<String, Any?>,
@@ -385,7 +387,7 @@ class AppActiveContextWatchOS internal constructor(
 
     }
 
-    val activeContextId = uuid4()
+    val activeContextId = Uuid.random()
     internal var result: AppIntentResult = AppIntentResult.NORMAL
 
     override fun runOnUiThread(runnable: () -> Unit) {

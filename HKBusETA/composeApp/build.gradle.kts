@@ -125,7 +125,6 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.materialIconsExtended)
             implementation(libs.kotlinx.collections.immutable)
-            implementation(libs.uuid)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.encoding)
             implementation(libs.kotlinx.serialization.json)
@@ -176,7 +175,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 938
+        versionCode = 942
         versionName = "2.4.5"
     }
     packaging {

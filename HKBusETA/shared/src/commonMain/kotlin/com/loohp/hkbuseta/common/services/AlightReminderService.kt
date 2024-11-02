@@ -22,7 +22,6 @@
 package com.loohp.hkbuseta.common.services
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.benasher44.uuid.uuid4
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
@@ -48,6 +47,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.math.absoluteValue
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 data class AlightReminderRemoteData(
@@ -96,6 +97,7 @@ enum class AlightReminderActiveState {
     ACTIVE, ARRIVED, STOPPED
 }
 
+@OptIn(ExperimentalUuidApi::class)
 class AlightReminderService private constructor(
     val context: AppContext,
     locationUpdater: (AppContext, Long, (LocationResult) -> Unit) -> Deferred<() -> Unit>,
@@ -105,7 +107,7 @@ class AlightReminderService private constructor(
     val destinationStopId: StopIdIndexed
 ) {
 
-    val instanceId = uuid4()
+    val instanceId = Uuid.random()
 
     val routeNumber = selectedRoute.routeNumber
     val bound = selectedRoute.idBound(co)

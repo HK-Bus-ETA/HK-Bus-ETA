@@ -90,7 +90,6 @@ kotlin {
         }
         commonMain.dependencies {
             implementation(libs.kotlinx.collections.immutable)
-            implementation(libs.uuid)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.encoding)
             implementation(libs.kotlinx.serialization.json)

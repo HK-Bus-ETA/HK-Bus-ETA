@@ -43,7 +43,6 @@ import co.touchlab.stately.concurrency.AtomicBoolean
 import co.touchlab.stately.concurrency.AtomicInt
 import co.touchlab.stately.concurrency.AtomicLong
 import co.touchlab.stately.concurrency.AtomicReference
-import com.benasher44.uuid.Uuid
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
@@ -96,6 +95,8 @@ import java.util.concurrent.TimeUnit
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.math.roundToInt
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class TileState {
 
@@ -167,11 +168,12 @@ class TileState {
     }
 }
 
+@OptIn(ExperimentalUuidApi::class)
 class EtaTileServiceCommon {
 
     companion object {
 
-        private val resourceVersion: AtomicReference<String> = AtomicReference(Uuid.randomUUID().toString())
+        private val resourceVersion: AtomicReference<String> = AtomicReference(Uuid.random().toString())
         private val inlineImageResources: MutableMap<String, Int> = ConcurrentHashMap()
 
         private val executor = Executors.newScheduledThreadPool(16)
@@ -184,7 +186,7 @@ class EtaTileServiceCommon {
         private fun addInlineImageResource(resource: Int): String {
             val key = resource.toString()
             inlineImageResources.computeIfAbsent(key) {
-                resourceVersion.set(Uuid.randomUUID().toString())
+                resourceVersion.set(Uuid.random().toString())
                 resource
             }
             return key

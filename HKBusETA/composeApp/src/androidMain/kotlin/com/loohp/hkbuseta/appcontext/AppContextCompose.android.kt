@@ -38,7 +38,6 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.util.AtomicFile
 import androidx.core.view.WindowCompat
-import com.benasher44.uuid.uuid4
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
 import com.loohp.hkbuseta.AlightReminderForegroundService
@@ -89,6 +88,8 @@ import kotlinx.serialization.json.encodeToStream
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
 import kotlin.math.absoluteValue
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 @Stable
@@ -270,6 +271,7 @@ open class AppContextComposeAndroid internal constructor(
 
 }
 
+@OptIn(ExperimentalUuidApi::class)
 @Stable
 class AppActiveContextComposeAndroid internal constructor(
     override val screen: AppScreen,
@@ -280,7 +282,7 @@ class AppActiveContextComposeAndroid internal constructor(
 
     override val context: ComponentActivity = componentActivity
 
-    val activeContextId = uuid4()
+    val activeContextId = Uuid.random()
     private var result: AppIntentResult = AppIntentResult.NORMAL
 
     override val screenWidth: Int

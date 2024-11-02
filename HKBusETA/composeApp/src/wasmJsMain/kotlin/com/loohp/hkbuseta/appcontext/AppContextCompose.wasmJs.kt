@@ -23,7 +23,6 @@ package com.loohp.hkbuseta.appcontext
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
-import com.benasher44.uuid.uuid4
 import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
@@ -55,6 +54,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlin.math.roundToInt
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 external fun writeToIndexedDB(key: String, data: String)
@@ -202,6 +203,7 @@ open class AppContextComposeWeb internal constructor() : AppContextCompose {
 
 }
 
+@OptIn(ExperimentalUuidApi::class)
 @Stable
 class AppActiveContextComposeWeb internal constructor(
     override val screen: AppScreen,
@@ -210,7 +212,7 @@ class AppActiveContextComposeWeb internal constructor(
     private val finishCallback: ((AppIntentResult) -> Unit)? = null
 ) : AppContextComposeWeb(), AppActiveContextCompose {
 
-    val activeContextId = uuid4()
+    val activeContextId = Uuid.random()
     private var result: AppIntentResult = AppIntentResult.NORMAL
 
     override fun runOnUiThread(runnable: () -> Unit) {

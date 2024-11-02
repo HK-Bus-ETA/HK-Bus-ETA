@@ -25,7 +25,6 @@ package com.loohp.hkbuseta.appcontext
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
-import com.benasher44.uuid.uuid4
 import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
@@ -121,6 +120,8 @@ import platform.posix.sockaddr_in
 import platform.posix.usleep
 import kotlin.collections.set
 import kotlin.math.roundToInt
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 data class ShareUrlData(val url: String, val title: String?)
@@ -396,6 +397,7 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
 
 }
 
+@OptIn(ExperimentalUuidApi::class)
 @Stable
 class AppActiveContextComposeIOS internal constructor(
     override val screen: AppScreen,
@@ -404,7 +406,7 @@ class AppActiveContextComposeIOS internal constructor(
     private val finishCallback: ((AppIntentResult) -> Unit)? = null
 ) : AppContextComposeIOS(), AppActiveContextCompose {
 
-    val activeContextId = uuid4()
+    val activeContextId = Uuid.random()
     private var result: AppIntentResult = AppIntentResult.NORMAL
 
     override fun runOnUiThread(runnable: () -> Unit) {

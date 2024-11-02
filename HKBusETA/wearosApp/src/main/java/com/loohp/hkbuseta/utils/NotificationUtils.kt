@@ -27,11 +27,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
-import com.benasher44.uuid.Uuid
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 fun checkNotificationPermission(appContext: AppContext, askIfNotGranted: Boolean): Boolean {
     return checkNotificationPermission(appContext, askIfNotGranted) { }
@@ -41,6 +42,7 @@ fun checkNotificationPermission(appContext: AppContext, callback: (Boolean) -> U
     return checkNotificationPermission(appContext, true, callback)
 }
 
+@OptIn(ExperimentalUuidApi::class)
 private fun checkNotificationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         callback.invoke(true)
@@ -53,7 +55,7 @@ private fun checkNotificationPermission(appContext: AppContext, askIfNotGranted:
     }
     if (askIfNotGranted && context is ComponentActivity) {
         var ref: ActivityResultLauncher<String>? = null
-        val launcher: ActivityResultLauncher<String> = context.activityResultRegistry.register(Uuid.randomUUID().toString(), ActivityResultContracts.RequestPermission()) {
+        val launcher: ActivityResultLauncher<String> = context.activityResultRegistry.register(Uuid.random().toString(), ActivityResultContracts.RequestPermission()) {
             Firebase.analytics.logEvent("notification_request_result", Bundle().apply {
                 putBoolean("value", it)
             })

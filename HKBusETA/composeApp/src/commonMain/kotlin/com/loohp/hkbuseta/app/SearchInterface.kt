@@ -56,7 +56,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -122,7 +121,7 @@ import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
 import com.loohp.hkbuseta.compose.platformLargeShape
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
-import com.loohp.hkbuseta.compose.rememberAutoResizeFontState
+import com.loohp.hkbuseta.compose.rememberAutoResizeTextState
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
@@ -336,7 +335,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                         modifier = Modifier.height(40.dp),
                         horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        val autoFontSizeState = rememberAutoResizeFontState(fontSizeRange = FontSizeRange(max = 17F.sp))
+                        val autoFontSizeState = rememberAutoResizeTextState(fontSizeRange = FontSizeRange(max = 17F.sp))
                         for (category in OperatorCategory.entries) {
                             PlatformButton(
                                 onClick = {

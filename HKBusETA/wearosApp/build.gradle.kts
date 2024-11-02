@@ -34,7 +34,7 @@ android {
         minSdk = 30
         //noinspection OldTargetApi
         targetSdk = 33
-        versionCode = 939
+        versionCode = 943
         versionName = "2.4.5"
         vectorDrawables {
             useSupportLibrary = true
@@ -75,7 +75,6 @@ android {
 dependencies {
     implementation(projects.shared)
     implementation(libs.kotlinx.collections.immutable)
-    implementation(libs.uuid)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.encoding)
     implementation(libs.kotlinx.serialization.json)

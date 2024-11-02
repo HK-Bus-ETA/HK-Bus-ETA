@@ -90,7 +90,7 @@ import com.loohp.hkbuseta.compose.StarOutline
 import com.loohp.hkbuseta.compose.mutableSignalStateOf
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
-import com.loohp.hkbuseta.compose.rememberAutoResizeFontState
+import com.loohp.hkbuseta.compose.rememberAutoResizeTextState
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.utils.DrawableResource
 import kotlinx.coroutines.CoroutineScope
@@ -206,7 +206,7 @@ fun TitleInterface(instance: AppActiveContext) {
         }
     }
 
-    val autoFontSizeState = rememberAutoResizeFontState(
+    val autoFontSizeState = rememberAutoResizeTextState(
         fontSizeRange = FontSizeRange(min = 9F.sp, max = 17F.sp),
         preferSingleLine = true
     )

@@ -20,14 +20,12 @@
 
 package com.loohp.hkbuseta.compose
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -157,8 +156,9 @@ fun AutoResizeDrawPhaseColorText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     var previousText by remember { mutableStateOf(text) }
-    var fontSizeValue by remember { mutableFloatStateOf(fontSizeRange.max.value) }
+    var fontSizeValue by remember { mutableStateOf(fontSizeRange.max) }
     var readyToDraw by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
 
     DrawPhaseColorText(
         text = text,
@@ -174,11 +174,11 @@ fun AutoResizeDrawPhaseColorText(
         overflow = overflow,
         softWrap = softWrap,
         style = style,
-        fontSize = fontSizeValue.sp,
+        fontSize = fontSizeValue,
         onTextLayout = {
             if (previousText != text) {
                 if (fontSizeRange.resetToMaxIfTextUpdated) {
-                    fontSizeValue = fontSizeRange.max.value
+                    fontSizeValue = fontSizeRange.max
                 }
                 previousText = text
             }
@@ -186,14 +186,16 @@ fun AutoResizeDrawPhaseColorText(
                 if (readyToDraw) {
                     readyToDraw = false
                 }
-                val nextFontSizeValue = fontSizeValue - fontSizeRange.step.value
-                if (nextFontSizeValue <= fontSizeRange.min.value) {
-                    // Reached minimum, set minimum font size and it's readToDraw
-                    fontSizeValue = fontSizeRange.min.value
-                    readyToDraw = true
-                } else {
-                    // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
-                    fontSizeValue = nextFontSizeValue
+                with(density) {
+                    val nextFontSize = fontSizeValue.toPx() - fontSizeRange.step.toPx()
+                    if (nextFontSize <= fontSizeRange.min.toPx()) {
+                        // Reached minimum, set minimum font size and it's readToDraw
+                        fontSizeValue = fontSizeRange.min
+                        readyToDraw = true
+                    } else {
+                        // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
+                        fontSizeValue = nextFontSize.toSp()
+                    }
                 }
             } else {
                 // Text fits before reaching the minimum, it's readyToDraw
@@ -223,8 +225,9 @@ fun AutoResizeDrawPhaseColorText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     var previousText by remember { mutableStateOf(text) }
-    var fontSizeValue by remember { mutableFloatStateOf(fontSizeRange.max.value) }
+    var fontSizeValue by remember { mutableStateOf(fontSizeRange.max) }
     var readyToDraw by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
 
     DrawPhaseColorText(
         text = text,
@@ -240,11 +243,11 @@ fun AutoResizeDrawPhaseColorText(
         overflow = overflow,
         softWrap = softWrap,
         style = style,
-        fontSize = fontSizeValue.sp,
+        fontSize = fontSizeValue,
         onTextLayout = {
             if (previousText != text) {
                 if (fontSizeRange.resetToMaxIfTextUpdated) {
-                    fontSizeValue = fontSizeRange.max.value
+                    fontSizeValue = fontSizeRange.max
                 }
                 previousText = text
             }
@@ -252,14 +255,16 @@ fun AutoResizeDrawPhaseColorText(
                 if (readyToDraw) {
                     readyToDraw = false
                 }
-                val nextFontSizeValue = fontSizeValue - fontSizeRange.step.value
-                if (nextFontSizeValue <= fontSizeRange.min.value) {
-                    // Reached minimum, set minimum font size and it's readToDraw
-                    fontSizeValue = fontSizeRange.min.value
-                    readyToDraw = true
-                } else {
-                    // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
-                    fontSizeValue = nextFontSizeValue
+                with(density) {
+                    val nextFontSize = fontSizeValue.toPx() - fontSizeRange.step.toPx()
+                    if (nextFontSize <= fontSizeRange.min.toPx()) {
+                        // Reached minimum, set minimum font size and it's readToDraw
+                        fontSizeValue = fontSizeRange.min
+                        readyToDraw = true
+                    } else {
+                        // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
+                        fontSizeValue = nextFontSize.toSp()
+                    }
                 }
             } else {
                 // Text fits before reaching the minimum, it's readyToDraw
@@ -289,8 +294,9 @@ fun AutoResizeText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     var previousText by remember { mutableStateOf(text) }
-    var fontSizeValue by remember { mutableFloatStateOf(fontSizeRange.max.value) }
+    var fontSizeValue by remember { mutableStateOf(fontSizeRange.max) }
     var readyToDraw by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
 
     Text(
         text = text,
@@ -306,11 +312,11 @@ fun AutoResizeText(
         overflow = overflow,
         softWrap = softWrap,
         style = style,
-        fontSize = fontSizeValue.sp,
+        fontSize = fontSizeValue,
         onTextLayout = {
             if (previousText != text) {
                 if (fontSizeRange.resetToMaxIfTextUpdated) {
-                    fontSizeValue = fontSizeRange.max.value
+                    fontSizeValue = fontSizeRange.max
                 }
                 previousText = text
             }
@@ -318,14 +324,16 @@ fun AutoResizeText(
                 if (readyToDraw) {
                     readyToDraw = false
                 }
-                val nextFontSizeValue = fontSizeValue - fontSizeRange.step.value
-                if (nextFontSizeValue <= fontSizeRange.min.value) {
-                    // Reached minimum, set minimum font size and it's readToDraw
-                    fontSizeValue = fontSizeRange.min.value
-                    readyToDraw = true
-                } else {
-                    // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
-                    fontSizeValue = nextFontSizeValue
+                with(density) {
+                    val nextFontSize = fontSizeValue.toPx() - fontSizeRange.step.toPx()
+                    if (nextFontSize <= fontSizeRange.min.toPx()) {
+                        // Reached minimum, set minimum font size and it's readToDraw
+                        fontSizeValue = fontSizeRange.min
+                        readyToDraw = true
+                    } else {
+                        // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
+                        fontSizeValue = nextFontSize.toSp()
+                    }
                 }
             } else {
                 // Text fits before reaching the minimum, it's readyToDraw
@@ -355,8 +363,9 @@ fun AutoResizeText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     var previousText by remember { mutableStateOf(text) }
-    var fontSizeValue by remember { mutableFloatStateOf(fontSizeRange.max.value) }
+    var fontSizeValue by remember { mutableStateOf(fontSizeRange.max) }
     var readyToDraw by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
 
     Text(
         text = text,
@@ -372,11 +381,11 @@ fun AutoResizeText(
         overflow = overflow,
         softWrap = softWrap,
         style = style,
-        fontSize = fontSizeValue.sp,
+        fontSize = fontSizeValue,
         onTextLayout = {
             if (previousText != text) {
                 if (fontSizeRange.resetToMaxIfTextUpdated) {
-                    fontSizeValue = fontSizeRange.max.value
+                    fontSizeValue = fontSizeRange.max
                 }
                 previousText = text
             }
@@ -384,14 +393,16 @@ fun AutoResizeText(
                 if (readyToDraw) {
                     readyToDraw = false
                 }
-                val nextFontSizeValue = fontSizeValue - fontSizeRange.step.value
-                if (nextFontSizeValue <= fontSizeRange.min.value) {
-                    // Reached minimum, set minimum font size and it's readToDraw
-                    fontSizeValue = fontSizeRange.min.value
-                    readyToDraw = true
-                } else {
-                    // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
-                    fontSizeValue = nextFontSizeValue
+                with(density) {
+                    val nextFontSize = fontSizeValue.toPx() - fontSizeRange.step.toPx()
+                    if (nextFontSize <= fontSizeRange.min.toPx()) {
+                        // Reached minimum, set minimum font size and it's readToDraw
+                        fontSizeValue = fontSizeRange.min
+                        readyToDraw = true
+                    } else {
+                        // Text doesn't fit yet and haven't reached minimum text range, keep decreasing
+                        fontSizeValue = nextFontSize.toSp()
+                    }
                 }
             } else {
                 // Text fits before reaching the minimum, it's readyToDraw
@@ -418,7 +429,6 @@ data class FontSizeRange(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 fun Modifier.userMarquee(): Modifier {
     return if (Shared.disableMarquee) this else basicMarquee(Int.MAX_VALUE)
 }
