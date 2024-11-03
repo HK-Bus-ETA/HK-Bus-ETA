@@ -88,6 +88,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -142,6 +147,16 @@ inline fun Modifier.applyIf(predicate: () -> Boolean, apply: Modifier.() -> Modi
 
 inline fun <T> Modifier.applyIfNotNull(item: T?, apply: Modifier.(T) -> Modifier): Modifier {
     return item?.let { apply.invoke(this, it) }?: this
+}
+
+inline fun Modifier.onHardwareKeyboardEnter(crossinline action: () -> Boolean): Modifier {
+    return onPreviewKeyEvent {
+        if (it.type == KeyEventType.KeyDown && it.key == Key.Enter) {
+            action.invoke()
+        } else {
+            false
+        }
+    }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)

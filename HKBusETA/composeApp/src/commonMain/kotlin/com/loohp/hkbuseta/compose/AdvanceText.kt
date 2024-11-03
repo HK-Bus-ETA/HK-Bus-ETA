@@ -75,6 +75,7 @@ fun TextInputDialog(
     onDismissRequest: (String, DismissRequestType) -> Unit,
     onConfirmation: (String) -> Unit
 ) {
+    val scope = rememberCoroutineScope()
     var textInput by remember { mutableStateOf(TextFieldValue(
         text = initialText?: "",
         selection = TextRange(initialText?.length?: 0)
@@ -91,7 +92,12 @@ fun TextInputDialog(
         },
         text = {
             PlatformOutlinedTextField(
-                modifier = Modifier.focusRequester(focusRequester),
+                modifier = Modifier
+                    .onHardwareKeyboardEnter {
+                        scope.launch { if (inputValid) onConfirmation.invoke(textInput.text) }
+                        true
+                    }
+                    .focusRequester(focusRequester),
                 value = textInput,
                 singleLine = true,
                 onValueChange = { textInput = it },
