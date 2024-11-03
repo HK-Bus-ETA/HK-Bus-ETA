@@ -202,7 +202,6 @@ import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.modifier.modifierLocalMapOf
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -779,6 +778,7 @@ actual fun PlatformAlertDialog(
         onDismissRequest = { onDismissRequest.invoke(DismissRequestType.CLICK_OUTSIDE) },
         confirmButton = {
             TextButton(
+                modifier = Modifier.applyIf(confirmEnabled) { pointerHoverIcon(PointerIcon.Hand) },
                 onClick = onConfirm,
                 enabled = confirmEnabled
             ) {
@@ -787,6 +787,7 @@ actual fun PlatformAlertDialog(
         },
         dismissButton = dismissButton?.let { {
             TextButton(
+                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                 onClick = { onDismissRequest.invoke(DismissRequestType.BUTTON) }
             ) {
                 it.invoke()
