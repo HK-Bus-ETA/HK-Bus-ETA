@@ -50,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -229,13 +230,30 @@ const val baseHtml: String = """
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
     <style>
-        #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
+        #map { 
+            position: absolute; top: 0; bottom: 0; left: 0; right: 0; 
+        }
+        
+        .leaflet-dark-theme.leaflet-layer {
+            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+        }
+        
+        .leaflet-dark-theme.leaflet-control-attribution {
+            background: #111111 !important;
+            color: #AAAAAA;
+            filter: brightness(1.4);
+        }
+        
+        .leaflet-dark-theme.leaflet-control-zoom {
+            filter: brightness(0.6) invert(1) contrast(3);
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <script>
-        var map = L.map('map').setView([22.32267, 144.17504], 13)
+        var map = L.map('map').setView([22.32267, 144.17504], 13);
+        var mapElement = document.getElementById("map");
 
         var tileLayers = L.layerGroup();
         map.addLayer(tileLayers);
@@ -411,6 +429,15 @@ actual fun MapRouteInterface(
             if (webViewState.loadingState == LoadingState.Finished) {
                 webViewNavigator.evaluateJavaScript("""
                     tileLayers.clearLayers();
+                    
+                    const argb = Number(${background.toArgb()});
+                    const alpha = (argb >> 24) & 0xFF;
+                    const red = (argb >> 16) & 0xFF;
+                    const green = (argb >> 8) & 0xFF;
+                    const blue = argb & 0xFF;
+                    const alphaCss = alpha / 255;
+                    mapElement.style.backgroundColor = "rgba(" + red + ", " + green + ", " + blue + ", " + alphaCss + ")";
+                    
                     L.tileLayer('$darkMode' === 'true' ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
@@ -418,6 +445,13 @@ actual fun MapRouteInterface(
                     L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", "$language" === "en" ? "en" : "tc"), {
                         maxZoom: 19,
                     }).addTo(tileLayers);
+                    
+                    const mapComponents = document.querySelectorAll('.leaflet-layer, .leaflet-control-zoom, .leaflet-control-attribution');
+                    if ('$darkMode' === 'true') {
+                        mapComponents.forEach(element => element.classList.add('leaflet-dark-theme'));
+                    } else {
+                        mapComponents.forEach(element => element.classList.remove('leaflet-dark-theme'));
+                    }
                 """.trimIndent())
             }
         }
@@ -515,6 +549,15 @@ actual fun MapSelectInterface(
             if (webViewState.loadingState == LoadingState.Finished) {
                 webViewNavigator.evaluateJavaScript("""
                     tileLayers.clearLayers();
+                    
+                    const argb = Number(${background.toArgb()});
+                    const alpha = (argb >> 24) & 0xFF;
+                    const red = (argb >> 16) & 0xFF;
+                    const green = (argb >> 8) & 0xFF;
+                    const blue = argb & 0xFF;
+                    const alphaCss = alpha / 255;
+                    mapElement.style.backgroundColor = "rgba(" + red + ", " + green + ", " + blue + ", " + alphaCss + ")";
+                    
                     L.tileLayer('$darkMode' === 'true' ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
@@ -522,6 +565,13 @@ actual fun MapSelectInterface(
                     L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", "$language" === "en" ? "en" : "tc"), {
                         maxZoom: 19,
                     }).addTo(tileLayers);
+                    
+                    const mapComponents = document.querySelectorAll('.leaflet-layer, .leaflet-control-zoom, .leaflet-control-attribution');
+                    if ('$darkMode' === 'true') {
+                        mapComponents.forEach(element => element.classList.add('leaflet-dark-theme'));
+                    } else {
+                        mapComponents.forEach(element => element.classList.remove('leaflet-dark-theme'));
+                    }
                 """.trimIndent())
             }
         }

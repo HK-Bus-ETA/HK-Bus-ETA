@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
@@ -58,6 +59,7 @@ import com.loohp.hkbuseta.common.utils.Stable
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
+import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.closenessTo
 import com.loohp.hkbuseta.utils.getLineColor
@@ -107,8 +109,9 @@ actual fun MapRouteInterface(
     var selectedStop by selectedStopState
     val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
     val scope = rememberCoroutineScope()
+    val backgroundColor = platformBackgroundColor
 
-    val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode)
+    val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode, backgroundColor.toArgb())
 
     LaunchedEffect (waypoints, stopNames) {
         webMap.show()
@@ -141,7 +144,7 @@ actual fun MapRouteInterface(
         }
     }
     LanguageDarkModeChangeEffect { language, darkMode ->
-        webMap.reloadTiles(language, darkMode)
+        webMap.reloadTiles(language, darkMode, backgroundColor.toArgb())
     }
     ChangedEffect (selectedStop) {
         val index = indexMap.indexOf(selectedStop - 1)
@@ -164,8 +167,9 @@ actual fun MapSelectInterface(
     var position by remember { mutableStateOf(initialPosition) }
     var init by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val backgroundColor = platformBackgroundColor
 
-    val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode)
+    val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode, backgroundColor.toArgb())
 
     LaunchedEffect (Unit) {
         webMap.show()
@@ -198,7 +202,7 @@ actual fun MapSelectInterface(
         }
     }
     LanguageDarkModeChangeEffect { language, darkMode ->
-        webMap.reloadTiles(language, darkMode)
+        webMap.reloadTiles(language, darkMode, backgroundColor.toArgb())
     }
 
     WebMapContainer(webMap)
@@ -206,7 +210,7 @@ actual fun MapSelectInterface(
 
 @Suppress("NOTHING_TO_INLINE")
 @Composable
-inline fun rememberWebMap(language: String, darkMode: Boolean): WebMap = remember { WebMap(language, darkMode) }
+inline fun rememberWebMap(language: String, darkMode: Boolean, backgroundColor: Int): WebMap = remember { WebMap(language, darkMode, backgroundColor) }
 
 @Suppress("NOTHING_TO_INLINE")
 @Composable
@@ -233,9 +237,9 @@ inline fun WebMapContainer(webMap: WebMap) {
 actual val isMapOverlayAlwaysOnTop: Boolean = true
 
 @Stable
-external class WebMap(language: String, darkMode: Boolean): JsAny {
+external class WebMap(language: String, darkMode: Boolean, backgroundColor: Int): JsAny {
     val valid: Boolean
-    fun reloadTiles(language: String, darkMode: Boolean)
+    fun reloadTiles(language: String, darkMode: Boolean, backgroundColor: Int)
     fun remove()
     fun setMapPosition(x: Float, y: Float, width: Float, height: Float)
     fun show()

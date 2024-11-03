@@ -234,3 +234,17 @@ body {
 .dark-modal-bottom-sheet .continue-button:disabled:hover, .dark-modal-bottom-sheet .continue-button[disabled]:hover {
     background-color: #FFB3AE;
 }
+
+.leaflet-dark-theme.leaflet-layer {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+.leaflet-dark-theme.leaflet-control-attribution {
+    background: #111111 !important;
+    color: #AAAAAA;
+    filter: brightness(1.4);
+}
+
+.leaflet-dark-theme.leaflet-control-zoom {
+    filter: brightness(0.6) invert(1) contrast(3);
+}

@@ -1,5 +1,5 @@
 class WebMap {
-    constructor(language, darkMode) {
+    constructor(language, darkMode, backgroundColor) {
         this.valid = true;
         this.mapElement = document.createElement("div");
         this.mapId = "map_" + Math.floor(Math.random() * Math.floor(1000000));
@@ -11,7 +11,7 @@ class WebMap {
         this.map = L.map(this.mapId).setView([22.32267, 144.17504], 13);
 
         this.tileLayers = L.layerGroup().addTo(this.map);
-        setTimeout(() => this.reloadTiles(language, darkMode), 10);
+        setTimeout(() => this.reloadTiles(language, darkMode, backgroundColor), 10);
 
         this.layer = L.layerGroup().addTo(this.map);
         this.polylines = [];
@@ -23,8 +23,16 @@ class WebMap {
         window.addEventListener("resize", this.resizeCallback);
     }
 
-    reloadTiles(language, darkMode) {
+    reloadTiles(language, darkMode, backgroundColor) {
         this.tileLayers.clearLayers();
+
+        const alpha = (backgroundColor >> 24) & 0xFF;
+        const red = (backgroundColor >> 16) & 0xFF;
+        const green = (backgroundColor >> 8) & 0xFF;
+        const blue = backgroundColor & 0xFF;
+        const alphaCss = alpha / 255;
+        this.mapElement.style.backgroundColor = "rgba(" + red + ", " + green + ", " + blue + ", " + alphaCss + ")";
+
         L.tileLayer(darkMode ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
@@ -32,6 +40,13 @@ class WebMap {
         L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", language === "en" ? "en" : "tc"), {
             maxZoom: 19,
         }).addTo(this.tileLayers);
+
+        const mapComponents = document.querySelectorAll('.leaflet-layer, .leaflet-control-zoom, .leaflet-control-attribution');
+        if (darkMode) {
+            mapComponents.forEach(element => element.classList.add('leaflet-dark-theme'));
+        } else {
+            mapComponents.forEach(element => element.classList.remove('leaflet-dark-theme'));
+        }
     }
 
     remove() {

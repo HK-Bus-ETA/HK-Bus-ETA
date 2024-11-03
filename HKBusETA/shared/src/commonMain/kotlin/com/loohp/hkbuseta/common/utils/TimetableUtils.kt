@@ -43,6 +43,9 @@ import kotlin.math.min
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
+
+typealias RouteTimetable = Map<OperatingWeekdays, List<TimetableEntry>>
+
 val LocalTime.Companion.MIDNIGHT: LocalTime by lazy { LocalTime(0, 0) }
 
 inline fun LocalDateTime.dayOfWeek(holidays: Collection<LocalDate>, midnight: LocalTime): DayOfWeek {
@@ -55,19 +58,13 @@ inline fun LocalDate.dayOfWeek(holidays: Collection<LocalDate>): DayOfWeek {
 }
 
 inline val DayOfWeek.isWeekend: Boolean get() = when (this) {
-    DayOfWeek.MONDAY -> false
-    DayOfWeek.TUESDAY -> false
-    DayOfWeek.WEDNESDAY -> false
-    DayOfWeek.THURSDAY -> false
-    DayOfWeek.FRIDAY -> false
-    DayOfWeek.SATURDAY -> true
-    DayOfWeek.SUNDAY -> true
+    DayOfWeek.SATURDAY, DayOfWeek.SUNDAY -> true
     else -> false
 }
 
 class OperatingWeekdays(
     private val weekdays: Set<DayOfWeek>
-): Set<DayOfWeek>, Comparable<OperatingWeekdays> {
+): Set<DayOfWeek> by weekdays, Comparable<OperatingWeekdays> {
 
     companion object {
 
@@ -104,12 +101,6 @@ class OperatingWeekdays(
             return OperatingWeekdays(SUNDAY_FIRST.filterIndexed { i, _ -> days.getOrElse(i) { false } }.toSet())
         }
     }
-
-    override val size: Int = weekdays.size
-    override fun isEmpty(): Boolean = weekdays.isEmpty()
-    override fun iterator(): Iterator<DayOfWeek> = weekdays.iterator()
-    override fun containsAll(elements: Collection<DayOfWeek>): Boolean = weekdays.containsAll(elements)
-    override fun contains(element: DayOfWeek): Boolean = weekdays.contains(element)
 
     fun intersects(other: OperatingWeekdays): Boolean = any { other.contains(it) }
 
@@ -379,7 +370,7 @@ enum class ServiceTimeCategory(
     )
 }
 
-fun Map<OperatingWeekdays, List<TimetableEntry>>.getServiceTimeCategory(): ServiceTimeCategory {
+fun RouteTimetable.getServiceTimeCategory(): ServiceTimeCategory {
     return DayOfWeek.entries.asSequence().mapNotNull { weekday ->
         asSequence().firstOrNull { it.key.contains(weekday) }?.value
     }.flatten().toList().getServiceTimeCategory()
@@ -406,7 +397,7 @@ fun Collection<TimetableEntry>.getServiceTimeCategory(): ServiceTimeCategory {
     }
 }
 
-fun Map<OperatingWeekdays, List<TimetableEntry>>.getRouteProportions(
+fun RouteTimetable.getRouteProportions(
     excludeWeekendsForDailyServices: Boolean = true
 ): Map<Route, Float> {
     val byWeekday = DayOfWeek.entries
@@ -479,7 +470,7 @@ class TimetableEntryMapBuilder(
         }
     }
 
-    fun build(): Map<OperatingWeekdays, List<TimetableEntry>> {
+    fun build(): RouteTimetable {
         if (timetableEntryMap.isEmpty()) {
             return mapOf(OperatingWeekdays.ALL to listOf(TimetableSpecialEntry(defaultRoute, "只在特定日子提供服務/沒有時間表資訊" withEn "Service only on specific days / No timetable info", null)))
         }
@@ -539,15 +530,15 @@ class TimetableEntryMapBuilder(
 inline fun buildTimetableEntryMap(
     defaultRoute: Route,
     builder: (TimetableEntryMapBuilder).() -> Unit
-): Map<OperatingWeekdays, List<TimetableEntry>> = TimetableEntryMapBuilder(defaultRoute).apply(builder).build()
+): RouteTimetable = TimetableEntryMapBuilder(defaultRoute).apply(builder).build()
 
-fun Collection<Route>.createTimetable(context: AppContext): Map<OperatingWeekdays, List<TimetableEntry>> {
+fun Collection<Route>.createTimetable(context: AppContext): RouteTimetable {
     return createTimetable(Registry.getInstance(context).getServiceDayMap()) {
         it.resolveSpecialRemark(context).takeIf { r -> r.isNotBlank() }
     }
 }
 
-fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>, resolveSpecialRemark: (Route) -> BilingualText?): Map<OperatingWeekdays, List<TimetableEntry>> {
+fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>, resolveSpecialRemark: (Route) -> BilingualText?): RouteTimetable {
     return cache("createTimetable", this, serviceDayMap, resolveSpecialRemark) {
         buildTimetableEntryMap(first()) {
             forEach {
