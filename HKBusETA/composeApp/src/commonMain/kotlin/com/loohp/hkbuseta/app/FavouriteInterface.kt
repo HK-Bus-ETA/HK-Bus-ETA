@@ -22,7 +22,6 @@
 package com.loohp.hkbuseta.app
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
@@ -171,7 +170,6 @@ val mainFavouriteTabItem = listOf(
     )
 )
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, signal: Signal = dummySignal) {
     val pagerState = rememberPagerState(
@@ -238,7 +236,7 @@ fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, sign
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
     val favouriteRouteStops by Shared.favoriteRouteStops.collectAsStateMultiplatform()
@@ -572,7 +570,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
     val favouriteStopIds by Shared.favoriteStops.collectAsStateMultiplatform()

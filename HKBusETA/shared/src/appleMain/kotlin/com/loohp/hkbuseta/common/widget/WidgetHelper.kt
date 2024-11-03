@@ -14,6 +14,7 @@ import com.loohp.hkbuseta.common.objects.WidgetStopData
 import com.loohp.hkbuseta.common.objects.bracketsRemovalRegex
 import com.loohp.hkbuseta.common.objects.busTerminusEnRegex
 import com.loohp.hkbuseta.common.objects.busTerminusZhRegex
+import com.loohp.hkbuseta.common.objects.extractCircularBracket
 import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isCircular
@@ -147,7 +148,7 @@ private fun Route.resolvedDestWithBranchWidget(prependTo: Boolean, branch: Route
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
                 }
                 dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
-                dest.let { if (prependTo) it.prependTo() else it } + ("(循環線)" withEn "(Circular)")
+                dest.let { if (prependTo) it.prependTo() else it } + branch.dest.extractCircularBracket()
             } else {
                 resolvedDestWithBranch(prependTo, branch)
             }

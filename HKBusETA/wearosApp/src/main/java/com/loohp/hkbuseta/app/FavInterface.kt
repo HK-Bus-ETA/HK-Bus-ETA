@@ -26,7 +26,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -107,21 +106,26 @@ import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getFavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.getRouteKey
+import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.removeFavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.resolveStop
+import com.loohp.hkbuseta.common.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.shared.TileUseState
 import com.loohp.hkbuseta.common.shared.Tiles
-import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.LocationResult
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.indexOf
+import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.compose.AdvanceButton
 import com.loohp.hkbuseta.compose.DrawPhaseColorText
 import com.loohp.hkbuseta.compose.RestartEffect
@@ -152,9 +156,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.absoluteValue
 
 
-@OptIn(ExperimentalWearFoundationApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun FavElements(ambientMode: Boolean, instance: AppActiveContext, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
@@ -525,16 +530,27 @@ fun FavButton(numIndex: Int, favouriteRouteStop: FavouriteRouteStop, etaResults:
                     }
                 }
 
-                val (index, _, stop) = favouriteRouteStop.resolveStop(instance) { origin?.location }
+                val (index, stopId, stop) = favouriteRouteStop.resolveStop(instance) { origin?.location }
                 val stopName = stop.name
                 val route = favouriteRouteStop.route
                 val kmbCtbJoint = route.isKmbCtbJoint
                 val co = favouriteRouteStop.co
                 val routeNumber = route.routeNumber
-                val stopId = favouriteRouteStop.stopId
                 val gmbRegion = route.gmbRegion
                 val gpsStop = favouriteRouteStop.favouriteStopMode.isRequiresLocation
-                val destName = Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, false)
+
+                val stopList = Registry.getInstance(instance).getAllStops(routeNumber, route.idBound(co), co, route.gmbRegion)
+                val stopData = stopList.getOrNull(stopList.indexesOf { it.stopId == stopId }.minByOrNull { (it - index).absoluteValue }?: -1)
+                val branches = Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.idBound(co), co, route.gmbRegion)
+                val currentBranch = branches.currentBranchStatus(currentLocalDateTime(), instance, false).asSequence().sortedByDescending { it.value.activeness }.first().key
+                val destName = if (co.isTrain) {
+                    Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, false)
+                } else if (stopData?.branchIds?.contains(currentBranch) != false) {
+                    route.resolvedDestWithBranch(false, currentBranch, index, stopId, instance)
+                } else {
+                    route.resolvedDest(false)
+                }
+
                 val rawColor = co.getColor(routeNumber, Color.White)
                 val color by WearOSShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { kmbCtbJoint })
 

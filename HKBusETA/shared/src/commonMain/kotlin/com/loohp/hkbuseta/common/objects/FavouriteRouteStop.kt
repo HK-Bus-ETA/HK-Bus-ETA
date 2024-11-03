@@ -106,9 +106,9 @@ expect val FavouriteRouteStop.platformDisplayInfo: JsonObject?
 fun List<FavouriteRouteStop>.toRouteSearchResult(instance: AppContext, origin: Coordinates?): List<RouteSearchResultEntry> {
     return asSequence()
         .map { fav ->
-            val (_, stopId, stop, route) = fav.resolveStop(instance) { origin }
+            val (index, stopId, stop, route) = fav.resolveStop(instance) { origin }
             val favouriteStopMode = fav.favouriteStopMode
-            RouteSearchResultEntry(route.getRouteKey(instance)!!, route, fav.co, StopInfo(stopId, stop, 0.0, fav.co), null, false, favouriteStopMode)
+            RouteSearchResultEntry(route.getRouteKey(instance)!!, route, fav.co, StopInfo(stopId, stop, 0.0, fav.co, index), null, false, favouriteStopMode)
         }
         .distinctBy { routeEntry -> routeEntry.uniqueKey }
         .toList()

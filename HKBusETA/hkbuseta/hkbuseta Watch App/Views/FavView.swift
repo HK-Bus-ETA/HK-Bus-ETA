@@ -220,14 +220,29 @@ struct FavView: AppScreenView {
                 VStack(alignment: .leading, spacing: 1.scaled(appContext)) {
                     let resolvedStop = favouriteRouteStop.resolveStop(context: appContext) { origin?.location }
                     let stopName = resolvedStop.stop.name
-                    let index = resolvedStop.index
+                    let stopId = resolvedStop.stopId
+                    let index = resolvedStop.index.asInt()
                     let route = resolvedStop.route
                     let kmbCtbJoint = route.isKmbCtbJoint
                     let co = favouriteRouteStop.co
                     let routeNumber = route.routeNumber
                     let gmbRegion = route.gmbRegion
                     let gpsStop = favouriteRouteStop.favouriteStopMode.isRequiresLocation
-                    let destName = registry(appContext).getStopSpecialDestinations(stopId: favouriteRouteStop.stopId, co: favouriteRouteStop.co, route: route, prependTo: false)
+                    
+                    let stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
+                    let stopData = stopList.enumerated().filter { $0.element.stopId == stopId }.min(by: { abs($0.offset - index) < abs($1.offset - index) })?.element
+                    let branches = registry(appContext).getAllBranchRoutes(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
+                    let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
+                    let destName = {
+                        if co.isTrain {
+                            return registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: false)
+                        } else if stopData?.branchIds.contains(currentBranch) != false {
+                            return route.resolvedDestWithBranch(prependTo: false, branch: currentBranch, selectedStop: index.asInt32(), selectedStopId: stopId, context: appContext)
+                        } else {
+                            return route.resolvedDest(prependTo: false)
+                        }
+                    }()
+                    
                     let color = operatorColor(favouriteRouteStop.co.getColor(routeNumber: routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }
                     let operatorName = favouriteRouteStop.co.getDisplayName(routeNumber: routeNumber, kmbCtbJoint: kmbCtbJoint, gmbRegion: gmbRegion, language: Shared().language, elseName: "???")
                     let mainText = "\(operatorName) \(favouriteRouteStop.co.getDisplayRouteNumber(routeNumber: routeNumber, shortened: false))"

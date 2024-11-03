@@ -54,7 +54,7 @@ struct EtaView: AppScreenView {
             if co.isTrain {
                 return registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
             } else if stopData?.branchIds.contains(currentBranch) != false {
-                return route.resolvedDestWithBranch(prependTo: true, branch: currentBranch)
+                return route.resolvedDestWithBranch(prependTo: true, branch: currentBranch, selectedStop: index.asInt32(), selectedStopId: stopId, context: appContext)
             } else {
                 return route.resolvedDest(prependTo: true)
             }

@@ -99,6 +99,14 @@ func openMaps(lat: Double, lng: Double, label: String, longClick: Bool) {
     mapItem.openInMaps()
 }
 
+extension Int32 {
+    
+    func asInt() -> Int {
+        return Int(self)
+    }
+    
+}
+
 extension Int {
     
     func asInt32() -> Int32 {

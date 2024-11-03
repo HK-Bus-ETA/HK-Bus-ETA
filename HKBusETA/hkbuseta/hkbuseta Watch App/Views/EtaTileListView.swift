@@ -119,7 +119,7 @@ struct EtaTileView: View {
         let favouriteResolvedStop = mainResolvedStop.first!
         let favouriteStopRoute = mainResolvedStop.second!
         
-        let index = favouriteResolvedStop.index
+        let index = favouriteResolvedStop.index.asInt()
         let stopId = favouriteResolvedStop.stopId
         let stop = favouriteResolvedStop.stop
         let route = favouriteResolvedStop.route
@@ -128,7 +128,19 @@ struct EtaTileView: View {
         let gpsStop = favouriteStopRoute.favouriteStopMode.isRequiresLocation
 
         let routeNumber = route.routeNumber
-        let destName = registryNoUpdate(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
+        let stopList = registryNoUpdate(appContext).getAllStops(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
+        let stopData = stopList.enumerated().filter { $0.element.stopId == stopId }.min(by: { abs($0.offset - index) < abs($1.offset - index) })?.element
+        let branches = registryNoUpdate(appContext).getAllBranchRoutes(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
+        let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
+        let destName = {
+            if co.isTrain {
+                return registryNoUpdate(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
+            } else if stopData?.branchIds.contains(currentBranch) != false {
+                return route.resolvedDestWithBranch(prependTo: true, branch: currentBranch, selectedStop: index.asInt32(), selectedStopId: stopId, context: appContext)
+            } else {
+                return route.resolvedDest(prependTo: true)
+            }
+        }()
         
         let color: Color = {
             if eta == nil {

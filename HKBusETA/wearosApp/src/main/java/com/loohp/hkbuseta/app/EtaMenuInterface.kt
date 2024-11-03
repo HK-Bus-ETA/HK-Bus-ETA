@@ -136,7 +136,7 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             if (co.isTrain) {
                 Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true)
             } else if (stopData?.branchIds?.contains(currentBranch) != false) {
-                route.resolvedDestWithBranch(true, currentBranch)
+                route.resolvedDestWithBranch(true, currentBranch, index, stopId, instance)
             } else {
                 route.resolvedDest(true)
             }

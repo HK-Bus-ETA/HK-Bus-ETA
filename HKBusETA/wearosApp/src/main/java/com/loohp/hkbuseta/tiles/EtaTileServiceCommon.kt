@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.tiles
 
 import android.os.Build
 import android.text.format.DateFormat
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.wear.protolayout.ActionBuilders
@@ -54,15 +55,21 @@ import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolveStop
 import com.loohp.hkbuseta.common.objects.resolveStops
+import com.loohp.hkbuseta.common.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.shared.Tiles
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.getAndNegate
 import com.loohp.hkbuseta.common.utils.hongKongZoneId
+import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.utils.addContentAnnotatedString
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -94,6 +101,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import kotlin.collections.component1
 import kotlin.collections.component2
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -359,8 +367,7 @@ class EtaTileServiceCommon {
         }
 
         private fun subTitle(destName: BilingualText, gpsStop: Boolean, routeNumber: String, co: Operator, context: AppContext): LayoutElementBuilders.Text {
-            val name = co.getDisplayRouteNumber(routeNumber).plus(" ").plus(destName[Shared.language])
-                .plus(if (gpsStop) (if (Shared.language == "en") " - Closest" else " - 最近") else "")
+            val name = co.getDisplayRouteNumber(routeNumber) + " " + destName[Shared.language] + (if (gpsStop) (if (Shared.language == "en") " - Closest" else " - 最近") else "")
             return LayoutElementBuilders.Text.Builder()
                 .setModifiers(
                     ModifiersBuilders.Modifiers.Builder()
@@ -480,7 +487,18 @@ class EtaTileServiceCommon {
 
             val routeNumber = route.routeNumber
             val stopName = stop.name
-            val destName = Registry.getInstanceNoUpdateCheck(context).getStopSpecialDestinations(stopId, co, route, true)
+
+            val stopList = Registry.getInstanceNoUpdateCheck(context).getAllStops(routeNumber, route.idBound(co), co, route.gmbRegion)
+            val stopData = stopList.getOrNull(stopList.indexesOf { it.stopId == stopId }.minByOrNull { (it - index).absoluteValue }?: -1)
+            val branches = Registry.getInstanceNoUpdateCheck(context).getAllBranchRoutes(routeNumber, route.idBound(co), co, route.gmbRegion)
+            val currentBranch = branches.currentBranchStatus(currentLocalDateTime(), context, false).asSequence().sortedByDescending { it.value.activeness }.first().key
+            val destName = if (co.isTrain) {
+                Registry.getInstanceNoUpdateCheck(context).getStopSpecialDestinations(stopId, co, route, true)
+            } else if (stopData?.branchIds?.contains(currentBranch) != false) {
+                route.resolvedDestWithBranch(true, currentBranch, index, stopId, context)
+            } else {
+                route.resolvedDest(true)
+            }
 
             val color = if (eta == null) {
                 tileState.setLastUpdateSuccessful(false)

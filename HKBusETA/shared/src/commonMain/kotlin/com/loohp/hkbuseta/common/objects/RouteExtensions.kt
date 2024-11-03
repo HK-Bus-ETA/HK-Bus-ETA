@@ -328,6 +328,7 @@ fun Operator.getDisplayFormattedName(routeNumber: String, kmbCtbJoint: Boolean, 
 val bracketsRemovalRegex: Regex = " *\\([^)]*\\) *".toRegex()
 val busTerminusZhRegex: Regex = " *(?:巴士)?總站".toRegex()
 val busTerminusEnRegex: Regex = "(?i) *(?:Bus )?Terminus".toRegex()
+val circularBracketRegex: Regex = "( *\\([^)]*(?:循環|Circular)[^)]*\\)) *".toRegex()
 
 fun Route.shouldPrependTo(): Boolean {
     return lrtCircular == null
@@ -355,6 +356,12 @@ fun Route.getCircularPivotIndex(stops: List<Registry.StopData>): Int {
         }
 }
 
+fun BilingualText.extractCircularBracket(): BilingualText {
+    val zh = circularBracketRegex.findAll(this.zh).lastOrNull()?.groupValues?.get(1)
+    val en = circularBracketRegex.findAll(this.en).lastOrNull()?.groupValues?.get(1)
+    return (zh?: "(循環線)") withEn (en?: "(Circular)")
+}
+
 fun Route.resolvedDest(prependTo: Boolean): BilingualText {
     return lrtCircular?: dest.let { if (prependTo) it.prependTo() else it }
 }
@@ -377,7 +384,7 @@ fun StopIndexedRouteSearchResultEntry.resolvedDest(prependTo: Boolean, context: 
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
                 }
                 dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
-                dest.let { if (prependTo) it.prependTo() else it } + ("(循環線)" withEn "(Circular)")
+                dest.let { if (prependTo) it.prependTo() else it } + route!!.dest.extractCircularBracket()
             } else {
                 route!!.resolvedDest(prependTo)
             }
@@ -401,7 +408,7 @@ fun StopIndexedRouteSearchResultEntry.resolvedDestFormatted(prependTo: Boolean, 
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
                 }
                 dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
-                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + ("(循環線)" withEn "(Circular)").asFormattedText(*style)
+                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + route!!.dest.extractCircularBracket().asFormattedText(*style)
             } else {
                 route!!.resolvedDestFormatted(prependTo, *style)
             }
@@ -434,7 +441,7 @@ fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
                 }
                 dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
-                dest.let { if (prependTo) it.prependTo() else it } + ("(循環線)" withEn "(Circular)")
+                dest.let { if (prependTo) it.prependTo() else it } + branch.dest.extractCircularBracket()
             } else {
                 resolvedDestWithBranch(prependTo, branch)
             }
@@ -459,7 +466,7 @@ fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, sel
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
                 }
                 dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
-                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + ("(循環線)" withEn "(Circular)").asFormattedText(*style)
+                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + branch.dest.extractCircularBracket().asFormattedText(*style)
             } else {
                 resolvedDestWithBranchFormatted(prependTo, branch, *style)
             }
@@ -469,7 +476,7 @@ fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, sel
     }
 }
 
-val Route.isCircular: Boolean get() = dest.zh.contains("循環線")
+val Route.isCircular: Boolean get() = dest.zh.run { contains("循環線") || contains("循環行走") }
 
 val Route.journeyTimeCircular: Int? get() = journeyTime?.let { if (isCircular) it * 2 else it }
 

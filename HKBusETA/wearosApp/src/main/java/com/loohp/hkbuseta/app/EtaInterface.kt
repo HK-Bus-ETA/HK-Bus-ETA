@@ -151,7 +151,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
         if (co.isTrain) {
             Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true)
         } else if (stopData?.branchIds?.contains(currentBranch) != false) {
-            route.resolvedDestWithBranch(true, currentBranch)
+            route.resolvedDestWithBranch(true, currentBranch, index, stopId, instance)
         } else {
             route.resolvedDest(true)
         }
@@ -510,7 +510,6 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EtaText(ambientMode: Boolean, lines: ETAQueryResult?, seq: Int, etaDisplayMode: ETADisplayMode, instance: AppActiveContext) {
     val content = lines.getResolvedText(seq, etaDisplayMode, instance).asContentAnnotatedString()

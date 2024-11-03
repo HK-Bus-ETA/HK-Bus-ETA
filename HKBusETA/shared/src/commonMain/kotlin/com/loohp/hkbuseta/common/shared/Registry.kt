@@ -159,6 +159,7 @@ import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.parseInstant
 import com.loohp.hkbuseta.common.utils.toIntOrElse
 import com.loohp.hkbuseta.common.utils.parseLocalDateTime
+import com.loohp.hkbuseta.common.utils.performGC
 import com.loohp.hkbuseta.common.utils.toLongOrElse
 import com.loohp.hkbuseta.common.utils.plus
 import com.loohp.hkbuseta.common.utils.postJSONResponse
@@ -958,6 +959,8 @@ class Registry {
             } catch (e: Exception) {
                 e.printStackTrace()
                 state.value = State.ERROR
+            } finally {
+                performGC()
             }
             if (state.value != State.READY) {
                 state.value = State.ERROR
