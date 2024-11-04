@@ -148,6 +148,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
@@ -236,6 +237,8 @@ fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, sign
     }
 }
 
+private val favouriteRouteStopChosenTabState: MutableStateFlow<Int> = MutableStateFlow(0)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
@@ -260,9 +263,14 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
         }
     }
 
-    val pagerState = rememberPagerState { favouriteRouteStops.size }
+    var favouriteRouteStopChosenTab by favouriteRouteStopChosenTabState.collectAsStateMultiplatform()
+    val pagerState = rememberPagerState(initialPage = favouriteRouteStopChosenTab) { favouriteRouteStops.size }
     val scope = rememberCoroutineScope()
     val routes: MutableMap<BilingualText, ImmutableList<StopIndexedRouteSearchResultEntry>> = remember { mutableStateMapOf() }
+
+    LaunchedEffect (pagerState.currentPage) {
+        favouriteRouteStopChosenTab = pagerState.currentPage
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth()

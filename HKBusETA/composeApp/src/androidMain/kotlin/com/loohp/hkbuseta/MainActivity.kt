@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,10 +30,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private var pipModeState: PipModeState = PipModeState.Left
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,18 +50,16 @@ class MainActivity : ComponentActivity() {
                 FavouriteRoutesWidget.updateAll(this@MainActivity)
             }
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel(
-                "alight_reminder_channel",
-                resources.getString(R.string.alight_reminder_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                enableVibration(true)
-                enableLights(true)
-            }
-            notificationManager.createNotificationChannel(channel)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = NotificationChannel(
+            "alight_reminder_channel",
+            resources.getString(R.string.alight_reminder_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            enableVibration(true)
+            enableLights(true)
         }
+        notificationManager.createNotificationChannel(channel)
         setContent {
             App()
         }
@@ -98,8 +97,26 @@ class MainActivity : ComponentActivity() {
         componentActivityPaused = false
     }
 
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        if (isInPictureInPictureMode) {
+            pipModeState = PipModeState.Entered
+        } else {
+            val id = Random.nextInt()
+            pipModeState = PipModeState.JustLeft(id)
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(1500)
+                if (pipModeState.matchesJustLeft(id)) {
+                    pipModeState = PipModeState.Left
+                }
+            }
+        }
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+    }
+
     override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean, newConfig: Configuration) {
-        recreate()
+        if (pipModeState is PipModeState.Left) {
+            recreate()
+        }
         super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig)
     }
 
@@ -111,4 +128,14 @@ internal fun Intent.extractUrl(): String? {
         Intent.ACTION_VIEW -> data.toString()
         else -> null
     }
+}
+
+private sealed interface PipModeState {
+    data object Entered: PipModeState
+    data class JustLeft(val id: Int): PipModeState
+    data object Left: PipModeState
+}
+
+private fun PipModeState.matchesJustLeft(id: Int): Boolean {
+    return this is PipModeState.JustLeft && this.id == id
 }
