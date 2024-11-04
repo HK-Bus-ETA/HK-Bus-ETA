@@ -162,9 +162,9 @@ kotlin {
                 "osx-aarch_64" -> "mac-aarch64"
                 else -> throw IllegalStateException("Unknown OS: ${osdetector.classifier}")
             }
-            implementation("org.openjfx:javafx-base:11.0.2:${fxSuffix}")
-            implementation("org.openjfx:javafx-graphics:11.0.2:${fxSuffix}")
-            implementation("org.openjfx:javafx-controls:11.0.2:${fxSuffix}")
+            implementation("org.openjfx:javafx-base:17.0.13:${fxSuffix}")
+            implementation("org.openjfx:javafx-graphics:17.0.13:${fxSuffix}")
+            implementation("org.openjfx:javafx-controls:17.0.13:${fxSuffix}")
         }
         wasmJsMain.dependencies {
             implementation(projects.shared)

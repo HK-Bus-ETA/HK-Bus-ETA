@@ -43,12 +43,25 @@ import com.loohp.hkbuseta.common.utils.isReachable
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.timeFormatLocale
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import com.loohp.hkbuseta.utils.DesktopUtils
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.jvm.javaio.copyTo
 import io.ktor.utils.io.jvm.javaio.toByteReadChannel
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
+import java.io.File
+import java.net.URI
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import javafx.application.Platform
 import javafx.stage.FileChooser
+import javax.swing.JOptionPane
+import javax.swing.filechooser.FileSystemView
+import kotlin.math.roundToInt
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -60,20 +73,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
-import java.awt.Desktop
-import java.awt.Toolkit
-import java.awt.datatransfer.StringSelection
-import java.io.File
-import java.net.URI
-import java.text.DateFormat
-import java.text.SimpleDateFormat
-import java.time.format.DateTimeFormatter
-import javax.swing.JOptionPane
-import javax.swing.filechooser.FileSystemView
-import kotlin.math.roundToInt
-import kotlin.text.Charsets
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 
 private var versionImpl: () -> Triple<String, String, Long> = { Triple("Unknown", "Unknown", -1) }
@@ -267,14 +266,7 @@ class AppActiveContextComposeDesktop internal constructor(
     }
 
     override fun handleWebpages(url: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
-        return {
-            if (Desktop.isDesktopSupported()) {
-                val desktop = Desktop.getDesktop()
-                if (desktop.isSupported(Desktop.Action.BROWSE)) {
-                    desktop.browse(URI(url.normalizeUrlScheme()))
-                }
-            }
-        }
+        return { DesktopUtils.browse(URI(url.normalizeUrlScheme())) }
     }
 
     override fun handleWebImages(url: String, longClick: Boolean, haptics: HapticFeedback): () -> Unit {
@@ -329,6 +321,7 @@ class AppActiveContextComposeDesktop internal constructor(
                     writer.flush()
                 }
                 onSuccess.invoke()
+                DesktopUtils.openParentFolder(selectedFile)
             }
         }
     }
