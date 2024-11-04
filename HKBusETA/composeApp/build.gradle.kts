@@ -205,6 +205,9 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+
+            modules("java.net.http")
+
             packageName = "HK Bus ETA"
             packageVersion = "2.4.5"
 
