@@ -105,6 +105,7 @@ import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isPetBus
+import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
@@ -355,7 +356,11 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                 val routeNumber = route.route!!.routeNumber
                 val gmbRegion = route.route!!.gmbRegion
                 val displayRouteNumber = co.getListDisplayRouteNumber(routeNumber, true)
-                val dest = route.route!!.resolvedDest(false)[Shared.language]
+                val dest = if (co.isTrain) {
+                    Registry.getInstance(instance).getStopSpecialDestinations(route.stopInfo!!.stopId, co, route.route!!, true)
+                } else {
+                    route.resolvedDest(false, instance)
+                }[Shared.language]
                 val isNightRoute = co.isBus && calculateServiceTimeCategory(routeNumber, co) {
                     Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).getServiceTimeCategory()
                 } == ServiceTimeCategory.NIGHT
