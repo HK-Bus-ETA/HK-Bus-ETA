@@ -23,7 +23,9 @@ package com.loohp.hkbuseta.shared
 
 import com.loohp.hkbuseta.appcontext.applicationAppContext
 import com.loohp.hkbuseta.common.shared.Shared
+import javafx.application.Platform
 import kotlinx.coroutines.runBlocking
+import javax.swing.UIManager
 
 object DesktopShared {
 
@@ -41,6 +43,11 @@ object DesktopShared {
 
     fun setSystemFormatProviders() {
         System.setProperty("java.locale.providers", "HOST")
+    }
+
+    fun startupJavaFX() {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+        Platform.startup { /* do nothing */ }
     }
 
 }

@@ -47,11 +47,11 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.jvm.javaio.copyTo
 import io.ktor.utils.io.jvm.javaio.toByteReadChannel
+import javafx.application.Platform
+import javafx.stage.FileChooser
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
@@ -68,10 +68,10 @@ import java.net.URI
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
-import javax.swing.JFileChooser
 import javax.swing.JOptionPane
-import javax.swing.UIManager
+import javax.swing.filechooser.FileSystemView
 import kotlin.math.roundToInt
+import kotlin.text.Charsets
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -294,34 +294,35 @@ class AppActiveContextComposeDesktop internal constructor(
     }
 
     override fun readFileFromFileChooser(fileType: String, read: (String) -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-            val fileChooser = JFileChooser()
-            fileChooser.dialogTitle = if (Shared.language == "en") "Import" else "匯人"
-            fileChooser.dialogType = JFileChooser.OPEN_DIALOG
-            val result = fileChooser.showOpenDialog(null)
-            if (result == JFileChooser.APPROVE_OPTION) {
-                val selectedFile = fileChooser.selectedFile
+        Platform.runLater {
+            val fileChooser = FileChooser().apply {
+                title = if (Shared.language == "en") "Import" else "匯人"
+                initialDirectory = FileSystemView.getFileSystemView().defaultDirectory
+                extensionFilters += FileChooser.ExtensionFilter(if (Shared.language == "en") "All Files" else "所有檔案", "*.*")
+            }
+            val selectedFile = fileChooser.showOpenDialog(null)
+            if (selectedFile != null) {
                 read.invoke(selectedFile.readLines(Charsets.UTF_8).joinToString(""))
             }
         }
     }
 
     override fun writeFileToFileChooser(fileType: String, fileName: String, file: String, onSuccess: () -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val fileChooser = JFileChooser()
-            fileChooser.selectedFile = File(fileName)
-            fileChooser.dialogTitle = if (Shared.language == "en") "Export" else "匯出"
-            fileChooser.dialogType = JFileChooser.SAVE_DIALOG
-            val result = fileChooser.showOpenDialog(null)
-            if (result == JFileChooser.APPROVE_OPTION) {
-                val selectedFile = fileChooser.selectedFile
+        Platform.runLater {
+            val fileChooser = FileChooser().apply {
+                title = if (Shared.language == "en") "Export" else "匯出"
+                initialFileName = fileName
+                initialDirectory = FileSystemView.getFileSystemView().defaultDirectory
+                extensionFilters += FileChooser.ExtensionFilter(if (Shared.language == "en") "All Files" else "所有檔案", "*.*")
+            }
+            val selectedFile = fileChooser.showSaveDialog(null)
+            if (selectedFile != null) {
                 if (selectedFile.exists()) {
                     val response = JOptionPane.showConfirmDialog(null,
-                        if (Shared.language == "en") "The file already exists. Do you want to overwrite the existing file?" else "這個文件已經存在。你想覆蓋已有的文件嗎？",
-                        if (Shared.language == "en") "File Exists" else "文件已經存在", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE
+                        if (Shared.language == "en") "The file already exists. Do you want to overwrite the existing file?" else "此檔案已經存在，你想覆蓋已有的檔案嗎？",
+                        if (Shared.language == "en") "File Exists" else "檔案已經存在", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE
                     )
-                    if (response != JOptionPane.YES_OPTION) return@launch
+                    if (response != JOptionPane.YES_OPTION) return@runLater
                 }
                 selectedFile.printWriter(Charsets.UTF_8).use { writer ->
                     writer.write(file)

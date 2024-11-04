@@ -42,6 +42,7 @@ import java.awt.Dimension
 fun main() = application {
     DesktopShared.setSystemFormatProviders()
     DesktopShared.setDefaultExceptionHandler()
+    DesktopShared.startupJavaFX()
     setVersionImpl { Triple("HKBusETA", "2.4.5", 26) }
     Window(
         onCloseRequest = ::exitApplication,

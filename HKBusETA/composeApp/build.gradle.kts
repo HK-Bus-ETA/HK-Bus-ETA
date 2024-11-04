@@ -32,6 +32,7 @@ plugins {
     alias(libs.plugins.googleDevToolsKsp)
     alias(libs.plugins.compose.compiler)
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("com.google.osdetector") version "1.7.3"
 }
 
 secrets {
@@ -153,6 +154,17 @@ kotlin {
             implementation(libs.commons.lang3)
             implementation(libs.kotlinx.coroutines.swing)
             api(libs.compose.webview.multiplatform)
+            val fxSuffix = when (osdetector.classifier) {
+                "linux-x86_64" -> "linux"
+                "linux-aarch_64" -> "linux-aarch64"
+                "windows-x86_64" -> "win"
+                "osx-x86_64" -> "mac"
+                "osx-aarch_64" -> "mac-aarch64"
+                else -> throw IllegalStateException("Unknown OS: ${osdetector.classifier}")
+            }
+            implementation("org.openjfx:javafx-base:11.0.2:${fxSuffix}")
+            implementation("org.openjfx:javafx-graphics:11.0.2:${fxSuffix}")
+            implementation("org.openjfx:javafx-controls:11.0.2:${fxSuffix}")
         }
         wasmJsMain.dependencies {
             implementation(projects.shared)
@@ -210,18 +222,24 @@ compose.desktop {
 
             packageName = "HK Bus ETA"
             packageVersion = "2.4.5"
+            vendor = "HK Bus ETA"
 
             macOS {
                 iconFile.set(project.file("icon.icns"))
             }
             windows {
                 perUserInstall = true
+                menu = true
                 upgradeUuid = "20ce294a-f7d4-484a-87c0-d26d8950ab5e"
+                shortcut = true
                 iconFile.set(project.file("icon.ico"))
             }
             linux {
                 packageName = "hk-bus-eta"
                 appRelease = packageVersion
+                shortcut = true
+                debMaintainer = vendor
+                debPackageVersion = packageVersion
                 iconFile.set(project.file("icon.png"))
             }
         }
