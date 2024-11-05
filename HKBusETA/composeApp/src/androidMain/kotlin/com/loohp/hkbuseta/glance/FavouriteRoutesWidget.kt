@@ -357,7 +357,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                 val gmbRegion = route.route!!.gmbRegion
                 val displayRouteNumber = co.getListDisplayRouteNumber(routeNumber, true)
                 val dest = if (co.isTrain) {
-                    Registry.getInstance(instance).getStopSpecialDestinations(route.stopInfo!!.stopId, co, route.route!!, true)
+                    Registry.getInstance(instance).getStopSpecialDestinations(route.stopInfo!!.stopId, co, route.route!!, false)
                 } else {
                     route.resolvedDest(false, instance)
                 }[Shared.language]
