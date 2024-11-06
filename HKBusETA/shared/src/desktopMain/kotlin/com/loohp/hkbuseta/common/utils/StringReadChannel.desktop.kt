@@ -62,7 +62,7 @@ actual class StringBackedStringReadChannel actual constructor(
 class InputStreamBackedStringReadChannel(
     override val inputStream: InputStream,
     override val charset: Charset,
-): StringReadChannel {
+): StringReadChannel, AutoCloseable {
     override suspend fun string(): String {
         return inputStream.bufferedReader(charset).useLines { it.joinToString("") }
     }
@@ -79,6 +79,9 @@ class InputStreamBackedStringReadChannel(
                 ByteArrayPool.recycle(buffer)
             }
         }
+    }
+    override fun close() {
+        ignoreExceptions { inputStream.close() }
     }
 }
 
