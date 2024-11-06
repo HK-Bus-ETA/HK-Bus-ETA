@@ -42,6 +42,7 @@ import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
+import com.loohp.hkbuseta.common.utils.StringReadChannel
 import com.loohp.hkbuseta.common.utils.wrap
 import com.loohp.hkbuseta.common.utils.wrapList
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -133,7 +134,7 @@ interface AppActiveContextCompose: AppContextCompose, AppActiveContext {
 
     fun completeFinishCallback()
 
-    fun readFileFromFileChooser(fileType: String, read: (String) -> Unit)
+    fun readFileFromFileChooser(fileType: String, read: suspend (StringReadChannel) -> Unit)
 
     fun writeFileToFileChooser(fileType: String, fileName: String, file: String, onSuccess: () -> Unit)
 

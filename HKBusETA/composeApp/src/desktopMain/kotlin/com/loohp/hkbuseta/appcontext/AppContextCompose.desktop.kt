@@ -63,8 +63,10 @@ import kotlin.math.roundToInt
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
@@ -285,7 +287,7 @@ class AppActiveContextComposeDesktop internal constructor(
         //do nothing
     }
 
-    override fun readFileFromFileChooser(fileType: String, read: (String) -> Unit) {
+    override fun readFileFromFileChooser(fileType: String, read: suspend (StringReadChannel) -> Unit) {
         Platform.runLater {
             val fileChooser = FileChooser().apply {
                 title = if (Shared.language == "en") "Import" else "匯人"
@@ -294,7 +296,11 @@ class AppActiveContextComposeDesktop internal constructor(
             }
             val selectedFile = fileChooser.showOpenDialog(null)
             if (selectedFile != null) {
-                read.invoke(selectedFile.readLines(Charsets.UTF_8).joinToString(""))
+                CoroutineScope(Dispatchers.IO).launch {
+                    selectedFile.inputStream().use {
+                        read.invoke(it.toStringReadChannel())
+                    }
+                }
             }
         }
     }

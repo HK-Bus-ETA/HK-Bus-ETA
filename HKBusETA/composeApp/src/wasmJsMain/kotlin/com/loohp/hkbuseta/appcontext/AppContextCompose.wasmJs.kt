@@ -249,8 +249,12 @@ class AppActiveContextComposeWeb internal constructor(
         //do nothing
     }
 
-    override fun readFileFromFileChooser(fileType: String, read: (String) -> Unit) {
-        readFile { read.invoke(it) }
+    override fun readFileFromFileChooser(fileType: String, read: suspend (StringReadChannel) -> Unit) {
+        readFile {
+            CoroutineScope(Dispatchers.IO).launch {
+                read.invoke(it.toStringReadChannel())
+            }
+        }
     }
 
     override fun writeFileToFileChooser(fileType: String, fileName: String, file: String, onSuccess: () -> Unit) {

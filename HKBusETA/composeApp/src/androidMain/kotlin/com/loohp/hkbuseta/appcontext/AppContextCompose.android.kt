@@ -355,16 +355,18 @@ class AppActiveContextComposeAndroid internal constructor(
         finishCallback?.invoke(result)
     }
 
-    override fun readFileFromFileChooser(fileType: String, read: (String) -> Unit) {
+    override fun readFileFromFileChooser(fileType: String, read: suspend (StringReadChannel) -> Unit) {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.type = fileType
         context.startActivity(intent) {
             if (it.resultCode == Activity.RESULT_OK) {
-                val uri = it.data?.data?: return@startActivity
-                context.contentResolver.openInputStream(uri)?.use { ins -> ins.reader(Charsets.UTF_8).buffered().use { reader ->
-                    read.invoke(reader.lineSequence().joinToString(""))
-                } }
+                CoroutineScope(Dispatchers.IO).launch {
+                    val uri = it.data?.data?: return@launch
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        read.invoke(input.toStringReadChannel())
+                    }
+                }
             }
         }
     }

@@ -459,8 +459,8 @@ class AppActiveContextComposeIOS internal constructor(
         navColorState.value = nav
     }
 
-    override fun readFileFromFileChooser(fileType: String, read: (String) -> Unit) {
-        fileChooserImportImpl.invoke(read)
+    override fun readFileFromFileChooser(fileType: String, read: suspend (StringReadChannel) -> Unit) {
+        fileChooserImportImpl.invoke { runBlocking { read.invoke(it.toStringReadChannel()) } }
     }
 
     override fun writeFileToFileChooser(fileType: String, fileName: String, file: String, onSuccess: () -> Unit) {
