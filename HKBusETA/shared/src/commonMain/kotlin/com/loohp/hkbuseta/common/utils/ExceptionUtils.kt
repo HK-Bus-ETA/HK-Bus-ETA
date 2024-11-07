@@ -1,10 +1,12 @@
 package com.loohp.hkbuseta.common.utils
 
 
-inline fun ignoreExceptions(block: () -> Unit) {
+inline fun ignoreExceptions(printStackTract: Boolean = false, block: () -> Unit) {
     try {
         block.invoke()
-    } catch (_: Throwable) {
-        //do nothing
+    } catch (e: Throwable) {
+        if (printStackTract) {
+            e.printStackTrace()
+        }
     }
 }

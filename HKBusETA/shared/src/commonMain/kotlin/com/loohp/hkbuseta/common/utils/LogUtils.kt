@@ -22,4 +22,9 @@
 package com.loohp.hkbuseta.common.utils
 
 
+@Target(AnnotationTarget.FIELD, AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.SOURCE)
+@MustBeDocumented
+annotation class DebugPurpose
+
 expect fun debugLog(vararg message: Any?)

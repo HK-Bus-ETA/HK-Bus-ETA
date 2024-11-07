@@ -40,12 +40,9 @@ import com.loohp.hkbuseta.common.appcontext.HapticFeedbackType
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.utils.ImmutableState
-import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
-import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.StringReadChannel
-import com.loohp.hkbuseta.common.utils.wrap
-import com.loohp.hkbuseta.common.utils.wrapList
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlin.random.Random
 
 
 expect fun initialScreen(): AppActiveContextCompose
@@ -53,13 +50,13 @@ expect fun handleEmptyStack(stack: MutableList<AppActiveContextCompose>)
 
 object ScreenState {
 
-    val hasInterruptElement: MutableNonNullStateFlow<Boolean> = MutableStateFlow(false).wrap()
+    val hasInterruptElement: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
 }
 
 object HistoryStack {
 
-    val historyStack: MutableNonNullStateFlowList<AppActiveContextCompose> = MutableStateFlow(listOf(initialScreen())).wrapList()
+    val historyStack: MutableStateFlow<List<AppActiveContextCompose>> = MutableStateFlow(listOf(initialScreen()))
 
     fun popHistoryStack() {
         val stack = historyStack.value.toMutableList()
@@ -86,26 +83,21 @@ fun AppActiveContext.isTopOfStack(): Boolean {
 }
 
 data class ToastTextData(
+    val id: Int = Random.nextInt(),
     val text: String,
     val duration: ToastDuration,
     val actionLabel: String?,
     val action: (() -> Unit)?
-) {
-
-    companion object {
-
-        val RESET: ToastTextData = ToastTextData("", ToastDuration.SHORT, null, null)
-
-    }
-
-}
+)
 
 object ToastTextState {
 
-    val toastState: MutableNonNullStateFlow<ToastTextData> = MutableStateFlow(ToastTextData.RESET).wrap()
+    val toastState: MutableStateFlow<ToastTextData?> = MutableStateFlow(null)
 
-    fun resetToastState() {
-        toastState.value = ToastTextData.RESET
+    fun resetToastState(id: Int) {
+        if (toastState.value?.id == id) {
+            toastState.value = null
+        }
     }
 
 }
@@ -119,7 +111,7 @@ interface AppContextCompose : AppContext {
     }
 
     fun showToastText(text: String, duration: ToastDuration, actionLabel: String?, action: (() -> Unit)?) {
-        ToastTextState.toastState.value = ToastTextData(text, duration, actionLabel, action)
+        ToastTextState.toastState.value = ToastTextData(text = text, duration = duration, actionLabel = actionLabel, action = action)
     }
 
 }

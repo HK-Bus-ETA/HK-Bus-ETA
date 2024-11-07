@@ -119,18 +119,18 @@ fun App(onReady: (() -> Unit)? = null) {
                 }
             }
             LaunchedEffect (toastState) {
-                if (toastState.text.isNotBlank()) {
+                toastState?.apply {
                     try {
                         val result = snackbarHostState.showSnackbar(
-                            message = toastState.text,
-                            duration = toastState.duration.snackbar,
-                            actionLabel = toastState.actionLabel
+                            message = text,
+                            duration = duration.snackbar,
+                            actionLabel = actionLabel
                         )
                         if (result == SnackbarResult.ActionPerformed) {
-                            toastState.action?.invoke()
+                            action?.invoke()
                         }
                     } finally {
-                        ToastTextState.resetToastState()
+                        ToastTextState.resetToastState(id)
                     }
                 }
             }
