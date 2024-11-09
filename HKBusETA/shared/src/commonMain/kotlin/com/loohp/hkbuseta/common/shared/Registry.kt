@@ -117,6 +117,7 @@ import com.loohp.hkbuseta.common.utils.InlineImage
 import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.SmallSize
+import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asAutoSortedList
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.buildFormattedString
@@ -144,12 +145,10 @@ import com.loohp.hkbuseta.common.utils.getXMLResponse
 import com.loohp.hkbuseta.common.utils.gzipSupported
 import com.loohp.hkbuseta.common.utils.hongKongTimeZone
 import com.loohp.hkbuseta.common.utils.ifFalse
-import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.common.utils.minus
 import com.loohp.hkbuseta.common.utils.nextLocalDateTimeAfter
-import com.loohp.hkbuseta.common.utils.nonNullEquals
 import com.loohp.hkbuseta.common.utils.optDouble
 import com.loohp.hkbuseta.common.utils.optInt
 import com.loohp.hkbuseta.common.utils.optJsonArray
@@ -157,16 +156,16 @@ import com.loohp.hkbuseta.common.utils.optJsonObject
 import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.parseInstant
-import com.loohp.hkbuseta.common.utils.toIntOrElse
 import com.loohp.hkbuseta.common.utils.parseLocalDateTime
 import com.loohp.hkbuseta.common.utils.performGC
-import com.loohp.hkbuseta.common.utils.toLongOrElse
 import com.loohp.hkbuseta.common.utils.plus
 import com.loohp.hkbuseta.common.utils.postJSONResponse
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.common.utils.strEq
 import com.loohp.hkbuseta.common.utils.sundayZeroDayNumber
+import com.loohp.hkbuseta.common.utils.toIntOrElse
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
+import com.loohp.hkbuseta.common.utils.toLongOrElse
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
 import com.loohp.hkbuseta.common.utils.wrap
 import io.ktor.http.encodeURLQueryComponent
@@ -368,7 +367,10 @@ class Registry {
                         val newRoute = newRouteData.route!!
                         val stopList = getAllStops(newRoute.routeNumber, newRoute.idBound(co), co, newRoute.gmbRegion)
                         val finalStopIdCompare = stopId
-                        var index = stopList.indexOf { it.stopId == finalStopIdCompare } + 1
+                        var index = stopList.indexesOf { it.stopId == finalStopIdCompare }
+                            .minByOrNull { (favouriteRoute.index - it + 1).absoluteValue }
+                            ?.let { it + 1 }
+                            ?: 0
                         val stopData: StopData
                         if (index < 1) {
                             index = favouriteRoute.index.coerceIn(1, stopList.size)
@@ -912,7 +914,10 @@ class Registry {
                                             val newRoute = newRouteData.route!!
                                             val stopList = getAllStops(newRoute.routeNumber, newRoute.idBound(co), co, newRoute.gmbRegion)
                                             val finalStopIdCompare = stopId
-                                            var index = stopList.indexOf { it.stopId == finalStopIdCompare } + 1
+                                            var index = stopList.indexesOf { it.stopId == finalStopIdCompare }
+                                                .minByOrNull { (favouriteRoute.index - it + 1).absoluteValue }
+                                                ?.let { it + 1 }
+                                                ?: 0
                                             val stopData: StopData
                                             if (index < 1) {
                                                 index = favouriteRoute.index.coerceIn(1, stopList.size)
@@ -1332,23 +1337,23 @@ class Registry {
 
     fun getAllBranchRoutes(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?): List<Route> {
         return try {
-            getAllBranchRoutesBulk(listOf(AllBranchRoutesSearchParameters(routeNumber, bound, co, gmbRegion))).first()
+            getAllBranchRoutesBulk(listOf(element = AllBranchRoutesSearchParameters(routeNumber, bound, co, gmbRegion))).first()
         } catch (e: Throwable) {
             throw RuntimeException("Error occurred while getting branch routes for $routeNumber, $bound, $co, $gmbRegion: ${e.message}", e)
         }
     }
 
     fun getAllStops(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?): List<StopData> {
-        return getAllStops(routeNumber, bound, co, gmbRegion, setOf(Operator.KMB))
+        return getAllStops(routeNumber, bound, co, gmbRegion, true)
     }
 
-    fun getAllStops(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?, mergeDiffIdButSameNameOperators: Set<Operator>): List<StopData> {
-        return cache("getAllStops", routeNumber, bound, co, gmbRegion, mergeDiffIdButSameNameOperators) {
+    fun getAllStops(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?, mergeEtaSeparateIds: Boolean): List<StopData> {
+        return cache("getAllStops", routeNumber, bound, co, gmbRegion, mergeEtaSeparateIds) {
             try {
+                val branches = getAllBranchRoutes(routeNumber, bound, co, gmbRegion)
                 val stopList = DATA!!.dataSheet.stopList
-                val mergeDiffIdButSameName = mergeDiffIdButSameNameOperators.contains(co)
                 val lists: MutableList<Pair<MutableBranchedList<String, StopData, Route>, Int>> = mutableListOf()
-                for (route in getAllBranchRoutes(routeNumber, bound, co, gmbRegion)) {
+                for (route in branches) {
                     val localStops: MutableBranchedList<String, StopData, Route> = MutableBranchedList(route)
                     val stops = route.stops[co]
                     val serviceType = route.serviceType.toIntOrElse(1)
@@ -1362,6 +1367,30 @@ class Registry {
                 if (lists.isEmpty()) {
                     emptyList()
                 } else {
+                    val mergedStopIds: Set<Set<String>>
+                    val mergedStopIdBranch: Map<String, Route>
+                    if (mergeEtaSeparateIds) {
+                        val allStops = branches.flatMap { it.stops[co]?: emptyList() }
+                        val mapped = branches.asSequence()
+                            .mapNotNull {
+                                val stops = it.stops[co]?: return@mapNotNull null
+                                stops.asSequence()
+                                    .filterNot { i -> allStops.any(2) { d -> i == d } }
+                                    .map { i -> i to it }
+                                    .toSet()
+                            }
+                            .flatten()
+                            .toList()
+                        mergedStopIds = mapped.asSequence()
+                            .map { it.first }
+                            .groupBy { stopList[it]?.name }
+                            .values
+                            .mapNotNullTo(mutableSetOf()) { if (it.size > 1) it.toSet() else null }
+                        mergedStopIdBranch = mapped.toMap()
+                    } else {
+                        mergedStopIds = emptySet()
+                        mergedStopIdBranch = emptyMap()
+                    }
                     lists.sortBy { it.second }
                     val result: MutableBranchedList<String, StopData, Route> = MutableBranchedList(
                         branchId = lists.first().first.branchId,
@@ -1377,7 +1406,7 @@ class Registry {
                             }
                         },
                         equalityPredicate = { a, b ->
-                            a == b || (mergeDiffIdButSameName && stopList[a]?.name nonNullEquals stopList[b]?.name)
+                            a == b || mergedStopIds.any { it.contains(a) && it.contains(b) }
                         }
                     )
                     val isMainBranchCircular = lists.firstOrNull()?.first?.branchId?.isCircular?: false
@@ -1385,7 +1414,9 @@ class Registry {
                         result.merge(first, isMainBranchCircular || !first.branchId.isCircular)
                     }
                     result.asSequenceWithBranchIds()
-                        .map { (f, s) -> f.withBranchIds(s) }
+                        .map { (f, s) ->
+                            f.with(s, mergedStopIds.firstOrNull { it.contains(f.stopId) }?.associateWith { mergedStopIdBranch[it]!! })
+                        }
                         .toList()
                 }
             } catch (e: Throwable) {
@@ -1395,9 +1426,27 @@ class Registry {
     }
 
     @Immutable
-    data class StopData(val stopId: String, val serviceType: Int, val stop: Stop, val route: Route, val branchIds: Set<Route> = emptySet(), val fare: Fare?, val holidayFare: Fare?) {
-        fun withBranchIds(branchIds: Set<Route>): StopData {
-            return StopData(stopId, serviceType, stop, route, branchIds, fare, holidayFare)
+    data class StopData(
+        val stopId: String,
+        val serviceType: Int,
+        val stop: Stop,
+        val route: Route,
+        val branchIds: Set<Route> = emptySet(),
+        val mergedStopIds: Map<String, Route> = mapOf(stopId to route),
+        val fare: Fare?,
+        val holidayFare: Fare?
+    ) {
+        fun with(branchIds: Set<Route>?, mergedStopIds: Map<String, Route>?): StopData {
+            return StopData(
+                stopId = stopId,
+                serviceType = serviceType,
+                stop = stop,
+                route = route,
+                branchIds = branchIds?: this.branchIds,
+                mergedStopIds = mergedStopIds?: this.mergedStopIds,
+                fare = fare,
+                holidayFare = holidayFare
+            )
         }
     }
 
@@ -2005,10 +2054,10 @@ class Registry {
         }
     }
 
-    private val cachedWaypoints: MutableMap<String, RouteWaypoints> = ConcurrentMutableMap()
+    private val cachedWaypoints: MutableMap<Route, RouteWaypoints> = ConcurrentMutableMap()
     private val cachedTrafficSnapshots: MutableMap<RouteWaypoints, Array<out List<TrafficSnapshotPoint>>> = ConcurrentMutableMap()
 
-    fun getRouteWaypoints(route: Route, context: AppContext, provideStops: List<Stop>?): Deferred<RouteWaypoints> {
+    fun getRouteWaypoints(route: Route, context: AppContext): Deferred<RouteWaypoints> {
         val id = route.waypointsId
         val gzip = gzipSupported()
         val (gzipFolder, gzipSuffix) = if (gzip) "_gzip" to ".gz" else "" to ""
@@ -2017,7 +2066,7 @@ class Registry {
         val isKmbCtbJoint = route.isKmbCtbJoint
         val stops = route.stops[co]!!.map { it.asStop(context)!! }
         return CoroutineScope(Dispatchers.IO).async {
-            return@async cachedWaypoints.getOrPut(id) {
+            return@async cachedWaypoints.getOrPut(route) {
                 getJSONResponse<JsonObject>("https://waypoints.hkbuseta.com/waypoints$gzipFolder/$id.json$gzipSuffix", gzip)
                     ?.optJsonArray("features")
                     ?.optJsonObject(0)
@@ -2027,21 +2076,25 @@ class Registry {
                         val path = it
                             .map { l -> l.jsonArray.map { e -> Coordinates.fromJsonArray(e.jsonArray, true) } }
                             .run {
-                                if (size == 1 && stops.size > 2) {
+                                if (size == 1) {
                                     var path = first()
                                     val firstStopLocation = stops.first().location
                                     if (path.first().distance(firstStopLocation) > path.last().distance(firstStopLocation)) {
                                         path = path.reversed()
                                     }
-                                    path.splitByClosestPoints(stops.map { s -> s.location })
+                                    if (stops.size > 2) {
+                                        path.splitByClosestPoints(stops.map { s -> s.location })
+                                    } else {
+                                        listOf(element = path)
+                                    }
                                 } else {
                                     this
                                 }
                             }
                             .map { p -> p.simplified() }
-                        RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, path, true)
+                        RouteWaypoints(routeNumber, co, isKmbCtbJoint, stops, path, true)
                     }
-                    ?: RouteWaypoints(routeNumber, co, isKmbCtbJoint, provideStops?: stops, listOf(stops.map { it.location }), false)
+                    ?: RouteWaypoints(routeNumber, co, isKmbCtbJoint, stops, listOf(element = stops.map { it.location }), false)
             }
         }
     }
@@ -2413,7 +2466,7 @@ class Registry {
     }
 
     private suspend fun etaQueryKmb(typhoonInfo: TyphoonInfo, rawStopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext): ETAQueryResult {
-        val allStops = getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion, emptySet())
+        val allStops = getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion, false)
         val stopData = allStops.first { it.stopId == rawStopId }
         val sameStops = allStops
             .asSequence()
@@ -2436,7 +2489,7 @@ class Registry {
                 }
                 .toList()
         } else {
-            listOf(rawStopId to "")
+            listOf(element = rawStopId to "")
         }
         val lines: MutableMap<Int, ETALineEntry> = mutableMapOf()
         val isMtrEndOfLine = false

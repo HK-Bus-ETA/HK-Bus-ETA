@@ -358,7 +358,7 @@ fun SearchNearbyButton(stop: Stop, route: Route, instance: AppActiveContext) {
             intent.putExtra("interchangeSearch", true)
             intent.putExtra("lat", stop.location.lat)
             intent.putExtra("lng", stop.location.lng)
-            intent.putExtra("exclude", listOf(route.routeNumber))
+            intent.putExtra("exclude", listOf(element = route.routeNumber))
             instance.startActivity(intent)
         },
         colors = ButtonDefaults.buttonColors(

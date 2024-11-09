@@ -126,7 +126,7 @@ fun <T> List<List<T>>.mergeSequences(allElements: List<T>): List<List<T>> {
 
 inline fun <T> List<T>.differenceSequence(referenceList: List<T>): List<List<T>> {
     if (isEmpty()) return emptyList()
-    if (referenceList.isEmpty()) return listOf(this)
+    if (referenceList.isEmpty()) return listOf(element = this)
     val result = mutableListOf<List<T>>()
     var index = -1
     var referenceIndex = -1

@@ -373,7 +373,7 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
         )
         val existingItems = UIApplication.sharedApplication.shortcutItems
         val newItems = if (existingItems.isNullOrEmpty()) {
-            listOf(item)
+            listOf(element = item)
         } else if (existingItems.any { it is UIApplicationShortcutItem && it.type == id }) {
             existingItems.map {
                 if (it is UIApplicationShortcutItem && it.type == id) item else it

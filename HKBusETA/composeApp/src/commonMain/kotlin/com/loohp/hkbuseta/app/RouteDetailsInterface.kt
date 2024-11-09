@@ -396,14 +396,13 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
 
     val alternateStopNamesShowing = Shared.alternateStopNamesShowingState.collectAsStateMultiplatform { Registry.getInstance(instance).setAlternateStopNames(it, instance) }
 
-    val waypointStops by remember { derivedStateOf { (if (co.isTrain) allStops else allStops.filter { it.branchIds.contains(selectedBranch) }).map { it.stop } } }
     var waypoints by remember { mutableStateOf(if (co.isTrain) route.defaultWaypoints(instance) else selectedBranch.defaultWaypoints(instance)) }
     var trafficSnapshots: Array<out List<TrafficSnapshotPoint>>? by remember { mutableStateOf(null) }
     var trafficSnapshotsLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect (selectedBranch, waypointStops) {
+    LaunchedEffect (allStops, selectedBranch) {
         CoroutineScope(Dispatchers.IO).launch {
-            val waypointsAsync = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, instance, waypointStops).await()
+            val waypointsAsync = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, instance).await()
             withContext(Dispatchers.Main) {
                 waypoints = waypointsAsync
             }

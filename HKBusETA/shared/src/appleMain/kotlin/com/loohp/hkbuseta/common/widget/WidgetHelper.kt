@@ -284,7 +284,7 @@ fun buildWidgetData(precomputedData: String): ExtendedWidgetData {
         val resolvedDestName = route.resolvedDestWithBranchWidget(false, currentBranch, resolved.index, resolved.stopId, widgetPrecomputedData.allStops)[language]
         GC.collect()
         val widgetResults = getEtaWidget(resolved.stopId, resolved.index, widgetPrecomputedData.co, route, widgetPrecomputedData)
-        val etaLines = widgetResults.lines.takeIf { it.isNotEmpty() }?: listOf((if (language == "en") "No scheduled departures" else "沒有預定班次").toWidgetLineEntry())
+        val etaLines = widgetResults.lines.takeIf { it.isNotEmpty() }?: listOf(element = (if (language == "en") "No scheduled departures" else "沒有預定班次").toWidgetLineEntry())
         val hasServices = widgetResults.hasServices
         val closestStopLabel = if (language == "en") " - Closest" else " - 最近"
         val lastUpdatedLabel = (if (language == "en") "Last Updated: " else "更新時間: ") + currentLocalDateTime().formatTimeWidget()

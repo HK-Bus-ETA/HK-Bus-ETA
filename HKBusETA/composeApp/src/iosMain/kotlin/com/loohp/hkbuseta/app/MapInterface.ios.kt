@@ -45,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.interop.UIKitView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
@@ -383,8 +382,9 @@ actual fun MapSelectInterface(
 const val DefaultAltitude: CLLocationDistance = 2500.0
 
 @OptIn(ExperimentalForeignApi::class)
-inline fun Offset.asAppleMapOffset(): CValue<CGPoint> {
-    return CGPointMake(x * -18.0, y * -18.0)
+inline fun Offset.asAppleMapOffset(image: UIImage): CValue<CGPoint> {
+    val (width, height) = image.size.useContents { width to height }
+    return CGPointMake((width * 0.5) - (width * x), (height * 0.5) - (height * y))
 }
 
 @OptIn(ExperimentalForeignApi::class)
@@ -418,8 +418,10 @@ class MapDelegate(
                 annotationView.annotation = viewForAnnotation
             }
             annotationView.canShowCallout = true
-            annotationView.image = UIImage.imageNamed(iconName)?.resize(36.0)
-            annotationView.centerOffset = anchor.asAppleMapOffset()
+            UIImage.imageNamed(iconName)?.resize(36.0)?.apply {
+                annotationView.image = this
+                annotationView.centerOffset = anchor.asAppleMapOffset(this)
+            }
             return annotationView
         }
         return null

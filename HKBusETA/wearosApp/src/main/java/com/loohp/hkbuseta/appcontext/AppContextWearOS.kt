@@ -271,7 +271,7 @@ open class AppContextWearOS internal constructor(
     }
 
     override fun removeAppShortcut(id: String) {
-        ShortcutManagerCompat.removeDynamicShortcuts(context, listOf(id))
+        ShortcutManagerCompat.removeDynamicShortcuts(context, listOf(element = id))
     }
 
     override suspend fun <T> withHighBandwidthNetwork(block: suspend () -> T): T {

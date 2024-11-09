@@ -195,7 +195,7 @@ class TimetableIntervalEntry(
     specialRouteRemark: BilingualText?,
     subEntries: List<TimetableIntervalEntry>? = null
 ): TimetableEntry(route, specialRouteRemark, start) {
-    val subEntries: List<TimetableIntervalEntry> = subEntries?: listOf(this)
+    val subEntries: List<TimetableIntervalEntry> = subEntries?: listOf(element = this)
     override val hasScheduledServices: Boolean = true
     fun mergeAfter(entry: TimetableIntervalEntry): TimetableIntervalEntry {
         return TimetableIntervalEntry(route, start, entry.end, interval merge entry.interval, specialRouteRemark, subEntries + entry.subEntries)
@@ -297,7 +297,7 @@ fun List<TimetableEntry>.currentEntry(
     maxResults: Int = Int.MAX_VALUE
 ): List<Int> {
     if (isEmpty()) return emptyList()
-    if (all { it is TimetableSpecialEntry }) return listOf(0)
+    if (all { it is TimetableSpecialEntry }) return listOf(element = 0)
     val singleEntryWindow = singleEntryActivePreWindowMinutes.minutes
     val compareMidnight = if (getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
     val compareTime = compareMidnight.atDate(time.date).let { if (it > time) it - 1.days else it }
@@ -472,7 +472,7 @@ class TimetableEntryMapBuilder(
 
     fun build(): RouteTimetable {
         if (timetableEntryMap.isEmpty()) {
-            return mapOf(OperatingWeekdays.ALL to listOf(TimetableSpecialEntry(defaultRoute, "只在特定日子提供服務/沒有時間表資訊" withEn "Service only on specific days / No timetable info", null)))
+            return mapOf(OperatingWeekdays.ALL to listOf(element = TimetableSpecialEntry(defaultRoute, "只在特定日子提供服務/沒有時間表資訊" withEn "Service only on specific days / No timetable info", null)))
         }
         val merged: MutableMap<OperatingWeekdays, List<TimetableEntry>> = mutableMapOf()
         var current: Pair<MutableSet<DayOfWeek>, List<TimetableEntry>>? = null
@@ -501,7 +501,7 @@ class TimetableEntryMapBuilder(
             val (firstEntry, secondEntry) = if (routeOrder.indexOf { it == a.route } > routeOrder.indexOf { it == b.route }) b to a else a to b
             if (firstEntry.route.co.firstCo() == Operator.KMB && firstEntry.route.serviceType == secondEntry.route.serviceType) {
                 when (firstEntry) {
-                    is TimetableSingleEntry -> listOf(firstEntry)
+                    is TimetableSingleEntry -> listOf(element = firstEntry)
                     is TimetableIntervalEntry -> {
                         if (secondEntry is TimetableIntervalEntry) {
                             buildList {
@@ -514,10 +514,10 @@ class TimetableEntryMapBuilder(
                                 }
                             }
                         } else {
-                            listOf(firstEntry)
+                            listOf(element = firstEntry)
                         }
                     }
-                    else -> listOf(firstEntry)
+                    else -> listOf(element = firstEntry)
                 }
             } else {
                 listOf(a, b)

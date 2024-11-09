@@ -280,7 +280,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
@@ -960,23 +959,30 @@ fun ListStopsBottomSheet(
                                     }.asAnnotatedString()
                                 )
                             }
-                            ActionRow(
-                                onClick = {
-                                    scope.launch {
-                                        val result = copyToClipboard(stopData.stopId)
-                                        sheetState.hide()
-                                        sheetType = BottomSheetType.NONE
-                                        instance.showToastText(if (result) {
-                                            if (Shared.language == "en") "Copied to clipboard" else "已複製到剪貼簿"
-                                        } else {
-                                            if (Shared.language == "en") "Failed to copy to clipboard" else "無法複製到剪貼簿"
-                                        }, ToastDuration.SHORT)
-                                    }
-                                },
-                                icon = PlatformIcons.Outlined.Code,
-                                text = (if (Shared.language == "en") "Copy Stop ID" else "複製 Stop ID").asAnnotatedString(),
-                                subText = stopData.stopId.asAnnotatedString()
-                            )
+                            for ((stopId, branch) in stopData.mergedStopIds) {
+                                val subText = if (stopData.mergedStopIds.size <= 1) {
+                                    stopId
+                                } else {
+                                    "$stopId (${branch.resolveSpecialRemark(instance, RemarkType.LABEL_ALL)[Shared.language]})"
+                                }
+                                ActionRow(
+                                    onClick = {
+                                        scope.launch {
+                                            val result = copyToClipboard(stopId)
+                                            sheetState.hide()
+                                            sheetType = BottomSheetType.NONE
+                                            instance.showToastText(if (result) {
+                                                if (Shared.language == "en") "Copied to clipboard" else "已複製到剪貼簿"
+                                            } else {
+                                                if (Shared.language == "en") "Failed to copy to clipboard" else "無法複製到剪貼簿"
+                                            }, ToastDuration.SHORT)
+                                        }
+                                    },
+                                    icon = PlatformIcons.Outlined.Code,
+                                    text = (if (Shared.language == "en") "Copy Stop ID" else "複製 Stop ID").asAnnotatedString(),
+                                    subText = subText.asAnnotatedString()
+                                )
+                            }
                         }
                     }
                 )

@@ -102,7 +102,7 @@ open class FormattedText(
             0 -> this
             1 -> {
                 val first = content[0]
-                FormattedText(listOf(FormattedTextContent(first.string.trim(), first.style)))
+                FormattedText(listOf(element = FormattedTextContent(first.string.trim(), first.style)))
             }
             else -> {
                 val newContent = content.toMutableList()
@@ -122,7 +122,7 @@ open class FormattedText(
             0 -> this
             1 -> {
                 val first = content[0]
-                FormattedText(listOf(FormattedTextContent(first.string.trim(predicate), first.style)))
+                FormattedText(listOf(element = FormattedTextContent(first.string.trim(predicate), first.style)))
             }
             else -> {
                 val newContent = content.toMutableList()

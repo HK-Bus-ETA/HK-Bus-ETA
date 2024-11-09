@@ -56,7 +56,7 @@ object ScreenState {
 
 object HistoryStack {
 
-    val historyStack: MutableStateFlow<List<AppActiveContextCompose>> = MutableStateFlow(listOf(initialScreen()))
+    val historyStack: MutableStateFlow<List<AppActiveContextCompose>> = MutableStateFlow(listOf(element = initialScreen()))
 
     fun popHistoryStack() {
         val stack = historyStack.value.toMutableList()
@@ -69,7 +69,7 @@ object HistoryStack {
     }
 
     fun clearAll() {
-        historyStack.value = listOf(initialScreen())
+        historyStack.value = listOf(element = initialScreen())
     }
 
 }

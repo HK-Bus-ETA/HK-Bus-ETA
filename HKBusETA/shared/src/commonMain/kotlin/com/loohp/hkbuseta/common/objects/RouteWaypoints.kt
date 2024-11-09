@@ -34,7 +34,7 @@ data class RouteWaypoints(
     val co: Operator,
     val isKmbCtbJoint: Boolean,
     val stops: List<Stop>,
-    val paths: List<List<Coordinates>> = listOf(stops.map { it.location }),
+    val paths: List<List<Coordinates>> = listOf(element = stops.map { it.location }),
     val isHighRes: Boolean,
 )
 

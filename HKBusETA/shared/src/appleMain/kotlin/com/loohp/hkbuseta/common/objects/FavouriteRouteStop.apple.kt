@@ -114,8 +114,9 @@ fun FavouriteRouteStop.buildWidgetPrecomputedData(): WidgetPrecomputedData {
             )
         }
         co === Operator.KMB -> {
-            val stopData = allStops.first { it.stopId == stopId }
-            val stopIds = allStops
+            val nonMergingAllStops = registry.getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion, false)
+            val stopData = nonMergingAllStops.first { it.stopId == stopId }
+            val stopIds = nonMergingAllStops
                 .asSequence()
                 .filter { it.stop.name == stopData.stop.name && it.stop.location.distance(stopData.stop.location) < 0.1 }
                 .distinctBy(

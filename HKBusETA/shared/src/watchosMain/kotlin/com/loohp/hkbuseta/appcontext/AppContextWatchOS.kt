@@ -124,7 +124,7 @@ import kotlin.uuid.Uuid
 
 object HistoryStack {
 
-    val historyStack: MutableNonNullStateFlowList<AppActiveContextWatchOS> = MutableStateFlow(listOf(AppActiveContextWatchOS.INIT_ENTRY)).wrapList()
+    val historyStack: MutableNonNullStateFlowList<AppActiveContextWatchOS> = MutableStateFlow(listOf(element = AppActiveContextWatchOS.INIT_ENTRY)).wrapList()
 
     fun popHistoryStack() {
         val stack = historyStack.value.toMutableList()

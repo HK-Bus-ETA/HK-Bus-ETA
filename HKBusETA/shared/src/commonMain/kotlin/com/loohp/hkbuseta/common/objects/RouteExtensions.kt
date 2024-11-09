@@ -44,6 +44,7 @@ import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.eitherContains
 import com.loohp.hkbuseta.common.utils.getRouteProportions
 import com.loohp.hkbuseta.common.utils.indexesOf
+import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.common.utils.mergeSequences
 import com.loohp.hkbuseta.common.utils.nonNullEquals
 import com.loohp.hkbuseta.common.utils.outOfOrderSequence
@@ -359,7 +360,7 @@ fun Route.getCircularPivotIndex(stops: List<Registry.StopData>): Int {
 fun BilingualText.extractCircularBracket(): BilingualText {
     val zh = circularBracketRegex.findAll(this.zh).lastOrNull()?.groupValues?.get(1)
     val en = circularBracketRegex.findAll(this.en).lastOrNull()?.groupValues?.get(1)
-    return (zh?: "(循環線)") withEn (en?: "(Circular)")
+    return (zh?: "") withEn (en?: "")
 }
 
 fun Route.resolvedDest(prependTo: Boolean): BilingualText {
@@ -476,7 +477,11 @@ fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, sel
     }
 }
 
-val Route.isCircular: Boolean get() = dest.zh.run { contains("循環線") || contains("循環行走") }
+val Route.isCircular: Boolean get() {
+    if (dest.zh.run { contains("循環線") || contains("循環行走") }) return true
+    val stops = stops[co.firstCo()]
+    return stops != null && stops.size > 1 && stops.first() == stops.last()
+}
 
 val Route.journeyTimeCircular: Int? get() = journeyTime?.let { if (isCircular) it * 2 else it }
 
@@ -1054,7 +1059,7 @@ fun Route.findSimilarRoutes(co: Operator, context: AppContext): List<RouteSearch
         routeNumber.lastOrNull()?.takeIf { c -> c.isLetter() } != it.route!!.routeNumber.lastOrNull()?.takeIf { c -> c.isLetter() }
     }.thenBy {
         similarities.getOrPut(it.route!!.routeGroupKey(it.co)) {
-            val s = it.route!!.stops[it.co]?.takeIf { s -> s.isNotEmpty() }?: listOf("----")
+            val s = it.route!!.stops[it.co]?.takeIf { s -> s.isNotEmpty() }?: listOf(element = "----")
             max(stops.sequenceSimilarity(s, equality), s.sequenceSimilarity(stops, equality))
         }
     })

@@ -183,7 +183,7 @@ private suspend fun etaQueryKmbCtbJoint(scope: CoroutineScope, stopId: String, s
 }
 
 private suspend fun etaQueryKmb(rawStopId: String, stopIndex: Int, route: Route, precomputedData: WidgetPrecomputedData): WidgetETAResult {
-    val stopIds = precomputedData.kmbStopIds?: listOf(rawStopId)
+    val stopIds = precomputedData.kmbStopIds?: listOf(element = rawStopId)
     val unsortedLines: MutableList<LocalDateTime> = mutableListOf()
     for (stopId in stopIds) {
         val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
@@ -348,7 +348,7 @@ data class GMBETAEntry(
 )
 
 private suspend fun etaQueryGmb(stopId: String, stopIndex: Int, co: Operator, route: Route, precomputedData: WidgetPrecomputedData): WidgetETAResult {
-    val branches = precomputedData.gmbBranches?: listOf(route.gtfsId)
+    val branches = precomputedData.gmbBranches?: listOf(element = route.gtfsId)
     val data = getJSONResponse<JsonObject>("https://data.etagmb.gov.hk/eta/stop/$stopId")
     val stopSequences: MutableMap<String, MutableSet<Int>> = mutableMapOf()
     val busList: MutableList<GMBETAEntry> = mutableListOf()
@@ -396,7 +396,7 @@ private suspend fun etaQueryLrt(stopId: String, route: Route, precomputedData: W
     val stopsList = route.stops[Operator.LRT]!!
     return if (stopsList.indexOf(stopId) + 1 >= stopsList.size) {
         WidgetETAResult(
-            lines = listOf(route.endOfLineText[language].toWidgetLineEntry()),
+            lines = listOf(element = route.endOfLineText[language].toWidgetLineEntry()),
             hasServices = false
         )
     } else {
@@ -436,7 +436,7 @@ private suspend fun etaQueryMtr(stopId: String, route: Route, precomputedData: W
     val bound = route.bound[Operator.MTR]
     return if (precomputedData.isMtrEndOfLine == true) {
         WidgetETAResult(
-            lines = listOf(route.endOfLineText[language].toWidgetLineEntry()),
+            lines = listOf(element = route.endOfLineText[language].toWidgetLineEntry()),
             hasServices = false
         )
     } else {
@@ -527,7 +527,7 @@ private suspend fun etaQueryFortuneFerry(stopId: String, co: Operator, route: Ro
     val index = stops.indexOf(stopId)
     return if (index + 1 >= stops.size) {
         WidgetETAResult(
-            lines = listOf(route.endOfLineText[language].toWidgetLineEntry()),
+            lines = listOf(element = route.endOfLineText[language].toWidgetLineEntry()),
             hasServices = false
         )
     } else {
@@ -536,7 +536,7 @@ private suspend fun etaQueryFortuneFerry(stopId: String, co: Operator, route: Ro
         val data = getJSONResponse<JsonObject>("https://www.hongkongwatertaxi.com.hk/eta/?route=${stop}${nextStop}")!!
         if (data.optString("generated_timestamp").takeIf { it.isNotBlank() && !it.equals("null", true) }?.parseInstant()?.toLocalDateTime(hongKongTimeZone)?.let { it < now } == true) {
             WidgetETAResult(
-                lines = listOf((if (language == "en") "Check Timetable" else "查看時間表").toWidgetLineEntry()),
+                lines = listOf(element = (if (language == "en") "Check Timetable" else "查看時間表").toWidgetLineEntry()),
                 hasServices = true
             )
         } else {
