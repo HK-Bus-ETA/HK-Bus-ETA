@@ -963,7 +963,7 @@ fun ListStopsBottomSheet(
                                 val subText = if (stopData.mergedStopIds.size <= 1) {
                                     stopId
                                 } else {
-                                    "$stopId (${branch.resolveSpecialRemark(instance, RemarkType.LABEL_ALL)[Shared.language]})"
+                                    "$stopId (${branch.resolveSpecialRemark(instance, RemarkType.LABEL_MAIN_BRANCH)[Shared.language]})"
                                 }
                                 ActionRow(
                                     onClick = {
