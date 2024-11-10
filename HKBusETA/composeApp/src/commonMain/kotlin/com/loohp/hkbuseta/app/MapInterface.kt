@@ -28,6 +28,7 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
+import com.loohp.hkbuseta.common.objects.getCircularPivotIndex
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.buildImmutableList
@@ -66,4 +67,13 @@ fun RouteWaypoints.buildStopListMapping(allStops: List<Registry.StopData>): Immu
             }
         }
     }
+}
+
+fun Route.isStopOnOtherSideOfPivot(stopIndex: Int, selectedStop: Int, allStops: List<Registry.StopData>, indexMap: ImmutableList<Int>): Boolean {
+    val pivotIndex = ((getCircularPivotIndex(allStops) - 1) downTo 0).asSequence().map { indexMap.indexOf(it) }.firstOrNull { it >= 0 }?: return false
+    if (pivotIndex == stopIndex) return false
+    val selectedIndex = ((selectedStop - 1) downTo 0).asSequence().map { indexMap.indexOf(it) }.firstOrNull { it >= 0 }?: 0
+    val selectedAfterPivot = selectedIndex >= pivotIndex
+    val stopAfterPivot = stopIndex >= pivotIndex
+    return selectedAfterPivot != stopAfterPivot
 }
