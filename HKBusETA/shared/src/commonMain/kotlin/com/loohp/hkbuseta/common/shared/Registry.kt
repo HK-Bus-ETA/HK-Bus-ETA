@@ -2156,7 +2156,7 @@ class Registry {
                     co === Operator.LRT -> etaQueryLrt(typhoonInfo, stopId, stopIndex, co, route, options)
                     co === Operator.MTR -> etaQueryMtr(typhoonInfo, stopId, co, route)
                     co === Operator.SUNFERRY -> etaQuerySunFerry(typhoonInfo, stopId, co, route)
-                    co === Operator.HKKF -> etaQueryHkkf(typhoonInfo, co, route)
+                    co === Operator.HKKF -> etaQueryHkkf(typhoonInfo, stopId, co, route)
                     co === Operator.FORTUNEFERRY -> etaQueryFortuneFerry(typhoonInfo, stopId, co, route)
                     else -> throw IllegalStateException("Unknown Operator ${co.name}")
                 }
@@ -3422,77 +3422,84 @@ class Registry {
         return ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, co, lines)
     }
 
-    private suspend fun etaQueryHkkf(typhoonInfo: TyphoonInfo, co: Operator, route: Route): ETAQueryResult {
+    private suspend fun etaQueryHkkf(typhoonInfo: TyphoonInfo, stopId: String, co: Operator, route: Route): ETAQueryResult {
         val lines: MutableMap<Int, ETALineEntry> = mutableMapOf()
-        val isMtrEndOfLine = false
+        var isMtrEndOfLine = false
         val language = Shared.language
         lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(language, null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
         val isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
-        val routeId = route.routeNumber.substring(2, 3)
-        val bound = if (route.bound[co] == "O") "outbound" else "inbound"
-        val data = getJSONResponse<JsonObject>("https://hkkfeta.com/opendata/eta/$routeId/$bound")!!.optJsonArray("data")!!
-        var i = 1
-        for (element in data) {
-            val entryData = element.jsonObject
-            val eta = entryData.optString("ETA")
-            val time = if (eta.isNotEmpty() && !eta.equals("null", true)) eta.parseInstant().toLocalDateTime(hongKongTimeZone) else null
-            val mins = if (time == null) Double.NEGATIVE_INFINITY else (time.epochSeconds - currentEpochSeconds) / 60.0
-            val remark = entryData.optString("rmk_${if (language == "en") "en" else "tc"}").takeIf { it.isNotBlank() && !it.equals("null", true) }?: ""
-            val minsRounded = mins.roundToInt()
-            if (minsRounded < -5) continue
-            val seq = i++
-            var timeMessage = "".asFormattedText()
-            var remarkMessage = "".asFormattedText()
-            if (minsRounded > 59) {
-                val clockTime = currentLocalDateTime() + minsRounded.minutes
-                timeMessage = "${clockTime.hour.pad(2)}:${clockTime.minute.pad(2)}".asFormattedText(BoldStyle)
-            } else if (language == "en") {
-                if (minsRounded > 0) {
-                    timeMessage = buildFormattedString {
-                        append(minsRounded.toString(), BoldStyle)
-                        append(" Min.", SmallSize)
+        val stops = route.stops[co]!!
+        val index = stops.indexOf(stopId)
+        if (index + 1 >= stops.size) {
+            isMtrEndOfLine = true
+            lines[1] = ETALineEntry.textEntry(route.endOfLineText[language])
+        } else {
+            val routeId = route.routeNumber.substring(2, 3)
+            val bound = if (route.bound[co] == "O") "outbound" else "inbound"
+            val data = getJSONResponse<JsonObject>("https://hkkfeta.com/opendata/eta/$routeId/$bound")!!.optJsonArray("data")!!
+            var i = 1
+            for (element in data) {
+                val entryData = element.jsonObject
+                val eta = entryData.optString("ETA")
+                val time = if (eta.isNotEmpty() && !eta.equals("null", true)) eta.parseInstant().toLocalDateTime(hongKongTimeZone) else null
+                val mins = if (time == null) Double.NEGATIVE_INFINITY else (time.epochSeconds - currentEpochSeconds) / 60.0
+                val remark = entryData.optString("rmk_${if (language == "en") "en" else "tc"}").takeIf { it.isNotBlank() && !it.equals("null", true) }?: ""
+                val minsRounded = mins.roundToInt()
+                if (minsRounded < -5) continue
+                val seq = i++
+                var timeMessage = "".asFormattedText()
+                var remarkMessage = "".asFormattedText()
+                if (minsRounded > 59) {
+                    val clockTime = currentLocalDateTime() + minsRounded.minutes
+                    timeMessage = "${clockTime.hour.pad(2)}:${clockTime.minute.pad(2)}".asFormattedText(BoldStyle)
+                } else if (language == "en") {
+                    if (minsRounded > 0) {
+                        timeMessage = buildFormattedString {
+                            append(minsRounded.toString(), BoldStyle)
+                            append(" Min.", SmallSize)
+                        }
+                    } else if (minsRounded > -60) {
+                        timeMessage = buildFormattedString {
+                            append("-", BoldStyle)
+                            append(" Min.", SmallSize)
+                        }
                     }
-                } else if (minsRounded > -60) {
-                    timeMessage = buildFormattedString {
-                        append("-", BoldStyle)
-                        append(" Min.", SmallSize)
-                    }
-                }
-            } else {
-                if (minsRounded > 0) {
-                    timeMessage = buildFormattedString {
-                        append(minsRounded.toString(), BoldStyle)
-                        append(" 分鐘", SmallSize)
-                    }
-                } else if (minsRounded > -60) {
-                    timeMessage = buildFormattedString {
-                        append("-", BoldStyle)
-                        append(" 分鐘", SmallSize)
-                    }
-                }
-            }
-            if (remark.isNotEmpty()) {
-                remarkMessage += buildFormattedString {
-                    if (timeMessage.isEmpty()) {
-                        append(remark)
-                    } else {
-                        append(" (${remark})", SmallSize)
-                    }
-                }
-            }
-            remarkMessage = if (timeMessage.isEmpty() && remarkMessage.isEmpty()) {
-                if (seq == 1) {
-                    getNoScheduledDepartureMessage(language, remarkMessage, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
                 } else {
-                    buildFormattedString {
-                        append("", BoldStyle)
-                        append("-")
+                    if (minsRounded > 0) {
+                        timeMessage = buildFormattedString {
+                            append(minsRounded.toString(), BoldStyle)
+                            append(" 分鐘", SmallSize)
+                        }
+                    } else if (minsRounded > -60) {
+                        timeMessage = buildFormattedString {
+                            append("-", BoldStyle)
+                            append(" 分鐘", SmallSize)
+                        }
                     }
                 }
-            } else {
-                "".asFormattedText(BoldStyle) + remarkMessage
+                if (remark.isNotEmpty()) {
+                    remarkMessage += buildFormattedString {
+                        if (timeMessage.isEmpty()) {
+                            append(remark)
+                        } else {
+                            append(" (${remark})", SmallSize)
+                        }
+                    }
+                }
+                remarkMessage = if (timeMessage.isEmpty() && remarkMessage.isEmpty()) {
+                    if (seq == 1) {
+                        getNoScheduledDepartureMessage(language, remarkMessage, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                    } else {
+                        buildFormattedString {
+                            append("", BoldStyle)
+                            append("-")
+                        }
+                    }
+                } else {
+                    "".asFormattedText(BoldStyle) + remarkMessage
+                }
+                lines[seq] = ETALineEntry.etaEntry(ETALineEntryText.bus(timeMessage, remarkMessage), toShortText(language, minsRounded.toLong(), 0), route.routeNumber, mins, minsRounded.toLong())
             }
-            lines[seq] = ETALineEntry.etaEntry(ETALineEntryText.bus(timeMessage, remarkMessage), toShortText(language, minsRounded.toLong(), 0), route.routeNumber, mins, minsRounded.toLong())
         }
         return ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, co, lines)
     }

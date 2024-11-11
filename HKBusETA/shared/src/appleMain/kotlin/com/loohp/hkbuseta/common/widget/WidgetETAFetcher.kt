@@ -68,7 +68,7 @@ fun getEtaWidget(stopId: String, stopIndex: Int, co: Operator, route: Route, pre
                 co === Operator.LRT -> etaQueryLrt(stopId, route, precomputedData)
                 co === Operator.MTR -> etaQueryMtr(stopId, route, precomputedData)
                 co === Operator.SUNFERRY -> etaQuerySunFerry(stopId, co, route)
-                co === Operator.HKKF -> etaQueryHkkf(co, route)
+                co === Operator.HKKF -> etaQueryHkkf(stopId, co, route)
                 co === Operator.FORTUNEFERRY -> etaQueryFortuneFerry(stopId, co, route, precomputedData)
                 else -> throw IllegalStateException("Unknown Operator ${co.name}")
             }
@@ -500,25 +500,34 @@ private suspend fun etaQuerySunFerry(stopId: String, co: Operator, route: Route)
     )
 }
 
-private suspend fun etaQueryHkkf(co: Operator, route: Route): WidgetETAResult {
-    val routeId = route.routeNumber.substring(2, 3)
-    val bound = if (route.bound[co] == "O") "outbound" else "inbound"
-    val data = getJSONResponse<JsonObject>("https://hkkfeta.com/opendata/eta/$routeId/$bound")!!.optJsonArray("data")!!
-    val lines = mutableListOf<WidgetLineEntry>()
-    for (element in data) {
-        val entryData = element.jsonObject
-        val eta = entryData.optString("ETA")
-        val time = if (eta.isNotEmpty() && !eta.equals("null", true)) eta.parseInstant().toLocalDateTime(
-            hongKongTimeZone
-        ) else null
-        val mins = if (time == null) Double.NEGATIVE_INFINITY else (time.epochSeconds - currentEpochSeconds) / 60.0
-        if (mins.roundToInt() < -5) continue
-        lines.add(currentLocalDateTime(mins.minutes).toWidgetLineEntry())
+private suspend fun etaQueryHkkf(stopId: String, co: Operator, route: Route): WidgetETAResult {
+    val stops = route.stops[co]!!
+    val index = stops.indexOf(stopId)
+    return if (index + 1 >= stops.size) {
+        WidgetETAResult(
+            lines = emptyList(),
+            hasServices = false
+        )
+    } else {
+        val routeId = route.routeNumber.substring(2, 3)
+        val bound = if (route.bound[co] == "O") "outbound" else "inbound"
+        val data = getJSONResponse<JsonObject>("https://hkkfeta.com/opendata/eta/$routeId/$bound")!!.optJsonArray("data")!!
+        val lines = mutableListOf<WidgetLineEntry>()
+        for (element in data) {
+            val entryData = element.jsonObject
+            val eta = entryData.optString("ETA")
+            val time = if (eta.isNotEmpty() && !eta.equals("null", true)) eta.parseInstant().toLocalDateTime(
+                hongKongTimeZone
+            ) else null
+            val mins = if (time == null) Double.NEGATIVE_INFINITY else (time.epochSeconds - currentEpochSeconds) / 60.0
+            if (mins.roundToInt() < -5) continue
+            lines.add(currentLocalDateTime(mins.minutes).toWidgetLineEntry())
+        }
+        WidgetETAResult(
+            lines = lines,
+            hasServices = lines.isNotEmpty()
+        )
     }
-    return WidgetETAResult(
-        lines = lines,
-        hasServices = lines.isNotEmpty()
-    )
 }
 
 private suspend fun etaQueryFortuneFerry(stopId: String, co: Operator, route: Route, precomputedData: WidgetPrecomputedData): WidgetETAResult {
