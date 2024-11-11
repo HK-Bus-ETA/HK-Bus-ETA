@@ -103,7 +103,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
     val compareMidnight = remember(timetableData) { if (timetableData.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight }
     val weekday by remember(timetableData, compareMidnight) { derivedStateOf { now.dayOfWeek(Registry.getInstance(instance).getHolidays(), compareMidnight) } }
     val timetableKeysSorted by remember(timetableData) { derivedStateOf { timetableData.keys.sorted() } }
-    val timetableCurrentEntries by remember(timetableData) { derivedStateOf { timetableKeysSorted.associateWith { if (it.contains(weekday)) timetableData[it]!!.currentEntry(now) else emptyList() } } }
+    val timetableCurrentEntries by remember(timetableData) { derivedStateOf { timetableKeysSorted.associateWith { if (it.contains(weekday)) timetableData[it]!!.currentEntry(timetableData.routeNumber, timetableData.co, now) else emptyList() } } }
     val currentBranches by remember(timetableData) { derivedStateOf { timetableCurrentEntries.asSequence().map { (k, v) -> timetableData[k]!!.asSequence().filterIndexed { i, _ -> v.contains(i) }.map { it.route } }.flatten().toSet() } }
     val scroll = rememberScrollState()
     val hasJourneyTimeBranches by remember(routes) { derivedStateOf { routes.asSequence().filter { it.journeyTime != null }.associateWith { it.journeyTime!! } } }
@@ -270,7 +270,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                             val stars = (entry.specialRouteRemark?.let { specialDenoteChar(remarks[it]!!.second) }?: "").asAnnotatedString(style)
                             when (entry) {
                                 is TimetableIntervalEntry -> {
-                                    val currentSubIndexes by remember(entry) { derivedStateOf { if (weekdays.contains(weekday)) entry.subEntries.currentEntry(now) else emptyList() } }
+                                    val currentSubIndexes by remember(entry) { derivedStateOf { if (weekdays.contains(weekday)) entry.subEntries.currentEntry(timetableData.routeNumber, timetableData.co, now) else emptyList() } }
                                     val subDisplayEntries: List<TimetableDisplayEntries>? = if (entry.subEntries.size > 1) {
                                         buildList {
                                             for ((subIndex, subEntry) in entry.subEntries.withIndex()) {

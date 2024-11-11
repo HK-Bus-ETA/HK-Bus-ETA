@@ -27,6 +27,7 @@ import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.firstCo
+import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isNotBlank
 import com.loohp.hkbuseta.common.objects.joinBilingualText
 import com.loohp.hkbuseta.common.objects.journeyTimeCircular
@@ -44,7 +45,19 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 
-typealias RouteTimetable = Map<OperatingWeekdays, List<TimetableEntry>>
+class RouteTimetable(
+    val routeNumber: String,
+    val co: Operator,
+    timetable: Map<OperatingWeekdays, List<TimetableEntry>>
+): Map<OperatingWeekdays, List<TimetableEntry>> by timetable
+
+fun routeTimetableOf(routeNumber: String, co: Operator, pair: Pair<OperatingWeekdays, List<TimetableEntry>>): RouteTimetable {
+    return RouteTimetable(routeNumber, co, mapOf(pair = pair))
+}
+
+fun routeTimetableOf(routeNumber: String, co: Operator, vararg pairs: Pair<OperatingWeekdays, List<TimetableEntry>>): RouteTimetable {
+    return RouteTimetable(routeNumber, co, pairs.toMap())
+}
 
 val LocalTime.Companion.MIDNIGHT: LocalTime by lazy { LocalTime(0, 0) }
 
@@ -171,6 +184,7 @@ sealed class TimetableEntry(
     abstract fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean
     abstract infix fun overlap(other: TimetableEntry): Boolean
     abstract fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int
+    abstract fun numberOfServicesWithin(windowStart: LocalTime, windowEnd: LocalTime, firstServiceCheck: (LocalTime) -> Boolean): Int
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is TimetableEntry) return false
@@ -204,7 +218,7 @@ class TimetableIntervalEntry(
         return "${start.hour.pad(2)}:${start.minute.pad(2)} - ${end.hour.pad(2)}:${end.minute.pad(2)}"
     }
     override fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean {
-        return start.isBetweenInclusive(windowStart, windowEnd) && end.isBetweenInclusive(windowStart, windowEnd)
+        return (start to end).isBetweenInclusive(windowStart, windowEnd)
     }
     override fun overlap(other: TimetableEntry): Boolean {
         if (other !is TimetableIntervalEntry) return false
@@ -214,7 +228,32 @@ class TimetableIntervalEntry(
         return false
     }
     override fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int {
-        return ((end - start).inWholeMinutes.toInt() / interval.middle) + if (firstServiceCheck.invoke(start)) 1 else 0
+        return if (subEntries.isNotEmpty() && subEntries.first() != this) {
+            var numberOfServices = 0
+            for ((index, entry) in subEntries.withIndex()) {
+                numberOfServices += entry.numberOfServices { index == 0 && firstServiceCheck.invoke(it) }
+            }
+            numberOfServices
+        } else {
+            ((end - start).inWholeMinutes.toInt() / interval.middle) + if (firstServiceCheck.invoke(start)) 1 else 0
+        }
+    }
+    override fun numberOfServicesWithin(windowStart: LocalTime, windowEnd: LocalTime, firstServiceCheck: (LocalTime) -> Boolean): Int {
+        return if (subEntries.isNotEmpty() && subEntries.first() != this) {
+            var numberOfServices = 0
+            for ((index, entry) in subEntries.withIndex()) {
+                numberOfServices += entry.numberOfServicesWithin(windowStart, windowEnd) { index == 0 && firstServiceCheck.invoke(it) }
+            }
+            numberOfServices
+        } else {
+            return (start to end).intersects(windowStart, windowEnd)?.let { (periodStart, periodEnd) ->
+                if (periodStart == periodEnd) {
+                    if (firstServiceCheck.invoke(periodStart)) 1 else 0
+                } else {
+                    (((periodEnd - periodStart).inWholeMinutes.toInt() / interval.middle) + if (firstServiceCheck.invoke(periodStart)) 1 else 0)
+                }
+            }?: 0
+        }
     }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -252,6 +291,9 @@ class TimetableSingleEntry(
     override fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int {
         return 1
     }
+    override fun numberOfServicesWithin(windowStart: LocalTime, windowEnd: LocalTime, firstServiceCheck: (LocalTime) -> Boolean): Int {
+        return if (within(windowStart, windowEnd)) 1 else 0
+    }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is TimetableSingleEntry) return false
@@ -276,6 +318,7 @@ class TimetableSpecialEntry(
     override fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean = false
     override infix fun overlap(other: TimetableEntry): Boolean = false
     override fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int = 0
+    override fun numberOfServicesWithin(windowStart: LocalTime, windowEnd: LocalTime, firstServiceCheck: (LocalTime) -> Boolean): Int = 0
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is TimetableSpecialEntry) return false
@@ -291,6 +334,8 @@ class TimetableSpecialEntry(
 }
 
 fun List<TimetableEntry>.currentEntry(
+    routeNumber: String,
+    co: Operator,
     time: LocalDateTime,
     singleEntryActivePreWindowMinutes: Int = 60,
     searchPreWindow: IntRange = 0..0,
@@ -299,7 +344,7 @@ fun List<TimetableEntry>.currentEntry(
     if (isEmpty()) return emptyList()
     if (all { it is TimetableSpecialEntry }) return listOf(element = 0)
     val singleEntryWindow = singleEntryActivePreWindowMinutes.minutes
-    val compareMidnight = if (getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
+    val compareMidnight = if (getServiceTimeCategory(routeNumber, co).day) dayServiceMidnight else nightServiceMidnight
     val compareTime = compareMidnight.atDate(time.date).let { if (it > time) it - 1.days else it }
     val searchStart = time + searchPreWindow.first.minutes
     val searchEnd = time + searchPreWindow.last.minutes
@@ -373,28 +418,29 @@ enum class ServiceTimeCategory(
 fun RouteTimetable.getServiceTimeCategory(): ServiceTimeCategory {
     return DayOfWeek.entries.asSequence().mapNotNull { weekday ->
         asSequence().firstOrNull { it.key.contains(weekday) }?.value
-    }.flatten().toList().getServiceTimeCategory()
+    }.flatten().toList().getServiceTimeCategory(routeNumber, co)
 }
 
-fun Collection<TimetableEntry>.getServiceTimeCategory(): ServiceTimeCategory {
+fun Collection<TimetableEntry>.getServiceTimeCategory(routeNumber: String, co: Operator): ServiceTimeCategory {
+    if (co.isBus && (routeNumber.firstOrNull() == 'N' || routeNumber.lastOrNull() == 'N')) {
+        return ServiceTimeCategory.NIGHT
+    }
     val filtered = filter { it.hasScheduledServices }
-    if (filtered.isEmpty()) return ServiceTimeCategory.DAY
-
-    val diff = (0 until 24).associateWith { h ->
-        val time = LocalTime(h, 0)
-        filtered.minOf { when (it) {
-            is TimetableSingleEntry -> it.time.minIntervalMinutes(time)
-            is TimetableIntervalEntry -> if (time.isBetweenInclusive(it.start, it.end)) 0 else min(it.start.minIntervalMinutes(time), it.end.minIntervalMinutes(time))
-            else -> throw IllegalArgumentException("Invalid timetable entry type")
-        } }
+    if (filtered.isEmpty()) {
+        return ServiceTimeCategory.DAY
     }
-    val minDiff = diff.values.min()
-    val minDiffHours = diff.filter { it.value == minDiff }
-    return when {
-        minDiffHours.any { it.key in 7..20 } && minDiffHours.any { it.key in 2..4 } -> ServiceTimeCategory.TWENTY_FOUR_HOURS
-        minDiffHours.all { it.key in 22..24 || it.key in 0..7 } && minDiffHours.any { it.key in 0..6 } -> ServiceTimeCategory.NIGHT
-        else -> ServiceTimeCategory.DAY
+    if (filtered.all { it.within(LocalTime(0, 0), LocalTime(6, 0)) }) {
+        return ServiceTimeCategory.NIGHT
     }
+    if (
+        filtered.any { it.numberOfServicesWithin(LocalTime(7, 0), LocalTime(19, 59)) { true } > 0 } &&
+        filtered.any { it.numberOfServicesWithin(LocalTime(2, 0), LocalTime(3, 59)) { true } > 0 }
+    ) {
+        return ServiceTimeCategory.TWENTY_FOUR_HOURS
+    }
+    val dayTimeServices = filtered.sumOf { it.numberOfServicesWithin(LocalTime(5, 0), LocalTime(0, 59)) { true } }
+    val nightTimeServices = filtered.sumOf { it.numberOfServicesWithin(LocalTime(1, 0), LocalTime(4, 59)) { true } }
+    return if (nightTimeServices > dayTimeServices) ServiceTimeCategory.NIGHT else ServiceTimeCategory.DAY
 }
 
 fun RouteTimetable.getRouteProportions(
@@ -471,14 +517,16 @@ class TimetableEntryMapBuilder(
     }
 
     fun build(): RouteTimetable {
+        val routeNumber = defaultRoute.routeNumber
+        val co = defaultRoute.co.firstCo()!!
         if (timetableEntryMap.isEmpty()) {
-            return mapOf(OperatingWeekdays.ALL to listOf(element = TimetableSpecialEntry(defaultRoute, "只在特定日子提供服務/沒有時間表資訊" withEn "Service only on specific days / No timetable info", null)))
+            return routeTimetableOf(routeNumber, co, OperatingWeekdays.ALL to listOf(element = TimetableSpecialEntry(defaultRoute, "只在特定日子提供服務/沒有時間表資訊" withEn "Service only on specific days / No timetable info", null)))
         }
-        val merged: MutableMap<OperatingWeekdays, List<TimetableEntry>> = mutableMapOf()
-        var current: Pair<MutableSet<DayOfWeek>, List<TimetableEntry>>? = null
         for (timetableEntries in timetableEntryMap.values) {
             mergeSimilarTimeIntervals(timetableEntries)
         }
+        val merged: MutableMap<OperatingWeekdays, List<TimetableEntry>> = mutableMapOf()
+        var current: Pair<MutableSet<DayOfWeek>, List<TimetableEntry>>? = null
         for ((weekday, timetableEntries) in timetableEntryMap) {
             when {
                 current == null -> current = mutableSetOf(weekday) to timetableEntries
@@ -492,8 +540,8 @@ class TimetableEntryMapBuilder(
         if (current?.first?.isNotEmpty() == true) {
             merged[OperatingWeekdays(current.first)] = current.second
         }
-        val compareMidnight = if (merged.values.flatten().getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
-        return merged.mapValues { (_, v) -> v.sortedWith { self, other -> when {
+        val compareMidnight = if (merged.values.flatten().getServiceTimeCategory(routeNumber, co).day) dayServiceMidnight else nightServiceMidnight
+        return RouteTimetable(routeNumber, co, merged.mapValues { (_, v) -> v.sortedWith { self, other -> when {
             self.compareTime == null -> -1
             other.compareTime == null -> 1
             else -> self.compareTime.compareToBy(other.compareTime, compareMidnight)
@@ -522,7 +570,7 @@ class TimetableEntryMapBuilder(
             } else {
                 listOf(a, b)
             }
-        } }
+        } })
     }
 
 }
@@ -577,7 +625,7 @@ fun Collection<Route>.isTimetableActive(time: LocalDateTime, serviceDayMap: Map<
     val weekday = time.dayOfWeek(holidays, compareMidnight)
     val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return false
     val jt = maxOf { it.journeyTimeCircular?: 0 }
-    return entries.currentEntry(time, 60, (-jt)..60, 1).isNotEmpty()
+    return entries.currentEntry(timetable.routeNumber, timetable.co, time, 60, (-jt)..60, 1).isNotEmpty()
 }
 
 fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): List<Route> {
@@ -593,7 +641,7 @@ fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, serviceDayMa
     val compareMidnight = if (timetable.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
     val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return toList()
-    val current = entries.currentEntry(time).takeIf { it.isNotEmpty() }?: return toList()
+    val current = entries.currentEntry(timetable.routeNumber, timetable.co, time).takeIf { it.isNotEmpty() }?: return toList()
     return entries.asSequence()
         .filterIndexed { i, _ -> current.contains(i) }
         .sortedBy { indexOfOrNull(it.route)?: Int.MAX_VALUE }
@@ -625,9 +673,9 @@ fun Collection<Route>.currentBranchStatus(time: LocalDateTime, serviceDayMap: Ma
     val weekday = time.dayOfWeek(holidays, compareMidnight)
     val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return associateWith { RouteBranchStatus.INACTIVE }
     if (entries.all { it is TimetableSpecialEntry }) return associateWith { RouteBranchStatus.NO_TIMETABLE }
-    val active = entries.currentEntry(time, 10).asSequence().map { entries[it].route }.toSet()
-    val leftTerminus = filterToSet { !active.contains(it) && it.journeyTime != null && entries.currentEntry(time, 0, (-it.journeyTimeCircular!!)..0).let { d -> d.any { i -> entries[i].route == it } } }
-    val soonBegin = filterToSet { !active.contains(it) && entries.currentEntry(time, 0, 0..60).let { d -> d.any { i -> entries[i].route == it } } }
+    val active = entries.currentEntry(timetable.routeNumber, timetable.co, time, 10).asSequence().map { entries[it].route }.toSet()
+    val leftTerminus = filterToSet { !active.contains(it) && it.journeyTime != null && entries.currentEntry(timetable.routeNumber, timetable.co, time, 0, (-it.journeyTimeCircular!!)..0).let { d -> d.any { i -> entries[i].route == it } } }
+    val soonBegin = filterToSet { !active.contains(it) && entries.currentEntry(timetable.routeNumber, timetable.co, time, 0, 0..60).let { d -> d.any { i -> entries[i].route == it } } }
     return associateWith { when {
         active.contains(it) -> RouteBranchStatus.ACTIVE
         leftTerminus.contains(it) && soonBegin.contains(it) -> if (entries.all { e -> e.route != it || e is TimetableSingleEntry }) RouteBranchStatus.ACTIVE else RouteBranchStatus.HOUR_GAP

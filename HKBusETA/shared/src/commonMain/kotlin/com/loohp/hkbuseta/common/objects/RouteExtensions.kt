@@ -1003,6 +1003,7 @@ fun RouteSearchResultEntry.findReverse(context: AppContext): RouteSearchResultEn
             val last = lastId.asStop(context)!!.location
             val predicate: (String, Route, Operator) -> Boolean = predicate@{ _, r, c ->
                 if (co != c) return@predicate false
+                if (co === Operator.NLB && r.nlbId == route!!.nlbId) return@predicate false
                 val routeStops = r.stops[c]?.takeIf { it.size > 1 }?: return@predicate false
                 val routeFirstStopId = routeStops.first()
                 val routeLastStopId = routeStops.last()

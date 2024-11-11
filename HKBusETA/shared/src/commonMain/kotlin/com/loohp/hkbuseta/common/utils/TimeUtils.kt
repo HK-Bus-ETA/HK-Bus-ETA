@@ -35,6 +35,8 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
@@ -42,6 +44,7 @@ import kotlin.time.Duration.Companion.days
 expect val hongKongZoneId: String
 
 val hongKongTimeZone: TimeZone get() = TimeZone.of(hongKongZoneId)
+val secondsInDay: Int = 1.days.inWholeSeconds.toInt()
 
 private val weekdayNames = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
@@ -96,6 +99,17 @@ fun LocalTime.nextLocalDateTimeAfter(after: LocalDateTime): LocalDateTime {
     return if (timeAtDate < after) timeAtDate + 1.days else timeAtDate
 }
 
+fun LocalTime.nextLocalTimeAfter(after: LocalTime, interval: Duration): LocalTime {
+    val today = currentLocalDateTime().date
+    val initialResult = atDate(today)
+    val afterDate = after.nextLocalDateTimeAfter(initialResult)
+    val difference = (afterDate - initialResult).inWholeMinutes.toInt()
+    val intervalMinutes = interval.inWholeMinutes.toInt()
+    val intervalsToAdd = (difference / intervalMinutes) + 1
+    val finalResult = initialResult + interval * intervalsToAdd
+    return finalResult.time
+}
+
 operator fun LocalDateTime.minus(other: LocalDateTime): Duration {
     val hongKongZone = hongKongTimeZone
     return this.toInstant(hongKongZone) - other.toInstant(hongKongZone)
@@ -131,10 +145,33 @@ fun LocalTime.compareToBy(other: LocalTime, midnight: LocalTime = LocalTime(0, 0
 }
 
 fun LocalTime.isBetweenInclusive(start: LocalTime, end: LocalTime): Boolean {
+    val timeSec = toSecondOfDay()
+    val startSec = start.toSecondOfDay()
+    val endSec = end.toSecondOfDay().let { if (it < startSec) it + secondsInDay else it }
+    return timeSec in startSec..endSec
+}
+
+fun Pair<LocalTime, LocalTime>.isBetweenInclusive(start: LocalTime, end: LocalTime): Boolean {
+    val timeStartSec = first.toSecondOfDay()
+    val timeEndSec = second.toSecondOfDay().let { if (it < timeStartSec) it + secondsInDay else it }
+    val startSec = start.toSecondOfDay()
+    val endSec = end.toSecondOfDay().let { if (it < startSec) it + secondsInDay else it }
+    return (startSec <= timeStartSec && timeEndSec <= endSec) || (startSec + secondsInDay <= timeStartSec && timeEndSec <= endSec + secondsInDay)
+}
+
+fun Pair<LocalTime, LocalTime>.intersects(start: LocalTime, end: LocalTime): Pair<LocalTime, LocalTime>? {
+    val timeStartSec = first.toSecondOfDay()
+    val timeEndSec = second.toSecondOfDay().let { if (it < timeStartSec) it + secondsInDay else it }
+    val startSec = start.toSecondOfDay()
+    val endSec = end.toSecondOfDay().let { if (it < startSec) it + secondsInDay else it }
     return when {
-        start == end -> this == start
-        start < end -> start < this && this < end
-        else -> this > start || this < end
+        startSec <= timeEndSec && endSec >= timeStartSec -> {
+            LocalTime.fromSecondOfDay(max(timeStartSec, startSec) % secondsInDay) to LocalTime.fromSecondOfDay(min(timeEndSec, endSec) % secondsInDay)
+        }
+        startSec + secondsInDay <= timeEndSec && endSec + secondsInDay >= timeStartSec -> {
+            LocalTime.fromSecondOfDay(max(timeStartSec, startSec + secondsInDay) % secondsInDay) to LocalTime.fromSecondOfDay(min(timeEndSec, endSec + secondsInDay) % secondsInDay)
+        }
+        else -> null
     }
 }
 
