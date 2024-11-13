@@ -8,7 +8,7 @@ class WebMap {
         this.mapElement.style.position = "absolute";
         document.body.appendChild(this.mapElement);
 
-        this.map = L.map(this.mapId).setView([22.32267, 144.17504], 13);
+        this.map = L.map(this.mapId).setView([22.2906812,114.1732862], 13);
 
         this.tileLayers = L.layerGroup().addTo(this.map);
         setTimeout(() => this.reloadTiles(language, darkMode, backgroundColor), 10);

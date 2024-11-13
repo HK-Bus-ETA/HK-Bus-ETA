@@ -1796,6 +1796,7 @@ class Registry {
                     map[line.line] = when (line.status) {
                         "green" -> TrainServiceStatus.NORMAL
                         "grey" -> TrainServiceStatus.NON_SERVICE_HOUR
+                        "typhoon" -> TrainServiceStatus.TYPHOON
                         else -> if (typhoon) TrainServiceStatus.TYPHOON else TrainServiceStatus.DISRUPTION
                     }
                 }

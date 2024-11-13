@@ -187,7 +187,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 961
+        versionCode = 966
         versionName = "2.4.7"
     }
     packaging {
