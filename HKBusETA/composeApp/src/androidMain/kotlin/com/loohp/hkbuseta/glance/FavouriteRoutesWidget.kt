@@ -126,7 +126,6 @@ import com.loohp.hkbuseta.common.utils.firstIsInstanceOrNull
 import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
-import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.getColor
@@ -564,7 +563,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
                         colorFilter = ColorFilter.tint(etaColor(instance.context).forGlance())
                     )
                 } else if (eta.isTyphoonSchedule) {
-                    val typhoonInfo by remember { Registry.getInstance(instance).typhoonInfo }.collectAsStateMultiplatform()
+                    val typhoonInfo by remember { Registry.getInstance(instance).typhoonInfo }.collectAsState()
                     Image(
                         modifier = GlanceModifier.size(25.dp),
                         contentDescription = typhoonInfo.typhoonWarningTitle,
