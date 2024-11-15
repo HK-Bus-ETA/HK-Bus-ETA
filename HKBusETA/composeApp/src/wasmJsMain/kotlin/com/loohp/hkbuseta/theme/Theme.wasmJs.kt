@@ -98,16 +98,20 @@ private fun rememberLoadFontFamilyEmitGradually(environment: ResourceEnvironment
     LaunchedEffect (Unit) {
         for ((identity, weight) in fontEntries) {
             CoroutineScope(Dispatchers.IO).launch {
-                val font = Font(
-                    identity = identity,
-                    data = FontResource("fonts/$identity.ttf").readBytes(environment),
-                    weight = weight
-                )
-                val newFonts = (fonts + font).asImmutableList()
-                val newFontFamily = FontFamily(newFonts)
-                withContext(Dispatchers.Main) {
-                    fonts = newFonts
-                    fontFamily = newFontFamily
+                try {
+                    val font = Font(
+                        identity = identity,
+                        data = FontResource("fonts/$identity.ttf").readBytes(environment),
+                        weight = weight
+                    )
+                    val newFonts = (fonts + font).asImmutableList()
+                    val newFontFamily = FontFamily(newFonts)
+                    withContext(Dispatchers.Main) {
+                        fonts = newFonts
+                        fontFamily = newFontFamily
+                    }
+                } catch (e: Throwable) {
+                    e.printStackTrace()
                 }
             }
         }
@@ -126,15 +130,20 @@ private fun rememberLoadFontFamilyEmitOnComplete(environment: ResourceEnvironmen
         val fonts = buildList {
             for ((identity, weight) in fontEntries) {
                 add(CoroutineScope(Dispatchers.IO).async {
-                    Font(
-                        identity = identity,
-                        data = FontResource("fonts/$identity.ttf").readBytes(environment),
-                        weight = weight
-                    )
+                    try {
+                        Font(
+                            identity = identity,
+                            data = FontResource("fonts/$identity.ttf").readBytes(environment),
+                            weight = weight
+                        )
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                        null
+                    }
                 })
             }
         }.awaitAll()
-        fontFamily = FontFamily(fonts)
+        fontFamily = FontFamily(fonts.filterNotNull())
     }
 
     return fontFamilyState
