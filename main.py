@@ -354,7 +354,8 @@ def download_and_process_data_sheet():
                     if first_stop_id != last_stop_id:
                         first_stop = DATA_SHEET["stopList"][first_stop_id]["location"]
                         last_stop = DATA_SHEET["stopList"][last_stop_id]["location"]
-                        if haversine(first_stop["lat"], first_stop["lng"], last_stop["lat"], last_stop["lng"]) > 0.3:
+                        if haversine(first_stop["lat"], first_stop["lng"], last_stop["lat"],
+                                     last_stop["lng"]) > 0.3:
                             data["dest"]["zh"] = data["dest"]["zh"].replace("(循環線)", "").strip()
                             data["dest"]["en"] = data["dest"]["en"].replace("(Circular)", "").strip()
                             bounds["ctb"] = bounds["ctb"][-1]
@@ -414,12 +415,6 @@ def download_and_process_data_sheet():
                 dest["zh"], dest["en"] = joint_dest
         elif "ctb" in bounds:
             if route_number in kmb_ops and "kmb" not in bounds:
-                for kmb_data in kmb_ops[route_number]:
-                    if kmb_data["serviceType"] == data["serviceType"]:
-                        if kmb_data["freq"] is None and data["freq"] is not None:
-                            kmb_data["freq"] = data["freq"]
-                        if kmb_data["fares"] is None and data["fares"] is not None:
-                            kmb_data["fares"] = data["fares"]
                 keys_to_remove.append(key)
             elif route_number in ctb_circular:
                 if ctb_circular[route_number] < 0:
