@@ -361,7 +361,7 @@ fun rememberLeafletScript(
     alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
     indexMap: ImmutableList<Int>
 ): State<String> {
-    val stopNames by remember(waypoints) { derivedStateOf { waypoints.stops.mapIndexed { index, stop -> index to stop }.joinToString(",") { (index, stop) ->
+    val stopNames by remember(waypoints, alternateStopNameShowing) { derivedStateOf { waypoints.stops.mapIndexed { index, stop -> index to stop }.joinToString(",") { (index, stop) ->
         val resolvedStop = alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
         "\"<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "") + "\""
     } } }
