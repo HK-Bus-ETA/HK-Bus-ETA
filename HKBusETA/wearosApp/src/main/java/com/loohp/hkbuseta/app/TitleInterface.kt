@@ -290,7 +290,7 @@ fun BottomText(instance: AppActiveContext) {
             text = alert.content?.get(Shared.language)?: ""
         )
     }?: run {
-        Text(
+        AutoResizeText(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(25.scaledSize(instance).dp)
@@ -300,7 +300,9 @@ fun BottomText(instance: AppActiveContext) {
                 ),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colors.primary,
-            fontSize = 9F.scaledSize(instance).sp,
+            fontSizeRange = FontSizeRange(
+                max = 9F.scaledSize(instance).sp
+            ),
             text = "${if (Shared.language == "en") "HK Bus ETA" else "香港巴士到站預報"} v${instance.versionName} (${instance.versionCode})\n@LoohpJames"
         )
     }
