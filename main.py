@@ -297,6 +297,73 @@ def download_and_process_data_sheet():
     mtr_dest = {}
     mtr_stops_lists = {}
 
+    kmb_only_routes = {}
+    ctb_only_routes = {}
+    for key, data in DATA_SHEET["routeList"].items():
+        route_number = data["route"]
+        bounds = data["bound"]
+        if "kmb" in bounds and "ctb" not in bounds:
+            if route_number in kmb_only_routes:
+                kmb_only_routes[route_number].append(key)
+            else:
+                kmb_only_routes[route_number] = [key]
+        elif "ctb" in bounds and "kmb" not in bounds:
+            if route_number in ctb_only_routes:
+                ctb_only_routes[route_number].append(key)
+            else:
+                ctb_only_routes[route_number] = [key]
+
+    keys_to_remove = []
+    for route_number, kmb_route_keys in kmb_only_routes.items():
+        if route_number in ctb_only_routes:
+            for kmb_route_key in kmb_route_keys:
+                kmb_route = DATA_SHEET["routeList"][kmb_route_key]
+                for ctb_route_key in ctb_only_routes[route_number]:
+                    if ctb_route_key not in keys_to_remove:
+                        ctb_route = DATA_SHEET["routeList"][ctb_route_key]
+                        if "kmb" in kmb_route["stops"]:
+                            if len(kmb_route["stops"]["kmb"]) == len(ctb_route["stops"]["ctb"]):
+                                matches = True
+                                for i in range(len(ctb_route["stops"]["ctb"])):
+                                    ctb_stop_id = ctb_route["stops"]["ctb"][i]
+                                    kmb_stop_id = kmb_route["stops"]["kmb"][i]
+                                    if ctb_stop_id in DATA_SHEET["stopMap"]:
+                                        if ctb_stop_id in DATA_SHEET["stopMap"] and any(
+                                                array[1] == kmb_stop_id for array in
+                                                DATA_SHEET["stopMap"][ctb_stop_id]):
+                                            continue
+                                        if kmb_stop_id in DATA_SHEET["stopMap"] and any(
+                                                array[1] == ctb_stop_id for array in
+                                                DATA_SHEET["stopMap"][kmb_stop_id]):
+                                            continue
+                                    ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
+                                    kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
+                                    distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"],
+                                                         kmb_stop_location["lat"], kmb_stop_location["lng"])
+                                    if distance > 0.1:
+                                        matches = False
+                                        break
+                                if matches:
+                                    keys_to_remove.append(ctb_route_key)
+                                    kmb_route["bound"]["ctb"] = ctb_route["bound"]["ctb"]
+                                    if "ctb" not in kmb_route["co"]:
+                                        kmb_route["co"].append("ctb")
+                                    kmb_route["stops"]["ctb"] = ctb_route["stops"]["ctb"]
+                                    if "fares" not in kmb_route or kmb_route["fares"] is None:
+                                        kmb_route["fares"] = ctb_route["fares"]
+                                    if "faresHoliday" not in kmb_route or kmb_route["faresHoliday"] is None:
+                                        kmb_route["faresHoliday"] = ctb_route["faresHoliday"]
+                                    if "freq" not in kmb_route or kmb_route["freq"] is None:
+                                        kmb_route["freq"] = ctb_route["freq"]
+                                    if "gtfsId" not in kmb_route or kmb_route["gtfsId"] is None:
+                                        kmb_route["gtfsId"] = ctb_route["gtfsId"]
+                                    if "jt" not in kmb_route or kmb_route["jt"] is None:
+                                        kmb_route["jt"] = ctb_route["jt"]
+
+    for route_key in keys_to_remove:
+        if route_key in DATA_SHEET["routeList"]:
+            del DATA_SHEET["routeList"][route_key]
+
     def list_index_of(li, o):
         try:
             return li.index(o)
@@ -415,59 +482,13 @@ def download_and_process_data_sheet():
                 dest["zh"], dest["en"] = joint_dest
         elif "ctb" in bounds:
             if route_number in kmb_ops and "kmb" not in bounds:
-                kmb_bound = bounds["ctb"]
                 for kmb_data in kmb_ops[route_number]:
-                    if "kmb" in kmb_data["bound"] and "ctb" in kmb_data["bound"]:
-                        if kmb_data["bound"]["kmb"] != kmb_data["bound"]["ctb"]:
-                            if len(kmb_bound) > 1:
-                                kmb_bound = kmb_bound[::-1]
-                            else:
-                                kmb_bound = "O" if kmb_bound == "I" else "I"
-                            break
-                bounds["kmb"] = kmb_bound
-                if "ctb" in data["stops"] and data["stops"]["ctb"] is not None:
-                    kmb_stops = None
-                    for kmb_data in kmb_ops[route_number]:
-                        if "kmb" in kmb_data["stops"]:
-                            if len(kmb_data["stops"]) == len(data["stops"]["ctb"]):
-                                matches = True
-                                for i in range(len(data["stops"]["ctb"])):
-                                    ctb_stop_id = data["stops"]["ctb"][i]
-                                    kmb_stop_id = kmb_data["stops"][i]
-                                    if ctb_stop_id in DATA_SHEET["stopMap"]:
-                                        if any(array[1] == kmb_stop_id for array in DATA_SHEET["stopMap"][ctb_stop_id]):
-                                            continue
-                                        if any(array[1] == ctb_stop_id for array in DATA_SHEET["stopMap"][kmb_stop_id]):
-                                            continue
-                                    ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
-                                    kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
-                                    distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"], kmb_stop_location["lat"], kmb_stop_location["lng"])
-                                    if distance > 0.05:
-                                        matches = False
-                                        break
-                                if matches:
-                                    kmb_stops = kmb_data["stops"]
-                    if kmb_stops is None:
-                        kmb_stops = []
-                        for ctb_stop_id in data["stops"]["ctb"]:
-                            kmb_stop_id = None
-                            if ctb_stop_id in DATA_SHEET["stopMap"]:
-                                for array in DATA_SHEET["stopMap"][ctb_stop_id]:
-                                    if array[0] == "kmb":
-                                        kmb_stop_id = array[1]
-                                        break
-                            if kmb_stop_id is None:
-                                ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
-                                closest_stop_distance = None
-                                for stop_id in DATA_SHEET["stopList"]:
-                                    if len(stop_id) == 16:
-                                        stop_location = DATA_SHEET["stopList"][stop_id]["location"]
-                                        distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"], stop_location["lat"], stop_location["lng"])
-                                        if closest_stop_distance is None or distance < closest_stop_distance:
-                                            kmb_stop_id = stop_id
-                                            closest_stop_distance = distance
-                            kmb_stops.append(kmb_stop_id)
-                    data["stops"]["kmb"] = kmb_stops
+                    if kmb_data["serviceType"] == data["serviceType"]:
+                        if kmb_data["freq"] is None and data["freq"] is not None:
+                            kmb_data["freq"] = data["freq"]
+                        if kmb_data["fares"] is None and data["fares"] is not None:
+                            kmb_data["fares"] = data["fares"]
+                keys_to_remove.append(key)
             elif route_number in ctb_circular:
                 if ctb_circular[route_number] < 0:
                     if len(bounds["ctb"]) >= 2:
