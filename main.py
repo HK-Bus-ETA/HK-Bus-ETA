@@ -415,7 +415,59 @@ def download_and_process_data_sheet():
                 dest["zh"], dest["en"] = joint_dest
         elif "ctb" in bounds:
             if route_number in kmb_ops and "kmb" not in bounds:
-                keys_to_remove.append(key)
+                kmb_bound = bounds["ctb"]
+                for kmb_data in kmb_ops[route_number]:
+                    if "kmb" in kmb_data["bound"] and "ctb" in kmb_data["bound"]:
+                        if kmb_data["bound"]["kmb"] != kmb_data["bound"]["ctb"]:
+                            if len(kmb_bound) > 1:
+                                kmb_bound = kmb_bound[::-1]
+                            else:
+                                kmb_bound = "O" if kmb_bound == "I" else "I"
+                            break
+                bounds["kmb"] = kmb_bound
+                if "ctb" in data["stops"] and data["stops"]["ctb"] is not None:
+                    kmb_stops = None
+                    for kmb_data in kmb_ops[route_number]:
+                        if "kmb" in kmb_data["stops"]:
+                            if len(kmb_data["stops"]) == len(data["stops"]["ctb"]):
+                                matches = True
+                                for i in range(len(data["stops"]["ctb"])):
+                                    ctb_stop_id = data["stops"]["ctb"][i]
+                                    kmb_stop_id = kmb_data["stops"][i]
+                                    if ctb_stop_id in DATA_SHEET["stopMap"]:
+                                        if any(array[1] == kmb_stop_id for array in DATA_SHEET["stopMap"][ctb_stop_id]):
+                                            continue
+                                        if any(array[1] == ctb_stop_id for array in DATA_SHEET["stopMap"][kmb_stop_id]):
+                                            continue
+                                    ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
+                                    kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
+                                    distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"], kmb_stop_location["lat"], kmb_stop_location["lng"])
+                                    if distance > 0.05:
+                                        matches = False
+                                        break
+                                if matches:
+                                    kmb_stops = kmb_data["stops"]
+                    if kmb_stops is None:
+                        kmb_stops = []
+                        for ctb_stop_id in data["stops"]["ctb"]:
+                            kmb_stop_id = None
+                            if ctb_stop_id in DATA_SHEET["stopMap"]:
+                                for array in DATA_SHEET["stopMap"][ctb_stop_id]:
+                                    if array[0] == "kmb":
+                                        kmb_stop_id = array[1]
+                                        break
+                            if kmb_stop_id is None:
+                                ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
+                                closest_stop_distance = None
+                                for stop_id in DATA_SHEET["stopList"]:
+                                    if len(stop_id) == 16:
+                                        stop_location = DATA_SHEET["stopList"][stop_id]["location"]
+                                        distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"], stop_location["lat"], stop_location["lng"])
+                                        if closest_stop_distance is None or distance < closest_stop_distance:
+                                            kmb_stop_id = stop_id
+                                            closest_stop_distance = distance
+                            kmb_stops.append(kmb_stop_id)
+                    data["stops"]["kmb"] = kmb_stops
             elif route_number in ctb_circular:
                 if ctb_circular[route_number] < 0:
                     if len(bounds["ctb"]) >= 2:
