@@ -298,7 +298,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                 item {
                     when {
                         ambientMode -> {
-                            Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
+                            Spacer(modifier = Modifier.size(45.scaledSize(instance).dp))
                         }
                         recentSort == RecentSortMode.FORCED -> {
                             Button(
@@ -438,7 +438,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                             }
                         }
                         else -> {
-                            Spacer(modifier = Modifier.size(35.scaledSize(instance).dp))
+                            Spacer(modifier = Modifier.size(45.scaledSize(instance).dp))
                         }
                     }
                 }
@@ -542,7 +542,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                     )
                 }
                 item {
-                    Spacer(modifier = Modifier.size(40.scaledSize(instance).dp))
+                    Spacer(modifier = Modifier.size(45.scaledSize(instance).dp))
                 }
             }
             if (ambientMode) {

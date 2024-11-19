@@ -344,7 +344,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                     )
                 }
                 item {
-                    Spacer(modifier = Modifier.size(40.scaledSize(instance).dp))
+                    Spacer(modifier = Modifier.size(45.scaledSize(instance).dp))
                 }
             }
             if (ambientMode) {
