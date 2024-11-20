@@ -133,7 +133,9 @@ import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
+import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.DrawPhaseColorText
+import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
 import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
@@ -357,10 +359,15 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                                                 contentDescription = activeSortMode.routeSortMode.sortPrefixedTitle[Shared.language],
                                                 tint = MaterialTheme.colors.primary,
                                             )
-                                            Text(
+                                            AutoResizeText(
                                                 textAlign = TextAlign.Center,
                                                 color = MaterialTheme.colors.primary,
-                                                fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                                fontSizeRange = FontSizeRange(
+                                                    max = 14F.scaledSize(instance).sp.clamp(max = 14.dp)
+                                                ),
+                                                lineHeight = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                                maxLines = 2,
+                                                fontWeight = FontWeight.Bold,
                                                 text = activeSortMode.routeSortMode.extendedTitle[Shared.language]
                                             )
                                         }
@@ -391,10 +398,15 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                                                 checked = activeSortMode.filterTimetableActive,
                                                 onCheckedChange = null
                                             )
-                                            Text(
+                                            AutoResizeText(
                                                 textAlign = TextAlign.Center,
                                                 color = MaterialTheme.colors.primary,
-                                                fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                                fontSizeRange = FontSizeRange(
+                                                    max = 14F.scaledSize(instance).sp.clamp(max = 14.dp)
+                                                ),
+                                                lineHeight = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                                maxLines = 2,
+                                                fontWeight = FontWeight.Bold,
                                                 text = if (Shared.language == "en") "Prioritize In Service" else "現正服務優先"
                                             )
                                         }
@@ -425,10 +437,15 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                                                     contentDescription = filterDirections.extendedDisplayName[Shared.language],
                                                     tint = MaterialTheme.colors.primary,
                                                 )
-                                                Text(
+                                                AutoResizeText(
                                                     textAlign = TextAlign.Center,
                                                     color = MaterialTheme.colors.primary,
-                                                    fontSize = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                                    fontSizeRange = FontSizeRange(
+                                                        max = 14F.scaledSize(instance).sp.clamp(max = 14.dp)
+                                                    ),
+                                                    lineHeight = 14F.scaledSize(instance).sp.clamp(max = 14.dp),
+                                                    maxLines = 2,
+                                                    fontWeight = FontWeight.Bold,
                                                     text = filterDirections.extendedDisplayName[Shared.language]
                                                 )
                                             }
