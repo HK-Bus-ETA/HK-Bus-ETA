@@ -241,6 +241,7 @@ import com.loohp.hkbuseta.utils.fontScaledDp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
+import com.loohp.hkbuseta.utils.lastLocation
 import com.loohp.hkbuseta.utils.renderedSize
 import com.loohp.hkbuseta.utils.withAlpha
 import kotlinx.collections.immutable.ImmutableList
@@ -375,7 +376,7 @@ fun RouteMapSearchInterface(
         scope.launch { pagerState.animateScrollToPage(if (index == 0) 1 else 0) }
     }
 
-    var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(null) }
+    var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(lastLocation?.location) }
 
     LaunchedEffect (Unit) {
         while (true) {

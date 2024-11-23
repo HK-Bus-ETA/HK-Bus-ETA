@@ -146,6 +146,7 @@ expect val PlatformIcons.Outlined.DepartureBoard: Painter @Composable get
 expect val PlatformIcons.Outlined.Delete: Painter @Composable get
 expect val PlatformIcons.Outlined.DeleteForever: Painter @Composable get
 expect val PlatformIcons.Outlined.DirectionsBoat: Painter @Composable get
+expect val PlatformIcons.Outlined.DirectionsBus: Painter @Composable get
 expect val PlatformIcons.Outlined.DoubleArrow: Painter @Composable get
 expect val PlatformIcons.Outlined.Download: Painter @Composable get
 expect val PlatformIcons.Outlined.Edit: Painter @Composable get

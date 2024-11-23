@@ -59,6 +59,7 @@ import androidx.compose.material.icons.filled.NoTransfer
 import androidx.compose.material.icons.outlined.BrokenImage
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.DepartureBoard
+import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
@@ -266,6 +267,7 @@ actual inline val PlatformIcons.Outlined.DepartureBoard: Painter @Composable get
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberSystemImagePainter("trash")
 actual inline val PlatformIcons.Outlined.DeleteForever: Painter @Composable get() = rememberSystemImagePainter("trash")
 actual inline val PlatformIcons.Outlined.DirectionsBoat: Painter @Composable get() = rememberSystemImagePainter("ferry")
+actual inline val PlatformIcons.Outlined.DirectionsBus: Painter @Composable get() = rememberSystemImagePainter("bus.doubledecker")
 actual inline val PlatformIcons.Outlined.DoubleArrow: Painter @Composable get() = rememberSystemImagePainter("chevron.right.2")
 actual inline val PlatformIcons.Outlined.Download: Painter @Composable get() = rememberSystemImagePainter("arrow.down.to.line")
 actual inline val PlatformIcons.Outlined.Edit: Painter @Composable get() = rememberSystemImagePainter("pencil")

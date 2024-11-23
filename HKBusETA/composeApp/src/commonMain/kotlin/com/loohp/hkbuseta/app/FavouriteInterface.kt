@@ -141,6 +141,7 @@ import com.loohp.hkbuseta.utils.coordinatesNullableStateSaver
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.lastLocation
 import com.loohp.hkbuseta.utils.renderedSizes
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -243,15 +244,13 @@ private val favouriteRouteStopChosenTabState: MutableStateFlow<Int> = MutableSta
 @Composable
 fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
     val favouriteRouteStops by Shared.favoriteRouteStops.collectAsStateMultiplatform()
-    var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(null) }
+    var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(lastLocation?.location) }
 
     LaunchedEffect (visible) {
         if (visible) {
-            if (location == null) {
-                val result = getGPSLocation(instance, LocationPriority.FASTER).awaitWithTimeout(3000)
-                if (result?.isSuccess == true && location == null) {
-                    location = result.location!!
-                }
+            val fastResult = getGPSLocation(instance, LocationPriority.FASTER).awaitWithTimeout(3000)
+            if (fastResult?.isSuccess == true) {
+                location = fastResult.location!!
             }
             while (true) {
                 val result = getGPSLocation(instance).await()

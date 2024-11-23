@@ -50,6 +50,7 @@ import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material.icons.outlined.TextRotationNone
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Update
+import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -301,6 +302,14 @@ fun SettingsInterface(instance: AppActiveContext) {
                     onLongClick = instance.wear.handleWebpages("https://data.hkbuseta.com/PRIVACY_POLICY.html", watchFirst = true, true, haptic.common),
                     icon = Icons.Outlined.Fingerprint,
                     text = (if (Shared.language == "en") "Privacy Policy" else "隱私權聲明").asAnnotatedString()
+                )
+            }
+            item {
+                SettingsButton(
+                    instance = instance,
+                    icon = Icons.Outlined.Watch,
+                    text = (if (Shared.language == "en") "App Platform" else "應用程式平台").asAnnotatedString(),
+                    subText = "WearOS".asAnnotatedString()
                 )
             }
             item {

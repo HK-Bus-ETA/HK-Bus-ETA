@@ -25,6 +25,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -39,6 +40,8 @@ suspend inline fun <T> Deferred<T>.awaitWithTimeout(timeout: Long, defaultValue:
     return try {
         withTimeout(timeout) { await() }
     } catch (e: CancellationException) {
+        defaultValue.invoke()
+    } catch (e: TimeoutCancellationException) {
         defaultValue.invoke()
     }
 }

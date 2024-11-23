@@ -88,6 +88,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.DepartureBoard
 import androidx.compose.material.icons.outlined.DirectionsBoat
+import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material.icons.outlined.DoubleArrow
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Edit
@@ -278,6 +279,7 @@ actual inline val PlatformIcons.Outlined.DepartureBoard: Painter @Composable get
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Delete)
 actual inline val PlatformIcons.Outlined.DeleteForever: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DeleteForever)
 actual inline val PlatformIcons.Outlined.DirectionsBoat: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DirectionsBoat)
+actual inline val PlatformIcons.Outlined.DirectionsBus: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DirectionsBus)
 actual inline val PlatformIcons.Outlined.DoubleArrow: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DoubleArrow)
 actual inline val PlatformIcons.Outlined.Download: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Download)
 actual inline val PlatformIcons.Outlined.Edit: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Edit)

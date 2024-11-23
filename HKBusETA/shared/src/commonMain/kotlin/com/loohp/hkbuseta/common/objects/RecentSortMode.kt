@@ -21,8 +21,14 @@
 
 package com.loohp.hkbuseta.common.objects
 
-enum class RecentSortMode(val enabled: Boolean, val defaultSortMode: RouteSortMode = RouteSortMode.NORMAL, val forcedMode: Boolean = false) {
+enum class RecentSortMode(
+    val enabled: Boolean,
+    val defaultSortMode: RouteSortMode = RouteSortMode.NORMAL,
+    val forcedMode: Boolean = false
+) {
 
-    DISABLED(false), CHOICE(true), FORCED(true, RouteSortMode.RECENT, true);
+    DISABLED(false),
+    CHOICE(true),
+    FORCED(true, RouteSortMode.RECENT, true);
 
 }

@@ -36,10 +36,10 @@ actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGra
     callback.invoke(false)
 }
 
-actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): Deferred<LocationResult?> {
+actual fun getGPSLocationUnrecorded(appContext: AppContext, priority: LocationPriority): Deferred<LocationResult?> {
     return CompletableDeferred(LocationResult.FAILED_RESULT)
 }
 
-actual fun getGPSLocation(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit> {
+actual fun getGPSLocationUnrecorded(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit> {
     return CompletableDeferred { /* do nothing */ }
 }

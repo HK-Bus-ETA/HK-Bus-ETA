@@ -88,6 +88,7 @@ import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.Bolt
 import com.loohp.hkbuseta.compose.DarkMode
+import com.loohp.hkbuseta.compose.DirectionsBus
 import com.loohp.hkbuseta.compose.DismissRequestType
 import com.loohp.hkbuseta.compose.Download
 import com.loohp.hkbuseta.compose.Fingerprint
@@ -405,7 +406,7 @@ fun SettingsInterface(instance: AppActiveContext) {
             SettingsRow(
                 instance = instance,
                 onClick = instance.handleWebpages("https://hkbus.app", false, haptic.common),
-                icon = PlatformIcons.Outlined.Smartphone,
+                icon = PlatformIcons.Outlined.DirectionsBus,
                 text = (if (Shared.language == "en") "Special Thanks to hkbus.app" else "特別感謝 hkbus.app").asAnnotatedString()
             )
             SettingsRow(
@@ -413,6 +414,12 @@ fun SettingsInterface(instance: AppActiveContext) {
                 onClick = instance.handleWebpages("https://data.hkbuseta.com/PRIVACY_POLICY.html", false, haptic.common),
                 icon = PlatformIcons.Outlined.Fingerprint,
                 text = (if (Shared.language == "en") "Privacy Policy" else "隱私權聲明").asAnnotatedString()
+            )
+            SettingsRow(
+                instance = instance,
+                icon = PlatformIcons.Outlined.Smartphone,
+                text = (if (Shared.language == "en") "App Platform" else "應用程式平台").asAnnotatedString(),
+                subText = composePlatform.displayName.asAnnotatedString()
             )
             SettingsRow(
                 instance = instance,

@@ -21,15 +21,52 @@
 
 package com.loohp.hkbuseta.utils
 
+import co.touchlab.stately.concurrency.AtomicReference
+import co.touchlab.stately.concurrency.value
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
+import com.loohp.hkbuseta.common.utils.currentTimeMillis
+import com.loohp.hkbuseta.common.utils.getCompletedOrNull
+import com.loohp.hkbuseta.common.utils.getValue
+import com.loohp.hkbuseta.common.utils.setValue
 import kotlinx.coroutines.Deferred
+import kotlin.concurrent.Volatile
+
+
+data class LastLocationResult(
+    val locationResult: LocationResult,
+    val time: Long,
+    val priority: LocationPriority
+)
+
+private var lastLocationInternal: LastLocationResult? by AtomicReference(null)
+val lastLocation: LocationResult? get() = lastLocationInternal?.locationResult
+
+fun updateLocationLocation(location: LocationResult?, priority: LocationPriority = LocationPriority.ACCURATE) {
+    if (location != null) {
+        val now = currentTimeMillis()
+        if (lastLocationInternal == null || lastLocationInternal?.let { it.priority <= priority } == true || now - (lastLocationInternal?.time?: 0) > 60000) {
+            lastLocationInternal = LastLocationResult(location, now, priority)
+        }
+    }
+}
 
 expect fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean = true, callback: (Boolean) -> Unit)
 
 expect fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGranted: Boolean = true, callback: (Boolean) -> Unit)
 
-expect fun getGPSLocation(appContext: AppContext, priority: LocationPriority = LocationPriority.ACCURATE): Deferred<LocationResult?>
+fun getGPSLocation(appContext: AppContext, priority: LocationPriority = LocationPriority.ACCURATE): Deferred<LocationResult?> {
+    return getGPSLocationUnrecorded(appContext, priority).apply { invokeOnCompletion { updateLocationLocation(getCompletedOrNull(), priority) } }
+}
 
-expect fun getGPSLocation(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit>
+fun getGPSLocation(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit> {
+    return getGPSLocationUnrecorded(appContext, interval) {
+        listener.invoke(it)
+        updateLocationLocation(it)
+    }
+}
+
+expect fun getGPSLocationUnrecorded(appContext: AppContext, priority: LocationPriority = LocationPriority.ACCURATE): Deferred<LocationResult?>
+
+expect fun getGPSLocationUnrecorded(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit>

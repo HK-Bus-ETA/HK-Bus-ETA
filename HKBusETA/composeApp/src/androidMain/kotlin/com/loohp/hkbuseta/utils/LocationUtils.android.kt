@@ -130,7 +130,7 @@ actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGra
     }
 }
 
-actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): Deferred<LocationResult?> {
+actual fun getGPSLocationUnrecorded(appContext: AppContext, priority: LocationPriority): Deferred<LocationResult?> {
     val defer = CompletableDeferred<LocationResult?>()
     checkLocationPermission(appContext, false) { permission ->
         if (permission) {
@@ -190,7 +190,7 @@ actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): D
     return defer
 }
 
-actual fun getGPSLocation(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit> {
+actual fun getGPSLocationUnrecorded(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit> {
     val defer = CompletableDeferred<() -> Unit>()
     checkLocationPermission(appContext, false) { permission ->
         if (permission) {

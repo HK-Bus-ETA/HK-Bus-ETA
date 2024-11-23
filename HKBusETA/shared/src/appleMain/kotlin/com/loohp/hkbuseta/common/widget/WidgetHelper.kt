@@ -178,10 +178,9 @@ expect fun CLLocationManager.authorizedForWidgetUpdates(): Boolean
 private fun getGPSLocationAppleWidget(priority: LocationPriority = LocationPriority.ACCURATE): Deferred<Coordinates?> {
     val defer = CompletableDeferred<Coordinates?>()
     val objectPreferenceStore: MutableList<Any> = ConcurrentMutableList()
-    when (CLLocationManager.authorizationStatus()) {
+    val locationManager = CLLocationManager()
+    when (locationManager.authorizationStatus) {
         kCLAuthorizationStatusAuthorizedWhenInUse, kCLAuthorizationStatusAuthorizedAlways -> {
-            val locationManager = CLLocationManager()
-
             if (locationManager.authorizedForWidgetUpdates()) {
                 val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
                     override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {

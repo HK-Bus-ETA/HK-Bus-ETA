@@ -156,6 +156,11 @@ struct SettingsView: AppScreenView {
                     text: (Shared().language == "en" ? "Privacy Policy" : "隱私權聲明").asAttributedString()
                 )
                 SettingsButton(
+                    icon: { (Image(systemName: "applewatch"), true) },
+                    text: (Shared().language == "en" ? "App Platform" : "應用程式平台").asAttributedString(),
+                    subText: "watchOS".asAttributedString()
+                )
+                SettingsButton(
                     onClick:  appContext.handleWebpages(url: "https://apps.apple.com/app/id6475241017", longClick: false, haptics: hapticsFeedback()),
                     onLongClick: appContext.handleWebpages(url: "https://loohpjames.com", longClick: true, haptics: hapticsFeedback()),
                     icon: { (Image("icon_circle"), false) },

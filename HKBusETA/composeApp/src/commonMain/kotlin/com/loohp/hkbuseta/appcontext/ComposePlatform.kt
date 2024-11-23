@@ -26,6 +26,7 @@ import com.loohp.hkbuseta.common.utils.Immutable
 
 @Immutable
 sealed class ComposePlatform(
+    val displayName: String,
     val hasMouse: Boolean,
     val hasKeyboard: Boolean,
     val hasLocation: Boolean,
@@ -40,6 +41,7 @@ sealed class ComposePlatform(
 ) {
     @Immutable
     class AndroidPlatform(tablet: Boolean): ComposePlatform(
+        displayName = "Android${if (tablet) " (Tablet)" else ""}",
         hasMouse = false,
         hasKeyboard = false,
         hasLocation = true,
@@ -54,6 +56,7 @@ sealed class ComposePlatform(
     )
     @Immutable
     class IOSPlatform(ipad: Boolean): ComposePlatform(
+        displayName = "iOS${if (ipad) " (iPad)" else ""}",
         hasMouse = false,
         hasKeyboard = false,
         hasLocation = true,
@@ -68,6 +71,7 @@ sealed class ComposePlatform(
     )
     @Immutable
     data object MacAppleSiliconPlatform: ComposePlatform(
+        displayName = "MacOS (Apple Silicon)",
         hasMouse = true,
         hasKeyboard = true,
         hasLocation = true,
@@ -82,6 +86,7 @@ sealed class ComposePlatform(
     )
     @Immutable
     class DesktopPlatform(isApple: Boolean): ComposePlatform(
+        displayName = "Desktop${if (isApple) " (MacOS)" else ""}",
         hasMouse = true,
         hasKeyboard = true,
         hasLocation = false,
@@ -96,6 +101,7 @@ sealed class ComposePlatform(
     )
     @Immutable
     class WebDesktopPlatform(isApple: Boolean): ComposePlatform(
+        displayName = "Web Desktop${if (isApple) " (MacOS)" else ""}",
         hasMouse = true,
         hasKeyboard = true,
         hasLocation = true,
@@ -110,6 +116,7 @@ sealed class ComposePlatform(
     )
     @Immutable
     class WebMobilePlatform(isApple: Boolean): ComposePlatform(
+        displayName = "Web Mobile${if (isApple) " (iOS)" else ""}",
         hasMouse = false,
         hasKeyboard = false,
         hasLocation = true,

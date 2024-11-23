@@ -10,3 +10,14 @@ inline fun ignoreExceptions(printStackTract: Boolean = false, block: () -> Unit)
         }
     }
 }
+
+inline fun <T> resultOrNull(printStackTract: Boolean = false, block: () -> T): T? {
+    return try {
+        block.invoke()
+    } catch (e: Throwable) {
+        if (printStackTract) {
+            e.printStackTrace()
+        }
+        null
+    }
+}

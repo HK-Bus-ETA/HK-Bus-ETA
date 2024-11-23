@@ -22,6 +22,9 @@
 package com.loohp.hkbuseta.common.utils
 
 import co.touchlab.stately.concurrency.AtomicBoolean
+import co.touchlab.stately.concurrency.AtomicReference
+import co.touchlab.stately.concurrency.value
+import kotlin.reflect.KProperty
 
 
 fun AtomicBoolean.getAndNegate(): Boolean {
@@ -30,4 +33,12 @@ fun AtomicBoolean.getAndNegate(): Boolean {
         value = this.value
     } while (!compareAndSet(value, !value))
     return value
+}
+
+inline operator fun <T> AtomicReference<T>.getValue(thisObj: Any?, property: KProperty<*>): T {
+    return this.value
+}
+
+inline operator fun <T> AtomicReference<T>.setValue(thisObj: Any?, property: KProperty<*>, value: T) {
+    this.value = value
 }

@@ -50,36 +50,36 @@ import platform.darwin.NSObject
 private val objectPreferenceStore: MutableList<Any> = ConcurrentMutableList()
 
 actual fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit) {
-    when (CLLocationManager.authorizationStatus()) {
-        kCLAuthorizationStatusNotDetermined -> if (askIfNotGranted) {
-            val locationManager = CLLocationManager()
-
-            val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
-                override fun locationManager(manager: CLLocationManager, didChangeAuthorizationStatus: CLAuthorizationStatus) {
-                    if (didChangeAuthorizationStatus != kCLAuthorizationStatusNotDetermined) {
-                        when (didChangeAuthorizationStatus) {
-                            kCLAuthorizationStatusAuthorizedWhenInUse, kCLAuthorizationStatusAuthorizedAlways -> callback.invoke(true)
-                            else -> callback.invoke(false)
+    val locationManager = CLLocationManager()
+    when (locationManager.authorizationStatus) {
+        kCLAuthorizationStatusNotDetermined -> {
+            if (askIfNotGranted) {
+                val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
+                    override fun locationManager(manager: CLLocationManager, didChangeAuthorizationStatus: CLAuthorizationStatus) {
+                        if (didChangeAuthorizationStatus != kCLAuthorizationStatusNotDetermined) {
+                            when (didChangeAuthorizationStatus) {
+                                kCLAuthorizationStatusAuthorizedWhenInUse, kCLAuthorizationStatusAuthorizedAlways -> callback.invoke(true)
+                                else -> callback.invoke(false)
+                            }
+                            objectPreferenceStore.remove(locationManager)
+                            objectPreferenceStore.remove(this)
                         }
+                    }
+
+                    override fun locationManager(manager: CLLocationManager, didFailWithError: NSError) {
+                        callback.invoke(false)
                         objectPreferenceStore.remove(locationManager)
                         objectPreferenceStore.remove(this)
                     }
                 }
-
-                override fun locationManager(manager: CLLocationManager, didFailWithError: NSError) {
-                    callback.invoke(false)
-                    objectPreferenceStore.remove(locationManager)
-                    objectPreferenceStore.remove(this)
-                }
+                locationManager.delegate = delegate
+                locationManager.desiredAccuracy = kCLLocationAccuracyBest
+                locationManager.requestWhenInUseAuthorization()
+                objectPreferenceStore.add(locationManager)
+                objectPreferenceStore.add(delegate)
+            } else {
+                callback.invoke(false)
             }
-
-            locationManager.delegate = delegate
-            locationManager.desiredAccuracy = kCLLocationAccuracyBest
-            locationManager.requestWhenInUseAuthorization()
-            objectPreferenceStore.add(locationManager)
-            objectPreferenceStore.add(delegate)
-        } else {
-            callback.invoke(false)
         }
         kCLAuthorizationStatusAuthorizedWhenInUse, kCLAuthorizationStatusAuthorizedAlways -> callback.invoke(true)
         else -> callback.invoke(false)
@@ -87,10 +87,9 @@ actual fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Bool
 }
 
 actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit) {
-    when (CLLocationManager.authorizationStatus()) {
+    val locationManager = CLLocationManager()
+    when (locationManager.authorizationStatus) {
         kCLAuthorizationStatusNotDetermined, kCLAuthorizationStatusAuthorizedWhenInUse -> if (askIfNotGranted) {
-            val locationManager = CLLocationManager()
-
             val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
                 override fun locationManager(manager: CLLocationManager, didChangeAuthorizationStatus: CLAuthorizationStatus) {
                     if (didChangeAuthorizationStatus != kCLAuthorizationStatusNotDetermined) {
@@ -123,14 +122,13 @@ actual fun checkBackgroundLocationPermission(appContext: AppContext, askIfNotGra
     }
 }
 
-actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): Deferred<LocationResult?> {
+actual fun getGPSLocationUnrecorded(appContext: AppContext, priority: LocationPriority): Deferred<LocationResult?> {
     val defer = CompletableDeferred<LocationResult?>()
+    val locationManager = CLLocationManager()
     checkLocationPermission(appContext, false) {
         if (it) {
-            when (CLLocationManager.authorizationStatus()) {
+            when (locationManager.authorizationStatus) {
                 kCLAuthorizationStatusAuthorizedWhenInUse, kCLAuthorizationStatusAuthorizedAlways -> {
-                    val locationManager = CLLocationManager()
-
                     val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
                         override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {
                             val location = didUpdateLocations.lastOrNull() as? CLLocation
@@ -166,14 +164,13 @@ actual fun getGPSLocation(appContext: AppContext, priority: LocationPriority): D
     return defer
 }
 
-actual fun getGPSLocation(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit> {
+actual fun getGPSLocationUnrecorded(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit> {
     val defer = CompletableDeferred<() -> Unit>()
+    val locationManager = CLLocationManager()
     checkLocationPermission(appContext, false) {
         if (it) {
-            when (CLLocationManager.authorizationStatus()) {
+            when (locationManager.authorizationStatus) {
                 kCLAuthorizationStatusAuthorizedWhenInUse, kCLAuthorizationStatusAuthorizedAlways -> {
-                    val locationManager = CLLocationManager()
-
                     val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
                         override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {
                             val location = didUpdateLocations.lastOrNull() as? CLLocation

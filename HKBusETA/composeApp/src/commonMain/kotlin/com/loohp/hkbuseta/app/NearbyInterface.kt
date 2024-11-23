@@ -137,6 +137,7 @@ import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.coordinatesNullableStateSaver
 import com.loohp.hkbuseta.utils.fontScaledDp
 import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.lastLocation
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CoroutineScope
@@ -210,7 +211,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
     var customCenterPosition by customCenterPositionState.collectAsStateMultiplatform()
     var choosingCustomCenterPosition by remember { mutableStateOf(false) }
 
-    var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(null) }
+    var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(lastLocation?.location) }
 
     var gpsFailed by rememberSaveable { mutableStateOf(false) }
     var nearbyRoutesResult by nearbyRoutesResultState.collectAsStateMultiplatform()
@@ -222,17 +223,12 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
             gpsFailed = true
         }
     }
-    LaunchedEffect (permissionState, visible) {
-        if (visible && permissionState.isAllowed) {
-            val result = getGPSLocation(instance, LocationPriority.FASTER).awaitWithTimeout(3000)
-            if (result?.isSuccess == true && location == null) {
-                location = result.location!!
-                gpsFailed = false
-            }
-        }
-    }
     LaunchedEffect (customCenterPosition, permissionState, visible) {
         if (visible && permissionState.isAllowed) {
+            val fastResult = getGPSLocation(instance, LocationPriority.FASTER).awaitWithTimeout(3000)
+            if (fastResult?.isSuccess == true) {
+                location = fastResult.location!!
+            }
             while (true) {
                 val result = getGPSLocation(instance).await()
                 if (result?.isSuccess == true) {

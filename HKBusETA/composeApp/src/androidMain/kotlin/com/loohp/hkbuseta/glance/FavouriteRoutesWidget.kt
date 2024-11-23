@@ -130,6 +130,7 @@ import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.lastLocation
 import com.loohp.hkbuseta.utils.spToDp
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -254,7 +255,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
     val groupNameZh = currentState(groupNameZhKey)
     val favouriteRouteStops by Shared.favoriteRouteStops.collectAsState()
     val group by remember(favouriteRouteStops, groupNameZh) { derivedStateOf { favouriteRouteStops.firstOrNull { it.name.zh == groupNameZh }?: favouriteRouteStops.first() } }
-    var location: Coordinates? by remember { mutableStateOf(null) }
+    var location: Coordinates? by remember { mutableStateOf(lastLocation?.location) }
     val routeStops by remember(group) { derivedStateOf { group.favouriteRouteStops.toRouteSearchResult(instance, location).toStopIndexed(instance) } }
     val etaResults: MutableMap<String, Registry.ETAQueryResult> = remember { ConcurrentMutableMap() }
     val etaUpdateTimes: MutableMap<String, Long> = remember { ConcurrentMutableMap() }
