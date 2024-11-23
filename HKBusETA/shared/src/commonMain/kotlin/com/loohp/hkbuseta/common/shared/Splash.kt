@@ -21,7 +21,6 @@
 
 package com.loohp.hkbuseta.common.shared
 
-import co.touchlab.stately.collections.ConcurrentMutableList
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.SplashEntry
 import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
@@ -34,12 +33,11 @@ import kotlinx.serialization.json.Json
 
 object Splash {
 
-    private val splashEntries: MutableList<SplashEntry> = ConcurrentMutableList()
+    private var splashEntries: List<SplashEntry> = emptyList()
 
     suspend fun load(context: AppContext) {
         if (splashEntries.isEmpty() && context.listFiles().contains("splash.json")) {
-            val splashEntries = JsonIgnoreUnknownKeys.decodeFromStringReadChannel<List<SplashEntry>>(context.readTextFile("splash.json"))
-            this.splashEntries.addAll(splashEntries)
+            this.splashEntries = JsonIgnoreUnknownKeys.decodeFromStringReadChannel<List<SplashEntry>>(context.readTextFile("splash.json"))
         }
     }
 
@@ -47,8 +45,7 @@ object Splash {
         if (splashEntries.isNotNullAndNotEmpty()) {
             val removedEntries = this.splashEntries - splashEntries.toSet()
             removedEntries.forEach { context.deleteFile(it.imageName) }
-            this.splashEntries.clear()
-            this.splashEntries.addAll(splashEntries)
+            this.splashEntries = splashEntries
             context.writeTextFile("splash.json", Json, SplashEntry.serializer().forList()) { splashEntries }
         }
     }
@@ -78,7 +75,7 @@ object Splash {
         val files = context.listFiles()
         val width = context.screenWidth
         val height = context.screenHeight
-        return splashEntries.shuffled().firstOrNull {
+        return splashEntries.asSequence().shuffled().firstOrNull {
             it.fitOrientation(width, height) && files.contains(it.imageName)
         }
     }

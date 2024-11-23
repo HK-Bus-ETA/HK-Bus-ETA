@@ -30,13 +30,13 @@ import android.net.NetworkRequest
 import android.net.Uri
 import android.os.Bundle
 import android.text.format.DateFormat
+import android.util.AtomicFile
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Stable
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
-import androidx.core.util.AtomicFile
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.google.firebase.Firebase
@@ -80,6 +80,7 @@ import com.loohp.hkbuseta.common.utils.currentBackgroundRestricted
 import com.loohp.hkbuseta.common.utils.getConnectionType
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import com.loohp.hkbuseta.common.utils.useWriteBuffered
 import com.loohp.hkbuseta.tiles.EtaTileConfigureActivity
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
 import com.loohp.hkbuseta.utils.getBitmapFromVectorDrawable
@@ -146,12 +147,9 @@ open class AppContextWearOS internal constructor(
 
     override suspend fun writeTextFile(fileName: String, writeText: () -> StringReadChannel) {
         withGlobalWritingFilesCounter {
-            AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
-                startWrite().use {
-                    writeText.invoke().transferTo(it)
-                    it.flush()
-                    finishWrite(it)
-                }
+            AtomicFile(context.applicationContext.getFileStreamPath(fileName)).useWriteBuffered {
+                writeText.invoke().transferTo(it)
+                it.flush()
             }
         }
     }
@@ -159,13 +157,10 @@ open class AppContextWearOS internal constructor(
     @OptIn(ExperimentalSerializationApi::class)
     override suspend fun <T> writeTextFile(fileName: String, json: Json, serializer: SerializationStrategy<T>, writeJson: () -> T) {
         withGlobalWritingFilesCounter {
-            AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
-                startWrite().use {
-                    val value = writeJson.invoke()
-                    json.encodeToStream(serializer, value, it)
-                    it.flush()
-                    finishWrite(it)
-                }
+            AtomicFile(context.applicationContext.getFileStreamPath(fileName)).useWriteBuffered {
+                val value = writeJson.invoke()
+                json.encodeToStream(serializer, value, it)
+                it.flush()
             }
         }
     }
@@ -176,12 +171,9 @@ open class AppContextWearOS internal constructor(
 
     override suspend fun writeRawFile(fileName: String, writeBytes: () -> ByteReadChannel) {
         withGlobalWritingFilesCounter {
-            AtomicFile(context.applicationContext.getFileStreamPath(fileName)).apply {
-                startWrite().use {
-                    writeBytes.invoke().copyTo(it)
-                    it.flush()
-                    finishWrite(it)
-                }
+            AtomicFile(context.applicationContext.getFileStreamPath(fileName)).useWriteBuffered {
+                writeBytes.invoke().copyTo(it)
+                it.flush()
             }
         }
     }

@@ -83,6 +83,7 @@ import com.loohp.hkbuseta.common.objects.getBody
 import com.loohp.hkbuseta.common.objects.getCircularPivotIndex
 import com.loohp.hkbuseta.common.objects.getColor
 import com.loohp.hkbuseta.common.objects.getDeepLink
+import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getOperators

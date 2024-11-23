@@ -187,8 +187,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 970
-        versionName = "2.4.7"
+        versionCode = 974
+        versionName = "2.4.8"
     }
     packaging {
         resources {
@@ -221,7 +221,7 @@ compose.desktop {
             modules("java.net.http")
 
             packageName = "HK Bus ETA"
-            packageVersion = "2.4.7"
+            packageVersion = "2.4.8"
             vendor = "HK Bus ETA"
 
             macOS {
