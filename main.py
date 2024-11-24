@@ -13,6 +13,7 @@ BUS_ROUTE = set()
 MTR_BUS_STOP_ALIAS = {}
 DATA_SHEET = {}
 KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
+ROUTE_REMARKS = {}
 MTR_DATA = {}
 MTR_BARRIER_FREE_MAPPING = {}
 LRT_DATA = {}
@@ -873,6 +874,60 @@ def download_and_process_traffic_snapshot():
         })
 
 
+def add_route_remarks():
+    global ROUTE_REMARKS
+    kmb = {
+        "HK1": {
+            "zh": "九龍旅遊路線",
+            "en": "Kowloon Tour Bus"
+        },
+        "PB1": {
+            "zh": "黃金海岸寵物巴士團 🐾",
+            "en": "HK Gold Coast Pet Bus 🐾"
+        },
+        "PB2": {
+            "zh": "西九、中環寵物巴士團 🐾",
+            "en": "West Kowloon & Central Pet Bus 🐾"
+        },
+        "PB3": {
+            "zh": "白石角寵物巴士團 🐾",
+            "en": "Pak Shek Kok Pet Bus 🐾"
+        },
+        "PB4": {
+            "zh": "東涌、迪士尼樂園寵物巴士團 🐾",
+            "en": "Tung Chung & Disneyland Pet Bus 🐾"
+        },
+        "PB5": {
+            "zh": "西沙 Go Park, 西貢寵物巴士團 🐾",
+            "en": "Sai Sha Go Park, Sai Kung Pet Bus 🐾"
+        },
+        "PB6": {
+            "zh": "將軍澳寵物巴士團 🐾",
+            "en": "Tseung Kwan O Pet Bus 🐾"
+        },
+        "LB1": {
+            "zh": "郊遊遠足路線 🏞",
+            "en": "Leisure Bus 🏞"
+        }
+    }
+    ctb = {
+        "H1": {
+            "zh": "觀光城巴",
+            "en": "HK City️ Sightseeing (Citybus)"
+        },
+        "H2": {
+            "zh": "觀光城巴",
+            "en": "HK City️ Sightseeing (Citybus)"
+        },
+        "H2K": {
+            "zh": "觀光城巴",
+            "en": "HK City️ Sightseeing (Citybus)"
+        }
+    }
+    ROUTE_REMARKS["kmb"] = kmb
+    ROUTE_REMARKS["ctb"] = ctb
+
+
 print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
 print("Downloading & Processing CTB Routes")
@@ -889,6 +944,8 @@ print("Downloading & Processing MTR & LRT Data")
 download_and_process_mtr_data()
 print("Downloading & Processing Traffic Snapshots")
 download_and_process_traffic_snapshot()
+print("Adding Route Remarks")
+add_route_remarks()
 print("Capitalizing KMB English Names")
 capitalize_english_names()
 print("Listing KMB Subsidiary Routes")
@@ -902,6 +959,7 @@ output = {
     "dataSheet": DATA_SHEET,
     "mtrBusStopAlias": MTR_BUS_STOP_ALIAS,
     "busRoute": sorted(BUS_ROUTE),
+    "routeRemarks": ROUTE_REMARKS,
     "kmbSubsidiary": {key: sorted(value) for key, value in KMB_SUBSIDIARY_ROUTES.items()},
     "mtrData": MTR_DATA,
     "mtrBarrierFreeMapping": MTR_BARRIER_FREE_MAPPING,
