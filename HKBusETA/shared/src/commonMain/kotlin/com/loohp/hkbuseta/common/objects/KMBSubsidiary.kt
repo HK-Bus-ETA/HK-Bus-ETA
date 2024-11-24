@@ -23,7 +23,5 @@ package com.loohp.hkbuseta.common.objects
 
 
 enum class KMBSubsidiary {
-
     KMB, LWB, SUNB
-
 }

@@ -743,6 +743,10 @@ class Registry {
         return DATA!!.mtrBusStopAlias
     }
 
+    internal fun getRouteRemarks(): Map<Operator, Map<String, BilingualText>> {
+        return DATA!!.routeRemarks
+    }
+
     @ReduceDataOmitted
     internal fun getMTRData(): Map<String, StationInfo> {
         return DATA!!.mtrData?: emptyMap()

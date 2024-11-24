@@ -25,12 +25,14 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import kotlinx.serialization.Serializable
 
+
 @Serializable
 @Immutable
 data class DataContainer(
     val dataSheet: DataSheet,
     val mtrBusStopAlias: Map<String, List<String>>,
     val kmbSubsidiary: Map<KMBSubsidiary, List<String>>,
+    val routeRemarks: Map<Operator, Map<String, BilingualText>>,
     @ReduceDataOmitted val lrtData: Map<String, StationInfo>? = null,
     @ReduceDataOmitted val mtrData: Map<String, StationInfo>? = null,
     @ReduceDataOmitted val mtrBarrierFreeMapping: StationBarrierFreeMapping? = null,

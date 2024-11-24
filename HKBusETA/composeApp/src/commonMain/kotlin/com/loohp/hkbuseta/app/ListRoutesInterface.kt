@@ -156,13 +156,13 @@ import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getFare
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getRouteRemarks
 import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
 import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isDefault
 import com.loohp.hkbuseta.common.objects.isFerry
-import com.loohp.hkbuseta.common.objects.isPetBus
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
@@ -1083,16 +1083,14 @@ fun RouteRow(
                 append(fare?.let { "  $$it" }?: "", SpanStyle(fontSize = TextUnit.Small))
             })
         }
-        when {
-            co == Operator.NLB || co.isFerry -> {
-                add((if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
-            }
-            co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB -> {
-                add((if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
-            }
-            co == Operator.KMB && routeNumber.isPetBus() -> {
-                add((if (Shared.language == "en") "Pet Bus \uD83D\uDC3E" else "寵物巴士 \uD83D\uDC3E").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
-            }
+        if (co == Operator.NLB || co.isFerry) {
+            add((if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
+        }
+        if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
+            add((if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
+        }
+        co.getRouteRemarks(instance, routeNumber)?.let {
+            add(it[Shared.language].asAnnotatedString(SpanStyle(color = secondLineCoColor)))
         }
     } }
     val otherDests = specialRouteAlerts?.firstIsInstanceOrNull<SpecialRouteAlerts.SpecialDest>()?.routes?.mapNotNull {

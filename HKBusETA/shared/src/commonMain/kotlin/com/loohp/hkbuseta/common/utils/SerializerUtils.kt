@@ -25,6 +25,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -37,6 +38,10 @@ import kotlinx.serialization.json.jsonPrimitive
 
 inline fun <T> KSerializer<T>.forList(): KSerializer<List<T>> {
     return ListSerializer(this)
+}
+
+inline infix fun <K, V> KSerializer<K>.associateWith(value: KSerializer<V>): KSerializer<Map<K, V>> {
+    return MapSerializer(this, value)
 }
 
 object LocalTimeSpecialSerializer : KSerializer<LocalTime> {

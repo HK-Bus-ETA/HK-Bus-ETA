@@ -196,8 +196,8 @@ fun String.getKMBSubsidiary(): KMBSubsidiary {
     return Shared.kmbSubsidiary[this]?: KMBSubsidiary.KMB
 }
 
-fun String.isPetBus(): Boolean {
-    return startsWith("PB")
+fun Operator.getRouteRemarks(context: AppContext, routeNumber: String): BilingualText? {
+    return Registry.getInstance(context).getRouteRemarks()[this]?.get(routeNumber)
 }
 
 fun Operator.getOperatorName(language: String, elseName: String = "???"): String {

@@ -101,10 +101,10 @@ import com.loohp.hkbuseta.common.objects.getDeepLink
 import com.loohp.hkbuseta.common.objects.getDisplayFormattedName
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.getListDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getRouteRemarks
 import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isBus
-import com.loohp.hkbuseta.common.objects.isPetBus
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
@@ -368,8 +368,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                 val coSpecialRemark = when {
                     co == Operator.NLB -> if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出"
                     co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB -> if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)"
-                    co == Operator.KMB && routeNumber.isPetBus() -> if (Shared.language == "en") "Pet Bus \uD83D\uDC3E" else "寵物巴士 \uD83D\uDC3E"
-                    else -> null
+                    else -> co.getRouteRemarks(instance, routeNumber)?.get(Shared.language)
                 }
                 val color = co.getColor(routeNumber, Color.White).adjustBrightness(if (GlanceTheme.colors.isDark(instance.context)) 1F else 0.7F)
                 val specialRouteAlerts = route.route!!.getSpecialRouteAlerts(instance)
