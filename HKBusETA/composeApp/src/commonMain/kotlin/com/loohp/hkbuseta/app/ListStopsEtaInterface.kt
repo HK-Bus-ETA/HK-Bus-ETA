@@ -1020,7 +1020,16 @@ fun ListStopsBottomSheet(
                         Box(
                             modifier = Modifier.padding(padding)
                         ) {
-                            ListRoutesInterface(instance, routes?: persistentListOf(), true, RouteListType.NEARBY, true, RecentSortMode.CHOICE, origin, routes != null)
+                            ListRoutesInterface(
+                                instance = instance,
+                                routes = routes?: persistentListOf(),
+                                checkSpecialDest = true,
+                                listType = RouteListType.NEARBY,
+                                showEta = true,
+                                recentSort = RecentSortMode.CHOICE,
+                                proximitySortOrigin = origin,
+                                showEmptyText = routes != null
+                            )
                         }
                     }
                 )

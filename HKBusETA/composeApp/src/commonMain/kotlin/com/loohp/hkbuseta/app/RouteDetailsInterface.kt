@@ -790,7 +790,16 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                     Box(
                         modifier = Modifier.padding(padding)
                     ) {
-                        ListRoutesInterface(instance, similarRoutes[selectedBranch]?: persistentListOf(), false, RouteListType.NORMAL, false, RecentSortMode.DISABLED, null, true)
+                        ListRoutesInterface(
+                            instance = instance,
+                            routes = similarRoutes[selectedBranch]?: persistentListOf(),
+                            checkSpecialDest = false,
+                            listType = RouteListType.NORMAL,
+                            showEta = false,
+                            recentSort = RecentSortMode.DISABLED,
+                            proximitySortOrigin = null,
+                            showEmptyText = true
+                        )
                     }
                 }
             )

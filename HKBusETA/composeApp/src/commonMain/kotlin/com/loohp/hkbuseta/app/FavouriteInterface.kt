@@ -359,18 +359,45 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     contentAlignment = Alignment.TopStart
                 ) {
                     routes[name]?.let { route ->
-                        ListRoutesInterface(instance, route, true, RouteListType.FAVOURITE, true, RecentSortMode.DISABLED, location?.asOriginData(false), visible, visible, extraActions = editActionButton, reorderable = { from, to ->
-                            val groups = Shared.favoriteRouteStops.value.toMutableList()
-                            val groupIndex = groups.indexOfName(favouriteRouteStop.name)
-                            val newList = groups[groupIndex].let { (name, list) -> FavouriteRouteGroup(name, list.toMutableList().apply { add(to.index, removeAt(from.index)) }) }
-                            groups[groupIndex] = newList
-                            routes[name] = newList.favouriteRouteStops.toRouteSearchResult(instance, location).toStopIndexed(instance).asImmutableList()
-                            CoroutineScope(Dispatchers.IO).launch {
-                                Registry.getInstance(instance).setFavouriteRouteGroups(groups, instance)
-                            }
-                        }, pipModeListName = name.asFormattedText())
+                        ListRoutesInterface(
+                            instance = instance,
+                            routes = route,
+                            checkSpecialDest = true,
+                            listType = RouteListType.FAVOURITE,
+                            showEta = true,
+                            recentSort = RecentSortMode.DISABLED,
+                            proximitySortOrigin = location?.asOriginData(false),
+                            proximitySortOriginIsRealLocation = true,
+                            showEmptyText = visible,
+                            visible = visible,
+                            extraActions = editActionButton,
+                            reorderable = { from, to ->
+                                val groups = Shared.favoriteRouteStops.value.toMutableList()
+                                val groupIndex = groups.indexOfName(favouriteRouteStop.name)
+                                val newList = groups[groupIndex].let { (name, list) -> FavouriteRouteGroup(name, list.toMutableList().apply { add(to.index, removeAt(from.index)) }) }
+                                groups[groupIndex] = newList
+                                routes[name] = newList.favouriteRouteStops.toRouteSearchResult(instance, location).toStopIndexed(instance).asImmutableList()
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    Registry.getInstance(instance).setFavouriteRouteGroups(groups, instance)
+                                }
+                            },
+                            pipModeListName = name.asFormattedText()
+                        )
                     }?: run {
-                        ListRoutesInterface(instance, persistentListOf(), true, RouteListType.FAVOURITE, true, RecentSortMode.DISABLED, location?.asOriginData(false), false, visible, extraActions = editActionButton, pipModeListName = name.asFormattedText())
+                        ListRoutesInterface(
+                            instance = instance,
+                            routes = persistentListOf(),
+                            checkSpecialDest = true,
+                            listType = RouteListType.FAVOURITE,
+                            showEta = true,
+                            recentSort = RecentSortMode.DISABLED,
+                            proximitySortOrigin = location?.asOriginData(false),
+                            proximitySortOriginIsRealLocation = true,
+                            showEmptyText = false,
+                            visible = visible,
+                            extraActions = editActionButton,
+                            pipModeListName = name.asFormattedText()
+                        )
                     }
                 }
                 if (editingRouteGroup) {
@@ -741,9 +768,27 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                             }
                         }
                         if (co.isTrain) {
-                            FavouriteTrainStationInterface(instance, stopId, stop, co, extraActions)
+                            FavouriteTrainStationInterface(
+                                instance = instance,
+                                stopId = stopId,
+                                stop = stop,
+                                co = co,
+                                extraActions = extraActions
+                            )
                         } else {
-                            ListRoutesInterface(instance, route, true, RouteListType.FAVOURITE_STOP, true, RecentSortMode.CHOICE, stop.location.asOriginData(false), visible, visible, extraActions = extraActions)
+                            ListRoutesInterface(
+                                instance = instance,
+                                routes = route,
+                                checkSpecialDest = true,
+                                listType = RouteListType.FAVOURITE_STOP,
+                                showEta = true,
+                                recentSort = RecentSortMode.CHOICE,
+                                proximitySortOrigin = stop.location.asOriginData(false),
+                                proximitySortOriginIsRealLocation = true,
+                                showEmptyText = visible,
+                                visible = visible,
+                                extraActions = extraActions
+                            )
                         }
                         if (deleting) {
                             DeleteDialog(
@@ -758,7 +803,18 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                             )
                         }
                     }?: run {
-                        ListRoutesInterface(instance, persistentListOf(), true, RouteListType.FAVOURITE_STOP, true, RecentSortMode.CHOICE, stop.location.asOriginData(false), false, visible)
+                        ListRoutesInterface(
+                            instance = instance,
+                            routes = persistentListOf(),
+                            checkSpecialDest = true,
+                            listType = RouteListType.FAVOURITE_STOP,
+                            showEta = true,
+                            recentSort = RecentSortMode.CHOICE,
+                            proximitySortOrigin = stop.location.asOriginData(false),
+                            proximitySortOriginIsRealLocation = true,
+                            showEmptyText = false,
+                            visible = visible
+                        )
                     }
                 }
             }

@@ -396,6 +396,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                     showEta = true,
                     recentSort = RecentSortMode.CHOICE,
                     proximitySortOrigin = customCenterPosition?: location,
+                    proximitySortOriginIsRealLocation = customCenterPosition == null,
                     showEmptyText = visible,
                     visible = visible,
                     bottomExtraSpace = if (actualHeight > 460) 75.dp else 0.dp,

@@ -242,6 +242,7 @@ import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
+import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
@@ -287,6 +288,7 @@ fun ListRoutesInterface(
     showEta: Boolean,
     recentSort: RecentSortMode,
     proximitySortOrigin: Coordinates?,
+    proximitySortOriginIsRealLocation: Boolean = false,
     showEmptyText: Boolean = true,
     visible: Boolean = true,
     maintainScrollPosition: Boolean = true,
@@ -353,6 +355,7 @@ fun ListRoutesInterface(
                     filterDirectionsState = filterDirectionsState,
                     availableDirections = routeGroupedByDirections.keys.asImmutableSet(),
                     proximitySortOrigin = proximitySortOrigin,
+                    proximitySortOriginIsRealLocation = proximitySortOriginIsRealLocation,
                     extraActions = extraActions,
                     activeSortModeState = activeSortModeState,
                     pipModeAllowed = pipModeListName != null
@@ -442,13 +445,24 @@ fun ListRouteTopBar(
     filterDirectionsState: MutableState<GeneralDirection?>,
     availableDirections: ImmutableSet<GeneralDirection>,
     proximitySortOrigin: Coordinates?,
+    proximitySortOriginIsRealLocation: Boolean,
     extraActions: (@Composable RowScope.() -> Unit)? = null,
     activeSortModeState: MutableState<RouteSortPreference>,
     pipModeAllowed: Boolean
 ) {
     var activeSortMode by activeSortModeState
     var filterDirections by filterDirectionsState
+    var allowSortingDespiteNoOrigin by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect (proximitySortOriginIsRealLocation) {
+        checkLocationPermission(instance, false) {
+            scope.launch {
+                allowSortingDespiteNoOrigin = !it && proximitySortOriginIsRealLocation
+            }
+        }
+    }
+
     Box (
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -582,7 +596,7 @@ fun ListRouteTopBar(
                     contentPadding = PaddingValues(10.dp),
                     shape = platformLargeShape,
                     colors = ButtonDefaults.textButtonColors(),
-                    enabled = !routesEmpty && (recentSort == RecentSortMode.CHOICE || proximitySortOrigin != null),
+                    enabled = !routesEmpty && (recentSort == RecentSortMode.CHOICE || proximitySortOrigin != null || allowSortingDespiteNoOrigin),
                     content = {
                         PlatformIcon(
                             modifier = Modifier.size(23.dp),

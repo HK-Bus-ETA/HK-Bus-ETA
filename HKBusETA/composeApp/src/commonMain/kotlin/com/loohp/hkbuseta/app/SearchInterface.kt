@@ -367,7 +367,18 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    ListRoutesInterface(instance, state.routes, false, listType, showEta, recentSort, proximitySortOrigin, showEmptyText, visible, false)
+                    ListRoutesInterface(
+                        instance = instance,
+                        routes = state.routes,
+                        checkSpecialDest = false,
+                        listType = listType,
+                        showEta = showEta,
+                        recentSort = recentSort,
+                        proximitySortOrigin = proximitySortOrigin,
+                        showEmptyText = showEmptyText,
+                        visible = visible,
+                        maintainScrollPosition = false
+                    )
                     PlatformFloatingActionButton(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
