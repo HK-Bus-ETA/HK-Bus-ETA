@@ -55,6 +55,8 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 
+actual val shouldRecordLastLocation: Boolean = false
+
 @OptIn(ExperimentalUuidApi::class)
 actual fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit) {
     val context = appContext.context

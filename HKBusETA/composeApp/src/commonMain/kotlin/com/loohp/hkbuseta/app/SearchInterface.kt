@@ -126,7 +126,7 @@ import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.equivalentDp
-import com.loohp.hkbuseta.utils.keyString
+import com.loohp.hkbuseta.utils.keyChar
 import com.loohp.hkbuseta.utils.pixelsToDp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -311,9 +311,9 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                                                     }
                                                     true
                                                 }
-                                                key.keyString?.let { s -> state.nextCharResult.characters.contains(s[0]) } == true -> {
+                                                key.keyChar?.let { c -> state.nextCharResult.characters.contains(c) } == true -> {
                                                     CoroutineScope(Dispatchers.IO).launch {
-                                                        handleInput(instance, key.keyString!![0])
+                                                        handleInput(instance, key.keyChar!!)
                                                     }
                                                     true
                                                 }

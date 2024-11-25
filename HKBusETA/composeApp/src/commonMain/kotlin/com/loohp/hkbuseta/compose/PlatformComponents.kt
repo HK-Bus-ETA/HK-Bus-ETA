@@ -35,7 +35,6 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.CheckboxColors
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -51,12 +50,10 @@ import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.material3.RadioButtonColors
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -66,7 +63,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -141,6 +137,7 @@ expect val PlatformIcons.Outlined.Bedtime: Painter @Composable get
 expect val PlatformIcons.Outlined.Bolt: Painter @Composable get
 expect val PlatformIcons.Outlined.CalendarClock: Painter @Composable get
 expect val PlatformIcons.Outlined.Code: Painter @Composable get
+expect val PlatformIcons.Outlined.Computer: Painter @Composable get
 expect val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get
 expect val PlatformIcons.Outlined.DepartureBoard: Painter @Composable get
 expect val PlatformIcons.Outlined.Delete: Painter @Composable get
@@ -182,6 +179,7 @@ expect val PlatformIcons.Outlined.Start: Painter @Composable get
 expect val PlatformIcons.Outlined.Streetview: Painter @Composable get
 expect val PlatformIcons.Outlined.SwipeRightAlt: Painter @Composable get
 expect val PlatformIcons.Outlined.SyncAlt: Painter @Composable get
+expect val PlatformIcons.Outlined.Tablet: Painter @Composable get
 expect val PlatformIcons.Outlined.TextRotationNone: Painter @Composable get
 expect val PlatformIcons.Outlined.Timer: Painter @Composable get
 expect val PlatformIcons.Outlined.Train: Painter @Composable get

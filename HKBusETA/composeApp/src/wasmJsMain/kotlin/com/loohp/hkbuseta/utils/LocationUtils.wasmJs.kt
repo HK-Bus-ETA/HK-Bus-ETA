@@ -33,6 +33,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
+actual val shouldRecordLastLocation: Boolean = false
+
 external fun getLocation(callback: (Double, Double) -> Unit, error: (Boolean) -> Unit)
 
 actual fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit) {

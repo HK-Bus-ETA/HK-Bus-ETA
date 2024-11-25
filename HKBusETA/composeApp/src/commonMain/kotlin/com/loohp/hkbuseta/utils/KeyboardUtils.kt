@@ -23,43 +23,53 @@ package com.loohp.hkbuseta.utils
 
 import androidx.compose.ui.input.key.Key
 
+private val keyCharMap: Map<Key, Char> = mapOf(
+    Key.Zero to '0',
+    Key.NumPad0 to '0',
+    Key.One to '1',
+    Key.NumPad1 to '1',
+    Key.Two to '2',
+    Key.NumPad2 to '2',
+    Key.Three to '3',
+    Key.NumPad3 to '3',
+    Key.Four to '4',
+    Key.NumPad4 to '4',
+    Key.Five to '5',
+    Key.NumPad5 to '5',
+    Key.Six to '6',
+    Key.NumPad6 to '6',
+    Key.Seven to '7',
+    Key.NumPad7 to '7',
+    Key.Eight to '8',
+    Key.NumPad8 to '8',
+    Key.Nine to '9',
+    Key.NumPad9 to '9',
+    Key.A to 'A',
+    Key.B to 'B',
+    Key.C to 'C',
+    Key.D to 'D',
+    Key.E to 'E',
+    Key.F to 'F',
+    Key.G to 'G',
+    Key.H to 'H',
+    Key.I to 'I',
+    Key.J to 'J',
+    Key.K to 'K',
+    Key.L to 'L',
+    Key.M to 'M',
+    Key.N to 'N',
+    Key.O to 'O',
+    Key.P to 'P',
+    Key.Q to 'Q',
+    Key.R to 'R',
+    Key.S to 'S',
+    Key.T to 'T',
+    Key.U to 'U',
+    Key.V to 'V',
+    Key.W to 'W',
+    Key.X to 'X',
+    Key.Y to 'Y',
+    Key.Z to 'Z'
+)
 
-val Key.keyString: String? get() = when (this) {
-    Key.Zero, Key.NumPad0 -> "0"
-    Key.One, Key.NumPad1 -> "1"
-    Key.Two, Key.NumPad2 -> "2"
-    Key.Three, Key.NumPad3 -> "3"
-    Key.Four, Key.NumPad4 -> "4"
-    Key.Five, Key.NumPad5 -> "5"
-    Key.Six, Key.NumPad6 -> "6"
-    Key.Seven, Key.NumPad7 -> "7"
-    Key.Eight, Key.NumPad8 -> "8"
-    Key.Nine, Key.NumPad9 -> "9"
-    Key.A -> "A"
-    Key.B -> "B"
-    Key.C -> "C"
-    Key.D -> "D"
-    Key.E -> "E"
-    Key.F -> "F"
-    Key.G -> "G"
-    Key.H -> "H"
-    Key.I -> "I"
-    Key.J -> "J"
-    Key.K -> "K"
-    Key.L -> "L"
-    Key.M -> "M"
-    Key.N -> "N"
-    Key.O -> "O"
-    Key.P -> "P"
-    Key.Q -> "Q"
-    Key.R -> "R"
-    Key.S -> "S"
-    Key.T -> "T"
-    Key.U -> "U"
-    Key.V -> "V"
-    Key.W -> "W"
-    Key.X -> "X"
-    Key.Y -> "Y"
-    Key.Z -> "Z"
-    else -> null
-}
+val Key.keyChar: Char? get() = keyCharMap[this]

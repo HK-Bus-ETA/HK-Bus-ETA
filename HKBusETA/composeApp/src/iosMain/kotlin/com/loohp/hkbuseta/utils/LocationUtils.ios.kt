@@ -49,6 +49,8 @@ import platform.darwin.NSObject
 
 private val objectPreferenceStore: MutableList<Any> = ConcurrentMutableList()
 
+actual val shouldRecordLastLocation: Boolean = composePlatform is ComposePlatform.MacAppleSiliconPlatform
+
 actual fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit) {
     val locationManager = CLLocationManager()
     when (locationManager.authorizationStatus) {

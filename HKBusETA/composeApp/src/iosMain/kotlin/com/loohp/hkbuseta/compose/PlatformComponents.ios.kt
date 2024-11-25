@@ -58,8 +58,10 @@ import androidx.compose.material.icons.filled.LocationDisabled
 import androidx.compose.material.icons.filled.NoTransfer
 import androidx.compose.material.icons.outlined.BrokenImage
 import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.DepartureBoard
 import androidx.compose.material.icons.outlined.DirectionsBus
+import androidx.compose.material.icons.outlined.Tablet
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
@@ -262,6 +264,7 @@ actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = re
 actual inline val PlatformIcons.Outlined.Bolt: Painter @Composable get() = rememberSystemImagePainter("bolt")
 actual inline val PlatformIcons.Outlined.CalendarClock: Painter @Composable get() = painterResource(DrawableResource("baseline_calendar_clock_24.xml"))
 actual inline val PlatformIcons.Outlined.Code: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Code)
+actual inline val PlatformIcons.Outlined.Computer: Painter @Composable get() = rememberSystemImagePainter("macbook")
 actual inline val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get() = rememberSystemImagePainter("dollarsign.arrow.circlepath")
 actual inline val PlatformIcons.Outlined.DepartureBoard: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DepartureBoard)
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberSystemImagePainter("trash")
@@ -296,13 +299,14 @@ actual inline val PlatformIcons.Outlined.Schedule: Painter @Composable get() = r
 actual inline val PlatformIcons.Outlined.Search: Painter @Composable get() = rememberSystemImagePainter("magnifyingglass")
 actual inline val PlatformIcons.Outlined.Settings: Painter @Composable get() = rememberSystemImagePainter("gearshape")
 actual inline val PlatformIcons.Outlined.Share: Painter @Composable get() = rememberSystemImagePainter("square.and.arrow.up")
-actual inline val PlatformIcons.Outlined.Smartphone: Painter @Composable get() = rememberSystemImagePainter("smartphone")
+actual inline val PlatformIcons.Outlined.Smartphone: Painter @Composable get() = rememberSystemImagePainter("iphone")
 actual inline val PlatformIcons.Outlined.Star: Painter @Composable get() = rememberSystemImagePainter("star.fill")
 actual inline val PlatformIcons.Outlined.StarOutline: Painter @Composable get() = rememberSystemImagePainter("star")
 actual inline val PlatformIcons.Outlined.Start: Painter @Composable get() = rememberSystemImagePainter("play")
 actual inline val PlatformIcons.Outlined.Streetview: Painter @Composable get() = rememberSystemImagePainter("road.lanes")
 actual inline val PlatformIcons.Outlined.SwipeRightAlt: Painter @Composable get() = rememberSystemImagePainter("arrow.right.circle")
 actual inline val PlatformIcons.Outlined.SyncAlt: Painter @Composable get() = rememberSystemImagePainter("arrow.left.arrow.right")
+actual inline val PlatformIcons.Outlined.Tablet: Painter @Composable get() = rememberSystemImagePainter("ipad.landscape")
 actual inline val PlatformIcons.Outlined.TextRotationNone: Painter @Composable get() = rememberSystemImagePainter("textformat.abc.dottedunderline")
 actual inline val PlatformIcons.Outlined.Timer: Painter @Composable get() = rememberSystemImagePainter("timer")
 actual inline val PlatformIcons.Outlined.Train: Painter @Composable get() = rememberSystemImagePainter("train.side.front.car")

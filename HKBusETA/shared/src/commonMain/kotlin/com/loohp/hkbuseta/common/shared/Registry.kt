@@ -719,46 +719,50 @@ class Registry {
         return DATA?.updatedTime
     }
 
+    fun getOptDataContainer(): DataContainer? {
+        return DATA
+    }
+
     fun getHolidays(): List<LocalDate> {
         return DATA!!.dataSheet.holidays
     }
 
-    internal fun getRouteList(): Map<String, Route> {
+    fun getRouteList(): Map<String, Route> {
         return DATA!!.dataSheet.routeList
     }
 
-    internal fun getStopList(): Map<String, Stop> {
+    fun getStopList(): Map<String, Stop> {
         return DATA!!.dataSheet.stopList
     }
 
-    internal fun getStopMap(): Map<String, List<Pair<Operator, String>>> {
+    fun getStopMap(): Map<String, List<Pair<Operator, String>>> {
         return DATA!!.dataSheet.stopMap
     }
 
-    internal fun getServiceDayMap(): Map<String, List<String>?> {
+    fun getServiceDayMap(): Map<String, List<String>?> {
         return DATA!!.dataSheet.serviceDayMap
     }
 
-    internal fun getMtrBusStopAlias(): Map<String, List<String>?> {
+    fun getMtrBusStopAlias(): Map<String, List<String>?> {
         return DATA!!.mtrBusStopAlias
     }
 
-    internal fun getRouteRemarks(): Map<Operator, Map<String, BilingualText>> {
+    fun getRouteRemarks(): Map<Operator, Map<String, BilingualText>> {
         return DATA!!.routeRemarks
     }
 
     @ReduceDataOmitted
-    internal fun getMTRData(): Map<String, StationInfo> {
+    fun getMTRData(): Map<String, StationInfo> {
         return DATA!!.mtrData?: emptyMap()
     }
 
     @ReduceDataOmitted
-    internal fun getLRTData(): Map<String, StationInfo> {
+    fun getLRTData(): Map<String, StationInfo> {
         return DATA!!.lrtData?: emptyMap()
     }
 
     @ReduceDataOmitted
-    internal fun getMTRBarrierFreeMapping(): StationBarrierFreeMapping {
+    fun getMTRBarrierFreeMapping(): StationBarrierFreeMapping {
         return DATA!!.mtrBarrierFreeMapping?: StationBarrierFreeMapping.EMPTY_MAPPING
     }
 

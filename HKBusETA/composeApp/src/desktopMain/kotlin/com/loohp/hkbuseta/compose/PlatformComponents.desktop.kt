@@ -83,6 +83,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.CurrencyExchange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
@@ -126,6 +127,7 @@ import androidx.compose.material.icons.outlined.Start
 import androidx.compose.material.icons.outlined.Streetview
 import androidx.compose.material.icons.outlined.SwipeRightAlt
 import androidx.compose.material.icons.outlined.SyncAlt
+import androidx.compose.material.icons.outlined.Tablet
 import androidx.compose.material.icons.outlined.TextRotationNone
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Train
@@ -274,6 +276,7 @@ actual inline val PlatformIcons.Outlined.Bedtime: Painter @Composable get() = re
 actual inline val PlatformIcons.Outlined.Bolt: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Bolt)
 actual inline val PlatformIcons.Outlined.CalendarClock: Painter @Composable get() = painterResource(DrawableResource("baseline_calendar_clock_24.xml"))
 actual inline val PlatformIcons.Outlined.Code: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Code)
+actual inline val PlatformIcons.Outlined.Computer: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Computer)
 actual inline val PlatformIcons.Outlined.CurrencyExchange: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.CurrencyExchange)
 actual inline val PlatformIcons.Outlined.DepartureBoard: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.DepartureBoard)
 actual inline val PlatformIcons.Outlined.Delete: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Delete)
@@ -315,6 +318,7 @@ actual inline val PlatformIcons.Outlined.Start: Painter @Composable get() = reme
 actual inline val PlatformIcons.Outlined.Streetview: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Streetview)
 actual inline val PlatformIcons.Outlined.SwipeRightAlt: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.SwipeRightAlt)
 actual inline val PlatformIcons.Outlined.SyncAlt: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.SyncAlt)
+actual inline val PlatformIcons.Outlined.Tablet: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Tablet)
 actual inline val PlatformIcons.Outlined.TextRotationNone: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.TextRotationNone)
 actual inline val PlatformIcons.Outlined.Timer: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Timer)
 actual inline val PlatformIcons.Outlined.Train: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Train)

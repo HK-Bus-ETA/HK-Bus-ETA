@@ -28,6 +28,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 
 
+actual val shouldRecordLastLocation: Boolean = false
+
 actual fun checkLocationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit) {
     callback.invoke(false)
 }

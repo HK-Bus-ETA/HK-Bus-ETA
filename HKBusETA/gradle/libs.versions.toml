@@ -37,7 +37,7 @@ mapsCompose = "6.1.2"
 material3 = "1.3.0"
 percentlayout = "1.0.0"
 playServicesLocation = "21.3.0"
-playServicesWearable = "18.2.0"
+playServicesWearable = "19.0.0"
 protolayoutExpression = "1.2.1"
 recyclerview = "1.3.2"
 reorderable = "2.2.0"
@@ -55,7 +55,7 @@ androidx-test-ext-junit = "1.1.5"
 espresso-core = "3.5.1"
 compose-bom = "2024.02.01"
 googleDevToolsKsp = "2.0.21-1.0.25"
-firebase-bom = "33.5.1"
+firebase-bom = "33.6.0"
 
 [libraries]
 android-pdf-viewer = { module = "com.github.mhiew:android-pdf-viewer", version.ref = "androidPdfViewer" }

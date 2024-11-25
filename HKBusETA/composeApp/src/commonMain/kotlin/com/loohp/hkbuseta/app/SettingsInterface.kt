@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.github.ajalt.colormath.model.RGB
+import com.loohp.hkbuseta.appcontext.PlatformType
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
@@ -87,6 +88,7 @@ import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.Bolt
+import com.loohp.hkbuseta.compose.Computer
 import com.loohp.hkbuseta.compose.DarkMode
 import com.loohp.hkbuseta.compose.DirectionsBus
 import com.loohp.hkbuseta.compose.DismissRequestType
@@ -107,6 +109,7 @@ import com.loohp.hkbuseta.compose.Schedule
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Share
 import com.loohp.hkbuseta.compose.Smartphone
+import com.loohp.hkbuseta.compose.Tablet
 import com.loohp.hkbuseta.compose.TextRotationNone
 import com.loohp.hkbuseta.compose.Timer
 import com.loohp.hkbuseta.compose.Translate
@@ -180,7 +183,6 @@ fun SettingsInterface(instance: AppActiveContext) {
                 )
         ) {
             SettingsRow(
-                instance = instance,
                 onClick = {
                     Registry.getInstance(instance).setLanguage(if (Shared.language == "en") "zh" else "en", instance)
                     relaunch(instance)
@@ -190,7 +192,6 @@ fun SettingsInterface(instance: AppActiveContext) {
                 subText = (if (Shared.language == "en") "English/中文" else "中文/English").asAnnotatedString()
             )
             SettingsRow(
-                instance = instance,
                 onClick = {
                     CoroutineScope(Dispatchers.Main).launch {
                         Registry.invalidateCache(instance)
@@ -205,7 +206,6 @@ fun SettingsInterface(instance: AppActiveContext) {
                 subText = ("${if (Shared.language == "en") "Last updated" else "最近更新時間"}: ${Registry.getInstance(instance).getLastUpdatedTime()?.let { instance.formatDateTime(it.toLocalDateTime(), true) }?: if (Shared.language == "en") "Never" else "從未"}").asAnnotatedString()
             )
             SettingsRow(
-                instance = instance,
                 onClick = {
                     Registry.getInstance(instance).setTheme(Shared.theme.next, instance)
                     relaunch(instance)
@@ -221,7 +221,6 @@ fun SettingsInterface(instance: AppActiveContext) {
             val showingColorPickerState = remember { mutableStateOf(false) }
             var showingColorPicker by showingColorPickerState
             SettingsRow(
-                instance = instance,
                 onClick = { showingColorPicker = true },
                 icon = PlatformIcons.Filled.Palette,
                 text = (if (Shared.language == "en") "Color" else "顏色").asAnnotatedString(),
@@ -236,7 +235,6 @@ fun SettingsInterface(instance: AppActiveContext) {
             }
             var etaDisplayMode by remember { mutableStateOf(Shared.etaDisplayMode) }
             SettingsRow(
-                instance = instance,
                 onClick = {
                     Registry.getInstance(instance).setEtaDisplayMode(Shared.etaDisplayMode.next, instance)
                     etaDisplayMode = Shared.etaDisplayMode
@@ -255,7 +253,6 @@ fun SettingsInterface(instance: AppActiveContext) {
             )
             var disableMarquee by remember { mutableStateOf(Shared.disableMarquee) }
             SettingsRow(
-                instance = instance,
                 onClick = {
                     Registry.getInstance(instance).setDisableMarquee(!Shared.disableMarquee, instance)
                     disableMarquee = Shared.disableMarquee
@@ -270,7 +267,6 @@ fun SettingsInterface(instance: AppActiveContext) {
             )
             var disableBoldDest by remember { mutableStateOf(Shared.disableBoldDest) }
             SettingsRow(
-                instance = instance,
                 onClick = {
                     Registry.getInstance(instance).setDisableBoldDest(!Shared.disableBoldDest, instance)
                     disableBoldDest = Shared.disableBoldDest
@@ -285,7 +281,6 @@ fun SettingsInterface(instance: AppActiveContext) {
             )
             var showRouteMap by remember { mutableStateOf(Shared.showRouteMap) }
             SettingsRow(
-                instance = instance,
                 onClick = {
                     Registry.getInstance(instance).setShowRouteMap(!Shared.showRouteMap, instance)
                     showRouteMap = Shared.showRouteMap
@@ -300,7 +295,6 @@ fun SettingsInterface(instance: AppActiveContext) {
             )
             var disableNavBarQuickActions by remember { mutableStateOf(Shared.disableNavBarQuickActions) }
             SettingsRow(
-                instance = instance,
                 onClick = {
                     Registry.getInstance(instance).setDisableNavBarQuickActions(!Shared.disableNavBarQuickActions, instance)
                     disableNavBarQuickActions = Shared.disableNavBarQuickActions
@@ -315,7 +309,6 @@ fun SettingsInterface(instance: AppActiveContext) {
             )
             var downloadSplash by remember { mutableStateOf(Shared.downloadSplash) }
             SettingsRow(
-                instance = instance,
                 onClick = {
                     Registry.getInstance(instance).setDownloadSplash(!Shared.downloadSplash, instance)
                     downloadSplash = Shared.downloadSplash
@@ -329,7 +322,6 @@ fun SettingsInterface(instance: AppActiveContext) {
                 }
             )
             SettingsRow(
-                instance = instance,
                 onClick = {
                     val preferences = Registry.getInstance(instance).exportPreference().toString()
                     val time = currentLocalDateTime().run {
@@ -348,7 +340,6 @@ fun SettingsInterface(instance: AppActiveContext) {
                 text = (if (Shared.language == "en") "Export Preferences" else "匯出個人喜好設定").asAnnotatedString()
             )
             SettingsRow(
-                instance = instance,
                 onClick = {
                     instance.compose.readFileFromFileChooser("application/json") {
                         try {
@@ -370,7 +361,6 @@ fun SettingsInterface(instance: AppActiveContext) {
             )
             platformShowDownloadAppBottomSheet?.also {
                 SettingsRow(
-                    instance = instance,
                     onClick = it,
                     icon = PlatformIcons.Outlined.MobileFriendly,
                     text = (if (Shared.language == "en") "Download the HK Bus ETA app" else "下載香港巴士到站預報應用程式").asAnnotatedString(),
@@ -378,19 +368,16 @@ fun SettingsInterface(instance: AppActiveContext) {
                 )
             }?: when (wearableConnection) {
                 WearableConnectionState.CONNECTED -> SettingsRow(
-                    instance = instance,
                     icon = PlatformIcons.Outlined.Watch,
                     text = (if (Shared.language == "en") "Smart Watch Sync" else "智能手錶同步").asAnnotatedString(),
                     subText = (if (Shared.language == "en") "Connected ✓" else "已連接 ✓").asAnnotatedString()
                 )
                 WearableConnectionState.PAIRED -> SettingsRow(
-                    instance = instance,
                     icon = PlatformIcons.Outlined.Watch,
                     text = (if (Shared.language == "en") "Smart Watch Sync" else "智能手錶同步").asAnnotatedString(),
                     subText = (if (Shared.language == "en") "Paired (Watch App in the Background)" else "已配對 (智能手錶程式在後台)").asAnnotatedString()
                 )
                 else -> SettingsRow(
-                    instance = instance,
                     onClick = instance.handleWebpages(BASE_URL, false, haptic.common),
                     icon = PlatformIcons.Outlined.Watch,
                     text = (if (Shared.language == "en") "Smart Watch App" else "智能手錶應用程式").asAnnotatedString(),
@@ -398,31 +385,30 @@ fun SettingsInterface(instance: AppActiveContext) {
                 )
             }
             SettingsRow(
-                instance = instance,
                 onClick = instance.handleWebpages(BASE_URL, false, haptic.common),
                 icon = PlatformIcons.Outlined.Share,
                 text = (if (Shared.language == "en") "Share App" else "分享應用程式").asAnnotatedString()
             )
             SettingsRow(
-                instance = instance,
                 onClick = instance.handleWebpages("https://hkbus.app", false, haptic.common),
                 icon = PlatformIcons.Outlined.DirectionsBus,
                 text = (if (Shared.language == "en") "Special Thanks to hkbus.app" else "特別感謝 hkbus.app").asAnnotatedString()
             )
             SettingsRow(
-                instance = instance,
                 onClick = instance.handleWebpages("https://data.hkbuseta.com/PRIVACY_POLICY.html", false, haptic.common),
                 icon = PlatformIcons.Outlined.Fingerprint,
                 text = (if (Shared.language == "en") "Privacy Policy" else "隱私權聲明").asAnnotatedString()
             )
             SettingsRow(
-                instance = instance,
-                icon = PlatformIcons.Outlined.Smartphone,
+                icon = when (composePlatform.type) {
+                    PlatformType.PHONE -> PlatformIcons.Outlined.Smartphone
+                    PlatformType.TABLET -> PlatformIcons.Outlined.Tablet
+                    PlatformType.COMPUTER -> PlatformIcons.Outlined.Computer
+                },
                 text = (if (Shared.language == "en") "App Platform" else "應用程式平台").asAnnotatedString(),
                 subText = composePlatform.displayName.asAnnotatedString()
             )
             SettingsRow(
-                instance = instance,
                 onClick = platformShowDownloadAppBottomSheet?: instance.handleWebpages(if (composePlatform.appleEnvironment) "https://apps.apple.com/app/id6475241017" else "https://play.google.com/store/apps/details?id=com.loohp.hkbuseta", false, haptic.common),
                 onLongClick = instance.handleWebpages("https://loohpjames.com", true, haptic.common),
                 icon = DrawableResource("icon_circle.png"),
@@ -435,7 +421,6 @@ fun SettingsInterface(instance: AppActiveContext) {
 
 @Composable
 fun SettingsRow(
-    instance: AppActiveContext,
     onClick: () -> Unit = { /* do nothing */ },
     onLongClick: () -> Unit = { /* do nothing */ },
     icon: DrawableResource,
@@ -443,7 +428,6 @@ fun SettingsRow(
     subText: AnnotatedString? = null
 ) {
     SettingsRow(
-        instance = instance,
         onClick = onClick,
         onLongClick = onLongClick,
         icon = painterResource(icon),
@@ -454,7 +438,6 @@ fun SettingsRow(
 
 @Composable
 fun SettingsRow(
-    instance: AppActiveContext,
     onClick: () -> Unit = { /* do nothing */ },
     onLongClick: () -> Unit = { /* do nothing */ },
     icon: Painter,
