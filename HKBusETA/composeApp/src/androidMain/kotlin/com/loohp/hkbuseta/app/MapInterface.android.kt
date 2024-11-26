@@ -70,6 +70,7 @@ import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
@@ -81,6 +82,7 @@ import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.DebugPurpose
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.compose.ChangedEffect
@@ -230,8 +232,20 @@ fun GoogleMapRouteInterface(
             mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
             onMapLoaded = { init = currentTimeMillis() }
         ) {
-            StopMarkers(waypoints, stops, alternateStopNames, alternateStopNameShowing, icon, anchor, selectedStopState, shouldShowStopIndex)
-            WaypointPaths(waypoints)
+            StopMarkers(
+                instance = instance,
+                waypoints = waypoints,
+                stops = stops,
+                alternateStopNames = alternateStopNames,
+                alternateStopNameShowing = alternateStopNameShowing,
+                icon = icon,
+                anchor = anchor,
+                selectedStopState = selectedStopState,
+                shouldShowStopIndex = shouldShowStopIndex
+            )
+            WaypointPaths(
+                waypoints = waypoints
+            )
         }
     }
 }
@@ -239,6 +253,7 @@ fun GoogleMapRouteInterface(
 @Composable
 @GoogleMapComposable
 fun StopMarkers(
+    instance: AppActiveContext,
     waypoints: RouteWaypoints,
     stops: ImmutableList<Registry.StopData>,
     alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
@@ -252,7 +267,7 @@ fun StopMarkers(
         val indexMap = remember { waypoints.buildStopListMapping(stops) }
         var selectedStop by selectedStopState
         for ((i, stop) in waypoints.stops.withIndex()) {
-            val stopIndex = indexMap[i] + 1
+            val stopIndex = { indexMap[i] + 1 }.logPossibleStopMarkerIndexMapException(instance, waypoints, indexMap, stops)
             val title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.getOrNull(stopIndex - 1)?.stop?: stop).name[Shared.language]
             val markerState = rememberStopMarkerState(stop)
             ChangedEffect (selectedStop) {
@@ -270,6 +285,28 @@ fun StopMarkers(
                 zIndex = 3F
             )
         }
+    }
+}
+
+@Suppress("NOTHING_TO_INLINE")
+@DebugPurpose
+inline fun (() -> Int).logPossibleStopMarkerIndexMapException(
+    instance: AppActiveContext,
+    waypoints: RouteWaypoints,
+    indexMap: ImmutableList<Int>,
+    stops: ImmutableList<Registry.StopData>
+): Int {
+    try {
+        return invoke()
+    } catch (e: Throwable) {
+        instance.logFirebaseEvent("stop_marker_crash", AppBundle().apply {
+            putString("co", waypoints.co.name)
+            putString("route", waypoints.routeNumber)
+            putString("indexMap", indexMap.toString())
+            putString("stopsSize", stops.size.toString())
+            putString("waypointsStopSize", waypoints.stops.size.toString())
+        })
+        throw e
     }
 }
 
