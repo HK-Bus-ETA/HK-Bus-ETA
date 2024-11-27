@@ -7,7 +7,19 @@ const firebaseConfig = {
     appId: "1:949231290501:web:d05d962759110d4a8701ec",
     measurementId: "G-Q85F24HQMW"
 };
-var firebaseApp = firebase.initializeApp(firebaseConfig);
+let firebaseAppInstance = null;
+getFirebaseApp();
+
+function getFirebaseApp() {
+    if (firebaseAppInstance == null) {
+        try {
+            firebaseAppInstance = firebase.initializeApp(firebaseConfig);
+        } catch (err) {
+            console.log(err);
+        }
+    }
+    return firebaseAppInstance;
+}
 
 function logFirebase(name, keyValues) {
     let parts = keyValues.split('\0');
@@ -15,5 +27,8 @@ function logFirebase(name, keyValues) {
     for (let i = 0; i < parts.length; i += 2) {
         obj[parts[i]] = parts[i + 1];
     }
-    firebaseApp.analytics().logEvent(name, obj);
+    let firebaseApp = getFirebaseApp();
+    if (firebaseApp != null) {
+        firebaseApp.analytics().logEvent(name, obj);
+    }
 }
