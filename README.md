@@ -11,23 +11,24 @@ For more info, check out the app listing on Google Play / App Store with the lin
 ## Language 語言
 This app is in the native language of Hong Kong: **Traditional Chinese**.<br>
 In addition, it also supports **English**.<br>
-此應用程式支援 **繁體中文** 及 **英文**
+此應用程式支援 **中文** 及 **英文**
 
 ## Live Demonstration & Screenshots 下載連結及截圖
 <a href='https://play.google.com/store/apps/details?id=com.loohp.hkbuseta&utm_source=GitHub-Repo&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://loohpjames.com/assets/images/get-it-on-google-play.png' height="50"/></a>
-<a href='https://apps.apple.com/app/id6475241017'><img alt='Download on the App Store' src='https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg' height="50"></a>
+<a href='https://apps.apple.com/app/id6475241017'><img alt='Download on the App Store' src='https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg' height="50"></a><br>
+[Or view the Web Version (Mobile not recommended)<br>
+或查看網頁版（不建議使用手機）](https://app.hkbuseta.com)
 
 ## Data Sources 數據來源
-- [DATA.GOV.HK 資料一線通](https://data.gov.hk)
+- [DATA.GOV.HK 開放數據平台](https://data.gov.hk)
 - [The Kowloon Motor Bus Co. (1933) Ltd 九龍巴士（一九三三）有限公司](https://www.kmb.hk)
 - [Citybus Limited 城巴有限公司](https://www.citybus.com.hk)
 - [New Lantao Bus Co. (1973) Ltd 新大嶼山巴士(一九七三)有限公司](https://www.nlb.com.hk/)
 - [MTR Corporation Limited 香港鐵路有限公司](https://www.mtr.com.hk/)
 - [HK Bus Crawling@2021](https://github.com/hkbus/hk-bus-crawling)
 
-## Domain Data Repositories 網域資訊儲存庫
-- [HK-Bus-ETA-AppLinks](https://github.com/HK-Bus-ETA/HK-Bus-ETA-AppLinks)
-- [HK-Bus-ETA-SplashScreens](https://github.com/HK-Bus-ETA/HK-Bus-ETA-SplashScreens)
+## Sub-repositories 相關儲存庫
+- [HK-Bus-ETA Organization](https://github.com/orgs/HK-Bus-ETA/repositories)
 - [wear.hkbus.app](https://github.com/hkbus/wear.hkbus.app)
 - [watch.hkbus.app](https://github.com/hkbus/watch.hkbus.app)
 
