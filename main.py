@@ -912,16 +912,16 @@ def add_route_remarks():
     }
     ctb = {
         "H1": {
-            "zh": "觀光城巴",
-            "en": "HK City️ Sightseeing (Citybus)"
+            "zh": "港島往九龍，懷舊之旅",
+            "en": "Hong Kong Island to Kowloon, Heritage Route"
         },
         "H2": {
-            "zh": "觀光城巴",
-            "en": "HK City️ Sightseeing (Citybus)"
+            "zh": "九龍往港島，文化之旅",
+            "en": "Kowloon to Hong Kong Island, Cultural Route"
         },
         "H2K": {
-            "zh": "觀光城巴",
-            "en": "HK City️ Sightseeing (Citybus)"
+            "zh": "港島、九龍循環線，夜賞香港",
+            "en": "Hong Kong Island and Kowloon Circular, Night Scene Hong Kong"
         }
     }
     ROUTE_REMARKS["kmb"] = kmb
