@@ -110,12 +110,14 @@ import com.loohp.hkbuseta.common.utils.AutoSortedList
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.Colored
+import com.loohp.hkbuseta.common.utils.EMSP
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.InlineImage
 import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
+import com.loohp.hkbuseta.common.utils.NQSP
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asAutoSortedList
@@ -3177,9 +3179,9 @@ class Registry {
                                     appendInlineContent(InlineImage.LRV, "\uD83D\uDE83")
                                 }
                                 if (lrt.trainLength == 1) {
-                                    appendInlineContent(InlineImage.LRV_EMPTY, " ")
+                                    appendInlineContent(InlineImage.LRV_EMPTY, EMSP)
                                 }
-                                append(" ")
+                                append(EMSP)
                             },
                             time = annotatedMinsMessage,
                             remark = "".asFormattedText()
@@ -3201,9 +3203,9 @@ class Registry {
                                     appendInlineContent(InlineImage.LRV, "\uD83D\uDE83")
                                 }
                                 if (lrt.trainLength == 1) {
-                                    appendInlineContent(InlineImage.LRV_EMPTY, " ")
+                                    appendInlineContent(InlineImage.LRV_EMPTY, EMSP)
                                 }
-                                append(" ")
+                                append(EMSP)
                             },
                             time = annotatedMinsMessage,
                             remark = "".asFormattedText()
@@ -3212,14 +3214,14 @@ class Registry {
                             platform = buildFormattedString {
                                 append("", BoldStyle)
                                 append(lrt.platformNumber.getCircledNumber(), Colored(lineColor))
-                                append(" ")
+                                append(NQSP)
                             },
                             carts = buildFormattedString {
                                 for (u in 0 until lrt.trainLength) {
                                     appendInlineContent(InlineImage.LRV, "\uD83D\uDE83")
                                 }
                                 if (lrt.trainLength == 1) {
-                                    appendInlineContent(InlineImage.LRV_EMPTY, " ")
+                                    appendInlineContent(InlineImage.LRV_EMPTY, EMSP)
                                 }
                                 append("  ")
                             },
@@ -3336,7 +3338,7 @@ class Registry {
                                 },
                                 destination = buildFormattedString {
                                     append(annotatedDest)
-                                    append(" ")
+                                    append(EMSP)
                                 },
                                 time = minsMessage,
                                 remark = if (seq == 1 && delayed) {

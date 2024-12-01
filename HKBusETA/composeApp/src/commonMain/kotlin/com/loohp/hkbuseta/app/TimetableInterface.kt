@@ -67,6 +67,7 @@ import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.NBSP
 import com.loohp.hkbuseta.common.utils.TimetableIntervalEntry
 import com.loohp.hkbuseta.common.utils.TimetableSingleEntry
 import com.loohp.hkbuseta.common.utils.TimetableSpecialEntry
@@ -274,7 +275,7 @@ fun TimetableInterface(
                             val denote = if (anyRemarks) {
                                 buildAnnotatedString {
                                     append(remarks[entry.specialRouteRemark]!!.second.getCircledNumber(), coColor?.invoke()?.let { style.copy(color = it, fontWeight = FontWeight.Normal) }?: style.copy(fontWeight = FontWeight.Normal))
-                                    append(" ", style)
+                                    append(NBSP, style)
                                 }
                             } else {
                                 "".asAnnotatedString(style)
@@ -412,7 +413,7 @@ fun TimetableInterface(
                         fontSize = 16.sp,
                         text = buildAnnotatedString {
                             append(denote.getCircledNumber(), coColor?.invoke()?.let { style.copy(color = it, fontWeight = FontWeight.Normal) }?: style.copy(fontWeight = FontWeight.Normal))
-                            append(" ", style)
+                            append(NBSP, style)
                             append((remark?: ("正常路線" withEn "Normal Route"))[Shared.language], style)
                         }
                     )

@@ -22,6 +22,10 @@
 package com.loohp.hkbuseta.common.utils
 
 
+const val NBSP: String = " "
+const val NQSP: String = " "
+const val EMSP: String = " "
+
 inline fun CharSequence.remove(regex: Regex): String {
     return replace(regex, "")
 }
