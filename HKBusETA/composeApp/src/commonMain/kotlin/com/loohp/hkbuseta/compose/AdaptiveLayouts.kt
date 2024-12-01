@@ -52,7 +52,6 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -156,7 +155,6 @@ sealed interface AdaptiveTopBottomMode {
     ): AdaptiveTopBottomMode
 }
 
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun AdaptiveTopBottomLayout(
     modifier: Modifier = Modifier,
@@ -280,7 +278,8 @@ fun AdaptiveTopBottomLayout(
                                         .fillMaxWidth()
                                         .height(20.dp)
                                         .background(Color.Gray)
-                                        .transformable(transformableState),
+                                        .transformable(transformableState)
+                                        .pointerHoverIcon(PointerIcon.Hand),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(

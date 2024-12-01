@@ -267,7 +267,7 @@ fun StopMarkers(
         val indexMap = remember { waypoints.buildStopListMapping(stops) }
         var selectedStop by selectedStopState
         for ((i, stop) in waypoints.stops.withIndex()) {
-            val stopIndex = { indexMap[i] + 1 }.logPossibleStopMarkerIndexMapException(instance, waypoints, indexMap, stops)
+            val stopIndex = { indexMap[i] + 1 }.logPossibleStopMarkerIndexMapException(instance, waypoints)
             val title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.getOrNull(stopIndex - 1)?.stop?: stop).name[Shared.language]
             val markerState = rememberStopMarkerState(stop)
             ChangedEffect (selectedStop) {
@@ -293,19 +293,11 @@ fun StopMarkers(
 inline fun (() -> Int).logPossibleStopMarkerIndexMapException(
     instance: AppActiveContext,
     waypoints: RouteWaypoints,
-    indexMap: ImmutableList<Int>,
-    stops: ImmutableList<Registry.StopData>
 ): Int {
     try {
         return invoke()
     } catch (e: Throwable) {
-        instance.logFirebaseEvent("stop_marker_crash", AppBundle().apply {
-            putString("co", waypoints.co.name)
-            putString("route", waypoints.routeNumber)
-            putString("indexMap", indexMap.toString())
-            putString("stopsSize", stops.size.toString())
-            putString("waypointsStopSize", waypoints.stops.size.toString())
-        })
+        instance.logFirebaseEvent("stop_marker_crash_${waypoints.co.name}_${waypoints.routeNumber}", AppBundle())
         throw e
     }
 }
