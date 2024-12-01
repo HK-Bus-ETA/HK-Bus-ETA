@@ -47,10 +47,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -61,6 +63,7 @@ import com.loohp.hkbuseta.common.objects.RemarkType
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
+import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Immutable
@@ -72,6 +75,7 @@ import com.loohp.hkbuseta.common.utils.currentEntry
 import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.common.utils.dayOfWeek
 import com.loohp.hkbuseta.common.utils.dayServiceMidnight
+import com.loohp.hkbuseta.common.utils.getCircledNumber
 import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.nightServiceMidnight
 import com.loohp.hkbuseta.common.utils.toDisplayText
@@ -84,20 +88,19 @@ import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
+import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.fontScaledDp
 import kotlinx.collections.immutable.ImmutableList
 
 
-private val specialDenoteChars = listOf("*", "^", "#")
-
-fun specialDenoteChar(index: Int): String {
-    return specialDenoteChars[index % specialDenoteChars.size].repeat((index / specialDenoteChars.size) + 1)
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>) {
+fun TimetableInterface(
+    instance: AppActiveContext,
+    routes: ImmutableList<Route>,
+    coColor: (() -> Color)? = null
+) {
     val now by currentMinuteState.collectAsStateMultiplatform()
     val timetableData = remember(routes) { routes.createTimetable(instance) }
     val compareMidnight = remember(timetableData) { if (timetableData.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight }
@@ -181,12 +184,13 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                     }
                 }
             }
-            var denoteIndex = 0
+            var denoteIndex = 1
             val remarks = timetableData.values.asSequence()
                 .flatten()
-                .filter { it.specialRouteRemark != null }
-                .groupBy { it.specialRouteRemark!! }
+                .sortedBy { it.specialRouteRemark != null }
+                .groupBy { it.specialRouteRemark }
                 .mapValues { it.value to denoteIndex++ }
+            val anyRemarks = remarks.any { it.key != null }
             val onlyDaily by remember { derivedStateOf { timetableKeysSorted.size <= 1 } }
             timetableKeysSorted.forEach { weekdays ->
                 var dayExpanded by remember { mutableStateOf(onlyDaily || composePlatform.hasLargeScreen || weekdays.contains(weekday)) }
@@ -267,7 +271,14 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                         val timetableDisplayEntries = mutableListOf<TimetableDisplayEntries>()
                         for ((index, entry) in entries.withIndex()) {
                             val style = SpanStyle(fontWeight = FontWeight.Bold.takeIf { currentIndexes.contains(index) })
-                            val stars = (entry.specialRouteRemark?.let { specialDenoteChar(remarks[it]!!.second) }?: "").asAnnotatedString(style)
+                            val denote = if (anyRemarks) {
+                                buildAnnotatedString {
+                                    append(remarks[entry.specialRouteRemark]!!.second.getCircledNumber(), coColor?.invoke()?.let { style.copy(color = it, fontWeight = FontWeight.Normal) }?: style.copy(fontWeight = FontWeight.Normal))
+                                    append(" ", style)
+                                }
+                            } else {
+                                "".asAnnotatedString(style)
+                            }
                             when (entry) {
                                 is TimetableIntervalEntry -> {
                                     val currentSubIndexes by remember(entry) { derivedStateOf { if (weekdays.contains(weekday)) entry.subEntries.currentEntry(timetableData.routeNumber, timetableData.co, now) else emptyList() } }
@@ -277,7 +288,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                                                 val subStyle = SpanStyle(fontWeight = FontWeight.Bold.takeIf { currentSubIndexes.contains(subIndex) })
                                                 add(
                                                     TimetableDisplayEntries(
-                                                        timeString = stars + subEntry.toString(Shared.language).asAnnotatedString(subStyle),
+                                                        timeString = denote + subEntry.toString(Shared.language).asAnnotatedString(subStyle),
                                                         intervalString = subEntry.interval.toDisplayText().asAnnotatedString(subStyle)
                                                     )
                                                 )
@@ -288,7 +299,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                                     }
                                     timetableDisplayEntries.add(
                                         TimetableDisplayEntries(
-                                            timeString = stars + entry.toString(Shared.language).asAnnotatedString(style),
+                                            timeString = denote + entry.toString(Shared.language).asAnnotatedString(style),
                                             intervalString = entry.interval.toDisplayText().asAnnotatedString(style),
                                             subDisplayEntries = subDisplayEntries
                                         )
@@ -298,7 +309,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                                     if (anyIntervals || timetableDisplayEntries.lastOrNull()?.intervalString?.isNotEmpty() == true) {
                                         timetableDisplayEntries.add(
                                             TimetableDisplayEntries(
-                                                timeString = stars + entry.toString(Shared.language).asAnnotatedString(style),
+                                                timeString = denote + entry.toString(Shared.language).asAnnotatedString(style),
                                                 intervalString = "".asAnnotatedString()
                                             )
                                         )
@@ -307,7 +318,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                                         val lastString = lastEntry?.timeString?.let { it + ", ".asAnnotatedString() }?: "".asAnnotatedString()
                                         timetableDisplayEntries.add(
                                             TimetableDisplayEntries(
-                                                timeString = lastString + stars + entry.toString(Shared.language).asAnnotatedString(style),
+                                                timeString = lastString + denote + entry.toString(Shared.language).asAnnotatedString(style),
                                                 intervalString = "".asAnnotatedString()
                                             )
                                         )
@@ -316,7 +327,7 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                                 is TimetableSpecialEntry -> {
                                     timetableDisplayEntries.add(
                                         TimetableDisplayEntries(
-                                            timeString = stars + entry.toString(Shared.language).asAnnotatedString(style),
+                                            timeString = denote + entry.toString(Shared.language).asAnnotatedString(style),
                                             intervalString = " ".asAnnotatedString()
                                         )
                                     )
@@ -390,16 +401,22 @@ fun TimetableInterface(instance: AppActiveContext, routes: ImmutableList<Route>)
                 }
             }
             Spacer(modifier = Modifier.size(25.dp))
-            for ((remark, pair) in remarks) {
-                val (entries, denote) = pair
-                PlatformText(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .iosExtraHeight(),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold.takeIf { entries.any { e -> currentBranches.contains(e.route) } },
-                    text = specialDenoteChar(denote) + remark[Shared.language]
-                )
+            if (anyRemarks) {
+                for ((remark, pair) in remarks) {
+                    val (entries, denote) = pair
+                    val style = SpanStyle(fontWeight = FontWeight.Bold.takeIf { entries.any { e -> currentBranches.contains(e.route) } })
+                    PlatformText(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .iosExtraHeight(),
+                        fontSize = 16.sp,
+                        text = buildAnnotatedString {
+                            append(denote.getCircledNumber(), coColor?.invoke()?.let { style.copy(color = it, fontWeight = FontWeight.Normal) }?: style.copy(fontWeight = FontWeight.Normal))
+                            append(" ", style)
+                            append((remark?: ("正常路線" withEn "Normal Route"))[Shared.language], style)
+                        }
+                    )
+                }
             }
         }
     }

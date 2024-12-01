@@ -151,6 +151,13 @@ fun LocalTime.isBetweenInclusive(start: LocalTime, end: LocalTime): Boolean {
     return timeSec in startSec..endSec
 }
 
+fun LocalTime.isBetweenExclusive(start: LocalTime, end: LocalTime): Boolean {
+    val timeSec = toSecondOfDay()
+    val startSec = start.toSecondOfDay()
+    val endSec = end.toSecondOfDay().let { if (it < startSec) it + secondsInDay else it }
+    return timeSec in (startSec + 1) until endSec
+}
+
 fun Pair<LocalTime, LocalTime>.isBetweenInclusive(start: LocalTime, end: LocalTime): Boolean {
     val timeStartSec = first.toSecondOfDay()
     val timeEndSec = second.toSecondOfDay().let { if (it < timeStartSec) it + secondsInDay else it }

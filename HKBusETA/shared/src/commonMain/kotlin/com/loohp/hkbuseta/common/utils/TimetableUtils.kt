@@ -223,8 +223,8 @@ class TimetableIntervalEntry(
     override fun overlap(other: TimetableEntry): Boolean {
         if (other !is TimetableIntervalEntry) return false
         if (start == other.start || end == other.end) return true
-        if (other.start.isBetweenInclusive(start, end)) return true
-        if (other.end.isBetweenInclusive(start, end)) return true
+        if (other.start.isBetweenExclusive(start, end)) return true
+        if (other.end.isBetweenExclusive(start, end)) return true
         return false
     }
     override fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int {
@@ -475,7 +475,14 @@ class TimetableEntryMapBuilder(
     private val timetableEntryMap: MutableMap<DayOfWeek, MutableList<TimetableEntry>> = mutableMapOf()
     private val routeOrder: MutableSet<Route> = linkedSetOf()
 
-    private fun List<TimetableEntry>.resolveConflict(conflictResolver: (TimetableEntry, TimetableEntry) -> List<TimetableEntry>): List<TimetableEntry> {
+    private fun interface ConflictResolver {
+        fun ConflictResolver.invoke(a: TimetableEntry, b: TimetableEntry): List<TimetableEntry>
+    }
+    private inline fun ConflictResolver.invoke(a: TimetableEntry, b: TimetableEntry): List<TimetableEntry> = invoke(a, b)
+
+    private fun List<TimetableEntry>.resolveConflict(
+        conflictResolver: ConflictResolver
+    ): List<TimetableEntry> {
         if (isEmpty()) return this
         val result = toMutableList()
         var lastEntry: TimetableEntry = result.first()
@@ -553,12 +560,14 @@ class TimetableEntryMapBuilder(
                     is TimetableIntervalEntry -> {
                         if (secondEntry is TimetableIntervalEntry) {
                             buildList {
+                                @Suppress("UNCHECKED_CAST")
+                                val subEntries = (firstEntry.subEntries + secondEntry.subEntries).sortedBy { it.start }.resolveConflict(this@resolveConflict) as List<TimetableIntervalEntry>
                                 if (firstEntry.start != secondEntry.start && firstEntry.start.isBetweenInclusive(secondEntry.start, secondEntry.end)) {
-                                    add(TimetableIntervalEntry(secondEntry.route, secondEntry.start, firstEntry.start, secondEntry.interval, secondEntry.specialRouteRemark))
+                                    add(TimetableIntervalEntry(secondEntry.route, secondEntry.start, firstEntry.start, secondEntry.interval, secondEntry.specialRouteRemark, subEntries))
                                 }
                                 add(firstEntry)
                                 if (firstEntry.end != secondEntry.end && firstEntry.end.isBetweenInclusive(secondEntry.start, secondEntry.end)) {
-                                    add(TimetableIntervalEntry(secondEntry.route, firstEntry.end, secondEntry.end, secondEntry.interval, secondEntry.specialRouteRemark))
+                                    add(TimetableIntervalEntry(secondEntry.route, firstEntry.end, secondEntry.end, secondEntry.interval, secondEntry.specialRouteRemark, subEntries))
                                 }
                             }
                         } else {

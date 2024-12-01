@@ -191,15 +191,19 @@ import com.loohp.hkbuseta.compose.rememberAutoResizeTextState
 import com.loohp.hkbuseta.compose.rememberIsInPipMode
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.compose.userMarquee
+import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.Small
+import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
+import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
+import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.pixelsToDp
 import com.loohp.hkbuseta.utils.sp
 import kotlinx.collections.immutable.ImmutableList
@@ -341,6 +345,8 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val isNightRoute by remember { derivedStateOf { co.isBus && calculateServiceTimeCategory(routeNumber, co) {
         Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).getServiceTimeCategory()
     } == ServiceTimeCategory.NIGHT } }
+    val rawColor by remember { derivedStateOf { co.getColor(routeNumber, Color.White) } }
+    val color by ComposeShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { route.route!!.isKmbCtbJoint })
 
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
     var ctbHasTwoWaySectionFare by remember { mutableStateOf(false) }
@@ -757,7 +763,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                     StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranchState, alternateStopNamesShowing, timesStartIndexState = timesStartIndexState, timesInitState = timesInitState)
                     StopsTabItemType.TRAFFIC_SNAPSHOTS -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TRAFFIC_SNAPSHOTS, location, route, selectedStop, selectedBranchState, alternateStopNamesShowing, waypoints = waypoints, trafficSnapshots = trafficSnapshots)
                     StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.asImmutableList(), possibleBidirectionalSectionFare)
-                    StopsTabItemType.TIMETABLE -> TimetableInterface(instance, routeBranches.asImmutableList())
+                    StopsTabItemType.TIMETABLE -> TimetableInterface(instance, routeBranches.asImmutableList()) { color.let { if (darkMode) it else it.adjustBrightness(0.85F) } }
                 }
             }
         }
