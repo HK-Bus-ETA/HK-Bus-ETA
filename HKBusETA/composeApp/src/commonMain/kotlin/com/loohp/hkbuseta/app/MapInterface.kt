@@ -25,13 +25,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
+import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.getCircularPivotIndex
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.buildImmutableList
+import com.loohp.hkbuseta.common.utils.debugLog
 import kotlinx.collections.immutable.ImmutableList
 
 
@@ -56,12 +59,12 @@ expect fun MapSelectInterface(
 
 expect val isMapOverlayAlwaysOnTop: Boolean
 
-fun RouteWaypoints.buildStopListMapping(allStops: List<Registry.StopData>): ImmutableList<Int> {
+fun RouteWaypoints.buildStopListMapping(context: AppContext, allStops: List<Registry.StopData>): ImmutableList<Int> {
     return buildImmutableList {
         var waypointStopIndex = 0
         for ((index, stopData) in allStops.withIndex()) {
             val waypointStop = stops.getOrNull(waypointStopIndex)?: break
-            if (waypointStop == stopData.stop) {
+            if (waypointStop == stopData.stop || stopData.mergedStopIds.keys.any { it.asStop(context) == waypointStop }) {
                 add(index)
                 waypointStopIndex++
             }

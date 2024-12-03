@@ -140,7 +140,7 @@ actual fun MapRouteInterface(
     if (hasGooglePlayServices) {
         GoogleMapRouteInterface(instance, waypoints, stops, selectedStopState, alternateStopNameShowing, alternateStopNames)
     } else {
-        DefaultMapRouteInterface(waypoints, stops, selectedStopState, alternateStopNameShowing, alternateStopNames)
+        DefaultMapRouteInterface(instance, waypoints, stops, selectedStopState, alternateStopNameShowing, alternateStopNames)
     }
 }
 
@@ -264,7 +264,7 @@ fun StopMarkers(
     shouldShowStopIndex: Boolean
 ) {
     key(waypoints, stops) {
-        val indexMap = remember { waypoints.buildStopListMapping(stops) }
+        val indexMap = remember { waypoints.buildStopListMapping(instance, stops) }
         var selectedStop by selectedStopState
         for ((i, stop) in waypoints.stops.withIndex()) {
             val stopIndex = { indexMap[i] + 1 }.logPossibleStopMarkerIndexMapException(instance, waypoints)
@@ -461,6 +461,7 @@ fun rememberLeafletScript(
 
 @Composable
 fun DefaultMapRouteInterface(
+    instance: AppActiveContext,
     waypoints: RouteWaypoints,
     stops: ImmutableList<Registry.StopData>,
     selectedStopState: MutableIntState,
@@ -471,7 +472,7 @@ fun DefaultMapRouteInterface(
     val webViewNavigator = rememberWebViewNavigator()
     val webViewJsBridge = rememberWebViewJsBridge()
     var selectedStop by selectedStopState
-    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
+    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(instance, stops) } }
     val script by rememberLeafletScript(waypoints, alternateStopNameShowing, alternateStopNames, indexMap)
     val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
     val background = platformBackgroundColor

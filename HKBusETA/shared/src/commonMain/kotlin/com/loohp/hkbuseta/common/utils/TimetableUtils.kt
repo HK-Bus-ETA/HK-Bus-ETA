@@ -561,7 +561,11 @@ class TimetableEntryMapBuilder(
                         if (secondEntry is TimetableIntervalEntry) {
                             buildList {
                                 @Suppress("UNCHECKED_CAST")
-                                val subEntries = (firstEntry.subEntries + secondEntry.subEntries).sortedBy { it.start }.resolveConflict(this@resolveConflict) as List<TimetableIntervalEntry>
+                                val subEntries = if (firstEntry.subEntries.size > 1 || secondEntry.subEntries.size > 1) {
+                                    (firstEntry.subEntries + secondEntry.subEntries).sortedBy { it.start }.resolveConflict(this@resolveConflict) as List<TimetableIntervalEntry>
+                                } else {
+                                    null
+                                }
                                 if (firstEntry.start != secondEntry.start && firstEntry.start.isBetweenInclusive(secondEntry.start, secondEntry.end)) {
                                     add(TimetableIntervalEntry(secondEntry.route, secondEntry.start, firstEntry.start, secondEntry.interval, secondEntry.specialRouteRemark, subEntries))
                                 }

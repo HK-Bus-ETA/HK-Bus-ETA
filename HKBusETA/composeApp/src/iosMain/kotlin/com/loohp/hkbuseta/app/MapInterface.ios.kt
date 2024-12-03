@@ -127,7 +127,7 @@ actual fun MapRouteInterface(
     alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
 ) {
     var selectedStop by selectedStopState
-    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
+    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(instance, stops) } }
     val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
     val iconName = remember { when (waypoints.co) {
         Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {

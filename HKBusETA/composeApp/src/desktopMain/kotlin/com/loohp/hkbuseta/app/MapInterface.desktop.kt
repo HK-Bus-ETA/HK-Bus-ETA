@@ -377,7 +377,7 @@ actual fun MapRouteInterface(
         val webViewNavigator = rememberWebViewNavigator()
         val webViewJsBridge = rememberWebViewJsBridge()
         var selectedStop by selectedStopState
-        val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
+        val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(instance, stops) } }
         val script by rememberLeafletScript(waypoints, alternateStopNameShowing, alternateStopNames, indexMap)
         val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
         val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()

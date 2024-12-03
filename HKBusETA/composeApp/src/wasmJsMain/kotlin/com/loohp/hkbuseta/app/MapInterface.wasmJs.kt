@@ -107,7 +107,7 @@ actual fun MapRouteInterface(
     } }
     val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
     var selectedStop by selectedStopState
-    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(stops) } }
+    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(instance, stops) } }
     val scope = rememberCoroutineScope()
     val backgroundColor = platformBackgroundColor
 
