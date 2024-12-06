@@ -879,7 +879,7 @@ def add_route_remarks():
     kmb = {
         "HK1": {
             "zh": "九龍旅遊路線",
-            "en": "Kowloon Tour Bus"
+            "en": "Kowloon Bus Tour"
         },
         "PB1": {
             "zh": "寵物巴士團 🐾",
@@ -929,15 +929,15 @@ def add_route_remarks():
     ctb = {
         "H1": {
             "zh": "過海旅遊路線",
-            "en": "Cross Harbour Tour Bus"
+            "en": "Cross Harbour Bus Tour"
         },
         "H2": {
             "zh": "過海旅遊路線",
-            "en": "Cross Harbour Tour Bus"
+            "en": "Cross Harbour Bus Tour"
         },
         "H2K": {
             "zh": "過海旅遊路線",
-            "en": "Cross Harbour Tour Bus"
+            "en": "Cross Harbour Bus Tour"
         }
     }
     ROUTE_REMARKS["kmb"] = kmb
