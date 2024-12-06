@@ -882,28 +882,44 @@ def add_route_remarks():
             "en": "Kowloon Tour Bus"
         },
         "PB1": {
-            "zh": "黃金海岸寵物巴士團 🐾",
-            "en": "HK Gold Coast Pet Bus 🐾"
+            "zh": "寵物巴士團 🐾",
+            "en": "Pet Bus 🐾"
         },
         "PB2": {
-            "zh": "西九、中環寵物巴士團 🐾",
-            "en": "West Kowloon & Central Pet Bus 🐾"
+            "zh": "寵物巴士團 🐾",
+            "en": "Pet Bus 🐾"
         },
         "PB3": {
-            "zh": "白石角寵物巴士團 🐾",
-            "en": "Pak Shek Kok Pet Bus 🐾"
+            "zh": "寵物巴士團 🐾",
+            "en": "Pet Bus 🐾"
         },
         "PB4": {
-            "zh": "東涌、迪士尼樂園寵物巴士團 🐾",
-            "en": "Tung Chung & Disneyland Pet Bus 🐾"
+            "zh": "寵物巴士團 🐾",
+            "en": "Pet Bus 🐾"
         },
         "PB5": {
-            "zh": "西沙 Go Park, 西貢寵物巴士團 🐾",
-            "en": "Sai Sha Go Park, Sai Kung Pet Bus 🐾"
+            "zh": "寵物巴士團 🐾",
+            "en": "Pet Bus 🐾"
         },
         "PB6": {
-            "zh": "將軍澳寵物巴士團 🐾",
-            "en": "Tseung Kwan O Pet Bus 🐾"
+            "zh": "寵物巴士團 🐾",
+            "en": "Pet Bus 🐾"
+        },
+        "PBN1": {
+            "zh": "夜間寵物巴士團 🐾",
+            "en": "Evening Pet Bus 🐾"
+        },
+        "PBN2": {
+            "zh": "夜間寵物巴士團 🐾",
+            "en": "Evening Pet Bus 🐾"
+        },
+        "PBN3": {
+            "zh": "夜間寵物巴士團 🐾",
+            "en": "Evening Pet Bus 🐾"
+        },
+        "PBN4": {
+            "zh": "夜間寵物巴士團 🐾",
+            "en": "Evening Pet Bus 🐾"
         },
         "LB1": {
             "zh": "郊遊遠足路線 🏞",
@@ -912,16 +928,16 @@ def add_route_remarks():
     }
     ctb = {
         "H1": {
-            "zh": "港島往九龍，懷舊之旅",
-            "en": "Hong Kong Island to Kowloon, Heritage Route"
+            "zh": "過海旅遊路線",
+            "en": "Cross Harbour Tour Bus"
         },
         "H2": {
-            "zh": "九龍往港島，文化之旅",
-            "en": "Kowloon to Hong Kong Island, Cultural Route"
+            "zh": "過海旅遊路線",
+            "en": "Cross Harbour Tour Bus"
         },
         "H2K": {
-            "zh": "港島、九龍循環線，夜賞香港",
-            "en": "Hong Kong Island and Kowloon Circular, Night Scene Hong Kong"
+            "zh": "過海旅遊路線",
+            "en": "Cross Harbour Tour Bus"
         }
     }
     ROUTE_REMARKS["kmb"] = kmb
