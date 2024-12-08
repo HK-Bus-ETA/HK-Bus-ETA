@@ -77,6 +77,7 @@ import com.loohp.hkbuseta.compose.AdaptiveNavBar
 import com.loohp.hkbuseta.compose.AdaptiveNavBarItem
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.IconPainterLayer
 import com.loohp.hkbuseta.compose.MutableSignalState
 import com.loohp.hkbuseta.compose.NearMe
 import com.loohp.hkbuseta.compose.PlatformIcon
@@ -102,16 +103,34 @@ import org.jetbrains.compose.resources.painterResource
 @Immutable
 data class TitleTabItem(
     val title: BilingualText,
-    val unselectedIcon: @Composable () -> Painter,
-    val selectedIcon: @Composable () -> Painter,
+    val unselectedIconLayers: List<IconPainterLayer>,
+    val selectedIconLayers: List<IconPainterLayer>,
     val unselectedColors: @Composable () -> NavigationBarItemColors? = { null },
     val selectedColors: @Composable () -> NavigationBarItemColors? = { null },
     val appScreens: Set<AppScreen>,
     val alreadyOnPageClickAction: (AppActiveContext.(MutableSignalState) -> Unit)? = null
 ) {
 
-    fun icon(selected: Boolean): @Composable () -> Painter {
-        return if (selected) selectedIcon else unselectedIcon
+    constructor(
+        title: BilingualText,
+        unselectedIcon: @Composable () -> Painter,
+        selectedIcon: @Composable () -> Painter,
+        unselectedColors: @Composable () -> NavigationBarItemColors? = { null },
+        selectedColors: @Composable () -> NavigationBarItemColors? = { null },
+        appScreens: Set<AppScreen>,
+        alreadyOnPageClickAction: (AppActiveContext.(MutableSignalState) -> Unit)? = null
+    ): this(
+        title = title,
+        unselectedIconLayers = listOf(IconPainterLayer(unselectedIcon)),
+        selectedIconLayers = listOf(IconPainterLayer(selectedIcon)),
+        unselectedColors = unselectedColors,
+        selectedColors = selectedColors,
+        appScreens = appScreens,
+        alreadyOnPageClickAction = alreadyOnPageClickAction
+    )
+
+    fun iconLayers(selected: Boolean): List<IconPainterLayer> {
+        return if (selected) selectedIconLayers else unselectedIconLayers
     }
 
     fun colors(selected: Boolean): @Composable () -> NavigationBarItemColors? {
@@ -143,8 +162,13 @@ val titleTabItems = listOf(
     ),
     TitleTabItem(
         title = "港鐵" withEn "MTR",
-        unselectedIcon = { painterResource(DrawableResource("mtr_vector.xml")) },
-        selectedIcon = { painterResource(DrawableResource("mtr_vector.xml")) },
+        unselectedIconLayers = listOf(
+            IconPainterLayer({ painterResource(DrawableResource("mtr_vector.xml")) })
+        ),
+        selectedIconLayers = listOf(
+            IconPainterLayer({ painterResource(DrawableResource("mtr_background_vector.xml")) }, Color.White) { scale(0.9F) },
+            IconPainterLayer({ painterResource(DrawableResource("mtr_vector.xml")) })
+        ),
         selectedColors = { NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFFAC2E44)) },
         appScreens = setOf(AppScreen.SEARCH_TRAIN),
         alreadyOnPageClickAction = { it.notifySignal() }
@@ -239,13 +263,19 @@ fun TitleInterface(instance: AppActiveContext) {
                         targetValue = if (selected) 1.1F else 1F,
                         animationSpec = tween(200, easing = LinearEasing)
                     )
-                    PlatformIcon(
-                        modifier = Modifier
-                            .size(22.dp)
-                            .scale(scale),
-                        painter = item.icon(selected).invoke(),
-                        contentDescription = item.title[Shared.language]
-                    )
+                    Box {
+                        for ((icon, overrideColor, modifier) in item.iconLayers(selected)) {
+                            PlatformIcon(
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .scale(scale)
+                                    .run(modifier),
+                                painter = icon.invoke(),
+                                tint = overrideColor,
+                                contentDescription = item.title[Shared.language]
+                            )
+                        }
+                    }
                 },
                 colors = item.colors(selected).invoke()
             )

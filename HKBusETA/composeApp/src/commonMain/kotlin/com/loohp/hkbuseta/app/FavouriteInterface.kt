@@ -108,6 +108,7 @@ import com.loohp.hkbuseta.compose.DeleteForever
 import com.loohp.hkbuseta.compose.Edit
 import com.loohp.hkbuseta.compose.EditNote
 import com.loohp.hkbuseta.compose.FontSizeRange
+import com.loohp.hkbuseta.compose.IconPainterLayer
 import com.loohp.hkbuseta.compose.Map
 import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformIcon
@@ -158,8 +159,16 @@ import sh.calvin.reorderable.ReorderableColumn
 
 data class FavouriteTabItem(
     val title: BilingualText,
-    val icon: @Composable () -> Painter
-)
+    val iconLayers: List<IconPainterLayer>
+) {
+    constructor(
+        title: BilingualText,
+        icon: @Composable () -> Painter
+    ): this(
+        title = title,
+        iconLayers = listOf(IconPainterLayer(icon))
+    )
+}
 
 val mainFavouriteTabItem = listOf(
     FavouriteTabItem(
@@ -197,16 +206,21 @@ fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, sign
         modifier = Modifier.fillMaxWidth()
     ) {
         PlatformTabRow(selectedTabIndex = pagerState.currentPage) {
-            mainFavouriteTabItem.forEachIndexed { index, (title, icon) ->
+            mainFavouriteTabItem.forEachIndexed { index, (title, iconLayers) ->
                 PlatformTab(
                     selected = index == pagerState.currentPage,
                     onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                     icon = {
-                        PlatformIcon(
-                            modifier = Modifier.size(18F.sp.dp),
-                            painter = icon.invoke(),
-                            contentDescription = title[Shared.language]
-                        )
+                        Box {
+                            for ((icon, overrideColor, modifier) in iconLayers) {
+                                PlatformIcon(
+                                    modifier = Modifier.size(18F.sp.dp).run(modifier),
+                                    painter = icon.invoke(),
+                                    tint = overrideColor,
+                                    contentDescription = title[Shared.language]
+                                )
+                            }
+                        }
                     },
                     text = {
                         PlatformText(

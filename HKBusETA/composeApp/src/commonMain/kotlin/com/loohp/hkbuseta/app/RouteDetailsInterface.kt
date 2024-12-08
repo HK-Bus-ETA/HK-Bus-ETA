@@ -68,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -162,6 +163,7 @@ import com.loohp.hkbuseta.compose.DirectionsBoat
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.Fullscreen
 import com.loohp.hkbuseta.compose.FullscreenExit
+import com.loohp.hkbuseta.compose.IconPainterLayer
 import com.loohp.hkbuseta.compose.NotificationImportant
 import com.loohp.hkbuseta.compose.PhotoCamera
 import com.loohp.hkbuseta.compose.PlatformButton
@@ -225,10 +227,22 @@ enum class StopsTabItemType {
 @Immutable
 data class ListStopsTabItem(
     val title: BilingualText,
-    val icon: @Composable () -> Painter,
+    val iconLayers: List<IconPainterLayer>,
     val color: Color? = null,
     val type: StopsTabItemType
-)
+) {
+    constructor(
+        title: BilingualText,
+        icon: @Composable () -> Painter,
+        color: Color? = null,
+        type: StopsTabItemType
+    ): this(
+        title = title,
+        iconLayers = listOf(IconPainterLayer(icon)),
+        color = color,
+        type = type
+    )
+}
 
 val busListStopsTabItem = listOf(
     ListStopsTabItem(
@@ -261,7 +275,10 @@ val busListStopsTabItem = listOf(
 val trainListStopsTabItem = listOf(
     ListStopsTabItem(
         title = "車站" withEn "Stations",
-        icon = { painterResource(DrawableResource("mtr_vector.xml")) },
+        iconLayers = listOf(
+            IconPainterLayer({ painterResource(DrawableResource("mtr_background_vector.xml")) }, Color.White) { scale(0.9F) },
+            IconPainterLayer({ painterResource(DrawableResource("mtr_vector.xml")) })
+        ),
         color = Color(0xFFAC2E44),
         type = StopsTabItemType.STOPS
     ),
@@ -280,7 +297,10 @@ val trainListStopsTabItem = listOf(
 val lrtListStopsTabItem = listOf(
     ListStopsTabItem(
         title = "車站" withEn "Stops",
-        icon = { painterResource(DrawableResource("lrt_vector.xml")) },
+        iconLayers = listOf(
+            IconPainterLayer({ painterResource(DrawableResource("lrt_background_vector.xml")) }, Color.White) { scale(0.9F) },
+            IconPainterLayer({ painterResource(DrawableResource("lrt_vector.xml")) })
+        ),
         color = Color(0xFFCDA410),
         type = StopsTabItemType.STOPS
     ),
@@ -665,17 +685,21 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                 .applyIf(composePlatform.applePlatform) { platformHorizontalDividerShadow() },
             selectedTabIndex = pagerState.currentPage
         ) {
-            listStopsTabItem.forEachIndexed { index, (title, icon, color, type) ->
+            listStopsTabItem.forEachIndexed { index, (title, iconLayers, color, type) ->
                 PlatformTab(
                     selected = index == pagerState.currentPage,
                     onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                     icon = {
-                        PlatformIcon(
-                            modifier = Modifier.size(18F.sp.dp),
-                            painter = icon.invoke(),
-                            tint = color,
-                            contentDescription = title[Shared.language]
-                        )
+                        Box {
+                            for ((icon, overrideColor, modifier) in iconLayers) {
+                                PlatformIcon(
+                                    modifier = Modifier.size(18F.sp.dp).run(modifier),
+                                    painter = icon.invoke(),
+                                    tint = overrideColor?: color,
+                                    contentDescription = title[Shared.language]
+                                )
+                            }
+                        }
                     },
                     text = {
                         Row(

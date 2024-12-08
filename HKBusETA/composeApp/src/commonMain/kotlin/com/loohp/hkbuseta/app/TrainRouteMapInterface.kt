@@ -94,6 +94,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -192,6 +193,7 @@ import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.CheckCircle
 import com.loohp.hkbuseta.compose.DarkMode
 import com.loohp.hkbuseta.compose.Error
+import com.loohp.hkbuseta.compose.IconPainterLayer
 import com.loohp.hkbuseta.compose.Info
 import com.loohp.hkbuseta.compose.Map
 import com.loohp.hkbuseta.compose.NotificationImportant
@@ -295,21 +297,39 @@ private val lightRailRouteMapLoaded: MutableStateFlow<Boolean> = MutableStateFlo
 @Immutable
 data class TrainRouteMapTabItem(
     val title: BilingualText,
-    val icon: @Composable () -> Painter,
+    val iconLayers: List<IconPainterLayer>,
     val color: Color? = null,
     val shouldSaveTabPosition: Boolean
-)
+) {
+    constructor(
+        title: BilingualText,
+        icon: @Composable () -> Painter,
+        color: Color? = null,
+        shouldSaveTabPosition: Boolean
+    ): this(
+        title = title,
+        iconLayers = listOf(IconPainterLayer(icon)),
+        color = color,
+        shouldSaveTabPosition = shouldSaveTabPosition
+    )
+}
 
 val trainRouteMapItems = listOf(
     TrainRouteMapTabItem(
         title = "港鐵" withEn "MTR",
-        icon = { painterResource(DrawableResource("mtr_vector.xml")) },
+        iconLayers = listOf(
+            IconPainterLayer({ painterResource(DrawableResource("mtr_background_vector.xml")) }, Color.White) { scale(0.9F) },
+            IconPainterLayer({ painterResource(DrawableResource("mtr_vector.xml")) })
+        ),
         color = Color(0xFFAC2E44),
         shouldSaveTabPosition = true
     ),
     TrainRouteMapTabItem(
         title = "輕鐵" withEn "Light Rail",
-        icon = { painterResource(DrawableResource("lrt_vector.xml")) },
+        iconLayers = listOf(
+            IconPainterLayer({ painterResource(DrawableResource("lrt_background_vector.xml")) }, Color.White) { scale(0.9F) },
+            IconPainterLayer({ painterResource(DrawableResource("lrt_vector.xml")) })
+        ),
         color = Color(0xFFCDA410),
         shouldSaveTabPosition = true
     ),
@@ -430,17 +450,21 @@ fun RouteMapSearchInterface(
             verticalAlignment = Alignment.CenterVertically
         ) {
             PlatformTabRow(selectedTabIndex = pagerState.currentPage) {
-                trainRouteMapItems.forEachIndexed { index, (title, icon, color) ->
+                trainRouteMapItems.forEachIndexed { index, (title, iconLayers, color) ->
                     PlatformTab(
                         selected = pagerState.currentPage == index,
                         onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                         icon = {
-                            PlatformIcon(
-                                modifier = Modifier.size(18F.sp.dp),
-                                painter = icon.invoke(),
-                                tint = color,
-                                contentDescription = title[Shared.language]
-                            )
+                            Box {
+                                for ((icon, overrideColor, modifier) in iconLayers) {
+                                    PlatformIcon(
+                                        modifier = Modifier.size(18F.sp.dp).run(modifier),
+                                        painter = icon.invoke(),
+                                        tint = overrideColor?: color,
+                                        contentDescription = title[Shared.language]
+                                    )
+                                }
+                            }
                         },
                         text = {
                             PlatformText(
