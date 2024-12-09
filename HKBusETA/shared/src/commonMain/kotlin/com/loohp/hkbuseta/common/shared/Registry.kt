@@ -165,6 +165,7 @@ import com.loohp.hkbuseta.common.utils.postJSONResponse
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.common.utils.strEq
 import com.loohp.hkbuseta.common.utils.sundayZeroDayNumber
+import com.loohp.hkbuseta.common.utils.toGroupedMap
 import com.loohp.hkbuseta.common.utils.toIntOrElse
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.toLongOrElse
@@ -368,8 +369,7 @@ class Registry {
                         val newRouteData = newRoutes[0]
                         val newRoute = newRouteData.route!!
                         val stopList = getAllStops(newRoute.routeNumber, newRoute.idBound(co), co, newRoute.gmbRegion)
-                        val finalStopIdCompare = stopId
-                        var index = stopList.indexesOf { it.stopId == finalStopIdCompare }
+                        var index = stopList.indexesOf { it.stopId == stopId }
                             .minByOrNull { (favouriteRoute.index - it + 1).absoluteValue }
                             ?.let { it + 1 }
                             ?: 0
@@ -923,8 +923,7 @@ class Registry {
                                             val newRouteData = newRoutes.minBy { keyOrder.indexOf(it.routeKey) }
                                             val newRoute = newRouteData.route!!
                                             val stopList = getAllStops(newRoute.routeNumber, newRoute.idBound(co), co, newRoute.gmbRegion)
-                                            val finalStopIdCompare = stopId
-                                            var index = stopList.indexesOf { it.stopId == finalStopIdCompare }
+                                            var index = stopList.indexesOf { it.stopId == stopId }
                                                 .minByOrNull { (favouriteRoute.index - it + 1).absoluteValue }
                                                 ?.let { it + 1 }
                                                 ?: 0
@@ -1378,14 +1377,22 @@ class Registry {
                     emptyList()
                 } else {
                     val mergedStopIds: Set<Set<String>>
-                    val mergedStopIdBranch: Map<String, Route>
+                    val mergedStopIdBranch: Map<String, List<Route>>
                     if (mergeEtaSeparateIds) {
-                        val allStops = branches.flatMap { it.stops[co]?: emptyList() }
+                        val excludeStops = branches.asSequence()
+                            .mapNotNull { it.stops[co] }
+                            .flatMapTo(mutableSetOf()) {
+                                it.asSequence()
+                                    .filter { i ->
+                                        val stopI = stopList[i]?.name
+                                        it.any(2) { d -> stopI == stopList[d]?.name }
+                                    }
+                            }
                         val mapped = branches.asSequence()
                             .mapNotNull {
                                 val stops = it.stops[co]?: return@mapNotNull null
                                 stops.asSequence()
-                                    .filterNot { i -> allStops.any(2) { d -> i == d } }
+                                    .filterNot { i -> excludeStops.contains(i) }
                                     .map { i -> i to it }
                                     .toSet()
                             }
@@ -1396,7 +1403,7 @@ class Registry {
                             .groupBy { stopList[it]?.name }
                             .values
                             .mapNotNullTo(mutableSetOf()) { if (it.size > 1) it.toSet() else null }
-                        mergedStopIdBranch = mapped.toMap()
+                        mergedStopIdBranch = mapped.toGroupedMap()
                     } else {
                         mergedStopIds = emptySet()
                         mergedStopIdBranch = emptyMap()
@@ -1442,11 +1449,11 @@ class Registry {
         val stop: Stop,
         val route: Route,
         val branchIds: Set<Route> = emptySet(),
-        val mergedStopIds: Map<String, Route> = mapOf(stopId to route),
+        val mergedStopIds: Map<String, List<Route>> = mapOf(stopId to listOf(route)),
         val fare: Fare?,
         val holidayFare: Fare?
     ) {
-        fun with(branchIds: Set<Route>?, mergedStopIds: Map<String, Route>?): StopData {
+        fun with(branchIds: Set<Route>?, mergedStopIds: Map<String, List<Route>>?): StopData {
             return StopData(
                 stopId = stopId,
                 serviceType = serviceType,

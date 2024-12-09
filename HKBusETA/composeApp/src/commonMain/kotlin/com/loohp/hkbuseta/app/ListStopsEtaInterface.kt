@@ -959,11 +959,14 @@ fun ListStopsBottomSheet(
                                     }.asAnnotatedString()
                                 )
                             }
-                            for ((stopId, branch) in stopData.mergedStopIds) {
+                            for ((stopId, branches) in stopData.mergedStopIds) {
                                 val subText = if (stopData.mergedStopIds.size <= 1) {
                                     stopId
                                 } else {
-                                    "$stopId (${branch.resolveSpecialRemark(instance, RemarkType.LABEL_MAIN_BRANCH)[Shared.language]})"
+                                    val branchRemark = branches.asSequence()
+                                        .map { it.resolveSpecialRemark(instance, RemarkType.LABEL_MAIN_BRANCH)[Shared.language] }
+                                        .joinToString(separator = "/")
+                                    "$stopId ($branchRemark)"
                                 }
                                 ActionRow(
                                     onClick = {

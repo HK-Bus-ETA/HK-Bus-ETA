@@ -409,3 +409,7 @@ class TransformedSet<E, T>(
 }
 
 inline fun <E, T> Set<E>.asTransformedView(noinline transform: (E) -> T): Set<T> = TransformedSet(this, transform)
+
+inline fun <K, V> Iterable<Pair<K, V>>.toGroupedMap(): Map<K, List<V>> {
+    return groupBy({ it.first }, { it.second })
+}
