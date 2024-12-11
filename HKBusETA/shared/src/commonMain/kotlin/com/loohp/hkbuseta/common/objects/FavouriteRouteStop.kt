@@ -62,6 +62,8 @@ class FavouriteRouteStop(
 
     }
 
+    val similarityKey: Any by lazy { listOf(stopId, co, index, stop, route, favouriteStopMode) }
+
     override fun serialize(): JsonObject {
         return buildJsonObject {
             put("stopId", stopId)

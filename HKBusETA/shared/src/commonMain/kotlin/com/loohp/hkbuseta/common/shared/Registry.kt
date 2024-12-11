@@ -389,7 +389,7 @@ class Registry {
                         e.printStackTrace()
                         return@mapNotNull null
                     }
-                })
+                }.distinctBy { it.similarityKey })
             }
         }
         savePreferences(context, sync)
@@ -948,7 +948,7 @@ class Registry {
                                     localUpdatePercentage += percentagePerFav
                                     updatePercentageState.value = localUpdatePercentage
                                 }
-                            })
+                            }.distinctBy { it.similarityKey })
                         }
                         Shared.clearLookupRoute()
                         val lastLookupRoutes = PREFERENCES!!.lastLookupRoutes
