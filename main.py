@@ -1,5 +1,6 @@
 import json
 import math
+import random
 import re
 import time
 import urllib.request
@@ -9,7 +10,7 @@ import chardet
 import requests
 from shapely.geometry import Point, Polygon
 
-BUS_ROUTE = set()
+BUS_ROUTE = {}
 MTR_BUS_STOP_ALIAS = {}
 DATA_SHEET = {}
 KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
@@ -155,7 +156,17 @@ def download_and_process_kmb_route():
     kmb_route = data.get("data", [])
     for route_data in kmb_route:
         route = route_data.get("route", "")
-        BUS_ROUTE.add(route)
+        BUS_ROUTE[route] = {
+            "co": "kmb",
+            "orig": {
+                "zh": route_data.get("orig_tc"),
+                "en": route_data.get("orig_en")
+            },
+            "dest": {
+                "zh": route_data.get("dest_tc"),
+                "en": route_data.get("dest_en")
+            }
+        }
 
 
 def download_and_process_ctb_route():
@@ -166,7 +177,17 @@ def download_and_process_ctb_route():
     ctb_route = data.get("data", [])
     for route_data in ctb_route:
         route = route_data.get("route", "")
-        BUS_ROUTE.add(route)
+        BUS_ROUTE[route] = {
+            "co": "ctb",
+            "orig": {
+                "zh": route_data.get("orig_tc"),
+                "en": route_data.get("orig_en")
+            },
+            "dest": {
+                "zh": route_data.get("dest_tc"),
+                "en": route_data.get("dest_en")
+            }
+        }
 
 
 def download_and_process_nlb_route():
@@ -177,7 +198,19 @@ def download_and_process_nlb_route():
     nlb_route = data.get("routes", [])
     for route_data in nlb_route:
         route = route_data.get("routeNo", "")
-        BUS_ROUTE.add(route)
+        name_zh = route_data.get("routeName_c", " \u003E ").split("\u003E")
+        name_en = route_data.get("routeName_e", " \u003E ").split("\u003E")
+        BUS_ROUTE[route] = {
+            "co": "nlb",
+            "orig": {
+                "zh": name_zh[0].strip(),
+                "en": name_en[0].strip()
+            },
+            "dest": {
+                "zh": name_zh[1].strip(),
+                "en": name_en[1].strip()
+            }
+        }
 
 
 def download_and_process_mtr_bus_data():
@@ -195,7 +228,11 @@ def download_and_process_mtr_bus_data():
     for key, data in DATA_SHEET["routeList"].items():
         bound = data["bound"]
         if "lrtfeeder" in bound:
-            BUS_ROUTE.add(data["route"])
+            BUS_ROUTE[data["route"]] = {
+                "co": "mtr-bus",
+                "orig": data["orig"].copy(),
+                "dest": data["dest"].copy()
+            }
             direction = bound["lrtfeeder"]
             del bound["lrtfeeder"]
             bound["mtr-bus"] = direction
@@ -218,7 +255,17 @@ def download_and_process_gmb_route():
     gmb_route = data.get("data", {}).get("routes", {})
     for region, route_list in gmb_route.items():
         for route in route_list:
-            BUS_ROUTE.add(route)
+            BUS_ROUTE[route] = {
+                "co": "gmb",
+                "orig": {
+                    "zh": "未知地點",
+                    "en": "Unknown Place"
+                },
+                "dest": {
+                    "zh": "未知地點",
+                    "en": "Unknown Place"
+                }
+            }
 
 
 def clean_data_sheet(data):
@@ -386,10 +433,18 @@ def download_and_process_data_sheet():
             data["co"] = ["fortuneferry"]
 
         if "lightRail" in bounds:
-            BUS_ROUTE.add(data["route"])
+            BUS_ROUTE[data["route"]] = {
+                "co": "lightRail",
+                "orig": data["orig"].copy(),
+                "dest": data["dest"].copy()
+            }
         elif "mtr" in bounds:
             line_name = data["route"]
-            BUS_ROUTE.add(line_name)
+            BUS_ROUTE[line_name] = {
+                "co": "mtr",
+                "orig": data["orig"].copy(),
+                "dest": data["dest"].copy()
+            }
             bound = bounds.get("mtr")
             index = bound.find("-")
             stops = data["stops"]["mtr"]
@@ -873,57 +928,84 @@ def download_and_process_traffic_snapshot():
             }
         })
 
+def create_missing_routes():
+    global DATA_SHEET
+    global BUS_ROUTE
+    global ROUTE_REMARKS
+
+    missing_routes = BUS_ROUTE.copy()
+
+    for key, data in DATA_SHEET["routeList"].items():
+        route_number = data["route"]
+        operators = data["co"]
+        for co in operators:
+            if route_number in missing_routes and missing_routes[route_number]["co"] == co:
+                del missing_routes[route_number]
+                break
+
+    unknown_stop_ids = {
+        "kmb": ["ZZZZZZZZZZZZZZZY", "ZZZZZZZZZZZZZZZZ"],
+        "ctb": ["999998", "999999"],
+        "nlb": ["9998", "9999"],
+        "mtr-bus": ["Z99-Z998", "Z99-Z999"],
+        "gmb": ["99999998", "99999999"],
+        "lightRail": ["LR99998", "LR99999"],
+        "mtr": ["ZZY", "ZZZ"]
+    }
+
+    for stop_ids in unknown_stop_ids.values():
+        for stop_id in stop_ids:
+            DATA_SHEET["stopList"][stop_id] = {
+                "location": {
+                    "lat": 22.203615,
+                    "lng": 114.415195
+                },
+                "name": {
+                    "zh": "未有路線資訊",
+                    "en": "Route Details TBD"
+                },
+                "remark": {
+                    "zh": "(資訊通常會在數日後更新出現)",
+                    "en": "(Usually details will be updated in a few days)"
+                }
+            }
+
+    for route_number, data in missing_routes.items():
+        co = data["co"]
+        DATA_SHEET["routeList"][f"{route_number}+99+{data['orig']['en']}+{data['dest']['en']}"] = {
+            "bound": {co: "O"},
+            "co": [co],
+            "dest": data['dest'].copy(),
+            "fares": None,
+            "faresHoliday": None,
+            "freq": None,
+            "gtfsId": str(random.randint(10000000, 99999999)),
+            "jt": None,
+            "nlbId": None,
+            "orig": data['orig'].copy(),
+            "route": route_number,
+            "serviceType": "99",
+            "stops": {co: unknown_stop_ids[co].copy()}
+        }
+        if co not in ROUTE_REMARKS:
+            ROUTE_REMARKS[co] = {}
+        original_remark = ROUTE_REMARKS[co].get(route_number)
+        original_remark_zh = f"{original_remark['zh']} - " if original_remark is not None else ""
+        original_remark_en = f"{original_remark['en']} - " if original_remark is not None else ""
+        ROUTE_REMARKS[co][route_number] = {
+            "zh": f"{original_remark_zh}未有路線資訊",
+            "en": f"{original_remark_en}Route Details TBD"
+        }
+
 
 def add_route_remarks():
     global ROUTE_REMARKS
+    global BUS_ROUTE
+
     kmb = {
         "HK1": {
             "zh": "九龍旅遊路線",
             "en": "Kowloon Bus Tour"
-        },
-        "PB1": {
-            "zh": "寵物巴士團 🐾",
-            "en": "Pet Bus 🐾"
-        },
-        "PB2": {
-            "zh": "寵物巴士團 🐾",
-            "en": "Pet Bus 🐾"
-        },
-        "PB3": {
-            "zh": "寵物巴士團 🐾",
-            "en": "Pet Bus 🐾"
-        },
-        "PB4": {
-            "zh": "寵物巴士團 🐾",
-            "en": "Pet Bus 🐾"
-        },
-        "PB5": {
-            "zh": "寵物巴士團 🐾",
-            "en": "Pet Bus 🐾"
-        },
-        "PB6": {
-            "zh": "寵物巴士團 🐾",
-            "en": "Pet Bus 🐾"
-        },
-        "PBN1": {
-            "zh": "夜間寵物巴士團 🐾",
-            "en": "Evening Pet Bus 🐾"
-        },
-        "PBN2": {
-            "zh": "夜間寵物巴士團 🐾",
-            "en": "Evening Pet Bus 🐾"
-        },
-        "PBN3": {
-            "zh": "夜間寵物巴士團 🐾",
-            "en": "Evening Pet Bus 🐾"
-        },
-        "PBN4": {
-            "zh": "夜間寵物巴士團 🐾",
-            "en": "Evening Pet Bus 🐾"
-        },
-        "LB1": {
-            "zh": "郊遊遠足路線 🏞",
-            "en": "Leisure Bus 🏞"
         }
     }
     ctb = {
@@ -940,6 +1022,24 @@ def add_route_remarks():
             "en": "Cross Harbour Bus Tour"
         }
     }
+
+    for bus_route in BUS_ROUTE.keys():
+        if bus_route.startswith("PB"):
+            kmb[bus_route] = {
+                "zh": "寵物巴士團 🐾",
+                "en": "Pet Bus 🐾"
+            }
+        elif bus_route.startswith("PN"):
+            kmb[bus_route] = {
+                "zh": "夜間寵物巴士團 🐾",
+                "en": "Evening Pet Bus 🐾"
+            }
+        elif bus_route.startswith("LB"):
+            kmb[bus_route] = {
+                "zh": "郊遊遠足路線 🏞",
+                "en": "Leisure Bus 🏞"
+            }
+
     ROUTE_REMARKS["kmb"] = kmb
     ROUTE_REMARKS["ctb"] = ctb
 
@@ -962,6 +1062,8 @@ print("Downloading & Processing Traffic Snapshots")
 download_and_process_traffic_snapshot()
 print("Adding Route Remarks")
 add_route_remarks()
+print("Creating Missing Routes")
+create_missing_routes()
 print("Capitalizing KMB English Names")
 capitalize_english_names()
 print("Listing KMB Subsidiary Routes")
@@ -974,7 +1076,7 @@ inject_gmb_region()
 output = {
     "dataSheet": DATA_SHEET,
     "mtrBusStopAlias": MTR_BUS_STOP_ALIAS,
-    "busRoute": sorted(BUS_ROUTE),
+    "busRoute": sorted(BUS_ROUTE.keys()),
     "routeRemarks": ROUTE_REMARKS,
     "kmbSubsidiary": {key: sorted(value) for key, value in KMB_SUBSIDIARY_ROUTES.items()},
     "mtrData": MTR_DATA,
