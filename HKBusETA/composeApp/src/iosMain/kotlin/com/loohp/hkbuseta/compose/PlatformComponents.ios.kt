@@ -293,6 +293,7 @@ actual inline val PlatformIcons.Outlined.NotificationsActive: Painter @Composabl
 actual inline val PlatformIcons.Outlined.NotificationsOff: Painter @Composable get() = rememberSystemImagePainter("bell.slash")
 actual inline val PlatformIcons.Outlined.Paid: Painter @Composable get() = rememberSystemImagePainter("dollarsign.circle")
 actual inline val PlatformIcons.Outlined.PinDrop: Painter @Composable get() = rememberSystemImagePainter("mappin.circle")
+actual inline val PlatformIcons.Outlined.PushPin: Painter @Composable get() = rememberSystemImagePainter("pin")
 actual inline val PlatformIcons.Outlined.Route: Painter @Composable get() = rememberSystemImagePainter("arrow.triangle.swap")
 actual inline val PlatformIcons.Outlined.Reorder: Painter @Composable get() = rememberSystemImagePainter("line.3.horizontal")
 actual inline val PlatformIcons.Outlined.Schedule: Painter @Composable get() = rememberSystemImagePainter("clock")

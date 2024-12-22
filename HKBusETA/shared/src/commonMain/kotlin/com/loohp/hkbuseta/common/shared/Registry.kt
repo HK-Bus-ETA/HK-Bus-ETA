@@ -879,6 +879,7 @@ class Registry {
                     } else {
                         state.value = State.UPDATING
                         updatePercentageState.value = 0f
+                        Shared.pinnedItems.value = emptyList()
                         val percentageOffset = if (Shared.favoriteRouteStops.value.all { it.favouriteRouteStops.isEmpty() }) 0.15f else 0f
                         context.withHighBandwidthNetwork {
                             if (!updateChecked.value) {
@@ -1772,7 +1773,7 @@ class Registry {
         ) }
         @Volatile
         private var locationCache: Coordinates? = null
-        suspend fun resolveLocation(): Deferred<Coordinates> {
+        fun resolveLocation(): Deferred<Coordinates> {
             if (locationCache != null) return CompletableDeferred(locationCache!!)
             return CoroutineScope(Dispatchers.IO).async { locationProvider.invoke().apply { locationCache = this } }
         }

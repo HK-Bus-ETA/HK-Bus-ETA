@@ -22,6 +22,7 @@
 package com.loohp.hkbuseta.app
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +47,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,13 +63,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -86,6 +97,7 @@ import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.asFormattedText
 import com.loohp.hkbuseta.common.objects.asOriginData
 import com.loohp.hkbuseta.common.objects.asStop
+import com.loohp.hkbuseta.common.objects.getOperatorName
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.indexOfName
 import com.loohp.hkbuseta.common.objects.isDefaultGroup
@@ -101,6 +113,7 @@ import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.awaitWithTimeout
 import com.loohp.hkbuseta.compose.Add
 import com.loohp.hkbuseta.compose.AdvanceTabRow
+import com.loohp.hkbuseta.compose.ArrowBack
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.DeleteDialog
@@ -110,6 +123,7 @@ import com.loohp.hkbuseta.compose.EditNote
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.IconPainterLayer
 import com.loohp.hkbuseta.compose.Map
+import com.loohp.hkbuseta.compose.NearMe
 import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
@@ -118,6 +132,7 @@ import com.loohp.hkbuseta.compose.PlatformTab
 import com.loohp.hkbuseta.compose.PlatformTabRow
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.Reorder
+import com.loohp.hkbuseta.compose.RightToLeftRow
 import com.loohp.hkbuseta.compose.Route
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Signal
@@ -132,11 +147,14 @@ import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
 import com.loohp.hkbuseta.compose.platformLargeShape
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
+import com.loohp.hkbuseta.compose.rememberAutoResizeTextState
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.DrawableResource
+import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustAlpha
+import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.coordinatesNullableStateSaver
 import com.loohp.hkbuseta.utils.dp
@@ -485,7 +503,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                                     AutoResizeText(
                                                         modifier = Modifier.weight(1F),
                                                         textAlign = TextAlign.Start,
-                                                        fontSizeRange = FontSizeRange(max = 25.sp),
+                                                        fontSizeRange = FontSizeRange(max = 22.sp),
                                                         text = item.name[Shared.language]
                                                     )
                                                     if (!item.isDefaultGroup) {
@@ -618,16 +636,45 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
     }
 }
 
+data class FavouriteStopItem(
+    val stopId: String,
+    val stop: Stop,
+    val distance: Double = Double.POSITIVE_INFINITY
+)
+
+private val stopCoIconLayers: Map<Operator, List<IconPainterLayer>> = mapOf(
+    Operator.MTR to listOf(
+        IconPainterLayer({ painterResource(DrawableResource("mtr_background_vector.xml")) }, Color.White) { scale(0.9F) },
+        IconPainterLayer({ painterResource(DrawableResource("mtr_vector.xml")) }, Color(0xFFAC2E44))
+    ),
+    Operator.LRT to listOf(
+        IconPainterLayer({ painterResource(DrawableResource("lrt_background_vector.xml")) }, Color.White) { scale(0.9F) },
+        IconPainterLayer({ painterResource(DrawableResource("lrt_vector.xml")) }, Color(0xFFCDA410))
+    )
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
     val favouriteStopIds by Shared.favoriteStops.collectAsStateMultiplatform()
     var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(null) }
     val favouriteStops by remember { derivedStateOf {
-        favouriteStopIds.mapNotNull { it.asStop(instance)?.let { s -> it to s } }.let { stops ->
-            location?.let { l -> stops.sortedBy { it.second.location.distance(l) } }?: stops
-        }
+        favouriteStopIds
+            .mapNotNullTo(mutableListOf()) { it.asStop(instance)?.let { s -> FavouriteStopItem(it, s) } }
+            .apply {
+                location?.let { l ->
+                    onEachIndexed { index, item ->
+                        val distance = item.stop.location.distance(l)
+                        if (distance <= 0.3) {
+                            this[index] = item.copy(distance = distance)
+                        }
+                    }
+                }
+                sortBy { it.distance }
+            }
     } }
+    val sheetState = rememberPlatformModalBottomSheetState()
+    var editingStops by remember { mutableStateOf(false) }
 
     LaunchedEffect (visible) {
         if (visible) {
@@ -662,7 +709,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
             modifier = Modifier.fillMaxWidth()
         ) {
             val tabScrollable = remember(favouriteStops) { mutableStateMapOf<Int, Boolean>() }
-            val tabTexts = remember(favouriteStops) { favouriteStops.asSequence().map { it.second.name[Shared.language] }.toImmutableList() }
+            val tabTexts = remember(favouriteStops) { favouriteStops.asSequence().map { it.stop.name[Shared.language] }.toImmutableList() }
             val renderSizes = tabTexts.renderedSizes(16F.sp, spanStyle = SpanStyle(fontWeight = FontWeight.Bold))
             AdvanceTabRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -671,25 +718,75 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                 scrollable = tabScrollable.values.any { it },
                 widestTabWidth = renderSizes.values.maxOfOrNull { it.size.width }?.equivalentDp?.plus(20.dp)?: 1.dp
             ) { scrollable ->
-                favouriteStops.forEachIndexed { index, item ->
+                favouriteStops.forEachIndexed { index, (stopId, stop, distance) ->
                     PlatformTab(
                         selected = index == pagerState.currentPage,
                         onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                         text = {
-                            PlatformText(
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth(0.9F)
                                     .padding(horizontal = 10.dp),
-                                onTextLayout = {
-                                    if (!scrollable) {
-                                        tabScrollable[index] = it.didOverflowWidth || it.didOverflowHeight
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally)
+                            ) {
+                                val operators = stopId.identifyStopCo()
+                                for ((co, iconLayers) in stopCoIconLayers) {
+                                    if (operators.contains(co)) {
+                                        Box {
+                                            for ((icon, color, modifier) in iconLayers) {
+                                                val painter = icon.invoke()
+                                                Canvas(
+                                                    modifier = Modifier
+                                                        .size(
+                                                            width = 17F.sp.dp,
+                                                            height = 16F.sp.dp
+                                                        )
+                                                        .run(modifier),
+                                                    contentDescription = co.getOperatorName(Shared.language)
+                                                ) {
+                                                    with(painter) {
+                                                        draw(
+                                                            size = Size(17F.sp.toPx(), 17F.sp.toPx()),
+                                                            colorFilter = color?.let { ColorFilter.tint(it) }
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        break
                                     }
-                                },
-                                fontSize = 16F.sp,
-                                lineHeight = 1.1F.em,
-                                maxLines = 1,
-                                text = item.second.name[Shared.language]
-                            )
+                                }
+                                PlatformText(
+                                    onTextLayout = {
+                                        if (!scrollable) {
+                                            tabScrollable[index] = it.didOverflowWidth || it.didOverflowHeight
+                                        }
+                                    },
+                                    fontSize = 16F.sp,
+                                    lineHeight = 1.1F.em,
+                                    maxLines = 1,
+                                    text = stop.name[Shared.language]
+                                )
+                                if (distance.isFinite()) {
+                                    val painter = PlatformIcons.Filled.NearMe
+                                    val color = LocalContentColor.current
+                                    Canvas(
+                                        modifier = Modifier.size(
+                                            width = 17F.sp.dp,
+                                            height = 16F.sp.dp
+                                        ),
+                                        contentDescription = if (Shared.language == "en") "Nearby" else "附近"
+                                    ) {
+                                        with(painter) {
+                                            draw(
+                                                size = Size(17F.sp.toPx(), 17F.sp.toPx()),
+                                                colorFilter = ColorFilter.tint(color)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     )
                 }
@@ -705,7 +802,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     val isOnPage by remember(it, visible) { derivedStateOf { pagerState.currentPage == it && visible } }
                     val data by remember(it) { derivedStateOf { favouriteStops[it] } }
                     LaunchedEffect (data, isOnPage) {
-                        val stop = data.second
+                        val stop = data.stop
                         if (isOnPage) {
                             CoroutineScope(Dispatchers.IO).launch {
                                 val nearbyRoutes = Registry.getInstance(instance).getNearbyRoutes(stop.location, emptySet(), false).result.toStopIndexed(instance).asImmutableList()
@@ -718,24 +815,27 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     val (stopId, stop) = data
                     val co by remember(stopId) { derivedStateOf { stopId.identifyStopCo().first() } }
                     routes[stop]?.let { route ->
-                        var deleting by remember { mutableStateOf(false) }
                         val extraActions: @Composable RowScope.() -> Unit = {
                             val haptic = LocalHapticFeedback.current
                             PlatformButton(
                                 modifier = Modifier
                                     .width(45.dp)
                                     .fillMaxHeight()
-                                    .plainTooltip(if (Shared.language == "en") "Remove Stop" else "刪除巴士站"),
-                                onClick = { deleting = true },
+                                    .plainTooltip(if (Shared.language == "en") "Edit Favourite Stops" else "編輯最喜愛巴士站"),
+                                onClick = { editingStops = true },
                                 contentPadding = PaddingValues(10.dp),
                                 shape = platformLargeShape,
                                 colors = ButtonDefaults.textButtonColors(),
                                 content = {
                                     PlatformIcon(
                                         modifier = Modifier.requiredSize(23.dp),
-                                        painter = PlatformIcons.Filled.DeleteForever,
-                                        tint = Color.Red,
-                                        contentDescription = if (Shared.language == "en") "Remove Stop" else "刪除巴士站"
+                                        painter = PlatformIcons.Filled.EditNote,
+                                        tint = when (co) {
+                                            Operator.MTR -> Color.White
+                                            Operator.LRT -> Color(0xFF001F50)
+                                            else -> null
+                                        },
+                                        contentDescription = if (Shared.language == "en") "Edit Favourite Stops" else "編輯最喜愛巴士站"
                                     )
                                 }
                             )
@@ -804,18 +904,6 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                 extraActions = extraActions
                             )
                         }
-                        if (deleting) {
-                            DeleteDialog(
-                                icon = PlatformIcons.Filled.DeleteForever,
-                                title = "確認刪除巴士站\n${stop.name.zh}" withEn "Confirm Removal\n${stop.name.en}",
-                                text = "一經確認將不能復原" withEn "This action cannot be undone.",
-                                onDismissRequest = { deleting = false },
-                                onConfirmation = {
-                                    deleting = false
-                                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { remove(stopId) }, instance)
-                                }
-                            )
-                        }
                     }?: run {
                         ListRoutesInterface(
                             instance = instance,
@@ -832,6 +920,172 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     }
                 }
             }
+        }
+    }
+
+    if (editingStops) {
+        val actionScroll = rememberScrollState()
+        var deleting: String? by remember { mutableStateOf(null) }
+        LaunchedEffect (deleting) {
+            ScreenState.hasInterruptElement.value = deleting != null
+        }
+        PlatformModalBottomSheet(
+            onDismissRequest = { editingStops = false },
+            sheetState = sheetState
+        ) {
+            Scaffold(
+                topBar = {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .platformHorizontalDividerShadow(5.dp)
+                            .background(platformPrimaryContainerColor)
+                            .padding(5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        PlatformText(
+                            modifier = Modifier.fillMaxWidth(),
+                            text = buildAnnotatedString {
+                                append(if (Shared.language == "en") "Edit Favourite Stops" else "編輯最喜愛巴士站")
+                                appendLine()
+                                append(if (Shared.language == "en") "(Nearby Stops will always be shown first)" else "(應用程式會首先排列鄰近的巴士站)", SpanStyle(fontSize = TextUnit.Small))
+                            },
+                            fontSize = 25.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                },
+                content = { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(padding)
+                    ) {
+                        ReorderableColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScrollWithScrollbar(
+                                    state = actionScroll,
+                                    flingBehavior = ScrollableDefaults.flingBehavior(),
+                                    scrollbarConfig = ScrollBarConfig(
+                                        indicatorThickness = 4.dp
+                                    )
+                                ),
+                            list = favouriteStopIds,
+                            onSettle = { fromIndex, toIndex ->
+                                val list = favouriteStopIds.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+                                Registry.getInstance(instance).setFavouriteStops(list, instance)
+                            }
+                        ) { _, item, isDragging ->
+                            val elevation by animateDpAsState(if (isDragging) 2.dp else 0.dp)
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                key(item) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(60.dp)
+                                            .background(platformComponentBackgroundColor)
+                                            .shadow(elevation)
+                                            .padding(10.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(15.dp, Alignment.Start),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.weight(1F),
+                                            horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            val autoResizeTextState = rememberAutoResizeTextState(
+                                                fontSizeRange = FontSizeRange(max = 22.sp)
+                                            )
+                                            AutoResizeText(
+                                                textAlign = TextAlign.Start,
+                                                autoResizeTextState = autoResizeTextState,
+                                                text = item.asStop(instance)!!.name[Shared.language]
+                                            )
+                                            val operators = item.identifyStopCo()
+                                            for ((co, iconLayers) in stopCoIconLayers) {
+                                                if (operators.contains(co)) {
+                                                    Box {
+                                                        for ((icon, color, modifier) in iconLayers) {
+                                                            val painter = icon.invoke()
+                                                            val fontSize = autoResizeTextState.value.fontSize
+                                                            Canvas(
+                                                                modifier = Modifier
+                                                                    .size(
+                                                                        width = fontSize.dp + 1.sp.dp,
+                                                                        height = fontSize.dp
+                                                                    )
+                                                                    .run(modifier),
+                                                                contentDescription = co.getOperatorName(Shared.language)
+                                                            ) {
+                                                                with(painter) {
+                                                                    draw(
+                                                                        size = Size(fontSize.toPx() + 1.sp.toPx(), fontSize.toPx() + 1.sp.toPx()),
+                                                                        colorFilter = color?.let { ColorFilter.tint(it) }
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    break
+                                                }
+                                            }
+                                        }
+                                        PlatformButton(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape),
+                                            colors = ButtonDefaults.clearColors(),
+                                            contentPadding = PaddingValues(0.dp),
+                                            onClick = { deleting = item }
+                                        ) {
+                                            PlatformIcon(
+                                                modifier = Modifier.size(26.dp),
+                                                tint = Color.Red,
+                                                painter = PlatformIcons.Outlined.DeleteForever,
+                                                contentDescription = if (Shared.language == "en") "Delete" else "刪除"
+                                            )
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .draggableHandle(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            PlatformIcon(
+                                                modifier = Modifier.size(26.dp),
+                                                painter = PlatformIcons.Outlined.Reorder,
+                                                contentDescription = if (Shared.language == "en") "Reorder" else "排序"
+                                            )
+                                        }
+                                    }
+                                }
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            )
+        }
+        if (deleting != null) {
+            val stopName by remember(deleting) { derivedStateOf { deleting?.asStop(instance)?.name } }
+            DeleteDialog(
+                icon = PlatformIcons.Filled.DeleteForever,
+                title = "確認刪除巴士站\n${stopName?.zh}" withEn "Confirm Removal\n${stopName?.en}",
+                text = "一經確認將不能復原" withEn "This action cannot be undone.",
+                onDismissRequest = { deleting = null },
+                onConfirmation = {
+                    val deleteId = deleting
+                    deleting = null
+                    val updated = Shared.favoriteStops.value.filter { it != deleteId }
+                    Registry.getInstance(instance).setFavouriteStops(updated, instance)
+                }
+            )
         }
     }
 }

@@ -84,6 +84,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -426,6 +427,8 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     var trafficSnapshots: Array<out List<TrafficSnapshotPoint>>? by remember { mutableStateOf(null) }
     var trafficSnapshotsLoading by remember { mutableStateOf(true) }
 
+    var pinnedSectionSize: IntSize by remember { mutableStateOf(IntSize.Zero) }
+
     LaunchedEffect (allStops, selectedBranch) {
         CoroutineScope(Dispatchers.IO).launch {
             val waypointsAsync = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, instance).await()
@@ -519,6 +522,10 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
         modifier = Modifier.fillMaxWidth()
     ) {
         val darkMode = Shared.theme.isDarkMode
+        TemporaryPinInterface(
+            instance = instance,
+            onSizeChange = { scope.launch { pinnedSectionSize = it } }
+        )
         PlatformTopAppBar(
             title = {
                 @Suppress("RemoveExplicitTypeArguments")
@@ -719,11 +726,10 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                         enter = fadeIn() + expandHorizontally(),
                                         exit = shrinkHorizontally() + fadeOut(),
                                     ) {
-                                        val density = LocalDensity.current
                                         PlatformCircularProgressIndicator(
-                                            modifier = Modifier.size(autoFontSizeState.value.fontSize(density).dp - 1.dp),
+                                            modifier = Modifier.size(autoFontSizeState.value.fontSize.dp - 1.dp),
                                             color = Color(0xFFF9DE09),
-                                            strokeWidth = autoFontSizeState.value.fontSize(density).dp / 8,
+                                            strokeWidth = autoFontSizeState.value.fontSize.dp / 8,
                                             trackColor = Color(0xFF797979),
                                             strokeCap = StrokeCap.Round,
                                         )
@@ -739,7 +745,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                         val textMeasurer = rememberTextMeasurer()
                                         val textToDraw = importantNoticeCount.getCircledNumber()
                                         val style = platformLocalTextStyle.copy(
-                                            fontSize = with(density) { (autoFontSizeState.value.fontSize(density).toPx() - 0.5F.sp.toPx()).toSp() },
+                                            fontSize = with(density) { (autoFontSizeState.value.fontSize.toPx() - 0.5F.sp.toPx()).toSp() },
                                             color = platformLocalContentColor
                                         )
                                         val textLayoutResult = remember(title[Shared.language], textToDraw) {
@@ -748,7 +754,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                         Canvas(
                                             modifier = Modifier.size(
                                                 width = textLayoutResult.first.size.width.equivalentDp,
-                                                height = autoFontSizeState.value.fontSize(density).dp
+                                                height = autoFontSizeState.value.fontSize.dp
                                             ),
                                         ) {
                                             val (textLayout, controlLayout) = textLayoutResult
@@ -783,7 +789,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             ) {
                 val item = listStopsTabItem[it]
                 when (item.type) {
-                    StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranchState, waypoints, possibleBidirectionalSectionFare, alertCheckRoute, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing)
+                    StopsTabItemType.STOPS -> MapStopsInterface(instance, location, route, selectedStop, selectedBranchState, waypoints, possibleBidirectionalSectionFare, alertCheckRoute, isActiveReminderService, pagerScrollEnabled, alternateStopNamesShowing, pinnedSectionSize)
                     StopsTabItemType.TIMES -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TIMES, location, route, selectedStop, selectedBranchState, alternateStopNamesShowing, timesStartIndexState = timesStartIndexState, timesInitState = timesInitState)
                     StopsTabItemType.TRAFFIC_SNAPSHOTS -> ListStopsEtaInterface(instance, ListStopsInterfaceType.TRAFFIC_SNAPSHOTS, location, route, selectedStop, selectedBranchState, alternateStopNamesShowing, waypoints = waypoints, trafficSnapshots = trafficSnapshots)
                     StopsTabItemType.NOTICES -> NoticeInterface(instance, notices?.asImmutableList(), possibleBidirectionalSectionFare)
@@ -850,7 +856,8 @@ fun MapStopsInterface(
     alertCheckRoute: Boolean,
     isActiveReminderService: Boolean,
     pagerScrollEnabled: MutableState<Boolean>,
-    alternateStopNamesShowingState: MutableState<Boolean>
+    alternateStopNamesShowingState: MutableState<Boolean>,
+    pinnedSectionSize: IntSize
 ) {
     var mapExpanded by remember { mutableStateOf(false) }
 
@@ -881,7 +888,7 @@ fun MapStopsInterface(
             bottomSize = { when {
                 !it.isNarrow -> min(412F, (window.width / 2F).pixelsToDp(instance)).dp
                 mapExpanded -> 200.dp
-                else -> (window.height / 11F * 6F).pixelsToDp(instance).dp
+                else -> ((window.height - pinnedSectionSize.height) / 11F * 6F).pixelsToDp(instance).dp
             } },
             top = { screenSize ->
                 Column(

@@ -581,12 +581,12 @@ inline fun List<FavouriteRouteStop>.resolveStops(context: AppContext, originGett
 
 fun Route.getFare(stopIndex: Int, holidayFare: Boolean = false): Fare? {
     val list = faresHoliday?.takeIf { holidayFare }?: fares?: return null
-    return list.getOrNull(stopIndex)
+    return list.getOrNull(stopIndex - 1)
 }
 
 fun Route.getFare(stopId: String, holidayFare: Boolean = false): Fare? {
     val index = stops.firstNotNullOfOrNull { (_, v) -> v.indexOf(stopId).takeIf { it >= 0 } }?: return null
-    return getFare(index, holidayFare)
+    return getFare(index + 1, holidayFare)
 }
 
 inline fun Collection<Operator>.firstCo(): Operator? {

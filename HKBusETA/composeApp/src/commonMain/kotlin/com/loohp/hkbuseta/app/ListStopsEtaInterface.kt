@@ -141,6 +141,7 @@ import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.TemporaryPinItem
 import com.loohp.hkbuseta.common.objects.TrafficSnapshotPoint
 import com.loohp.hkbuseta.common.objects.WearableConnectionState
 import com.loohp.hkbuseta.common.objects.add
@@ -210,6 +211,7 @@ import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformModalBottomSheet
 import com.loohp.hkbuseta.compose.PlatformText
+import com.loohp.hkbuseta.compose.PushPin
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Share
@@ -923,6 +925,19 @@ fun ListStopsBottomSheet(
                             )
                             ActionRow(
                                 onClick = {
+                                    scope.launch {
+                                        val stopBranches = allStops[selectedStop - 1].branchIds
+                                        val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
+                                        Shared.pinnedItems.value += TemporaryPinItem(branch, co, selectedStop)
+                                        sheetState.hide()
+                                        sheetType = BottomSheetType.NONE
+                                    }
+                                },
+                                icon = PlatformIcons.Outlined.PushPin,
+                                text = (if (Shared.language == "en") "Pin to Top" else "置頂").asAnnotatedString()
+                            )
+                            ActionRow(
+                                onClick = {
                                     instance.compose.shareUrl(
                                         url = selectedBranch.getDeepLink(instance, allStops[selectedStop - 1].stopId, selectedStop - 1),
                                         title = "${if (Shared.language == "en") "Share Route" else "分享路線"} - ${co.getDisplayName(
@@ -1567,7 +1582,7 @@ fun StopEntryExpansionEta(
             verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)
         ) {
             val haptic = LocalHapticFeedback.current
-            if (co == Operator.LRT) {
+            if (co === Operator.LRT) {
                 PlatformFilledTonalIconButton(
                     modifier = Modifier
                         .padding(end = 5.dp)
@@ -1665,6 +1680,27 @@ fun StopEntryExpansionEta(
                     tint = Color(0xFFC4AB48),
                     contentDescription = if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站"
                 )
+            }
+            if (co !== Operator.LRT) {
+                PlatformFilledTonalIconButton(
+                    modifier = Modifier
+                        .padding(end = 5.dp)
+                        .size(42.dp, 32.dp)
+                        .plainTooltip(if (Shared.language == "en") "Pin to Top" else "置頂"),
+                    onClick = {
+                        val stopBranches = allStops[selectedStop - 1].branchIds
+                        val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
+                        Shared.pinnedItems.value += TemporaryPinItem(branch, co, selectedStop)
+                    },
+                    shape = RoundedCornerShape(5.dp)
+                ) {
+                    PlatformIcon(
+                        modifier = Modifier.size(25.dp),
+                        painter = PlatformIcons.Outlined.PushPin,
+                        tint = Color(0xFFC4AB48),
+                        contentDescription = if (Shared.language == "en") "Pin to Top" else "置頂"
+                    )
+                }
             }
             if (composePlatform.supportPip) {
                 PlatformFilledTonalIconButton(
@@ -2096,6 +2132,25 @@ fun StopEntryExpansionAlightReminder(
                     painter = if (favouriteStopAlreadySet) PlatformIcons.Outlined.Star else PlatformIcons.Outlined.StarOutline,
                     tint = Color(0xFFC4AB48),
                     contentDescription = if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站"
+                )
+            }
+            PlatformFilledTonalIconButton(
+                modifier = Modifier
+                    .padding(end = 5.dp)
+                    .size(42.dp, 32.dp)
+                    .plainTooltip(if (Shared.language == "en") "Pin to Top" else "置頂"),
+                onClick = {
+                    val stopBranches = allStops[selectedStop - 1].branchIds
+                    val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
+                    Shared.pinnedItems.value += TemporaryPinItem(branch, co, selectedStop)
+                },
+                shape = RoundedCornerShape(5.dp)
+            ) {
+                PlatformIcon(
+                    modifier = Modifier.size(25.dp),
+                    painter = PlatformIcons.Outlined.PushPin,
+                    tint = Color(0xFFC4AB48),
+                    contentDescription = if (Shared.language == "en") "Pin to Top" else "置頂"
                 )
             }
             PlatformFilledTonalIconButton(

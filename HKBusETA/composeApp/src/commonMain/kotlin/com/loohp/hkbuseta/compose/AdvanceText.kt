@@ -361,6 +361,7 @@ data class AutoResizeTextState(
     fun isReady(): Boolean {
         return ready.containsAll(subscribers)
     }
+    val fontSize: TextUnit @Composable get() = fontSize(LocalDensity.current)
     fun fontSize(density: Density): TextUnit {
         return with(density) { measuredFontSize.values.minByOrNull { it.toPx() }?: fontSizeRange.max }
     }

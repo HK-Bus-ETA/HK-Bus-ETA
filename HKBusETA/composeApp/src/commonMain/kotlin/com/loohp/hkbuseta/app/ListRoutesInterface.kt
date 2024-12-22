@@ -1049,7 +1049,9 @@ fun LazyItemScope.RouteEntry(
             checkSpecialDest = checkSpecialDest,
             etaResults = etaResults,
             etaUpdateTimes = etaUpdateTimes,
-            instance = instance)
+            simpleStyle = false,
+            instance = instance
+        )
     }
 }
 
@@ -1065,6 +1067,7 @@ fun RouteRow(
     checkSpecialDest: Boolean,
     etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>,
     etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>,
+    simpleStyle: Boolean,
     instance: AppActiveContext
 ) {
     val co = route.co
@@ -1127,7 +1130,7 @@ fun RouteRow(
     Row (
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = (if (showEta) 65 else 55).dp)
+            .heightIn(min = (if (simpleStyle) 45 else if (showEta) 65 else 55).dp)
             .padding(horizontal = 5.dp),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
@@ -1246,21 +1249,23 @@ fun RouteRow(
                     )
                 }
             }
-            PlatformText(
-                textAlign = TextAlign.Start,
-                fontSize = 14F.sp,
-                lineHeight = 1.1F.em,
-                maxLines = 1,
-                text = co.getDisplayFormattedName(routeNumber, kmbCtbJoint, gmbRegion, Shared.language)
-                    .let { if (Shared.theme.isDarkMode) it else it.transformColors { _, c -> Colored(Color(c.color).adjustBrightness(0.75F).toArgb().toLong()) } }
-                    .asContentAnnotatedString()
-                    .annotatedString
-            )
+            if (!simpleStyle) {
+                PlatformText(
+                    textAlign = TextAlign.Start,
+                    fontSize = 14F.sp,
+                    lineHeight = 1.1F.em,
+                    maxLines = 1,
+                    text = co.getDisplayFormattedName(routeNumber, kmbCtbJoint, gmbRegion, Shared.language)
+                        .let { if (Shared.theme.isDarkMode) it else it.transformColors { _, c -> Colored(Color(c.color).adjustBrightness(0.75F).toArgb().toLong()) } }
+                        .asContentAnnotatedString()
+                        .annotatedString
+                )
+            }
         }
         if (secondLine.isEmpty() && otherDests == null) {
             Row(
                 modifier = Modifier.weight(1F),
-                horizontalArrangement = Arrangement.Start
+                horizontalArrangement = Arrangement.Start,
             ) {
                 if (route.route!!.shouldPrependTo()) {
                     PlatformText(
@@ -1298,90 +1303,147 @@ fun RouteRow(
                         layout(placeable.width, height) {
                             placeable.placeRelative(0, 0)
                         }
-                    }
+                    },
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    if (route.route!!.shouldPrependTo()) {
-                        PlatformText(
-                            modifier = Modifier.alignByBaseline(),
-                            textAlign = TextAlign.Start,
-                            lineHeight = 1.1F.em,
-                            fontSize = 22F.sp,
-                            maxLines = 1,
-                            text = bilingualToPrefix[Shared.language].asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))
-                        )
-                    }
-                    PlatformText(
-                        modifier = Modifier
-                            .alignByBaseline()
-                            .userMarquee(),
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Start,
-                        lineHeight = 1.1F.em,
-                        fontSize = 22F.sp,
-                        maxLines = userMarqueeMaxLines(),
-                        text = dest
-                    )
-                }
-                otherDests?.let { otherDests ->
-                    for ((otherRoute, otherDest) in otherDests) {
-                        Row(
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            if (otherRoute.shouldPrependTo()) {
-                                PlatformText(
-                                    modifier = Modifier.alignByBaseline(),
-                                    textAlign = TextAlign.Start,
-                                    lineHeight = 1.1F.em,
-                                    fontSize = 17F.sp,
-                                    maxLines = 1,
-                                    text = bilingualOnlyToPrefix[Shared.language].asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))
-                                )
-                            }
+                if (simpleStyle) {
+                    Row(
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        if (route.route!!.shouldPrependTo()) {
                             PlatformText(
-                                modifier = Modifier
-                                    .alignByBaseline()
-                                    .weight(1F)
-                                    .userMarquee(),
-                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.alignByBaseline(),
                                 textAlign = TextAlign.Start,
                                 lineHeight = 1.1F.em,
                                 fontSize = 17F.sp,
+                                maxLines = 1,
+                                text = bilingualToPrefix[Shared.language].asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))
+                            )
+                        }
+                        PlatformText(
+                            modifier = Modifier
+                                .alignByBaseline()
+                                .userMarquee(),
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Start,
+                            lineHeight = 1.1F.em,
+                            fontSize = 17F.sp,
+                            maxLines = userMarqueeMaxLines(),
+                            text = dest
+                        )
+                    }
+                    if (secondLine.isNotEmpty()) {
+                        val infiniteTransition = rememberInfiniteTransition(label = "SecondLineCrossFade")
+                        val animatedCurrentLine by infiniteTransition.animateValue(
+                            initialValue = 0,
+                            targetValue = secondLine.size,
+                            typeConverter = Int.VectorConverter,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(5500 * secondLine.size, easing = LinearEasing),
+                                repeatMode = RepeatMode.Restart
+                            ),
+                            label = "SecondLineCrossFade"
+                        )
+                        Crossfade(
+                            modifier = Modifier.animateContentSize(),
+                            targetState = animatedCurrentLine,
+                            animationSpec = tween(durationMillis = 500, easing = LinearEasing),
+                            label = "SecondLineCrossFade"
+                        ) {
+                            PlatformText(
+                                modifier = Modifier.userMarquee(),
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Start,
+                                fontSize = 11F.sp,
+                                lineHeight = 1.1F.em,
                                 maxLines = userMarqueeMaxLines(),
-                                text = otherDest
+                                text = secondLine[it.coerceIn(secondLine.indices)]
                             )
                         }
                     }
-                }
-                if (secondLine.isNotEmpty()) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "SecondLineCrossFade")
-                    val animatedCurrentLine by infiniteTransition.animateValue(
-                        initialValue = 0,
-                        targetValue = secondLine.size,
-                        typeConverter = Int.VectorConverter,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(5500 * secondLine.size, easing = LinearEasing),
-                            repeatMode = RepeatMode.Restart
-                        ),
-                        label = "SecondLineCrossFade"
-                    )
-                    Crossfade(
-                        modifier = Modifier.animateContentSize(),
-                        targetState = animatedCurrentLine,
-                        animationSpec = tween(durationMillis = 500, easing = LinearEasing),
-                        label = "SecondLineCrossFade"
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.Start
                     ) {
+                        if (route.route!!.shouldPrependTo()) {
+                            PlatformText(
+                                modifier = Modifier.alignByBaseline(),
+                                textAlign = TextAlign.Start,
+                                lineHeight = 1.1F.em,
+                                fontSize = 22F.sp,
+                                maxLines = 1,
+                                text = bilingualToPrefix[Shared.language].asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))
+                            )
+                        }
                         PlatformText(
-                            modifier = Modifier.userMarquee(),
+                            modifier = Modifier
+                                .alignByBaseline()
+                                .userMarquee(),
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Start,
-                            fontSize = 16F.sp,
                             lineHeight = 1.1F.em,
+                            fontSize = 22F.sp,
                             maxLines = userMarqueeMaxLines(),
-                            text = secondLine[it.coerceIn(secondLine.indices)]
+                            text = dest
                         )
+                    }
+                    otherDests?.let { otherDests ->
+                        for ((otherRoute, otherDest) in otherDests) {
+                            Row(
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                if (otherRoute.shouldPrependTo()) {
+                                    PlatformText(
+                                        modifier = Modifier.alignByBaseline(),
+                                        textAlign = TextAlign.Start,
+                                        lineHeight = 1.1F.em,
+                                        fontSize = 17F.sp,
+                                        maxLines = 1,
+                                        text = bilingualOnlyToPrefix[Shared.language].asAnnotatedString(SpanStyle(fontSize = TextUnit.Small))
+                                    )
+                                }
+                                PlatformText(
+                                    modifier = Modifier
+                                        .alignByBaseline()
+                                        .weight(1F)
+                                        .userMarquee(),
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Start,
+                                    lineHeight = 1.1F.em,
+                                    fontSize = 17F.sp,
+                                    maxLines = userMarqueeMaxLines(),
+                                    text = otherDest
+                                )
+                            }
+                        }
+                    }
+                    if (secondLine.isNotEmpty()) {
+                        val infiniteTransition = rememberInfiniteTransition(label = "SecondLineCrossFade")
+                        val animatedCurrentLine by infiniteTransition.animateValue(
+                            initialValue = 0,
+                            targetValue = secondLine.size,
+                            typeConverter = Int.VectorConverter,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(5500 * secondLine.size, easing = LinearEasing),
+                                repeatMode = RepeatMode.Restart
+                            ),
+                            label = "SecondLineCrossFade"
+                        )
+                        Crossfade(
+                            modifier = Modifier.animateContentSize(),
+                            targetState = animatedCurrentLine,
+                            animationSpec = tween(durationMillis = 500, easing = LinearEasing),
+                            label = "SecondLineCrossFade"
+                        ) {
+                            PlatformText(
+                                modifier = Modifier.userMarquee(),
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Start,
+                                fontSize = 16F.sp,
+                                lineHeight = 1.1F.em,
+                                maxLines = userMarqueeMaxLines(),
+                                text = secondLine[it.coerceIn(secondLine.indices)]
+                            )
+                        }
                     }
                 }
             }
@@ -1404,7 +1466,7 @@ fun RouteRow(
                 )
             }
         } else if (showEta && route.stopInfo != null) {
-            ETAElement(key, route, etaResults, etaUpdateTimes, instance)
+            ETAElement(key, route, etaResults, etaUpdateTimes, if (simpleStyle) 0.7F else 1.0F, instance)
         }
     }
 }
@@ -1664,6 +1726,7 @@ fun ETAElement(
     route: StopIndexedRouteSearchResultEntry,
     etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>,
     etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>,
+    fontSizeScale: Float,
     instance: AppActiveContext
 ) {
     var etaState by remember { mutableStateOf(etaResults.value[key]) }
@@ -1704,7 +1767,7 @@ fun ETAElement(
             if (eta.nextScheduledBus !in 0..59) {
                 if (eta.isMtrEndOfLine) {
                     PlatformIcon(
-                        modifier = Modifier.size(30.dp),
+                        modifier = Modifier.size(30.dp * fontSizeScale),
                         painter = PlatformIcons.Outlined.LineEndCircle,
                         contentDescription = route.route!!.endOfLineText[Shared.language],
                         tint = etaColor,
@@ -1712,13 +1775,13 @@ fun ETAElement(
                 } else if (eta.isTyphoonSchedule) {
                     val typhoonInfo by remember { Registry.getInstance(instance).typhoonInfo }.collectAsStateMultiplatform()
                     Image(
-                        modifier = Modifier.size(30.dp),
+                        modifier = Modifier.size(30.dp * fontSizeScale),
                         painter = painterResource(DrawableResource("cyclone.png")),
                         contentDescription = typhoonInfo.typhoonWarningTitle
                     )
                 } else {
                     PlatformIcon(
-                        modifier = Modifier.size(30.dp),
+                        modifier = Modifier.size(30.dp * fontSizeScale),
                         painter = PlatformIcons.Outlined.Schedule,
                         contentDescription = if (Shared.language == "en") "No scheduled departures at this moment" else "暫時沒有預定班次",
                         tint = etaColor,
@@ -1729,9 +1792,9 @@ fun ETAElement(
                     ETADisplayMode.COUNTDOWN -> {
                         val (text1, text2) = eta.firstLine.shortText
                         buildAnnotatedString {
-                            append(text1, SpanStyle(fontSize = 27.sp, color = etaColor))
+                            append(text1, SpanStyle(fontSize = 27.sp * fontSizeScale, color = etaColor))
                             append("\n")
-                            append(text2, SpanStyle(fontSize = 14.sp, color = etaColor))
+                            append(text2, SpanStyle(fontSize = 14.sp * fontSizeScale, color = etaColor))
                             (2..3).mapNotNull {
                                 val (eText1, eText2) = eta[it].shortText
                                 if (eText1.isBlank() || eText2 != text2) {
@@ -1741,19 +1804,19 @@ fun ETAElement(
                                 }
                             }.takeIf { it.isNotEmpty() }?.joinToString(", ", postfix = text2)?.apply {
                                 append("\n")
-                                append(this, SpanStyle(fontSize = 11.sp))
+                                append(this, SpanStyle(fontSize = 11.sp * fontSizeScale))
                             }
                         } to 1.1F.em
                     }
                     ETADisplayMode.CLOCK_TIME -> {
                         val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
                         buildAnnotatedString {
-                            append(text1, SpanStyle(fontSize = 20.sp, color = etaColor, fontWeight = FontWeight.Bold))
+                            append(text1, SpanStyle(fontSize = 20.sp * fontSizeScale, color = etaColor, fontWeight = FontWeight.Bold))
                             (2..3).forEach {
                                 val eText1 = eta.getResolvedText(it, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
                                 if (eText1.length > 1) {
                                     append("\n")
-                                    append(eText1, SpanStyle(fontSize = 16.sp))
+                                    append(eText1, SpanStyle(fontSize = 16.sp * fontSizeScale))
                                 }
                             }
                         } to 1.4F.em
@@ -1762,19 +1825,19 @@ fun ETAElement(
                         val text1 = eta.getResolvedText(1, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
                         val (text2, text3) = eta.firstLine.shortText
                         buildAnnotatedString {
-                            append(text1, SpanStyle(fontSize = 20.sp, color = etaColor, fontWeight = FontWeight.Bold))
+                            append(text1, SpanStyle(fontSize = 20.sp * fontSizeScale, color = etaColor, fontWeight = FontWeight.Bold))
                             append("  ")
-                            append(text2, SpanStyle(fontSize = 20.sp, color = etaColor, fontWeight = FontWeight.Bold))
-                            append(text3, SpanStyle(fontSize = 12.sp, color = etaColor))
+                            append(text2, SpanStyle(fontSize = 20.sp * fontSizeScale, color = etaColor, fontWeight = FontWeight.Bold))
+                            append(text3, SpanStyle(fontSize = 12.sp * fontSizeScale, color = etaColor))
                             (2..3).forEach {
                                 val eText1 = eta.getResolvedText(it, Shared.etaDisplayMode, instance).resolvedClockTime.string.trim()
                                 if (eText1.length > 1) {
                                     val (eText2, eText3) = eta[it].shortText
                                     append("\n")
-                                    append(eText1, SpanStyle(fontSize = 16.sp))
+                                    append(eText1, SpanStyle(fontSize = 16.sp * fontSizeScale))
                                     append("  ")
-                                    append(eText2, SpanStyle(fontSize = 16.sp))
-                                    append(eText3, SpanStyle(fontSize = 10.sp))
+                                    append(eText2, SpanStyle(fontSize = 16.sp * fontSizeScale))
+                                    append(eText3, SpanStyle(fontSize = 10.sp * fontSizeScale))
                                 }
                             }
                         } to 1.4F.em
@@ -1782,7 +1845,7 @@ fun ETAElement(
                 }
                 PlatformText(
                     textAlign = TextAlign.End,
-                    fontSize = 14.sp,
+                    fontSize = 14.sp * fontSizeScale,
                     color = etaSecondColor,
                     lineHeight = lineHeight,
                     maxLines = 3,

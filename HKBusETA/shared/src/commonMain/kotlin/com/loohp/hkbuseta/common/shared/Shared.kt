@@ -48,6 +48,7 @@ import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteSortPreference
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.StopInfo
+import com.loohp.hkbuseta.common.objects.TemporaryPinItem
 import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
@@ -251,6 +252,8 @@ object Shared {
     fun getMtrLineName(lineName: String, orElse: String): String {
         return lineName.getMtrLineName { orElse.asBilingualText() }[language]
     }
+
+    val pinnedItems: MutableNonNullStateFlowList<TemporaryPinItem> = MutableStateFlow(emptyList<TemporaryPinItem>()).wrapList()
 
     var language = "zh"
     var etaDisplayMode = ETADisplayMode.COUNTDOWN

@@ -27,6 +27,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -281,22 +282,29 @@ fun TitleInterface(instance: AppActiveContext) {
             )
         },
         content = {
-            HorizontalPager(
-                modifier = Modifier.fillMaxSize(),
-                state = pagerState,
-                userScrollEnabled = true
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize()
+                TemporaryPinInterface(
+                    instance = instance
+                )
+                HorizontalPager(
+                    modifier = Modifier.fillMaxSize(),
+                    state = pagerState,
+                    userScrollEnabled = true
                 ) {
-                    val isOnPage = pagerState.currentPage == it && titleTabItems[it].appScreens.contains(instance.compose.screen)
-                    when (it) {
-                        0 -> NearbyInterface(instance, isOnPage)
-                        1 -> FavouriteInterface(instance, isOnPage, signal.signal)
-                        2 -> SearchInterface(instance, isOnPage)
-                        3 -> RouteMapSearchInterface(instance, isOnPage, signal.signal)
-                        4 -> SettingsInterface(instance)
-                        else -> PlatformText(titleTabItems[it].title[Shared.language])
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        val isOnPage = pagerState.currentPage == it && titleTabItems[it].appScreens.contains(instance.compose.screen)
+                        when (it) {
+                            0 -> NearbyInterface(instance, isOnPage)
+                            1 -> FavouriteInterface(instance, isOnPage, signal.signal)
+                            2 -> SearchInterface(instance, isOnPage)
+                            3 -> RouteMapSearchInterface(instance, isOnPage, signal.signal)
+                            4 -> SettingsInterface(instance)
+                            else -> PlatformText(titleTabItems[it].title[Shared.language])
+                        }
                     }
                 }
             }

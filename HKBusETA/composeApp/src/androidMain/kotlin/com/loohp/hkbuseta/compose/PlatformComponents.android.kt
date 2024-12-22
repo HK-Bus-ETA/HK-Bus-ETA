@@ -109,6 +109,7 @@ import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.Paid
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.PinDrop
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Reorder
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Schedule
@@ -185,7 +186,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -292,6 +292,7 @@ actual inline val PlatformIcons.Outlined.NotificationsActive: Painter @Composabl
 actual inline val PlatformIcons.Outlined.NotificationsOff: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.NotificationsOff)
 actual inline val PlatformIcons.Outlined.Paid: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Paid)
 actual inline val PlatformIcons.Outlined.PinDrop: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.PinDrop)
+actual inline val PlatformIcons.Outlined.PushPin: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.PushPin)
 actual inline val PlatformIcons.Outlined.Reorder: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Reorder)
 actual inline val PlatformIcons.Outlined.Route: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Route)
 actual inline val PlatformIcons.Outlined.Schedule: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Schedule)
@@ -567,7 +568,7 @@ actual fun PlatformTopAppBar(
         actions = actions,
         windowInsets = windowInsets,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
+            containerColor = platformTopBarColor
         )
     )
 }
@@ -585,7 +586,7 @@ actual inline val platformSurfaceColor: Color
 actual inline val platformSurfaceContainerColor: Color
     @Composable get() = MaterialTheme.colorScheme.surfaceContainer
 actual inline val platformTopBarColor: Color
-    @Composable get() = platformPrimaryContainerColor
+    @Composable get() = MaterialTheme.colorScheme.secondaryContainer
 actual inline val platformLocalTextStyle: TextStyle
     @Composable get() = LocalTextStyle.current
 actual inline val platformExtraLargeShape: Shape
