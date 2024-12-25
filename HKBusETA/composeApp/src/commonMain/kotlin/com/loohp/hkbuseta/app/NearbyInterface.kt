@@ -81,12 +81,15 @@ import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.FavouriteStop
 import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.asBilingualText
+import com.loohp.hkbuseta.common.objects.hasStop
 import com.loohp.hkbuseta.common.objects.joinToBilingualText
+import com.loohp.hkbuseta.common.objects.removeStop
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
@@ -405,7 +408,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                         nearbyRoutesResult?.let {
                             val stop by remember(it) { derivedStateOf { it.closestStop } }
                             val stopId by remember(it) { derivedStateOf { it.closestStopId } }
-                            val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.contains(stopId) } }
+                            val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.hasStop(stopId) } }
                             PlatformButton(
                                 modifier = Modifier
                                     .width(45.dp)
@@ -413,9 +416,9 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                     .plainTooltip(if (Shared.language == "en") "Add to Favourite Stops" else "設置為最喜愛車站"),
                                 onClick = {
                                     if (favouriteStopAlreadySet) {
-                                        Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { remove(stopId) }, instance)
+                                        Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopId) }, instance)
                                     } else {
-                                        Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(stopId) }, instance)
+                                        Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopId, stop)) }, instance)
                                     }
                                 },
                                 contentPadding = PaddingValues(10.dp),

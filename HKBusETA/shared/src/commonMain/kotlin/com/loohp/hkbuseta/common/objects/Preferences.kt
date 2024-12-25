@@ -63,7 +63,7 @@ class Preferences(
     var alternateStopName: Boolean,
     var lastNearbyLocation: RadiusCenterPosition?,
     var disableNavBarQuickActions: Boolean,
-    val favouriteStops: ConcurrentMutableList<String>,
+    val favouriteStops: ConcurrentMutableList<FavouriteStop>,
     val favouriteRouteStops: ConcurrentMutableList<FavouriteRouteGroup>,
     val lastLookupRoutes: ConcurrentMutableList<LastLookupRoute>,
     val etaTileConfigurations: ConcurrentMutableMap<Int, List<Int>>,
@@ -89,7 +89,13 @@ class Preferences(
             val alternateStopName = json.optBoolean("alternateStopName", false)
             val lastNearbyLocation = if (json.containsKey("lastNearbyLocation")) RadiusCenterPosition.deserialize(json.optJsonObject("lastNearbyLocation")!!) else null
             val disableNavBarQuickActions = json.optBoolean("disableNavBarQuickActions", false)
-            val favouriteStops = ConcurrentMutableList<String>().apply { addAll(json.optJsonArray("favouriteStops")?.mapToMutableList { it.jsonPrimitive.content }?: mutableListOf()) }
+            val favouriteStops = ConcurrentMutableList<FavouriteStop>().apply {
+                if (json.optJsonArray("favouriteStops")?.getOrNull(0) is JsonPrimitive) {
+                    addAll(json.optJsonArray("favouriteStops")?.mapToMutableList { FavouriteStop.fromLegacy(it.jsonPrimitive.content) }?: mutableListOf())
+                } else {
+                    json.optJsonArray("favouriteStops")!!.forEach { add(FavouriteStop.deserialize(it.jsonObject)) }
+                }
+            }
             val favouriteRouteStops = if (json["favouriteRouteStops"] is JsonArray) {
                 ConcurrentMutableList<FavouriteRouteGroup>().apply { addAll(json.optJsonArray("favouriteRouteStops")!!.mapToMutableList { FavouriteRouteGroup.deserialize(it.jsonObject) }) }
             } else {

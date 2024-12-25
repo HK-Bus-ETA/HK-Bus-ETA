@@ -130,6 +130,7 @@ import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.common.objects.FavouriteStop
 import com.loohp.hkbuseta.common.objects.FavouriteStopMode
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.Operator
@@ -162,6 +163,7 @@ import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.mapTrafficSnapshots
 import com.loohp.hkbuseta.common.objects.remove
+import com.loohp.hkbuseta.common.objects.removeStop
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
@@ -452,11 +454,7 @@ fun ListStopsEtaInterface(
                     if (!timesInit) {
                         scroll.scrollToItem(index)
                         if (type == ListStopsInterfaceType.TIMES) {
-                            if (index >= allStops.size - 1) {
-                                timesStartIndex = index
-                            } else {
-                                timesStartIndex = index + 1
-                            }
+                            timesStartIndex = if (index >= allStops.size - 1) index else index + 1
                         }
                         timesInit = true
                     }
@@ -817,7 +815,7 @@ fun ListStopsBottomSheet(
     ) {
         val haptic = LocalHapticFeedback.current
         val stopData = allStops[selectedStop - 1]
-        val favouriteStopAlreadySet by remember { derivedStateOf { favouriteStops.contains(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
+        val favouriteStopAlreadySet by remember { derivedStateOf { favouriteStops.hasStop(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
         when (sheetType) {
             BottomSheetType.ACTIONS -> {
                 Scaffold(
@@ -1498,7 +1496,7 @@ fun StopEntryExpansionEta(
     var lrtDirectionMode by lrtDirectionModeState
     val etaQueryOptions by remember { derivedStateOf { Registry.EtaQueryOptions(lrtDirectionMode) } }
 
-    val favouriteStopAlreadySet by remember { derivedStateOf { favouriteStops.contains(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
+    val favouriteStopAlreadySet by remember { derivedStateOf { favouriteStops.hasStop(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
 
     val etaResults = etaResultsState.value
     val etaUpdateTimes = etaUpdateTimesState.value
@@ -1978,7 +1976,7 @@ fun StopEntryExpansionAlightReminder(
 
     val togglingAlightReminder by togglingAlightReminderState
 
-    val favouriteStopAlreadySet by remember(favouriteStops, favouriteRouteStops) { derivedStateOf { favouriteStops.contains(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
+    val favouriteStopAlreadySet by remember(favouriteStops, favouriteRouteStops) { derivedStateOf { favouriteStops.hasStop(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
 
     var sheetType by sheetTypeState
 
@@ -2194,7 +2192,7 @@ fun StopEntryExpansionAlightReminder(
 fun SetFavouriteInterface(instance: AppActiveContext, co: Operator, stopIndex: Int, stopData: Registry.StopData) {
     val favouriteStops by Shared.favoriteStops.collectAsStateMultiplatform()
     val favouriteRouteStops by Shared.favoriteRouteStops.collectAsStateMultiplatform()
-    val favouriteStopAlreadySet by remember(favouriteStops) { derivedStateOf { favouriteStops.contains(stopData.stopId) } }
+    val favouriteStopAlreadySet by remember(favouriteStops) { derivedStateOf { favouriteStops.hasStop(stopData.stopId) } }
     var addingRouteGroup by remember { mutableStateOf(false) }
     var deletingRouteGroup: BilingualText? by remember { mutableStateOf(null) }
     if (addingRouteGroup) {
@@ -2267,9 +2265,9 @@ fun SetFavouriteInterface(instance: AppActiveContext, co: Operator, stopIndex: I
                 ActionRow(
                     onClick = {
                         if (favouriteStopAlreadySet) {
-                            Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { remove(stopData.stopId) }, instance)
+                            Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopData.stopId) }, instance)
                         } else {
-                            Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(stopData.stopId) }, instance)
+                            Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopData.stopId, stopData.stop)) }, instance)
                         }
                     },
                     icon = PlatformIcons.Outlined.Star,
@@ -2622,7 +2620,6 @@ fun ETADisplay(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EtaText(
     text: FormattedText,

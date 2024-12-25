@@ -37,7 +37,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -136,6 +135,7 @@ import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.Fare
 import com.loohp.hkbuseta.common.objects.FareCategory
 import com.loohp.hkbuseta.common.objects.FareType
+import com.loohp.hkbuseta.common.objects.FavouriteStop
 import com.loohp.hkbuseta.common.objects.FirstLastTrainPath
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RouteNotice
@@ -161,10 +161,12 @@ import com.loohp.hkbuseta.common.objects.getMTRStationStreetMapUrl
 import com.loohp.hkbuseta.common.objects.getMtrLineSortingIndex
 import com.loohp.hkbuseta.common.objects.getRedirectToMTRJourneyPlannerUrl
 import com.loohp.hkbuseta.common.objects.getStationBarrierFreeDetails
+import com.loohp.hkbuseta.common.objects.hasStop
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
 import com.loohp.hkbuseta.common.objects.mtrLines
+import com.loohp.hkbuseta.common.objects.removeStop
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
@@ -980,7 +982,6 @@ fun MTRRouteMapMapInterface(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MTRETADisplayInterface(
     stopId: String,
@@ -1421,13 +1422,13 @@ fun MTRRouteMapOptionsInterface(
         )
 
         val favouriteStops by Shared.favoriteStops.collectAsStateMultiplatform()
-        val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.contains(stopId) } }
+        val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.hasStop(stopId) } }
         PlatformButton(
             onClick = {
                 if (favouriteStopAlreadySet) {
-                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { remove(stopId) }, instance)
+                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopId) }, instance)
                 } else {
-                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(stopId) }, instance)
+                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopId, stop)) }, instance)
                 }
             },
             content = {
@@ -2037,7 +2038,6 @@ fun LRTRouteMapMapInterface(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LRTETADisplayInterface(
     instance: AppActiveContext,
@@ -2537,13 +2537,13 @@ fun LRTETADisplayOptionsInterface(
         )
 
         val favouriteStops by Shared.favoriteStops.collectAsStateMultiplatform()
-        val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.contains(stopId) } }
+        val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.hasStop(stopId) } }
         PlatformButton(
             onClick = {
                 if (favouriteStopAlreadySet) {
-                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { remove(stopId) }, instance)
+                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopId) }, instance)
                 } else {
-                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(stopId) }, instance)
+                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopId, stop)) }, instance)
                 }
             },
             content = {
@@ -3113,7 +3113,6 @@ fun TrainETADisplay(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TrainEtaText(
     text: FormattedText,

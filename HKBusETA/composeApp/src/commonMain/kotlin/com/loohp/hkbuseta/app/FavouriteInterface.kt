@@ -65,17 +65,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -97,11 +93,13 @@ import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.asFormattedText
 import com.loohp.hkbuseta.common.objects.asOriginData
 import com.loohp.hkbuseta.common.objects.asStop
+import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.getOperatorName
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.indexOfName
 import com.loohp.hkbuseta.common.objects.isDefaultGroup
 import com.loohp.hkbuseta.common.objects.isTrain
+import com.loohp.hkbuseta.common.objects.stop
 import com.loohp.hkbuseta.common.objects.toRouteSearchResult
 import com.loohp.hkbuseta.common.objects.toStopIndexed
 import com.loohp.hkbuseta.common.objects.withEn
@@ -113,7 +111,6 @@ import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.awaitWithTimeout
 import com.loohp.hkbuseta.compose.Add
 import com.loohp.hkbuseta.compose.AdvanceTabRow
-import com.loohp.hkbuseta.compose.ArrowBack
 import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.DeleteDialog
@@ -132,7 +129,6 @@ import com.loohp.hkbuseta.compose.PlatformTab
 import com.loohp.hkbuseta.compose.PlatformTabRow
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.Reorder
-import com.loohp.hkbuseta.compose.RightToLeftRow
 import com.loohp.hkbuseta.compose.Route
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Signal
@@ -660,7 +656,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
     var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(null) }
     val favouriteStops by remember { derivedStateOf {
         favouriteStopIds
-            .mapNotNullTo(mutableListOf()) { it.asStop(instance)?.let { s -> FavouriteStopItem(it, s) } }
+            .mapNotNullTo(mutableListOf()) { it.stop(instance)?.let { s -> FavouriteStopItem(it.stopId, s) } }
             .apply {
                 location?.let { l ->
                     onEachIndexed { index, item ->
@@ -730,9 +726,10 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally)
                             ) {
-                                val operators = stopId.identifyStopCo()
-                                for ((co, iconLayers) in stopCoIconLayers) {
-                                    if (operators.contains(co)) {
+                                val co = stopId.identifyStopCo().firstCo()
+                                if (co != null) {
+                                    val iconLayers = stopCoIconLayers[co]
+                                    if (iconLayers != null) {
                                         Box {
                                             for ((icon, color, modifier) in iconLayers) {
                                                 val painter = icon.invoke()
@@ -754,7 +751,6 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                                 }
                                             }
                                         }
-                                        break
                                     }
                                 }
                                 PlatformText(
@@ -813,7 +809,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                         }
                     }
                     val (stopId, stop) = data
-                    val co by remember(stopId) { derivedStateOf { stopId.identifyStopCo().first() } }
+                    val co by remember(stopId) { derivedStateOf { stopId.identifyStopCo().firstCo()!! } }
                     routes[stop]?.let { route ->
                         val extraActions: @Composable RowScope.() -> Unit = {
                             val haptic = LocalHapticFeedback.current
@@ -1004,11 +1000,12 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                             AutoResizeText(
                                                 textAlign = TextAlign.Start,
                                                 autoResizeTextState = autoResizeTextState,
-                                                text = item.asStop(instance)!!.name[Shared.language]
+                                                text = item.stop(instance)!!.name[Shared.language]
                                             )
-                                            val operators = item.identifyStopCo()
-                                            for ((co, iconLayers) in stopCoIconLayers) {
-                                                if (operators.contains(co)) {
+                                            val co = item.stopId.identifyStopCo().firstCo()
+                                            if (co != null) {
+                                                val iconLayers = stopCoIconLayers[co]
+                                                if (iconLayers != null) {
                                                     Box {
                                                         for ((icon, color, modifier) in iconLayers) {
                                                             val painter = icon.invoke()
@@ -1031,7 +1028,6 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                                             }
                                                         }
                                                     }
-                                                    break
                                                 }
                                             }
                                         }
@@ -1041,7 +1037,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                                 .clip(CircleShape),
                                             colors = ButtonDefaults.clearColors(),
                                             contentPadding = PaddingValues(0.dp),
-                                            onClick = { deleting = item }
+                                            onClick = { deleting = item.stopId }
                                         ) {
                                             PlatformIcon(
                                                 modifier = Modifier.size(26.dp),
@@ -1082,7 +1078,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                 onConfirmation = {
                     val deleteId = deleting
                     deleting = null
-                    val updated = Shared.favoriteStops.value.filter { it != deleteId }
+                    val updated = Shared.favoriteStops.value.filter { it.stopId != deleteId }
                     Registry.getInstance(instance).setFavouriteStops(updated, instance)
                 }
             )

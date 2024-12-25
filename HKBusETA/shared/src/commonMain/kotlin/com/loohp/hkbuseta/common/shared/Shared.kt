@@ -36,6 +36,7 @@ import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
 import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.common.objects.FavouriteStop
 import com.loohp.hkbuseta.common.objects.FavouriteStopMode
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
@@ -275,7 +276,7 @@ object Shared {
     val favoriteRouteStops: MutableNonNullStateFlowList<FavouriteRouteGroup> = MutableStateFlow(emptyList<FavouriteRouteGroup>()).wrapList()
 
     private val favouriteStopLock: Lock = Lock()
-    val favoriteStops: MutableNonNullStateFlowList<String> = MutableStateFlow(emptyList<String>()).wrapList()
+    val favoriteStops: MutableNonNullStateFlowList<FavouriteStop> = MutableStateFlow(emptyList<FavouriteStop>()).wrapList()
 
     val shouldShowFavListRouteView: Boolean get() = favoriteRouteStops.value.flatMap { it.favouriteRouteStops }.count() > 2
 
@@ -296,7 +297,7 @@ object Shared {
         }
     }
 
-    fun updateFavoriteStops(mutation: (MutableStateFlow<List<String>>) -> Unit) {
+    fun updateFavoriteStops(mutation: (MutableStateFlow<List<FavouriteStop>>) -> Unit) {
         favouriteStopLock.withLock {
             mutation.invoke(favoriteStops)
         }
@@ -304,7 +305,9 @@ object Shared {
 
     fun getAllInterestedStops(): List<String> {
         return buildList {
-            addAll(favoriteStops.value)
+            favoriteStops.value.forEach {
+                add(it.stopId)
+            }
             favoriteRouteStops.value.asSequence()
                 .flatMap { it.favouriteRouteStops }
                 .forEach { when (it.favouriteStopMode) {

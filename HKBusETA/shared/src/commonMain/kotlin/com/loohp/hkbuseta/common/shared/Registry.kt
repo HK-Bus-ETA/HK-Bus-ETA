@@ -47,6 +47,7 @@ import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.Fare
 import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
+import com.loohp.hkbuseta.common.objects.FavouriteStop
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.MTRStatus
@@ -163,6 +164,7 @@ import com.loohp.hkbuseta.common.utils.performGC
 import com.loohp.hkbuseta.common.utils.plus
 import com.loohp.hkbuseta.common.utils.postJSONResponse
 import com.loohp.hkbuseta.common.utils.remove
+import com.loohp.hkbuseta.common.utils.runIfNotNull
 import com.loohp.hkbuseta.common.utils.strEq
 import com.loohp.hkbuseta.common.utils.sundayZeroDayNumber
 import com.loohp.hkbuseta.common.utils.toGroupedMap
@@ -347,7 +349,21 @@ class Registry {
         val favouriteRouteStopsUpdated = PREFERENCES!!.favouriteRouteStops != preferences.favouriteRouteStops
         PREFERENCES!!.syncWith(preferences).ifFalse { return }
         if (favouriteStopsUpdated) {
-            PREFERENCES!!.favouriteStops.retainAll { getStopById(it) != null }
+            PREFERENCES!!.favouriteStops.mapNotNull {
+                val stop = getStopById(it.stopId)
+                if (stop != null) {
+                    it.copy(stop = stop)
+                } else {
+                    val closestStop = it.stop?.location?.let { l ->
+                        findNearestStops(l) { i, _ -> i.identifyStopCo().firstCo()?.isTrain != true }
+                    }
+                    if (closestStop == null || closestStop.distance > 0.3) {
+                        null
+                    } else {
+                        FavouriteStop(closestStop.stopId, closestStop.stop)
+                    }
+                }
+            }
         }
         if (favouriteRouteStopsUpdated) {
             PREFERENCES!!.favouriteRouteStops.forEachIndexed { idx, item ->
@@ -583,7 +599,7 @@ class Registry {
         savePreferences(context)
     }
 
-    fun setFavouriteStops(favouriteStops: List<String>, context: AppContext) {
+    fun setFavouriteStops(favouriteStops: List<FavouriteStop>, context: AppContext) {
         val distinct = favouriteStops.asSequence().distinct().toList().toImmutableList()
         Shared.updateFavoriteStops { it.value = distinct }
         PREFERENCES!!.favouriteStops.apply {
@@ -903,7 +919,21 @@ class Registry {
                         updatePercentageState.value = 0.85f + percentageOffset
                         var localUpdatePercentage = updatePercentageState.value
                         val percentagePerFav = 0.15f / Shared.favoriteRouteStops.value.flatMap { it.favouriteRouteStops }.count()
-                        val updateFavouriteStops = Shared.favoriteStops.value.filter { getStopById(it) != null }
+                        val updateFavouriteStops = Shared.favoriteStops.value.mapNotNull {
+                            val stop = getStopById(it.stopId)
+                            if (stop != null) {
+                                it.copy(stop = stop)
+                            } else {
+                                val closestStop = it.stop?.location?.let { l ->
+                                    findNearestStops(l) { i, _ -> i.identifyStopCo().firstCo()?.isTrain != true }
+                                }
+                                if (closestStop == null || closestStop.distance > 0.3) {
+                                    null
+                                } else {
+                                    FavouriteStop(closestStop.stopId, closestStop.stop)
+                                }
+                            }
+                        }
                         val updateFavouriteRoutes = Shared.favoriteRouteStops.value.map { (name, list) ->
                             FavouriteRouteGroup(name, list.mapNotNull { favouriteRoute ->
                                 try {
@@ -1050,8 +1080,9 @@ class Registry {
             .toList()
     }
 
-    fun findNearestStops(center: Coordinates): NearbyStopSearchResult? {
+    fun findNearestStops(center: Coordinates, predicate: ((String, Stop) -> Boolean)? = null): NearbyStopSearchResult? {
         return DATA!!.dataSheet.stopList.asSequence()
+            .runIfNotNull(predicate) { filter { (i, s) -> it.invoke(i, s) } }
             .map { (i, s) -> NearbyStopSearchResult(i, s, s.location.distance(center)) }
             .minByOrNull { it.distance }
     }
