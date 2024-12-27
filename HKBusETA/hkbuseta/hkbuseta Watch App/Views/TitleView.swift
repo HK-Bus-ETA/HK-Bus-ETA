@@ -118,8 +118,11 @@ struct TitleView: AppScreenView {
                     if let url = alert.url {
                         Text(alert.content?.get(language: Shared().language) ?? "")
                             .lineLimit(2)
-                            .autoResizing(maxSize: 19.scaled(appContext, true), minSize: 12.scaled(appContext))
+                            .lineSpacing(0)
+                            .autoResizing(maxSize: 19.scaled(appContext, true), minSize: 11.scaled(appContext))
+                            .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFF6161).asColor())
+                            .padding(.horizontal, 10.scaled(appContext))
                             .highPriorityGesture(
                                 TapGesture()
                                     .onEnded { _ in
@@ -129,8 +132,11 @@ struct TitleView: AppScreenView {
                     } else {
                         Text(alert.content?.get(language: Shared().language) ?? "")
                             .lineLimit(2)
-                            .autoResizing(maxSize: 19.scaled(appContext, true), minSize: 12.scaled(appContext))
+                            .lineSpacing(0)
+                            .autoResizing(maxSize: 19.scaled(appContext, true), minSize: 11.scaled(appContext))
+                            .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFF6161).asColor())
+                            .padding(.horizontal, 10.scaled(appContext))
                     }
                 } else {
                     Text(Shared().language == "en" ? "HK Bus ETA" : "香港巴士到站預報")
@@ -139,7 +145,8 @@ struct TitleView: AppScreenView {
                         .font(.system(size: 11.scaled(appContext))).padding(.bottom)
                 }
             }
-            .frame(height: 35.scaled(appContext, true))
+            .frame(height: 26.scaled(appContext, true))
+            .padding(.bottom)
         }
         .padding()
         .onAppear {
