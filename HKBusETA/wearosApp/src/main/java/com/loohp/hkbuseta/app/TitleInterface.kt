@@ -75,6 +75,7 @@ import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.scaledSize
+import com.loohp.hkbuseta.utils.sp
 
 
 @Composable
@@ -271,7 +272,7 @@ fun BottomText(instance: AppActiveContext) {
     appAlert?.takeOrNull()?.let { alert ->
         AutoResizeText(
             modifier = Modifier
-                .padding(20.dp, 0.dp)
+                .padding(30.dp, 0.dp)
                 .fillMaxWidth()
                 .height(25.scaledSize(instance).dp)
                 .applyIfNotNull(alert.url) {
@@ -285,8 +286,9 @@ fun BottomText(instance: AppActiveContext) {
             overflow = TextOverflow.Ellipsis,
             fontSizeRange = FontSizeRange(
                 max = 16F.scaledSize(instance).sp,
-                min = 9F.scaledSize(instance).sp
+                min = 8F.dp.sp
             ),
+            maxLines = 2,
             text = alert.content?.get(Shared.language)?: ""
         )
     }?: run {

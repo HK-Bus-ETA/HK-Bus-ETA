@@ -37,13 +37,11 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +49,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -96,6 +93,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Fill
@@ -113,11 +111,18 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.size.SizeResolver
+import com.github.panpf.zoomimage.CoilZoomAsyncImage
+import com.github.panpf.zoomimage.CoilZoomState
+import com.github.panpf.zoomimage.rememberCoilZoomState
+import com.github.panpf.zoomimage.zoom.ScalesCalculator
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.common
@@ -231,9 +236,6 @@ import com.loohp.hkbuseta.compose.table.TableColumnWidth
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
-import com.loohp.hkbuseta.compose.zoomable.Zoomable
-import com.loohp.hkbuseta.compose.zoomable.ZoomableState
-import com.loohp.hkbuseta.compose.zoomable.rememberZoomableState
 import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
@@ -246,7 +248,11 @@ import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.lastLocation
+import com.loohp.hkbuseta.utils.predefined
+import com.loohp.hkbuseta.utils.realPointToContentPoint
+import com.loohp.hkbuseta.utils.realPointToTouchPoint
 import com.loohp.hkbuseta.utils.renderedSize
+import com.loohp.hkbuseta.utils.touchPointToRealPoint
 import com.loohp.hkbuseta.utils.withAlpha
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -261,6 +267,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import org.jetbrains.compose.resources.InternalResourceApi
+import org.jetbrains.compose.resources.getResourceUri
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.readResourceBytes
 
@@ -686,7 +693,7 @@ fun RouteMapSearchInterface(
     }
 }
 
-data class ZoomState(val scale: Float, val translationX: Float, val translationY: Float)
+data class ZoomState(val scale: Float, val offset: Offset?)
 
 enum class StationInfoSheetType(
     val showing: Boolean,
@@ -710,7 +717,7 @@ enum class StationInfoSheetType(
     )
 }
 
-private val mtrRouteMapZoomState: MutableStateFlow<ZoomState> = MutableStateFlow(ZoomState(if (composePlatform.hasLargeScreen) 2F else 6F, 0F, 0F))
+private val mtrRouteMapZoomState: MutableStateFlow<ZoomState> = MutableStateFlow(ZoomState(if (composePlatform.hasLargeScreen) 1F else 1.7F, null))
 private val mtrRouteMapLocationJumpedState: MutableStateFlow<Boolean> = MutableStateFlow(false)
 private val mtrRouteMapSelectedStopIdState: MutableStateFlow<String?> = MutableStateFlow(null)
 private val mtrRouteMapShowingSheetState: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -727,16 +734,7 @@ fun MTRRouteMapInterface(
     isPreview: Boolean
 ) {
     var zoomState by mtrRouteMapZoomState.collectAsStateMultiplatform()
-    val state = rememberZoomableState(
-        initialScale = zoomState.scale,
-        maxScale = 8F,
-        initialTranslationX = zoomState.translationX,
-        initialTranslationY = zoomState.translationY,
-        doubleTapOutScale = 6F,
-        doubleTapScale = 7F
-    )
-    val imageSizeState = remember { mutableStateOf(IntSize.Zero) }
-    val imageSize by imageSizeState
+    val state = rememberCoilZoomState()
     var mtrRouteMapData by mtrRouteMapDataState.collectAsStateMultiplatform()
     var allStops: Map<String, Stop?> by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
@@ -752,8 +750,42 @@ fun MTRRouteMapInterface(
     var mtrSheetInfoType by mtrSheetInfoTypeState
     val mtrSheetInfoState = rememberPlatformModalBottomSheetState()
 
-    LaunchedEffect (state.scale, state.translationX, state.translationY) {
-        zoomState = ZoomState(state.scale, state.translationX, state.translationY)
+    val loadedState = remember { mutableStateOf(false) }
+    val loaded by loadedState
+
+    var setScale by remember(loaded) { mutableStateOf(false) }
+
+    LaunchedEffect (Unit) {
+        state.zoomable.apply {
+            threeStepScale = true
+            mouseWheelScaleScrollDeltaConverter = { it * 0.005F }
+            scalesCalculator = ScalesCalculator.predefined(
+                minScale = 1F,
+                mediumScale = 1.7F,
+                maxScale = 2.3F
+            )
+        }
+    }
+    LaunchedEffect (loaded) {
+        if (loaded) {
+            state.zoomable.apply {
+                delay(50)
+                zoomState.offset?.let {
+                    scale(zoomState.scale)
+                    offset(it)
+                }?: run {
+                    val dimension = mtrRouteMapData?.dimension?: Size.Zero
+                    val offset = state.zoomable.realPointToContentPoint(dimension.center, dimension)
+                    locate(offset.round(), zoomState.scale)
+                }
+                setScale = true
+            }
+        }
+    }
+    LaunchedEffect (setScale, state.zoomable.transform.scaleX, state.zoomable.transform.offset) {
+        if (setScale) {
+            zoomState = ZoomState(state.zoomable.transform.scaleX, state.zoomable.transform.offset)
+        }
     }
     LaunchedEffect (Unit) {
         mtrRouteMapLoaded.value = true
@@ -765,8 +797,8 @@ fun MTRRouteMapInterface(
             allStops = data.stations.keys.associateWith { it.asStop(instance) }
         }
     }
-    LaunchedEffect (allStops, location) {
-        if (location != null && allStops.isNotEmpty()) {
+    LaunchedEffect (setScale, allStops, location) {
+        if (setScale && location != null && allStops.isNotEmpty()) {
             val stop = allStops.entries.asSequence().filter { it.value != null }.minByOrNull { it.value!!.location.distance(location) }
             closestStop = stop
             if (stop != null) {
@@ -776,35 +808,33 @@ fun MTRRouteMapInterface(
                 if (!locationJumped && stopLaunch == null) {
                     mtrRouteMapData?.let { data ->
                         val position = data.stations[stop.key]!!
-                        val scaleX = data.dimension.width / imageSize.width
-                        val scaleY = data.dimension.height / imageSize.height
-                        val offset = Offset((position.x / scaleX) - (imageSize.width / 2), (position.y / scaleY) - (imageSize.height / 2))
-                        state.animateTranslateTo(-offset)
+                        val offset = state.zoomable.realPointToContentPoint(position, data.dimension)
+                        state.zoomable.locate(offset.round(), animated = true)
                         locationJumped = true
                     }
                 }
             }
         }
     }
-    LaunchedEffect (stopLaunch) {
-        stopLaunch?.let { stopLaunch ->
-            while (mtrRouteMapData == null) delay(10)
-            mtrRouteMapData?.let { data ->
-                val position = data.stations[stopLaunch]
-                if (position != null) {
-                    val scaleX = data.dimension.width / imageSize.width
-                    val scaleY = data.dimension.height / imageSize.height
-                    val offset = Offset((position.x / scaleX) - (imageSize.width / 2), (position.y / scaleY) - (imageSize.height / 2))
-                    state.animateTranslateTo(-offset)
-                    selectedStopId = stopLaunch
-                    sheetState.hide()
-                    showingSheet = true
+    LaunchedEffect (setScale, stopLaunch) {
+        if (setScale) {
+            stopLaunch?.let { stopLaunch ->
+                while (mtrRouteMapData == null) delay(10)
+                mtrRouteMapData?.let { data ->
+                    val position = data.stations[stopLaunch]
+                    if (position != null) {
+                        val offset = state.zoomable.realPointToContentPoint(position, data.dimension)
+                        state.zoomable.locate(offset.round(), animated = true)
+                        selectedStopId = stopLaunch
+                        sheetState.hide()
+                        showingSheet = true
+                    }
                 }
             }
         }
     }
 
-    MTRRouteMapMapInterface(instance, state, sheetState, imageSizeState, closestStopState)
+    MTRRouteMapMapInterface(instance, state, sheetState, loadedState, closestStopState, setScale)
 
     selectedStopId?.let { stopId ->
         val stop by remember(stopId) { derivedStateOf { stopId.asStop(instance)!! } }
@@ -833,16 +863,16 @@ fun MTRRouteMapInterface(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, InternalResourceApi::class)
 @Composable
 fun MTRRouteMapMapInterface(
     instance: AppActiveContext,
-    state: ZoomableState,
+    state: CoilZoomState,
     sheetState: SheetState,
-    imageSizeState: MutableState<IntSize>,
-    closestStopState: MutableState<Map.Entry<String, Stop?>?>
+    loadedState: MutableState<Boolean>,
+    closestStopState: MutableState<Map.Entry<String, Stop?>?>,
+    show: Boolean
 ) {
-    var imageSize by imageSizeState
     val scope = rememberCoroutineScope()
     val infiniteTransition = rememberInfiniteTransition(label = "ClosestStationIndicator")
     val animatedClosestStationRadius by infiniteTransition.animateFloat(
@@ -857,114 +887,55 @@ fun MTRRouteMapMapInterface(
     val mtrRouteMapData by mtrRouteMapDataState.collectAsStateMultiplatform()
     var selectedStopId by mtrRouteMapSelectedStopIdState.collectAsStateMultiplatform()
     var showingSheet by mtrRouteMapShowingSheetState.collectAsStateMultiplatform()
-    val selectedMtrStartingStation by selectedMtrStartingStationState.collectAsStateMultiplatform()
+    var selectedMtrStartingStation by selectedMtrStartingStationState.collectAsStateMultiplatform()
     val typhoonInfo by Registry.getInstance(instance).typhoonInfo.collectAsStateMultiplatform()
     val closestStop by closestStopState
-    Zoomable(
-        modifier = Modifier
-            .fillMaxSize()
-            .clipToBounds(),
-        state = state
-    ) {
-        Image(
+    var loaded by loadedState
+
+    val path = getResourceUri("routemaps/mtr_system_map${if (Shared.theme.isDarkMode) "_dark" else ""}${if (typhoonInfo.isAboveTyphoonSignalNine) "_typhoon" else ""}.png")
+
+    mtrRouteMapData?.let { data ->
+        CoilZoomAsyncImage(
             modifier = Modifier
-                .aspectRatio(mtrRouteMapData?.dimension?.run { width / height }?: 1F)
                 .fillMaxSize()
-                .onSizeChanged { imageSize = it }
+                .clipToBounds()
                 .composed {
-                    var hoveringStation by remember { mutableStateOf(false) }
-                    pointerInput(Unit) {
-                        awaitEachGesture {
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                if (event.type == PointerEventType.Move) {
-                                    val change = event.changes[0]
-                                    val offset = change.position
-                                    mtrRouteMapData?.let { data ->
-                                        val scaleX = data.dimension.width / imageSize.width
-                                        val scaleY = data.dimension.height / imageSize.height
-                                        val clickedPos = Offset(offset.x * scaleX, offset.y * scaleY)
+                    if (loaded) {
+                        var hoveringStation by remember { mutableStateOf(false) }
+                        pointerInput(Unit) {
+                            awaitEachGesture {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    if (event.type == PointerEventType.Move) {
+                                        val change = event.changes[0]
+                                        val pos = change.position
+                                        val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
                                         hoveringStation = data.findClickedStations(clickedPos) != null
                                     }
                                 }
                             }
-                        }
-                    }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else PointerIcon.Crosshair)
-                }
-                .pointerInput(Unit) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown(pass = PointerEventPass.Initial)
-                        val downTime = currentTimeMillis()
-                        val tapTimeout = viewConfiguration.longPressTimeoutMillis
-                        val tapPosition = down.position
-                        do {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            val currentTime = currentTimeMillis()
-                            if (event.changes.size != 1) break
-                            if (currentTime - downTime >= tapTimeout) break
-                            val change = event.changes[0]
-                            if ((change.position - tapPosition).getDistance() > viewConfiguration.touchSlop) break
-                            if (change.id == down.id && !change.pressed) {
-                                val offset = change.position
-                                mtrRouteMapData?.let { data ->
-                                    val scaleX = data.dimension.width / imageSize.width
-                                    val scaleY = data.dimension.height / imageSize.height
-                                    val clickedPos = Offset(offset.x * scaleX, offset.y * scaleY)
-                                    val stopId = data.findClickedStations(clickedPos)
-                                    if (stopId != null) {
-                                        change.consume()
-                                    }
-                                    scope.launch {
-                                        selectedStopId = stopId
-                                        sheetState.hide()
-                                        showingSheet = true
-                                    }
-                                }
-                            }
-                        } while (event.changes.any { it.id == down.id && it.pressed })
+                        }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else PointerIcon.Crosshair)
+                    } else {
+                        this
                     }
                 }
                 .drawWithContent {
-                    drawContent()
-                    mtrRouteMapData?.let { data ->
-                        val scaleX = data.dimension.width / imageSize.width
-                        val scaleY = data.dimension.height / imageSize.height
-                        selectedMtrStartingStation?.let { selected ->
-                            val position = data.stations[selected]
-                            if (position != null) {
-                                val center = Offset(position.x / scaleX, position.y / scaleY)
-                                drawCircle(
-                                    color = Color(0xff53ff19),
-                                    radius = animatedClosestStationRadius,
-                                    center = center,
-                                    alpha = 0.3F,
-                                    style = Fill
-                                )
-                                drawCircle(
-                                    color = Color(0xff53ff19),
-                                    radius = animatedClosestStationRadius,
-                                    center = center,
-                                    style = Stroke(
-                                        width = 3.dp.toPx()
-                                    )
-                                )
-                            }
-                        }
-                        closestStop?.let { closest ->
-                            val stopId = closest.key
-                            if (stopId != selectedMtrStartingStation) {
-                                val position = data.stations[stopId]
+                    if (show) {
+                        drawContent()
+                        if (loaded) {
+                            selectedMtrStartingStation?.let { selected ->
+                                val position = data.stations[selected]
                                 if (position != null) {
-                                    val center = Offset(position.x / scaleX, position.y / scaleY)
+                                    val center = state.zoomable.realPointToTouchPoint(position, data.dimension)
                                     drawCircle(
-                                        color = Color(0xff199fff),
+                                        color = Color(0xff53ff19),
                                         radius = animatedClosestStationRadius,
                                         center = center,
                                         alpha = 0.3F,
                                         style = Fill
                                     )
                                     drawCircle(
-                                        color = Color(0xff199fff),
+                                        color = Color(0xff53ff19),
                                         radius = animatedClosestStationRadius,
                                         center = center,
                                         style = Stroke(
@@ -973,10 +944,62 @@ fun MTRRouteMapMapInterface(
                                     )
                                 }
                             }
+                            closestStop?.let { closest ->
+                                val stopId = closest.key
+                                if (stopId != selectedMtrStartingStation) {
+                                    val position = data.stations[stopId]
+                                    if (position != null) {
+                                        val center = state.zoomable.realPointToTouchPoint(position, data.dimension)
+                                        drawCircle(
+                                            color = Color(0xff199fff),
+                                            radius = animatedClosestStationRadius,
+                                            center = center,
+                                            alpha = 0.3F,
+                                            style = Fill
+                                        )
+                                        drawCircle(
+                                            color = Color(0xff199fff),
+                                            radius = animatedClosestStationRadius,
+                                            center = center,
+                                            style = Stroke(
+                                                width = 3.dp.toPx()
+                                            )
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 },
-            painter = painterResource(DrawableResource("routemaps/mtr_system_map${if (Shared.theme.isDarkMode) "_dark" else ""}${if (typhoonInfo.isAboveTyphoonSignalNine) "_typhoon" else ""}.png")),
+            model = ImageRequest.Builder(LocalPlatformContext.current)
+                .data(path)
+                .size(SizeResolver.ORIGINAL)
+                .build(),
+            onSuccess = { scope.launch { loaded = true } },
+            scrollBar = null,
+            zoomState = state,
+            onTap = { pos ->
+                if (loaded) {
+                    val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
+                    val stopId = data.findClickedStations(clickedPos)
+                    scope.launch {
+                        selectedStopId = stopId
+                        sheetState.hide()
+                        showingSheet = true
+                    }
+                }
+            },
+            onLongPress = { pos ->
+                if (loaded) {
+                    val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
+                    val stopId = data.findClickedStations(clickedPos)
+                    if (stopId != null) {
+                        scope.launch {
+                            selectedMtrStartingStation = stopId
+                        }
+                    }
+                }
+            },
             contentDescription = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖"
         )
     }
@@ -1769,7 +1792,7 @@ fun MTRRouteMapInfoSheetInterface(
     }
 }
 
-private val lrtRouteMapZoomState: MutableStateFlow<ZoomState> = MutableStateFlow(ZoomState(2F, 0F, 0F))
+private val lrtRouteMapZoomState: MutableStateFlow<ZoomState> = MutableStateFlow(ZoomState(1F, null))
 private val lrtRouteMapLocationJumpedState: MutableStateFlow<Boolean> = MutableStateFlow(false)
 private val lrtRouteMapSelectedStopIdState: MutableStateFlow<String?> = MutableStateFlow(null)
 private val lrtRouteMapShowingSheetState: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -1784,16 +1807,7 @@ fun LRTRouteMapInterface(
     isPreview: Boolean
 ) {
     var zoomState by lrtRouteMapZoomState.collectAsStateMultiplatform()
-    val state = rememberZoomableState(
-        initialScale = zoomState.scale,
-        maxScale = 4F,
-        initialTranslationX = zoomState.translationX,
-        initialTranslationY = zoomState.translationY,
-        doubleTapOutScale = 2F,
-        doubleTapScale = 3F
-    )
-    val imageSizeState = remember { mutableStateOf(IntSize(0, 0)) }
-    val imageSize by imageSizeState
+    val state = rememberCoilZoomState()
     var lightRailRouteMapData by lightRailRouteMapDataState.collectAsStateMultiplatform()
     var allStops: Map<String, Stop?> by remember { mutableStateOf(lightRailRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
@@ -1809,8 +1823,42 @@ fun LRTRouteMapInterface(
     var lrtSheetInfoType by lrtSheetInfoTypeState
     val lrtSheetInfoState = rememberPlatformModalBottomSheetState()
 
-    LaunchedEffect (state.scale, state.translationX, state.translationY) {
-        zoomState = ZoomState(state.scale, state.translationX, state.translationY)
+    val loadedState = remember { mutableStateOf(false) }
+    val loaded by loadedState
+
+    var setScale by remember(loaded) { mutableStateOf(false) }
+
+    LaunchedEffect (Unit) {
+        state.zoomable.apply {
+            threeStepScale = true
+            mouseWheelScaleScrollDeltaConverter = { it * 0.005F }
+            scalesCalculator = ScalesCalculator.predefined(
+                minScale = 0.6F,
+                mediumScale = 1F,
+                maxScale = 1.7F
+            )
+        }
+    }
+    LaunchedEffect (loaded) {
+        if (loaded) {
+            state.zoomable.apply {
+                delay(50)
+                zoomState.offset?.let {
+                    scale(zoomState.scale)
+                    offset(it)
+                }?: run {
+                    val dimension = lightRailRouteMapData?.dimension?: Size.Zero
+                    val offset = state.zoomable.realPointToContentPoint(dimension.center, dimension)
+                    locate(offset.round(), zoomState.scale)
+                }
+                setScale = true
+            }
+        }
+    }
+    LaunchedEffect (setScale, state.zoomable.transform.scaleX, state.zoomable.transform.offset) {
+        if (setScale) {
+            zoomState = ZoomState(state.zoomable.transform.scaleX, state.zoomable.transform.offset)
+        }
     }
     LaunchedEffect (Unit) {
         lightRailRouteMapLoaded.value = true
@@ -1822,8 +1870,8 @@ fun LRTRouteMapInterface(
             allStops = data.stations.keys.associateWith { it.asStop(instance) }
         }
     }
-    LaunchedEffect (allStops, location) {
-        if (location != null && allStops.isNotEmpty()) {
+    LaunchedEffect (setScale, allStops, location) {
+        if (setScale && location != null && allStops.isNotEmpty()) {
             val stop = allStops.entries.asSequence().filter { it.value != null }.minByOrNull { it.value!!.location.distance(location) }
             closestStop = stop
             if (stop != null) {
@@ -1833,36 +1881,33 @@ fun LRTRouteMapInterface(
                 if (!locationJumped && stopLaunch == null) {
                     lightRailRouteMapData?.let { data ->
                         val position = data.stations[stop.key]!!
-                        val scaleX = data.dimension.width / imageSize.width
-                        val scaleY = data.dimension.height / imageSize.height
-                        val offset = Offset((position.x / scaleX) - (imageSize.width / 2), (position.y / scaleY) - (imageSize.height / 2))
-                        state.animateTranslateTo(-offset)
+                        val offset = state.zoomable.realPointToContentPoint(position, data.dimension)
+                        state.zoomable.locate(offset.round(), animated = true)
                         locationJumped = true
                     }
                 }
             }
-
         }
     }
-    LaunchedEffect (stopLaunch) {
-        stopLaunch?.let { stopLaunch ->
-            while (lightRailRouteMapData == null) delay(10)
-            lightRailRouteMapData?.let { data ->
-                val position = data.stations[stopLaunch]
-                if (position != null) {
-                    val scaleX = data.dimension.width / imageSize.width
-                    val scaleY = data.dimension.height / imageSize.height
-                    val offset = Offset((position.x / scaleX) - (imageSize.width / 2), (position.y / scaleY) - (imageSize.height / 2))
-                    state.animateTranslateTo(-offset)
-                    selectedStopId = stopLaunch
-                    sheetState.hide()
-                    showingSheet = true
+    LaunchedEffect (setScale, stopLaunch) {
+        if (setScale) {
+            stopLaunch?.let { stopLaunch ->
+                while (lightRailRouteMapData == null) delay(10)
+                lightRailRouteMapData?.let { data ->
+                    val position = data.stations[stopLaunch]
+                    if (position != null) {
+                        val offset = state.zoomable.realPointToContentPoint(position, data.dimension)
+                        state.zoomable.locate(offset.round(), animated = true)
+                        selectedStopId = stopLaunch
+                        sheetState.hide()
+                        showingSheet = true
+                    }
                 }
             }
         }
     }
 
-    LRTRouteMapMapInterface(state, sheetState, imageSizeState, closestStopState)
+    LRTRouteMapMapInterface(state, sheetState, loadedState, closestStopState, setScale)
 
     selectedStopId?.let { stopId ->
         val stop by remember(stopId) { derivedStateOf { stopId.asStop(instance)!! } }
@@ -1891,15 +1936,15 @@ fun LRTRouteMapInterface(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, InternalResourceApi::class)
 @Composable
 fun LRTRouteMapMapInterface(
-    state: ZoomableState,
+    state: CoilZoomState,
     sheetState: SheetState,
-    imageSizeState: MutableState<IntSize>,
-    closestStopState: MutableState<Map.Entry<String, Stop?>?>
+    loadedState: MutableState<Boolean>,
+    closestStopState: MutableState<Map.Entry<String, Stop?>?>,
+    show: Boolean
 ) {
-    var imageSize by imageSizeState
     val scope = rememberCoroutineScope()
     val infiniteTransition = rememberInfiniteTransition(label = "ClosestStationIndicator")
     val animatedClosestStationRadius by infiniteTransition.animateFloat(
@@ -1914,113 +1959,54 @@ fun LRTRouteMapMapInterface(
     val lightRailRouteMapData by lightRailRouteMapDataState.collectAsStateMultiplatform()
     var selectedStopId by lrtRouteMapSelectedStopIdState.collectAsStateMultiplatform()
     var showingSheet by lrtRouteMapShowingSheetState.collectAsStateMultiplatform()
-    val selectedLrtStartingStation by selectedLrtStartingStationState.collectAsStateMultiplatform()
+    var selectedLrtStartingStation by selectedLrtStartingStationState.collectAsStateMultiplatform()
     val closestStop by closestStopState
-    Zoomable(
-        modifier = Modifier
-            .fillMaxSize()
-            .clipToBounds(),
-        state = state
-    ) {
-        Image(
+    var loaded by loadedState
+
+    val path = getResourceUri("routemaps/light_rail_system_map${if (Shared.theme.isDarkMode) "_dark" else ""}.png")
+
+    lightRailRouteMapData?.let { data ->
+        CoilZoomAsyncImage(
             modifier = Modifier
-                .aspectRatio(lightRailRouteMapData?.dimension?.run { width / height }?: 1F)
                 .fillMaxSize()
-                .onSizeChanged { imageSize = it }
+                .clipToBounds()
                 .composed {
-                    var hoveringStation by remember { mutableStateOf(false) }
-                    pointerInput(Unit) {
-                        awaitEachGesture {
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                if (event.type == PointerEventType.Move) {
-                                    val change = event.changes[0]
-                                    val offset = change.position
-                                    lightRailRouteMapData?.let { data ->
-                                        val scaleX = data.dimension.width / imageSize.width
-                                        val scaleY = data.dimension.height / imageSize.height
-                                        val clickedPos = Offset(offset.x * scaleX, offset.y * scaleY)
+                    if (loaded) {
+                        var hoveringStation by remember { mutableStateOf(false) }
+                        pointerInput(Unit) {
+                            awaitEachGesture {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    if (event.type == PointerEventType.Move) {
+                                        val change = event.changes[0]
+                                        val pos = change.position
+                                        val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
                                         hoveringStation = data.findClickedStations(clickedPos) != null
                                     }
                                 }
                             }
-                        }
-                    }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else PointerIcon.Crosshair)
-                }
-                .pointerInput(Unit) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown(pass = PointerEventPass.Initial)
-                        val downTime = currentTimeMillis()
-                        val tapTimeout = viewConfiguration.longPressTimeoutMillis
-                        val tapPosition = down.position
-                        do {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            val currentTime = currentTimeMillis()
-                            if (event.changes.size != 1) break
-                            if (currentTime - downTime >= tapTimeout) break
-                            val change = event.changes[0]
-                            if ((change.position - tapPosition).getDistance() > viewConfiguration.touchSlop) break
-                            if (change.id == down.id && !change.pressed) {
-                                val offset = change.position
-                                lightRailRouteMapData?.let { data ->
-                                    val scaleX = data.dimension.width / imageSize.width
-                                    val scaleY = data.dimension.height / imageSize.height
-                                    val clickedPos = Offset(offset.x * scaleX, offset.y * scaleY)
-                                    val stopId = data.findClickedStations(clickedPos)
-                                    if (stopId != null) {
-                                        change.consume()
-                                    }
-                                    scope.launch {
-                                        selectedStopId = stopId
-                                        sheetState.hide()
-                                        showingSheet = true
-                                    }
-                                }
-                            }
-                        } while (event.changes.any { it.id == down.id && it.pressed })
+                        }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else PointerIcon.Crosshair)
+                    } else {
+                        this
                     }
                 }
                 .drawWithContent {
-                    drawContent()
-                    lightRailRouteMapData?.let { data ->
-                        val scaleX = data.dimension.width / imageSize.width
-                        val scaleY = data.dimension.height / imageSize.height
-                        selectedLrtStartingStation?.let { selected ->
-                            val position = data.stations[selected]
-                            if (position != null) {
-                                val center = Offset(position.x / scaleX, position.y / scaleY)
-                                drawCircle(
-                                    color = Color(0xff53ff19),
-                                    radius = animatedClosestStationRadius,
-                                    center = center,
-                                    alpha = 0.3F,
-                                    style = Fill
-                                )
-                                drawCircle(
-                                    color = Color(0xff53ff19),
-                                    radius = animatedClosestStationRadius,
-                                    center = center,
-                                    style = Stroke(
-                                        width = 3.dp.toPx()
-                                    )
-                                )
-                            }
-                        }
-                        closestStop?.let { closest ->
-                            val stopId = closest.key
-                            if (stopId != selectedLrtStartingStation) {
-                                val position = data.stations[stopId]
+                    if (show) {
+                        drawContent()
+                        if (loaded) {
+                            selectedLrtStartingStation?.let { selected ->
+                                val position = data.stations[selected]
                                 if (position != null) {
-                                    val center = Offset(position.x / scaleX, position.y / scaleY)
+                                    val center = state.zoomable.realPointToTouchPoint(position, data.dimension)
                                     drawCircle(
-                                        color = Color(0xff199fff),
+                                        color = Color(0xff53ff19),
                                         radius = animatedClosestStationRadius,
                                         center = center,
                                         alpha = 0.3F,
                                         style = Fill
                                     )
                                     drawCircle(
-                                        color = Color(0xff199fff),
+                                        color = Color(0xff53ff19),
                                         radius = animatedClosestStationRadius,
                                         center = center,
                                         style = Stroke(
@@ -2029,10 +2015,62 @@ fun LRTRouteMapMapInterface(
                                     )
                                 }
                             }
+                            closestStop?.let { closest ->
+                                val stopId = closest.key
+                                if (stopId != selectedLrtStartingStation) {
+                                    val position = data.stations[stopId]
+                                    if (position != null) {
+                                        val center = state.zoomable.realPointToTouchPoint(position, data.dimension)
+                                        drawCircle(
+                                            color = Color(0xff199fff),
+                                            radius = animatedClosestStationRadius,
+                                            center = center,
+                                            alpha = 0.3F,
+                                            style = Fill
+                                        )
+                                        drawCircle(
+                                            color = Color(0xff199fff),
+                                            radius = animatedClosestStationRadius,
+                                            center = center,
+                                            style = Stroke(
+                                                width = 3.dp.toPx()
+                                            )
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 },
-            painter = painterResource(DrawableResource("routemaps/light_rail_system_map${if (Shared.theme.isDarkMode) "_dark" else ""}.png")),
+            model = ImageRequest.Builder(LocalPlatformContext.current)
+                .data(path)
+                .size(SizeResolver.ORIGINAL)
+                .build(),
+            onSuccess = { scope.launch { loaded = true } },
+            scrollBar = null,
+            zoomState = state,
+            onTap = { pos ->
+                if (loaded) {
+                    val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
+                    val stopId = data.findClickedStations(clickedPos)
+                    scope.launch {
+                        selectedStopId = stopId
+                        sheetState.hide()
+                        showingSheet = true
+                    }
+                }
+            },
+            onLongPress = { pos ->
+                if (loaded) {
+                    val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
+                    val stopId = data.findClickedStations(clickedPos)
+                    if (stopId != null) {
+                        scope.launch {
+                            selectedLrtStartingStation = stopId
+                        }
+                    }
+                }
+            },
             contentDescription = if (Shared.language == "en") "Light Rail Route Map" else "輕鐵路綫圖"
         )
     }

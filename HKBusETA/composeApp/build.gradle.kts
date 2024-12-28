@@ -141,6 +141,7 @@ kotlin {
             implementation(libs.material.kolor)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
+            implementation(libs.zoomimage.compose.coil3)
         }
         iosMain.dependencies {
             implementation(projects.shared)
@@ -187,7 +188,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1010
+        versionCode = 1018
         versionName = "2.4.12"
     }
     packaging {

@@ -56,6 +56,7 @@ espresso-core = "3.5.1"
 compose-bom = "2024.02.01"
 googleDevToolsKsp = "2.0.21-1.0.25"
 firebase-bom = "33.7.0"
+zoomimageComposeCoil3 = "1.1.0"
 
 [libraries]
 android-pdf-viewer = { module = "com.github.mhiew:android-pdf-viewer", version.ref = "androidPdfViewer" }
@@ -125,6 +126,7 @@ compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = 
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+zoomimage-compose-coil3 = { module = "io.github.panpf.zoomimage:zoomimage-compose-coil3", version.ref = "zoomimageComposeCoil3" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
