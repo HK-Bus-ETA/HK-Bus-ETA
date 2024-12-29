@@ -253,6 +253,7 @@ import com.loohp.hkbuseta.utils.realPointToContentPoint
 import com.loohp.hkbuseta.utils.realPointToTouchPoint
 import com.loohp.hkbuseta.utils.renderedSize
 import com.loohp.hkbuseta.utils.touchPointToRealPoint
+import com.loohp.hkbuseta.utils.unrestrictedBitmapSize
 import com.loohp.hkbuseta.utils.withAlpha
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -717,7 +718,7 @@ enum class StationInfoSheetType(
     )
 }
 
-private val mtrRouteMapZoomState: MutableStateFlow<ZoomState> = MutableStateFlow(ZoomState(if (composePlatform.hasLargeScreen) 1F else 1.7F, null))
+private val mtrRouteMapZoomState: MutableStateFlow<ZoomState> = MutableStateFlow(ZoomState(if (composePlatform.hasLargeScreen) 0.7F else 1F, null))
 private val mtrRouteMapLocationJumpedState: MutableStateFlow<Boolean> = MutableStateFlow(false)
 private val mtrRouteMapSelectedStopIdState: MutableStateFlow<String?> = MutableStateFlow(null)
 private val mtrRouteMapShowingSheetState: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -758,11 +759,11 @@ fun MTRRouteMapInterface(
     LaunchedEffect (Unit) {
         state.zoomable.apply {
             threeStepScale = true
-            mouseWheelScaleScrollDeltaConverter = { it * 0.005F }
+            mouseWheelScaleScrollDeltaConverter = { it * 0.004F }
             scalesCalculator = ScalesCalculator.predefined(
-                minScale = 1F,
-                mediumScale = 1.7F,
-                maxScale = 2.3F
+                minScale = 0.7F,
+                mediumScale = 1F,
+                maxScale = 1.5F
             )
         }
     }
@@ -973,6 +974,7 @@ fun MTRRouteMapMapInterface(
                 },
             model = ImageRequest.Builder(LocalPlatformContext.current)
                 .data(path)
+                .unrestrictedBitmapSize()
                 .size(SizeResolver.ORIGINAL)
                 .build(),
             onSuccess = { scope.launch { loaded = true } },
@@ -1792,7 +1794,7 @@ fun MTRRouteMapInfoSheetInterface(
     }
 }
 
-private val lrtRouteMapZoomState: MutableStateFlow<ZoomState> = MutableStateFlow(ZoomState(1F, null))
+private val lrtRouteMapZoomState: MutableStateFlow<ZoomState> = MutableStateFlow(ZoomState(0.8F, null))
 private val lrtRouteMapLocationJumpedState: MutableStateFlow<Boolean> = MutableStateFlow(false)
 private val lrtRouteMapSelectedStopIdState: MutableStateFlow<String?> = MutableStateFlow(null)
 private val lrtRouteMapShowingSheetState: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -1831,11 +1833,11 @@ fun LRTRouteMapInterface(
     LaunchedEffect (Unit) {
         state.zoomable.apply {
             threeStepScale = true
-            mouseWheelScaleScrollDeltaConverter = { it * 0.005F }
+            mouseWheelScaleScrollDeltaConverter = { it * 0.004F }
             scalesCalculator = ScalesCalculator.predefined(
-                minScale = 0.6F,
+                minScale = 0.8F,
                 mediumScale = 1F,
-                maxScale = 1.7F
+                maxScale = 1.5F
             )
         }
     }
@@ -2044,6 +2046,7 @@ fun LRTRouteMapMapInterface(
                 },
             model = ImageRequest.Builder(LocalPlatformContext.current)
                 .data(path)
+                .unrestrictedBitmapSize()
                 .size(SizeResolver.ORIGINAL)
                 .build(),
             onSuccess = { scope.launch { loaded = true } },

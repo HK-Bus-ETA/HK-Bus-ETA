@@ -2,6 +2,9 @@ package com.loohp.hkbuseta.utils
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import coil3.request.ImageRequest
+import coil3.request.maxBitmapSize
+import coil3.size.Dimension
 import com.github.panpf.zoomimage.compose.zoom.ZoomableState
 import com.github.panpf.zoomimage.util.IntSizeCompat
 import com.github.panpf.zoomimage.zoom.ContentScaleCompat
@@ -87,4 +90,8 @@ data class PredefinedScalesCalculator(
 
 fun ScalesCalculator.Companion.predefined(minScale: Float, mediumScale: Float, maxScale: Float): PredefinedScalesCalculator {
     return PredefinedScalesCalculator(minScale, mediumScale, maxScale)
+}
+
+fun ImageRequest.Builder.unrestrictedBitmapSize(): ImageRequest. Builder {
+    return maxBitmapSize(coil3.size.Size(Dimension.Undefined, Dimension.Undefined))
 }

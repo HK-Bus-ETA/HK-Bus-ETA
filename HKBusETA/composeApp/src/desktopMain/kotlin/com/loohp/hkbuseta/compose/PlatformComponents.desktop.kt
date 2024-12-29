@@ -71,6 +71,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.PriorityHigh
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
@@ -264,6 +265,7 @@ actual inline val PlatformIcons.Filled.NoTransfer: Painter @Composable get() = r
 actual inline val PlatformIcons.Filled.PinDrop: Painter @Composable get() = rememberVectorPainter(Icons.Filled.PinDrop)
 actual inline val PlatformIcons.Filled.PhotoCamera: Painter @Composable get() = rememberVectorPainter(Icons.Filled.PhotoCamera)
 actual inline val PlatformIcons.Filled.PriorityHigh: Painter @Composable get() = rememberVectorPainter(Icons.Filled.PriorityHigh)
+actual inline val PlatformIcons.Filled.PushPin: Painter @Composable get() = rememberVectorPainter(Icons.Filled.PushPin)
 actual inline val PlatformIcons.Filled.Search: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Search)
 actual inline val PlatformIcons.Filled.Settings: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Settings)
 actual inline val PlatformIcons.Filled.Star: Painter @Composable get() = rememberVectorPainter(Icons.Filled.Star)

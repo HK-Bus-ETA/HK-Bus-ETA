@@ -254,7 +254,18 @@ object Shared {
         return lineName.getMtrLineName { orElse.asBilingualText() }[language]
     }
 
+    private val pinnedItemsLock: Lock = Lock()
     val pinnedItems: MutableNonNullStateFlowList<TemporaryPinItem> = MutableStateFlow(emptyList<TemporaryPinItem>()).wrapList()
+
+    fun togglePinnedItems(item: TemporaryPinItem) {
+        pinnedItemsLock.withLock {
+            pinnedItems.value = pinnedItems.value.toMutableList().apply {
+                if (!removeAll { it.key == item.key }) {
+                    add(item)
+                }
+            }
+        }
+    }
 
     var language = "zh"
     var etaDisplayMode = ETADisplayMode.COUNTDOWN

@@ -27,7 +27,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -921,17 +920,21 @@ fun ListStopsBottomSheet(
                                 icon = if (favouriteStopAlreadySet) PlatformIcons.Outlined.Star else PlatformIcons.Outlined.StarOutline,
                                 text = (if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站").asAnnotatedString()
                             )
+                            val pinnedItems by Shared.pinnedItems.collectAsStateMultiplatform()
+                            val pinItem by remember(allStops) { derivedStateOf {
+                                val stopBranches = allStops[selectedStop - 1].branchIds
+                                val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
+                                TemporaryPinItem(branch, co, selectedStop, routeBranches)
+                            } }
                             ActionRow(
                                 onClick = {
                                     scope.launch {
-                                        val stopBranches = allStops[selectedStop - 1].branchIds
-                                        val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
-                                        Shared.pinnedItems.value += TemporaryPinItem(branch, co, selectedStop)
+                                        Shared.togglePinnedItems(pinItem)
                                         sheetState.hide()
                                         sheetType = BottomSheetType.NONE
                                     }
                                 },
-                                icon = PlatformIcons.Outlined.PushPin,
+                                icon = if (pinnedItems.any { it.key == pinItem.key }) PlatformIcons.Filled.PushPin else PlatformIcons.Outlined.PushPin,
                                 text = (if (Shared.language == "en") "Pin to Top" else "置頂").asAnnotatedString()
                             )
                             ActionRow(
@@ -1680,21 +1683,23 @@ fun StopEntryExpansionEta(
                 )
             }
             if (co !== Operator.LRT) {
+                val pinnedItems by Shared.pinnedItems.collectAsStateMultiplatform()
+                val pinItem by remember(allStops) { derivedStateOf {
+                    val stopBranches = allStops[selectedStop - 1].branchIds
+                    val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
+                    TemporaryPinItem(branch, co, selectedStop, routeBranches)
+                } }
                 PlatformFilledTonalIconButton(
                     modifier = Modifier
                         .padding(end = 5.dp)
                         .size(42.dp, 32.dp)
                         .plainTooltip(if (Shared.language == "en") "Pin to Top" else "置頂"),
-                    onClick = {
-                        val stopBranches = allStops[selectedStop - 1].branchIds
-                        val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
-                        Shared.pinnedItems.value += TemporaryPinItem(branch, co, selectedStop)
-                    },
+                    onClick = { Shared.togglePinnedItems(pinItem) },
                     shape = RoundedCornerShape(5.dp)
                 ) {
                     PlatformIcon(
                         modifier = Modifier.size(25.dp),
-                        painter = PlatformIcons.Outlined.PushPin,
+                        painter = if (pinnedItems.any { it.key == pinItem.key }) PlatformIcons.Filled.PushPin else PlatformIcons.Outlined.PushPin,
                         tint = Color(0xFFC4AB48),
                         contentDescription = if (Shared.language == "en") "Pin to Top" else "置頂"
                     )
@@ -2132,21 +2137,23 @@ fun StopEntryExpansionAlightReminder(
                     contentDescription = if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站"
                 )
             }
+            val pinnedItems by Shared.pinnedItems.collectAsStateMultiplatform()
+            val pinItem by remember(allStops) { derivedStateOf {
+                val stopBranches = allStops[selectedStop - 1].branchIds
+                val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
+                TemporaryPinItem(branch, co, selectedStop, routeBranches)
+            } }
             PlatformFilledTonalIconButton(
                 modifier = Modifier
                     .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
                     .plainTooltip(if (Shared.language == "en") "Pin to Top" else "置頂"),
-                onClick = {
-                    val stopBranches = allStops[selectedStop - 1].branchIds
-                    val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
-                    Shared.pinnedItems.value += TemporaryPinItem(branch, co, selectedStop)
-                },
+                onClick = { Shared.togglePinnedItems(pinItem) },
                 shape = RoundedCornerShape(5.dp)
             ) {
                 PlatformIcon(
                     modifier = Modifier.size(25.dp),
-                    painter = PlatformIcons.Outlined.PushPin,
+                    painter = if (pinnedItems.any { it.key == pinItem.key }) PlatformIcons.Filled.PushPin else PlatformIcons.Outlined.PushPin,
                     tint = Color(0xFFC4AB48),
                     contentDescription = if (Shared.language == "en") "Pin to Top" else "置頂"
                 )

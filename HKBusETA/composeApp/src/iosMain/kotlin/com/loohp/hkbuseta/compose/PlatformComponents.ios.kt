@@ -58,10 +58,7 @@ import androidx.compose.material.icons.filled.LocationDisabled
 import androidx.compose.material.icons.filled.NoTransfer
 import androidx.compose.material.icons.outlined.BrokenImage
 import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.DepartureBoard
-import androidx.compose.material.icons.outlined.DirectionsBus
-import androidx.compose.material.icons.outlined.Tablet
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
@@ -251,6 +248,7 @@ actual inline val PlatformIcons.Filled.NoTransfer: Painter @Composable get() = r
 actual inline val PlatformIcons.Filled.PinDrop: Painter @Composable get() = rememberSystemImagePainter("mappin.circle.fill")
 actual inline val PlatformIcons.Filled.PhotoCamera: Painter @Composable get() = rememberSystemImagePainter("camera.fill")
 actual inline val PlatformIcons.Filled.PriorityHigh: Painter @Composable get() = rememberSystemImagePainter("exclamationmark")
+actual inline val PlatformIcons.Filled.PushPin: Painter @Composable get() = rememberSystemImagePainter("pin.fill")
 actual inline val PlatformIcons.Filled.Search: Painter @Composable get() = rememberSystemImagePainter("magnifyingglass")
 actual inline val PlatformIcons.Filled.Settings: Painter @Composable get() = rememberSystemImagePainter("gearshape.fill")
 actual inline val PlatformIcons.Filled.Star: Painter @Composable get() = rememberSystemImagePainter("star.fill")

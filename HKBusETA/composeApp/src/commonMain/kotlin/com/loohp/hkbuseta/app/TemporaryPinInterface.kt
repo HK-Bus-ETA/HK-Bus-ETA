@@ -22,6 +22,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
@@ -33,16 +36,18 @@ import com.loohp.hkbuseta.appcontext.screenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.StopInfo
 import com.loohp.hkbuseta.common.objects.getRouteKey
-import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.compose.Close
 import com.loohp.hkbuseta.compose.PlatformButton
 import com.loohp.hkbuseta.compose.PlatformIcon
@@ -58,6 +63,7 @@ import com.loohp.hkbuseta.compose.platformTopBarColor
 import com.loohp.hkbuseta.compose.verticalScrollBar
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.equivalentDp
+import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.renderedSize
 import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.CoroutineScope
@@ -75,6 +81,7 @@ fun TemporaryPinInterface(
     var items by Shared.pinnedItems.collectAsStateMultiplatform()
 
     val window = currentLocalWindowSize
+    val now by currentMinuteState.collectAsStateMultiplatform()
 
     val scroll = rememberLazyListState()
     val routeNumberWidth = if (Shared.language == "en") "249M".renderedSize(30F.sp) else "機場快線".renderedSize(22F.sp)
@@ -101,14 +108,20 @@ fun TemporaryPinInterface(
             .applyIfNotNull(onSizeChange) { this.onSizeChanged(it) },
         state = scroll
     ) {
-        items(items, key = { it.id }) { item ->
-            val routeKey by remember(item) { derivedStateOf { item.route.getRouteKey(instance)!! } }
-            val allStops by remember(item) { derivedStateOf { Registry.getInstance(instance).getAllStops(item.route.routeNumber, item.route.idBound(item.co), item.co, item.route.gmbRegion) } }
+        items(items, key = { it.key }) { item ->
+            val allStops by remember(item) { derivedStateOf { Registry.getInstance(instance).getAllStops(item.routeNumber, item.bound, item.co, item.gmbRegion) } }
             val stopData by remember { derivedStateOf { allStops[item.stopIndex - 1] } }
+            val branchByActiveness by remember(item) { derivedStateOf { item.branches.currentBranchStatus(now, instance).asSequence().sortedByDescending { it.value.activeness }.map { it.key }.toList() } }
+
+            val route by remember { derivedStateOf { branchByActiveness.first { stopData.branchIds.contains(it) } } }
+            val routeKey by remember(item) { derivedStateOf { route.getRouteKey(instance)!! } }
+
+            val primaryColor by remember(item) { derivedStateOf { item.co.getLineColor(route.routeNumber, Color.Red) } }
+            val secondaryColor by remember(item) { derivedStateOf { if (route.isKmbCtbJoint) Operator.CTB.getLineColor(route.routeNumber, Color.Red) else primaryColor } }
             val routeEntry by remember(item) { derivedStateOf {
                 StopIndexedRouteSearchResultEntry(
-                    routeKey = item.route.getRouteKey(instance)!!,
-                    route = item.route,
+                    routeKey = route.getRouteKey(instance)!!,
+                    route = route,
                     co = item.co,
                     stopInfo = StopInfo(
                         stopId = stopData.stopId,
@@ -124,9 +137,22 @@ fun TemporaryPinInterface(
                     cachedAllStops = allStops.asImmutableList(),
                 )
             } }
+
             RightToLeftRow(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .drawWithContent {
+                        drawContent()
+                        drawLine(
+                            brush = Brush.verticalGradient(
+                                0F to primaryColor,
+                                1F to secondaryColor
+                            ),
+                            strokeWidth = 4.dp.toPx(),
+                            start = Offset(8.dp.toPx(), 7.dp.toPx()),
+                            end = Offset(8.dp.toPx(), size.height - 7.dp.toPx())
+                        )
+                    }
                     .combinedClickable(
                         onClick = {
                             CoroutineScope(Dispatchers.IO).launch {
@@ -157,7 +183,7 @@ fun TemporaryPinInterface(
                     colors = ButtonDefaults.clearColors(),
                     contentPadding = PaddingValues(0.dp),
                     onClick = {
-                        items = items.toMutableList().apply { removeAll { it.id == item.id } }
+                        items = items.toMutableList().apply { removeAll { it.key == item.key } }
                     }
                 ) {
                     PlatformIcon(
@@ -168,7 +194,7 @@ fun TemporaryPinInterface(
                     )
                 }
                 RouteRow(
-                    key = item.route.getRouteKey(instance)!!,
+                    key = route.getRouteKey(instance)!!,
                     listType = RouteListType.NORMAL,
                     routeNumberWidth = routeNumberWidth.size.width,
                     showEta = true,

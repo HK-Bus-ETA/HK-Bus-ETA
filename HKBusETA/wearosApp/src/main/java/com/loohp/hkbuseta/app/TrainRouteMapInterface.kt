@@ -20,6 +20,7 @@
 
 package com.loohp.hkbuseta.app
 
+import android.graphics.BitmapFactory
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -61,6 +62,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
@@ -74,6 +76,11 @@ import coil3.request.ImageRequest
 import coil3.size.SizeResolver
 import com.github.panpf.zoomimage.compose.rememberZoomState
 import com.github.panpf.zoomimage.compose.zoom.zoom
+import com.github.panpf.zoomimage.subsampling.ImageInfo
+import com.github.panpf.zoomimage.subsampling.ImageSource
+import com.github.panpf.zoomimage.subsampling.fromByteArray
+import com.github.panpf.zoomimage.subsampling.size
+import com.github.panpf.zoomimage.util.IntSizeCompat
 import com.github.panpf.zoomimage.zoom.ScalesCalculator
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.context
@@ -106,6 +113,10 @@ import com.loohp.hkbuseta.utils.realPointToContentPoint
 import com.loohp.hkbuseta.utils.realPointToTouchPoint
 import com.loohp.hkbuseta.utils.scaledSize
 import com.loohp.hkbuseta.utils.touchPointToRealPoint
+import com.loohp.hkbuseta.utils.unrestrictedBitmapSize
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -115,6 +126,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.jsonArray
 import java.io.InputStream
+import java.util.concurrent.ConcurrentHashMap
+
 
 enum class TrainRouteMapType {
 
@@ -296,22 +309,39 @@ fun MTRRouteMapMapInterface(
     )
 
     val platformContext = LocalPlatformContext.current
+    val context = LocalContext.current
+    val sizeCache = remember { ConcurrentHashMap<Int, Pair<ByteArray, IntSizeCompat>>() }
     LaunchedEffect (Unit) {
-        val resId = resources[!ambientMode]!!
-        val request = ImageRequest.Builder(platformContext)
-            .data(resId)
-            .size(SizeResolver.ORIGINAL)
-            .build()
-        platformContext.imageLoader.enqueue(request)
+        CoroutineScope(Dispatchers.IO).launch {
+            val resId = resources[!ambientMode]!!
+            val request = ImageRequest.Builder(platformContext)
+                .data(resId)
+                .size(SizeResolver.ORIGINAL)
+                .build()
+            platformContext.imageLoader.enqueue(request)
+            sizeCache.computeIfAbsent(resId) {
+                context.resources.openRawResource(resId).use { it.readBytes() } to BitmapFactory.decodeResource(context.resources, resId).size
+            }
+        }
     }
-
-    state.zoomable.contentScale = ContentScale.Fit
-    state.zoomable.alignment = Alignment.Center
 
     val transition = updateTransition(
         targetState = ambientMode to resources[ambientMode]!!,
         label = "MTRRouteMapAmbientCrossfade"
     )
+
+    LaunchedEffect (transition.currentState) {
+        val resId = transition.currentState.second
+        val (bytes, size) = CoroutineScope(Dispatchers.IO).async {
+            sizeCache.computeIfAbsent(resId) {
+                context.resources.openRawResource(resId).use { it.readBytes() } to BitmapFactory.decodeResource(context.resources, resId).size
+            }
+        }.await()
+        state.setSubsamplingImage(
+            imageSource = ImageSource.fromByteArray(bytes),
+            imageInfo = ImageInfo(size, "image/png")
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -556,19 +586,39 @@ fun LRTRouteMapMapInterface(
     )
 
     val platformContext = LocalPlatformContext.current
+    val context = LocalContext.current
+    val sizeCache = remember { ConcurrentHashMap<Int, Pair<ByteArray, IntSizeCompat>>() }
     LaunchedEffect (Unit) {
-        val resId = resources[!ambientMode]!!
-        val request = ImageRequest.Builder(platformContext)
-            .data(resId)
-            .size(SizeResolver.ORIGINAL)
-            .build()
-        platformContext.imageLoader.enqueue(request)
+        CoroutineScope(Dispatchers.IO).launch {
+            val resId = resources[!ambientMode]!!
+            val request = ImageRequest.Builder(platformContext)
+                .data(resId)
+                .size(SizeResolver.ORIGINAL)
+                .build()
+            platformContext.imageLoader.enqueue(request)
+            sizeCache.computeIfAbsent(resId) {
+                context.resources.openRawResource(resId).use { it.readBytes() } to BitmapFactory.decodeResource(context.resources, resId).size
+            }
+        }
     }
 
     val transition = updateTransition(
         targetState = ambientMode to resources[ambientMode]!!,
         label = "LRTRouteMapAmbientCrossfade"
     )
+
+    LaunchedEffect (transition.currentState) {
+        val resId = transition.currentState.second
+        val (bytes, size) = CoroutineScope(Dispatchers.IO).async {
+            sizeCache.computeIfAbsent(resId) {
+                context.resources.openRawResource(resId).use { it.readBytes() } to BitmapFactory.decodeResource(context.resources, resId).size
+            }
+        }.await()
+        state.setSubsamplingImage(
+            imageSource = ImageSource.fromByteArray(bytes),
+            imageInfo = ImageInfo(size, "image/png")
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -677,6 +727,7 @@ fun LRTRouteMapMapInterface(
                             },
                         model = ImageRequest.Builder(LocalPlatformContext.current)
                             .data(resId)
+                            .unrestrictedBitmapSize()
                             .size(SizeResolver.ORIGINAL)
                             .build(),
                         onSuccess = {

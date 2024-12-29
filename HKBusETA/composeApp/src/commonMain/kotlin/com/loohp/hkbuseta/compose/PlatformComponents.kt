@@ -124,6 +124,7 @@ expect val PlatformIcons.Filled.NoTransfer: Painter @Composable get
 expect val PlatformIcons.Filled.PinDrop: Painter @Composable get
 expect val PlatformIcons.Filled.PhotoCamera: Painter @Composable get
 expect val PlatformIcons.Filled.PriorityHigh: Painter @Composable get
+expect val PlatformIcons.Filled.PushPin: Painter @Composable get
 expect val PlatformIcons.Filled.Search: Painter @Composable get
 expect val PlatformIcons.Filled.Settings: Painter @Composable get
 expect val PlatformIcons.Filled.Star: Painter @Composable get
