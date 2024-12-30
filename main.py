@@ -1023,7 +1023,39 @@ def add_route_remarks():
         }
     }
 
-    for bus_route in BUS_ROUTE.keys():
+    kmb_routes_data_with_timetables = {}
+    for key, data in DATA_SHEET["routeList"].items():
+        route_number = data["route"]
+        operators = data["co"]
+        if "kmb" in operators and data["freq"] is not None:
+            if route_number not in kmb_routes_data_with_timetables:
+                kmb_routes_data_with_timetables[route_number] = []
+            kmb_routes_data_with_timetables[route_number].append(data)
+
+    for bus_route, data in BUS_ROUTE.items():
+        if data["co"] == "kmb" and len(kmb_routes_data_with_timetables.get(bus_route, [])) <= 0:
+            bound1 = get_web_json(f"https://search.kmb.hk/KMBWebSite/Function/FunctionRequest.ashx?action=getSpecialRoute&route={bus_route}&bound=1")["data"]
+            bound2 = get_web_json(f"https://search.kmb.hk/KMBWebSite/Function/FunctionRequest.ashx?action=getSpecialRoute&route={bus_route}&bound=2")["data"]
+            if bound1["CountSpecal"] == 0 and bound2["CountSpecal"] == 0:
+                bound1_text = None
+                bound2_text = None
+                if len(bound1["routes"]) > 0 and len(bound1["routes"][0]["Desc_CHI"].strip()) > 0:
+                    bound1_text = bound1["routes"][0]["Desc_CHI"].strip()
+                if len(bound2["routes"]) > 0 and len(bound2["routes"][0]["Desc_CHI"].strip()) > 0:
+                    bound2_text = bound2["routes"][0]["Desc_CHI"].strip()
+                if bound1_text == bound2_text or bound1_text is None or bound2_text is None:
+                    if bound1_text is not None:
+                        kmb[bus_route] = {
+                            "zh": bound1["routes"][0]["Desc_CHI"].strip(),
+                            "en": bound1["routes"][0]["Desc_ENG"].strip()
+                        }
+                        continue
+                    elif bound2_text is not None:
+                        kmb[bus_route] = {
+                            "zh": bound2["routes"][0]["Desc_CHI"].strip(),
+                            "en": bound2["routes"][0]["Desc_ENG"].strip()
+                        }
+                        continue
         if bus_route.startswith("PB"):
             kmb[bus_route] = {
                 "zh": "寵物巴士團 🐾",
