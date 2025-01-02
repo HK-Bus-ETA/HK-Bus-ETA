@@ -1,15 +1,15 @@
+import concurrent.futures
 import json
 import math
-import random
 import re
 import time
 import urllib.request
-import concurrent.futures
 import zlib
+
 import chardet
 import requests
-from shapely.geometry import Point, Polygon
 from bs4 import BeautifulSoup
+from shapely.geometry import Point, Polygon
 
 BUS_ROUTE = {}
 MTR_BUS_STOP_ALIAS = {}
@@ -973,14 +973,15 @@ def create_missing_routes():
 
     for route_number, data in missing_routes.items():
         co = data["co"]
-        DATA_SHEET["routeList"][f"{route_number}+99+{data['orig']['en']}+{data['dest']['en']}"] = {
+        key = f"{route_number}+99+{data['orig']['en']}+{data['dest']['en']}"
+        DATA_SHEET["routeList"][key] = {
             "bound": {co: "O"},
             "co": [co],
             "dest": data['dest'].copy(),
             "fares": None,
             "faresHoliday": None,
             "freq": None,
-            "gtfsId": str(random.randint(10000000, 99999999)),
+            "gtfsId": None,
             "jt": None,
             "nlbId": None,
             "orig": data['orig'].copy(),
