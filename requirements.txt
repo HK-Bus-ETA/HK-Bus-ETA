@@ -1,3 +1,11 @@
-requests~=2.31.0
+beautifulsoup4~=4.12.3
+soupsieve~=2.6
+pip~=23.2.1
+numpy~=2.1.2
+charset-normalizer~=3.3.2
+certifi~=2024.8.30
 chardet~=5.2.0
-shapely~=2.0.2
+shapely~=2.0.6
+urllib3~=2.2.3
+idna~=3.10
+requests~=2.32.0

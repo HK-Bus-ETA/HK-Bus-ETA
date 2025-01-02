@@ -9,6 +9,7 @@ import zlib
 import chardet
 import requests
 from shapely.geometry import Point, Polygon
+from bs4 import BeautifulSoup
 
 BUS_ROUTE = {}
 MTR_BUS_STOP_ALIAS = {}
@@ -1024,6 +1025,7 @@ def add_route_remarks():
     }
 
     kmb_routes_data_with_timetables = {}
+    ctb_routes_data_with_timetables = {}
     for key, data in DATA_SHEET["routeList"].items():
         route_number = data["route"]
         operators = data["co"]
@@ -1031,31 +1033,34 @@ def add_route_remarks():
             if route_number not in kmb_routes_data_with_timetables:
                 kmb_routes_data_with_timetables[route_number] = []
             kmb_routes_data_with_timetables[route_number].append(data)
+        if "ctb" in operators and data["freq"] is not None:
+            if route_number not in ctb_routes_data_with_timetables:
+                ctb_routes_data_with_timetables[route_number] = []
+            ctb_routes_data_with_timetables[route_number].append(data)
 
     for bus_route, data in BUS_ROUTE.items():
         if data["co"] == "kmb" and len(kmb_routes_data_with_timetables.get(bus_route, [])) <= 0:
             bound1 = get_web_json(f"https://search.kmb.hk/KMBWebSite/Function/FunctionRequest.ashx?action=getSpecialRoute&route={bus_route}&bound=1")["data"]
             bound2 = get_web_json(f"https://search.kmb.hk/KMBWebSite/Function/FunctionRequest.ashx?action=getSpecialRoute&route={bus_route}&bound=2")["data"]
-            if bound1["CountSpecal"] == 0 and bound2["CountSpecal"] == 0:
-                bound1_text = None
-                bound2_text = None
-                if len(bound1["routes"]) > 0 and len(bound1["routes"][0]["Desc_CHI"].strip()) > 0:
-                    bound1_text = bound1["routes"][0]["Desc_CHI"].strip()
-                if len(bound2["routes"]) > 0 and len(bound2["routes"][0]["Desc_CHI"].strip()) > 0:
-                    bound2_text = bound2["routes"][0]["Desc_CHI"].strip()
-                if bound1_text == bound2_text or bound1_text is None or bound2_text is None:
-                    if bound1_text is not None:
-                        kmb[bus_route] = {
-                            "zh": bound1["routes"][0]["Desc_CHI"].strip(),
-                            "en": bound1["routes"][0]["Desc_ENG"].strip()
-                        }
-                        continue
-                    elif bound2_text is not None:
-                        kmb[bus_route] = {
-                            "zh": bound2["routes"][0]["Desc_CHI"].strip(),
-                            "en": bound2["routes"][0]["Desc_ENG"].strip()
-                        }
-                        continue
+            bound1_text = None
+            bound2_text = None
+            if len(bound1["routes"]) > 0 and len(bound1["routes"][0]["Desc_CHI"].strip()) > 0:
+                bound1_text = bound1["routes"][0]["Desc_CHI"].strip()
+            if len(bound2["routes"]) > 0 and len(bound2["routes"][0]["Desc_CHI"].strip()) > 0:
+                bound2_text = bound2["routes"][0]["Desc_CHI"].strip()
+            if bound1_text == bound2_text or bound1_text is None or bound2_text is None:
+                if bound1_text is not None:
+                    kmb[bus_route] = {
+                        "zh": bound1["routes"][0]["Desc_CHI"].strip(),
+                        "en": bound1["routes"][0]["Desc_ENG"].strip()
+                    }
+                    continue
+                elif bound2_text is not None:
+                    kmb[bus_route] = {
+                        "zh": bound2["routes"][0]["Desc_CHI"].strip(),
+                        "en": bound2["routes"][0]["Desc_ENG"].strip()
+                    }
+                    continue
         if bus_route.startswith("PB"):
             kmb[bus_route] = {
                 "zh": "寵物巴士團 🐾",
@@ -1071,6 +1076,36 @@ def add_route_remarks():
                 "zh": "郊遊遠足路線 🏞",
                 "en": "Leisure Bus 🏞"
             }
+
+    ctb_soup_zh = BeautifulSoup(get_web_text("https://mobile.citybus.com.hk/nwp3/printout1.php?l=0", False), "html.parser")
+    ctb_soup_en = BeautifulSoup(get_web_text("https://mobile.citybus.com.hk/nwp3/printout1.php?l=1", False), "html.parser")
+
+    def parse_routes(soup):
+        route_notes = {}
+        rows = soup.find_all("tr")
+        for row in rows:
+            cells = row.find_all("td")
+            if len(cells) >= 4:
+                route = cells[0].get_text(strip=True)
+                remark = cells[3].get_text(strip=True)
+                if route not in route_notes:
+                    route_notes[route] = remark
+                elif route_notes[route] != remark:
+                    route_notes[route] = None  # Mark as inconsistent
+        return route_notes
+
+    route_notes_zh = parse_routes(ctb_soup_zh)
+    route_notes_en = parse_routes(ctb_soup_en)
+
+    for route_number in route_notes_zh:
+        if route_number in BUS_ROUTE.keys() and len(ctb_routes_data_with_timetables.get(route_number, [])) <= 0:
+            zh_remark = route_notes_zh.get(route_number, "").strip()
+            en_remark = route_notes_en.get(route_number, "").strip()
+            if len(zh_remark) > 0:
+                ctb[route_number] = {
+                    "zh": zh_remark,
+                    "en": en_remark
+                }
 
     ROUTE_REMARKS["kmb"] = kmb
     ROUTE_REMARKS["ctb"] = ctb
