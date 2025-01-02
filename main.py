@@ -11,97 +11,6 @@ import requests
 from bs4 import BeautifulSoup
 from shapely.geometry import Point, Polygon
 
-BUS_ROUTE = {}
-MTR_BUS_STOP_ALIAS = {}
-DATA_SHEET = {}
-KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
-ROUTE_REMARKS = {}
-MTR_DATA = {}
-MTR_BARRIER_FREE_MAPPING = {}
-LRT_DATA = {}
-TRAFFIC_SNAPSHOTS = []
-
-DATA_SHEET_FILE_NAME = "data.json"
-DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
-DATA_SHEET_FULL_FILE_NAME = "data_full.json"
-DATA_SHEET_FULL_FORMATTED_FILE_NAME = "data_full_formatted.json"
-CHECKSUM_FILE_NAME = "checksum.md5"
-LAST_UPDATED_FILE = "last_updated.txt"
-
-RECAPITALIZE_KEYWORDS = [
-    "BBI",
-    "MTR",
-    "STK",
-    "FCA",
-    "LMC",
-    "SL",
-    "apm",
-    "II",
-    "GTC",
-    "HK",
-    "HKFYG",
-    "HKU",
-    "HKSYU",
-    "CCC",
-    "H.K.",
-    "OSH",
-    "HACTL",
-    "H.K.U.S.T.",
-    "HSBC",
-    "JPC",
-    "SOGO",
-    "CNT",
-    "HZMB",
-    "HQ",
-    "S.K.H.",
-    "TKO",
-    "KMB",
-    "IVE",
-    "LOHAS",
-    "CITIC",
-    "CLP",
-    "IFC",
-    "MacLehose",
-    "UC",
-    "KLN",
-    "Li K.S.",
-    "EMSD",
-    "S.L.Y.",
-    "Sub-station",
-    "DHL",
-    "QESOSA",
-    "CICTA",
-    "T.K.O.",
-    "CAD",
-    "HKCECE",
-    "HKCEC",
-    "YMCA",
-    "MEGA Plus",
-    "SkyCity Marriott",
-    "and",
-    "of",
-    "for",
-    "of the",
-    "for the",
-    "NOVO LAND",
-    "GO PARK",
-    "EKCC"
-]
-
-NORMALIZE_CHARS = {
-    "／": "/",
-    "∕": "/"
-}
-
-SUN_BUS_ROUTES = {"331", "331S", "917", "918", "945"}
-LWB_AREA = Polygon([
-    (22.353035101615237, 114.04468147886547),
-    (22.33535147194486, 114.06412468869647),
-    (22.188100849108828, 114.06444874219365),
-    (22.18870096192713, 113.82594536826676),
-    (22.35273539776945, 113.83145427771888)
-])
-
 
 def merge(a, b, path=None):
     if path is None:
@@ -138,6 +47,11 @@ def get_web_text(url, gzip=True):
         return text.decode(encoding['encoding'])
 
 
+def read_json(file_path):
+    with open(file_path, 'r') as file:
+        return json.load(file)
+
+
 def haversine(lat1, lon1, lat2, lon2):
     lat1_rad = math.radians(lat1)
     lon1_rad = math.radians(lon1)
@@ -148,6 +62,46 @@ def haversine(lat1, lon1, lat2, lon2):
     a = math.sin(dlat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return 6371.0 * c
+
+
+# ===========================
+
+
+BUS_ROUTE = {}
+MTR_BUS_STOP_ALIAS = {}
+DATA_SHEET = {}
+KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
+ROUTE_REMARKS = {}
+MTR_DATA = {}
+MTR_BARRIER_FREE_MAPPING = {}
+LRT_DATA = {}
+TRAFFIC_SNAPSHOTS = []
+
+DATA_SHEET_FILE_NAME = "data.json"
+DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
+DATA_SHEET_FULL_FILE_NAME = "data_full.json"
+DATA_SHEET_FULL_FORMATTED_FILE_NAME = "data_full_formatted.json"
+CHECKSUM_FILE_NAME = "checksum.md5"
+LAST_UPDATED_FILE = "last_updated.txt"
+
+RECAPITALIZE_KEYWORDS = read_json("recapitalize_keywords.json")["recapitalize"]
+
+NORMALIZE_CHARS = {
+    "／": "/",
+    "∕": "/"
+}
+
+SUN_BUS_ROUTES = {"331", "331S", "917", "918", "945"}
+LWB_AREA = Polygon([
+    (22.353035101615237, 114.04468147886547),
+    (22.33535147194486, 114.06412468869647),
+    (22.188100849108828, 114.06444874219365),
+    (22.18870096192713, 113.82594536826676),
+    (22.35273539776945, 113.83145427771888)
+])
+
+
+# ===========================
 
 
 def download_and_process_kmb_route():
