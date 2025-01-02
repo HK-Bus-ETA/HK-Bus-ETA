@@ -84,7 +84,8 @@ RECAPITALIZE_KEYWORDS = [
     "of the",
     "for the",
     "NOVO LAND",
-    "GO PARK"
+    "GO PARK",
+    "EKCC"
 ]
 
 NORMALIZE_CHARS = {
