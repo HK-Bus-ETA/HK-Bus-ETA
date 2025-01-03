@@ -3,3 +3,6 @@ data_formatted.json
 checksum.md5
 .idea/
 .DS_Store
+data_full.json
+data_full_formatted.json
+last_updated.txt

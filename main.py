@@ -1,4 +1,5 @@
 import concurrent.futures
+import copy
 import json
 import math
 import re
@@ -77,6 +78,8 @@ MTR_BARRIER_FREE_MAPPING = {}
 LRT_DATA = {}
 TRAFFIC_SNAPSHOTS = []
 
+MISSING_ROUTES = {}
+
 DATA_SHEET_FILE_NAME = "data.json"
 DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
 DATA_SHEET_FULL_FILE_NAME = "data_full.json"
@@ -112,8 +115,9 @@ def download_and_process_kmb_route():
     kmb_route = data.get("data", [])
     for route_data in kmb_route:
         route = route_data.get("route", "")
-        BUS_ROUTE[route] = {
-            "co": "kmb",
+        if route not in BUS_ROUTE:
+            BUS_ROUTE[route] = {}
+        BUS_ROUTE[route]["kmb"] = {
             "orig": {
                 "zh": route_data.get("orig_tc"),
                 "en": route_data.get("orig_en")
@@ -133,8 +137,9 @@ def download_and_process_ctb_route():
     ctb_route = data.get("data", [])
     for route_data in ctb_route:
         route = route_data.get("route", "")
-        BUS_ROUTE[route] = {
-            "co": "ctb",
+        if route not in BUS_ROUTE:
+            BUS_ROUTE[route] = {}
+        BUS_ROUTE[route]["ctb"] = {
             "orig": {
                 "zh": route_data.get("orig_tc"),
                 "en": route_data.get("orig_en")
@@ -154,19 +159,26 @@ def download_and_process_nlb_route():
     nlb_route = data.get("routes", [])
     for route_data in nlb_route:
         route = route_data.get("routeNo", "")
+        nlb_id = route_data.get("routeId", "")
         name_zh = route_data.get("routeName_c", " \u003E ").split("\u003E")
         name_en = route_data.get("routeName_e", " \u003E ").split("\u003E")
-        BUS_ROUTE[route] = {
-            "co": "nlb",
-            "orig": {
-                "zh": name_zh[0].strip(),
-                "en": name_en[0].strip()
-            },
-            "dest": {
-                "zh": name_zh[1].strip(),
-                "en": name_en[1].strip()
+        if route not in BUS_ROUTE:
+            BUS_ROUTE[route] = {}
+        if "nlb" in BUS_ROUTE[route]:
+            if nlb_id not in BUS_ROUTE[route]["nlb"]["nlb_ids"]:
+                BUS_ROUTE[route]["nlb"]["nlb_ids"].append(nlb_id)
+        else:
+            BUS_ROUTE[route]["nlb"] = {
+                "nlb_ids": [nlb_id],
+                "orig": {
+                    "zh": name_zh[0].strip(),
+                    "en": name_en[0].strip()
+                },
+                "dest": {
+                    "zh": name_zh[1].strip(),
+                    "en": name_en[1].strip()
+                }
             }
-        }
 
 
 def download_and_process_mtr_bus_data():
@@ -184,8 +196,9 @@ def download_and_process_mtr_bus_data():
     for key, data in DATA_SHEET["routeList"].items():
         bound = data["bound"]
         if "lrtfeeder" in bound:
-            BUS_ROUTE[data["route"]] = {
-                "co": "mtr-bus",
+            if data["route"] not in BUS_ROUTE:
+                BUS_ROUTE[data["route"]] = {}
+            BUS_ROUTE[data["route"]]["mtr-bus"] = {
                 "orig": data["orig"].copy(),
                 "dest": data["dest"].copy()
             }
@@ -211,8 +224,9 @@ def download_and_process_gmb_route():
     gmb_route = data.get("data", {}).get("routes", {})
     for region, route_list in gmb_route.items():
         for route in route_list:
-            BUS_ROUTE[route] = {
-                "co": "gmb",
+            if route not in BUS_ROUTE:
+                BUS_ROUTE[route] = {}
+            BUS_ROUTE[route]["gmb"] = {
                 "orig": {
                     "zh": "未知地點",
                     "en": "Unknown Place"
@@ -389,15 +403,17 @@ def download_and_process_data_sheet():
             data["co"] = ["fortuneferry"]
 
         if "lightRail" in bounds:
-            BUS_ROUTE[data["route"]] = {
-                "co": "lightRail",
+            if data["route"] not in BUS_ROUTE:
+                BUS_ROUTE[data["route"]] = {}
+            BUS_ROUTE[data["route"]]["lightRail"] = {
                 "orig": data["orig"].copy(),
                 "dest": data["dest"].copy()
             }
         elif "mtr" in bounds:
             line_name = data["route"]
-            BUS_ROUTE[line_name] = {
-                "co": "mtr",
+            if line_name not in BUS_ROUTE:
+                BUS_ROUTE[line_name] = {}
+            BUS_ROUTE[line_name]["mtr"] = {
                 "orig": data["orig"].copy(),
                 "dest": data["dest"].copy()
             }
@@ -716,7 +732,7 @@ def inject_gmb_region():
 def list_kmb_subsidiary_routes():
     global DATA_SHEET
     global SUN_BUS_ROUTES
-    global KMB_SUBSIDIARY_ROUTE
+    global KMB_SUBSIDIARY_ROUTES
     global LWB_AREA
     gtfs = get_web_text("https://static.data.gov.hk/td/pt-headway-tc/routes.txt").splitlines()[1:]
     lwb_routes = set()
@@ -888,16 +904,31 @@ def create_missing_routes():
     global DATA_SHEET
     global BUS_ROUTE
     global ROUTE_REMARKS
+    global MISSING_ROUTES
 
-    missing_routes = BUS_ROUTE.copy()
+    MISSING_ROUTES = copy.deepcopy(BUS_ROUTE)
+    joint_operated = set()
 
     for key, data in DATA_SHEET["routeList"].items():
         route_number = data["route"]
         operators = data["co"]
         for co in operators:
-            if route_number in missing_routes and missing_routes[route_number]["co"] == co:
-                del missing_routes[route_number]
+            if route_number in MISSING_ROUTES and co in MISSING_ROUTES[route_number]:
+                if data.get("kmbCtbJoint", False):
+                    joint_operated.add(route_number)
+                del MISSING_ROUTES[route_number][co]
+                if len(MISSING_ROUTES[route_number]) <= 0:
+                    del MISSING_ROUTES[route_number]
                 break
+
+    for route_number in joint_operated:
+        if route_number in MISSING_ROUTES:
+            if "kmb" in MISSING_ROUTES[route_number]:
+                del MISSING_ROUTES[route_number]["kmb"]
+            if "ctb" in MISSING_ROUTES[route_number]:
+                del MISSING_ROUTES[route_number]["ctb"]
+            if len(MISSING_ROUTES[route_number]) <= 0:
+                del MISSING_ROUTES[route_number]
 
     unknown_stop_ids = {
         "kmb": ["ZZZZZZZZZZZZZZZY", "ZZZZZZZZZZZZZZZZ"],
@@ -926,33 +957,24 @@ def create_missing_routes():
                 }
             }
 
-    for route_number, data in missing_routes.items():
-        co = data["co"]
-        key = f"{route_number}+99+{data['orig']['en']}+{data['dest']['en']}"
-        DATA_SHEET["routeList"][key] = {
-            "bound": {co: "O"},
-            "co": [co],
-            "dest": data['dest'].copy(),
-            "fares": None,
-            "faresHoliday": None,
-            "freq": None,
-            "gtfsId": None,
-            "jt": None,
-            "nlbId": None,
-            "orig": data['orig'].copy(),
-            "route": route_number,
-            "serviceType": "99",
-            "stops": {co: unknown_stop_ids[co].copy()}
-        }
-        if co not in ROUTE_REMARKS:
-            ROUTE_REMARKS[co] = {}
-        original_remark = ROUTE_REMARKS[co].get(route_number)
-        original_remark_zh = f"{original_remark['zh']} - " if original_remark is not None else ""
-        original_remark_en = f"{original_remark['en']} - " if original_remark is not None else ""
-        ROUTE_REMARKS[co][route_number] = {
-            "zh": f"{original_remark_zh}未有路線資訊",
-            "en": f"{original_remark_en}Route Details TBD"
-        }
+    for route_number, operator_data in MISSING_ROUTES.items():
+        for co, data in operator_data.items():
+            key = f"{route_number}+99+{data['orig']['en']}+{data['dest']['en']}"
+            DATA_SHEET["routeList"][key] = {
+                "bound": {co: "O"},
+                "co": [co],
+                "dest": data['dest'].copy(),
+                "fares": None,
+                "faresHoliday": None,
+                "freq": None,
+                "gtfsId": None,
+                "jt": None,
+                "nlbId": None,
+                "orig": data['orig'].copy(),
+                "route": route_number,
+                "serviceType": "99",
+                "stops": {co: unknown_stop_ids[co].copy()}
+            }
 
 
 def add_route_remarks():
@@ -979,9 +1001,11 @@ def add_route_remarks():
             "en": "Cross Harbour Bus Tour"
         }
     }
+    nlb = {}
 
     kmb_routes_data_with_timetables = {}
     ctb_routes_data_with_timetables = {}
+    nlb_routes_data_with_timetables = {}
     for key, data in DATA_SHEET["routeList"].items():
         route_number = data["route"]
         operators = data["co"]
@@ -993,9 +1017,13 @@ def add_route_remarks():
             if route_number not in ctb_routes_data_with_timetables:
                 ctb_routes_data_with_timetables[route_number] = []
             ctb_routes_data_with_timetables[route_number].append(data)
+        if "nlb" in operators and data["freq"] is not None:
+            if route_number not in nlb_routes_data_with_timetables:
+                nlb_routes_data_with_timetables[route_number] = []
+            nlb_routes_data_with_timetables[route_number].append(data)
 
-    for bus_route, data in BUS_ROUTE.items():
-        if data["co"] == "kmb" and len(kmb_routes_data_with_timetables.get(bus_route, [])) <= 0:
+    for bus_route, operator_data in BUS_ROUTE.items():
+        if "kmb" in operator_data and len(kmb_routes_data_with_timetables.get(bus_route, [])) <= 0:
             bound1 = get_web_json(f"https://search.kmb.hk/KMBWebSite/Function/FunctionRequest.ashx?action=getSpecialRoute&route={bus_route}&bound=1")["data"]
             bound2 = get_web_json(f"https://search.kmb.hk/KMBWebSite/Function/FunctionRequest.ashx?action=getSpecialRoute&route={bus_route}&bound=2")["data"]
             bound1_text = None
@@ -1047,14 +1075,14 @@ def add_route_remarks():
                 if route not in route_notes:
                     route_notes[route] = remark
                 elif route_notes[route] != remark:
-                    route_notes[route] = None  # Mark as inconsistent
+                    route_notes[route] = None
         return route_notes
 
     route_notes_zh = parse_routes(ctb_soup_zh)
     route_notes_en = parse_routes(ctb_soup_en)
 
     for route_number in route_notes_zh:
-        if route_number in BUS_ROUTE.keys() and len(ctb_routes_data_with_timetables.get(route_number, [])) <= 0:
+        if route_number in BUS_ROUTE and "ctb" in BUS_ROUTE[route_number] and len(ctb_routes_data_with_timetables.get(route_number, [])) <= 0:
             zh_remark = route_notes_zh.get(route_number, "").strip()
             en_remark = route_notes_en.get(route_number, "").strip()
             if len(zh_remark) > 0:
@@ -1063,8 +1091,82 @@ def add_route_remarks():
                     "en": en_remark
                 }
 
+    def extract_nlb_timetable_date(html_content):
+        soup = BeautifulSoup(html_content, 'html.parser')
+        widgets = soup.find_all('div', class_='widget')
+        if not widgets:
+            return None
+        timetable_widget = None
+        for widget in widgets:
+            widget_title = widget.find('div', class_='widget-title')
+            if widgets is not None and "時間表" in widget_title.text:
+                timetable_widget = widget
+                break
+        if not timetable_widget:
+            return None
+        date_paragraph = timetable_widget.find('div', class_='widget-content')
+        if date_paragraph and date_paragraph.text.strip():
+            raw_text = date_paragraph.text.strip()
+            dates_text = re.findall("([0-9]+)年([0-9]+)月([0-9]+)日", raw_text)
+            if len(dates_text) <= 0:
+                if len(re.findall("只於指定日子提供服務", raw_text)) > 0:
+                    return []
+                else:
+                    return None
+            dates_parsed = []
+            for group in dates_text:
+                year, month, day = group
+                dates_parsed.append(f"{day}/{month}/{year}")
+            return dates_parsed
+        return None
+
+    def format_dates_list(strings, separator, last_separator):
+        if not strings:
+            return ""
+        elif len(strings) == 1:
+            return strings[0]
+        elif len(strings) == 2:
+            return f"{strings[0]}{last_separator}{strings[1]}"
+        else:
+            return f"{separator.join(strings[:-1])}{last_separator}{strings[-1]}"
+
+    for bus_route, operator_data in BUS_ROUTE.items():
+        if "nlb" in operator_data and len(nlb_routes_data_with_timetables.get(bus_route, [])) <= 0:
+            nlb_ids = operator_data["nlb"]["nlb_ids"]
+            dates_list = {}
+            for nlb_id in nlb_ids:
+                page = get_web_text(f"https://nlb.com.hk/route/detail/{nlb_id}", False)
+                dates = extract_nlb_timetable_date(page)
+                if dates is not None:
+                    dates_list[",".join(dates)] = dates
+            if len(dates_list) == 1:
+                dates = next(iter(dates_list.values()))
+                if len(dates) == 0:
+                    nlb[bus_route] = {
+                        "zh": f"只於指定日子提供服務",
+                        "en": f"Service on specified days only"
+                    }
+                else:
+                    nlb[bus_route] = {
+                        "zh": f"只於 {format_dates_list(dates, ', ', '及')} 提供服務",
+                        "en": f"Service on {format_dates_list(dates, ', ', ' & ')} only"
+                    }
+
     ROUTE_REMARKS["kmb"] = kmb
     ROUTE_REMARKS["ctb"] = ctb
+    ROUTE_REMARKS["nlb"] = nlb
+
+    for route_number, operator_data in MISSING_ROUTES.items():
+        for co, data in operator_data.items():
+            if co not in ROUTE_REMARKS:
+                ROUTE_REMARKS[co] = {}
+            original_remark = ROUTE_REMARKS[co].get(route_number)
+            original_remark_zh = f"{original_remark['zh']} - " if original_remark is not None else ""
+            original_remark_en = f"{original_remark['en']} - " if original_remark is not None else ""
+            ROUTE_REMARKS[co][route_number] = {
+                "zh": f"{original_remark_zh}未有路線資訊",
+                "en": f"{original_remark_en}Route Details TBD"
+            }
 
 
 print("Downloading & Processing KMB Routes")
@@ -1083,10 +1185,10 @@ print("Downloading & Processing MTR & LRT Data")
 download_and_process_mtr_data()
 print("Downloading & Processing Traffic Snapshots")
 download_and_process_traffic_snapshot()
-print("Adding Route Remarks")
-add_route_remarks()
 print("Creating Missing Routes")
 create_missing_routes()
+print("Adding Route Remarks")
+add_route_remarks()
 print("Capitalizing KMB English Names")
 capitalize_english_names()
 print("Listing KMB Subsidiary Routes")
