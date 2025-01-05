@@ -188,6 +188,7 @@ import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.firstIsInstanceOrNull
 import com.loohp.hkbuseta.common.utils.floorToInt
 import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
+import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.transformColors
 import com.loohp.hkbuseta.compose.ArrowUpward
@@ -1096,7 +1097,12 @@ fun RouteRow(
                     val distance = (route.stopInfo!!.distance * 1000).roundToInt()
                     append("  $distance${if (Shared.language == "en") "m" else "米"}", SpanStyle(fontSize = TextUnit.Small))
                 }
-                val fare = route.route!!.getFare(route.stopInfoIndex, Registry.getInstance(instance).isPublicHoliday(currentLocalDateTime().date))
+                val routeStopIndex = Registry.getInstance(instance).getAllStops(routeNumber, route.route!!.idBound(co), co, gmbRegion).asSequence()
+                    .mapIndexed { index, stopData -> index to stopData }
+                    .filter { (_, stopData) -> stopData.branchIds.contains(route.route!!) }
+                    .toList()
+                    .indexOf { (index) -> index + 1 == route.stopInfoIndex } + 1
+                val fare = route.route!!.getFare(routeStopIndex, Registry.getInstance(instance).isPublicHoliday(currentLocalDateTime().date))
                 append(fare?.let { "  $$it" }?: "", SpanStyle(fontSize = TextUnit.Small))
             })
         }

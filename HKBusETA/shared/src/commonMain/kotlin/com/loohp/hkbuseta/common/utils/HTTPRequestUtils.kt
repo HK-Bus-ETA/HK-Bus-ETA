@@ -157,7 +157,7 @@ suspend inline fun <reified T> getJSONResponse(link: String, gzip: Boolean): T? 
             }
         }.let {
             if (it.status == HttpStatusCode.OK) {
-                Json.decodeFromStringReadChannel(if (gzip) it.gzipBodyAsStringReadChannel(Charsets.UTF_8) else it.bodyAsStringReadChannel(Charsets.UTF_8))
+                JsonIgnoreUnknownKeys.decodeFromStringReadChannel(if (gzip) it.gzipBodyAsStringReadChannel(Charsets.UTF_8) else it.bodyAsStringReadChannel(Charsets.UTF_8))
             } else {
                 null
             }
@@ -182,7 +182,7 @@ suspend inline fun <reified I, reified T> postJSONResponse(link: String, body: I
             }
         }.let {
             if (it.status == HttpStatusCode.OK) {
-                Json.decodeFromStringReadChannel(it.bodyAsStringReadChannel(Charsets.UTF_8))
+                JsonIgnoreUnknownKeys.decodeFromStringReadChannel(it.bodyAsStringReadChannel(Charsets.UTF_8))
             } else {
                 null
             }

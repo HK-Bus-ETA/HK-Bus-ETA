@@ -819,7 +819,7 @@ fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext)
             true
         } else {
             val allStops = cachedAllStops?: Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
-            val branches = allStops.asSequence().flatMap { it.branchIds }.toSet()
+            val branches = allStops[stopInfoIndex - 1].branchIds
             val branchStops = branches.associateWith { b ->
                 allStops.mapIndexedNotNull { i, e -> if (e.branchIds.contains(b)) ((i + 1) to e) else null }
             }

@@ -80,9 +80,9 @@ data class PredefinedScalesCalculator(
         initialScale: Float
     ): ScalesCalculator.Result {
         return ScalesCalculator.Result(
-            minScale = minScale,
-            mediumScale = mediumScale,
-            maxScale = maxScale
+            minScale = this.minScale,
+            mediumScale = this.mediumScale,
+            maxScale = this.maxScale
         )
     }
 
