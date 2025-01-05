@@ -42,3 +42,4 @@ HKBusETA/composeApp/hkbuseta-data
 .kotlin
 local.defaults.properties
 secrets.properties
+**/output-metadata.json
