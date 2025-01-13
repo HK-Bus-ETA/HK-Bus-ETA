@@ -23,7 +23,14 @@
 
 package com.loohp.hkbuseta.compose
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -31,15 +38,19 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
@@ -398,6 +409,58 @@ fun rememberAutoResizeTextState(
     }
 
     return mutableState
+}
+
+@Composable
+fun <T> AnimatedTextTransition(
+    state: T,
+    transitionSpec: AnimationSpec<Int> = tween(durationMillis = 500, easing = LinearEasing),
+    contentKey: (T) -> Any? = { it },
+    content: @Composable (T) -> Unit
+) {
+    var init by remember { mutableStateOf(false) }
+
+    val key by remember(state) { derivedStateOf { contentKey.invoke(state) } }
+    var previousState by remember { mutableStateOf(state) }
+
+    var height by remember { mutableIntStateOf(0) }
+
+    val animatable = remember { Animatable(0, Int.VectorConverter) }
+    val animatedOffset by animatable.asState()
+
+    LaunchedEffect (key) {
+        if (init) {
+            animatable.snapTo(height)
+            animatable.animateTo(0, transitionSpec)
+            previousState = state
+        } else {
+            init = true
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .wrapContentSize()
+            .applyIf(animatable.isRunning) { clipToBounds() }
+            .onSizeChanged { height = it.height }
+    ) {
+        if (animatedOffset > 0) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer { translationY = (animatedOffset - height).toFloat() }
+            ) {
+                content.invoke(previousState)
+            }
+        }
+        Box(
+            modifier = Modifier
+                .wrapContentSize()
+                .graphicsLayer { translationY = animatedOffset.toFloat() }
+        ) {
+            content.invoke(state)
+        }
+    }
 }
 
 fun Modifier.userMarquee(): Modifier {

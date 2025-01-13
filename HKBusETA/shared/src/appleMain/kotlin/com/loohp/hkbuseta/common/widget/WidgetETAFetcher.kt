@@ -68,7 +68,7 @@ fun getEtaWidget(stopId: String, stopIndex: Int, co: Operator, route: Route, pre
                 co === Operator.LRT -> etaQueryLrt(stopId, route, precomputedData)
                 co === Operator.MTR -> etaQueryMtr(stopId, route, precomputedData)
                 co === Operator.SUNFERRY -> etaQuerySunFerry(stopId, co, route)
-                co === Operator.HKKF -> etaQueryHkkf(stopId, co, route)
+                co === Operator.HKKF -> etaQueryHkkf(stopId, co, route, precomputedData)
                 co === Operator.FORTUNEFERRY -> etaQueryFortuneFerry(stopId, co, route, precomputedData)
                 else -> throw IllegalStateException("Unknown Operator ${co.name}")
             }
@@ -500,29 +500,29 @@ private suspend fun etaQuerySunFerry(stopId: String, co: Operator, route: Route)
     )
 }
 
-private suspend fun etaQueryHkkf(stopId: String, co: Operator, route: Route): WidgetETAResult {
+private suspend fun etaQueryHkkf(stopId: String, co: Operator, route: Route, precomputedData: WidgetPrecomputedData): WidgetETAResult {
+    val language = precomputedData.language
     val stops = route.stops[co]!!
     val index = stops.indexOf(stopId)
-    return if (index + 1 >= stops.size) {
+    val isEnd = index + 1 >= stops.size
+    val routeId = route.routeNumber.substring(2, 3)
+    val bound = if (route.bound[co] == "O") "outbound" else "inbound"
+    val data = getJSONResponse<JsonObject>("https://hkkfeta.com/opendata/eta/$routeId/$bound")!!.optJsonArray("data")!!
+    val lines = mutableListOf<WidgetLineEntry>()
+    for (element in data) {
+        val entryData = element.jsonObject
+        val eta = if (isEnd) entryData.optString("ETA") else "${entryData.optString("date")}T${entryData.optString("session_time")}+08:00"
+        val time = if (eta.isNotEmpty() && !eta.equals("null", true)) eta.parseInstant().toLocalDateTime(hongKongTimeZone) else null
+        val mins = if (time == null) Double.NEGATIVE_INFINITY else (time.epochSeconds - currentEpochSeconds) / 60.0
+        if (mins.roundToInt() < -5) continue
+        lines.add(currentLocalDateTime(mins.minutes).toWidgetLineEntry())
+    }
+    return if (lines.isEmpty()) {
         WidgetETAResult(
-            lines = emptyList(),
-            hasServices = false
+            lines = listOf(element = (if (language == "en") "Check Timetable" else "查看時間表").toWidgetLineEntry()),
+            hasServices = true
         )
     } else {
-        val routeId = route.routeNumber.substring(2, 3)
-        val bound = if (route.bound[co] == "O") "outbound" else "inbound"
-        val data = getJSONResponse<JsonObject>("https://hkkfeta.com/opendata/eta/$routeId/$bound")!!.optJsonArray("data")!!
-        val lines = mutableListOf<WidgetLineEntry>()
-        for (element in data) {
-            val entryData = element.jsonObject
-            val eta = entryData.optString("ETA")
-            val time = if (eta.isNotEmpty() && !eta.equals("null", true)) eta.parseInstant().toLocalDateTime(
-                hongKongTimeZone
-            ) else null
-            val mins = if (time == null) Double.NEGATIVE_INFINITY else (time.epochSeconds - currentEpochSeconds) / 60.0
-            if (mins.roundToInt() < -5) continue
-            lines.add(currentLocalDateTime(mins.minutes).toWidgetLineEntry())
-        }
         WidgetETAResult(
             lines = lines,
             hasServices = lines.isNotEmpty()
