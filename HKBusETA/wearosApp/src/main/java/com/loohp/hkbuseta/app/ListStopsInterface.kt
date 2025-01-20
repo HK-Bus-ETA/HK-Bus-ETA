@@ -646,7 +646,7 @@ fun ETAElement(index: Int, stopId: String, route: RouteSearchResultEntry, etaRes
             delay(etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, index) {
-            val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).getEta(stopId, index, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+            val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).buildEtaQuery(stopId, index, route.co, route.route!!, instance).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
             etaStateFlow.value = result
             etaUpdateTimes.value[index] = System.currentTimeMillis()
             etaResults.value[index] = result

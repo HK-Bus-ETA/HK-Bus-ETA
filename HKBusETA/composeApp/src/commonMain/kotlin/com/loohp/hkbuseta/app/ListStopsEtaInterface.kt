@@ -2475,7 +2475,7 @@ fun ETAColumn(
     val refreshEta = suspend {
         val optionsCopy = options.copy()
         val result = CoroutineScope(etaUpdateScope).async {
-            Registry.getInstance(instance).getEta(stopData.stopId, index, co, stopData.route, instance, options).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            Registry.getInstance(instance).buildEtaQuery(stopData.stopId, index, co, stopData.route, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
         }.await()
         if (options == optionsCopy) {
             if (result.isConnectionError) {

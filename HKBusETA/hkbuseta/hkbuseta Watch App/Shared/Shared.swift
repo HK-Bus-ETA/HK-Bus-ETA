@@ -40,8 +40,8 @@ func fetchEta(appContext: AppContext, stopId: String, stopIndex: Int, co: Operat
 }
 
 func fetchEta(appContext: AppContext, stopId: String, stopIndex: Int32, co: Operator, route: Route, options: Registry.EtaQueryOptions? = nil, callback: @escaping (Registry.ETAQueryResult) -> Void) {
-    let pending = registry(appContext).getEta(stopId: stopId, stopIndex: stopIndex, co: co, route: route, context: appContext, options: options)
-    pending.onComplete(timeout: Shared().ETA_UPDATE_INTERVAL, unit: Kotlinx_datetimeDateTimeUnit.Companion().MILLISECOND, callback: { result in
+    let pending = registry(appContext).buildEtaQuery(stopId: stopId, stopIndex: stopIndex, co: co, route: route, context: appContext, options: options)
+    pending.query(timeout: Shared().ETA_UPDATE_INTERVAL, unit: Kotlinx_datetimeDateTimeUnit.Companion().MILLISECOND, callback: { result in
         DispatchQueue.main.async {
             callback(result)
         }

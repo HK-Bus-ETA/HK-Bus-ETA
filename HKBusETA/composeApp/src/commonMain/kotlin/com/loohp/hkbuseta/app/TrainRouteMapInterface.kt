@@ -1034,7 +1034,7 @@ fun MTRETADisplayInterface(
             launch {
                while (true) {
                    val result = CoroutineScope(Dispatchers.IO).async {
-                       Registry.getInstance(instance).getEta(stopId, 0, Operator.MTR, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                       Registry.getInstance(instance).buildEtaQuery(stopId, 0, Operator.MTR, route.route!!, instance).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                    }.await()
                    if (result.isConnectionError) {
                        errorCounters[route.routeKey] = (errorCounters[route.routeKey]?: 0) + 1
@@ -2104,7 +2104,7 @@ fun LRTETADisplayInterface(
         placeholderRoute?.let { placeholderRoute ->
             while (true) {
                 val result = CoroutineScope(Dispatchers.IO).async {
-                    Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                    Registry.getInstance(instance).buildEtaQuery(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                 }.await()
                 if (result.isConnectionError) {
                     errorCounter++
@@ -2122,7 +2122,7 @@ fun LRTETADisplayInterface(
     RestartEffect {
         placeholderRoute?.let { placeholderRoute ->
             val result = CoroutineScope(Dispatchers.IO).async {
-                Registry.getInstance(instance).getEta(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                Registry.getInstance(instance).buildEtaQuery(stopId, 0, Operator.LRT, placeholderRoute.route!!, instance, Registry.EtaQueryOptions(lrtAllMode = true)).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             }.await()
             if (result.isConnectionError) {
                 errorCounter++

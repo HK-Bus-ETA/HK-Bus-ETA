@@ -644,7 +644,7 @@ fun ETAElement(favouriteRouteStop: FavouriteRouteStop, resolvedStop: FavouriteRe
             delay(etaUpdateTimes.value[favoriteId]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
         }
         schedule.invoke(true, favoriteId) {
-            val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).getEta(stopId, index, favouriteRouteStop.co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+            val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).buildEtaQuery(stopId, index, favouriteRouteStop.co, route, instance).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
             etaStateFlow.value = result
             etaUpdateTimes.value[favoriteId] = System.currentTimeMillis()
             etaResults.value[favoriteId] = result
@@ -653,7 +653,7 @@ fun ETAElement(favouriteRouteStop: FavouriteRouteStop, resolvedStop: FavouriteRe
     LaunchedEffect (resolvedStop) {
         if (favouriteRouteStop.favouriteStopMode.isRequiresLocation) {
             schedule.invoke(true, favoriteId) {
-                val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).getEta(stopId, index, favouriteRouteStop.co, route, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+                val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).buildEtaQuery(stopId, index, favouriteRouteStop.co, route, instance).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
                 etaStateFlow.value = result
                 etaUpdateTimes.value[favoriteId] = System.currentTimeMillis()
                 etaResults.value[favoriteId] = result

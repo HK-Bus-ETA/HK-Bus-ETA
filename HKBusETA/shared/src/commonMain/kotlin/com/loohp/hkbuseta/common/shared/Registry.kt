@@ -183,6 +183,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -1205,8 +1206,9 @@ class Registry {
                 if (excludedRouteNumbers.contains(data.routeNumber)) continue
                 if (data.isCtbIsCircular) continue
                 val routeGroupKey = data.routeGroupKey(co)
-                val allStops = allStopsCache.getOrPut(routeGroupKey) { getAllStops(data.routeNumber, data.idBound, data.co.firstCo()!!, data.gmbRegion) }
+                val allStops = allStopsCache.getOrPut(routeGroupKey) { getAllStops(data.routeNumber, data.idBound(co), co, data.gmbRegion) }
                 val stopIndex = allStops.indexesOf { it.stopId == stopId }.minByOrNull { (it - branchStopIndex).absoluteValue }?: -1
+                if (stopIndex < 0) continue
                 val nearbyStop = nearbyStopOriginal.copy(stopIndex = stopIndex + 1)
                 if (!nearbyRoutes.containsKey(routeGroupKey)) {
                     nearbyRoutes[routeGroupKey] = arrayOfNulls<RouteSearchResultEntry?>(2) to mutableListOf()
@@ -2187,17 +2189,17 @@ class Registry {
         val lrtAllMode: Boolean = false
     )
 
-    fun getEta(stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext, options: EtaQueryOptions? = null): PendingETAQueryResult {
-        context.logFirebaseEvent("eta_query", AppBundle().apply {
-            putString("by_stop", stopId + "," + stopIndex + "," + route.routeNumber + "," + co.name + "," + route.bound[co])
-            putString("by_bound", route.routeNumber + "," + co.name + "," + route.bound[co])
-            putString("by_route", route.routeNumber + "," + co.name)
-        })
-        val pending = PendingETAQueryResult(context, co, CoroutineScope(Dispatchers.IO).async {
+    fun buildEtaQuery(stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext, options: EtaQueryOptions? = null): ETAQueryTask {
+        return ETAQueryTask(context, co) {
+            context.logFirebaseEvent("eta_query", AppBundle().apply {
+                putString("by_stop", stopId + "," + stopIndex + "," + route.routeNumber + "," + co.name + "," + route.bound[co])
+                putString("by_bound", route.routeNumber + "," + co.name + "," + route.bound[co])
+                putString("by_route", route.routeNumber + "," + co.name)
+            })
             try {
                 val typhoonInfo = currentTyphoonData.await()
                 when {
-                    route.isKmbCtbJoint -> etaQueryKmbCtbJoint(this, typhoonInfo, stopId, stopIndex, co, route)
+                    route.isKmbCtbJoint -> etaQueryKmbCtbJoint(typhoonInfo, stopId, stopIndex, co, route)
                     co === Operator.KMB -> etaQueryKmb(typhoonInfo, stopId, stopIndex, co, route, context)
                     co === Operator.CTB -> etaQueryCtb(typhoonInfo, stopId, stopIndex, co, route)
                     co === Operator.NLB -> etaQueryNlb(typhoonInfo, stopId, co, route)
@@ -2212,13 +2214,13 @@ class Registry {
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
-                ETAQueryResult.connectionError(context.currentBackgroundRestrictions(), co)
+                val restrictionType = if (context is AppActiveContext) BackgroundRestrictionType.NONE else context.currentBackgroundRestrictions()
+                ETAQueryResult.connectionError(restrictionType, co)
             }
-        })
-        return pending
+        }
     }
 
-    private suspend fun etaQueryKmbCtbJoint(scope: CoroutineScope, typhoonInfo: TyphoonInfo, stopId: String, stopIndex: Int, co: Operator, route: Route): ETAQueryResult {
+    private suspend fun etaQueryKmbCtbJoint(typhoonInfo: TyphoonInfo, stopId: String, stopIndex: Int, co: Operator, route: Route): ETAQueryResult {
         val lines: MutableMap<Int, ETALineEntry> = mutableMapOf()
         val isMtrEndOfLine = false
         val isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
@@ -2228,184 +2230,30 @@ class Registry {
         val jointOperated: MutableSet<JointOperatedEntry> = ConcurrentMutableSet()
         var kmbSpecialMessage: FormattedText? = null
         var kmbFirstScheduledBus = Long.MAX_VALUE
-        val kmbFuture = scope.launch {
-            val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
-            val buses = data!!.optJsonArray("data")!!
-            val stopSequences: MutableSet<Int> = HashSet()
-            for (u in 0 until buses.size) {
-                val bus = buses.optJsonObject(u)!!
-                if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
-                    val routeNumber = bus.optString("route")
-                    val bound = bus.optString("dir")
-                    if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB]) {
-                        stopSequences.add(bus.optInt("seq"))
-                    }
-                }
-            }
-            val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
-            val usedRealSeq: MutableSet<Int> = HashSet()
-            for (u in 0 until buses.size) {
-                val bus = buses.optJsonObject(u)!!
-                if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
-                    val routeNumber = bus.optString("route")
-                    val bound = bus.optString("dir")
-                    val stopSeq = bus.optInt("seq")
-                    if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq && usedRealSeq.add(bus.optInt("eta_seq"))) {
-                        val eta = bus.optString("eta")
-                        if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
-                            val mins = (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0
-                            val minsRounded = mins.roundToInt()
-                            var timeMessage = "".asFormattedText()
-                            var remarkMessage = "".asFormattedText()
-                            if (language == "en") {
-                                if (minsRounded > 0) {
-                                    timeMessage = buildFormattedString {
-                                        append(minsRounded.toString(), BoldStyle)
-                                        append(" Min.", SmallSize)
-                                    }
-                                } else if (minsRounded > -60) {
-                                    timeMessage = buildFormattedString {
-                                        append("-", BoldStyle)
-                                        append(" Min.", SmallSize)
-                                    }
-                                }
-                                if (bus.optString("rmk_en").isNotEmpty()) {
-                                    remarkMessage += buildFormattedString {
-                                        if (timeMessage.isEmpty()) {
-                                            append(bus.optString("rmk_en")
-                                                .replace("Final Bus", "Final KMB Bus"))
-                                        } else {
-                                            append(" (${bus.optString("rmk_en")
-                                                .replace("Final Bus", "Final KMB Bus")})", SmallSize)
-                                        }
-                                    }
-                                }
-                            } else {
-                                if (minsRounded > 0) {
-                                    timeMessage = buildFormattedString {
-                                        append(minsRounded.toString(), BoldStyle)
-                                        append(" 分鐘", SmallSize)
-                                    }
-                                } else if (minsRounded > -60) {
-                                    timeMessage = buildFormattedString {
-                                        append("-", BoldStyle)
-                                        append(" 分鐘", SmallSize)
-                                    }
-                                }
-                                if (bus.optString("rmk_tc").isNotEmpty()) {
-                                    remarkMessage += buildFormattedString {
-                                        if (timeMessage.isEmpty()) {
-                                            append(bus.optString("rmk_tc")
-                                                .replace("原定", "預定")
-                                                .replace("最後班次", "九巴尾班車")
-                                                .replace("九巴尾班車已過", "尾班車已過本站"))
-                                        } else {
-                                            append(" (${bus.optString("rmk_tc")
-                                                .replace("原定", "預定")
-                                                .replace("最後班次", "九巴尾班車")
-                                                .replace("九巴尾班車已過", "尾班車已過本站")})", SmallSize)
-                                        }
-                                    }
-                                }
-                            }
-                            if ((remarkMessage.contains("預定班次") || remarkMessage.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
-                                kmbFirstScheduledBus = minsRounded.toLong()
-                            }
-                            jointOperated.add(JointOperatedEntry(mins, minsRounded.toLong(), timeMessage, remarkMessage, Operator.KMB))
-                        } else {
-                            var remarkMessage = "".asFormattedText()
-                            if (language == "en") {
-                                if (bus.optString("rmk_en").isNotEmpty()) {
-                                    remarkMessage += buildFormattedString {
-                                        append(bus.optString("rmk_en")
-                                            .replace("Final Bus", "Final KMB Bus"))
-                                    }
-                                }
-                            } else {
-                                if (bus.optString("rmk_tc").isNotEmpty()) {
-                                    remarkMessage += buildFormattedString {
-                                        append(bus.optString("rmk_tc")
-                                            .replace("原定", "預定")
-                                            .replace("最後班次", "九巴尾班車")
-                                            .replace("九巴尾班車已過", "尾班車已過本站"))
-                                    }
-                                }
-                            }
-                            remarkMessage = if (remarkMessage.isEmpty() || typhoonInfo.isAboveTyphoonSignalEight && (remarkMessage strEq "ETA service suspended" || remarkMessage strEq "暫停預報")) {
-                                getNoScheduledDepartureMessage(language, remarkMessage, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
-                            } else {
-                                "".asFormattedText(BoldStyle) + remarkMessage
-                            }
-                            kmbSpecialMessage = remarkMessage
-                        }
-                    }
-                }
-            }
-        }
-        run {
-            val routeNumber = route.routeNumber
-            val matchingStops: List<Pair<Operator, String>>? = DATA!!.dataSheet.stopMap[stopId]
-            val ctbStopIds: MutableList<String> = mutableListOf()
-            if (matchingStops == null) {
-                val cacheKey = routeNumber + "_" + stopId + "_" + stopIndex + "_ctb"
-                @Suppress("UNCHECKED_CAST")
-                val cachedIds = objectCache[cacheKey] as List<String>?
-                if (cachedIds == null) {
-                    val location: Coordinates = DATA!!.dataSheet.stopList[stopId]!!.location
-                    for ((key, value) in DATA!!.dataSheet.stopList.entries) {
-                        if (Operator.CTB.matchStopIdPattern(key) && location.distance(value.location) < 0.4) {
-                            ctbStopIds.add(key)
-                        }
-                    }
-                    objectCache[cacheKey] = ctbStopIds.toList()
-                } else {
-                    ctbStopIds.addAll(cachedIds)
-                }
-            } else {
-                for ((first, second) in matchingStops) {
-                    if (Operator.CTB === first) {
-                        ctbStopIds.add(second)
-                    }
-                }
-            }
-            val (first, second) = getAllDestinationsByDirection(routeNumber, Operator.KMB, null, null, route, stopId)
-            val destKeys = second.asSequence().map { it.zh.remove(" ") }.toSet()
-            val ctbEtaEntries: ConcurrentMutableMap<String?, MutableSet<JointOperatedEntry>> = ConcurrentMutableMap()
-            val stopQueryData = buildList {
-                for (ctbStopId in ctbStopIds) {
-                    add(scope.async { getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber") })
-                }
-            }.awaitAll()
-            val stopSequences: MutableMap<String, MutableSet<Int>> = mutableMapOf()
-            val queryBusDests: Array<Array<String?>?> = arrayOfNulls(stopQueryData.size)
-            for (i in stopQueryData.indices) {
-                val data = stopQueryData[i]
+        coroutineScope {
+            val kmbFuture = launch {
+                val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
                 val buses = data!!.optJsonArray("data")!!
-                val busDests = arrayOfNulls<String>(buses.size)
+                val stopSequences: MutableSet<Int> = HashSet()
                 for (u in 0 until buses.size) {
                     val bus = buses.optJsonObject(u)!!
-                    if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
-                        val rawBusDest = bus.optString("dest_tc").remove(" ")
-                        val busDest = destKeys.asSequence().minBy { it.editDistance(rawBusDest) }
-                        busDests[u] = busDest
-                        stopSequences.getOrPut(busDest) { HashSet() }.add(bus.optInt("seq"))
+                    if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
+                        val routeNumber = bus.optString("route")
+                        val bound = bus.optString("dir")
+                        if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB]) {
+                            stopSequences.add(bus.optInt("seq"))
+                        }
                     }
                 }
-                queryBusDests[i] = busDests
-            }
-            val matchingSeq = stopSequences.entries.asSequence()
-                .map { (key, value) -> key to (value.minByOrNull { (it - stopIndex).absoluteValue }?: -1) }
-                .toMap()
-            for (i in stopQueryData.indices) {
-                val data = stopQueryData[i]!!
-                val buses = data.optJsonArray("data")!!
-                val usedRealSeq: MutableMap<String?, MutableSet<Int>> = mutableMapOf()
+                val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
+                val usedRealSeq: MutableSet<Int> = HashSet()
                 for (u in 0 until buses.size) {
                     val bus = buses.optJsonObject(u)!!
-                    if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
-                        val busDest = queryBusDests[i]!![u]!!
+                    if (Operator.KMB === Operator.valueOf(bus.optString("co"))) {
+                        val routeNumber = bus.optString("route")
+                        val bound = bus.optString("dir")
                         val stopSeq = bus.optInt("seq")
-                        if ((stopSeq == (matchingSeq[busDest]?: 0)) && usedRealSeq.getOrPut(busDest) { HashSet() }.add(bus.optInt("eta_seq"))) {
+                        if (routeNumber == route.routeNumber && bound == route.bound[Operator.KMB] && stopSeq == matchingSeq && usedRealSeq.add(bus.optInt("eta_seq"))) {
                             val eta = bus.optString("eta")
                             if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
                                 val mins = (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0
@@ -2427,9 +2275,11 @@ class Registry {
                                     if (bus.optString("rmk_en").isNotEmpty()) {
                                         remarkMessage += buildFormattedString {
                                             if (timeMessage.isEmpty()) {
-                                                append(bus.optString("rmk_en"))
+                                                append(bus.optString("rmk_en")
+                                                    .replace("Final Bus", "Final KMB Bus"))
                                             } else {
-                                                append(" (${bus.optString("rmk_en")})", SmallSize)
+                                                append(" (${bus.optString("rmk_en")
+                                                    .replace("Final Bus", "Final KMB Bus")})", SmallSize)
                                             }
                                         }
                                     }
@@ -2450,34 +2300,188 @@ class Registry {
                                             if (timeMessage.isEmpty()) {
                                                 append(bus.optString("rmk_tc")
                                                     .replace("原定", "預定")
-                                                    .replace("最後班次", "尾班車")
-                                                    .replace("尾班車已過", "尾班車已過本站"))
+                                                    .replace("最後班次", "九巴尾班車")
+                                                    .replace("九巴尾班車已過", "尾班車已過本站"))
                                             } else {
                                                 append(" (${bus.optString("rmk_tc")
                                                     .replace("原定", "預定")
-                                                    .replace("最後班次", "尾班車")
-                                                    .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
+                                                    .replace("最後班次", "九巴尾班車")
+                                                    .replace("九巴尾班車已過", "尾班車已過本站")})", SmallSize)
                                             }
                                         }
                                     }
                                 }
-                                ctbEtaEntries.synchronize {
-                                    ctbEtaEntries.getOrPut(busDest) { ConcurrentMutableSet() }.add(
-                                        JointOperatedEntry(mins, minsRounded.toLong(), timeMessage, remarkMessage, Operator.CTB)
-                                    )
+                                if ((remarkMessage.contains("預定班次") || remarkMessage.contains("Scheduled Bus")) && mins < kmbFirstScheduledBus) {
+                                    kmbFirstScheduledBus = minsRounded.toLong()
                                 }
+                                jointOperated.add(JointOperatedEntry(mins, minsRounded.toLong(), timeMessage, remarkMessage, Operator.KMB))
+                            } else {
+                                var remarkMessage = "".asFormattedText()
+                                if (language == "en") {
+                                    if (bus.optString("rmk_en").isNotEmpty()) {
+                                        remarkMessage += buildFormattedString {
+                                            append(bus.optString("rmk_en")
+                                                .replace("Final Bus", "Final KMB Bus"))
+                                        }
+                                    }
+                                } else {
+                                    if (bus.optString("rmk_tc").isNotEmpty()) {
+                                        remarkMessage += buildFormattedString {
+                                            append(bus.optString("rmk_tc")
+                                                .replace("原定", "預定")
+                                                .replace("最後班次", "九巴尾班車")
+                                                .replace("九巴尾班車已過", "尾班車已過本站"))
+                                        }
+                                    }
+                                }
+                                remarkMessage = if (remarkMessage.isEmpty() || typhoonInfo.isAboveTyphoonSignalEight && (remarkMessage strEq "ETA service suspended" || remarkMessage strEq "暫停預報")) {
+                                    getNoScheduledDepartureMessage(language, remarkMessage, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle)
+                                } else {
+                                    "".asFormattedText(BoldStyle) + remarkMessage
+                                }
+                                kmbSpecialMessage = remarkMessage
                             }
                         }
                     }
                 }
             }
-            first.asSequence().map { ctbEtaEntries[it.zh.remove(" ")] }.forEach {
-                if (it != null) {
-                    jointOperated.addAll(it)
+            run {
+                val routeNumber = route.routeNumber
+                val matchingStops: List<Pair<Operator, String>>? = DATA!!.dataSheet.stopMap[stopId]
+                val ctbStopIds: MutableList<String> = mutableListOf()
+                if (matchingStops == null) {
+                    val cacheKey = routeNumber + "_" + stopId + "_" + stopIndex + "_ctb"
+                    @Suppress("UNCHECKED_CAST")
+                    val cachedIds = objectCache[cacheKey] as List<String>?
+                    if (cachedIds == null) {
+                        val location: Coordinates = DATA!!.dataSheet.stopList[stopId]!!.location
+                        for ((key, value) in DATA!!.dataSheet.stopList.entries) {
+                            if (Operator.CTB.matchStopIdPattern(key) && location.distance(value.location) < 0.4) {
+                                ctbStopIds.add(key)
+                            }
+                        }
+                        objectCache[cacheKey] = ctbStopIds.toList()
+                    } else {
+                        ctbStopIds.addAll(cachedIds)
+                    }
+                } else {
+                    for ((first, second) in matchingStops) {
+                        if (Operator.CTB === first) {
+                            ctbStopIds.add(second)
+                        }
+                    }
+                }
+                val (first, second) = getAllDestinationsByDirection(routeNumber, Operator.KMB, null, null, route, stopId)
+                val destKeys = second.asSequence().map { it.zh.remove(" ") }.toSet()
+                val ctbEtaEntries: ConcurrentMutableMap<String?, MutableSet<JointOperatedEntry>> = ConcurrentMutableMap()
+                val stopQueryData = buildList {
+                    for (ctbStopId in ctbStopIds) {
+                        add(async { getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber") })
+                    }
+                }.awaitAll()
+                val stopSequences: MutableMap<String, MutableSet<Int>> = mutableMapOf()
+                val queryBusDests: Array<Array<String?>?> = arrayOfNulls(stopQueryData.size)
+                for (i in stopQueryData.indices) {
+                    val data = stopQueryData[i]
+                    val buses = data!!.optJsonArray("data")!!
+                    val busDests = arrayOfNulls<String>(buses.size)
+                    for (u in 0 until buses.size) {
+                        val bus = buses.optJsonObject(u)!!
+                        if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
+                            val rawBusDest = bus.optString("dest_tc").remove(" ")
+                            val busDest = destKeys.asSequence().minBy { it.editDistance(rawBusDest) }
+                            busDests[u] = busDest
+                            stopSequences.getOrPut(busDest) { HashSet() }.add(bus.optInt("seq"))
+                        }
+                    }
+                    queryBusDests[i] = busDests
+                }
+                val matchingSeq = stopSequences.entries.asSequence()
+                    .map { (key, value) -> key to (value.minByOrNull { (it - stopIndex).absoluteValue }?: -1) }
+                    .toMap()
+                for (i in stopQueryData.indices) {
+                    val data = stopQueryData[i]!!
+                    val buses = data.optJsonArray("data")!!
+                    val usedRealSeq: MutableMap<String?, MutableSet<Int>> = mutableMapOf()
+                    for (u in 0 until buses.size) {
+                        val bus = buses.optJsonObject(u)!!
+                        if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
+                            val busDest = queryBusDests[i]!![u]!!
+                            val stopSeq = bus.optInt("seq")
+                            if ((stopSeq == (matchingSeq[busDest]?: 0)) && usedRealSeq.getOrPut(busDest) { HashSet() }.add(bus.optInt("eta_seq"))) {
+                                val eta = bus.optString("eta")
+                                if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
+                                    val mins = (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0
+                                    val minsRounded = mins.roundToInt()
+                                    var timeMessage = "".asFormattedText()
+                                    var remarkMessage = "".asFormattedText()
+                                    if (language == "en") {
+                                        if (minsRounded > 0) {
+                                            timeMessage = buildFormattedString {
+                                                append(minsRounded.toString(), BoldStyle)
+                                                append(" Min.", SmallSize)
+                                            }
+                                        } else if (minsRounded > -60) {
+                                            timeMessage = buildFormattedString {
+                                                append("-", BoldStyle)
+                                                append(" Min.", SmallSize)
+                                            }
+                                        }
+                                        if (bus.optString("rmk_en").isNotEmpty()) {
+                                            remarkMessage += buildFormattedString {
+                                                if (timeMessage.isEmpty()) {
+                                                    append(bus.optString("rmk_en"))
+                                                } else {
+                                                    append(" (${bus.optString("rmk_en")})", SmallSize)
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        if (minsRounded > 0) {
+                                            timeMessage = buildFormattedString {
+                                                append(minsRounded.toString(), BoldStyle)
+                                                append(" 分鐘", SmallSize)
+                                            }
+                                        } else if (minsRounded > -60) {
+                                            timeMessage = buildFormattedString {
+                                                append("-", BoldStyle)
+                                                append(" 分鐘", SmallSize)
+                                            }
+                                        }
+                                        if (bus.optString("rmk_tc").isNotEmpty()) {
+                                            remarkMessage += buildFormattedString {
+                                                if (timeMessage.isEmpty()) {
+                                                    append(bus.optString("rmk_tc")
+                                                        .replace("原定", "預定")
+                                                        .replace("最後班次", "尾班車")
+                                                        .replace("尾班車已過", "尾班車已過本站"))
+                                                } else {
+                                                    append(" (${bus.optString("rmk_tc")
+                                                        .replace("原定", "預定")
+                                                        .replace("最後班次", "尾班車")
+                                                        .replace("尾班車已過", "尾班車已過本站")})", SmallSize)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    ctbEtaEntries.synchronize {
+                                        ctbEtaEntries.getOrPut(busDest) { ConcurrentMutableSet() }.add(
+                                            JointOperatedEntry(mins, minsRounded.toLong(), timeMessage, remarkMessage, Operator.CTB)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                first.asSequence().map { ctbEtaEntries[it.zh.remove(" ")] }.forEach {
+                    if (it != null) {
+                        jointOperated.addAll(it)
+                    }
                 }
             }
+            kmbFuture.join()
         }
-        kmbFuture.join()
         if (jointOperated.isEmpty()) {
             if (kmbSpecialMessage.isNullOrEmpty()) {
                 lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(language, null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
@@ -3688,55 +3692,54 @@ class Registry {
     }
 
     @Immutable
-    class PendingETAQueryResult(
+    class ETAQueryTask(
         private val context: AppContext,
         private val co: Operator,
-        private val deferred: Deferred<ETAQueryResult>
+        private val task: suspend () -> ETAQueryResult
     ) {
 
-        private val errorResult: ETAQueryResult
-            get() {
+        private val errorResult: ETAQueryResult by lazy {
             val restrictionType = if (context is AppActiveContext) BackgroundRestrictionType.NONE else context.currentBackgroundRestrictions()
-            return ETAQueryResult.connectionError(restrictionType, co)
+            ETAQueryResult.connectionError(restrictionType, co)
         }
 
-        suspend fun get(): ETAQueryResult {
+        suspend fun query(): ETAQueryResult {
             return try {
-                deferred.await()
+                task.invoke()
             } catch (e: Exception) {
                 e.printStackTrace()
-                try { deferred.cancel() } catch (ignore: Throwable) { }
                 errorResult
             }
         }
 
-        suspend fun get(timeout: Int, unit: DateTimeUnit.TimeBased): ETAQueryResult {
+        suspend fun query(timeout: Int, unit: DateTimeUnit.TimeBased): ETAQueryResult {
             return try {
-                withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() }
+                withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { task.invoke() }
             } catch (e: Exception) {
                 e.printStackTrace()
-                try { deferred.cancel() } catch (ignore: Throwable) { }
                 errorResult
             }
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
-        fun onComplete(callback: (ETAQueryResult) -> Unit) {
+        fun query(callback: (ETAQueryResult) -> Unit) {
+            val deferred = CoroutineScope(Dispatchers.IO).async { task.invoke() }
             deferred.invokeOnCompletion { it?.let {
                 it.printStackTrace()
                 callback.invoke(errorResult)
             }?: callback.invoke(deferred.getCompleted()) }
         }
 
-        fun onComplete(timeout: Int, unit: DateTimeUnit.TimeBased, callback: (ETAQueryResult) -> Unit) {
+        fun query(timeout: Int, unit: DateTimeUnit.TimeBased, callback: (ETAQueryResult) -> Unit) {
             CoroutineScope(Dispatchers.IO).launch {
-               try {
-                   callback.invoke(withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() })
-               } catch (e: Exception) {
-                   e.printStackTrace()
-                   try { deferred.cancel() } catch (ignore: Throwable) { }
-                   callback.invoke(errorResult)
-               }
+                val deferred = async { task.invoke() }
+                try {
+                    callback.invoke(withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() })
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    try { deferred.cancel() } catch (ignore: Throwable) { }
+                    callback.invoke(errorResult)
+                }
             }
         }
     }

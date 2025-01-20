@@ -22,7 +22,6 @@ package com.loohp.hkbuseta.tiles
 
 import android.os.Build
 import android.text.format.DateFormat
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.wear.protolayout.ActionBuilders
@@ -469,7 +468,7 @@ class EtaTileServiceCommon {
                 val eta = Registry.MergedETAQueryResult.merge(
                     favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { (favStop, resolved) ->
                         val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                        (resolved to favStop) to runBlocking(Dispatchers.IO) { Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+                        (resolved to favStop) to runBlocking(Dispatchers.IO) { Registry.getInstanceNoUpdateCheck(context).buildEtaQuery(stopId, index, favStop.co, route, context).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
                     }
                 )
                 it.markLastUpdated()
@@ -710,7 +709,7 @@ class EtaTileServiceCommon {
                             it.cacheETAQueryResult(Registry.MergedETAQueryResult.merge(
                                 favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { (favStop, resolved) ->
                                     val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                                    (resolved to favStop) to runBlocking(Dispatchers.IO) { Registry.getInstanceNoUpdateCheck(context).getEta(stopId, index, favStop.co, route, context).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+                                    (resolved to favStop) to runBlocking(Dispatchers.IO) { Registry.getInstanceNoUpdateCheck(context).buildEtaQuery(stopId, index, favStop.co, route, context).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
                                 }
                             ))
                             it.markLastUpdated()

@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/gtm-session-fetcher.git",
       "state" : {
-        "revision" : "5cfe5f090c982de9c58605d2a82a4fc77b774fbd",
-        "version" : "4.1.0"
+        "revision" : "85b7b231882c3c472b8bda4fb495324d3f19bab6",
+        "version" : "4.2.0"
       }
     },
     {
@@ -97,7 +97,7 @@
       "location" : "https://github.com/rickclephas/KMP-NativeCoroutines.git",
       "state" : {
         "branch" : "master",
-        "revision" : "a92a55c7054d806cba28bdaf2198e59d1f18df5e"
+        "revision" : "5bf76426017df17e4bed2f44a15d251f30d822d0"
       }
     },
     {

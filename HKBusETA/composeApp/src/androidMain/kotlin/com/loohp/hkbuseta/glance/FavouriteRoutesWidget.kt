@@ -536,7 +536,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
         }
         while (true) {
             val result = CoroutineScope(etaUpdateScope).async {
-                Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                Registry.getInstance(instance).buildEtaQuery(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             }.await()
             etaState = result
             etaResults.value[key] = result

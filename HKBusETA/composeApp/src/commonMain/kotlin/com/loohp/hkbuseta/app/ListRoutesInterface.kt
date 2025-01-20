@@ -1579,7 +1579,7 @@ fun PipETAColumn(
         val result = Registry.MergedETAQueryResult.merge(buildList {
             for (route in routes) {
                 add(CoroutineScope(etaUpdateScope).async {
-                    route to Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance, options).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                    route to Registry.getInstance(instance).buildEtaQuery(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                 })
             }
         }.awaitAll())
@@ -1743,7 +1743,7 @@ fun ETAElement(
         }
         while (true) {
             val result = CoroutineScope(etaUpdateScope).async {
-                Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                Registry.getInstance(instance).buildEtaQuery(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             }.await()
             etaState = result
             etaResults.value[key] = result
@@ -1755,7 +1755,7 @@ fun ETAElement(
     }
     RestartEffect {
         val result = CoroutineScope(etaUpdateScope).async {
-            Registry.getInstance(instance).getEta(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            Registry.getInstance(instance).buildEtaQuery(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
         }.await()
         etaState = result
         etaResults.value[key] = result

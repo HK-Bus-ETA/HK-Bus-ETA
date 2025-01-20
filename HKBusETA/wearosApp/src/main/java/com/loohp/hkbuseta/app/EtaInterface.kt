@@ -100,7 +100,6 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
-import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
@@ -279,7 +278,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 LaunchedEffect (Unit) {
                     schedule.invoke(false, null)
                     schedule.invoke(true) {
-                        val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).getEta(stopId, index, co, route, instance, options).get(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+                        val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).buildEtaQuery(stopId, index, co, route, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
                         if (active) {
                             etaStateFlow.value = result
                         }
@@ -288,10 +287,9 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                         val newOptions = Registry.EtaQueryOptions(lrtDirectionMode = Shared.lrtDirectionMode)
                         if (newOptions != options) {
                             options = newOptions
-                            Registry.getInstance(instance).getEta(stopId, index, co, route, instance, options).onComplete(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) {
-                                if (active) {
-                                    etaStateFlow.value = it
-                                }
+                            val result = Registry.getInstance(instance).buildEtaQuery(stopId, index, co, route, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                            if (active) {
+                                etaStateFlow.value = result
                             }
                         }
                         delay(50)
