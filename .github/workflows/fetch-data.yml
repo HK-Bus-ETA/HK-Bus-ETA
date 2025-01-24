@@ -1,7 +1,7 @@
 name: Data Fetching Processing
 on:
   schedule:
-    - cron: "25 21 * * *" # 05:25 (HKT) daily
+    - cron: "45 21 * * *" # 05:45 (HKT) daily
   workflow_dispatch:
 
 jobs:
