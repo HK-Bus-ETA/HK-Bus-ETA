@@ -28,6 +28,21 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
 
+infix fun <F, S> List<F>?.elementsTo(other: List<S>?): List<Pair<F?, S?>> {
+    if (this == null && other == null) return emptyList()
+    if (this == null) return other!!.map { null to it }
+    if (other == null) return this.map { it to null }
+    val destination = mutableListOf<Pair<F?, S?>>()
+    val firstItr = this.iterator()
+    val secondItr = other.iterator()
+    while (firstItr.hasNext() || secondItr.hasNext()) {
+        val firstElement = if (firstItr.hasNext()) firstItr.next() else null
+        val secondElement = if (secondItr.hasNext()) secondItr.next() else null
+        destination.add(firstElement to secondElement)
+    }
+    return destination
+}
+
 class AutoSortedList<E: Comparable<E>, T: MutableList<E>>(
     val backingList: T,
     private val comparator: Comparator<E> = naturalOrder(),

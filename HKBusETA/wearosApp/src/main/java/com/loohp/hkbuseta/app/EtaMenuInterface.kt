@@ -121,6 +121,8 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
         val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
 
+        val alternateStopNameShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle()
+
         val favouriteRouteStops by Shared.favoriteRouteStops.collectAsStateWithLifecycle()
         val selectedGroupState = remember { mutableStateOf(favouriteRouteStops.first().name) }
 
@@ -139,6 +141,13 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
                 route.resolvedDestWithBranch(true, currentBranch, index, stopId, instance)
             } else {
                 route.resolvedDest(true)
+            }
+        }
+        val stopName = remember {
+            if (route.isKmbCtbJoint && alternateStopNameShowing) {
+                Registry.getInstance(instance).findJointAlternateStop(stopId, routeNumber).stop.name
+            } else {
+                stop.name
             }
         }
 
@@ -176,7 +185,7 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
             }
             item {
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))
-                OpenOnMapsButton(stop.name, lat, lng, instance)
+                OpenOnMapsButton(stopName, lat, lng, instance)
             }
             item {
                 Spacer(modifier = Modifier.size(10.scaledSize(instance).dp))

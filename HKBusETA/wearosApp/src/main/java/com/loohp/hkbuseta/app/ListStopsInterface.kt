@@ -210,7 +210,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
         var closestIndex by remember { mutableIntStateOf(0) }
 
         val alternateStopNames by remember { derivedStateOf { if (kmbCtbJoint) {
-            Registry.getInstance(instance).findEquivalentStops(stopsList.map { it.stopId }, Operator.CTB).asImmutableList()
+            Registry.getInstance(instance).findJointAlternateStops(stopsList.map { it.stopId }, routeNumber).asImmutableList()
         } else {
             null
         } } }
@@ -220,7 +220,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                 if (stopId != null) {
                     var index = stopsList.indexesOf { it.stopId == stopId }.minBy { (it - (stopIndex?: 0)).absoluteValue }
                     if (index < 0 && route.route!!.isKmbCtbJoint) {
-                        val altStops = Registry.getInstance(instance).findEquivalentStops(stopsList.map { it.stopId }, Operator.CTB)
+                        val altStops = Registry.getInstance(instance).findJointAlternateStops(stopsList.map { it.stopId }, routeNumber)
                         index = altStops.indexesOf { it.stopId == stopId }.minBy { (it - (stopIndex?: 0)).absoluteValue }
                     }
                     if (index >= 0) {

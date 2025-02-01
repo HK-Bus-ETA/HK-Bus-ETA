@@ -134,6 +134,7 @@ import kotlin.math.absoluteValue
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, stop: Stop, route: Route, offsetStart: Int, instance: AppActiveContext, schedule: (Boolean, (() -> Unit)?) -> Unit) {
+    val alternateStopNameShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle()
     val haptic = LocalHapticFeedback.current
     val window = currentLocalWindowSize
     val scope = rememberCoroutineScope()
@@ -155,13 +156,20 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
             route.resolvedDest(true)
         }
     }
+    val stopName = remember {
+        if (route.isKmbCtbJoint && alternateStopNameShowing) {
+            Registry.getInstance(instance).findJointAlternateStop(stopId, routeNumber).stop.name
+        } else {
+            stop.name
+        }
+    }
 
     if (swipe.currentValue) {
         instance.runOnUiThread {
             val text = if (Shared.language == "en") {
-                "Nearby Interchange Routes of ${stop.name.en}"
+                "Nearby Interchange Routes of ${stopName.en}"
             } else {
-                "${stop.name.zh} 附近轉乘路線"
+                "${stopName.zh} 附近轉乘路線"
             }
             instance.showToastText(text, ToastDuration.LONG)
         }
@@ -302,7 +310,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 }
 
                 Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
-                Title(ambientMode, index, stop.name, lat, lng, routeNumber, co, instance)
+                Title(ambientMode, index, stopName, lat, lng, routeNumber, co, instance)
                 SubTitle(ambientMode, resolvedDestName, lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(9.scaledSize(instance).dp))
                 EtaText(ambientMode, eta, 1, etaDisplayMode, instance)

@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.then
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -100,17 +101,27 @@ class DataSheet(
         routeList.entries.asSequence().sortedWith(compareBy(routeComparatorRouteNumberFirst) { it.value }).map { it.key }.toList()
     }
     @Transient
-    val routeKeysByStopId: Deferred<Map<String, Set<Pair<String, Int>>>> = CoroutineScope(Dispatchers.IO).async {
-        mutableMapOf<String, MutableSet<Pair<String, Int>>>().apply {
-            for ((key, route) in routeList) {
-                for (stopIds in route.stops.values) {
-                    for ((index, stopId) in stopIds.withIndex()) {
-                        getOrPut(stopId) { HashSet() }.add(key to index)
-                    }
+    private val routeKeysByTask = CoroutineScope(Dispatchers.IO).async {
+        val byStopId = mutableMapOf<String, MutableSet<Pair<String, Int>>>()
+        val byRouteNumber = mutableMapOf<String, MutableSet<String>>()
+        for ((key, route) in routeList) {
+            for (stopIds in route.stops.values) {
+                for ((index, stopId) in stopIds.withIndex()) {
+                    byStopId.getOrPut(stopId) { HashSet() }.add(key to index)
                 }
             }
+            byRouteNumber.getOrPut(route.routeNumber) { HashSet() }.add(key)
         }
+        RouteKeysByTaskResult(
+            byStopId = byStopId,
+            byRouteNumber = byRouteNumber
+        )
     }
+
+    @Transient
+    val routeKeysByStopId: Deferred<Map<String, Set<Pair<String, Int>>>> = routeKeysByTask.then { byStopId }
+    @Transient
+    val routeKeysByRouteNumber: Deferred<Map<String, Set<String>>> = routeKeysByTask.then { byRouteNumber }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -133,3 +144,8 @@ class DataSheet(
     }
 
 }
+
+private data class RouteKeysByTaskResult(
+    val byStopId: Map<String, MutableSet<Pair<String, Int>>>,
+    val byRouteNumber: Map<String, MutableSet<String>>
+)

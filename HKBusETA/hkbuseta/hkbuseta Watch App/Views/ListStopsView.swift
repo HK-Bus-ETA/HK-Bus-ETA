@@ -93,7 +93,7 @@ struct ListStopsView: AppScreenView {
             self.mtrLineSectionData = []
         }
         if kmbCtbJoint {
-            self.alternateStopNames = registry(appContext).findEquivalentStops(stopIds: stopList.map { $0.stopId }, co: Operator.Companion().CTB)
+            self.alternateStopNames = registry(appContext).findJointAlternateStops(stopIds: stopList.map { $0.stopId }, routeNumber: routeNumber)
         } else {
             self.alternateStopNames = nil
         }
@@ -199,7 +199,7 @@ struct ListStopsView: AppScreenView {
             } else if let scrollToStop = self.scrollToStop {
                 var index = stopList.firstIndex(where: { $0.stopId == scrollToStop })
                 if index == nil && route.route!.isKmbCtbJoint {
-                    let altStops = registry(appContext).findEquivalentStops(stopIds: stopList.map { $0.stopId }, co: Operator.Companion().CTB)
+                    let altStops = registry(appContext).findJointAlternateStops(stopIds: stopList.map { $0.stopId }, routeNumber: routeNumber)
                     index = altStops.firstIndex(where: { $0.stopId == scrollToStop })
                 }
                 if index != nil {

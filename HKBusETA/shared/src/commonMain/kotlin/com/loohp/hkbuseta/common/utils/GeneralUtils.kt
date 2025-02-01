@@ -12,3 +12,7 @@ inline fun <T> T.runIf(condition: () -> Boolean, block: T.() -> T): T {
 inline fun <E, T> T.runIfNotNull(item: E?, block: T.(E) -> T): T {
     return if (item == null) this else block.invoke(this, item)
 }
+
+inline fun <T> firstNonNull(vararg blocks: () -> T?, orElse: () -> T): T {
+    return blocks.firstNotNullOfOrNull { it.invoke() }?: orElse.invoke()
+}

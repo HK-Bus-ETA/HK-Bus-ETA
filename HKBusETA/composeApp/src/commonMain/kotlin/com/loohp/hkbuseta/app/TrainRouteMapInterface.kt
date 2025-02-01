@@ -1453,7 +1453,7 @@ fun MTRRouteMapOptionsInterface(
                 if (favouriteStopAlreadySet) {
                     Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopId) }, instance)
                 } else {
-                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopId, stop)) }, instance)
+                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopId, stop, null)) }, instance)
                 }
             },
             content = {
@@ -2584,7 +2584,7 @@ fun LRTETADisplayOptionsInterface(
                 if (favouriteStopAlreadySet) {
                     Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopId) }, instance)
                 } else {
-                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopId, stop)) }, instance)
+                    Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopId, stop, null)) }, instance)
                 }
             },
             content = {

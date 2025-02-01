@@ -485,7 +485,11 @@ class EtaTileServiceCommon {
             val gpsStop = favouriteStopRoute.favouriteStopMode.isRequiresLocation
 
             val routeNumber = route.routeNumber
-            val stopName = stop.name
+            val stopName = if (route.isKmbCtbJoint && Shared.alternateStopNamesShowingState.value) {
+                Registry.getInstanceNoUpdateCheck(context).findJointAlternateStop(stopId, routeNumber).stop.name
+            } else {
+                stop.name
+            }
 
             val stopList = Registry.getInstanceNoUpdateCheck(context).getAllStops(routeNumber, route.idBound(co), co, route.gmbRegion)
             val stopData = stopList.getOrNull(stopList.indexesOf { it.stopId == stopId }.minByOrNull { (it - index).absoluteValue }?: -1)

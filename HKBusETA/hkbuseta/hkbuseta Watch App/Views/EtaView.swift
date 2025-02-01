@@ -9,6 +9,8 @@ import SwiftUI
 import shared
 
 struct EtaView: AppScreenView {
+    
+    @StateObject private var alternateStopNamesShowingState = StateFlowObservable(stateFlow: Shared().alternateStopNamesShowingState, initSubscribe: true)
 
     @State private var eta: Registry.ETAQueryResult? = nil
     let etaTimer = Timer.publish(every: Double(Shared().ETA_UPDATE_INTERVAL) / 1000, on: .main, in: .common).autoconnect()
@@ -67,7 +69,14 @@ struct EtaView: AppScreenView {
     var body: some View {
         VStack(alignment: .center, spacing: 3.scaled(appContext)) {
             Spacer().frame(fixedSize: 3.scaled(appContext))
-            Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
+            let stopName = {
+                if route.isKmbCtbJoint && alternateStopNamesShowingState.state.boolValue {
+                    return registry(appContext).findJointAlternateStop(stopId: stopId, routeNumber: route.routeNumber).stop.name
+                } else {
+                    return stop.name
+                }
+            }()
+            Text(co.isTrain ? stopName.get(language: Shared().language) : "\(index). \(stopName.get(language: Shared().language))")
                 .multilineTextAlignment(.center)
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(2)

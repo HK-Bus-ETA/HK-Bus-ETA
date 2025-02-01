@@ -35,7 +35,8 @@ import kotlinx.serialization.json.put
 @Serializable
 data class FavouriteStop(
     val stopId: String,
-    val stop: Stop?
+    val stop: Stop?,
+    val kmbCtbJointRouteNumber: String?
 ) : JSONSerializable {
 
     companion object {
@@ -43,11 +44,12 @@ data class FavouriteStop(
         fun deserialize(json: JsonObject): FavouriteStop {
             val stopId = json.optString("stopId")
             val stop = json.optJsonObject("stop")?.let { Stop.deserialize(it) }
-            return FavouriteStop(stopId, stop)
+            val kmbCtbJointRouteNumber = json.optString("kmbCtbJointRouteNumber").takeIf { it.isNotBlank() }
+            return FavouriteStop(stopId, stop, kmbCtbJointRouteNumber)
         }
 
         fun fromLegacy(stopId: String): FavouriteStop {
-            return FavouriteStop(stopId, null)
+            return FavouriteStop(stopId, null, null)
         }
 
     }
@@ -56,6 +58,7 @@ data class FavouriteStop(
         return buildJsonObject {
             put("stopId", stopId)
             stop?.let { put("stop", it.serialize()) }
+            kmbCtbJointRouteNumber?.let { put("kmbCtbJointRouteNumber", it) }
         }
     }
 

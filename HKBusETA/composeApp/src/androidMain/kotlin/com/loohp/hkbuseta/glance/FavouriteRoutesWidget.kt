@@ -254,6 +254,7 @@ fun FirstInstallWidgetContent() {
 fun FavouriteRoutesWidgetContent(instance: AppContext) {
     val groupNameZh = currentState(groupNameZhKey)
     val favouriteRouteStops by Shared.favoriteRouteStops.collectAsState()
+    val alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsState()
     val group by remember(favouriteRouteStops, groupNameZh) { derivedStateOf { favouriteRouteStops.firstOrNull { it.name.zh == groupNameZh }?: favouriteRouteStops.first() } }
     var location: Coordinates? by remember { mutableStateOf(lastLocation?.location) }
     val routeStops by remember(group) { derivedStateOf { group.favouriteRouteStops.toRouteSearchResult(instance, location).toStopIndexed(instance) } }
@@ -364,7 +365,16 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                 val isNightRoute = co.isBus && calculateServiceTimeCategory(routeNumber, co) {
                     Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).getServiceTimeCategory()
                 } == ServiceTimeCategory.NIGHT
-                val secondLine = if (route.stopInfo != null) route.stopInfo!!.data!!.name[Shared.language] else null
+                val secondLine = if (route.stopInfo != null) {
+                    val stopName = if (kmbCtbJoint && alternateStopNamesShowing) {
+                        Registry.getInstance(instance).findJointAlternateStop(route.stopInfo!!.stopId, routeNumber).stop.name
+                    } else {
+                        route.stopInfo!!.data!!.name
+                    }
+                    stopName[Shared.language]
+                } else {
+                    null
+                }
                 val coSpecialRemark = when {
                     co == Operator.NLB -> if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出"
                     co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB -> if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)"

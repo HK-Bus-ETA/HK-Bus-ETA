@@ -117,6 +117,10 @@ class BilingualText(
 
 }
 
+inline fun BilingualText.trim(): BilingualText {
+    return BilingualText(zh.trim(), en.trim())
+}
+
 inline fun BilingualText.isEmpty(): Boolean {
     return !isNotEmpty()
 }

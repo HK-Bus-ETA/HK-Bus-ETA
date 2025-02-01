@@ -32,6 +32,7 @@ import com.loohp.hkbuseta.common.objects.isNotBlank
 import com.loohp.hkbuseta.common.objects.joinBilingualText
 import com.loohp.hkbuseta.common.objects.journeyTimeCircular
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
+import com.loohp.hkbuseta.common.objects.trim
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import kotlinx.datetime.DayOfWeek
@@ -468,9 +469,15 @@ fun RouteTimetable.getRouteProportions(
     }
 }
 
+val NO_TIMETABLE_TEXT: BilingualText = "只在特定日子提供服務/沒有時間表資訊" withEn "Service only on specific days / No timetable info"
+val NO_TIMETABLE_SUFFIX: BilingualText = " (沒有時間表資訊)" withEn " (No timetable info)"
+
 class TimetableEntryMapBuilder(
-    private val defaultRoute: Route
+    private val defaultRoute: Route,
+    noTimetableText: BilingualText?
 ) {
+
+    private val noTimetableText: BilingualText = noTimetableText?.let { it.trim() + NO_TIMETABLE_SUFFIX }?: NO_TIMETABLE_TEXT
 
     private val timetableEntryMap: MutableMap<DayOfWeek, MutableList<TimetableEntry>> = mutableMapOf()
     private val routeOrder: MutableSet<Route> = linkedSetOf()
@@ -527,7 +534,7 @@ class TimetableEntryMapBuilder(
         val routeNumber = defaultRoute.routeNumber
         val co = defaultRoute.co.firstCo()!!
         if (timetableEntryMap.isEmpty()) {
-            return routeTimetableOf(routeNumber, co, OperatingWeekdays.ALL to listOf(element = TimetableSpecialEntry(defaultRoute, "只在特定日子提供服務/沒有時間表資訊" withEn "Service only on specific days / No timetable info", null)))
+            return routeTimetableOf(routeNumber, co, OperatingWeekdays.ALL to listOf(element = TimetableSpecialEntry(defaultRoute, noTimetableText, null)))
         }
         for (timetableEntries in timetableEntryMap.values) {
             mergeSimilarTimeIntervals(timetableEntries)
@@ -590,18 +597,25 @@ class TimetableEntryMapBuilder(
 
 inline fun buildTimetableEntryMap(
     defaultRoute: Route,
+    noTimetableText: BilingualText?,
     builder: (TimetableEntryMapBuilder).() -> Unit
-): RouteTimetable = TimetableEntryMapBuilder(defaultRoute).apply(builder).build()
+): RouteTimetable = TimetableEntryMapBuilder(defaultRoute, noTimetableText).apply(builder).build()
 
 fun Collection<Route>.createTimetable(context: AppContext): RouteTimetable {
-    return createTimetable(Registry.getInstance(context).getServiceDayMap()) {
-        it.resolveSpecialRemark(context).takeIf { r -> r.isNotBlank() }
-    }
+    val registry = Registry.getInstance(context)
+    val route = first()
+    return createTimetable(
+        serviceDayMap = registry.getServiceDayMap(),
+        noTimetableText = registry.getRouteRemarks()[route.co.firstCo()!!]?.get(route.routeNumber),
+        resolveSpecialRemark = {
+            it.resolveSpecialRemark(context).takeIf { r -> r.isNotBlank() }
+        }
+    )
 }
 
-fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>, resolveSpecialRemark: (Route) -> BilingualText?): RouteTimetable {
+fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>, noTimetableText: BilingualText?, resolveSpecialRemark: (Route) -> BilingualText?): RouteTimetable {
     return cache("createTimetable", this, serviceDayMap, resolveSpecialRemark) {
-        buildTimetableEntryMap(first()) {
+        buildTimetableEntryMap(first(), noTimetableText) {
             forEach {
                 it.freq?.let { f ->
                     val remark = resolveSpecialRemark.invoke(it)
@@ -633,7 +647,7 @@ fun Collection<Route>.isTimetableActive(time: LocalDateTime, context: AppContext
 
 fun Collection<Route>.isTimetableActive(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>): Boolean {
     if (isEmpty()) throw IllegalArgumentException("Route list is empty")
-    val timetable = createTimetable(serviceDayMap) { null }
+    val timetable = createTimetable(serviceDayMap, null) { null }
     val compareMidnight = if (timetable.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
     val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return false
@@ -650,7 +664,7 @@ fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, context: App
 fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): List<Route> {
     if (isEmpty()) throw IllegalArgumentException("Route list is empty")
     if (size == 1) return toList()
-    val timetable = createTimetable(serviceDayMap, resolveSpecialRemark)
+    val timetable = createTimetable(serviceDayMap, null, resolveSpecialRemark)
     val compareMidnight = if (timetable.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
     val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return toList()
@@ -681,7 +695,7 @@ fun Collection<Route>.currentBranchStatus(time: LocalDateTime, context: AppConte
 
 fun Collection<Route>.currentBranchStatus(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): Map<Route, RouteBranchStatus> {
     if (isEmpty()) return emptyMap()
-    val timetable = createTimetable(serviceDayMap, resolveSpecialRemark)
+    val timetable = createTimetable(serviceDayMap, null, resolveSpecialRemark)
     val compareMidnight = if (timetable.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
     val weekday = time.dayOfWeek(holidays, compareMidnight)
     val entries = timetable.entries.firstOrNull { (k) -> k.contains(weekday) }?.value?: return associateWith { RouteBranchStatus.INACTIVE }

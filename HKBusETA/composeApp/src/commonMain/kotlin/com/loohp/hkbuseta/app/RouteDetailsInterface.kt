@@ -388,7 +388,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                 if (index >= 0) {
                     index + 1
                 } else if (route.route!!.isKmbCtbJoint) {
-                    val altStops = Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB)
+                    val altStops = Registry.getInstance(instance).findJointAlternateStops(allStops.map { it.stopId }, routeNumber)
                     val ctbIndex = altStops.indexOfFirst { it.stopId == id }
                     ctbIndex.takeIf { it >= 0 }?.let { it + 1 }
                 } else {
@@ -876,7 +876,7 @@ fun MapStopsInterface(
 
     if (Shared.showRouteMap && !pipMode) {
         val alternateStopNames by remember(listRoute, isKmbCtbJoint) { derivedStateOf { if (isKmbCtbJoint) {
-            Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB).asImmutableList()
+            Registry.getInstance(instance).findJointAlternateStops(allStops.map { it.stopId }, routeNumber).asImmutableList()
         } else {
             null
         }.asImmutableState() } }

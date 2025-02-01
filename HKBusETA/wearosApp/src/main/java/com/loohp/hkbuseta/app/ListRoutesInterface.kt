@@ -171,7 +171,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalWearFoundationApi::class)
+@OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, mtrSearch: String?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
@@ -614,6 +614,8 @@ fun LazyItemScope.RouteRow(
     instance: AppActiveContext,
     schedule: (Boolean, String, (() -> Unit)?) -> Unit
 ) {
+    val alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle()
+
     val co = route.co
     val kmbCtbJoint = route.route!!.isKmbCtbJoint
     val routeNumber = co.getListDisplayRouteNumber(route.route!!.routeNumber, true)
@@ -628,8 +630,12 @@ fun LazyItemScope.RouteRow(
             add(instance.formatDateTime((Shared.findLookupRouteTime(route.routeKey)?: 0).toLocalDateTime(), true).asAnnotatedString())
         }
         if (route.stopInfo != null && mtrSearch.isNullOrEmpty()) {
-            val stop = route.stopInfo!!.data!!
-            add(stop.name[Shared.language].asAnnotatedString())
+            val stopName = if (kmbCtbJoint && alternateStopNamesShowing) {
+                Registry.getInstance(instance).findJointAlternateStop(route.stopInfo!!.stopId, routeNumber).stop.name
+            } else {
+                route.stopInfo!!.data!!.name
+            }
+            add(stopName[Shared.language].asAnnotatedString())
         }
         if (co == Operator.NLB || co.isFerry) {
             add((if (Shared.language == "en") "From ".plus(route.route!!.orig.en) else "從".plus(route.route!!.orig.zh).plus("開出")).asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))

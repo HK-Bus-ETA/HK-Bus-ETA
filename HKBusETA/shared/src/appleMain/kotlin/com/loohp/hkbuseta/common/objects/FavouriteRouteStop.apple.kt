@@ -5,7 +5,6 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ColorContentStyle
 import com.loohp.hkbuseta.common.utils.distinctBy
-import com.loohp.hkbuseta.common.utils.gzipSupported
 import com.loohp.hkbuseta.common.utils.indexesOf
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
@@ -58,7 +57,6 @@ actual val FavouriteRouteStop.platformDisplayInfo: JsonObject? get() = buildJson
         put("secondLine", if (co.isTrain) stop.name[Shared.language] else "${index}. ${stop.name[Shared.language]}")
     }
     put("deeplink", route.getDeepLink(appContextForWidget, stopId, index))
-    gzipSupported()
     put("precomputedData", JsonWidgetPrecomputedData.encodeToString(buildWidgetPrecomputedData()))
 }
 

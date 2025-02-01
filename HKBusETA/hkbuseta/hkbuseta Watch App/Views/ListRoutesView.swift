@@ -11,7 +11,10 @@ import shared
 struct ListRoutesView: AppScreenView {
     
     @StateObject private var jointOperatedColorFraction = StateFlowObservable(stateFlow: Shared().jointOperatedColorFractionState)
+    
     @StateObject private var lastLookupRoutes: StateFlowListObservable<LastLookupRoute>
+    
+    @StateObject private var alternateStopNamesShowingState = StateFlowObservable(stateFlow: Shared().alternateStopNamesShowingState, initSubscribe: true)
     
     @State private var animationTick = 0
     
@@ -356,8 +359,13 @@ struct ListRoutesView: AppScreenView {
                 list.append(appContext.formatDateTime(localDateTime: TimeUtilsKt.toLocalDateTime(Shared().findLookupRouteTime(routeKey: route.routeKey)?.int64Value ?? 0), includeTime: true).asAttributedString())
             }
             if route.stopInfo != nil && (mtrSearch == nil || mtrSearch!.isEmpty) {
-                let stop = route.stopInfo!.data!
-                list.append((stop.name.get(language: Shared().language)).asAttributedString())
+                let stopName: BilingualText
+                if kmbCtbJoint && alternateStopNamesShowingState.state.boolValue {
+                    stopName = registry(appContext).findJointAlternateStop(stopId: route.stopInfo!.stopId, routeNumber: routeNumber).stop.name
+                } else {
+                    stopName = route.stopInfo!.data!.name
+                }
+                list.append(stopName.get(language: Shared().language).asAttributedString())
             }
             if route.co == Operator.Companion().NLB || route.co.isFerry {
                 list.append((Shared().language == "en" ? "From \(route.route!.orig.en)" : "從\(route.route!.orig.zh)開出").asAttributedString(color: color.adjustBrightness(percentage: 0.75)))

@@ -87,6 +87,8 @@ struct EtaTileListView: AppScreenView {
 
 struct EtaTileView: View {
     
+    @StateObject private var alternateStopNamesShowingState = StateFlowObservable(stateFlow: Shared().alternateStopNamesShowingState, initSubscribe: true)
+    
     let etaTimer: Publishers.Autoconnect<Timer.TimerPublisher>
     
     private let appContext: AppActiveContextWatchOS
@@ -152,6 +154,14 @@ struct EtaTileView: View {
             }
         }()
         
+        let stopName = {
+            if route.isKmbCtbJoint && alternateStopNamesShowingState.state.boolValue {
+                registry(appContext).findJointAlternateStop(stopId: stopId, routeNumber: routeNumber).stop.name
+            } else {
+                stop.name
+            }
+        }()
+        
         Button(action: { /* do nothing */ }) {
             HStack {
                 Rectangle()
@@ -159,7 +169,7 @@ struct EtaTileView: View {
                     .foregroundColor(color)
                     .animation(.linear(duration: 1.0), value: color)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
+                    Text(co.isTrain ? stopName.get(language: Shared().language) : "\(index). \(stopName.get(language: Shared().language))")
                         .multilineTextAlignment(.leading)
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                         .lineLimit(2)

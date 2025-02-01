@@ -743,7 +743,7 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
         val bound = idBound(co)
         val (routeList, stopList) = Registry.getInstance(context).let { it.getAllBranchRoutes(routeNumber, bound, co, gmbRegion) to it.getStopList() }
         val allStops by lazy { Registry.getInstance(context).getAllStops(routeNumber, bound, co, gmbRegion).map { it.stopId } }
-        val timetable = routeList.createTimetable(Registry.getInstance(context).getServiceDayMap()) { BilingualText.EMPTY }
+        val timetable = routeList.createTimetable(Registry.getInstance(context).getServiceDayMap(), null) { BilingualText.EMPTY }
         val proportions = timetable.takeIf { co == Operator.KMB || co == Operator.CTB }?.getRouteProportions()?: mapOf(routeList.first() to 1F)
         val mainRoute = proportions.maxBy { it.value }.takeIf { (_, v) -> v > 0.9F }?.key?: routeList.first()
         if (proportions[mainRoute]?.let { it > 0.4F } == true) {

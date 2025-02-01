@@ -78,6 +78,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.loohp.hkbuseta.appcontext.ScreenState
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -635,6 +636,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
 data class FavouriteStopItem(
     val stopId: String,
     val stop: Stop,
+    val kmbCtbJointRouteNumber: String?,
     val distance: Double = Double.POSITIVE_INFINITY
 )
 
@@ -652,11 +654,12 @@ private val stopCoIconLayers: Map<Operator, List<IconPainterLayer>> = mapOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
-    val favouriteStopIds by Shared.favoriteStops.collectAsStateMultiplatform()
+    val alternateStopNameShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle()
+    val favouriteStopsRaw by Shared.favoriteStops.collectAsStateMultiplatform()
     var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(null) }
     val favouriteStops by remember { derivedStateOf {
-        favouriteStopIds
-            .mapNotNullTo(mutableListOf()) { it.stop(instance)?.let { s -> FavouriteStopItem(it.stopId, s) } }
+        favouriteStopsRaw
+            .mapNotNullTo(mutableListOf()) { it.stop(instance)?.let { s -> FavouriteStopItem(it.stopId, s, it.kmbCtbJointRouteNumber) } }
             .apply {
                 location?.let { l ->
                     onEachIndexed { index, item ->
@@ -714,7 +717,14 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                 scrollable = tabScrollable.values.any { it },
                 widestTabWidth = renderSizes.values.maxOfOrNull { it.size.width }?.equivalentDp?.plus(20.dp)?: 1.dp
             ) { scrollable ->
-                favouriteStops.forEachIndexed { index, (stopId, stop, distance) ->
+                favouriteStops.forEachIndexed { index, (stopId, stop, kmbCtbJointRouteNumber, distance) ->
+                    val stopName by remember(stopId, stop, kmbCtbJointRouteNumber, alternateStopNameShowing) { derivedStateOf {
+                        if (kmbCtbJointRouteNumber != null && alternateStopNameShowing) {
+                            Registry.getInstance(instance).findJointAlternateStop(stopId, kmbCtbJointRouteNumber).stop.name
+                        } else {
+                            stop.name
+                        }
+                    } }
                     PlatformTab(
                         selected = index == pagerState.currentPage,
                         onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
@@ -762,7 +772,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                     fontSize = 16F.sp,
                                     lineHeight = 1.1F.em,
                                     maxLines = 1,
-                                    text = stop.name[Shared.language]
+                                    text = stopName[Shared.language]
                                 )
                                 if (distance.isFinite()) {
                                     val painter = PlatformIcons.Filled.NearMe
@@ -968,9 +978,9 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                         indicatorThickness = 4.dp
                                     )
                                 ),
-                            list = favouriteStopIds,
+                            list = favouriteStopsRaw,
                             onSettle = { fromIndex, toIndex ->
-                                val list = favouriteStopIds.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+                                val list = favouriteStopsRaw.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
                                 Registry.getInstance(instance).setFavouriteStops(list, instance)
                             }
                         ) { _, item, isDragging ->

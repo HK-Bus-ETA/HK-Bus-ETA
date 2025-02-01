@@ -22,10 +22,12 @@
 package com.loohp.hkbuseta.common.utils
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -44,4 +46,8 @@ suspend inline fun <T> Deferred<T>.awaitWithTimeout(timeout: Long, defaultValue:
     } catch (e: TimeoutCancellationException) {
         defaultValue.invoke()
     }
+}
+
+inline fun <T, R> Deferred<T>.then(crossinline block: T.() -> R): Deferred<R> {
+    return CoroutineScope(Dispatchers.IO).async { block.invoke(await()) }
 }

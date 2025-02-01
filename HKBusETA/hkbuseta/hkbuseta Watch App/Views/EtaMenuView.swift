@@ -11,6 +11,8 @@ import shared
 struct EtaMenuView: AppScreenView {
 
     @StateObject private var jointOperatedColorFraction = StateFlowObservable(stateFlow: Shared().jointOperatedColorFractionState)
+    
+    @StateObject private var alternateStopNamesShowingState = StateFlowObservable(stateFlow: Shared().alternateStopNamesShowingState, initSubscribe: true)
 
     @StateObject private var favouriteRouteStops = StateFlowListObservable(stateFlow: Shared().favoriteRouteStops)
 
@@ -65,7 +67,14 @@ struct EtaMenuView: AppScreenView {
                 VStack(alignment: .center, spacing: 1.scaled(appContext)) {
                     Spacer().frame(fixedSize: 10.scaled(appContext))
                     VStack(alignment: .center) {
-                        Text(co.isTrain ? stop.name.get(language: Shared().language) : "\(index). \(stop.name.get(language: Shared().language))")
+                        let stopName = {
+                            if route.isKmbCtbJoint && alternateStopNamesShowingState.state.boolValue {
+                                return registry(appContext).findJointAlternateStop(stopId: stopId, routeNumber: route.routeNumber).stop.name
+                            } else {
+                                return stop.name
+                            }
+                        }()
+                        Text(co.isTrain ? stopName.get(language: Shared().language) : "\(index). \(stopName.get(language: Shared().language))")
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)

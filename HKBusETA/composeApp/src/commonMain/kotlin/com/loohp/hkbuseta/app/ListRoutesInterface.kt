@@ -121,6 +121,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.compose
@@ -1071,6 +1072,8 @@ fun RouteRow(
     simpleStyle: Boolean,
     instance: AppActiveContext
 ) {
+    val alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle()
+
     val co = route.co
     val kmbCtbJoint = route.route!!.isKmbCtbJoint
     val routeNumber = route.route!!.routeNumber
@@ -1085,13 +1088,18 @@ fun RouteRow(
             Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).getServiceTimeCategory()
         } == ServiceTimeCategory.NIGHT
     }
-    val secondLine = remember(route, co, kmbCtbJoint, routeNumber, dest, secondLineCoColor, listType, localContentColor) { buildList {
+    val secondLine = remember(route, co, kmbCtbJoint, routeNumber, dest, secondLineCoColor, listType, localContentColor, alternateStopNamesShowing) { buildList {
         if (listType == RouteListType.RECENT) {
             add(instance.formatDateTime((Shared.findLookupRouteTime(route.routeKey)?: 0).toLocalDateTime(), true).asAnnotatedString(SpanStyle(color = localContentColor.adjustAlpha(0.6F))))
         }
         if (route.stopInfo != null) {
             add(buildAnnotatedString {
-                append(route.stopInfo!!.data!!.name[Shared.language])
+                val stopName = if (kmbCtbJoint && alternateStopNamesShowing) {
+                    Registry.getInstance(instance).findJointAlternateStop(route.stopInfo!!.stopId, routeNumber).stop.name
+                } else {
+                    route.stopInfo!!.data!!.name
+                }
+                append(stopName[Shared.language])
                 append("", SpanStyle(fontSize = TextUnit.Small))
                 if (listType == RouteListType.NEARBY) {
                     val distance = (route.stopInfo!!.distance * 1000).roundToInt()

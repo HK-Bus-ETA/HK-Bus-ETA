@@ -74,6 +74,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -122,6 +123,7 @@ import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.appcontext.sendToWatch
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
@@ -155,6 +157,7 @@ import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getMTRStationLayoutUrl
 import com.loohp.hkbuseta.common.objects.getMTRStationStreetMapUrl
+import com.loohp.hkbuseta.common.objects.getOperatorName
 import com.loohp.hkbuseta.common.objects.hasStop
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.indexOfName
@@ -322,7 +325,7 @@ val RouteBranchStatus?.description: BilingualText get() = when (this) {
 
 private val etaUpdateScope: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
 
-fun generateRouteLineData(instance: AppActiveContext, routeNumber: String, co: Operator, isLrtCircular: Boolean, lineColor: Color, stopsList: ImmutableList<Registry.StopData>, selectedBranch: Route): List<Any> {
+private fun generateRouteLineData(instance: AppActiveContext, routeNumber: String, co: Operator, isLrtCircular: Boolean, lineColor: Color, stopsList: ImmutableList<Registry.StopData>, selectedBranch: Route): List<Any> {
     return if (co.isTrain) {
         val mtrStopsInterchange = stopsList.asSequence().map { Registry.getInstance(instance).getMtrStationInterchange(it.stopId, routeNumber) }.toImmutableList()
         createMTRLineSectionData(
@@ -336,6 +339,14 @@ fun generateRouteLineData(instance: AppActiveContext, routeNumber: String, co: O
     } else {
         generateLineTypes(lineColor, stopsList, selectedBranch)
     }
+}
+
+private fun jointStopId(stopId: String, route: Route, context: AppContext): List<Pair<String, Operator?>> {
+    if (!route.isKmbCtbJoint) return listOf(element = stopId to null)
+    return listOf(
+        stopId to Operator.KMB,
+        Registry.getInstance(context).findJointAlternateStops(listOf(element = stopId), route.routeNumber).first().stopId to Operator.CTB
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -405,7 +416,7 @@ fun ListStopsEtaInterface(
     val sheetType by sheetTypeState
 
     val alternateStopNames by remember(listRoute) { derivedStateOf { if (isKmbCtbJoint) {
-        Registry.getInstance(instance).findEquivalentStops(allStops.map { it.stopId }, Operator.CTB).asImmutableList()
+        Registry.getInstance(instance).findJointAlternateStops(allStops.map { it.stopId }, routeNumber).asImmutableList()
     } else {
         null
     }.asImmutableState() } }
@@ -790,6 +801,8 @@ fun ListStopsBottomSheet(
     togglingAlightReminderState: MutableState<Boolean>,
     sheetState: SheetState
 ) {
+    val alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsStateMultiplatform()
+
     val selectedBranch by selectedBranchState
     val selectedStop by selectedStopState
 
@@ -815,6 +828,13 @@ fun ListStopsBottomSheet(
         val haptic = LocalHapticFeedback.current
         val stopData = allStops[selectedStop - 1]
         val favouriteStopAlreadySet by remember { derivedStateOf { favouriteStops.hasStop(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
+        val stopName by remember(stopData, alternateStopNamesShowing) { derivedStateOf {
+            if (stopData.route.isKmbCtbJoint && alternateStopNamesShowing) {
+                Registry.getInstance(instance).findJointAlternateStop(stopData.stopId, stopData.route.routeNumber).stop.name
+            } else {
+                stopData.stop.name
+            }
+        } }
         when (sheetType) {
             BottomSheetType.ACTIONS -> {
                 Scaffold(
@@ -828,9 +848,10 @@ fun ListStopsBottomSheet(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
+
                             PlatformText(
                                 modifier = Modifier.fillMaxWidth(),
-                                text = stopData.stop.name[Shared.language],
+                                text = stopName[Shared.language],
                                 fontSize = 25.sp,
                                 textAlign = TextAlign.Center
                             )
@@ -880,7 +901,7 @@ fun ListStopsBottomSheet(
                                 text = (if (Shared.language == "en") "Find Nearby Interchanges" else "尋找附近轉乘路線").asAnnotatedString()
                             )
                             ActionRow(
-                                onClick = instance.handleOpenMaps(stopData.stop.location.lat, stopData.stop.location.lng, stopData.stop.name[Shared.language], false, haptic.common),
+                                onClick = instance.handleOpenMaps(stopData.stop.location.lat, stopData.stop.location.lng, stopName[Shared.language], false, haptic.common),
                                 icon = PlatformIcons.Outlined.Map,
                                 text = (if (Shared.language == "en") "Open Stop Location on Maps" else "在地圖上顯示巴士站位置").asAnnotatedString()
                             )
@@ -975,32 +996,35 @@ fun ListStopsBottomSheet(
                                     }.asAnnotatedString()
                                 )
                             }
-                            for ((stopId, branches) in stopData.mergedStopIds) {
-                                val subText = if (stopData.mergedStopIds.size <= 1) {
-                                    stopId
-                                } else {
-                                    val branchRemark = branches.asSequence()
-                                        .map { it.resolveSpecialRemark(instance, RemarkType.LABEL_MAIN_BRANCH)[Shared.language] }
-                                        .joinToString(separator = "/")
-                                    "$stopId ($branchRemark)"
+                            for ((originalStopId, branches) in stopData.mergedStopIds) {
+                                for ((stopId, operator) in jointStopId(originalStopId, stopData.route, instance)) {
+                                    val operatorText = if (operator == null) "" else " [${operator.getOperatorName(Shared.language)}]"
+                                    val subText = if (stopData.mergedStopIds.size <= 1) {
+                                        "$stopId$operatorText"
+                                    } else {
+                                        val branchRemark = branches.asSequence()
+                                            .map { it.resolveSpecialRemark(instance, RemarkType.LABEL_MAIN_BRANCH)[Shared.language] }
+                                            .joinToString(separator = "/")
+                                        "$stopId ($branchRemark)$operatorText"
+                                    }
+                                    ActionRow(
+                                        onClick = {
+                                            scope.launch {
+                                                val result = copyToClipboard(stopId)
+                                                sheetState.hide()
+                                                sheetType = BottomSheetType.NONE
+                                                instance.showToastText(if (result) {
+                                                    if (Shared.language == "en") "Copied to clipboard" else "已複製到剪貼簿"
+                                                } else {
+                                                    if (Shared.language == "en") "Failed to copy to clipboard" else "無法複製到剪貼簿"
+                                                }, ToastDuration.SHORT)
+                                            }
+                                        },
+                                        icon = PlatformIcons.Outlined.Code,
+                                        text = (if (Shared.language == "en") "Copy Stop ID" else "複製 Stop ID").asAnnotatedString(),
+                                        subText = subText.asAnnotatedString()
+                                    )
                                 }
-                                ActionRow(
-                                    onClick = {
-                                        scope.launch {
-                                            val result = copyToClipboard(stopId)
-                                            sheetState.hide()
-                                            sheetType = BottomSheetType.NONE
-                                            instance.showToastText(if (result) {
-                                                if (Shared.language == "en") "Copied to clipboard" else "已複製到剪貼簿"
-                                            } else {
-                                                if (Shared.language == "en") "Failed to copy to clipboard" else "無法複製到剪貼簿"
-                                            }, ToastDuration.SHORT)
-                                        }
-                                    },
-                                    icon = PlatformIcons.Outlined.Code,
-                                    text = (if (Shared.language == "en") "Copy Stop ID" else "複製 Stop ID").asAnnotatedString(),
-                                    subText = subText.asAnnotatedString()
-                                )
                             }
                         }
                     }
@@ -1029,7 +1053,7 @@ fun ListStopsBottomSheet(
                         ) {
                             PlatformText(
                                 modifier = Modifier.fillMaxWidth(),
-                                text = "${stopData.stop.name[Shared.language]}${if (Shared.language == "en") " - Nearby Routes" else " - 附近路線"}",
+                                text = "${stopName[Shared.language]}${if (Shared.language == "en") " - Nearby Routes" else " - 附近路線"}",
                                 fontSize = 25.sp,
                                 textAlign = TextAlign.Center
                             )
@@ -2197,11 +2221,19 @@ fun StopEntryExpansionAlightReminder(
 
 @Composable
 fun SetFavouriteInterface(instance: AppActiveContext, co: Operator, stopIndex: Int, stopData: Registry.StopData) {
+    val alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsState()
     val favouriteStops by Shared.favoriteStops.collectAsStateMultiplatform()
     val favouriteRouteStops by Shared.favoriteRouteStops.collectAsStateMultiplatform()
     val favouriteStopAlreadySet by remember(favouriteStops) { derivedStateOf { favouriteStops.hasStop(stopData.stopId) } }
     var addingRouteGroup by remember { mutableStateOf(false) }
     var deletingRouteGroup: BilingualText? by remember { mutableStateOf(null) }
+    val stopName by remember(stopData, alternateStopNamesShowing) { derivedStateOf {
+        if (stopData.route.isKmbCtbJoint && alternateStopNamesShowing) {
+            Registry.getInstance(instance).findJointAlternateStop(stopData.stopId, stopData.route.routeNumber).stop.name
+        } else {
+            stopData.stop.name
+        }
+    } }
     if (addingRouteGroup) {
         TextInputDialog(
             title = "新增分類" withEn "New Group",
@@ -2244,7 +2276,7 @@ fun SetFavouriteInterface(instance: AppActiveContext, co: Operator, stopIndex: I
             ) {
                 PlatformText(
                     modifier = Modifier.fillMaxWidth(),
-                    text = stopData.stop.name[Shared.language],
+                    text = stopName[Shared.language],
                     fontSize = 25.sp,
                     textAlign = TextAlign.Center
                 )
@@ -2274,7 +2306,7 @@ fun SetFavouriteInterface(instance: AppActiveContext, co: Operator, stopIndex: I
                         if (favouriteStopAlreadySet) {
                             Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopData.stopId) }, instance)
                         } else {
-                            Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopData.stopId, stopData.stop)) }, instance)
+                            Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopData.stopId, stopData.stop, stopData.route.routeNumber.takeIf { stopData.route.isKmbCtbJoint })) }, instance)
                         }
                     },
                     icon = PlatformIcons.Outlined.Star,
@@ -2669,10 +2701,18 @@ fun PipModeInterface(
         onDismissRequest = { /* do nothing */ },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        val alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsState()
         var size by remember { mutableStateOf(IntSize(599, 336)) }
         val factor by remember(size) { derivedStateOf { size.height / 336F } }
         val darkMode = Shared.theme.isDarkMode
         val routeNumber = route.routeNumber
+        val stopName by remember(stopData, alternateStopNamesShowing) { derivedStateOf {
+            if (stopData.route.isKmbCtbJoint && alternateStopNamesShowing) {
+                Registry.getInstance(instance).findJointAlternateStop(stopData.stopId, stopData.route.routeNumber).stop.name
+            } else {
+                stopData.stop.name
+            }
+        } }
 
         Column(
             modifier = Modifier
@@ -2735,7 +2775,7 @@ fun PipModeInterface(
                 AutoResizeText(
                     fontSizeRange = FontSizeRange(max = 12.dp.sp * factor),
                     lineHeight = 1.1F.em,
-                    text = "${if (co.isTrain) "" else "${index}. "}${stopData.stop.name[Shared.language]}",
+                    text = "${if (co.isTrain) "" else "${index}. "}${stopName[Shared.language]}",
                     maxLines = 1
                 )
             }

@@ -137,7 +137,9 @@ import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
 import com.loohp.hkbuseta.common.utils.distinctBy
 import com.loohp.hkbuseta.common.utils.doRetry
 import com.loohp.hkbuseta.common.utils.editDistance
+import com.loohp.hkbuseta.common.utils.elementsTo
 import com.loohp.hkbuseta.common.utils.epochSeconds
+import com.loohp.hkbuseta.common.utils.firstNonNull
 import com.loohp.hkbuseta.common.utils.getCircledNumber
 import com.loohp.hkbuseta.common.utils.getCompletedOrNull
 import com.loohp.hkbuseta.common.utils.getJSONResponse
@@ -361,7 +363,7 @@ class Registry {
                     if (closestStop == null || closestStop.distance > 0.3) {
                         null
                     } else {
-                        FavouriteStop(closestStop.stopId, closestStop.stop)
+                        it.copy(stopId = closestStop.stopId, stop = closestStop.stop)
                     }
                 }
             }
@@ -931,7 +933,7 @@ class Registry {
                                 if (closestStop == null || closestStop.distance > 0.3) {
                                     null
                                 } else {
-                                    FavouriteStop(closestStop.stopId, closestStop.stop)
+                                    it.copy(stopId = closestStop.stopId, stop = closestStop.stop)
                                 }
                             }
                         }
@@ -1088,9 +1090,28 @@ class Registry {
             .minByOrNull { it.distance }
     }
 
-    fun findEquivalentStops(stopIds: List<String>, co: Operator): List<NearbyStopSearchResult> {
+    fun findJointAlternateStop(stopId: String, routeNumber: String): NearbyStopSearchResult {
+        return findJointAlternateStops(listOf(element = stopId), routeNumber).first()
+    }
+
+    fun findJointAlternateStops(stopIds: List<String>, routeNumber: String): List<NearbyStopSearchResult> {
+        if (stopIds.isEmpty()) return emptyList()
+        val routeListSequence = DATA!!.dataSheet.routeKeysByRouteNumber.getCompletedOrNull()?.get(routeNumber)?.asSequence()
+            ?.map { DATA!!.dataSheet.routeList[it]!! }
+            ?: DATA!!.dataSheet.routeList.values.asSequence()
+        val routeSpecificStopMap = routeListSequence
+            .filter { it.isKmbCtbJoint && it.routeNumber == routeNumber }
+            .map { it.stops[Operator.KMB] elementsTo it.stops[Operator.CTB] }
+            .flatten()
+            .distinct()
+            .groupBy({ it.first }, { it.second })
         return stopIds.map { stopId ->
-            val id = DATA!!.dataSheet.stopMap[stopId]?.firstOrNull { it.first == co }?.second?: findNearbyStops(DATA!!.dataSheet.stopList[stopId]!!.location, 0.1).firstOrNull { it.stopId.identifyStopCo().contains(co) }?.stopId?: stopId
+            val id = firstNonNull(
+                { routeSpecificStopMap[stopId]?.firstOrNull() },
+                { DATA!!.dataSheet.stopMap[stopId]?.asSequence()?.sortedBy { !routeSpecificStopMap.any { (_, v) -> v.contains(it.second) } }?.firstOrNull { it.first == Operator.CTB }?.second },
+                { findNearbyStops(DATA!!.dataSheet.stopList[stopId]!!.location, 0.1).firstOrNull { it.stopId.identifyStopCo().contains(Operator.CTB) }?.stopId },
+                orElse = { stopId }
+            )
             NearbyStopSearchResult(id, DATA!!.dataSheet.stopList[id]!!, 0.0)
         }
     }
@@ -1195,9 +1216,7 @@ class Registry {
             for ((key, branchStopIndex) in DATA!!.dataSheet.routeKeysByStopId.await()[stopId]?: emptyList()) {
                 val data = DATA!!.dataSheet.routeList[key]!!
                 val co = if (data.isKmbCtbJoint) {
-                    val alternateStopName = Shared.alternateStopNamesShowingState.value
-                    if (alternateStopName && nearbyStopOriginal.co === Operator.KMB) continue
-                    if (!alternateStopName && nearbyStopOriginal.co === Operator.CTB) continue
+                    if (nearbyStopOriginal.co === Operator.CTB) continue
                     Operator.KMB
                 } else {
                     nearbyStopOriginal.co
@@ -1278,7 +1297,7 @@ class Registry {
                     if (k != null) {
                         val routeNumber = k.route!!.routeNumber
                         getOrPut(k.routeKey) {
-                            calculateServiceTimeCategory(routeNumber, k.co) { v!!.createTimetable(serviceMap) { null }.getServiceTimeCategory() }.night
+                            calculateServiceTimeCategory(routeNumber, k.co) { v!!.createTimetable(serviceMap, null) { null }.getServiceTimeCategory() }.night
                         }
                     }
                 }
@@ -1395,7 +1414,7 @@ class Registry {
             try {
                 val branches = getAllBranchRoutes(routeNumber, bound, co, gmbRegion)
                 val stopList = DATA!!.dataSheet.stopList
-                val lists: MutableList<Pair<MutableBranchedList<String, StopData, Route>, Int>> = mutableListOf()
+                val lists: MutableList<BranchData> = mutableListOf()
                 for (route in branches) {
                     val localStops: MutableBranchedList<String, StopData, Route> = MutableBranchedList(route)
                     val stops = route.stops[co]
@@ -1405,7 +1424,7 @@ class Registry {
                         val holidayFare = route.faresHoliday?.getOrNull(index)
                         localStops.add(stopId, StopData(stopId, serviceType, stopList[stopId]!!, route, fare = fare, holidayFare = holidayFare))
                     }
-                    lists.add(localStops to serviceType)
+                    lists.add(BranchData(localStops, route, serviceType, co))
                 }
                 if (lists.isEmpty()) {
                     emptyList()
@@ -1442,9 +1461,9 @@ class Registry {
                         mergedStopIds = emptySet()
                         mergedStopIdBranch = emptyMap()
                     }
-                    lists.sortBy { it.second }
+                    lists.sortWith(naturalOrder())
                     val result: MutableBranchedList<String, StopData, Route> = MutableBranchedList(
-                        branchId = lists.first().first.branchId,
+                        branchId = lists.first().branchedList.branchId,
                         conflictResolve = { a, b ->
                             val aType = a.serviceType
                             val bType = b.serviceType
@@ -1460,7 +1479,7 @@ class Registry {
                             a == b || mergedStopIds.any { it.contains(a) && it.contains(b) }
                         }
                     )
-                    val isMainBranchCircular = lists.firstOrNull()?.first?.branchId?.isCircular?: false
+                    val isMainBranchCircular = lists.firstOrNull()?.branchedList?.branchId?.isCircular?: false
                     for ((first) in lists) {
                         result.merge(first, isMainBranchCircular || !first.branchId.isCircular)
                     }
@@ -1473,6 +1492,21 @@ class Registry {
             } catch (e: Throwable) {
                 throw RuntimeException("Error occurred while getting stops for $routeNumber, $bound, $co, $gmbRegion: ${e.message}", e)
             }
+        }
+    }
+
+    @Immutable
+    data class BranchData(
+        val branchedList: MutableBranchedList<String, StopData, Route>,
+        val route: Route,
+        val serviceType: Int,
+        val co: Operator
+    ): Comparable<BranchData> {
+        companion object {
+            val COMPARATOR = compareBy<BranchData> { it.serviceType }.thenBy { !it.route.isCircular }.thenBy { it.route.stops[it.co]?.size?: 0 }
+        }
+        override fun compareTo(other: BranchData): Int {
+            return COMPARATOR.compare(this, other)
         }
     }
 
