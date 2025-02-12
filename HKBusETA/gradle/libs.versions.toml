@@ -55,7 +55,7 @@ androidx-test-ext-junit = "1.1.5"
 espresso-core = "3.5.1"
 compose-bom = "2024.02.01"
 googleDevToolsKsp = "2.0.21-1.0.25"
-firebase-bom = "33.8.0"
+firebase-bom = "33.9.0"
 zoomimageComposeCoil3 = "1.1.0"
 
 [libraries]

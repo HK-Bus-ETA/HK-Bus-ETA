@@ -430,7 +430,16 @@ fun Collection<TimetableEntry>.getServiceTimeCategory(routeNumber: String, co: O
     if (filtered.isEmpty()) {
         return ServiceTimeCategory.DAY
     }
-    if (filtered.all { it.within(LocalTime(0, 0), LocalTime(6, 0)) }) {
+    if (
+        filtered.all { it.within(LocalTime(0, 0), LocalTime(6, 0)) } &&
+        filtered.any { it.within(LocalTime(0, 1), LocalTime(5, 59)) }
+    ) {
+        return ServiceTimeCategory.NIGHT
+    }
+    if (
+        filtered.all { it.within(LocalTime(22, 0), LocalTime(7, 0)) } &&
+        filtered.any { it.within(LocalTime(1, 1), LocalTime(4, 59)) }
+    ) {
         return ServiceTimeCategory.NIGHT
     }
     if (
