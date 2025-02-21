@@ -109,7 +109,20 @@ struct NearbyView: AppScreenView {
         dispatcherIO {
             if location != nil {
                 let loc = location!.location!
-                let result: Registry.NearbyRoutesResult? = registry(appContext).getNearbyRoutesBlocking(origin: loc, excludedRouteNumbers: Set(exclude.map { $0 }), isInterchangeSearch: interchangeSearch)
+                let excludedRoutes = {
+                    var map: [Operator: Set<String>] = [:]
+                    for entry in exclude {
+                        let parts = entry.components(separatedBy: ",")
+                        let co = Operator.Companion().valueOf(name: parts[0])
+                        let routeNumber = parts[1]
+                        if map[co] == nil {
+                            map[co] = Set()
+                        }
+                        map[co]!.insert(routeNumber)
+                    }
+                    return map
+                }()
+                let result: Registry.NearbyRoutesResult? = registry(appContext).getNearbyRoutesBlocking(origin: loc, excludedRoutes: excludedRoutes, isInterchangeSearch: interchangeSearch)
                 if result == nil {
                     failed = true
                 } else {

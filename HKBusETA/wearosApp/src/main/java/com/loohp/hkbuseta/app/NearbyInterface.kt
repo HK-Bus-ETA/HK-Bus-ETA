@@ -43,6 +43,7 @@ import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.Stop
@@ -56,12 +57,13 @@ import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlin.math.roundToInt
 
 
 @Composable
-fun NearbyPage(location: LocationResult?, exclude: ImmutableSet<String>, interchangeSearch: Boolean, instance: AppActiveContext) {
+fun NearbyPage(location: LocationResult?, exclude: ImmutableMap<Operator, Set<String>>, interchangeSearch: Boolean, instance: AppActiveContext) {
     HKBusETATheme {
         Column(
             modifier = Modifier
@@ -144,7 +146,7 @@ fun NoNearbyText(closestStop: Stop, distance: Double, instance: AppActiveContext
 }
 
 @Composable
-fun MainElement(location: LocationResult?, exclude: ImmutableSet<String>, interchangeSearch: Boolean, instance: AppActiveContext) {
+fun MainElement(location: LocationResult?, exclude: ImmutableMap<Operator, Set<String>>, interchangeSearch: Boolean, instance: AppActiveContext) {
     var state by remember { mutableStateOf(false) }
     var result: Registry.NearbyRoutesResult? by remember { mutableStateOf(null) }
 

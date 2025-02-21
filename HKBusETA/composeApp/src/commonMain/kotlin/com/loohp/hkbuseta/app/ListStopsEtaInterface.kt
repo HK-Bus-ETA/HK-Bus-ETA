@@ -1038,7 +1038,7 @@ fun ListStopsBottomSheet(
                 var routes: ImmutableList<StopIndexedRouteSearchResultEntry>? by remember(origin) { mutableStateOf(null) }
 
                 LaunchedEffect (origin) {
-                    routes = Registry.getInstance(instance).getNearbyRoutes(origin, setOf(listRoute.route!!.routeNumber), true).result.toStopIndexed(instance).asImmutableList()
+                    routes = Registry.getInstance(instance).getNearbyRoutes(origin, mapOf(listRoute.co to setOf(listRoute.route!!.routeNumber)), true).result.toStopIndexed(instance).asImmutableList()
                 }
 
                 Scaffold(

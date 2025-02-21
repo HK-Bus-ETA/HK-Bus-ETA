@@ -26,11 +26,15 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Stable
 import com.loohp.hkbuseta.app.NearbyPage
 import com.loohp.hkbuseta.appcontext.appContext
+import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.common.utils.LocationResult
+import com.loohp.hkbuseta.common.utils.buildImmutableMap
 import com.loohp.hkbuseta.common.utils.ifFalse
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
 
@@ -44,7 +48,7 @@ class NearbyActivity : ComponentActivity() {
         WearOSShared.setDefaultExceptionHandler(this)
 
         var location: LocationResult? = null
-        var exclude: ImmutableSet<String> = persistentSetOf()
+        var exclude: ImmutableMap<Operator, MutableSet<String>> = persistentMapOf()
         var interchangeSearch = false
         if (intent.extras != null) {
             if (intent.extras!!.containsKey("lat") && intent.extras!!.containsKey("lng")) {
@@ -53,7 +57,13 @@ class NearbyActivity : ComponentActivity() {
                 location = LocationResult.of(lat, lng)
             }
             if (intent.extras!!.containsKey("exclude")) {
-                exclude = intent.extras!!.getStringArrayList("exclude")!!.toImmutableSet()
+                val excludeList = intent.extras!!.getStringArrayList("exclude")!!
+                exclude = buildImmutableMap {
+                    for (entry in excludeList) {
+                        val (co, routeNumber) = entry.split(",")
+                        getOrPut(Operator.valueOf(co)) { mutableSetOf() }.add(routeNumber)
+                    }
+                }
             }
             interchangeSearch = intent.extras!!.getBoolean("interchangeSearch", false)
         }

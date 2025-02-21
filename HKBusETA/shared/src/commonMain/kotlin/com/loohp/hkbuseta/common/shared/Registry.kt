@@ -1183,11 +1183,11 @@ class Registry {
         }
     }
 
-    suspend fun getNearbyRoutes(origin: Coordinates, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): NearbyRoutesResult {
-        return getNearbyRoutes(origin, 0.3, excludedRouteNumbers, isInterchangeSearch)
+    suspend fun getNearbyRoutes(origin: Coordinates, excludedRoutes: Map<Operator, Set<String>>, isInterchangeSearch: Boolean): NearbyRoutesResult {
+        return getNearbyRoutes(origin, 0.3, excludedRoutes, isInterchangeSearch)
     }
 
-    suspend fun getNearbyRoutes(origin: Coordinates, radius: Double, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): NearbyRoutesResult {
+    suspend fun getNearbyRoutes(origin: Coordinates, radius: Double, excludedRoutes: Map<Operator, Set<String>>, isInterchangeSearch: Boolean): NearbyRoutesResult {
         val nearbyStops: MutableList<StopInfo> = mutableListOf()
         var closestStop: Stop? = null
         var closestStopId: String? = null
@@ -1222,7 +1222,7 @@ class Registry {
                     nearbyStopOriginal.co
                 }
                 if (!data.co.contains(nearbyStopOriginal.co)) continue
-                if (excludedRouteNumbers.contains(data.routeNumber)) continue
+                if (data.co.any { excludedRoutes[it]?.contains(data.routeNumber) == true }) continue
                 if (data.isCtbIsCircular) continue
                 val routeGroupKey = data.routeGroupKey(co)
                 val allStops = allStopsCache.getOrPut(routeGroupKey) { getAllStops(data.routeNumber, data.idBound(co), co, data.gmbRegion) }

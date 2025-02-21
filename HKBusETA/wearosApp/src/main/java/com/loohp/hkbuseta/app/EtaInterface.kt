@@ -177,7 +177,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
         intent.putExtra("interchangeSearch", true)
         intent.putExtra("lat", stop.location.lat)
         intent.putExtra("lng", stop.location.lng)
-        intent.putExtra("exclude", listOf(element = route.routeNumber))
+        intent.putExtra("exclude", route.co.map { "${it.name},${route.routeNumber}" })
         instance.startActivity(intent) {
             scope.launch {
                 swipe.snapTo(false)

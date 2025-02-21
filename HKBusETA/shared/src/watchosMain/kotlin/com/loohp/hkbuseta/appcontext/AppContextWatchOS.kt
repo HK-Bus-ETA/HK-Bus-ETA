@@ -545,12 +545,12 @@ fun Registry.findRoutesBlocking(input: String, exact: Boolean, coPredicate: (Str
     return runBlocking(Dispatchers.IO) { findRoutes(input, exact, coPredicate) }
 }
 
-fun Registry.getNearbyRoutesBlocking(origin: Coordinates, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): Registry.NearbyRoutesResult {
-    return runBlocking(Dispatchers.IO) { getNearbyRoutes(origin, 0.3, excludedRouteNumbers, isInterchangeSearch) }
+fun Registry.getNearbyRoutesBlocking(origin: Coordinates, excludedRoutes: Map<Operator, Set<String>>, isInterchangeSearch: Boolean): Registry.NearbyRoutesResult {
+    return runBlocking(Dispatchers.IO) { getNearbyRoutes(origin, 0.3, excludedRoutes, isInterchangeSearch) }
 }
 
-fun Registry.getNearbyRoutesBlocking(origin: Coordinates, radius: Double, excludedRouteNumbers: Set<String>, isInterchangeSearch: Boolean): Registry.NearbyRoutesResult {
-    return runBlocking(Dispatchers.IO) { getNearbyRoutes(origin, radius, excludedRouteNumbers, isInterchangeSearch) }
+fun Registry.getNearbyRoutesBlocking(origin: Coordinates, radius: Double, excludedRoutes: Map<Operator, Set<String>>, isInterchangeSearch: Boolean): Registry.NearbyRoutesResult {
+    return runBlocking(Dispatchers.IO) { getNearbyRoutes(origin, radius, excludedRoutes, isInterchangeSearch) }
 }
 
 fun handleSearchInputLaunch(

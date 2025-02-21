@@ -811,7 +811,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                         val stop = data.stop
                         if (isOnPage) {
                             CoroutineScope(Dispatchers.IO).launch {
-                                val nearbyRoutes = Registry.getInstance(instance).getNearbyRoutes(stop.location, emptySet(), false).result.toStopIndexed(instance).asImmutableList()
+                                val nearbyRoutes = Registry.getInstance(instance).getNearbyRoutes(stop.location, emptyMap(), false).result.toStopIndexed(instance).asImmutableList()
                                 withContext(Dispatchers.Main) {
                                     routes[stop] = nearbyRoutes
                                 }

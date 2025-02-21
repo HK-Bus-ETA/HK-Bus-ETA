@@ -302,7 +302,7 @@ struct EtaMenuView: AppScreenView {
                     data["interchangeSearch"] = true
                     data["lat"] = stop.location.lat
                     data["lng"] = stop.location.lng
-                    data["exclude"] = [route.routeNumber]
+                    data["exclude"] = route.co.map { "\($0.name),\(route.routeNumber)" }
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.nearby, data))
                 }
         )
@@ -313,7 +313,7 @@ struct EtaMenuView: AppScreenView {
                     data["interchangeSearch"] = true
                     data["lat"] = stop.location.lat
                     data["lng"] = stop.location.lng
-                    data["exclude"] = [route.routeNumber]
+                    data["exclude"] = route.co.map { "\($0.name),\(route.routeNumber)" }
                     appContext.startActivity(appIntent: newAppIntent(appContext, AppScreen.nearby, data))
                 }
         )

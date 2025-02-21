@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -80,7 +81,10 @@ import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import com.loohp.hkbuseta.common.appcontext.AppIntent
+import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.FavouriteStop
 import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.RecentSortMode
@@ -115,6 +119,7 @@ import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformOutlinedTextField
 import com.loohp.hkbuseta.compose.PlatformSlider
 import com.loohp.hkbuseta.compose.PlatformText
+import com.loohp.hkbuseta.compose.Route
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Search
 import com.loohp.hkbuseta.compose.Star
@@ -248,7 +253,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
         location?.let { loc ->
             CoroutineScope(Dispatchers.IO).launch {
                 if (customCenterPosition == null) {
-                    val result = Registry.getInstance(instance).getNearbyRoutes(loc, emptySet(), false)
+                    val result = Registry.getInstance(instance).getNearbyRoutes(loc, emptyMap(), false)
                     val stopIndexed = result.result.toStopIndexed(instance).asImmutableList()
                     withContext(Dispatchers.Main) {
                         routes = stopIndexed
@@ -261,7 +266,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
     LaunchedEffect (customCenterPosition) {
         CoroutineScope(Dispatchers.IO).launch {
             customCenterPosition?.let {
-                val result = Registry.getInstance(instance).getNearbyRoutes(it, it.radius.toDouble(), emptySet(), false)
+                val result = Registry.getInstance(instance).getNearbyRoutes(it, it.radius.toDouble(), emptyMap(), false)
                 val stopIndexed = result.result.toStopIndexed(instance).asImmutableList()
                 withContext(Dispatchers.Main) {
                     routes = stopIndexed
