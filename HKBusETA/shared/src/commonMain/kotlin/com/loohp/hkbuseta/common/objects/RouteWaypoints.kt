@@ -36,7 +36,20 @@ data class RouteWaypoints(
     val stops: List<Stop>,
     val paths: List<List<Coordinates>> = listOf(element = stops.map { it.location }),
     val isHighRes: Boolean,
-)
+    val firstStopIndexOffset: Int = 0,
+) {
+    fun subRoute(staringStopIndex: Int, endingStopIndex: Int, firstStopIndexOffset: Int): RouteWaypoints {
+        return RouteWaypoints(
+            routeNumber = routeNumber,
+            co = co,
+            isKmbCtbJoint = isKmbCtbJoint,
+            stops = stops.subList(staringStopIndex, endingStopIndex + 1),
+            paths = paths.subList(staringStopIndex, endingStopIndex),
+            isHighRes = isHighRes,
+            firstStopIndexOffset = firstStopIndexOffset
+        )
+    }
+}
 
 fun Route.defaultWaypoints(context: AppContext): RouteWaypoints {
     val operator = co.firstCo()!!

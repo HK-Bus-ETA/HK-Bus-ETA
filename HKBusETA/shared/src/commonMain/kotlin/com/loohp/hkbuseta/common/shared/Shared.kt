@@ -108,6 +108,8 @@ object Shared {
     const val TERMINATE_ALIGHT_REMINDER_ID = "/HKBusETA/TerminateAlightReminder"
     const val INVALIDATE_CACHE_ID = "/HKBusETA/InvalidateCache"
 
+    const val JOURNEY_PLANNER_AVAILABLE = false
+
     val MTR_ROUTE_FILTER: (Route) -> Boolean = { r -> r.bound.containsKey(Operator.MTR) }
     val FERRY_ROUTE_FILTER: (Route) -> Boolean = { r -> r.bound.keys.any { it.isFerry } }
     val RECENT_ROUTE_FILTER: (String, Route, Operator) -> Boolean = { k, _, _ -> lastLookupRoutes.value.any { it.routeKey == k } }

@@ -63,6 +63,8 @@ import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -135,6 +137,24 @@ object ComposeShared {
         } else {
             val fraction by Shared.jointOperatedColorFractionState.collectAsStateMultiplatform()
             remember(primaryColor, secondaryColor) { derivedStateOf { Color(interpolateColor(primaryColor.toArgb().toLong(), secondaryColor.toArgb().toLong(), fraction)) } }
+        }
+    }
+
+    @Composable
+    fun rememberOperatorColors(colors: ImmutableList<Pair<Color, Color?>>): State<ImmutableList<Color>> {
+        return if (!colors.any { it.second != null }) {
+            remember(colors) { mutableStateOf(colors.map { it.first }.toImmutableList()) }
+        } else {
+            val fraction by Shared.jointOperatedColorFractionState.collectAsStateMultiplatform()
+            remember(colors) { derivedStateOf {
+                colors.map { (primaryColor, secondaryColor) ->
+                    if (secondaryColor == null) {
+                        primaryColor
+                    } else {
+                        Color(interpolateColor(primaryColor.toArgb().toLong(), secondaryColor.toArgb().toLong(), fraction))
+                    }
+                }.toImmutableList()
+            } }
         }
     }
 

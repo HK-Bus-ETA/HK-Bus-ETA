@@ -494,18 +494,41 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
             }
         }
         if (actualHeight > 460) {
-            PlatformFloatingActionButton(
+            Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(10.dp)
-                    .plainTooltip(if (Shared.language == "en") "Custom Location" else "自訂位置"),
-                onClick = { choosingCustomCenterPosition = true },
+                    .padding(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                PlatformIcon(
-                    modifier = Modifier.size(27.dp),
-                    painter = if (customCenterPosition == null) PlatformIcons.Outlined.PinDrop else PlatformIcons.Filled.PinDrop,
-                    contentDescription = if (Shared.language == "en") "Custom Location" else "自訂位置"
-                )
+                if (Shared.JOURNEY_PLANNER_AVAILABLE) {
+                    PlatformFloatingActionButton(
+                        modifier = Modifier.plainTooltip(if (Shared.language == "en") "Journey Planner" else "行程規劃"),
+                        onClick = {
+                            val appIntent = AppIntent(instance, AppScreen.JOURNEY_PLANNER)
+                            val origin: Coordinates? = customCenterPosition?: location
+                            if (origin != null) {
+                                appIntent.putExtra("origin", origin)
+                            }
+                            instance.startActivity(appIntent)
+                        },
+                    ) {
+                        PlatformIcon(
+                            modifier = Modifier.size(27.dp),
+                            painter = PlatformIcons.Outlined.Route,
+                            contentDescription = if (Shared.language == "en") "Journey Planner" else "行程規劃"
+                        )
+                    }
+                }
+                PlatformFloatingActionButton(
+                    modifier = Modifier.plainTooltip(if (Shared.language == "en") "Custom Location" else "自訂位置"),
+                    onClick = { choosingCustomCenterPosition = true },
+                ) {
+                    PlatformIcon(
+                        modifier = Modifier.size(27.dp),
+                        painter = if (customCenterPosition == null) PlatformIcons.Outlined.PinDrop else PlatformIcons.Filled.PinDrop,
+                        contentDescription = if (Shared.language == "en") "Custom Location" else "自訂位置"
+                    )
+                }
             }
         }
     }

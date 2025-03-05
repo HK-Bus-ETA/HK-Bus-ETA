@@ -23,7 +23,8 @@ package com.loohp.hkbuseta.app
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableIntState
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.Coordinates
@@ -32,20 +33,49 @@ import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.getCircularPivotIndex
 import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.buildImmutableList
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
+
+@Immutable
+data class MapRouteSection(
+    val waypoints: RouteWaypoints,
+    val stops: List<Registry.StopData>,
+    val alternateStopNames: List<Registry.NearbyStopSearchResult>?
+)
 
 @Composable
-expect fun MapRouteInterface(
+fun MapRouteInterface(
     instance: AppActiveContext,
     waypoints: RouteWaypoints,
     stops: ImmutableList<Registry.StopData>,
     selectedStopState: MutableIntState,
-    selectedBranchState: MutableState<Route>,
     alternateStopNameShowing: Boolean,
     alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
+) {
+    val sections = remember(waypoints, stops, alternateStopNames) {
+        persistentListOf(MapRouteSection(waypoints, stops, alternateStopNames.value))
+    }
+    val selectedSectionState = remember { mutableIntStateOf(0) }
+    MapRouteInterface(
+        instance = instance,
+        sections = sections,
+        selectedStopState = selectedStopState,
+        selectedSectionState = selectedSectionState,
+        alternateStopNameShowing = alternateStopNameShowing
+    )
+}
+
+@Composable
+expect fun MapRouteInterface(
+    instance: AppActiveContext,
+    sections: ImmutableList<MapRouteSection>,
+    selectedStopState: MutableIntState,
+    selectedSectionState: MutableIntState,
+    alternateStopNameShowing: Boolean
 )
 
 @Composable
@@ -60,7 +90,7 @@ expect val isMapOverlayAlwaysOnTop: Boolean
 
 fun RouteWaypoints.buildStopListMapping(context: AppContext, allStops: List<Registry.StopData>): ImmutableList<Int> {
     return buildImmutableList {
-        var waypointStopIndex = 0
+        var waypointStopIndex = firstStopIndexOffset
         for ((index, stopData) in allStops.withIndex()) {
             val waypointStop = stops.getOrNull(waypointStopIndex)?: break
             if (waypointStop == stopData.stop || stopData.mergedStopIds.keys.any { it.asStop(context) == waypointStop }) {

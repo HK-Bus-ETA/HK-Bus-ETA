@@ -14,10 +14,10 @@ class WebMap {
         setTimeout(() => this.reloadTiles(language, darkMode, backgroundColor), 10);
 
         this.layer = L.layerGroup().addTo(this.map);
-        this.polylines = [];
-        this.polylinesOutline = [];
+        this.polylinesList = [];
+        this.polylinesOutlineList = [];
 
-        this.stopMarkers = [];
+        this.stopMarkersList = [];
 
         this.resizeCallback = () => this.map.invalidateSize();
         window.addEventListener("resize", this.resizeCallback);
@@ -119,9 +119,14 @@ class WebMap {
         }).addTo(this.layer);
     }
 
-    updateMarkings(stopsJsArray, stopNamesJsArray, pathsJsArray, colorHex, opacity, outlineHex, outlineOpacity, iconFile, anchorX, anchorY, indexMap, shouldShowStopIndex, selectStopCallback) {
+    clearMarkings() {
         this.layer.clearLayers();
+        this.stopMarkersList = [];
+        this.polylinesList = [];
+        this.polylinesOutlineList = [];
+    }
 
+    addMarkings(stopsJsArray, stopNamesJsArray, pathsJsArray, colorHex, opacity, outlineHex, outlineOpacity, iconFile, anchorX, anchorY, indexMap, shouldShowStopIndex, selectStopCallback) {
         var stopIcon = L.icon({
             iconUrl: iconFile,
             iconSize: [30, 30],
@@ -132,7 +137,7 @@ class WebMap {
         var stopNames = stopNamesJsArray.split('\0');
         var indexMap = indexMap.split(',').map((s) => Number(s));
 
-        this.stopMarkers = stops.map((point, index) => {
+        var stopMarkers = stops.map((point, index) => {
             var clicked = false;
             var title;
             if (shouldShowStopIndex) {
@@ -164,32 +169,38 @@ class WebMap {
 
         var paths = splitLatLngPaths(pathsJsArray);
 
-        this.polylines = [];
+        var polylines = [];
+        var polylinesOutline = [];
+
         paths.forEach(path => {
-            this.polylinesOutline.push(L.polyline(path, { color: outlineHex, opacity: outlineOpacity, weight: 5 }).addTo(this.layer));
+            polylinesOutline.push(L.polyline(path, { color: outlineHex, opacity: outlineOpacity, weight: 5 }).addTo(this.layer));
         });
         paths.forEach(path => {
-            this.polylines.push(L.polyline(path, { color: colorHex, opacity: opacity, weight: 4 }).addTo(this.layer));
+            polylines.push(L.polyline(path, { color: colorHex, opacity: opacity, weight: 4 }).addTo(this.layer));
         });
+
+        this.stopMarkersList.push(stopMarkers);
+        this.polylinesList.push(polylines);
+        this.polylinesOutlineList.push(polylinesOutline);
     }
 
     mapFlyTo(lat, lng) {
         this.map.flyTo([lat.toString(), lng.toString()], 15, { animate: true, duration: 0.5 });
     }
 
-    updateLineColor(colorHex, opacity, outlineHex, outlineOpacity) {
-        if (this.polylines || this.polylinesOutline) {
-            this.polylinesOutline.forEach(polyline => {
+    updateLineColor(sectionIndex, colorHex, opacity, outlineHex, outlineOpacity) {
+        if (this.polylinesList[sectionIndex] || this.polylinesOutlineList[sectionIndex]) {
+            this.polylinesOutlineList[sectionIndex].forEach(polyline => {
                 polyline.setStyle({ color: outlineHex, opacity: outlineOpacity });
             });
-            this.polylines.forEach(polyline => {
+            this.polylinesList[sectionIndex].forEach(polyline => {
                 polyline.setStyle({ color: colorHex, opacity: opacity });
             });
         }
     }
 
-    showMarker(index) {
-        this.stopMarkers[index].openPopup()
+    showMarker(sectionIndex, stopIndex) {
+        this.stopMarkersList[sectionIndex][stopIndex].openPopup()
     }
 }
 

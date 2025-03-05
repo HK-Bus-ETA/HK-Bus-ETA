@@ -148,7 +148,7 @@ inline fun <T> List<T>.differenceSequence(referenceList: List<T>): List<List<T>>
     while (referenceIndex < referenceList.size - 1) {
         index++
         referenceIndex++
-        val item = this[index]
+        val item = this.getOrNull(index)?: break
         var referenceItem = referenceList[referenceIndex]
         if (item != referenceItem) {
             var joinIndex = size

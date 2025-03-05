@@ -912,7 +912,7 @@ fun MapStopsInterface(
                                 }
                             }
                     ) {
-                        MapRouteInterface(instance, waypoints, allStops.asImmutableList(), selectedStopState, selectedBranchState, alternateStopNamesShowing, alternateStopNames)
+                        MapRouteInterface(instance, waypoints, allStops.asImmutableList(), selectedStopState, alternateStopNamesShowing, alternateStopNames)
                         if (screenSize.isNarrow) {
                             PlatformFilledTonalIconToggleButton(
                                 modifier = Modifier

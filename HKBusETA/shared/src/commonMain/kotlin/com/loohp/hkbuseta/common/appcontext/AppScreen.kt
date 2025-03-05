@@ -43,6 +43,7 @@ enum class AppScreen {
     RECENT,
     SETTINGS,
     PDF,
+    JOURNEY_PLANNER,
     DUMMY;
 
     companion object {

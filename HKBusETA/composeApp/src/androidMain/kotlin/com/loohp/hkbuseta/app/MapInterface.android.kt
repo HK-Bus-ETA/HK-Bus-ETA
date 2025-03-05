@@ -33,7 +33,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -41,6 +40,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -74,7 +74,6 @@ import com.loohp.hkbuseta.common.appcontext.AppBundle
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
-import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
@@ -84,6 +83,8 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.DebugPurpose
 import com.loohp.hkbuseta.common.utils.ImmutableState
+import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.ImmediateEffect
@@ -109,6 +110,7 @@ import com.multiplatform.webview.web.WebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -129,18 +131,16 @@ inline fun isHuaweiDevice(): Boolean {
 @Composable
 actual fun MapRouteInterface(
     instance: AppActiveContext,
-    waypoints: RouteWaypoints,
-    stops: ImmutableList<Registry.StopData>,
+    sections: ImmutableList<MapRouteSection>,
     selectedStopState: MutableIntState,
-    selectedBranchState: MutableState<Route>,
-    alternateStopNameShowing: Boolean,
-    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
+    selectedSectionState: MutableIntState,
+    alternateStopNameShowing: Boolean
 ) {
     val hasGooglePlayServices = rememberGooglePlayServicesAvailable(instance)
     if (hasGooglePlayServices) {
-        GoogleMapRouteInterface(instance, waypoints, stops, selectedStopState, alternateStopNameShowing, alternateStopNames)
+        GoogleMapRouteInterface(instance, sections, selectedStopState, selectedSectionState, alternateStopNameShowing)
     } else {
-        DefaultMapRouteInterface(instance, waypoints, stops, selectedStopState, alternateStopNameShowing, alternateStopNames)
+        DefaultMapRouteInterface(instance, sections, selectedStopState, selectedSectionState, alternateStopNameShowing)
     }
 }
 
@@ -148,20 +148,20 @@ actual fun MapRouteInterface(
 @Composable
 fun GoogleMapRouteInterface(
     instance: AppActiveContext,
-    waypoints: RouteWaypoints,
-    stops: ImmutableList<Registry.StopData>,
+    sections: ImmutableList<MapRouteSection>,
     selectedStopState: MutableIntState,
-    alternateStopNameShowing: Boolean,
-    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
+    selectedSectionState: MutableIntState,
+    alternateStopNameShowing: Boolean
 ) {
     val selectedStop by selectedStopState
+    val selectedSection by selectedSectionState
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(stops[selectedStop - 1].stop.location.toGoogleLatLng(), 15F)
+        position = CameraPosition.fromLatLngZoom(sections[selectedSection].stops[selectedStop - 1].stop.location.toGoogleLatLng(), 15F)
     }
-    val icon = remember { Bitmap.createScaledBitmap(BitmapFactory.decodeResource(instance.context.resources, when (waypoints.co) {
-        Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {
-            KMBSubsidiary.KMB -> if (waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_kmb else R.mipmap.bus_kmb
-            KMBSubsidiary.LWB -> if (waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_lwb else R.mipmap.bus_lwb
+    val icons = remember { sections.map { Bitmap.createScaledBitmap(BitmapFactory.decodeResource(instance.context.resources, when (it.waypoints.co) {
+        Operator.KMB -> when (it.waypoints.routeNumber.getKMBSubsidiary()) {
+            KMBSubsidiary.KMB -> if (it.waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_kmb else R.mipmap.bus_kmb
+            KMBSubsidiary.LWB -> if (it.waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_lwb else R.mipmap.bus_lwb
             else -> R.mipmap.bus_kmb
         }
         Operator.CTB -> R.mipmap.bus_ctb
@@ -174,17 +174,17 @@ fun GoogleMapRouteInterface(
         Operator.SUNFERRY -> R.mipmap.bus_nlb
         Operator.FORTUNEFERRY -> R.mipmap.bus_nlb
         else -> R.mipmap.bus_kmb
-    }), 96, 96, false) }
-    val shouldShowStopIndex = remember { !waypoints.co.run { isTrain || isFerry } }
-    val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
+    }), 96, 96, false) } }
+    val shouldShowStopIndex = remember { sections.map { !it.waypoints.co.run { isTrain || isFerry } } }
+    val anchors = remember { sections.map { if (it.waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) } }
     var init by remember { mutableLongStateOf(-1) }
     var hasLocation by remember { mutableStateOf(false) }
     var gpsEnabled by remember { mutableStateOf(false) }
     val backgroundColor = if (Shared.theme.isDarkMode) 0xFF0F0F0F.toInt() else null
 
-    LaunchedEffect (selectedStop, init) {
+    LaunchedEffect (selectedSection, selectedStop, init) {
         if (init >= 0) {
-            val location = stops[selectedStop - 1].stop.location
+            val location = sections[selectedSection].stops[selectedStop - 1].stop.location
             if (currentTimeMillis() - init > 500) {
                 cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(location.toGoogleLatLng(), 15F), 500)
             } else {
@@ -232,20 +232,24 @@ fun GoogleMapRouteInterface(
             mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
             onMapLoaded = { init = currentTimeMillis() }
         ) {
-            StopMarkers(
-                instance = instance,
-                waypoints = waypoints,
-                stops = stops,
-                alternateStopNames = alternateStopNames,
-                alternateStopNameShowing = alternateStopNameShowing,
-                icon = icon,
-                anchor = anchor,
-                selectedStopState = selectedStopState,
-                shouldShowStopIndex = shouldShowStopIndex
-            )
-            WaypointPaths(
-                waypoints = waypoints
-            )
+            for ((index, section) in sections.withIndex()) {
+                StopMarkers(
+                    instance = instance,
+                    waypoints = section.waypoints,
+                    stops = section.stops.asImmutableList(),
+                    alternateStopNames = section.alternateStopNames?.asImmutableList().asImmutableState(),
+                    alternateStopNameShowing = alternateStopNameShowing,
+                    icon = icons[index],
+                    anchor = anchors[index],
+                    selectedStopState = selectedStopState,
+                    selectedSectionState = selectedSectionState,
+                    sectionIndex = index,
+                    shouldShowStopIndex = shouldShowStopIndex[index]
+                )
+                WaypointPaths(
+                    waypoints = section.waypoints
+                )
+            }
         }
     }
 }
@@ -261,17 +265,20 @@ fun StopMarkers(
     icon: Bitmap,
     anchor: Offset,
     selectedStopState: MutableIntState,
+    selectedSectionState: MutableIntState,
+    sectionIndex: Int,
     shouldShowStopIndex: Boolean
 ) {
     key(waypoints, stops) {
         val indexMap = remember { waypoints.buildStopListMapping(instance, stops) }
         var selectedStop by selectedStopState
+        var selectedSection by selectedSectionState
         for ((i, stop) in waypoints.stops.withIndex()) {
             val stopIndex = { indexMap[i] + 1 }.logPossibleStopMarkerIndexMapException(instance, waypoints)?: continue
             val title = (alternateStopNames.value?.takeIf { alternateStopNameShowing }?.getOrNull(stopIndex - 1)?.stop?: stop).name[Shared.language]
             val markerState = rememberStopMarkerState(stop)
-            ChangedEffect (selectedStop) {
-                if (selectedStop == stopIndex) {
+            ChangedEffect (selectedSection, selectedStop) {
+                if (selectedSection == sectionIndex && selectedStop == stopIndex) {
                     markerState.showInfoWindow()
                 }
             }
@@ -281,7 +288,11 @@ fun StopMarkers(
                 snippet = stop.remark?.get(Shared.language),
                 icon = BitmapDescriptorFactory.fromBitmap(icon),
                 anchor = anchor,
-                onClick = { selectedStop = stopIndex; false },
+                onClick = {
+                    selectedSection = sectionIndex
+                    selectedStop = stopIndex
+                    false
+                },
                 zIndex = 3F
             )
         }
@@ -385,96 +396,144 @@ const val baseHtml: String = """
 
 @Composable
 fun rememberLeafletScript(
-    waypoints: RouteWaypoints,
+    sections: ImmutableList<MapRouteSection>,
     alternateStopNameShowing: Boolean,
-    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
-    indexMap: ImmutableList<Int>
+    indexMap: ImmutableList<ImmutableList<Int>>
 ): State<String> {
-    val stopNames by remember(waypoints, alternateStopNameShowing) { derivedStateOf { waypoints.stops.mapIndexed { index, stop -> index to stop }.joinToString(",") { (index, stop) ->
-        val resolvedStop = alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
-        "\"<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "") + "\""
-    } } }
-    val stopsJsArray by remember(waypoints) { derivedStateOf { waypoints.stops.joinToString(",") { "[${it.location.lat}, ${it.location.lng}]" } } }
-    val pathsJsArray by remember(waypoints) { derivedStateOf { waypoints.paths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" } } }
-    val pathColor = remember { waypoints.co.getLineColor(waypoints.routeNumber, Color.Red) }
-    val colorHex = remember { pathColor.toHexString() }
-    val iconFile = remember { when (waypoints.co) {
-        Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {
-            KMBSubsidiary.KMB -> if (waypoints.isKmbCtbJoint) "bus_jointly_kmb.svg" else "bus_kmb.svg"
-            KMBSubsidiary.LWB -> if (waypoints.isKmbCtbJoint) "bus_jointly_lwb.svg" else "bus_lwb.svg"
-            else -> "bus_kmb.svg"
+    val stopNames by remember(sections, alternateStopNameShowing) { derivedStateOf {
+        sections.joinToString(prefix = "[[", separator = "]],[[", postfix = "]]") { s ->
+            s.waypoints.stops.mapIndexed { index, stop -> index to stop }
+                .joinToString(",") { (index, stop) ->
+                    val resolvedStop = s.alternateStopNames?.takeIf { alternateStopNameShowing }
+                        ?.get(index)?.stop ?: stop
+                    "\"<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }
+                        ?: "") + "\""
+                }
         }
-        Operator.CTB -> "bus_ctb.svg"
-        Operator.NLB -> "bus_nlb.svg"
-        Operator.GMB -> "minibus.svg"
-        Operator.MTR_BUS -> "bus_mtr-bus.svg"
-        Operator.LRT -> "mtr.svg"
-        Operator.MTR -> "mtr.svg"
-        Operator.HKKF -> "bus_nlb.svg"
-        Operator.SUNFERRY -> "bus_nlb.svg"
-        Operator.FORTUNEFERRY -> "bus_nlb.svg"
-        else -> "bus_kmb.svg"
     } }
-    val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
-    val clearness = remember { pathColor.closenessTo(Color(0xFFFDE293)) }
-    val (outlineHex, outlineOpacity) = remember { if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F }
-    val shouldShowStopIndex = remember { !waypoints.co.run { isTrain || isFerry } }
+    val stopsJsArray by remember(sections) { derivedStateOf {
+        sections.joinToString(prefix = "[", separator = "],[", postfix = "]") {
+            s -> s.waypoints.stops.joinToString(",") { "[${it.location.lat}, ${it.location.lng}]" }
+        }
+    } }
+    val pathsJsArray by remember(sections) { derivedStateOf {
+        sections.joinToString(prefix = "[", separator = "],[", postfix = "]") { s ->
+            s.waypoints.paths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" }
+        }
+    } }
+    val pathColors = remember { sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) } }
+    val colorHexes = remember {
+        pathColors.joinToString(prefix = "[\"", separator = "\"],[\"", postfix = "\"]") { it.toHexString() }
+    }
+    val iconFiles = remember {
+        sections.joinToString(prefix = "[\"", separator = "\"],[\"", postfix = "\"]") { s ->
+            when (s.waypoints.co) {
+                Operator.KMB -> when (s.waypoints.routeNumber.getKMBSubsidiary()) {
+                    KMBSubsidiary.KMB -> if (s.waypoints.isKmbCtbJoint) "bus_jointly_kmb.svg" else "bus_kmb.svg"
+                    KMBSubsidiary.LWB -> if (s.waypoints.isKmbCtbJoint) "bus_jointly_lwb.svg" else "bus_lwb.svg"
+                    else -> "bus_kmb.svg"
+                }
+                Operator.CTB -> "bus_ctb.svg"
+                Operator.NLB -> "bus_nlb.svg"
+                Operator.GMB -> "minibus.svg"
+                Operator.MTR_BUS -> "bus_mtr-bus.svg"
+                Operator.LRT -> "mtr.svg"
+                Operator.MTR -> "mtr.svg"
+                Operator.HKKF -> "bus_nlb.svg"
+                Operator.SUNFERRY -> "bus_nlb.svg"
+                Operator.FORTUNEFERRY -> "bus_nlb.svg"
+                else -> "bus_kmb.svg"
+            }
+        }
+    }
+    val anchors = remember { sections.asSequence()
+        .map { s -> if (s.waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
+        .map { a -> "[${a.x * 30F}, ${a.y * 30F}]" }
+        .joinToString(prefix = "[", separator = "],[", postfix = "]")
+    }
+    val clearnesses = remember { pathColors.map { it.closenessTo(Color(0xFFFDE293)) } }
+    val outlineHexOpacity = remember { clearnesses.asSequence()
+        .map { if (it > 0.8F) { "[\"${Color.Blue.toHexString()}\", ${((it - 0.8) / 0.05).toFloat()}]" } else "[null, 0]" }
+        .joinToString(prefix = "[", separator = "],[", postfix = "]")
+    }
+    val shouldShowStopIndex = remember(sections) {
+        sections.joinToString(prefix = "[", separator = "],[", postfix = "]") {
+            (!it.waypoints.co.run { isTrain || isFerry }).toString()
+        }
+    }
+    val indexMapStr = remember(indexMap) { indexMap.joinToString(prefix = "[", separator = "],[", postfix = "]") { it.joinToString(prefix = "[", separator = ",", postfix = "]") } }
 
-    return remember(waypoints, stopNames, stopsJsArray, pathsJsArray) { derivedStateOf { """
+    return remember(sections, stopNames, stopsJsArray, pathsJsArray) { derivedStateOf { """
         layer.clearLayers();
         
-        var stopIcon = L.icon({
-            iconUrl: 'file:///android_asset/$iconFile',
-            iconSize: [30, 30],
-            iconAnchor: [${anchor.x * 30F}, ${anchor.y * 30F}]
-        });
+        polylinesList = [];
+        polylinesOutlineList = [];
+        stopMarkersList = [];
 
-        var stops = [$stopsJsArray];
-        var stopNames = [$stopNames];
-        var indexMap = [${indexMap.joinToString(separator = ",")}];
-
-        stopMarkers = stops.map(function(point, index) {
-            var title;
-            if ("$shouldShowStopIndex" == "true") {
-                title = "<div style='text-align: center;'><b>" + (indexMap[index] + 1) + ". </b>" + stopNames[index] + "<div>";
-            } else {
-                title = "<div style='text-align: center;'>" + stopNames[index] + "<div>";
-            }
-            return L.marker(point, {icon: stopIcon})
-                .addTo(layer)
-                .bindPopup(title, { offset: L.point(0, -22), closeButton: false })
-                .on('click', () => window.kmpJsBridge.callNative("SelectStop", index.toString(), null));
-        });
-        
+        var stops = $stopsJsArray;
+        var stopNames = $stopNames;
+        var indexMap = $indexMapStr;
+        var colorHexes = $colorHexes;
+        var iconFiles = $iconFiles;
+        var anchors = $anchors;
+        var outlineHexOpacity = $outlineHexOpacity;
+        var shouldShowStopIndex = $shouldShowStopIndex;
         var paths = [$pathsJsArray];
         
-        polylines = [];
-        polylinesOutline = [];
-        paths.forEach(function(path) {
-            polylinesOutline.push(L.polyline(path, { color: '$outlineHex', opacity: $outlineOpacity, weight: 5 }).addTo(layer));
-        });
-        paths.forEach(function(path) {
-            polylines.push(L.polyline(path, { color: '$colorHex', opacity: 1.0, weight: 4 }).addTo(layer));
-        });
+        for (var i = 0; i < ${sections.size}; i++) {
+            var sectionIndex = i;
+            var stopIcon = L.icon({
+                iconUrl: 'file:///android_asset/' + iconFiles[sectionIndex],
+                iconSize: [30, 30],
+                iconAnchor: anchors[sectionIndex]
+            });
+    
+            var stopMarkers = stops.map(function(point, index) {
+                var title;
+                if (shouldShowStopIndex[sectionIndex]) {
+                    title = "<div style='text-align: center;'><b>" + (indexMap[sectionIndex][index] + 1) + ". </b>" + stopNames[sectionIndex][index] + "<div>";
+                } else {
+                    title = "<div style='text-align: center;'>" + stopNames[sectionIndex][index] + "<div>";
+                }
+                return L.marker(point, {icon: stopIcon})
+                    .addTo(layer)
+                    .bindPopup(title, { offset: L.point(0, -22), closeButton: false })
+                    .on('click', () => window.kmpJsBridge.callNative("SelectStop", sectionIndex + "," + index, null));
+            });
+            
+            var polylines = [];
+            var polylinesOutline = [];
+            paths[sectionIndex].forEach(function(path) {
+                polylinesOutline.push(L.polyline(path, { color: outlineHexOpacity[sectionIndex][0], opacity: outlineHexOpacity[sectionIndex][1], weight: 5 }).addTo(layer));
+            });
+            paths[sectionIndex].forEach(function(path) {
+                polylines.push(L.polyline(path, { color: colorHexes[sectionIndex], opacity: 1.0, weight: 4 }).addTo(layer));
+            });
+            
+            stopMarkersList.push(stopMarkers);
+            polylinesList.push(polylines);
+            polylinesOutlineList.push(polylinesOutline);
+        }
     """.trimIndent() } }
 }
 
 @Composable
 fun DefaultMapRouteInterface(
     instance: AppActiveContext,
-    waypoints: RouteWaypoints,
-    stops: ImmutableList<Registry.StopData>,
+    sections: ImmutableList<MapRouteSection>,
     selectedStopState: MutableIntState,
-    alternateStopNameShowing: Boolean,
-    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
+    selectedSectionState: MutableIntState,
+    alternateStopNameShowing: Boolean
 ) {
+    val scope = rememberCoroutineScope()
     val webViewState = rememberWebViewStateWithHTMLData(baseHtml)
     val webViewNavigator = rememberWebViewNavigator()
     val webViewJsBridge = rememberWebViewJsBridge()
     var selectedStop by selectedStopState
-    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(instance, stops) } }
-    val script by rememberLeafletScript(waypoints, alternateStopNameShowing, alternateStopNames, indexMap)
-    val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
+    var selectedSection by selectedSectionState
+    val indexMap by remember(sections) { derivedStateOf { sections.map { it.waypoints.buildStopListMapping(instance, it.stops) }.asImmutableList() } }
+    val script by rememberLeafletScript(sections, alternateStopNameShowing, indexMap)
+    val pathColors by ComposeShared.rememberOperatorColors(sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) to Operator.CTB.getOperatorColor(Color.Yellow).takeIf { s.waypoints.isKmbCtbJoint } }.asImmutableList())
     val background = platformBackgroundColor
 
     ImmediateEffect (Unit) {
@@ -485,36 +544,45 @@ fun DefaultMapRouteInterface(
             webViewNavigator.evaluateJavaScript(script)
         }
     }
-    LaunchedEffect (pathColor, webViewState.loadingState) {
+    LaunchedEffect (pathColors, webViewState.loadingState) {
         if (webViewState.loadingState == LoadingState.Finished) {
-            val colorHex = pathColor.toHexString()
-            val clearness = pathColor.closenessTo(Color(0xFFFDE293))
-            val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
-            webViewNavigator.evaluateJavaScript("""
-                if (polylines || polylinesOutline) {
-                    polylinesOutline.forEach(function(polyline) {
-                        polyline.setStyle({ color: '$outlineHex', opacity: $outlineOpacity });
-                    });
-                    polylines.forEach(function(polyline) {
-                        polyline.setStyle({ color: '$colorHex', opacity: 1.0 });
-                    });
-                }
-            """.trimIndent())
+            for ((index, pathColor) in pathColors.withIndex()) {
+                val colorHex = pathColor.toHexString()
+                val clearness = pathColor.closenessTo(Color(0xFFFDE293))
+                val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
+                webViewNavigator.evaluateJavaScript("""
+                    if (polylinesList[$index] || polylinesOutlineList[$index]) {
+                        polylinesOutlineList[$index].forEach(function(polyline) {
+                            polyline.setStyle({ color: '$outlineHex', opacity: $outlineOpacity });
+                        });
+                        polylinesList[$index].forEach(function(polyline) {
+                            polyline.setStyle({ color: '$colorHex', opacity: 1.0 });
+                        });
+                    }
+                """.trimIndent())
+            }
         }
     }
-    LaunchedEffect (selectedStop, webViewState.loadingState) {
+    LaunchedEffect (selectedSection, selectedStop, webViewState.loadingState) {
         if (webViewState.loadingState == LoadingState.Finished) {
-            val location = stops[selectedStop - 1].stop.location
+            val location = sections[selectedSection].stops[selectedStop - 1].stop.location
             webViewNavigator.evaluateJavaScript("""
                 map.flyTo([${location.lat},${location.lng}], 15, {animate: true, duration: 0.5});
             """.trimIndent())
         }
     }
     LaunchedEffect (Unit) {
+        webViewJsBridge.clear()
         webViewJsBridge.register(object : IJsMessageHandler {
             override fun methodName(): String = "SelectStop"
             override fun handle(message: JsMessage, navigator: WebViewNavigator?, callback: (String) -> Unit) {
-                message.params.toIntOrNull()?.apply { selectedStop = indexMap[this] + 1 }
+                val (sectionIndex, stopIndex) = message.params.split(",").map { it.toIntOrNull() }
+                if (sectionIndex != null && stopIndex != null) {
+                    scope.launch {
+                        selectedSection = sectionIndex
+                        selectedStop = indexMap[sectionIndex][stopIndex] + 1
+                    }
+                }
             }
         })
     }
@@ -548,11 +616,11 @@ fun DefaultMapRouteInterface(
             """.trimIndent())
         }
     }
-    ChangedEffect (selectedStop) {
-        val index = indexMap.indexOf(selectedStop - 1)
+    ChangedEffect (selectedSection, selectedStop) {
+        val index = indexMap[selectedSection].indexOf(selectedStop - 1)
         if (index >= 0) {
             webViewNavigator.evaluateJavaScript("""
-                stopMarkers[$index].openPopup();
+                stopMarkersList[$selectedSection][$index].openPopup();
             """.trimIndent())
         }
     }

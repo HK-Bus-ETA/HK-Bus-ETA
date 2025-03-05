@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,15 +46,12 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
-import com.loohp.hkbuseta.common.objects.Route
-import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
-import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.Stable
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.LanguageDarkModeChangeEffect
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
@@ -72,26 +68,24 @@ import kotlinx.coroutines.launch
 @Composable
 actual fun MapRouteInterface(
     instance: AppActiveContext,
-    waypoints: RouteWaypoints,
-    stops: ImmutableList<Registry.StopData>,
+    sections: ImmutableList<MapRouteSection>,
     selectedStopState: MutableIntState,
-    selectedBranchState: MutableState<Route>,
-    alternateStopNameShowing: Boolean,
-    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
+    selectedSectionState: MutableIntState,
+    alternateStopNameShowing: Boolean
 ) {
     val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
 
-    val stopNames by remember(waypoints, alternateStopNameShowing, alternateStopNames) { derivedStateOf { waypoints.stops.mapIndexed { index, stop -> index to stop }.joinToString("\u0000") { (index, stop) ->
-        val resolvedStop = alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
+    val stopNames by remember(sections, alternateStopNameShowing) { derivedStateOf { sections.map { s -> s.waypoints.stops.mapIndexed { index, stop -> index to stop }.joinToString("\u0000") { (index, stop) ->
+        val resolvedStop = s.alternateStopNames?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
         "<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "")
-    } } }
-    val stopsJsArray by remember(waypoints) { derivedStateOf { waypoints.stops.joinToString("\u0000") { "${it.location.lat}\u0000${it.location.lng}" } } }
-    val pathsJsArray by remember(waypoints) { derivedStateOf { waypoints.paths.joinToString("\u0000") { path -> path.joinToString(separator = "|") { "${it.lat}|${it.lng}" } } } }
-    val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
-    val iconFile = remember { when (waypoints.co) {
-        Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {
-            KMBSubsidiary.KMB -> if (waypoints.isKmbCtbJoint) "bus_jointly_kmb.svg" else "bus_kmb.svg"
-            KMBSubsidiary.LWB -> if (waypoints.isKmbCtbJoint) "bus_jointly_lwb.svg" else "bus_lwb.svg"
+    } } } }
+    val stopsJsArrays by remember(sections) { derivedStateOf { sections.map { s -> s.waypoints.stops.joinToString("\u0000") { "${it.location.lat}\u0000${it.location.lng}" } } } }
+    val pathsJsArrays by remember(sections) { derivedStateOf { sections.map { s -> s.waypoints.paths.joinToString("\u0000") { path -> path.joinToString(separator = "|") { "${it.lat}|${it.lng}" } } } } }
+    val pathColors by ComposeShared.rememberOperatorColors(sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) to Operator.CTB.getOperatorColor(Color.Yellow).takeIf { s.waypoints.isKmbCtbJoint } }.asImmutableList())
+    val iconFiles = remember { sections.map { s -> when (s.waypoints.co) {
+        Operator.KMB -> when (s.waypoints.routeNumber.getKMBSubsidiary()) {
+            KMBSubsidiary.KMB -> if (s.waypoints.isKmbCtbJoint) "bus_jointly_kmb.svg" else "bus_kmb.svg"
+            KMBSubsidiary.LWB -> if (s.waypoints.isKmbCtbJoint) "bus_jointly_lwb.svg" else "bus_lwb.svg"
             else -> "bus_kmb.svg"
         }
         Operator.CTB -> "bus_ctb.svg"
@@ -104,33 +98,42 @@ actual fun MapRouteInterface(
         Operator.SUNFERRY -> "bus_nlb.svg"
         Operator.FORTUNEFERRY -> "bus_nlb.svg"
         else -> "bus_kmb.svg"
-    } }
-    val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
+    } } }
+    val anchors = remember { sections.map { s -> if (s.waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) } }
     var selectedStop by selectedStopState
-    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(instance, stops) } }
+    var selectedSection by selectedSectionState
+    val indexMap by remember(sections) { derivedStateOf { sections.map { s -> s.waypoints.buildStopListMapping(instance, s.stops) } } }
     val scope = rememberCoroutineScope()
     val backgroundColor = platformBackgroundColor
 
     val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode, backgroundColor.toArgb())
 
-    LaunchedEffect (waypoints, stopNames) {
+    LaunchedEffect (sections, stopNames) {
         webMap.show()
-        val colorHex = pathColor.toHexString()
-        val clearness = pathColor.closenessTo(Color(0xFFFDE293))
-        val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
-        webMap.updateMarkings(stopsJsArray, stopNames, pathsJsArray, colorHex, 1F, outlineHex, outlineOpacity, "assets/$iconFile", anchor.x, anchor.y, indexMap.joinToString(separator = ","), !waypoints.co.run { isTrain || isFerry }) {
-            scope.launch { selectedStop = indexMap[it] + 1 }
+        webMap.clearMarkings()
+        for ((index, section) in sections.withIndex()) {
+            val colorHex = pathColors[index].toHexString()
+            val clearness = pathColors[index].closenessTo(Color(0xFFFDE293))
+            val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
+            webMap.addMarkings(stopsJsArrays[index], stopNames[index], pathsJsArrays[index], colorHex, 1F, outlineHex, outlineOpacity, "assets/${iconFiles[index]}", anchors[index].x, anchors[index].y, indexMap[index].joinToString(separator = ","), !section.waypoints.co.run { isTrain || isFerry }) {
+                scope.launch {
+                    selectedSection = index
+                    selectedStop = indexMap[index][it] + 1
+                }
+            }
         }
     }
-    LaunchedEffect (pathColor) {
-        val colorHex = pathColor.toHexString()
-        val clearness = pathColor.closenessTo(Color(0xFFFDE293))
-        val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
-        webMap.updateLineColor(colorHex, 1F, outlineHex, outlineOpacity)
+    LaunchedEffect (pathColors) {
+        for ((index, pathColor) in pathColors.withIndex()) {
+            val colorHex = pathColor.toHexString()
+            val clearness = pathColor.closenessTo(Color(0xFFFDE293))
+            val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
+            webMap.updateLineColor(index, colorHex, 1F, outlineHex, outlineOpacity)
+        }
     }
-    LaunchedEffect (selectedStop) {
+    LaunchedEffect (selectedSection, selectedStop) {
         webMap.show()
-        val location = stops[selectedStop - 1].stop.location
+        val location = sections[selectedSection].stops[selectedStop - 1].stop.location
         webMap.mapFlyTo(location.lat, location.lng)
     }
     DisposableEffect (Unit) {
@@ -146,10 +149,10 @@ actual fun MapRouteInterface(
     LanguageDarkModeChangeEffect { language, darkMode ->
         webMap.reloadTiles(language, darkMode, backgroundColor.toArgb())
     }
-    ChangedEffect (selectedStop) {
-        val index = indexMap.indexOf(selectedStop - 1)
+    ChangedEffect (selectedSection, selectedStop) {
+        val index = indexMap[selectedSection].indexOf(selectedStop - 1)
         if (index >= 0) {
-            webMap.showMarker(index)
+            webMap.showMarker(selectedSection, index)
         }
     }
 
@@ -247,8 +250,9 @@ external class WebMap(language: String, darkMode: Boolean, backgroundColor: Int)
     fun startSelect(lat: Double, lng: Double, radius: Float, onMoveCallback: (Double, Double, Double) -> Unit)
     fun flyToSelect(lat: Double, lng: Double)
     fun updateSelect(lat: Double, lng: Double, radius: Float)
-    fun updateMarkings(stopsJsArray: String, stopNamesJsArray: String, pathsJsArray: String, colorHex: String, opacity: Float, outlineHex: String?, outlineOpacity: Float, iconFile: String, anchorX: Float, anchorY: Float, indexMap: String, shouldShowStopIndex: Boolean, selectStopCallback: (Int) -> Unit)
-    fun updateLineColor(colorHex: String, opacity: Float, outlineHex: String?, outlineOpacity: Float)
+    fun clearMarkings()
+    fun addMarkings(stopsJsArray: String, stopNamesJsArray: String, pathsJsArray: String, colorHex: String, opacity: Float, outlineHex: String?, outlineOpacity: Float, iconFile: String, anchorX: Float, anchorY: Float, indexMap: String, shouldShowStopIndex: Boolean, selectStopCallback: (Int) -> Unit)
+    fun updateLineColor(sectionIndex: Int, colorHex: String, opacity: Float, outlineHex: String?, outlineOpacity: Float)
     fun mapFlyTo(lat: Double, lng: Double)
-    fun showMarker(index: Int)
+    fun showMarker(sectionIndex: Int, stopIndex: Int)
 }

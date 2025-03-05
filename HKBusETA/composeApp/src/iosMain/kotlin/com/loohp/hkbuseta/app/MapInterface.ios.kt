@@ -32,7 +32,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -55,14 +54,11 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
-import com.loohp.hkbuseta.common.objects.Route
-import com.loohp.hkbuseta.common.objects.RouteWaypoints
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
-import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
-import com.loohp.hkbuseta.common.utils.ImmutableState
+import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.radians
 import com.loohp.hkbuseta.common.utils.withLock
 import com.loohp.hkbuseta.compose.LocationOff
@@ -90,6 +86,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import opensavvy.pedestal.weak.ExperimentalWeakApi
+import opensavvy.pedestal.weak.WeakMap
 import platform.CoreGraphics.CGPoint
 import platform.CoreGraphics.CGPointMake
 import platform.CoreLocation.CLLocationCoordinate2D
@@ -115,40 +113,45 @@ import kotlin.math.cos
 import kotlin.math.log2
 import kotlin.math.sin
 
-@OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class, ExperimentalWeakApi::class)
 @Composable
 actual fun MapRouteInterface(
     instance: AppActiveContext,
-    waypoints: RouteWaypoints,
-    stops: ImmutableList<Registry.StopData>,
+    sections: ImmutableList<MapRouteSection>,
     selectedStopState: MutableIntState,
-    selectedBranchState: MutableState<Route>,
-    alternateStopNameShowing: Boolean,
-    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
+    selectedSectionState: MutableIntState,
+    alternateStopNameShowing: Boolean
 ) {
+    var selectedSection by selectedSectionState
     var selectedStop by selectedStopState
-    val indexMap by remember(waypoints, stops) { derivedStateOf { waypoints.buildStopListMapping(instance, stops) } }
-    val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
-    val iconName = remember { when (waypoints.co) {
-        Operator.KMB -> when (waypoints.routeNumber.getKMBSubsidiary()) {
-            KMBSubsidiary.KMB -> if (waypoints.isKmbCtbJoint) "bus_jointly_kmb" else "bus_kmb"
-            KMBSubsidiary.LWB -> if (waypoints.isKmbCtbJoint) "bus_jointly_lwb" else "bus_lwb"
+    val indexMap by remember(sections) { derivedStateOf { sections.map { s -> s.waypoints.buildStopListMapping(instance, s.stops) } } }
+    val pathColors by ComposeShared.rememberOperatorColors(sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) to Operator.CTB.getOperatorColor(Color.Yellow).takeIf { s.waypoints.isKmbCtbJoint } }.asImmutableList())
+    val iconNames = remember { sections.map { s ->
+        when (s.waypoints.co) {
+            Operator.KMB -> when (s.waypoints.routeNumber.getKMBSubsidiary()) {
+                KMBSubsidiary.KMB -> if (s.waypoints.isKmbCtbJoint) "bus_jointly_kmb" else "bus_kmb"
+                KMBSubsidiary.LWB -> if (s.waypoints.isKmbCtbJoint) "bus_jointly_lwb" else "bus_lwb"
+                else -> "bus_kmb"
+            }
+            Operator.CTB -> "bus_ctb"
+            Operator.NLB -> "bus_nlb"
+            Operator.GMB -> "minibus"
+            Operator.MTR_BUS -> "bus_mtrbus"
+            Operator.LRT -> "mtr_stop"
+            Operator.MTR -> "mtr_stop"
+            Operator.HKKF -> "bus_nlb"
+            Operator.SUNFERRY -> "bus_nlb"
+            Operator.FORTUNEFERRY -> "bus_nlb"
             else -> "bus_kmb"
         }
-        Operator.CTB -> "bus_ctb"
-        Operator.NLB -> "bus_nlb"
-        Operator.GMB -> "minibus"
-        Operator.MTR_BUS -> "bus_mtrbus"
-        Operator.LRT -> "mtr_stop"
-        Operator.MTR -> "mtr_stop"
-        Operator.HKKF -> "bus_nlb"
-        Operator.SUNFERRY -> "bus_nlb"
-        Operator.FORTUNEFERRY -> "bus_nlb"
-        else -> "bus_kmb"
     } }
-    val shouldShowStopIndex = remember { !waypoints.co.run { isTrain || isFerry } }
-    val anchor = remember { if (waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) }
-    val mapDelegate = remember(indexMap) { MapDelegate(iconName, pathColor, anchor) { selectedStop = indexMap[it] + 1 } }
+    val shouldShowStopIndex = remember { sections.map { s -> !s.waypoints.co.run { isTrain || isFerry } } }
+    val anchors = remember { sections.map { s -> if (s.waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) } }
+    val polylineSectionIndexMap = remember { WeakMap<MKPolyline, Int>() }
+    val mapDelegate = remember(indexMap) { MapDelegate(iconNames, pathColors.toMutableList(), anchors, polylineSectionIndexMap) { sectionIndex, stopIndex ->
+        selectedSection = sectionIndex
+        selectedStop = indexMap[sectionIndex][stopIndex] + 1
+    } }
     val map = remember { MKMapView() }
     val lock = remember { Lock() }
 
@@ -161,18 +164,18 @@ actual fun MapRouteInterface(
     var annotations: List<MKAnnotationProtocol> by remember { mutableStateOf(emptyList()) }
     var overlays: List<MKPolyline> by remember { mutableStateOf(emptyList()) }
 
-    LaunchedEffect (selectedStop) {
+    LaunchedEffect (selectedSection, selectedStop) {
         CoroutineScope(Dispatchers.Main).launch {
             delay(200)
             lock.withLock {
                 if (init) {
-                    val location = stops[selectedStop - 1].stop.location
+                    val location = sections[selectedSection].stops[selectedStop - 1].stop.location
                     camera = MKMapCamera()
                     camera.centerCoordinate = location.toAppleCoordinates()
                     camera.altitude = DefaultAltitude
                     map.setCamera(camera, true)
 
-                    val index = indexMap.indexOf(selectedStop - 1)
+                    val index = indexMap[selectedSection].indexOf(selectedStop - 1)
                     if (index >= 0) {
                         map.selectAnnotation(annotations[index], true)
                     }
@@ -189,25 +192,34 @@ actual fun MapRouteInterface(
             }
         }
     }
-    DisposableEffect (waypoints, alternateStopNameShowing, alternateStopNames) {
+    DisposableEffect (sections, alternateStopNameShowing) {
         val allocated = mutableListOf<CPointer<*>>()
         CoroutineScope(Dispatchers.Main).launch {
             lock.withLock {
                 map.removeAnnotations(annotations)
                 map.removeOverlays(overlays)
-                annotations = waypoints.stops.mapIndexed { index, stop ->
-                    val resolvedStop = alternateStopNames.value?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
-                    val title = resolvedStop.name[Shared.language]
-                    MapAnnotation(
-                        title = if (shouldShowStopIndex) "${indexMap[index] + 1}. $title" else title,
-                        subTitle = resolvedStop.remark?.get(Shared.language),
-                        index = index,
-                        location = stop.location
-                    )
+                val annotationList = mutableListOf<MapAnnotation>()
+                val overlaysList = mutableListOf<MKPolyline>()
+                for ((sectionIndex, section) in sections.withIndex()) {
+                    for ((index, stop) in section.waypoints.stops.withIndex()) {
+                        val resolvedStop = section.alternateStopNames?.takeIf { alternateStopNameShowing }?.get(index)?.stop?: stop
+                        val title = resolvedStop.name[Shared.language]
+                        annotationList.add(MapAnnotation(
+                            title = if (shouldShowStopIndex[sectionIndex]) "${indexMap[sectionIndex][index] + 1}. $title" else title,
+                            subTitle = resolvedStop.remark?.get(Shared.language),
+                            sectionIndex = sectionIndex,
+                            index = index,
+                            location = stop.location
+                        ))
+                    }
+                    for (path in section.waypoints.paths) {
+                        val line = MKPolyline.polylineWithCoordinates(path.toAppleCoordinates(nativeHeap).apply { allocated.add(this) }, path.size.convert())
+                        polylineSectionIndexMap[line] = sectionIndex
+                        overlaysList.add(line)
+                    }
                 }
-                overlays = waypoints.paths.map { path ->
-                    MKPolyline.polylineWithCoordinates(path.toAppleCoordinates(nativeHeap).apply { allocated.add(this) }, path.size.convert())
-                }
+                annotations = annotationList
+                overlays = overlaysList
                 map.addAnnotations(annotations)
                 map.addOverlays(overlays, MKOverlayLevelAboveRoads)
             }
@@ -223,17 +235,19 @@ actual fun MapRouteInterface(
             }
         }
     }
-    LaunchedEffect (pathColor) {
+    LaunchedEffect (pathColors) {
         CoroutineScope(Dispatchers.Main).launch {
             lock.withLock {
-                mapDelegate.update(color = pathColor)
+                for ((index, pathColor) in pathColors.withIndex()) {
+                    mapDelegate.update(index, pathColor)
+                }
             }
         }
     }
     LaunchedEffect (Unit) {
         CoroutineScope(Dispatchers.Main).launch {
             lock.withLock {
-                val location = stops[selectedStop - 1].stop.location
+                val location = sections[selectedSection].stops[selectedStop - 1].stop.location
                 camera.centerCoordinate = location.toAppleCoordinates()
                 camera.altitude = DefaultAltitude
                 map.setCamera(camera, false)
@@ -277,9 +291,7 @@ actual fun MapRouteInterface(
     }
 }
 
-@OptIn(ExperimentalForeignApi::class, ExperimentalMaterial3Api::class,
-    ExperimentalComposeUiApi::class
-)
+@OptIn(ExperimentalForeignApi::class, ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 actual fun MapSelectInterface(
     instance: AppActiveContext,
@@ -389,17 +401,18 @@ inline fun Offset.asAppleMapOffset(image: UIImage): CValue<CGPoint> {
 
 @OptIn(ExperimentalForeignApi::class)
 class MapDelegate(
-    private val iconName: String,
-    private var color: Color,
-    private val anchor: Offset,
-    private val callback: (Int) -> Unit,
+    private val iconName: List<String>,
+    private val color: MutableList<Color>,
+    private val anchor: List<Offset>,
+    private val polylineSectionIndexMap: WeakMap<MKPolyline, Int>,
+    private val callback: (Int, Int) -> Unit,
 ): NSObject(), MKMapViewDelegateProtocol {
 
-    private val polylineRenderers = mutableSetOf<MKPolylineRenderer>()
+    private val polylineRenderers = List(iconName.size) { mutableSetOf<MKPolylineRenderer>() }
 
-    fun update(color: Color = this.color) {
-        this.color = color
-        for (renderer in polylineRenderers) {
+    fun update(sectionIndex: Int, color: Color = this.color[sectionIndex]) {
+        this.color[sectionIndex] = color
+        for (renderer in polylineRenderers[sectionIndex]) {
             renderer.strokeColor = color.toUIColor()
             renderer.lineWidth = 5.0
             renderer.setNeedsDisplay()
@@ -409,6 +422,7 @@ class MapDelegate(
     override fun mapView(mapView: MKMapView, viewForAnnotation: MKAnnotationProtocol): MKAnnotationView? {
         if (viewForAnnotation is MapAnnotation) {
             val identifier = "StopMarker"
+            val sectionIndex = viewForAnnotation.sectionIndex()
             val annotationView: MKAnnotationView
             val dequeuedAnnotationView = mapView.dequeueReusableAnnotationViewWithIdentifier(identifier)
             if (dequeuedAnnotationView == null) {
@@ -418,9 +432,9 @@ class MapDelegate(
                 annotationView.annotation = viewForAnnotation
             }
             annotationView.canShowCallout = true
-            UIImage.imageNamed(iconName)?.resize(36.0)?.apply {
+            UIImage.imageNamed(iconName[sectionIndex])?.resize(36.0)?.apply {
                 annotationView.image = this
-                annotationView.centerOffset = anchor.asAppleMapOffset(this)
+                annotationView.centerOffset = anchor[sectionIndex].asAppleMapOffset(this)
             }
             return annotationView
         }
@@ -429,18 +443,21 @@ class MapDelegate(
 
     override fun mapView(mapView: MKMapView, didSelectAnnotationView: MKAnnotationView) {
         val annotation = (didSelectAnnotationView.annotation as? MapAnnotation)?: return
-        callback.invoke(annotation.index())
+        callback.invoke(annotation.sectionIndex(), annotation.index())
     }
 
     override fun mapView(mapView: MKMapView, rendererForOverlay: MKOverlayProtocol): MKOverlayRenderer {
         val polyline = rendererForOverlay as? MKPolyline
         if (polyline != null) {
-            val renderer = MKPolylineRenderer(polyline)
-            renderer.strokeColor = color.toUIColor()
-            renderer.lineWidth = 5.0
-            renderer.setNeedsDisplay()
-            polylineRenderers.add(renderer)
-            return renderer
+            val sectionIndex = polylineSectionIndexMap[polyline]
+            if (sectionIndex != null) {
+                val renderer = MKPolylineRenderer(polyline)
+                renderer.strokeColor = color[sectionIndex].toUIColor()
+                renderer.lineWidth = 5.0
+                renderer.setNeedsDisplay()
+                polylineRenderers[sectionIndex].add(renderer)
+                return renderer
+            }
         }
         return MKOverlayRenderer(rendererForOverlay)
     }
@@ -451,6 +468,7 @@ class MapDelegate(
 class MapAnnotation(
     title: String? = null,
     subTitle: String? = null,
+    private val sectionIndex: Int,
     private val index: Int,
     private val location: Coordinates
 ): NSObject(), MKAnnotationProtocol {
@@ -458,6 +476,10 @@ class MapAnnotation(
     private val titleInternal = title
     private val subTitleInternal = subTitle
     private val appleCoordinates = location.toAppleCoordinates()
+
+    fun sectionIndex(): Int {
+        return sectionIndex
+    }
 
     fun index(): Int {
         return index

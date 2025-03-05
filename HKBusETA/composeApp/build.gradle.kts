@@ -147,6 +147,7 @@ kotlin {
             implementation(projects.shared)
             implementation(libs.cupertino)
             implementation(libs.cupertino.native)
+            implementation(libs.weak)
             api(libs.compose.multiplatform.lifecycle.tracker)
         }
         desktopMain.dependencies {
@@ -188,8 +189,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1046
-        versionName = "2.4.19"
+        versionCode = 1048
+        versionName = "2.4.20"
     }
     packaging {
         resources {
@@ -222,7 +223,7 @@ compose.desktop {
             modules("java.net.http")
 
             packageName = "HK Bus ETA"
-            packageVersion = "2.4.19"
+            packageVersion = "2.4.20"
             vendor = "HK Bus ETA"
 
             macOS {
