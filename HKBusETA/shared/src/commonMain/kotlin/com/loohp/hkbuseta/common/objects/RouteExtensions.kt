@@ -819,20 +819,24 @@ fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext)
             true
         } else {
             val allStops = cachedAllStops?: Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
-            val branches = allStops[stopInfoIndex - 1].branchIds
-            val branchStops = branches.associateWith { b ->
-                allStops.mapIndexedNotNull { i, e -> if (e.branchIds.contains(b)) ((i + 1) to e) else null }
-            }
-            branchStops.values.all {
-                when {
-                    it.last().first == stopInfoIndex -> true
-                    co === Operator.KMB && !route!!.isCircular -> {
-                        val stopIndex = it.indexOfFirst { (i) -> i == stopInfoIndex }
-                        val stopName = it.getOrNull(stopIndex)?.second?.stop?.name?.zh?.remove(bracketsRemovalRegex)
-                        val nextStopName = it.getOrNull(stopIndex + 1)?.second?.stop?.name?.zh?.remove(bracketsRemovalRegex)
-                        stopName nonNullEquals nextStopName
+            val branches = allStops.getOrNull(stopInfoIndex - 1)?.branchIds
+            if (branches == null) {
+                false
+            } else {
+                val branchStops = branches.associateWith { b ->
+                    allStops.mapIndexedNotNull { i, e -> if (e.branchIds.contains(b)) ((i + 1) to e) else null }
+                }
+                branchStops.values.all {
+                    when {
+                        it.last().first == stopInfoIndex -> true
+                        co === Operator.KMB && !route!!.isCircular -> {
+                            val stopIndex = it.indexOfFirst { (i) -> i == stopInfoIndex }
+                            val stopName = it.getOrNull(stopIndex)?.second?.stop?.name?.zh?.remove(bracketsRemovalRegex)
+                            val nextStopName = it.getOrNull(stopIndex + 1)?.second?.stop?.name?.zh?.remove(bracketsRemovalRegex)
+                            stopName nonNullEquals nextStopName
+                        }
+                        else -> false
                     }
-                    else -> false
                 }
             }
         }
