@@ -992,6 +992,10 @@ def add_route_remarks():
             "zh": "過海旅遊路線",
             "en": "Cross Harbour Bus Tour"
         },
+        "H1S": {
+            "zh": "過海旅遊路線",
+            "en": "Cross Harbour Bus Tour"
+        },
         "H2": {
             "zh": "過海旅遊路線",
             "en": "Cross Harbour Bus Tour"
