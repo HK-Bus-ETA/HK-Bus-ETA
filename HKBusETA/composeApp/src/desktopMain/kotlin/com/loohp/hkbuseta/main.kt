@@ -1,13 +1,13 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2024. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2024. Contributors
+ * Copyright (C) 2025. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2025. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.a
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,7 +16,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 package com.loohp.hkbuseta
@@ -43,7 +42,7 @@ fun main() = application {
     DesktopShared.setSystemFormatProviders()
     DesktopShared.setDefaultExceptionHandler()
     DesktopShared.startupJavaFX()
-    setVersionImpl { Triple("HKBusETA", "2.4.21", 41) }
+    setVersionImpl { Triple("HKBusETA", "2.4.22", 41) }
     Window(
         onCloseRequest = ::exitApplication,
         title = if (Shared.language == "en") "HK Bus ETA" else "香港巴士到站預報",

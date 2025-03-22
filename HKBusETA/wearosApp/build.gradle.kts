@@ -1,8 +1,8 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2023. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2023. Contributors
+ * Copyright (C) 2025. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2025. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,8 +34,8 @@ android {
         minSdk = 30
         //noinspection OldTargetApi
         targetSdk = 33
-        versionCode = 1051
-        versionName = "2.4.21"
+        versionCode = 1053
+        versionName = "2.4.22"
         vectorDrawables {
             useSupportLibrary = true
         }

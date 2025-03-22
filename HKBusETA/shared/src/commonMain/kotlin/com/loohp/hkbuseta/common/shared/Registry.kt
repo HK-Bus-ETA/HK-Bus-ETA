@@ -1,13 +1,13 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2023. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2023. Contributors
+ * Copyright (C) 2025. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2025. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.a
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,7 +16,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
  */
 package com.loohp.hkbuseta.common.shared
 
@@ -50,7 +49,6 @@ import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.FavouriteStop
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
-import com.loohp.hkbuseta.common.objects.MTRStatus
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
@@ -73,6 +71,9 @@ import com.loohp.hkbuseta.common.objects.Theme
 import com.loohp.hkbuseta.common.objects.TrafficNews
 import com.loohp.hkbuseta.common.objects.TrafficSnapshotPoint
 import com.loohp.hkbuseta.common.objects.TrainServiceStatus
+import com.loohp.hkbuseta.common.objects.TrainServiceStatusMessage
+import com.loohp.hkbuseta.common.objects.TrainServiceStatusMessageStatus
+import com.loohp.hkbuseta.common.objects.TrainServiceStatusType
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.calculateServiceTimeCategory
 import com.loohp.hkbuseta.common.objects.defaultOperatorNotices
@@ -1875,31 +1876,44 @@ class Registry {
         return CoroutineScope(Dispatchers.IO).async {
             val map = mutableMapOf<String, TrainServiceStatus>()
             try {
-                val data = getXMLResponse<MTRStatus>("https://tnews.mtr.com.hk/alert/ryg_line_status.xml?_=$now")!!
+                val data = getJSONResponse<JsonObject>("https://tnews.mtr.com.hk/alert/ryg_line_status.json?_=$now")!!.optJsonObject("ryg_status")!!
                 val typhoon = typhoonInfo.value.isAboveTyphoonSignalNine
-                for (line in data.lines) {
-                    map[line.line] = when (line.status) {
-                        "green" -> TrainServiceStatus.NORMAL
-                        "grey" -> TrainServiceStatus.NON_SERVICE_HOUR
-                        "typhoon" -> TrainServiceStatus.TYPHOON
-                        else -> if (typhoon) TrainServiceStatus.TYPHOON else TrainServiceStatus.DISRUPTION
+                for (jsonElement in data.optJsonArray("line")!!) {
+                    val line = jsonElement.jsonObject
+                    val lineCode = line.optString("line_code")
+                    val status = line.optString("status")
+                    val statusType = when (status) {
+                        "green" -> TrainServiceStatusType.NORMAL
+                        "grey" -> TrainServiceStatusType.NON_SERVICE_HOUR
+                        "typhoon" -> TrainServiceStatusType.TYPHOON
+                        else -> if (typhoon) TrainServiceStatusType.TYPHOON else TrainServiceStatusType.DISRUPTION
                     }
+                    val statusMessage = if (line.containsKeyAndNotNull("messages")) {
+                        val messages = line["messages"]
+                        if (messages is JsonObject && messages.containsKeyAndNotNull("message")) {
+                            val messageJson = messages.optJsonObject("message")!!
+                            val messageTitle = messageJson.optString("title_tc").trim { it.isWhitespace() || it == '\t' } withEn messageJson.optString("title_en").trim { it.isWhitespace() || it == '\t' }
+                            val messageStatus = if (messageJson.optString("status").equals("red", ignoreCase = true)) TrainServiceStatusMessageStatus.RED else TrainServiceStatusMessageStatus.NORMAL
+                            val messageUrl = messageJson.optString("url_tc") withEn messageJson.optString("url_en")
+                            val messageUrlMobile = messageJson.optString("url_tc_m") withEn messageJson.optString("url_en_m")
+                            TrainServiceStatusMessage(
+                                title = messageTitle,
+                                status = messageStatus,
+                                url = messageUrl,
+                                urlMobile = messageUrlMobile
+                            )
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                    map[lineCode] = TrainServiceStatus(
+                        type = statusType,
+                        messages = statusMessage
+                    )
                 }
                 map
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                null
-            }
-        }.await()
-    }
-
-    suspend fun getLrtLineRedAlert(): Pair<String, String?>? {
-        return CoroutineScope(Dispatchers.IO).async {
-            try {
-                val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
-                data.optString("red_alert_message_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.let {
-                    it to data.optString("red_alert_url_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }
-                }
             } catch (e: Throwable) {
                 e.printStackTrace()
                 null

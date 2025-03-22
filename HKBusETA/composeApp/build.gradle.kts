@@ -1,13 +1,13 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2023. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2023. Contributors
+ * Copyright (C) 2025. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2025. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.a
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,7 +16,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
@@ -189,8 +188,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1050
-        versionName = "2.4.21"
+        versionCode = 1052
+        versionName = "2.4.22"
     }
     packaging {
         resources {
@@ -223,7 +222,7 @@ compose.desktop {
             modules("java.net.http")
 
             packageName = "HK Bus ETA"
-            packageVersion = "2.4.21"
+            packageVersion = "2.4.22"
             vendor = "HK Bus ETA"
 
             macOS {

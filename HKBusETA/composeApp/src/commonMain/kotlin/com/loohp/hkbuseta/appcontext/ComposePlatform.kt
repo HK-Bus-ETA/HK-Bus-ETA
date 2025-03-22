@@ -1,13 +1,13 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2024. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2024. Contributors
+ * Copyright (C) 2025. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2025. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.a
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,7 +16,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 package com.loohp.hkbuseta.appcontext
@@ -42,7 +41,8 @@ sealed class ComposePlatform(
     val appleEnvironment: Boolean,
     val isMobileAppRunningOnDesktop: Boolean,
     val hasLargeScreen: Boolean,
-    val browserEnvironment: Boolean
+    val browserEnvironment: Boolean,
+    val isMobile: Boolean
 ) {
     @Immutable
     class AndroidPlatform(tablet: Boolean): ComposePlatform(
@@ -58,7 +58,8 @@ sealed class ComposePlatform(
         appleEnvironment = false,
         isMobileAppRunningOnDesktop = false,
         hasLargeScreen = tablet,
-        browserEnvironment = false
+        browserEnvironment = false,
+        isMobile = true
     )
     @Immutable
     class IOSPlatform(ipad: Boolean): ComposePlatform(
@@ -74,7 +75,8 @@ sealed class ComposePlatform(
         appleEnvironment = true,
         isMobileAppRunningOnDesktop = false,
         hasLargeScreen = ipad,
-        browserEnvironment = false
+        browserEnvironment = false,
+        isMobile = true
     )
     @Immutable
     data object MacAppleSiliconPlatform: ComposePlatform(
@@ -90,7 +92,8 @@ sealed class ComposePlatform(
         appleEnvironment = true,
         isMobileAppRunningOnDesktop = true,
         hasLargeScreen = true,
-        browserEnvironment = false
+        browserEnvironment = false,
+        isMobile = false
     )
     @Immutable
     class DesktopPlatform(isApple: Boolean): ComposePlatform(
@@ -106,7 +109,8 @@ sealed class ComposePlatform(
         appleEnvironment = isApple,
         isMobileAppRunningOnDesktop = false,
         hasLargeScreen = true,
-        browserEnvironment = false
+        browserEnvironment = false,
+        isMobile = false
     )
     @Immutable
     class WebDesktopPlatform(isApple: Boolean): ComposePlatform(
@@ -122,7 +126,8 @@ sealed class ComposePlatform(
         appleEnvironment = isApple,
         isMobileAppRunningOnDesktop = true,
         hasLargeScreen = true,
-        browserEnvironment = true
+        browserEnvironment = true,
+        isMobile = false
     )
     @Immutable
     class WebMobilePlatform(isApple: Boolean): ComposePlatform(
@@ -138,7 +143,8 @@ sealed class ComposePlatform(
         appleEnvironment = isApple,
         isMobileAppRunningOnDesktop = false,
         hasLargeScreen = false,
-        browserEnvironment = true
+        browserEnvironment = true,
+        isMobile = true
     )
 }
 

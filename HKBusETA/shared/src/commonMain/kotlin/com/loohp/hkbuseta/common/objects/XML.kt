@@ -1,13 +1,13 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2024. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2024. Contributors
+ * Copyright (C) 2025. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2025. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.a
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,7 +16,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 package com.loohp.hkbuseta.common.objects
@@ -25,20 +24,6 @@ import kotlinx.serialization.Serializable
 import nl.adaptivity.xmlutil.serialization.XmlElement
 import nl.adaptivity.xmlutil.serialization.XmlSerialName
 
-@Serializable
-data class MTRStatus(
-    @XmlSerialName("lastBuildDate", prefix = "ryg_status") @XmlElement val lastBuildDate: String,
-    @XmlSerialName("refreshInterval", prefix = "ryg_status") @XmlElement val refreshInterval: String,
-    @XmlSerialName("line", prefix = "ryg_status") val lines: List<MTRLineStatus>,
-)
-
-@Serializable
-data class MTRLineStatus(
-    @XmlSerialName("line_code") @XmlElement val line: String,
-    @XmlSerialName("url_tc") @XmlElement val urlZh: String,
-    @XmlSerialName("url_en") @XmlElement val urlEn: String,
-    @XmlSerialName("status") @XmlElement val status: String
-)
 
 @Serializable
 data class TrafficNews(

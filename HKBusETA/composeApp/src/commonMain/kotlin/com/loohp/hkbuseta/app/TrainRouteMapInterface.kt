@@ -1,13 +1,13 @@
 /*
  * This file is part of HKBusETA.
  *
- * Copyright (C) 2024. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2024. Contributors
+ * Copyright (C) 2025. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2025. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.a
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,19 +16,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 package com.loohp.hkbuseta.app
 
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateValue
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -148,6 +150,8 @@ import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.TicketCategory
 import com.loohp.hkbuseta.common.objects.TrainServiceStatus
+import com.loohp.hkbuseta.common.objects.TrainServiceStatusMessageStatus
+import com.loohp.hkbuseta.common.objects.TrainServiceStatusType
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.compareRouteNumber
 import com.loohp.hkbuseta.common.objects.findFare
@@ -163,7 +167,9 @@ import com.loohp.hkbuseta.common.objects.getMTRBarrierFreeCategories
 import com.loohp.hkbuseta.common.objects.getMTRStationBarrierFree
 import com.loohp.hkbuseta.common.objects.getMTRStationLayoutUrl
 import com.loohp.hkbuseta.common.objects.getMTRStationStreetMapUrl
+import com.loohp.hkbuseta.common.objects.getMtrLineName
 import com.loohp.hkbuseta.common.objects.getMtrLineSortingIndex
+import com.loohp.hkbuseta.common.objects.getOperatorName
 import com.loohp.hkbuseta.common.objects.getRedirectToMTRJourneyPlannerUrl
 import com.loohp.hkbuseta.common.objects.getStationBarrierFreeDetails
 import com.loohp.hkbuseta.common.objects.hasStop
@@ -257,6 +263,7 @@ import com.loohp.hkbuseta.utils.unrestrictedBitmapSize
 import com.loohp.hkbuseta.utils.withAlpha
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -426,7 +433,8 @@ fun RouteMapSearchInterface(
     var mtrLineServiceDisruption by mtrLineServiceDisruptionState.collectAsStateMultiplatform()
     var mtrLineServiceDisruptionAvailable by mtrLineServiceDisruptionAvailableState.collectAsStateMultiplatform()
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
-    var lrtRedAlert: Pair<String, String?>? by remember { mutableStateOf(null) }
+
+    val mtrLineServiceMessages by remember { derivedStateOf { mtrLineServiceDisruption.asSequence().filter { (_, v) -> v.messages != null }.toImmutableList() } }
 
     val appAlert by ComposeShared.rememberAppAlert(instance)
 
@@ -442,12 +450,6 @@ fun RouteMapSearchInterface(
                 mtrLineServiceDisruptionAvailable = true
                 mtrLineServiceDisruption = result
             }
-            delay(180000)
-        }
-    }
-    LaunchedEffect (Unit) {
-        while (true) {
-            lrtRedAlert = Registry.getInstance(instance).getLrtLineRedAlert()
             delay(180000)
         }
     }
@@ -490,7 +492,7 @@ fun RouteMapSearchInterface(
         }
         AnimatedVisibility(
             modifier = Modifier.zIndex(1F),
-            visible = lrtRedAlert != null,
+            visible = mtrLineServiceMessages.isNotEmpty(),
             enter = slideInVertically(
                 initialOffsetY = { -it },
                 animationSpec = tween(durationMillis = 300)
@@ -506,21 +508,48 @@ fun RouteMapSearchInterface(
                 animationSpec = tween(durationMillis = 300)
             )
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .applyIfNotNull(lrtRedAlert?.second) { clickable(
-                        onClick = instance.handleWebpages(it, false, haptics.common),
-                        role = Role.Button
-                    ) }
-                    .background(Color(0xFFEB4034))
-                    .padding(10.dp)
+            val infiniteTransition = rememberInfiniteTransition(label = "MessageCrossfade")
+            val animatedCurrentLine by infiniteTransition.animateValue(
+                initialValue = 0,
+                targetValue = mtrLineServiceMessages.size,
+                typeConverter = Int.VectorConverter,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(5500 * mtrLineServiceMessages.size, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "SecondLineCrossFade"
+            )
+            Crossfade(
+                modifier = Modifier.animateContentSize(),
+                targetState = animatedCurrentLine,
+                animationSpec = tween(durationMillis = 500, easing = LinearEasing),
+                label = "SecondLineCrossFade"
             ) {
-                PlatformText(
-                    fontSize = 16.sp,
-                    color = Color.White,
-                    text = lrtRedAlert?.first?: ""
-                )
+                val (line, status) = mtrLineServiceMessages[it.coerceIn(mtrLineServiceMessages.indices)]
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .applyIfNotNull(status.messages?.url(composePlatform.isMobile)?.get(Shared.language)) { url -> clickable(
+                            onClick = instance.handleWebpages(url, false, haptics.common),
+                            role = Role.Button
+                        ) }
+                        .background(if (status.messages?.status == TrainServiceStatusMessageStatus.RED) {
+                            Color(0xFFEB4034)
+                        } else {
+                            if (line == "LR") Operator.LRT.getOperatorColor(Color.LightGray) else Operator.MTR.getLineColor(line, Color.LightGray)
+                        })
+                        .padding(10.dp)
+                ) {
+                    PlatformText(
+                        fontSize = 16.sp,
+                        color = Color.White,
+                        text = buildString {
+                            append(if (line == "LR") Operator.LRT.getOperatorName(Shared.language) else if (Shared.language == "en") line else line.getMtrLineName().zh)
+                            append(" - ")
+                            append(status.messages?.title?.get(Shared.language)?: "")
+                        }
+                    )
+                }
             }
         }
         Box(
@@ -551,17 +580,17 @@ fun RouteMapSearchInterface(
                 if (offset < 100.dp) {
                     val statusNotice = mtrLineStatus
                     val disruptedLines = mtrLineServiceDisruption.asSequence()
-                        .filter { (_, v) -> v == TrainServiceStatus.DISRUPTION }
+                        .filter { (_, v) -> v.type == TrainServiceStatusType.DISRUPTION }
                         .map { (k) -> k }
                         .sortedBy { it.getMtrLineSortingIndex() }
                         .map { it to if (it == "LR") Operator.LRT.getOperatorColor(Color.LightGray) else Operator.MTR.getLineColor(it, Color.LightGray) }
                         .toList()
                     val mtrLinesStatus = mtrLineServiceDisruption.filter { (k) -> mtrLines.contains(k) }
                     val (statusMessage, statusIcon) = when {
-                        mtrLinesStatus.values.all { it == TrainServiceStatus.NON_SERVICE_HOUR } -> {
+                        mtrLinesStatus.values.all { it.type == TrainServiceStatusType.NON_SERVICE_HOUR } -> {
                             (if (Shared.language == "en") "Non-service Hours" else "非服務時間") to PlatformIcons.Filled.DarkMode
                         }
-                        mtrLinesStatus.values.all { it == TrainServiceStatus.TYPHOON } -> {
+                        mtrLinesStatus.values.all { it.type == TrainServiceStatusType.TYPHOON } -> {
                             (if (Shared.language == "en") "Typhoon Timetable" else "颱風時間表") to PlatformIcons.Filled.Error
                         }
                         else -> {
