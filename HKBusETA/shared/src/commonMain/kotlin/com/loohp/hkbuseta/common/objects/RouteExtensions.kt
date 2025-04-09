@@ -328,6 +328,8 @@ val bracketsRemovalRegex: Regex = " *\\([^)]*\\) *".toRegex()
 val busTerminusZhRegex: Regex = " *(?:巴士)?總站".toRegex()
 val busTerminusEnRegex: Regex = "(?i) *(?:Bus )?Terminus".toRegex()
 val circularBracketRegex: Regex = "( *\\([^)]*(?:循環|Circular)[^)]*\\)) *".toRegex()
+val alightingStopBracketRegex: Regex = " *\\([^)]*(?:隧道|總站|轉車站|落客站|[A-Z]{1,2}[0-9]{1,3})[^)]*\\) *".toRegex()
+val alightingStopKeywords: List<String> = listOf("隧道", "總站", "轉車站", "落客站")
 
 fun Route.shouldPrependTo(): Boolean {
     return lrtCircular == null
@@ -828,11 +830,12 @@ fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext)
                 branchStops.values.all {
                     when {
                         it.last().first == stopInfoIndex -> true
-                        co === Operator.KMB && !route!!.isCircular -> {
+                        it.first().second.stopId == stopInfo?.stopId -> false
+                        co === Operator.KMB -> {
                             val stopIndex = it.indexOfFirst { (i) -> i == stopInfoIndex }
-                            val stopName = it.getOrNull(stopIndex)?.second?.stop?.name?.zh?.remove(bracketsRemovalRegex)
-                            val nextStopName = it.getOrNull(stopIndex + 1)?.second?.stop?.name?.zh?.remove(bracketsRemovalRegex)
-                            stopName nonNullEquals nextStopName
+                            val stopName = it.getOrNull(stopIndex)?.second?.stop?.name?.zh?.remove(alightingStopBracketRegex)
+                            val nextStopName = it.getOrNull(stopIndex + 1)?.second?.stop?.name?.zh?.remove(alightingStopBracketRegex)
+                            alightingStopKeywords.any { k -> stopName?.contains(k) == true } && stopName nonNullEquals nextStopName
                         }
                         else -> false
                     }
