@@ -358,7 +358,7 @@ def download_and_process_data_sheet():
                                     kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
                                     distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"],
                                                          kmb_stop_location["lat"], kmb_stop_location["lng"])
-                                    if distance > 0.1:
+                                    if distance > 0.3:
                                         matches = False
                                         break
                                 if matches:
@@ -546,7 +546,7 @@ def download_and_process_data_sheet():
                             continue
                         kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
                         ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
-                        if haversine(kmb_stop_location["lat"], kmb_stop_location["lng"], ctb_stop_location["lat"], ctb_stop_location["lng"]) >= 0.1:
+                        if haversine(kmb_stop_location["lat"], kmb_stop_location["lng"], ctb_stop_location["lat"], ctb_stop_location["lng"]) >= 0.3:
                             match = False
                             break
                     if not match:
