@@ -1180,6 +1180,108 @@ def add_route_remarks():
                 "en": f"{original_remark_en}Route Details TBD"
             }
 
+def add_ctb_stops_that_does_not_belong_to_any_route():
+    route_to_stops = {}
+    for key, data in DATA_SHEET["routeList"].items():
+        if "ctb" not in data["co"] or len(data["co"]) > 1:
+            continue
+        route_number = data["route"]
+        bounds = []
+        if "ctb" in data["bound"]:
+            bound = data["bound"]["ctb"]
+            if len(bound) > 1:
+                bounds.append("O")
+                bounds.append("I")
+            else:
+                bounds.append(bound)
+        else:
+            bounds.append("O")
+        if "ctb" in data["stops"]:
+            if route_number in route_to_stops:
+                for stop_id in data["stops"]["ctb"]:
+                    route_to_stops[route_number]["stops"].add(stop_id)
+            else:
+                route_to_stops[route_number] = {
+                    "bounds": {},
+                    "stops": set(data["stops"]["ctb"])
+                }
+            for bound in bounds:
+                if bound in route_to_stops[route_number]["bounds"]:
+                    if len(data["stops"]["ctb"]) > route_to_stops[route_number]["bounds"][bound]["stop_count"]:
+                        route_to_stops[route_number]["bounds"][bound]["stop_count"] = len(data["stops"]["ctb"])
+                        route_to_stops[route_number]["bounds"][bound]["orig"] = data['orig']
+                        route_to_stops[route_number]["bounds"][bound]["dest"] = data['dest']
+                else:
+                    route_to_stops[route_number]["bounds"][bound] = {
+                        "stop_count": len(data["stops"]["ctb"]),
+                        "orig": data['orig'],
+                        "dest": data['dest'],
+                    }
+
+    for route_number, data in route_to_stops.items():
+        known_stop_ids = data["stops"]
+        if "O" in data["bounds"]:
+            try:
+                outbound_stops_json = get_web_json(f"https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/{route_number}/outbound")
+                outbound_stops = []
+                any_missing = False
+                for entry in outbound_stops_json["data"]:
+                    stop_id = entry["stop"]
+                    if stop_id not in known_stop_ids:
+                        any_missing = True
+                    outbound_stops.append(entry["stop"])
+                if any_missing:
+                    key = f"{route_number}+98+{data['bounds']['O']['orig']['en']}+{data['bounds']['O']['dest']['en']}"
+                    DATA_SHEET["routeList"][key] = {
+                        "bound": {"ctb": "O"},
+                        "co": ["ctb"],
+                        "dest": data["bounds"]['O']['dest'].copy(),
+                        "fares": None,
+                        "faresHoliday": None,
+                        "freq": None,
+                        "gtfsId": None,
+                        "jt": None,
+                        "nlbId": None,
+                        "fakeRoute": True,
+                        "orig": data["bounds"]['O']['orig'].copy(),
+                        "route": route_number,
+                        "serviceType": "98",
+                        "stops": {"ctb": outbound_stops}
+                    }
+            except Exception as e:
+                print(e)
+
+        if "I" in data["bounds"]:
+            try:
+                inbound_stops_json = get_web_json(f"https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/{route_number}/inbound")
+                inbound_stops = []
+                any_missing = False
+                for entry in inbound_stops_json["data"]:
+                    stop_id = entry["stop"]
+                    if stop_id not in known_stop_ids:
+                        any_missing = True
+                    inbound_stops.append(entry["stop"])
+                if any_missing:
+                    key = f"{route_number}+98+{data['bounds']['I']['orig']['en']}+{data['bounds']['I']['dest']['en']}"
+                    DATA_SHEET["routeList"][key] = {
+                        "bound": {"ctb": "I"},
+                        "co": ["ctb"],
+                        "dest": data["bounds"]['I']['dest'].copy(),
+                        "fares": None,
+                        "faresHoliday": None,
+                        "freq": None,
+                        "gtfsId": None,
+                        "jt": None,
+                        "nlbId": None,
+                        "fakeRoute": True,
+                        "orig": data["bounds"]['I']['orig'].copy(),
+                        "route": route_number,
+                        "serviceType": "98",
+                        "stops": {"ctb": inbound_stops}
+                    }
+            except Exception as e:
+                print(e)
+
 
 print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
@@ -1201,6 +1303,8 @@ print("Creating Missing Routes")
 create_missing_routes()
 print("Adding Route Remarks")
 add_route_remarks()
+print("Add CTB Stops that does not Belong to Any Route")
+add_ctb_stops_that_does_not_belong_to_any_route()
 print("Capitalizing KMB English Names")
 capitalize_english_names()
 print("Listing KMB Subsidiary Routes")
