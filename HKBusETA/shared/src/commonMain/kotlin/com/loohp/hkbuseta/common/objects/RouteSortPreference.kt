@@ -30,7 +30,7 @@ import com.loohp.hkbuseta.common.utils.readString
 import com.loohp.hkbuseta.common.utils.writeBoolean
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.charsets.Charsets
 import kotlinx.io.Sink
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -61,7 +61,7 @@ data class RouteSortPreference(
         }
 
         suspend fun deserialize(input: ByteReadChannel): RouteSortPreference {
-            val routeSortMode = RouteSortMode.valueOf(input.readString(UTF_8))
+            val routeSortMode = RouteSortMode.valueOf(input.readString(Charsets.UTF_8))
             val filterTimetableActive = input.readBoolean()
             return RouteSortPreference(routeSortMode, filterTimetableActive)
         }
@@ -75,7 +75,7 @@ data class RouteSortPreference(
     }
 
     override fun serialize(out: Sink) {
-        out.writeString(routeSortMode.name, UTF_8)
+        out.writeString(routeSortMode.name, Charsets.UTF_8)
         out.writeBoolean(filterTimetableActive)
     }
 

@@ -92,6 +92,9 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 
+var statusBarColor: Color? = null
+var navBarColor: Color? = null
+
 @Stable
 open class AppContextComposeAndroid internal constructor(
     open val context: Context,
@@ -101,7 +104,7 @@ open class AppContextComposeAndroid internal constructor(
         get() = context.packageName
 
     override val versionName: String
-        get() = context.packageManager.getPackageInfo(packageName, 0).versionName
+        get() = context.packageManager.getPackageInfo(packageName, 0).versionName?: "Unknown"
 
     override val versionCode: Long
         get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -334,10 +337,12 @@ class AppActiveContextComposeAndroid internal constructor(
         val controller = WindowCompat.getInsetsController(context.window, context.window.decorView)
         status?.apply {
             context.window.statusBarColor = toArgb()
+            statusBarColor = this
             controller.isAppearanceLightStatusBars = brightness > 0.5F
         }
         nav?.apply {
             context.window.navigationBarColor = toArgb()
+            navBarColor = this
             controller.isAppearanceLightNavigationBars = brightness > 0.5F
         }
     }

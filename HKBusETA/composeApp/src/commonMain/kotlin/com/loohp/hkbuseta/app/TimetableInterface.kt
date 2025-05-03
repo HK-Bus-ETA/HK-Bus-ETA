@@ -94,7 +94,6 @@ import com.loohp.hkbuseta.utils.fontScaledDp
 import kotlinx.collections.immutable.ImmutableList
 
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TimetableInterface(
     instance: AppActiveContext,

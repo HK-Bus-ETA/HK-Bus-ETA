@@ -44,4 +44,6 @@ local.defaults.properties
 secrets.properties
 **/output-metadata.json
 
+**/release
+
 **/JourneyPlanner*

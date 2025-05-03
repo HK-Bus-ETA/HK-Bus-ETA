@@ -105,7 +105,7 @@ struct ListStopsView: AppScreenView {
         } else {
             self.closestIndex = -1
         }
-        let branches = registry(appContext).getAllBranchRoutes(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion)
+        let branches = registry(appContext).getAllBranchRoutes(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion, includeFakeRoutes: false)
         let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
         self.currentBranch = currentBranch
         self.resolvedDestName = route.route!.resolvedDestWithBranch(prependTo: true, branch: currentBranch)

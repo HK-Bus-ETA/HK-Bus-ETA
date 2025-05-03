@@ -36,7 +36,7 @@ import com.loohp.hkbuseta.common.utils.writeCollection
 import com.loohp.hkbuseta.common.utils.writeNullable
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.readInt
 import kotlinx.io.Sink
 import kotlinx.serialization.Serializable
@@ -71,7 +71,7 @@ data class Stop(
             val location = Coordinates.deserialize(input)
             val name = BilingualText.deserialize(input)
             val remark = input.readNullable { BilingualText.deserialize(it) }
-            val kmbBbiId = input.readNullable { it.readString(UTF_8) }
+            val kmbBbiId = input.readNullable { it.readString(Charsets.UTF_8) }
             val mtrIds = input.readNullable { it.readCollection(mutableSetOf()) { i -> i.readInt() } }
             return Stop(location, name, remark, kmbBbiId, mtrIds)
         }
@@ -117,7 +117,7 @@ data class Stop(
         location.serialize(out)
         name.serialize(out)
         out.writeNullable(remark) { o, v -> v.serialize(o) }
-        out.writeNullable(kmbBbiId) { o, v -> o.writeString(v, UTF_8) }
+        out.writeNullable(kmbBbiId) { o, v -> o.writeString(v, Charsets.UTF_8) }
         out.writeNullable(mtrIds) { o, v -> o.writeCollection(v) { o1, v1 -> o1.writeInt(v1) } }
     }
 

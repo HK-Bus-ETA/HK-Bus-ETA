@@ -40,7 +40,7 @@ import com.loohp.hkbuseta.common.utils.writeDouble
 import com.loohp.hkbuseta.common.utils.writeNullable
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.readInt
 import kotlinx.io.Sink
 import kotlinx.serialization.json.JsonObject
@@ -64,13 +64,13 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
         }
 
         suspend fun deserialize(input: ByteReadChannel): RouteSearchResultEntry {
-            val routeKey = input.readString(UTF_8)
+            val routeKey = input.readString(Charsets.UTF_8)
             val route = input.readNullable { Route.deserialize(it) }
-            val co = Operator.valueOf(input.readString(UTF_8))
+            val co = Operator.valueOf(input.readString(Charsets.UTF_8))
             val stop = input.readNullable { StopInfo.deserialize(it) }
             val origin = input.readNullable { Coordinates.deserialize(it) }
             val isInterchangeSearch = input.readBoolean()
-            val favouriteStopMode = input.readNullable { FavouriteStopMode.valueOf(it.readString(UTF_8)) }
+            val favouriteStopMode = input.readNullable { FavouriteStopMode.valueOf(it.readString(Charsets.UTF_8)) }
             return RouteSearchResultEntry(routeKey, route, co, stop, origin, isInterchangeSearch, favouriteStopMode)
         }
 
@@ -139,13 +139,13 @@ open class RouteSearchResultEntry : JSONSerializable, IOSerializable, Strippable
     }
 
     override fun serialize(out: Sink) {
-        out.writeString(routeKey, UTF_8)
+        out.writeString(routeKey, Charsets.UTF_8)
         out.writeNullable(route) { o, v -> v.serialize(o) }
-        out.writeString(co.name, UTF_8)
+        out.writeString(co.name, Charsets.UTF_8)
         out.writeNullable(stopInfo) { o, v -> v.serialize(o) }
         out.writeNullable(origin) { o, v -> v.serialize(o) }
         out.writeBoolean(isInterchangeSearch)
-        out.writeNullable(favouriteStopMode) { o, v -> o.writeString(v.name, UTF_8) }
+        out.writeNullable(favouriteStopMode) { o, v -> o.writeString(v.name, Charsets.UTF_8) }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -195,10 +195,10 @@ data class StopInfo(
         }
 
         suspend fun deserialize(input: ByteReadChannel): StopInfo {
-            val stopId = input.readString(UTF_8)
+            val stopId = input.readString(Charsets.UTF_8)
             val data = input.readNullable { Stop.deserialize(it) }
             val distance = input.readDouble()
-            val co = Operator.valueOf(input.readString(UTF_8))
+            val co = Operator.valueOf(input.readString(Charsets.UTF_8))
             val stopIndex = input.readNullable { it.readInt() }
             return StopInfo(stopId, data, distance, co, stopIndex)
         }
@@ -223,10 +223,10 @@ data class StopInfo(
     }
 
     override fun serialize(out: Sink) {
-        out.writeString(stopId, UTF_8)
+        out.writeString(stopId, Charsets.UTF_8)
         out.writeNullable(data) { o, v -> v.serialize(o) }
         out.writeDouble(distance)
-        out.writeString(co.name, UTF_8)
+        out.writeString(co.name, Charsets.UTF_8)
         out.writeNullable(stopIndex) { o, v -> o.writeInt(v) }
     }
 }

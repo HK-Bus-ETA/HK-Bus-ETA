@@ -662,9 +662,8 @@ fun RouteMapSearchInterface(
                                             .align(Alignment.Bottom)
                                             .height(25.dp)
                                             .requiredWidth(22.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End)
                                     ) {
-                                        Spacer(modifier = Modifier.weight(1F))
                                         for ((_, lineColor) in disruptedLines) {
                                             Spacer(
                                                 modifier = Modifier

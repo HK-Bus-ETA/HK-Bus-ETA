@@ -28,10 +28,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,7 +59,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.compose
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isTopOfStack
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
@@ -88,6 +93,7 @@ import com.loohp.hkbuseta.compose.Search
 import com.loohp.hkbuseta.compose.Settings
 import com.loohp.hkbuseta.compose.Star
 import com.loohp.hkbuseta.compose.StarOutline
+import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.mutableSignalStateOf
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
@@ -282,7 +288,9 @@ fun TitleInterface(instance: AppActiveContext) {
         },
         content = {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { consumeWindowInsets(WindowInsets.systemBars) }
             ) {
                 TemporaryPinInterface(
                     instance = instance

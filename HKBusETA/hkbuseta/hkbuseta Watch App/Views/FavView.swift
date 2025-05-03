@@ -231,7 +231,7 @@ struct FavView: AppScreenView {
                     
                     let stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
                     let stopData = stopList.enumerated().filter { $0.element.stopId == stopId }.min(by: { abs($0.offset - index) < abs($1.offset - index) })?.element
-                    let branches = registry(appContext).getAllBranchRoutes(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
+                    let branches = registry(appContext).getAllBranchRoutes(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion, includeFakeRoutes: false)
                     let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
                     let destName = {
                         if co.isTrain {

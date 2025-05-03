@@ -66,7 +66,9 @@ kotlin {
     }
 
     @OptIn(ExperimentalWasmDsl::class)
-    wasmJs { nodejs() }
+    wasmJs {
+        nodejs()
+    }
 
     sourceSets {
         val desktopMain by getting
@@ -110,7 +112,7 @@ kotlin {
 
 android {
     namespace = "com.loohp.hkbuseta.common"
-    compileSdk = 34
+    compileSdk = 35
     defaultConfig {
         minSdk = 24
     }

@@ -25,6 +25,7 @@ import com.loohp.hkbuseta.common.appcontext.ReduceDataOmitted
 import com.loohp.hkbuseta.common.shared.BASE_URL
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.Colored
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.FormattingTextContentStyle
@@ -1262,4 +1263,104 @@ fun getRedirectToMTRJourneyPlannerUrl(startingStationId: String?, destinationSta
     }
 
     return if (args.isEmpty()) url else url + args.joinToString(prefix = "?", separator = "&")
+}
+
+enum class NextBusTextDisplayMode {
+    FULL, COMPACT
+}
+
+fun Registry.NextBusPosition?.getDisplayText(allStops: List<Registry.StopData>, mode: NextBusTextDisplayMode, language: String): FormattedText? {
+    return this?.let { (nextStopId, nextStopTime, type, stopsCount) ->
+        if (stopsCount > 0) {
+            val nextStop = allStops.first { it.stopId == nextStopId }
+            buildFormattedString {
+                if (language == "en") {
+                    if (nextStopTime > 0) {
+                        when (type) {
+                            Registry.NextBusStatusType.ARRIVING -> {
+                                when (mode) {
+                                    NextBusTextDisplayMode.FULL -> {
+                                        append("Next Bus is ")
+                                        append("$nextStopTime mins", BoldStyle)
+                                        append(" to ")
+                                    }
+                                    NextBusTextDisplayMode.COMPACT -> {
+                                        append("Next Bus on route to ")
+                                    }
+                                }
+                            }
+                            Registry.NextBusStatusType.DEPARTING -> {
+                                when (mode) {
+                                    NextBusTextDisplayMode.FULL -> {
+                                        append("Next Bus will depart in ")
+                                        append("$nextStopTime mins", BoldStyle)
+                                        append(" from ")
+                                    }
+                                    NextBusTextDisplayMode.COMPACT -> {
+                                        append("Next Bus to depart from ")
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        append("Next Bus is at ")
+                    }
+                    append(nextStop.stop.name.en, BoldStyle)
+                    if (type == Registry.NextBusStatusType.ARRIVING) {
+                        append("(")
+                        append("$stopsCount", BoldStyle)
+                        when (mode) {
+                            NextBusTextDisplayMode.FULL -> append(" stops left)")
+                            NextBusTextDisplayMode.COMPACT -> append(" stops)")
+                        }
+                    }
+                } else {
+                    if (nextStopTime > 0) {
+                        when (type) {
+                            Registry.NextBusStatusType.ARRIVING -> {
+                                when (mode) {
+                                    NextBusTextDisplayMode.FULL -> {
+                                        append("下一班車將於")
+                                        append("${nextStopTime}分鐘", BoldStyle)
+                                        append("後到達")
+                                    }
+                                    NextBusTextDisplayMode.COMPACT -> {
+                                        append("下一班車正在前往")
+                                    }
+                                }
+                            }
+                            Registry.NextBusStatusType.DEPARTING -> {
+                                when (mode) {
+                                    NextBusTextDisplayMode.FULL -> {
+                                        append("下一班車將於")
+                                        append("${nextStopTime}分鐘", BoldStyle)
+                                        append("後從")
+                                    }
+                                    NextBusTextDisplayMode.COMPACT -> {
+                                        append("下一班車將從")
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        append("下一班車現在位於")
+                    }
+                    append(nextStop.stop.name.zh, BoldStyle)
+                    if (nextStopTime > 0 && type == Registry.NextBusStatusType.DEPARTING) {
+                        append("開出")
+                    }
+                    if (type == Registry.NextBusStatusType.ARRIVING) {
+                        when (mode) {
+                            NextBusTextDisplayMode.FULL -> append(" (剩餘")
+                            NextBusTextDisplayMode.COMPACT -> append(" (")
+                        }
+                        append(stopsCount.toString(), BoldStyle)
+                        append("個站)")
+                    }
+                }
+            }
+        } else {
+            null
+        }
+    }
 }

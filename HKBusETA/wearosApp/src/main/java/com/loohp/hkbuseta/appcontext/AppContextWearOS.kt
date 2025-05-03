@@ -115,7 +115,7 @@ open class AppContextWearOS internal constructor(
         get() = context.packageName
 
     override val versionName: String
-        get() = context.packageManager.getPackageInfo(packageName, 0).versionName
+        get() = context.packageManager.getPackageInfo(packageName, 0).versionName?: "Unknown"
 
     override val versionCode: Long
         get() = context.packageManager.getPackageInfo(packageName, 0).longVersionCode

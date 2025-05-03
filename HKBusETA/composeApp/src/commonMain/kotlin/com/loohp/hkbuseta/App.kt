@@ -27,8 +27,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.SnackbarHostState
@@ -49,9 +52,11 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.ToastTextState
 import com.loohp.hkbuseta.appcontext.applicationAppContext
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.hasWatchAppInstalled
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.appcontext.newScreen
@@ -184,7 +189,10 @@ fun App(onReady: (() -> Unit)? = null) {
                     },
                     content = {
                         Box(
-                            modifier = Modifier.applyIf(instance.shouldConsumePlatformWindowInsetsOnRoot) { consumePlatformWindowInsets() }
+                            modifier = Modifier
+                                .applyIf(instance.shouldConsumePlatformWindowInsetsOnRoot) {
+                                    consumePlatformWindowInsets()
+                                }
                         ) {
                             AnimatedContent(
                                 targetState = instance,
@@ -195,6 +203,7 @@ fun App(onReady: (() -> Unit)? = null) {
                             if (globalWritingFilesIndicatorAlpha > 0F) {
                                 RightToLeftRow(
                                     modifier = Modifier
+                                        .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { statusBarsPadding() }
                                         .align(Alignment.TopEnd)
                                         .background(platformBackgroundColor.adjustAlpha(0.5F), RoundedCornerShape(5.dp))
                                         .padding(5.dp)

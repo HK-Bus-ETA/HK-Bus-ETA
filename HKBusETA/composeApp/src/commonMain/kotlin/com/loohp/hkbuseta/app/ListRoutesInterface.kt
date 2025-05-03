@@ -107,9 +107,13 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.LineHeightStyle.Mode
+import androidx.compose.ui.text.style.LineHeightStyle.Trim
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -122,6 +126,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
+import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
@@ -227,6 +232,7 @@ import com.loohp.hkbuseta.compose.platformComponentBackgroundColor
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
 import com.loohp.hkbuseta.compose.platformLargeShape
 import com.loohp.hkbuseta.compose.platformLocalContentColor
+import com.loohp.hkbuseta.compose.platformLocalTextStyle
 import com.loohp.hkbuseta.compose.platformTopBarColor
 import com.loohp.hkbuseta.compose.rememberIsInPipMode
 import com.loohp.hkbuseta.compose.table.DataColumn

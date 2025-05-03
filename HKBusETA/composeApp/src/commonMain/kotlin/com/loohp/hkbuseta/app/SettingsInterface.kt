@@ -29,12 +29,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
@@ -51,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
@@ -63,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.github.ajalt.colormath.model.RGB
+import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.PlatformType
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.compose
@@ -106,6 +112,7 @@ import com.loohp.hkbuseta.compose.PlatformOutlinedTextField
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.Schedule
 import com.loohp.hkbuseta.compose.ScrollBarConfig
+import com.loohp.hkbuseta.compose.Settings
 import com.loohp.hkbuseta.compose.Share
 import com.loohp.hkbuseta.compose.Smartphone
 import com.loohp.hkbuseta.compose.Tablet
@@ -115,6 +122,7 @@ import com.loohp.hkbuseta.compose.Translate
 import com.loohp.hkbuseta.compose.Update
 import com.loohp.hkbuseta.compose.Upload
 import com.loohp.hkbuseta.compose.Watch
+import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.colorpicker.ClassicColorPicker
 import com.loohp.hkbuseta.compose.colorpicker.HsvColor
 import com.loohp.hkbuseta.compose.combinedClickable
@@ -162,14 +170,25 @@ fun SettingsInterface(instance: AppActiveContext) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        Spacer(
+        Row(
             modifier = Modifier
-                .height(30.dp)
-                .fillMaxWidth()
-                .platformHorizontalDividerShadow(5.dp)
-                .background(platformTopBarColor)
-                .padding(horizontal = 5.dp)
-        )
+                .padding(10.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PlatformIcon(
+                modifier = Modifier.size(26.dp),
+                painter = PlatformIcons.Filled.Settings,
+                contentDescription = if (Shared.language == "en") "Settings" else "設定"
+            )
+            PlatformText(
+                fontSize = 22.sp,
+                lineHeight = 1.1F.em,
+                text = if (Shared.language == "en") "Settings" else "設定"
+            )
+        }
+        HorizontalDivider()
         Column(
             modifier = Modifier
                 .fillMaxWidth()

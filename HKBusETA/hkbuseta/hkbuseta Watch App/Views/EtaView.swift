@@ -13,6 +13,7 @@ struct EtaView: AppScreenView {
     @StateObject private var alternateStopNamesShowingState = StateFlowObservable(stateFlow: Shared().alternateStopNamesShowingState, initSubscribe: true)
 
     @State private var eta: Registry.ETAQueryResult? = nil
+    @State private var nextBus: Registry.NextBusPosition? = nil
     let etaTimer = Timer.publish(every: Double(Shared().ETA_UPDATE_INTERVAL) / 1000, on: .main, in: .common).autoconnect()
 
     let freshnessTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
@@ -28,8 +29,10 @@ struct EtaView: AppScreenView {
 
     @State private var resolvedDestName: BilingualText
     @State private var stopList: [Registry.StopData]
+    @State private var stopData: Registry.StopData?
     @State private var etaDisplayMode: ETADisplayMode
     @State private var lrtDirectionMode: Bool
+    @State private var currentBranch: Route
 
     @State private var freshness: Bool
 
@@ -50,8 +53,10 @@ struct EtaView: AppScreenView {
         let stopList = registry(appContext).getAllStops(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
         self.stopList = stopList
         let stopData = stopList.enumerated().filter { $0.element.stopId == stopId }.min(by: { abs($0.offset - index) < abs($1.offset - index) })?.element
-        let branches = registry(appContext).getAllBranchRoutes(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion)
+        self.stopData = stopData
+        let branches = registry(appContext).getAllBranchRoutes(routeNumber: route.routeNumber, bound: route.idBound(co: co), co: co, gmbRegion: route.gmbRegion, includeFakeRoutes: false)
         let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
+        self.currentBranch = currentBranch
         self.resolvedDestName = {
             if co.isTrain {
                 return registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
@@ -85,7 +90,13 @@ struct EtaView: AppScreenView {
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(1)
                 .autoResizing(maxSize: 12.scaled(appContext, true))
-            Spacer().frame(fixedSize: 3.scaled(appContext))
+            Spacer().frame(fixedSize: 2.scaled(appContext))
+            let nextBusText = nextBus?.getDisplayText(allStops: stopList, mode: NextBusTextDisplayMode.compact, language: Shared().language)
+            Text(nextBusText?.asAttributedString(defaultFontSize: 11.scaled(appContext, true)) ?? "".asAttributedString())
+                .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.8).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
+                .lineLimit(2)
+                .autoResizing(maxSize: 11.scaled(appContext, true))
+            Spacer().frame(fixedSize: 2.scaled(appContext))
             ETALine(lines: eta, seq: 1)
             ETALine(lines: eta, seq: 2)
             ETALine(lines: eta, seq: 3)
@@ -130,6 +141,10 @@ struct EtaView: AppScreenView {
                             appContext.showToastText(text: lrtDirectionMode ? (Shared().language == "en" ? "Display all Light Rail routes in the same direction" : "顯示所有相同方向輕鐵路線") : (Shared().language == "en" ? "Display only the select Light Rail route" : "只顯示該輕鐵路線"), duration: ToastDuration.short_)
                             let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
                             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
+                            if let stopData = stopData {
+                                let route = stopData.branchIds.contains(currentBranch) ? currentBranch : stopData.route
+                                fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, stopList: stopList, options: options) { nextBus = $0 }
+                            }
                         }) {
                             Image(systemName: "arrow.forward.circle")
                                 .font(.system(size: 17.scaled(appContext, true)))
@@ -203,6 +218,10 @@ struct EtaView: AppScreenView {
         .onReceive(etaTimer) { _ in
             let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
+            if let stopData = stopData {
+                let route = stopData.branchIds.contains(currentBranch) ? currentBranch : stopData.route
+                fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, stopList: stopList, options: options) { nextBus = $0 }
+            }
         }
         .onReceive(freshnessTimer) { _ in
             freshness = eta?.isOutdated() != true
@@ -210,6 +229,10 @@ struct EtaView: AppScreenView {
         .onAppear {
             let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
+            if let stopData = stopData {
+                let route = stopData.branchIds.contains(currentBranch) ? currentBranch : stopData.route
+                fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, stopList: stopList, options: options) { nextBus = $0 }
+            }
         }
         .gesture(
             TapGesture()

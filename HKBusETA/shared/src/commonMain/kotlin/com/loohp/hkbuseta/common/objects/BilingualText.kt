@@ -26,7 +26,7 @@ import com.loohp.hkbuseta.common.utils.optString
 import com.loohp.hkbuseta.common.utils.readString
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.charsets.Charsets
 import kotlinx.io.Sink
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -51,8 +51,8 @@ class BilingualText(
         }
 
         suspend fun deserialize(input: ByteReadChannel): BilingualText {
-            val zh = input.readString(UTF_8)
-            val en = input.readString(UTF_8)
+            val zh = input.readString(Charsets.UTF_8)
+            val en = input.readString(Charsets.UTF_8)
             return BilingualText(zh, en)
         }
 
@@ -94,8 +94,8 @@ class BilingualText(
     }
 
     override fun serialize(out: Sink) {
-        out.writeString(zh, UTF_8)
-        out.writeString(en, UTF_8)
+        out.writeString(zh, Charsets.UTF_8)
+        out.writeString(en, Charsets.UTF_8)
     }
 
     override fun equals(other: Any?): Boolean {

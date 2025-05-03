@@ -51,6 +51,7 @@ import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.KMBSubsidiary
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Preferences
+import com.loohp.hkbuseta.common.objects.QueryTask
 import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
@@ -182,7 +183,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -192,7 +192,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
@@ -1362,20 +1361,22 @@ class Registry {
         val gmbRegion: GMBRegion?
     )
 
-    fun getAllBranchRoutesBulk(parameters: List<AllBranchRoutesSearchParameters>): List<List<Route>> {
+    fun getAllBranchRoutesBulk(parameters: List<AllBranchRoutesSearchParameters>, includeFakeRoutes: Boolean = false): List<List<Route>> {
         return try {
             val lists: Array<MutableList<Route>> = Array(parameters.size) { mutableListOf() }
             for (route in DATA!!.dataSheet.routeList.values) {
-                for (i in parameters.indices) {
-                    val (routeNumber, bound, co, gmbRegion) = parameters[i]
-                    if (routeNumber == route.routeNumber && route.co.contains(co)) {
-                        val match = when {
-                            co === Operator.NLB -> bound == route.nlbId
-                            bound.length > 1 && !co.isTrain -> !(route.isCtbIsCircular && route.freq == null) && (co !== Operator.GMB || gmbRegion == route.gmbRegion)
-                            else -> (bound == route.bound[co] || route.isCircular) && (co !== Operator.GMB || gmbRegion == route.gmbRegion)
-                        }
-                        if (match) {
-                            lists[i].add(route)
+                if (includeFakeRoutes || !route.fakeRoute) {
+                    for (i in parameters.indices) {
+                        val (routeNumber, bound, co, gmbRegion) = parameters[i]
+                        if (routeNumber == route.routeNumber && route.co.contains(co)) {
+                            val match = when {
+                                co === Operator.NLB -> bound == route.nlbId
+                                bound.length > 1 && !co.isTrain -> !(route.isCtbIsCircular && route.freq == null) && (co !== Operator.GMB || gmbRegion == route.gmbRegion)
+                                else -> (bound == route.bound[co] || route.isCircular) && (co !== Operator.GMB || gmbRegion == route.gmbRegion)
+                            }
+                            if (match) {
+                                lists[i].add(route)
+                            }
                         }
                     }
                 }
@@ -1398,9 +1399,9 @@ class Registry {
         }
     }
 
-    fun getAllBranchRoutes(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?): List<Route> {
+    fun getAllBranchRoutes(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?, includeFakeRoutes: Boolean = false): List<Route> {
         return try {
-            getAllBranchRoutesBulk(listOf(element = AllBranchRoutesSearchParameters(routeNumber, bound, co, gmbRegion))).first()
+            getAllBranchRoutesBulk(listOf(element = AllBranchRoutesSearchParameters(routeNumber, bound, co, gmbRegion)), includeFakeRoutes).first()
         } catch (e: Throwable) {
             throw RuntimeException("Error occurred while getting branch routes for $routeNumber, $bound, $co, $gmbRegion: ${e.message}", e)
         }
@@ -1413,7 +1414,7 @@ class Registry {
     fun getAllStops(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?, mergeEtaSeparateIds: Boolean): List<StopData> {
         return cache("getAllStops", routeNumber, bound, co, gmbRegion, mergeEtaSeparateIds) {
             try {
-                val branches = getAllBranchRoutes(routeNumber, bound, co, gmbRegion)
+                val branches = getAllBranchRoutes(routeNumber, bound, co, gmbRegion, true)
                 val stopList = DATA!!.dataSheet.stopList
                 val lists: MutableList<BranchData> = mutableListOf()
                 for (route in branches) {
@@ -1486,7 +1487,10 @@ class Registry {
                     }
                     result.asSequenceWithBranchIds()
                         .map { (f, s) ->
-                            f.with(s, mergedStopIds.firstOrNull { it.contains(f.stopId) }?.associateWith { mergedStopIdBranch[it]!! })
+                            f.with(
+                                branchIds = s.filterNotTo(mutableSetOf()) { it.fakeRoute },
+                                mergedStopIds = mergedStopIds.firstOrNull { it.contains(f.stopId) }?.associateWith { mergedStopIdBranch[it]!! }
+                            )
                         }
                         .toList()
                 }
@@ -2232,13 +2236,66 @@ class Registry {
     }
 
     @Immutable
+    data class NextBusPosition(
+        val stopId: String,
+        val timeToStop: Long,
+        val type: NextBusStatusType,
+        val stopsCount: Int
+    )
+
+    enum class NextBusStatusType {
+        ARRIVING, DEPARTING
+    }
+
+    @Immutable
+    class NextBusPositionQueryTask(task: suspend () -> NextBusPosition?): QueryTask<NextBusPosition?>(null, task)
+
+    fun findNextBusPosition(stopId: String, stopIndex: Int, co: Operator, route: Route, stopsList: List<StopData>, context: AppContext, options: EtaQueryOptions? = null): NextBusPositionQueryTask {
+        val startingIndex = stopsList
+            .indexesOf { it.stopId == stopId }
+            .minByOrNull { (it - stopIndex).absoluteValue }
+            ?: return NextBusPositionQueryTask { null }
+        val endingIndex = stopsList.indexOfFirst { it.branchIds.contains(route) }
+        return NextBusPositionQueryTask {
+            var previousStopTimeRounded = Long.MAX_VALUE
+            var previousStopTime = previousStopTimeRounded.toDouble()
+            var previousStop: String? = null
+            var type = NextBusStatusType.ARRIVING
+            var stopsCount = -1
+            for (i in startingIndex downTo endingIndex) {
+                val stopData = stopsList[i]
+                if (!stopData.branchIds.contains(route)) continue
+                val result = buildEtaQuery(stopData.stopId, i, co, route, context, options).query().rawLines[1]
+                when {
+                    result == null || result.etaRounded < 0 -> break
+                    result.eta <= previousStopTime -> {
+                        previousStopTime = result.eta
+                        previousStopTimeRounded = result.etaRounded
+                        previousStop = stopData.stopId
+                        if (i <= endingIndex) {
+                            type = NextBusStatusType.DEPARTING
+                        }
+                        stopsCount++
+                    }
+                    else -> break
+                }
+            }
+            previousStop?.let { NextBusPosition(it, previousStopTimeRounded, type, stopsCount) }
+        }
+    }
+
+    @Immutable
     data class EtaQueryOptions(
         val lrtDirectionMode: Boolean = false,
         val lrtAllMode: Boolean = false
     )
 
     fun buildEtaQuery(stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext, options: EtaQueryOptions? = null): ETAQueryTask {
-        return ETAQueryTask(context, co) {
+        val errorResult: ETAQueryResult by lazy {
+            val restrictionType = if (context is AppActiveContext) BackgroundRestrictionType.NONE else context.currentBackgroundRestrictions()
+            ETAQueryResult.connectionError(restrictionType, co)
+        }
+        return ETAQueryTask(errorResult) {
             context.logFirebaseEvent("eta_query", AppBundle().apply {
                 putString("by_stop", stopId + "," + stopIndex + "," + route.routeNumber + "," + co.name + "," + route.bound[co])
                 putString("by_bound", route.routeNumber + "," + co.name + "," + route.bound[co])
@@ -3740,57 +3797,7 @@ class Registry {
     }
 
     @Immutable
-    class ETAQueryTask(
-        private val context: AppContext,
-        private val co: Operator,
-        private val task: suspend () -> ETAQueryResult
-    ) {
-
-        private val errorResult: ETAQueryResult by lazy {
-            val restrictionType = if (context is AppActiveContext) BackgroundRestrictionType.NONE else context.currentBackgroundRestrictions()
-            ETAQueryResult.connectionError(restrictionType, co)
-        }
-
-        suspend fun query(): ETAQueryResult {
-            return try {
-                task.invoke()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                errorResult
-            }
-        }
-
-        suspend fun query(timeout: Int, unit: DateTimeUnit.TimeBased): ETAQueryResult {
-            return try {
-                withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { task.invoke() }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                errorResult
-            }
-        }
-
-        @OptIn(ExperimentalCoroutinesApi::class)
-        fun query(callback: (ETAQueryResult) -> Unit) {
-            val deferred = CoroutineScope(Dispatchers.IO).async { task.invoke() }
-            deferred.invokeOnCompletion { it?.let {
-                it.printStackTrace()
-                callback.invoke(errorResult)
-            }?: callback.invoke(deferred.getCompleted()) }
-        }
-
-        fun query(timeout: Int, unit: DateTimeUnit.TimeBased, callback: (ETAQueryResult) -> Unit) {
-            CoroutineScope(Dispatchers.IO).launch {
-                val deferred = async { task.invoke() }
-                try {
-                    callback.invoke(withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() })
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    try { deferred.cancel() } catch (ignore: Throwable) { }
-                    callback.invoke(errorResult)
-                }
-            }
-        }
-    }
+    class ETAQueryTask(errorResult: ETAQueryResult, task: suspend () -> ETAQueryResult): QueryTask<ETAQueryResult>(errorResult, task)
 
     @Immutable
     class ETALineEntryText private constructor(
@@ -4038,12 +4045,12 @@ class Registry {
         }
 
         val rawLines: Map<Int, ETALineEntry> = lines
-        val nextScheduledBus: Long = lines[1]?.etaRounded ?: -1
+        val nextScheduledBus: Long = lines[1]?.etaRounded?: -1
 
         val firstLine: ETALineEntry get() = this[1]
 
         fun getLine(index: Int): ETALineEntry {
-            return rawLines[index] ?: ETALineEntry.EMPTY
+            return rawLines[index]?: ETALineEntry.EMPTY
         }
 
         operator fun get(index: Int): ETALineEntry {

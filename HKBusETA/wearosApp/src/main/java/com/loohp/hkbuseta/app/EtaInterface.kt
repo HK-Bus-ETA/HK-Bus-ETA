@@ -57,7 +57,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -67,6 +66,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -88,10 +88,12 @@ import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
+import com.loohp.hkbuseta.common.objects.NextBusTextDisplayMode
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getDisplayText
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolvedDest
@@ -100,6 +102,8 @@ import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
+import com.loohp.hkbuseta.common.utils.FormattedText
+import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
@@ -116,7 +120,6 @@ import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
-import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.sameValueAs
 import com.loohp.hkbuseta.utils.scaledSize
@@ -128,6 +131,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 
 @OptIn(ExperimentalWearMaterialApi::class, ExperimentalWearFoundationApi::class, ExperimentalFoundationApi::class)
@@ -214,12 +218,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
         Box (
             modifier = Modifier
                 .fillMaxSize()
-                .composed {
-                    this.offset(
-                        animatedOffset.equivalentDp,
-                        swipe.offset.value.coerceAtMost(0F).equivalentDp
-                    )
-                }
+                .offset { IntOffset(animatedOffset.roundToInt(), swipe.offset.value.coerceAtMost(0F).roundToInt()) }
                 .combinedClickable(
                     onClick = {
                         etaDisplayMode = etaDisplayMode.next
@@ -274,6 +273,8 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 var active by remember { mutableStateOf(true) }
                 val etaStateFlow = remember { MutableStateFlow(null as ETAQueryResult?) }
                 val eta by etaStateFlow.collectAsStateWithLifecycle()
+                val nextBusStateFlow = remember { MutableStateFlow(null as Registry.NextBusPosition?) }
+                val nextBus by nextBusStateFlow.collectAsStateWithLifecycle()
                 var options by remember { mutableStateOf(Registry.EtaQueryOptions(lrtDirectionMode = Shared.lrtDirectionMode)) }
 
                 PauseEffect {
@@ -290,6 +291,15 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                         if (active) {
                             etaStateFlow.value = result
                         }
+                        if (stopData != null) {
+                            val nextBusResult = runBlocking(Dispatchers.IO) {
+                                val r = if (stopData.branchIds.contains(currentBranch)) currentBranch else stopData.route
+                                Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, r, stopList, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                            }
+                            if (active) {
+                                nextBusStateFlow.value = nextBusResult
+                            }
+                        }
                     }
                     while (true) {
                         val newOptions = Registry.EtaQueryOptions(lrtDirectionMode = Shared.lrtDirectionMode)
@@ -298,6 +308,15 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                             val result = Registry.getInstance(instance).buildEtaQuery(stopId, index, co, route, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
                             if (active) {
                                 etaStateFlow.value = result
+                            }
+                            if (stopData != null) {
+                                val nextBusResult = runBlocking(Dispatchers.IO) {
+                                    val r = if (stopData.branchIds.contains(currentBranch)) currentBranch else stopData.route
+                                    Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, r, stopList, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                                }
+                                if (active) {
+                                    nextBusStateFlow.value = nextBusResult
+                                }
                             }
                         }
                         delay(50)
@@ -312,7 +331,9 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 Spacer(modifier = Modifier.size(7.scaledSize(instance).dp))
                 Title(ambientMode, index, stopName, lat, lng, routeNumber, co, instance)
                 SubTitle(ambientMode, resolvedDestName, lat, lng, routeNumber, co, instance)
-                Spacer(modifier = Modifier.size(9.scaledSize(instance).dp))
+                Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
+                NextBusText(ambientMode, nextBus?.getDisplayText(stopList, NextBusTextDisplayMode.COMPACT, Shared.language)?: "".asFormattedText(), instance)
+                Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
                 EtaText(ambientMode, eta, 1, etaDisplayMode, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
                 EtaText(ambientMode, eta, 2, etaDisplayMode, instance)
@@ -512,6 +533,24 @@ fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Do
         maxLines = 1,
         fontSizeRange = FontSizeRange(
             max = 11F.scaledSize(instance).sp
+        )
+    )
+}
+
+@Composable
+fun NextBusText(ambientMode: Boolean, nextBusText: FormattedText, instance: AppActiveContext) {
+    AutoResizeText(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp, 0.dp),
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colors.primary
+            .adjustBrightness(0.8F)
+            .adjustBrightness(if (ambientMode) 0.7F else 1F),
+        text = nextBusText.asContentAnnotatedString().annotatedString,
+        maxLines = 2,
+        fontSizeRange = FontSizeRange(
+            max = 10F.scaledSize(instance).sp
         )
     )
 }

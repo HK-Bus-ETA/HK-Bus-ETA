@@ -83,7 +83,7 @@ kotlin {
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "composeApp"
+        outputModuleName = "composeApp"
         browser {
             commonWebpackConfig {
                 outputFileName = "composeApp.js"
@@ -178,7 +178,7 @@ kotlin {
 
 android {
     namespace = "com.loohp.hkbuseta"
-    compileSdk = 34
+    compileSdk = 35
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     sourceSets["main"].res.srcDirs("src/androidMain/res")
@@ -187,9 +187,10 @@ android {
     defaultConfig {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1056
-        versionName = "2.4.24"
+        //noinspection OldTargetApi
+        targetSdk = 35
+        versionCode = 1060
+        versionName = "2.5.0"
     }
     packaging {
         resources {
@@ -222,7 +223,7 @@ compose.desktop {
             modules("java.net.http")
 
             packageName = "HK Bus ETA"
-            packageVersion = "2.4.24"
+            packageVersion = "2.5.0"
             vendor = "HK Bus ETA"
 
             macOS {

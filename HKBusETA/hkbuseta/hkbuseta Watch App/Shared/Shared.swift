@@ -43,6 +43,19 @@ func fetchEta(appContext: AppContext, stopId: String, stopIndex: Int32, co: Oper
     let pending = registry(appContext).buildEtaQuery(stopId: stopId, stopIndex: stopIndex, co: co, route: route, context: appContext, options: options)
     pending.query(timeout: Shared().ETA_UPDATE_INTERVAL, unit: Kotlinx_datetimeDateTimeUnit.Companion().MILLISECOND, callback: { result in
         DispatchQueue.main.async {
+            callback(result!)
+        }
+    })
+}
+
+func fetchNextBus(appContext: AppContext, stopId: String, stopIndex: Int, co: Operator, route: Route, stopList: [Registry.StopData], options: Registry.EtaQueryOptions? = nil, callback: @escaping (Registry.NextBusPosition?) -> Void) {
+    fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: stopIndex.asInt32(), co: co, route: route, stopList: stopList, options: options, callback: callback)
+}
+
+func fetchNextBus(appContext: AppContext, stopId: String, stopIndex: Int32, co: Operator, route: Route, stopList: [Registry.StopData], options: Registry.EtaQueryOptions? = nil, callback: @escaping (Registry.NextBusPosition?) -> Void) {
+    let pending = registry(appContext).findNextBusPosition(stopId: stopId, stopIndex: stopIndex, co: co, route: route, stopsList: stopList, context: appContext, options: options)
+    pending.query(timeout: Shared().ETA_UPDATE_INTERVAL, unit: Kotlinx_datetimeDateTimeUnit.Companion().MILLISECOND, callback: { result in
+        DispatchQueue.main.async {
             callback(result)
         }
     })

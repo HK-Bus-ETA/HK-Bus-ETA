@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -51,7 +53,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
+import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.HistoryStack
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.screenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
@@ -74,6 +78,7 @@ import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.RightToLeftRow
 import com.loohp.hkbuseta.compose.ScrollBarConfig
+import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.combinedClickable
@@ -124,6 +129,7 @@ fun TemporaryPinInterface(
                 )
             )
             .background(platformTopBarColor)
+            .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { statusBarsPadding() }
             .animateContentSize()
             .applyIfNotNull(onSizeChange) { this.onSizeChanged(it) },
         state = scroll

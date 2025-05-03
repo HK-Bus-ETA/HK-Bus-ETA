@@ -36,7 +36,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -49,6 +48,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
@@ -133,6 +133,7 @@ import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
 import com.loohp.hkbuseta.common.objects.FavouriteStop
 import com.loohp.hkbuseta.common.objects.FavouriteStopMode
 import com.loohp.hkbuseta.common.objects.GMBRegion
+import com.loohp.hkbuseta.common.objects.NextBusTextDisplayMode
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.OriginData
 import com.loohp.hkbuseta.common.objects.RecentSortMode
@@ -154,6 +155,7 @@ import com.loohp.hkbuseta.common.objects.findSame
 import com.loohp.hkbuseta.common.objects.getDeepLink
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
+import com.loohp.hkbuseta.common.objects.getDisplayText
 import com.loohp.hkbuseta.common.objects.getMTRStationLayoutUrl
 import com.loohp.hkbuseta.common.objects.getMTRStationStreetMapUrl
 import com.loohp.hkbuseta.common.objects.getOperatorName
@@ -1485,7 +1487,7 @@ fun StopEntryExpansion(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StopEntryExpansionEta(
     instance: AppActiveContext,
@@ -1531,11 +1533,28 @@ fun StopEntryExpansionEta(
 
     val pipMode = rememberIsInPipMode(instance)
 
+    var nextBusPosition: Registry.NextBusPosition? by remember(selectedStop, selectedBranch) { mutableStateOf(null) }
+
+    LaunchedEffect (selectedStop, selectedBranch) {
+        while (true) {
+            val route = if (stopData.branchIds.contains(selectedBranch)) selectedBranch else stopData.route
+            nextBusPosition = Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, route, allStops, instance, etaQueryOptions).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+        }
+    }
+
     Column(
         modifier = Modifier.padding(vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)
     ) {
-        Column {
+        var height by remember { mutableIntStateOf(0) }
+        Column(
+            modifier = Modifier
+                .animateContentSize()
+                .requiredHeightIn(min = height.equivalentDp)
+                .onSizeChanged { height = it.height },
+            verticalArrangement = Arrangement.Top
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(15.dp, Alignment.Start),
@@ -1580,6 +1599,15 @@ fun StopEntryExpansionEta(
                     fontSize = 14.sp,
                     lineHeight = 1.3F.em,
                     text = alerts.joinToAnnotatedString("\n".asAnnotatedString())
+                )
+            }
+            val nextBusText = nextBusPosition.getDisplayText(allStops, NextBusTextDisplayMode.FULL, Shared.language)
+            if (nextBusText != null) {
+                PlatformText(
+                    modifier = Modifier.padding(top = 5.dp, end = 10.dp),
+                    fontSize = 14.sp,
+                    lineHeight = 1.3F.em,
+                    text = nextBusText.asContentAnnotatedString().annotatedString
                 )
             }
         }
@@ -1871,7 +1899,6 @@ fun StopEntryExpansionTimes(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StopEntryExpansionTrafficSnapshots(
     instance: AppActiveContext,
@@ -1967,7 +1994,7 @@ fun StopEntryExpansionTrafficSnapshots(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StopEntryExpansionAlightReminder(
     instance: AppActiveContext,

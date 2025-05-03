@@ -21,7 +21,7 @@
 package com.loohp.hkbuseta.common.utils
 
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.readInt
 import io.ktor.utils.io.readLong
 import kotlinx.io.Sink
@@ -58,7 +58,7 @@ open class FormattedText(
             val contentSize = input.readInt()
             val content: MutableList<FormattedTextContent> = mutableListOf()
             (0 until contentSize).forEach { _ ->
-                val string = input.readString(UTF_8)
+                val string = input.readString(Charsets.UTF_8)
                 val styleSize = input.readInt()
                 val style: MutableList<FormattingTextContentStyle> = mutableListOf()
                 (0 until styleSize).forEach { _ ->
@@ -156,7 +156,7 @@ open class FormattedText(
     override fun serialize(out: Sink) {
         out.writeInt(content.size)
         for (formattedTextContent in content) {
-            out.writeString(formattedTextContent.string, UTF_8)
+            out.writeString(formattedTextContent.string, Charsets.UTF_8)
             out.writeInt(formattedTextContent.style.size)
             for (style in formattedTextContent.style) {
                 style.serialize(out)
@@ -311,7 +311,7 @@ sealed class FormattingTextContentStyle(
         }
 
         suspend fun deserialize(input: ByteReadChannel): FormattingTextContentStyle {
-            return when (val type = input.readString(UTF_8)) {
+            return when (val type = input.readString(Charsets.UTF_8)) {
                 "small" -> SmallContentStyle
                 "big" -> BigContentStyle
                 "bold" -> BoldContentStyle
@@ -333,7 +333,7 @@ sealed class FormattingTextContentStyle(
     }
 
     override fun serialize(out: Sink) {
-        out.writeString(identifier, UTF_8)
+        out.writeString(identifier, Charsets.UTF_8)
         serializeValues(out)
     }
 
@@ -382,7 +382,7 @@ data class InlineImageStyle(
         }
 
         suspend fun deserializeValues(input: ByteReadChannel): InlineImageStyle {
-            return InlineImageStyle(InlineImage.valueOf(input.readString(UTF_8)))
+            return InlineImageStyle(InlineImage.valueOf(input.readString(Charsets.UTF_8)))
         }
     }
 
@@ -391,7 +391,7 @@ data class InlineImageStyle(
     }
 
     override fun serializeValues(out: Sink) {
-        out.writeString(image.name, UTF_8)
+        out.writeString(image.name, Charsets.UTF_8)
     }
 
 }
@@ -406,7 +406,7 @@ data class URLContentStyle(
         }
 
         suspend fun deserializeValues(input: ByteReadChannel): URLContentStyle {
-            return URLContentStyle(input.readString(UTF_8))
+            return URLContentStyle(input.readString(Charsets.UTF_8))
         }
     }
 
@@ -415,7 +415,7 @@ data class URLContentStyle(
     }
 
     override fun serializeValues(out: Sink) {
-        out.writeString(url, UTF_8)
+        out.writeString(url, Charsets.UTF_8)
     }
 
 }

@@ -207,7 +207,7 @@ private fun checkLocationPermission(appActiveContext: AppActiveContext, askIfNot
 
 fun getGPSLocation(appContext: AppContext): Deferred<LocationResult?> {
     if (!checkLocationPermission(appContext, false)) {
-        return CompletableDeferred(null)
+        return CompletableDeferred(value = null)
     }
     val context = appContext.context
     val future = CompletableFuture<LocationResult?>()

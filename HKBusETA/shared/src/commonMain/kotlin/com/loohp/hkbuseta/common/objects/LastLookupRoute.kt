@@ -28,7 +28,7 @@ import com.loohp.hkbuseta.common.utils.readString
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.readLong
 import kotlinx.datetime.LocalDateTime
 import kotlinx.io.Sink
@@ -51,7 +51,7 @@ class LastLookupRoute(
         }
 
         suspend fun deserialize(input: ByteReadChannel): LastLookupRoute {
-            val routeKey = input.readString(UTF_8)
+            val routeKey = input.readString(Charsets.UTF_8)
             val time = input.readLong()
             return LastLookupRoute(routeKey, time)
         }
@@ -80,7 +80,7 @@ class LastLookupRoute(
     }
 
     override fun serialize(out: Sink) {
-        out.writeString(routeKey, UTF_8)
+        out.writeString(routeKey, Charsets.UTF_8)
         out.writeLong(time)
     }
 

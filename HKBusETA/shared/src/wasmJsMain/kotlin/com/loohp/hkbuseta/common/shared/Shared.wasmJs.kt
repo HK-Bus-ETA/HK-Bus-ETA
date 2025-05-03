@@ -21,17 +21,18 @@
 package com.loohp.hkbuseta.common.shared
 
 import com.loohp.hkbuseta.common.utils.count
-import kotlinx.browser.window
 
 private val webUrlRegex = "^((?:[a-zA-Z0-9]+://)?[^/]+(?:/#)*)(.*)".toRegex()
 
 actual const val JOINT_OPERATED_COLOR_REFRESH_RATE: Long = 10
-actual val BASE_URL: String get() = window.location.href.let {
+actual val BASE_URL: String get() = href().let {
     val url = webUrlRegex.find(it)?.groupValues?.get(1)?: it
     if (url.endsWith("/#")) url else "$url/#"
 }
 
 val URL_STACK_COUNT: Int get() = (BASE_URL.count("/#") - 1).coerceAtLeast(0)
-val URL_ROUTE: String get() = window.location.href.let {
+val URL_ROUTE: String get() = href().let {
     webUrlRegex.find(it)?.groupValues?.get(2)?: ""
 }
+
+fun href(): String = js("window.location.href")

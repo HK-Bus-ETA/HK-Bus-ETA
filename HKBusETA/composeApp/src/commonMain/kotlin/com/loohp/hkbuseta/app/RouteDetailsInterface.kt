@@ -36,11 +36,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -89,6 +92,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
+import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.ScreenState
 import com.loohp.hkbuseta.appcontext.compose
@@ -526,6 +530,10 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             onSizeChange = { scope.launch { pinnedSectionSize = it } }
         )
         PlatformTopAppBar(
+            modifier = Modifier.applyIf(
+                predicate = { pinnedSectionSize != IntSize.Zero },
+                apply = { applyIf(composePlatform is ComposePlatform.AndroidPlatform) { consumeWindowInsets(WindowInsets.statusBars) } }
+            ),
             title = {
                 @Suppress("RemoveExplicitTypeArguments")
                 ConditionalComposable<RowScope>(
@@ -559,7 +567,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                 .applyIf(isNightRoute && !darkMode) {
                                     padding(horizontal = if (isNightRoute && !darkMode) 3.sp.dp else 0.dp).drawBehind {
                                         drawRoundRect(
-                                            topLeft = Offset(-3.sp.toPx(), 1.sp.toPx()),
+                                            topLeft = Offset(-3.sp.toPx(), 1.sp.toPx() + (if (composePlatform.browserEnvironment) 3 else 0).sp.toPx()),
                                             size = Size(size.width + 6.sp.toPx(), size.height - (if (composePlatform.applePlatform) 2 else 3).sp.toPx()),
                                             cornerRadius = CornerRadius(4.sp.toPx()),
                                             color = Color.Black

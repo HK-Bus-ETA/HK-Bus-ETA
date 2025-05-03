@@ -46,7 +46,7 @@ import com.loohp.hkbuseta.common.utils.writeMap
 import com.loohp.hkbuseta.common.utils.writeNullable
 import com.loohp.hkbuseta.common.utils.writeString
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.readInt
 import kotlinx.io.Sink
 import kotlinx.serialization.SerialName
@@ -75,6 +75,7 @@ class Route(
     val lrtCircular: BilingualText? = null,
     val dest: BilingualText,
     val orig: BilingualText,
+    val fakeRoute: Boolean = false,
     val stops: Map<Operator, List<String>>,
     @ReduceDataOmitted val fares: List<Fare>? = null,
     @ReduceDataOmitted val faresHoliday: List<Fare>? = null,
@@ -97,33 +98,35 @@ class Route(
             val lrtCircular = if (json.contains("lrtCircular")) BilingualText.deserialize(json.optJsonObject("lrtCircular")!!) else null
             val dest = BilingualText.deserialize(json.optJsonObject("dest")!!)
             val orig = BilingualText.deserialize(json.optJsonObject("orig")!!)
+            val fakeRoute = json.optBoolean("fakeRoute", false)
             val stops = json.optJsonObject("stops")!!.mapToMutableMap({ Operator.valueOf(it) }, { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.content } })
             val fares = json.optJsonArray("fares")?.mapToMutableList { Fare(it.jsonPrimitive.content) }
             val faresHoliday = json.optJsonArray("faresHoliday")?.mapToMutableList { Fare(it.jsonPrimitive.content) }
             val freq = json.optJsonObject("freq")?.mapToMutableMap { m -> m.jsonObject.mapToMutableMap { a -> (a as? JsonArray)?.mapToMutableList { e -> e.jsonPrimitive.content } } }
             val journeyTime = json.optString("jt").toIntOrNull()
-            return Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, lrtCircular, dest, orig, stops, fares, faresHoliday, freq, journeyTime)
+            return Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, lrtCircular, dest, orig, fakeRoute, stops, fares, faresHoliday, freq, journeyTime)
         }
 
         suspend fun deserialize(input: ByteReadChannel): Route {
-            val route = input.readString(UTF_8)
-            val bound = input.readMap(linkedMapOf()) { Operator.valueOf(it.readString(UTF_8)) to it.readString(UTF_8) }
-            val co = input.readCollection(mutableListOf()) { Operator.valueOf(it.readString(UTF_8)) }
-            val serviceType = input.readString(UTF_8)
-            val nlbId = input.readString(UTF_8)
-            val gtfsId = input.readString(UTF_8)
+            val route = input.readString(Charsets.UTF_8)
+            val bound = input.readMap(linkedMapOf()) { Operator.valueOf(it.readString(Charsets.UTF_8)) to it.readString(Charsets.UTF_8) }
+            val co = input.readCollection(mutableListOf()) { Operator.valueOf(it.readString(Charsets.UTF_8)) }
+            val serviceType = input.readString(Charsets.UTF_8)
+            val nlbId = input.readString(Charsets.UTF_8)
+            val gtfsId = input.readString(Charsets.UTF_8)
             val ctbIsCircular = input.readBoolean()
             val kmbCtbJoint = input.readBoolean()
-            val gmbRegion = input.readNullable { GMBRegion.valueOfOrNull(it.readString(UTF_8)) }
+            val gmbRegion = input.readNullable { GMBRegion.valueOfOrNull(it.readString(Charsets.UTF_8)) }
             val lrtCircular = input.readNullable { BilingualText.deserialize(it) }
             val dest = BilingualText.deserialize(input)
             val orig = BilingualText.deserialize(input)
-            val stops = input.readMap(linkedMapOf()) { Operator.valueOf(it.readString(UTF_8)) to it.readCollection(mutableListOf()) { it1 -> it1.readString(UTF_8) } }
-            val fares = input.readNullable { i -> i.readCollection(mutableListOf()) { Fare(it.readString(UTF_8)) } }
-            val faresHoliday = input.readNullable { i -> i.readCollection(mutableListOf()) { Fare(it.readString(UTF_8)) } }
-            val freq = input.readNullable { n -> n.readMap(mutableMapOf()) { m -> m.readString(UTF_8) to m.readMap(mutableMapOf()) { a -> a.readString(UTF_8) to a.readNullable { an -> an.readCollection(mutableListOf()) { e -> e.readString(UTF_8) } } } } }
+            val fakeRoute = input.readBoolean()
+            val stops = input.readMap(linkedMapOf()) { Operator.valueOf(it.readString(Charsets.UTF_8)) to it.readCollection(mutableListOf()) { it1 -> it1.readString(Charsets.UTF_8) } }
+            val fares = input.readNullable { i -> i.readCollection(mutableListOf()) { Fare(it.readString(Charsets.UTF_8)) } }
+            val faresHoliday = input.readNullable { i -> i.readCollection(mutableListOf()) { Fare(it.readString(Charsets.UTF_8)) } }
+            val freq = input.readNullable { n -> n.readMap(mutableMapOf()) { m -> m.readString(Charsets.UTF_8) to m.readMap(mutableMapOf()) { a -> a.readString(Charsets.UTF_8) to a.readNullable { an -> an.readCollection(mutableListOf()) { e -> e.readString(Charsets.UTF_8) } } } } }
             val journeyTime = input.readNullable { i -> i.readInt() }
-            return Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, lrtCircular, dest, orig, stops, fares, faresHoliday, freq, journeyTime)
+            return Route(route, bound, co, serviceType, nlbId, gtfsId, ctbIsCircular, kmbCtbJoint, gmbRegion, lrtCircular, dest, orig, fakeRoute, stops, fares, faresHoliday, freq, journeyTime)
         }
     }
 
@@ -145,6 +148,7 @@ class Route(
             }
             put("dest", dest.serialize())
             put("orig", orig.serialize())
+            put("fakeRoute", fakeRoute)
             put("stops", stops.toJsonObject { it.toJsonArray() })
             if (fares != null) {
                 put("fares", fares.toJsonArray())
@@ -162,28 +166,29 @@ class Route(
     }
 
     override fun serialize(out: Sink) {
-        out.writeString(routeNumber, UTF_8)
-        out.writeMap(bound) { o, k, v -> o.writeString(k.name, UTF_8) to o.writeString(v, UTF_8) }
-        out.writeCollection(co) { o, t -> o.writeString(t.name, UTF_8) }
-        out.writeString(serviceType, UTF_8)
-        out.writeString(nlbId, UTF_8)
-        out.writeString(gtfsId, UTF_8)
+        out.writeString(routeNumber, Charsets.UTF_8)
+        out.writeMap(bound) { o, k, v -> o.writeString(k.name, Charsets.UTF_8) to o.writeString(v, Charsets.UTF_8) }
+        out.writeCollection(co) { o, t -> o.writeString(t.name, Charsets.UTF_8) }
+        out.writeString(serviceType, Charsets.UTF_8)
+        out.writeString(nlbId, Charsets.UTF_8)
+        out.writeString(gtfsId, Charsets.UTF_8)
         out.writeBoolean(isCtbIsCircular)
         out.writeBoolean(isKmbCtbJoint)
-        out.writeNullable(gmbRegion) { o, v -> o.writeString(v.name, UTF_8) }
+        out.writeNullable(gmbRegion) { o, v -> o.writeString(v.name, Charsets.UTF_8) }
         out.writeNullable(lrtCircular) { o, v -> v.serialize(o) }
         dest.serialize(out)
         orig.serialize(out)
-        out.writeMap(stops) { o, k, v -> o.writeString(k.name, UTF_8) to o.writeCollection(v) { o1, t1 -> o1.writeString(t1, UTF_8) } }
-        out.writeNullable(fares) { o, v -> o.writeCollection(v) { o1, v1 -> o1.writeString(v1.toString(), UTF_8) } }
-        out.writeNullable(faresHoliday) { o, v -> o.writeCollection(v) { o1, v1 -> o1.writeString(v1.toString(), UTF_8) } }
+        out.writeBoolean(fakeRoute)
+        out.writeMap(stops) { o, k, v -> o.writeString(k.name, Charsets.UTF_8) to o.writeCollection(v) { o1, t1 -> o1.writeString(t1, Charsets.UTF_8) } }
+        out.writeNullable(fares) { o, v -> o.writeCollection(v) { o1, v1 -> o1.writeString(v1.toString(), Charsets.UTF_8) } }
+        out.writeNullable(faresHoliday) { o, v -> o.writeCollection(v) { o1, v1 -> o1.writeString(v1.toString(), Charsets.UTF_8) } }
         out.writeNullable(freq) { o, n -> o.writeMap(n) { o1, mk, mv ->
-            o1.writeString(mk, UTF_8)
+            o1.writeString(mk, Charsets.UTF_8)
             o1.writeMap(mv) { o2, ak, av ->
-                o2.writeString(ak, UTF_8)
+                o2.writeString(ak, Charsets.UTF_8)
                 o2.writeNullable(av) { o3, avn ->
                     o3.writeCollection(avn) { o4, e ->
-                        o4.writeString(e, UTF_8)
+                        o4.writeString(e, Charsets.UTF_8)
                     }
                 }
             }
@@ -207,6 +212,7 @@ class Route(
         if (lrtCircular != other.lrtCircular) return false
         if (dest != other.dest) return false
         if (orig != other.orig) return false
+        if (fakeRoute != other.fakeRoute) return false
         return stops == other.stops
     }
 
@@ -223,6 +229,7 @@ class Route(
         result = 31 * result + (lrtCircular?.hashCode() ?: 0)
         result = 31 * result + dest.hashCode()
         result = 31 * result + orig.hashCode()
+        result = 31 * result + fakeRoute.hashCode()
         result = 31 * result + stops.hashCode()
         return result
     }

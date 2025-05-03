@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,10 +34,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFontFamilyResolver
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.LineHeightStyle.Alignment
+import androidx.compose.ui.text.style.LineHeightStyle.Mode
+import androidx.compose.ui.text.style.LineHeightStyle.Trim
 import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.utils.FontResource
@@ -49,7 +55,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.FontResource
 import org.jetbrains.compose.resources.ResourceEnvironment
 import org.jetbrains.compose.resources.getFontResourceBytes
@@ -87,7 +92,6 @@ private val emojiFont = listOf(
     WebFontEntry("NotoColorEmoji-Regular", FontWeight.Normal)
 )
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 private fun rememberLoadFontFamilyEmitGradually(environment: ResourceEnvironment, fontEntries: Collection<WebFontEntry>): State<FontFamily?> {
     var fonts: ImmutableList<Font> by remember { mutableStateOf(persistentListOf()) }
@@ -119,7 +123,6 @@ private fun rememberLoadFontFamilyEmitGradually(environment: ResourceEnvironment
     return fontFamilyState
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 private fun rememberLoadFontFamilyEmitOnComplete(environment: ResourceEnvironment, fontEntries: Collection<WebFontEntry>): State<FontFamily?> {
     val fontFamilyState: MutableState<FontFamily?> = remember { mutableStateOf(null) }
@@ -172,7 +175,6 @@ fun Typography.applyFontFamily(fontFamily: FontFamily): Typography {
     )
 }
 
-@OptIn(ExperimentalResourceApi::class)
 suspend inline fun FontResource.readBytes(environment: ResourceEnvironment): ByteArray {
     return getFontResourceBytes(environment, this)
 }
@@ -186,7 +188,6 @@ fun resolveColorScheme(useDarkTheme: Boolean, customColor: Color?): ColorScheme 
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 actual fun AppTheme(
     useDarkTheme: Boolean,
@@ -217,7 +218,12 @@ actual fun AppTheme(
         MaterialTheme(
             colorScheme = resolveColorScheme(useDarkTheme, customColor),
             typography = it,
-            content = content
+            content = {
+                ProvideTextStyle(
+                    value = TextStyle(lineHeightStyle = LineHeightStyle(alignment = Alignment.Proportional, trim = Trim.None, mode = Mode.Fixed)),
+                    content = content
+                )
+            }
         )
     }
 }

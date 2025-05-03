@@ -20,28 +20,10 @@
 
 package com.loohp.hkbuseta.compose
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.BoundsTransform
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.SharedTransitionScope.OverlayClip
-import androidx.compose.animation.SharedTransitionScope.PlaceHolderSize
-import androidx.compose.animation.SharedTransitionScope.PlaceHolderSize.Companion.contentSize
-import androidx.compose.animation.SharedTransitionScope.ResizeMode
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.ScaleToBounds
-import androidx.compose.animation.SharedTransitionScope.SharedContentState
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.Spring.StiffnessMediumLow
-import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -55,6 +37,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
@@ -68,21 +51,18 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.CacheDrawScope
 import androidx.compose.ui.draw.DrawResult
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -99,7 +79,6 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -122,6 +101,8 @@ import androidx.compose.ui.unit.toOffset
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import com.loohp.hkbuseta.appcontext.ComposePlatform
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -158,91 +139,6 @@ inline fun Modifier.onHardwareKeyboardEnter(crossinline action: () -> Boolean): 
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
-val LocalSharedTransitionScope = compositionLocalOf<SharedTransitionScope?> { null }
-val LocalSharedAnimatedVisibilityScope = compositionLocalOf<AnimatedVisibilityScope?> { null }
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-fun Modifier.localSharedElement(
-    key: Any,
-    boundsTransform: BoundsTransform = DefaultBoundsTransform,
-    placeHolderSize: PlaceHolderSize = contentSize,
-    renderInOverlayDuringTransition: Boolean = true,
-    zIndexInOverlay: Float = 0f,
-    clipInOverlayDuringTransition: OverlayClip = ParentClip
-): Modifier {
-    val sharedTransitionScope = LocalSharedTransitionScope.current
-    val sharedAnimatedVisibilityScope = LocalSharedAnimatedVisibilityScope.current
-    return applyIf(sharedTransitionScope != null && sharedAnimatedVisibilityScope != null) {
-        with(sharedTransitionScope!!) {
-            sharedElement(
-                state = rememberSharedContentState(key),
-                animatedVisibilityScope = sharedAnimatedVisibilityScope!!,
-                boundsTransform = boundsTransform,
-                placeHolderSize = placeHolderSize,
-                renderInOverlayDuringTransition = renderInOverlayDuringTransition,
-                zIndexInOverlay = zIndexInOverlay,
-                clipInOverlayDuringTransition = clipInOverlayDuringTransition
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-fun Modifier.localSharedBounds(
-    key: Any,
-    enter: EnterTransition = fadeIn(),
-    exit: ExitTransition = fadeOut(),
-    boundsTransform: BoundsTransform = DefaultBoundsTransform,
-    resizeMode: ResizeMode = ScaleToBounds(ContentScale.FillWidth, Center),
-    placeHolderSize: PlaceHolderSize = contentSize,
-    renderInOverlayDuringTransition: Boolean = true,
-    zIndexInOverlay: Float = 0f,
-    clipInOverlayDuringTransition: OverlayClip = ParentClip
-): Modifier {
-    val sharedTransitionScope = LocalSharedTransitionScope.current
-    val sharedAnimatedVisibilityScope = LocalSharedAnimatedVisibilityScope.current
-    return applyIf(sharedTransitionScope != null && sharedAnimatedVisibilityScope != null) {
-        with(sharedTransitionScope!!) {
-            sharedBounds(
-                sharedContentState = rememberSharedContentState(key),
-                animatedVisibilityScope = sharedAnimatedVisibilityScope!!,
-                enter = enter,
-                exit = exit,
-                boundsTransform = boundsTransform,
-                resizeMode = resizeMode,
-                placeHolderSize = placeHolderSize,
-                renderInOverlayDuringTransition = renderInOverlayDuringTransition,
-                zIndexInOverlay = zIndexInOverlay,
-                clipInOverlayDuringTransition = clipInOverlayDuringTransition
-            )
-        }
-    }
-}
-
-private val DefaultSpring = spring(
-    stiffness = StiffnessMediumLow,
-    visibilityThreshold = Rect.VisibilityThreshold
-)
-
-@ExperimentalSharedTransitionApi
-private val DefaultBoundsTransform = BoundsTransform { _, _ -> DefaultSpring }
-
-@ExperimentalSharedTransitionApi
-private val ParentClip: OverlayClip =
-    object : OverlayClip {
-        override fun getClipPath(
-            state: SharedContentState,
-            bounds: Rect,
-            layoutDirection: LayoutDirection,
-            density: Density
-        ): Path? {
-            return state.parentSharedContentState?.clipPathInOverlay
-        }
-    }
-
 inline fun Modifier.clickable(
     enabled: Boolean = true,
     onClickLabel: String? = null,
@@ -255,7 +151,6 @@ inline fun Modifier.clickable(
     onClick = onClick
 ).pointerHoverIcon(PointerIcon.Hand)
 
-@OptIn(ExperimentalFoundationApi::class)
 inline fun Modifier.combinedClickable(
     enabled: Boolean = true,
     onClickLabel: String? = null,
@@ -361,7 +256,12 @@ fun rememberPlainTooltipPositionProvider(
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
     val tooltipAnchorSpacing = with(density) { spacingBetweenTooltipAndAnchor.roundToPx() }
-    val safeDrawingTop = WindowInsets.safeDrawing.getTop(density)
+    val extraStatusBarPadding = if (composePlatform is ComposePlatform.AndroidPlatform) {
+        WindowInsets.statusBars.getTop(density)
+    } else {
+        0
+    }
+    val safeDrawingTop = WindowInsets.safeDrawing.getTop(density) - extraStatusBarPadding
     val safeDrawingBottom = WindowInsets.safeDrawing.getBottom(density)
     val safeDrawingLeft = WindowInsets.safeDrawing.getLeft(density, layoutDirection)
     val safeDrawingRight = WindowInsets.safeDrawing.getRight(density, layoutDirection)
