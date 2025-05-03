@@ -131,6 +131,7 @@ import androidx.compose.ui.unit.sp
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.shared.Shared
+import com.loohp.hkbuseta.consumePlatformWindowInsets
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.UIImagePainter
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -789,7 +790,7 @@ actual fun PlatformModalBottomSheet(
                 modifier = Modifier.heightIn(max = (currentLocalWindowSize.height / 5 * 4).equivalentDp)
             ) {
                 Column(
-                    modifier = modifier
+                    modifier = modifier.consumePlatformWindowInsets()
                 ) {
                     content.invoke(this)
                 }

@@ -27,11 +27,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.SnackbarHostState
@@ -88,7 +86,7 @@ import com.loohp.hkbuseta.utils.dp
 import kotlinx.coroutines.delay
 
 @Composable
-expect fun Modifier.consumePlatformWindowInsets(): Modifier
+expect fun Modifier.platformSafeAreaSidesPaddingAndConsumeWindowInsets(): Modifier
 
 expect fun exitApp()
 
@@ -181,6 +179,9 @@ fun App(onReady: (() -> Unit)? = null) {
                     onReady?.invoke()
                 }
                 PlatformScaffold(
+                    modifier = Modifier.applyIf(instance.shouldConsumePlatformWindowInsetsOnRoot) {
+                        platformSafeAreaSidesPaddingAndConsumeWindowInsets()
+                    },
                     snackbarHost = {
                         SnackbarInterface(
                             instance = instance,
@@ -188,12 +189,7 @@ fun App(onReady: (() -> Unit)? = null) {
                         )
                     },
                     content = {
-                        Box(
-                            modifier = Modifier
-                                .applyIf(instance.shouldConsumePlatformWindowInsetsOnRoot) {
-                                    consumePlatformWindowInsets()
-                                }
-                        ) {
+                        Box {
                             AnimatedContent(
                                 targetState = instance,
                                 contentKey = { it.screenGroup }

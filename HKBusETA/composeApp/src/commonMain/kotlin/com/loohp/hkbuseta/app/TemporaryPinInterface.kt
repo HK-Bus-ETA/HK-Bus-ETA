@@ -20,7 +20,9 @@
 
 package com.loohp.hkbuseta.app
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +30,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -101,6 +102,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TemporaryPinInterface(
     instance: AppActiveContext,
+    emptyBackgroundColor: Color = platformTopBarColor,
     onSizeChange: ((IntSize) -> Unit)? = null
 ) {
     var items by Shared.pinnedItems.collectAsStateMultiplatform()
@@ -117,6 +119,12 @@ fun TemporaryPinInterface(
     val etaResultsState = remember { etaResults.asImmutableState() }
     val etaUpdateTimesState = remember { etaUpdateTimes.asImmutableState() }
 
+    val animatedBackgroundColor by animateColorAsState(
+        targetValue = if (items.isEmpty()) emptyBackgroundColor else platformTopBarColor,
+        animationSpec = tween(durationMillis = 300),
+        label = ""
+    )
+
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,7 +136,7 @@ fun TemporaryPinInterface(
                     padding = PaddingValues(0.dp, 2.dp, 0.dp, 2.dp)
                 )
             )
-            .background(platformTopBarColor)
+            .background(animatedBackgroundColor)
             .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { statusBarsPadding() }
             .animateContentSize()
             .applyIfNotNull(onSizeChange) { this.onSizeChanged(it) },

@@ -53,4 +53,4 @@ actual fun watchDataOverwriteWarningInitialValue(): Boolean = runBlocking(Dispat
 actual fun SnackbarInterface(instance: AppActiveContext, snackbarHostState: SnackbarHostState) = SnackbarHost(snackbarHostState)
 
 @Composable
-actual fun Modifier.consumePlatformWindowInsets(): Modifier = this
+actual fun Modifier.platformSafeAreaSidesPaddingAndConsumeWindowInsets(): Modifier = this

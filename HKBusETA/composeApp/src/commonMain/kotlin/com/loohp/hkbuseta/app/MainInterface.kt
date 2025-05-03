@@ -96,7 +96,7 @@ import com.loohp.hkbuseta.compose.PlatformLinearProgressIndicator
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
-import com.loohp.hkbuseta.consumePlatformWindowInsets
+import com.loohp.hkbuseta.platformSafeAreaSidesPaddingAndConsumeWindowInsets
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.dp
@@ -269,7 +269,7 @@ fun SplashScreen(instance: AppActiveContext, onSplashScreenDone: () -> Unit) {
         }
         Column(
             modifier = Modifier
-                .consumePlatformWindowInsets()
+                .platformSafeAreaSidesPaddingAndConsumeWindowInsets()
                 .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
                     statusBarsPadding()
                 }
@@ -335,7 +335,7 @@ fun UpdatingElements(instance: AppActiveContext) {
 
     Column(
         modifier = Modifier
-            .consumePlatformWindowInsets()
+            .platformSafeAreaSidesPaddingAndConsumeWindowInsets()
             .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
                 navigationBarsPadding()
             }
@@ -370,7 +370,7 @@ fun LoadingElements(instance: AppActiveContext) {
 
     Column (
         modifier = Modifier
-            .consumePlatformWindowInsets()
+            .platformSafeAreaSidesPaddingAndConsumeWindowInsets()
             .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
                 navigationBarsPadding()
             }

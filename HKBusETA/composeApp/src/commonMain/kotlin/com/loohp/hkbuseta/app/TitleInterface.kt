@@ -32,9 +32,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -97,9 +97,11 @@ import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.mutableSignalStateOf
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
+import com.loohp.hkbuseta.compose.platformTopBarColor
 import com.loohp.hkbuseta.compose.rememberAutoResizeTextState
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.utils.DrawableResource
+import com.loohp.hkbuseta.utils.adjustAlpha
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -288,15 +290,18 @@ fun TitleInterface(instance: AppActiveContext) {
         },
         content = {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { consumeWindowInsets(WindowInsets.systemBars) }
+                modifier = Modifier.fillMaxSize()
             ) {
                 TemporaryPinInterface(
-                    instance = instance
+                    instance = instance,
+                    emptyBackgroundColor = if (pagerState.currentPage == 0) platformTopBarColor else platformTopBarColor.adjustAlpha(0F)
                 )
                 HorizontalPager(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                            consumeWindowInsets(WindowInsets.navigationBars)
+                        },
                     state = pagerState,
                     userScrollEnabled = true
                 ) {

@@ -21,6 +21,7 @@
 package com.loohp.hkbuseta
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -45,7 +46,9 @@ fun MainViewController(): UIViewController {
         ) {
             val navColor by navColorState.collectAsStateMultiplatform()
             Box(
-                modifier = Modifier.drawBehind { drawRect(navColor?: Color.Transparent) }
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawBehind { drawRect(navColor?: Color.Transparent) }
             ) {
                 App()
             }

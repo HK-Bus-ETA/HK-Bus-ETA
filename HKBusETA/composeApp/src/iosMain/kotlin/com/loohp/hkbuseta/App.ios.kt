@@ -57,10 +57,18 @@ actual fun watchDataOverwriteWarningInitialValue(): Boolean = runBlocking(Dispat
 actual fun SnackbarInterface(instance: AppActiveContext, snackbarHostState: SnackbarHostState) = SnackbarHost(snackbarHostState)
 
 @Composable
-actual fun Modifier.consumePlatformWindowInsets(): Modifier {
-    return this
-        .consumeWindowInsets(WindowInsets.safeContent.exclude(WindowInsets.ime))
-        .padding(WindowInsets.safeDrawing.detectKeepSafeAreaSides().asPaddingValues())
+actual fun Modifier.platformSafeAreaSidesPaddingAndConsumeWindowInsets(): Modifier {
+    return platformSafeAreaSidesPadding().consumePlatformWindowInsets()
+}
+
+@Composable
+fun Modifier.platformSafeAreaSidesPadding(): Modifier {
+    return padding(WindowInsets.safeDrawing.detectKeepSafeAreaSides().asPaddingValues())
+}
+
+@Composable
+fun Modifier.consumePlatformWindowInsets(): Modifier {
+    return consumeWindowInsets(WindowInsets.safeContent.exclude(WindowInsets.ime))
 }
 
 @Composable
