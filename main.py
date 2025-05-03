@@ -1003,6 +1003,14 @@ def add_route_remarks():
         "H2K": {
             "zh": "過海旅遊路線",
             "en": "Cross Harbour Bus Tour"
+        },
+        "H3": {
+            "zh": "港島旅遊路線",
+            "en": "Hong Kong Island Bus Tour"
+        },
+        "H4": {
+            "zh": "港島旅遊路線",
+            "en": "Hong Kong Island Bus Tour"
         }
     }
     nlb = {}
