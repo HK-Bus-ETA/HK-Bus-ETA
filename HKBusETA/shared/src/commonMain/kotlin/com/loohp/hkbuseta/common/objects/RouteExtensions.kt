@@ -1307,7 +1307,7 @@ fun Registry.NextBusPosition?.getDisplayText(allStops: List<Registry.StopData>, 
                     }
                     append(nextStop.stop.name.en, BoldStyle)
                     if (type == Registry.NextBusStatusType.ARRIVING) {
-                        append("(")
+                        append(" (")
                         append("$stopsCount", BoldStyle)
                         when (mode) {
                             NextBusTextDisplayMode.FULL -> append(" stops left)")
