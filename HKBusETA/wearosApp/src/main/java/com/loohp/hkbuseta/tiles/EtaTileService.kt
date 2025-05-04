@@ -40,7 +40,6 @@ import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Registry
-import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.coroutines.Dispatchers
@@ -70,15 +69,11 @@ class EtaTileService : TileService() {
         }
     }
 
-    override fun onTileEnterEvent(requestParams: EventBuilders.TileEnterEvent) {
-        if (runBlocking { !Registry.isNewInstall(appContext) }) {
-            EtaTileServiceCommon.handleTileEnterEvent(requestParams.tileId, appContext)
-        }
-    }
-
-    override fun onTileLeaveEvent(requestParams: EventBuilders.TileLeaveEvent) {
-        if (runBlocking { !Registry.isNewInstall(appContext) }) {
-            EtaTileServiceCommon.handleTileLeaveEvent(requestParams.tileId)
+    override fun onRecentInteractionEventsAsync(events: MutableList<EventBuilders.TileInteractionEvent>): ListenableFuture<Void> {
+        return if (runBlocking { !Registry.isNewInstall(appContext) }) {
+            EtaTileServiceCommon.handleRecentInteractionEventsAsync(events, appContext)
+        } else {
+            Futures.immediateFuture(null)
         }
     }
 

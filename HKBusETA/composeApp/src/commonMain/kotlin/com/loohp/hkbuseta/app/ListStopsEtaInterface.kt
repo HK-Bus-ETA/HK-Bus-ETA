@@ -2794,7 +2794,7 @@ fun PipModeInterface(
                         modifier = Modifier
                             .alignByBaseline()
                             .padding(end = 2.dp),
-                        fontSize = 22.dp.sp * factor,
+                        fontSize = 16.dp.sp * factor,
                         lineHeight = 1.1F.em,
                         fontWeight = FontWeight.Bold,
                         text = co.getDisplayRouteNumber(routeNumber, true),
@@ -2804,7 +2804,7 @@ fun PipModeInterface(
                         modifier = Modifier
                             .weight(1F)
                             .alignByBaseline(),
-                        fontSizeRange = FontSizeRange(max = 15.dp.sp * factor),
+                        fontSizeRange = FontSizeRange(max = 13.dp.sp * factor),
                         lineHeight = 1.1F.em,
                         text = buildAnnotatedString {
                             if (route.shouldPrependTo()) {
@@ -2816,7 +2816,7 @@ fun PipModeInterface(
                     )
                     Image(
                         modifier = Modifier
-                            .requiredSize(22.dp * factor)
+                            .requiredSize(19.dp * factor)
                             .offset(y = 5.dp)
                             .padding(start = 2.5F.dp)
                             .align(Alignment.Top),
@@ -2847,7 +2847,7 @@ fun PipModeInterface(
                     etaResults = etaResults,
                     etaUpdateTimes = etaUpdateTimes,
                     options = options,
-                    fontSize = 14.5F.dp.sp * factor,
+                    fontSize = 12F.dp.sp * factor,
                     lineRange = 1..4,
                     dynamicLineRange = true,
                     instance = instance

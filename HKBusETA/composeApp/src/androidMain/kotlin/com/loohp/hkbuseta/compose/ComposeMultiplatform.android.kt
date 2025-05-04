@@ -92,7 +92,7 @@ actual fun AppActiveContext.enterPipMode() {
         ?: throw IllegalStateException("Picture in picture should be called in the context of an Activity")
     if (!activity.isInPictureInPictureMode) {
         activity.enterPictureInPictureMode(PictureInPictureParams.Builder()
-            .setAspectRatio(Rational(16, 9))
+            .setAspectRatio(Rational(16, 10))
             .build())
     }
 }

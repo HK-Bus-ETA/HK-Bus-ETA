@@ -72,6 +72,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -860,6 +861,12 @@ fun MTRRouteMapInterface(
                     }
                 }
             }
+        }
+    }
+    LaunchedEffect (showingSheet) {
+        delay(1000)
+        if (showingSheet && sheetState.currentValue == SheetValue.Hidden) {
+            showingSheet = false
         }
     }
 
@@ -1934,6 +1941,12 @@ fun LRTRouteMapInterface(
                     }
                 }
             }
+        }
+    }
+    LaunchedEffect (showingSheet) {
+        delay(1000)
+        if (showingSheet && sheetState.currentValue == SheetValue.Hidden) {
+            showingSheet = false
         }
     }
 

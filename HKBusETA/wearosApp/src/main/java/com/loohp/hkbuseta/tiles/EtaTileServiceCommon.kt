@@ -37,6 +37,7 @@ import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
 import androidx.wear.protolayout.expression.AnimationParameterBuilders
 import androidx.wear.protolayout.expression.DynamicBuilders.DynamicColor
+import androidx.wear.tiles.EventBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import co.touchlab.stately.concurrency.AtomicBoolean
@@ -66,6 +67,7 @@ import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
+import com.loohp.hkbuseta.common.utils.debugLog
 import com.loohp.hkbuseta.common.utils.getAndNegate
 import com.loohp.hkbuseta.common.utils.hongKongZoneId
 import com.loohp.hkbuseta.common.utils.indexesOf
@@ -731,6 +733,20 @@ class EtaTileServiceCommon {
         fun handleTileRemoveEvent(tileId: Int, context: AppContext) {
             handleTileLeaveEvent(tileId)
             Registry.getInstanceNoUpdateCheck(context).clearEtaTileConfiguration(tileId, context)
+        }
+
+        fun handleRecentInteractionEventsAsync(events: MutableList<EventBuilders.TileInteractionEvent>, context: AppContext): ListenableFuture<Void> {
+            return Futures.submit(Callable {
+                for (event in events) {
+                    debugLog(event.eventType)
+                    when (event.eventType) {
+                        EventBuilders.TileInteractionEvent.ENTER -> handleTileEnterEvent(event.tileId, context)
+                        EventBuilders.TileInteractionEvent.LEAVE -> handleTileLeaveEvent(event.tileId)
+                        EventBuilders.TileInteractionEvent.UNKNOWN -> { /* Do nothing */ }
+                    }
+                }
+                null
+            }, executor)
         }
 
         fun requestTileUpdate() {

@@ -42,7 +42,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -107,13 +106,9 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
-import androidx.compose.ui.text.style.LineHeightStyle.Mode
-import androidx.compose.ui.text.style.LineHeightStyle.Trim
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -126,7 +121,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
-import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
@@ -232,7 +226,6 @@ import com.loohp.hkbuseta.compose.platformComponentBackgroundColor
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
 import com.loohp.hkbuseta.compose.platformLargeShape
 import com.loohp.hkbuseta.compose.platformLocalContentColor
-import com.loohp.hkbuseta.compose.platformLocalTextStyle
 import com.loohp.hkbuseta.compose.platformTopBarColor
 import com.loohp.hkbuseta.compose.rememberIsInPipMode
 import com.loohp.hkbuseta.compose.table.DataColumn
@@ -792,7 +785,7 @@ fun EmptyListRouteInterface(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListRouteInterfaceInternal(
     instance: AppActiveContext,
@@ -899,7 +892,7 @@ fun ListRouteInterfaceInternal(
                 state = scroll,
                 contentPadding = PaddingValues(vertical = 1.dp)
             ) {
-                itemsIndexed(sortedResults, key = { _, route -> route.uniqueKey }) { index, route ->
+                itemsIndexed(if (reorderEnabled) routes else sortedResults, key = { _, route -> route.uniqueKey }) { index, route ->
                     val uniqueKey = route.uniqueKey
                     val width = routeNumberWidth.size.width
                     val deleteFunction = { Registry.getInstance(instance).removeLastLookupRoutes(route.routeKey, instance) }.takeIf { recentSort == RecentSortMode.FORCED }
@@ -1528,7 +1521,7 @@ fun PipModeInterface(
                         modifier = Modifier
                             .weight(1F)
                             .alignByBaseline(),
-                        fontSizeRange = FontSizeRange(max = 15.dp.sp * factor),
+                        fontSizeRange = FontSizeRange(max = 14.dp.sp * factor),
                         lineHeight = 1.1F.em,
                         text = listName[Shared.language].asContentAnnotatedString().annotatedString,
                         maxLines = 1
@@ -1558,14 +1551,14 @@ fun PipModeInterface(
                         seq = 1,
                         updating = false,
                         freshness = true,
-                        fontSize = 14.5F.dp.sp * factor
+                        fontSize = 12F.dp.sp * factor
                     )
                 } else {
                     PipETAColumn(
                         modifier = Modifier.fillMaxWidth(),
                         routes = routes,
                         options = Registry.EtaQueryOptions(lrtDirectionMode),
-                        fontSize = 14.5F.dp.sp * factor,
+                        fontSize = 12F.dp.sp * factor,
                         lineRange = 1..4,
                         dynamicLineRange = true,
                         instance = instance
