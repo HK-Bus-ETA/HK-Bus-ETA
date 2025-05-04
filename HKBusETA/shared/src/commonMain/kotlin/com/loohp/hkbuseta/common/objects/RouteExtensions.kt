@@ -828,7 +828,7 @@ fun StopIndexedRouteSearchResultEntry.getSpecialRouteAlerts(context: AppContext)
                 val branchStops = branches.associateWith { b ->
                     allStops.mapIndexedNotNull { i, e -> if (e.branchIds.contains(b)) ((i + 1) to e) else null }
                 }
-                branchStops.values.all {
+                branchStops.isNotEmpty() && branchStops.values.all {
                     when {
                         it.last().first == stopInfoIndex -> true
                         it.first().second.stopId == stopInfo?.stopId -> false
