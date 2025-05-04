@@ -2251,6 +2251,7 @@ class Registry {
     class NextBusPositionQueryTask(task: suspend () -> NextBusPosition?): QueryTask<NextBusPosition?>(null, task)
 
     fun findNextBusPosition(stopId: String, stopIndex: Int, co: Operator, route: Route, stopsList: List<StopData>, context: AppContext, options: EtaQueryOptions? = null): NextBusPositionQueryTask {
+        if (!co.isBus) return NextBusPositionQueryTask { null }
         val startingIndex = stopsList
             .indexesOf { it.stopId == stopId }
             .minByOrNull { (it - stopIndex).absoluteValue }

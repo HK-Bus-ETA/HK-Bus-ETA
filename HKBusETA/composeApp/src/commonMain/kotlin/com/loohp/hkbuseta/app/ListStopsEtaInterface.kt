@@ -162,6 +162,7 @@ import com.loohp.hkbuseta.common.objects.getOperatorName
 import com.loohp.hkbuseta.common.objects.hasStop
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.indexOfName
+import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.mapTrafficSnapshots
@@ -182,6 +183,7 @@ import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MTRStopSectionData
+import com.loohp.hkbuseta.common.utils.Optional
 import com.loohp.hkbuseta.common.utils.RouteBranchStatus
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
@@ -387,6 +389,7 @@ fun ListStopsEtaInterface(
 
     val etaResults = remember { ConcurrentMap<Int, Registry.ETAQueryResult>().asImmutableState() }
     val etaUpdateTimes = remember { ConcurrentMap<Int, Long>().asImmutableState() }
+    val nextBusPositions = remember { ConcurrentMap<Int, Optional<Registry.NextBusPosition>>().asImmutableState() }
 
     val times: SnapshotStateMap<Int, Registry.TimeBetweenStopResult> = remember { mutableStateMapOf() }
     var timesStartIndex by timesStartIndexState
@@ -590,6 +593,7 @@ fun ListStopsEtaInterface(
                                 lrtDirectionModeState = lrtDirectionModeState,
                                 etaResultsState = etaResults,
                                 etaUpdateTimesState = etaUpdateTimes,
+                                nextBusPositionState = nextBusPositions,
                                 sheetTypeState = sheetTypeState,
                                 togglingAlightReminderState = togglingAlightReminderState,
                                 alternateStopNamesShowingState = alternateStopNamesShowingState,
@@ -1111,6 +1115,7 @@ fun StopEntry(
     lrtDirectionModeState: MutableState<Boolean>,
     etaResultsState: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
+    nextBusPositionState: ImmutableState<out MutableMap<Int, Optional<Registry.NextBusPosition>>>,
     sheetTypeState: MutableState<BottomSheetType>,
     togglingAlightReminderState: MutableState<Boolean>,
     alternateStopNamesShowingState: MutableState<Boolean>,
@@ -1181,6 +1186,7 @@ fun StopEntry(
                     lrtDirectionModeState = lrtDirectionModeState,
                     etaResultsState = etaResultsState,
                     etaUpdateTimesState = etaUpdateTimesState,
+                    nextBusPositionState = nextBusPositionState,
                     sheetTypeState = sheetTypeState,
                     togglingAlightReminderState = togglingAlightReminderState,
                     trafficSnapshots = trafficSnapshots
@@ -1400,6 +1406,7 @@ fun StopEntryExpansion(
     lrtDirectionModeState: MutableState<Boolean>,
     etaResultsState: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
+    nextBusPositionState: ImmutableState<out MutableMap<Int, Optional<Registry.NextBusPosition>>>,
     sheetTypeState: MutableState<BottomSheetType>,
     togglingAlightReminderState: MutableState<Boolean>,
     trafficSnapshots: List<TrafficSnapshotPoint>?
@@ -1453,6 +1460,7 @@ fun StopEntryExpansion(
                 lrtDirectionModeState = lrtDirectionModeState,
                 etaResultsState = etaResultsState,
                 etaUpdateTimesState = etaUpdateTimesState,
+                nextBusPositionState = nextBusPositionState,
                 sheetTypeState = sheetTypeState,
                 togglingAlightReminderState = togglingAlightReminderState
             )
@@ -1506,6 +1514,7 @@ fun StopEntryExpansionEta(
     lrtDirectionModeState: MutableState<Boolean>,
     etaResultsState: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
+    nextBusPositionState: ImmutableState<out MutableMap<Int, Optional<Registry.NextBusPosition>>>,
     sheetTypeState: MutableState<BottomSheetType>,
     togglingAlightReminderState: MutableState<Boolean>
 ) {
@@ -1526,21 +1535,36 @@ fun StopEntryExpansionEta(
 
     val favouriteStopAlreadySet by remember { derivedStateOf { favouriteStops.hasStop(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
 
-    val etaResults = etaResultsState.value
     val etaUpdateTimes = etaUpdateTimesState.value
+    val nextBusPositions = nextBusPositionState.value
+
+    var nextBusPosition by remember(selectedStop, selectedBranch) { mutableStateOf(nextBusPositions[selectedStop]?.value) }
 
     var sheetType by sheetTypeState
 
     val pipMode = rememberIsInPipMode(instance)
 
-    var nextBusPosition: Registry.NextBusPosition? by remember(selectedStop, selectedBranch) { mutableStateOf(null) }
-
-    LaunchedEffect (selectedStop, selectedBranch) {
+    LaunchedEffect (Unit) {
+        etaUpdateTimes[index]?.apply {
+            delay(etaUpdateTimes[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+        }
         while (true) {
-            val route = if (stopData.branchIds.contains(selectedBranch)) selectedBranch else stopData.route
-            nextBusPosition = Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, route, allStops, instance, etaQueryOptions).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            nextBusPosition = if (co.isBus && stopData.branchIds.contains(selectedBranch)) {
+                Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, selectedBranch, allStops, instance, etaQueryOptions).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+            } else {
+                null
+            }
+            nextBusPositions[selectedStop] = Optional(nextBusPosition)
             delay(Shared.ETA_UPDATE_INTERVAL.toLong())
         }
+    }
+    LaunchedEffect (selectedStop, selectedBranch, etaQueryOptions) {
+        nextBusPosition = if (co.isBus && stopData.branchIds.contains(selectedBranch)) {
+            Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, selectedBranch, allStops, instance, etaQueryOptions).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+        } else {
+            null
+        }
+        nextBusPositions[selectedStop] = Optional(nextBusPosition)
     }
 
     Column(
@@ -1601,14 +1625,16 @@ fun StopEntryExpansionEta(
                     text = alerts.joinToAnnotatedString("\n".asAnnotatedString())
                 )
             }
-            val nextBusText = nextBusPosition.getDisplayText(allStops, NextBusTextDisplayMode.FULL, Shared.language)
-            if (nextBusText != null) {
-                PlatformText(
-                    modifier = Modifier.padding(top = 5.dp, end = 10.dp),
-                    fontSize = 14.sp,
-                    lineHeight = 1.3F.em,
-                    text = nextBusText.asContentAnnotatedString().annotatedString
-                )
+            if (co.isBus) {
+                val nextBusText = nextBusPosition.getDisplayText(allStops, NextBusTextDisplayMode.FULL, Shared.language)
+                if (nextBusText != null) {
+                    PlatformText(
+                        modifier = Modifier.padding(top = 5.dp, end = 10.dp),
+                        fontSize = 14.sp,
+                        lineHeight = 1.3F.em,
+                        text = nextBusText.asContentAnnotatedString().annotatedString
+                    )
+                }
             }
         }
         if (!pipMode) {
@@ -1619,8 +1645,8 @@ fun StopEntryExpansionEta(
                 index = index,
                 co = co,
                 stopData = stopData,
-                etaResults = etaResults.asImmutableState(),
-                etaUpdateTimes = etaUpdateTimes.asImmutableState(),
+                etaResults = etaResultsState,
+                etaUpdateTimes = etaUpdateTimesState,
                 options = etaQueryOptions,
                 fontSize = 16F.sp,
                 lineRange = 1..4,

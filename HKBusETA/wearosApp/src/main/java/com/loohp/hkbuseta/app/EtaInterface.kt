@@ -95,6 +95,7 @@ import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getDisplayText
 import com.loohp.hkbuseta.common.objects.idBound
+import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
@@ -291,10 +292,13 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                         if (active) {
                             etaStateFlow.value = result
                         }
-                        if (stopData != null) {
-                            val nextBusResult = runBlocking(Dispatchers.IO) {
-                                val r = if (stopData.branchIds.contains(currentBranch)) currentBranch else stopData.route
-                                Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, r, stopList, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                        if (co.isBus && stopData != null) {
+                            val nextBusResult = if (stopData.branchIds.contains(currentBranch)) {
+                                runBlocking(Dispatchers.IO) {
+                                    Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, currentBranch, stopList, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                                }
+                            } else {
+                                null
                             }
                             if (active) {
                                 nextBusStateFlow.value = nextBusResult
@@ -309,10 +313,13 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                             if (active) {
                                 etaStateFlow.value = result
                             }
-                            if (stopData != null) {
-                                val nextBusResult = runBlocking(Dispatchers.IO) {
-                                    val r = if (stopData.branchIds.contains(currentBranch)) currentBranch else stopData.route
-                                    Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, r, stopList, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                            if (co.isBus && stopData != null) {
+                                val nextBusResult = if (stopData.branchIds.contains(currentBranch)) {
+                                    runBlocking(Dispatchers.IO) {
+                                        Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, currentBranch, stopList, instance, options).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
+                                    }
+                                } else {
+                                    null
                                 }
                                 if (active) {
                                     nextBusStateFlow.value = nextBusResult
@@ -332,7 +339,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 Title(ambientMode, index, stopName, lat, lng, routeNumber, co, instance)
                 SubTitle(ambientMode, resolvedDestName, lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
-                NextBusText(ambientMode, nextBus?.getDisplayText(stopList, NextBusTextDisplayMode.COMPACT, Shared.language)?: "".asFormattedText(), instance)
+                NextBusText(ambientMode, nextBus?.takeIf { co.isBus }?.getDisplayText(stopList, NextBusTextDisplayMode.COMPACT, Shared.language)?: "".asFormattedText(), instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
                 EtaText(ambientMode, eta, 1, etaDisplayMode, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))

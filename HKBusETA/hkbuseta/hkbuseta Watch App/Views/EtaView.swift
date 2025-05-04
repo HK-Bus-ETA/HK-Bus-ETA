@@ -92,7 +92,7 @@ struct EtaView: AppScreenView {
                 .autoResizing(maxSize: 12.scaled(appContext, true))
             Spacer().frame(fixedSize: 2.scaled(appContext))
             let nextBusText = nextBus?.getDisplayText(allStops: stopList, mode: NextBusTextDisplayMode.compact, language: Shared().language)
-            Text(nextBusText?.asAttributedString(defaultFontSize: 11.scaled(appContext, true)) ?? "".asAttributedString())
+            Text((co.isBus ? nextBusText : nil)?.asAttributedString(defaultFontSize: 11.scaled(appContext, true)) ?? "".asAttributedString())
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.8).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(2)
                 .autoResizing(maxSize: 11.scaled(appContext, true))
@@ -142,8 +142,11 @@ struct EtaView: AppScreenView {
                             let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
                             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
                             if let stopData = stopData {
-                                let route = stopData.branchIds.contains(currentBranch) ? currentBranch : stopData.route
-                                fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, stopList: stopList, options: options) { nextBus = $0 }
+                                if co.isBus && stopData.branchIds.contains(currentBranch) {
+                                    fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: currentBranch, stopList: stopList, options: options) { nextBus = $0 }
+                                } else {
+                                    nextBus = nil
+                                }
                             }
                         }) {
                             Image(systemName: "arrow.forward.circle")
@@ -219,8 +222,11 @@ struct EtaView: AppScreenView {
             let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
             if let stopData = stopData {
-                let route = stopData.branchIds.contains(currentBranch) ? currentBranch : stopData.route
-                fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, stopList: stopList, options: options) { nextBus = $0 }
+                if co.isBus && stopData.branchIds.contains(currentBranch) {
+                    fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: currentBranch, stopList: stopList, options: options) { nextBus = $0 }
+                } else {
+                    nextBus = nil
+                }
             }
         }
         .onReceive(freshnessTimer) { _ in
@@ -230,8 +236,11 @@ struct EtaView: AppScreenView {
             let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
             if let stopData = stopData {
-                let route = stopData.branchIds.contains(currentBranch) ? currentBranch : stopData.route
-                fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, stopList: stopList, options: options) { nextBus = $0 }
+                if co.isBus && stopData.branchIds.contains(currentBranch) {
+                    fetchNextBus(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: currentBranch, stopList: stopList, options: options) { nextBus = $0 }
+                } else {
+                    nextBus = nil
+                }
             }
         }
         .gesture(
