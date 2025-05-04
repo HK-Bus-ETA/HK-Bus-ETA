@@ -2,7 +2,9 @@ import concurrent.futures
 import copy
 import json
 import math
+import random
 import re
+import string
 import time
 import urllib.request
 import zlib
@@ -256,6 +258,145 @@ def strip_data_sheet(data):
             del route_data["fares"]
         if "faresHoliday" in route_data:
             del route_data["faresHoliday"]
+
+
+def stop_matches(ctb_stop_id, kmb_stop_id):
+    if ctb_stop_id in DATA_SHEET["stopMap"]:
+        if ctb_stop_id in DATA_SHEET["stopMap"] and any(
+                array[1] == kmb_stop_id for array in
+                DATA_SHEET["stopMap"][ctb_stop_id]):
+            return True, 0
+        if kmb_stop_id in DATA_SHEET["stopMap"] and any(
+                array[1] == ctb_stop_id for array in
+                DATA_SHEET["stopMap"][kmb_stop_id]):
+            return True, 0
+    ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
+    kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
+    distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"],
+                         kmb_stop_location["lat"], kmb_stop_location["lng"])
+    return distance <= 0.3, distance
+
+
+def generate_ctb_route_with_more_stops(ctb_route):
+    route_number = ctb_route["route"]
+    ctb_stop_ids = ctb_route["stops"]["ctb"]
+    route_specific_stop_map = {}
+    matching_route = None
+    for key, data in DATA_SHEET["routeList"].items():
+        if route_number != data["route"] or "kmb" not in data["bound"] or "kmb" not in data["stops"]:
+            continue
+        first_kmb_stop_id = data["stops"]["kmb"][0]
+        last_kmb_stop_id = data["stops"]["kmb"][-1]
+        first_stop_matches = False
+        last_stop_matches = False
+        for ctb_stop_id in ctb_stop_ids[0:min(6, len(ctb_stop_ids) - 1)]:
+            if stop_matches(ctb_stop_id, first_kmb_stop_id)[0]:
+                first_stop_matches = True
+                break
+        for ctb_stop_id in reversed(ctb_stop_ids[max(1, len(ctb_stop_ids) - 6):len(ctb_stop_ids)]):
+            if stop_matches(ctb_stop_id, last_kmb_stop_id)[0]:
+                last_stop_matches = True
+                break
+        priority = False
+        if first_stop_matches and last_stop_matches:
+            if matching_route is None or (len(matching_route["stops"]["kmb"]) < len(data["stops"]["kmb"]) or (len(matching_route["stops"]["kmb"]) == len(data["stops"]["kmb"]) and "ctb" in data["stops"])):
+                matching_route = data
+                priority = True
+        if "ctb" in data["stops"]:
+            for i in range(min(len(data["stops"]["kmb"]), len(data["stops"]["ctb"]))):
+                ctb_stop_id = data["stops"]["ctb"][i]
+                kmb_stop_id = data["stops"]["kmb"][i]
+                if not re.fullmatch(r'ZZ[A-Z0-9]{8}[0-9]{6}', kmb_stop_id):
+                    if ctb_stop_id in route_specific_stop_map:
+                        if priority:
+                            route_specific_stop_map[ctb_stop_id] = kmb_stop_id
+                    else:
+                        route_specific_stop_map[ctb_stop_id] = kmb_stop_id
+    if matching_route is None:
+        return False
+    kmb_stop_index = 0
+    ctb_stop_index = -1
+    generated_kmb_stops = []
+    new_stop_maps = []
+    new_stop_entries = {}
+    while ctb_stop_index < len(ctb_stop_ids) - 1:
+        ctb_stop_index += 1
+        ctb_stop_id = ctb_stop_ids[ctb_stop_index]
+        ctb_next_stop_id = ctb_stop_ids[ctb_stop_index + 1] if ctb_stop_index + 1 < len(ctb_stop_ids) else None
+        kmb_stop_id = matching_route["stops"]["kmb"][kmb_stop_index] if kmb_stop_index < len(matching_route["stops"]["kmb"]) else None
+        actual_ctb_stop_id = matching_route["stops"]["ctb"][kmb_stop_index] if "ctb" in matching_route["stops"] and kmb_stop_index < len(matching_route["stops"]["ctb"]) else None
+        definitely_does_not_match = False if actual_ctb_stop_id is None else actual_ctb_stop_id != ctb_stop_id
+        matches, distance = stop_matches(ctb_stop_id, kmb_stop_id) if kmb_stop_id is not None else (False, 0)
+        if definitely_does_not_match:
+            matches = False
+        kmb_stop_offset = 1
+        if not matches:
+            for offset in range(1, 5):
+                offset_kmb_stop_id = matching_route["stops"]["kmb"][kmb_stop_index + offset] if kmb_stop_index + offset < len(matching_route["stops"]["kmb"]) else None
+                offset_actual_ctb_stop_id = matching_route["stops"]["ctb"][kmb_stop_index + offset] if "ctb" in matching_route["stops"] and kmb_stop_index + offset < len(matching_route["stops"]["ctb"]) else None
+                offset_definitely_does_not_match = False if offset_actual_ctb_stop_id is None else offset_actual_ctb_stop_id != ctb_stop_id
+                offset_matches, offset_distance = stop_matches(ctb_stop_id, offset_kmb_stop_id) if offset_kmb_stop_id is not None else (False, 0)
+                if offset_definitely_does_not_match:
+                    offset_matches = False
+                if offset_matches and offset_distance < 0.05 and (ctb_next_stop_id is None or offset_distance < stop_matches(ctb_next_stop_id, kmb_stop_id)[1]):
+                    matches, distance = offset_matches, offset_distance
+                    kmb_stop_offset += offset
+                    break
+        if kmb_stop_offset > 1 or (matches and (ctb_next_stop_id is None or distance < stop_matches(ctb_next_stop_id, kmb_stop_id)[1])):
+            generated_kmb_stops.append(kmb_stop_id)
+            kmb_stop_index += kmb_stop_offset
+        else:
+            ctb_stop = DATA_SHEET["stopList"][ctb_stop_id]
+            if ctb_stop_id in route_specific_stop_map:
+                kmb_stop_id = route_specific_stop_map[ctb_stop_id]
+            else:
+                kmb_stop_id = "ZZ" + generate_numeric_string(ctb_stop_id, 8, "alphanumeric", lambda s: s not in DATA_SHEET["stopList"]) + ctb_stop_id
+                new_stop_entries[kmb_stop_id] = ctb_stop.copy()
+            generated_kmb_stops.append(kmb_stop_id)
+            new_stop_maps.append((ctb_stop_id, kmb_stop_id))
+    if kmb_stop_index < len(matching_route["stops"]["kmb"]) - 1:
+        return False
+    ctb_route["stops"]["kmb"] = generated_kmb_stops
+    ctb_route["fakeRoute"] = True
+    ctb_route["kmbCtbJoint"] = True
+    if "kmb" not in ctb_route["co"]:
+        ctb_route["co"].append("kmb")
+    if "kmb" not in ctb_route["bound"]:
+        ctb_route["bound"]["kmb"] = matching_route["bound"]["kmb"]
+    for ctb_stop_id, kmb_stop_id in new_stop_maps:
+        ctb_stop_map_entry = ["kmb", kmb_stop_id]
+        if ctb_stop_id in DATA_SHEET["stopMap"]:
+            if ctb_stop_map_entry not in DATA_SHEET["stopMap"][ctb_stop_id]:
+                DATA_SHEET["stopMap"][ctb_stop_id].append(ctb_stop_map_entry)
+        else:
+            DATA_SHEET["stopMap"][ctb_stop_id] = [ctb_stop_map_entry]
+        kmb_stop_map_entry = ["ctb", ctb_stop_id]
+        if kmb_stop_id in DATA_SHEET["stopMap"]:
+            if kmb_stop_map_entry not in DATA_SHEET["stopMap"][kmb_stop_id]:
+                DATA_SHEET["stopMap"][kmb_stop_id].append(kmb_stop_map_entry)
+        else:
+            DATA_SHEET["stopMap"][kmb_stop_id] = [kmb_stop_map_entry]
+    for kmb_stop_id, stop in new_stop_entries.items():
+        DATA_SHEET["stopList"][kmb_stop_id] = stop
+        DATA_SHEET["stopList"][kmb_stop_id]["remark"] = {
+            "en": "(Citybus)",
+            "zh": "(城巴)"
+        }
+    return True
+
+
+def generate_numeric_string(seed_string, length, charset, predicate):
+    random.seed(seed_string)
+    if charset == "numeric":
+        characters = string.digits
+    elif charset == "alphanumeric":
+        characters = string.ascii_uppercase + string.digits
+    else:
+        raise ValueError("Unsupported charset. Use 'numeric' or 'alphanumeric'.")
+    while True:
+        result = ''.join(random.choice(characters) for _ in range(length))
+        if predicate(result):
+            return result
 
 
 def download_and_process_data_sheet():
@@ -516,7 +657,8 @@ def download_and_process_data_sheet():
                             kmb_data["freq"] = data["freq"]
                         if kmb_data["fares"] is None and data["fares"] is not None:
                             kmb_data["fares"] = data["fares"]
-                keys_to_remove.append(key)
+                if not generate_ctb_route_with_more_stops(data):
+                    keys_to_remove.append(key)
             elif route_number in ctb_circular:
                 if ctb_circular[route_number] < 0:
                     if len(bounds["ctb"]) >= 2:
@@ -1182,10 +1324,13 @@ def add_route_remarks():
 
 def add_ctb_stops_that_does_not_belong_to_any_route():
     route_to_stops = {}
+    joint_routes = set()
     for key, data in DATA_SHEET["routeList"].items():
-        if "ctb" not in data["co"] or len(data["co"]) > 1:
+        if "ctb" not in data["co"]:
             continue
         route_number = data["route"]
+        if "kmb" in data["bound"] or "kmb" in data["co"]:
+            joint_routes.add(route_number)
         bounds = []
         if "ctb" in data["bound"]:
             bound = data["bound"]["ctb"]
@@ -1218,69 +1363,54 @@ def add_ctb_stops_that_does_not_belong_to_any_route():
                         "dest": data['dest'],
                     }
 
-    for route_number, data in route_to_stops.items():
+    def process_route(route_number, data):
         known_stop_ids = data["stops"]
-        if "O" in data["bounds"]:
-            try:
-                outbound_stops_json = get_web_json(f"https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/{route_number}/outbound")
-                outbound_stops = []
-                any_missing = False
-                for entry in outbound_stops_json["data"]:
-                    stop_id = entry["stop"]
-                    if stop_id not in known_stop_ids:
-                        any_missing = True
-                    outbound_stops.append(entry["stop"])
-                if any_missing:
-                    key = f"{route_number}+98+{data['bounds']['O']['orig']['en']}+{data['bounds']['O']['dest']['en']}"
-                    DATA_SHEET["routeList"][key] = {
-                        "bound": {"ctb": "O"},
-                        "co": ["ctb"],
-                        "dest": data["bounds"]['O']['dest'].copy(),
-                        "fares": None,
-                        "faresHoliday": None,
-                        "freq": None,
-                        "gtfsId": None,
-                        "jt": None,
-                        "nlbId": None,
-                        "fakeRoute": True,
-                        "orig": data["bounds"]['O']['orig'].copy(),
-                        "route": route_number,
-                        "serviceType": "98",
-                        "stops": {"ctb": outbound_stops}
-                    }
-            except Exception as e:
-                print(e)
 
-        if "I" in data["bounds"]:
-            try:
-                inbound_stops_json = get_web_json(f"https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/{route_number}/inbound")
-                inbound_stops = []
-                any_missing = False
-                for entry in inbound_stops_json["data"]:
-                    stop_id = entry["stop"]
-                    if stop_id not in known_stop_ids:
-                        any_missing = True
-                    inbound_stops.append(entry["stop"])
-                if any_missing:
-                    key = f"{route_number}+98+{data['bounds']['I']['orig']['en']}+{data['bounds']['I']['dest']['en']}"
-                    DATA_SHEET["routeList"][key] = {
-                        "bound": {"ctb": "I"},
-                        "co": ["ctb"],
-                        "dest": data["bounds"]['I']['dest'].copy(),
-                        "fares": None,
-                        "faresHoliday": None,
-                        "freq": None,
-                        "gtfsId": None,
-                        "jt": None,
-                        "nlbId": None,
-                        "fakeRoute": True,
-                        "orig": data["bounds"]['I']['orig'].copy(),
-                        "route": route_number,
-                        "serviceType": "98",
-                        "stops": {"ctb": inbound_stops}
-                    }
-            except Exception as e:
-                print(e)
+        def handle_bound(bound_key):
+            if bound_key in data["bounds"]:
+                try:
+                    url = f"https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/{route_number}/{'in' if bound_key == 'I' else 'out'}bound"
+                    stops_json = get_web_json(url)
+                    stops = []
+                    any_missing = False
+                    for entry in stops_json["data"]:
+                        stop_id = entry["stop"]
+                        if stop_id not in known_stop_ids:
+                            any_missing = True
+                        stops.append(stop_id)
+
+                    if any_missing:
+                        bound_info = data["bounds"][bound_key]
+                        key = f"{route_number}+98+{bound_info['orig']['en']}+{bound_info['dest']['en']}"
+                        DATA_SHEET["routeList"][key] = {
+                            "bound": {"ctb": bound_key},
+                            "co": ["ctb"],
+                            "dest": bound_info['dest'].copy(),
+                            "fares": None,
+                            "faresHoliday": None,
+                            "freq": None,
+                            "gtfsId": None,
+                            "jt": None,
+                            "nlbId": None,
+                            "fakeRoute": True,
+                            "orig": bound_info['orig'].copy(),
+                            "route": route_number,
+                            "serviceType": "98",
+                            "stops": {"ctb": stops}
+                        }
+                        if route_number in joint_routes:
+                            if not generate_ctb_route_with_more_stops(DATA_SHEET["routeList"][key]):
+                                del DATA_SHEET["routeList"][key]
+                except Exception as e:
+                    print(e)
+
+        handle_bound("O")
+        handle_bound("I")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(process_route, route_number, data) for route_number, data in route_to_stops.items()]
+    for _ in concurrent.futures.as_completed(futures):
+        pass
 
 
 print("Downloading & Processing KMB Routes")
