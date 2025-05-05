@@ -1762,8 +1762,9 @@ fun StopEntryExpansionEta(
             if (co !== Operator.LRT) {
                 val pinnedItems by Shared.pinnedItems.collectAsStateMultiplatform()
                 val pinItem by remember(allStops) { derivedStateOf {
-                    val stopBranches = allStops[selectedStop - 1].branchIds
-                    val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else stopBranches.first()
+                    val pinnedStopData = allStops[selectedStop - 1]
+                    val stopBranches = pinnedStopData.branchIds
+                    val branch = if (stopBranches.contains(selectedBranch)) selectedBranch else (stopBranches.firstOrNull()?: pinnedStopData.route)
                     TemporaryPinItem(branch, co, selectedStop, routeBranches)
                 } }
                 PlatformFilledTonalIconButton(

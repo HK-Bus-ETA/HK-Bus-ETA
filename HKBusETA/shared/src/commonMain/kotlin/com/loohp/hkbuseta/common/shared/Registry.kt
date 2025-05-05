@@ -106,6 +106,7 @@ import com.loohp.hkbuseta.common.objects.routeComparatorRouteNumberFirst
 import com.loohp.hkbuseta.common.objects.routeGroupKey
 import com.loohp.hkbuseta.common.objects.simplified
 import com.loohp.hkbuseta.common.objects.splitByClosestPoints
+import com.loohp.hkbuseta.common.objects.strictEquals
 import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.objects.waypointsId
 import com.loohp.hkbuseta.common.objects.withEn
@@ -951,7 +952,7 @@ class Registry {
                                     )
                                     when {
                                         newRoutes.isEmpty() -> null
-                                        newRoutes.any { it.route == favouriteRoute.route } -> favouriteRoute
+                                        newRoutes.any { it.route strictEquals favouriteRoute.route } -> favouriteRoute
                                         else -> {
                                             val keyOrder = DATA!!.dataSheet.standardSortedRouteKeys.await()
                                             val newRouteData = newRoutes.minBy { keyOrder.indexOf(it.routeKey) }

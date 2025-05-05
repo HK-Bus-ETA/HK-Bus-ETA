@@ -240,3 +240,7 @@ fun Route.toRouteSearchResult(instance: AppContext): RouteSearchResultEntry {
     val routeKey = getRouteKey(instance)!!
     return RouteSearchResultEntry(routeKey, this, co.firstCo()!!)
 }
+
+inline infix fun Route?.strictEquals(other: Route?): Boolean {
+    return this == other && this?.fares == other?.fares && this?.faresHoliday == other?.faresHoliday
+}
