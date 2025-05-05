@@ -2269,7 +2269,7 @@ class Registry {
                 if (!stopData.branchIds.contains(route)) continue
                 val result = buildEtaQuery(stopData.stopId, i, co, route, context, options).query().rawLines[1]
                 when {
-                    result == null || result.etaRounded < 0 -> break
+                    result == null || result.etaRounded < 0 -> return@NextBusPositionQueryTask null
                     result.eta <= previousStopTime -> {
                         previousStopTime = result.eta
                         previousStopTimeRounded = result.etaRounded
