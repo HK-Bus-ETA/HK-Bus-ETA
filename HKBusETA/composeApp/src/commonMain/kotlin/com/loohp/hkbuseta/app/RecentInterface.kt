@@ -25,11 +25,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +52,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.loohp.hkbuseta.appcontext.ComposePlatform
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
@@ -64,6 +71,7 @@ import com.loohp.hkbuseta.compose.PlatformIcon
 import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformSwitch
 import com.loohp.hkbuseta.compose.PlatformText
+import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
@@ -94,13 +102,19 @@ fun RecentInterface(instance: AppActiveContext, visible: Boolean = true) {
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             Box(
                 modifier = Modifier
-                    .height(50.dp)
                     .fillMaxWidth()
                     .platformHorizontalDividerShadow(5.dp)
                     .background(platformTopBarColor)
+                    .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                        this.statusBarsPadding()
+                            .consumeWindowInsets(WindowInsets.statusBars)
+                            .consumeWindowInsets(WindowInsets.navigationBars)
+                    }
+                    .height(50.dp)
                     .padding(horizontal = 5.dp),
             ) {
                 Row(
