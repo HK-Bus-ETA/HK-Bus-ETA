@@ -889,7 +889,9 @@ fun MapStopsInterface(
         }.asImmutableState() } }
 
         AdaptiveTopBottomLayout(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { consumeWindowInsets(WindowInsets.statusBars) },
             context = instance,
             animateSize = true,
             bottomSize = { when {
@@ -950,7 +952,9 @@ fun MapStopsInterface(
         )
     } else {
         Box (
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { consumeWindowInsets(WindowInsets.statusBars) }
         ) {
             ListStopsEtaInterface(instance, if (isActiveReminderService) ListStopsInterfaceType.ALIGHT_REMINDER else ListStopsInterfaceType.ETA, location, listRoute, selectedStopState, selectedBranchState, alternateStopNamesShowingState, possibleBidirectionalSectionFare, alertCheckRoute)
         }
