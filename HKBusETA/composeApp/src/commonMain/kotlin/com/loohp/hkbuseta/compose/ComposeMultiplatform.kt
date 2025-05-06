@@ -118,7 +118,13 @@ expect val currentLocalWindowSize: IntSize @Composable get
 @Composable
 expect fun rememberIsInPipMode(context: AppActiveContext): Boolean
 
-expect fun AppActiveContext.enterPipMode()
+expect fun AppActiveContext.enterPipMode(
+    aspectRatio: AspectRatio = AspectRatio(16, 10),
+    sourceRectHint: SourceRectHintArea? = null
+)
+
+data class AspectRatio(val numerator: Int, val denominator: Int)
+data class SourceRectHintArea(val left: Int, val top: Int, val right: Int, val bottom: Int)
 
 @Composable
 expect fun calculateWindowSizeClass(): WindowSizeClass

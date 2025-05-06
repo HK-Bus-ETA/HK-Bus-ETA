@@ -23,6 +23,7 @@ package com.loohp.hkbuseta.compose
 import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.ContextWrapper
+import android.graphics.Rect
 import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -87,15 +88,21 @@ internal fun Context.findActivity(): ComponentActivity? {
     return null
 }
 
-actual fun AppActiveContext.enterPipMode() {
+actual fun AppActiveContext.enterPipMode(aspectRatio: AspectRatio, sourceRectHint: SourceRectHintArea?) {
     val activity = compose.context.findActivity()
         ?: throw IllegalStateException("Picture in picture should be called in the context of an Activity")
     if (!activity.isInPictureInPictureMode) {
-        activity.enterPictureInPictureMode(PictureInPictureParams.Builder()
-            .setAspectRatio(Rational(16, 10))
-            .build())
+        val builder = PictureInPictureParams.Builder()
+            .setAspectRatio(aspectRatio.toRational())
+        if (sourceRectHint != null) {
+            builder.setSourceRectHint(sourceRectHint.toRect())
+        }
+        activity.enterPictureInPictureMode(builder.build())
     }
 }
+
+fun AspectRatio.toRational(): Rational = Rational(numerator, denominator)
+fun SourceRectHintArea.toRect(): Rect = Rect(left, top, right, bottom)
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable

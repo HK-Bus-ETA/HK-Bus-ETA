@@ -217,6 +217,10 @@ import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import org.jetbrains.compose.resources.painterResource
 
+
+actual val PointerIcon.Companion.Grab: PointerIcon get() = Crosshair
+actual val PointerIcon.Companion.Grabbing: PointerIcon get() = Crosshair
+
 actual inline val PlatformIcons.AutoMirrored.Filled.ArrowBack: Painter @Composable get() = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack)
 actual inline val PlatformIcons.AutoMirrored.Filled.OpenInNew: Painter @Composable get() = rememberVectorPainter(Icons.AutoMirrored.Filled.OpenInNew)
 actual inline val PlatformIcons.AutoMirrored.Filled.Sort: Painter @Composable get() = rememberVectorPainter(Icons.AutoMirrored.Filled.Sort)

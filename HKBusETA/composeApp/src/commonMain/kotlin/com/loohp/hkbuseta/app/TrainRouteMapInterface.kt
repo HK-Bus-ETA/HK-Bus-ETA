@@ -207,6 +207,8 @@ import com.loohp.hkbuseta.compose.ChangedEffect
 import com.loohp.hkbuseta.compose.CheckCircle
 import com.loohp.hkbuseta.compose.DarkMode
 import com.loohp.hkbuseta.compose.Error
+import com.loohp.hkbuseta.compose.Grab
+import com.loohp.hkbuseta.compose.Grabbing
 import com.loohp.hkbuseta.compose.IconPainterLayer
 import com.loohp.hkbuseta.compose.Info
 import com.loohp.hkbuseta.compose.Map
@@ -927,6 +929,7 @@ fun MTRRouteMapMapInterface(
     val typhoonInfo by Registry.getInstance(instance).typhoonInfo.collectAsStateMultiplatform()
     val closestStop by closestStopState
     var loaded by loadedState
+    var isPressing by remember { mutableStateOf(false) }
 
     val path = getResourceUri("routemaps/mtr_system_map${if (Shared.theme.isDarkMode) "_dark" else ""}${if (typhoonInfo.isAboveTyphoonSignalNine) "_typhoon" else ""}.png")
 
@@ -942,15 +945,19 @@ fun MTRRouteMapMapInterface(
                             awaitEachGesture {
                                 while (true) {
                                     val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    if (event.type == PointerEventType.Move) {
-                                        val change = event.changes[0]
-                                        val pos = change.position
-                                        val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
-                                        hoveringStation = data.findClickedStations(clickedPos) != null
+                                    when (event.type) {
+                                        PointerEventType.Move -> {
+                                            val change = event.changes[0]
+                                            val pos = change.position
+                                            val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
+                                            hoveringStation = data.findClickedStations(clickedPos) != null
+                                        }
+                                        PointerEventType.Press -> isPressing = true
+                                        PointerEventType.Release -> isPressing = false
                                     }
                                 }
                             }
-                        }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else PointerIcon.Crosshair)
+                        }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else if (isPressing) PointerIcon.Grabbing else PointerIcon.Grab)
                     } else {
                         this
                     }
@@ -2005,6 +2012,7 @@ fun LRTRouteMapMapInterface(
     var selectedLrtStartingStation by selectedLrtStartingStationState.collectAsStateMultiplatform()
     val closestStop by closestStopState
     var loaded by loadedState
+    var isPressing by remember { mutableStateOf(false) }
 
     val path = getResourceUri("routemaps/light_rail_system_map${if (Shared.theme.isDarkMode) "_dark" else ""}.png")
 
@@ -2020,15 +2028,19 @@ fun LRTRouteMapMapInterface(
                             awaitEachGesture {
                                 while (true) {
                                     val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    if (event.type == PointerEventType.Move) {
-                                        val change = event.changes[0]
-                                        val pos = change.position
-                                        val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
-                                        hoveringStation = data.findClickedStations(clickedPos) != null
+                                    when (event.type) {
+                                        PointerEventType.Move -> {
+                                            val change = event.changes[0]
+                                            val pos = change.position
+                                            val clickedPos = state.zoomable.touchPointToRealPoint(pos, data.dimension)
+                                            hoveringStation = data.findClickedStations(clickedPos) != null
+                                        }
+                                        PointerEventType.Press -> isPressing = true
+                                        PointerEventType.Release -> isPressing = false
                                     }
                                 }
                             }
-                        }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else PointerIcon.Crosshair)
+                        }.pointerHoverIcon(if (hoveringStation) PointerIcon.Hand else if (isPressing) PointerIcon.Grabbing else PointerIcon.Grab)
                     } else {
                         this
                     }

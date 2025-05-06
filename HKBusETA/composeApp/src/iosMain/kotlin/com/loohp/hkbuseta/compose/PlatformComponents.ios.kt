@@ -182,6 +182,10 @@ import androidx.compose.material3.LocalContentColor as LocalMaterialContentColor
 import androidx.compose.material3.LocalTextStyle as LocalMaterialTextStyle
 
 
+
+actual val PointerIcon.Companion.Grab: PointerIcon get() = Crosshair
+actual val PointerIcon.Companion.Grabbing: PointerIcon get() = Crosshair
+
 inline val unknownImagePlaceholderPainter: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.BrokenImage)
 
 @Composable

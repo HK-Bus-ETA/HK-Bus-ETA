@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -36,18 +37,19 @@ import kotlin.coroutines.CoroutineContext
 @Composable
 actual fun <T> StateFlow<T>.collectAsStateMultiplatform(context: CoroutineContext): State<T> = collectAsState(context)
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 actual fun BackButtonEffect(enabled: Boolean, onBack: () -> Unit) {
+    BackHandler(enabled, onBack)
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 actual inline val currentLocalWindowSize: IntSize
     @Composable get() = LocalWindowInfo.current.containerSize
 
 @Composable
 actual fun rememberIsInPipMode(context: AppActiveContext): Boolean = false
 
-actual fun AppActiveContext.enterPipMode() {
+actual fun AppActiveContext.enterPipMode(aspectRatio: AspectRatio, sourceRectHint: SourceRectHintArea?) {
 }
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)

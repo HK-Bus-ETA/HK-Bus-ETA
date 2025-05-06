@@ -25,7 +25,6 @@ import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -39,14 +38,13 @@ actual fun <T> StateFlow<T>.collectAsStateMultiplatform(context: CoroutineContex
 actual fun BackButtonEffect(enabled: Boolean, onBack: () -> Unit) {
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 actual inline val currentLocalWindowSize: IntSize
     @Composable get() = LocalWindowInfo.current.containerSize
 
 @Composable
 actual fun rememberIsInPipMode(context: AppActiveContext): Boolean = false
 
-actual fun AppActiveContext.enterPipMode() {
+actual fun AppActiveContext.enterPipMode(aspectRatio: AspectRatio, sourceRectHint: SourceRectHintArea?) {
 }
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)

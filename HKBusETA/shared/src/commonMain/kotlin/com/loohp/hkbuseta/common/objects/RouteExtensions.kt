@@ -1281,7 +1281,7 @@ fun Registry.NextBusPosition?.getDisplayText(allStops: List<Registry.StopData>, 
                                 when (mode) {
                                     NextBusTextDisplayMode.FULL -> {
                                         append("Next Bus is ")
-                                        append("$nextStopTime mins", BoldStyle)
+                                        append("$nextStopTime min.", BoldStyle)
                                         append(" to ")
                                     }
                                     NextBusTextDisplayMode.COMPACT -> {
@@ -1293,7 +1293,7 @@ fun Registry.NextBusPosition?.getDisplayText(allStops: List<Registry.StopData>, 
                                 when (mode) {
                                     NextBusTextDisplayMode.FULL -> {
                                         append("Next Bus will depart in ")
-                                        append("$nextStopTime mins", BoldStyle)
+                                        append("$nextStopTime min.", BoldStyle)
                                         append(" from ")
                                     }
                                     NextBusTextDisplayMode.COMPACT -> {

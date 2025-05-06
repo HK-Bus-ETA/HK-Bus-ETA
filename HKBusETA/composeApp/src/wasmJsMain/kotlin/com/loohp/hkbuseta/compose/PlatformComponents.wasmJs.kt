@@ -195,6 +195,7 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -206,6 +207,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.fromKeyword
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
@@ -238,6 +240,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+
+
+@OptIn(ExperimentalComposeUiApi::class)
+actual val PointerIcon.Companion.Grab: PointerIcon get() = fromKeyword("grab")
+@OptIn(ExperimentalComposeUiApi::class)
+actual val PointerIcon.Companion.Grabbing: PointerIcon get() = fromKeyword("grabbing")
 
 actual inline val PlatformIcons.AutoMirrored.Filled.ArrowBack: Painter @Composable get() = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack)
 actual inline val PlatformIcons.AutoMirrored.Filled.OpenInNew: Painter @Composable get() = rememberVectorPainter(Icons.AutoMirrored.Filled.OpenInNew)
