@@ -2239,6 +2239,7 @@ class Registry {
 
     @Immutable
     data class NextBusPosition(
+        val routeNumber: String,
         val stopId: String,
         val timeToStop: Long,
         val type: NextBusStatusType,
@@ -2283,7 +2284,7 @@ class Registry {
                     else -> break
                 }
             }
-            previousStop?.let { NextBusPosition(it, previousStopTimeRounded, type, stopsCount) }
+            previousStop?.let { NextBusPosition(route.routeNumber, it, previousStopTimeRounded, type, stopsCount) }
         }
     }
 

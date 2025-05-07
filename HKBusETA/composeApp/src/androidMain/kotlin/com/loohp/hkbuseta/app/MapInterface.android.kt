@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -74,6 +75,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.loohp.hkbuseta.R
+import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -552,6 +554,7 @@ fun DefaultMapRouteInterface(
             val script by rememberLeafletScript(sections, alternateStopNameShowing, indexMap)
             val pathColors by ComposeShared.rememberOperatorColors(sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) to Operator.CTB.getOperatorColor(Color.Yellow).takeIf { s.waypoints.isKmbCtbJoint } }.asImmutableList())
             val background = platformBackgroundColor
+            val haptics = LocalHapticFeedback.current.common
 
             ImmediateEffect (Unit) {
                 webViewState.webSettings.backgroundColor = background
@@ -640,6 +643,13 @@ fun DefaultMapRouteInterface(
                 """.trimIndent())
                 }
             }
+            LaunchedEffect (webViewState.lastLoadedUrl) {
+                val url = webViewState.lastLoadedUrl
+                if (url != null && url != "about:blank") {
+                    instance.handleWebpages(url, false, haptics).invoke()
+                    isInWindow = !isInWindow
+                }
+            }
 
             WebView(
                 modifier = Modifier.fillMaxSize(),
@@ -663,7 +673,7 @@ actual fun MapSelectInterface(
     if (hasGooglePlayServices) {
         GoogleMapSelectInterface(instance, initialPosition, onMove)
     } else {
-        DefaultMapSelectInterface(initialPosition, currentRadius, onMove)
+        DefaultMapSelectInterface(instance, initialPosition, currentRadius, onMove)
     }
 }
 
@@ -739,6 +749,7 @@ fun GoogleMapSelectInterface(
 
 @Composable
 fun DefaultMapSelectInterface(
+    instance: AppActiveContext,
     initialPosition: Coordinates,
     currentRadius: Float,
     onMove: (Coordinates, Float) -> Unit
@@ -755,6 +766,7 @@ fun DefaultMapSelectInterface(
             var position by remember { mutableStateOf(initialPosition) }
             var init by remember { mutableStateOf(false) }
             val background = platformBackgroundColor
+            val haptics = LocalHapticFeedback.current.common
 
             ImmediateEffect (Unit) {
                 webViewState.webSettings.backgroundColor = background
@@ -834,6 +846,13 @@ fun DefaultMapSelectInterface(
                             mapComponents.forEach(element => element.classList.remove('leaflet-dark-theme'));
                         }
                     """.trimIndent())
+                }
+            }
+            LaunchedEffect (webViewState.lastLoadedUrl) {
+                val url = webViewState.lastLoadedUrl
+                if (url != null && url != "about:blank") {
+                    instance.handleWebpages(url, false, haptics).invoke()
+                    isInWindow = !isInWindow
                 }
             }
 

@@ -339,7 +339,14 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                 Title(ambientMode, index, stopName, lat, lng, routeNumber, co, instance)
                 SubTitle(ambientMode, resolvedDestName, lat, lng, routeNumber, co, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
-                NextBusText(ambientMode, nextBus?.takeIf { co.isBus }?.getDisplayText(stopList, NextBusTextDisplayMode.COMPACT, Shared.language)?: "".asFormattedText(), instance)
+                val nextBusText = nextBus?.takeIf { co.isBus }?.getDisplayText(
+                    allStops = stopList,
+                    alternateStopNamesShowing = alternateStopNameShowing && route.isKmbCtbJoint,
+                    mode = NextBusTextDisplayMode.COMPACT,
+                    context = instance,
+                    language = Shared.language,
+                )?: "".asFormattedText()
+                NextBusText(ambientMode, nextBusText, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))
                 EtaText(ambientMode, eta, 1, etaDisplayMode, instance)
                 Spacer(modifier = Modifier.size(3.scaledSize(instance).dp))

@@ -1169,6 +1169,7 @@ fun StopEntry(
                     alertCheckRoute = alertCheckRoute,
                     index = index,
                     allStops = allStops,
+                    alternateStopNames = alternateStopNames,
                     stopData = stopData,
                     routeBranches = routeBranches,
                     routeLineData = routeLineData,
@@ -1389,6 +1390,7 @@ fun StopEntryExpansion(
     alertCheckRoute: Boolean,
     index: Int,
     allStops: ImmutableList<Registry.StopData>,
+    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
     stopData: Registry.StopData,
     routeBranches: ImmutableList<Route>,
     routeLineData: ImmutableState<List<Any>>,
@@ -1451,6 +1453,7 @@ fun StopEntryExpansion(
                 alertCheckRoute = alertCheckRoute,
                 index = index,
                 allStops = allStops,
+                alternateStopNames = alternateStopNames,
                 stopData = stopData,
                 routeBranches = routeBranches,
                 routeNumber = routeNumber,
@@ -1505,6 +1508,7 @@ fun StopEntryExpansionEta(
     alertCheckRoute: Boolean,
     index: Int,
     allStops: ImmutableList<Registry.StopData>,
+    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
     stopData: Registry.StopData,
     routeBranches: ImmutableList<Route>,
     routeNumber: String,
@@ -1537,6 +1541,8 @@ fun StopEntryExpansionEta(
 
     val etaUpdateTimes = etaUpdateTimesState.value
     val nextBusPositions = nextBusPositionState.value
+
+    val alternateStopNameShowing by Shared.alternateStopNamesShowingState.collectAsStateMultiplatform()
 
     var nextBusPosition by remember(selectedStop, selectedBranch) { mutableStateOf(nextBusPositions[selectedStop]?.value) }
 
@@ -1626,7 +1632,14 @@ fun StopEntryExpansionEta(
                 )
             }
             if (co.isBus) {
-                val nextBusText = nextBusPosition.getDisplayText(allStops, NextBusTextDisplayMode.FULL, Shared.language)
+                val nextBusText = nextBusPosition.getDisplayText(
+                    allStops = allStops,
+                    alternateStopNames = alternateStopNames.value,
+                    alternateStopNamesShowing = alternateStopNameShowing && isKmbCtbJoint,
+                    mode = NextBusTextDisplayMode.FULL,
+                    context = instance,
+                    language = Shared.language
+                )
                 if (nextBusText != null) {
                     PlatformText(
                         modifier = Modifier.padding(top = 5.dp, end = 10.dp),

@@ -1269,10 +1269,23 @@ enum class NextBusTextDisplayMode {
     FULL, COMPACT
 }
 
-fun Registry.NextBusPosition?.getDisplayText(allStops: List<Registry.StopData>, mode: NextBusTextDisplayMode, language: String): FormattedText? {
-    return this?.let { (nextStopId, nextStopTime, type, stopsCount) ->
+fun Registry.NextBusPosition?.getDisplayText(
+    allStops: List<Registry.StopData>,
+    alternateStopNames: List<Registry.NearbyStopSearchResult>? = null,
+    alternateStopNamesShowing: Boolean,
+    mode: NextBusTextDisplayMode,
+    context: AppContext,
+    language: String
+): FormattedText? {
+    return this?.let { (_, nextStopId, nextStopTime, type, stopsCount) ->
         if (stopsCount > 0) {
-            val nextStop = allStops.first { it.stopId == nextStopId }
+            val nextStopIndex = allStops.indexOfFirst { it.stopId == nextStopId }
+            val nextStop = (alternateStopNames
+                ?.getOrNull(nextStopIndex)
+                ?.stop
+                ?: Registry.getInstance(context).findJointAlternateStop(stopId, routeNumber).stop
+                ).takeIf { alternateStopNamesShowing }
+                ?: allStops[nextStopIndex].stop
             buildFormattedString {
                 if (language == "en") {
                     if (nextStopTime > 0) {
@@ -1305,7 +1318,7 @@ fun Registry.NextBusPosition?.getDisplayText(allStops: List<Registry.StopData>, 
                     } else {
                         append("Next Bus is at ")
                     }
-                    append(nextStop.stop.name.en, BoldStyle)
+                    append(nextStop.name.en, BoldStyle)
                     if (type == Registry.NextBusStatusType.ARRIVING) {
                         append(" (")
                         append("$stopsCount", BoldStyle)
@@ -1345,7 +1358,7 @@ fun Registry.NextBusPosition?.getDisplayText(allStops: List<Registry.StopData>, 
                     } else {
                         append("下一班車現在位於")
                     }
-                    append(nextStop.stop.name.zh, BoldStyle)
+                    append(nextStop.name.zh, BoldStyle)
                     if (nextStopTime > 0 && type == Registry.NextBusStatusType.DEPARTING) {
                         append("開出")
                     }

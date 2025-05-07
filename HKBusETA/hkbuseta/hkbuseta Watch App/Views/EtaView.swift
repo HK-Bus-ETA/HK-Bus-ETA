@@ -91,7 +91,7 @@ struct EtaView: AppScreenView {
                 .lineLimit(1)
                 .autoResizing(maxSize: 12.scaled(appContext, true))
             Spacer().frame(fixedSize: 2.scaled(appContext))
-            let nextBusText = nextBus?.getDisplayText(allStops: stopList, mode: NextBusTextDisplayMode.compact, language: Shared().language)
+            let nextBusText = nextBus?.getDisplayText(allStops: stopList, alternateStopNames: nil, alternateStopNamesShowing: alternateStopNamesShowingState.state.boolValue && route.isKmbCtbJoint, mode: NextBusTextDisplayMode.compact, context: appContext, language: Shared().language)
             Text((co.isBus ? nextBusText : nil)?.asAttributedString(defaultFontSize: 11.scaled(appContext, true)) ?? "".asAttributedString())
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.8).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(2)
