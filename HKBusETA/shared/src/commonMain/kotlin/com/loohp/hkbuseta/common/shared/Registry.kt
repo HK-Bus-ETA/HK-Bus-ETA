@@ -1482,7 +1482,7 @@ class Registry {
                             a == b || mergedStopIds.any { it.contains(a) && it.contains(b) }
                         }
                     )
-                    val isMainBranchCircular = lists.firstOrNull()?.branchedList?.branchId?.isCircular?: false
+                    val isMainBranchCircular = lists.firstOrNull { !it.route.fakeRoute }?.branchedList?.branchId?.isCircular == true
                     for ((first) in lists) {
                         result.merge(first, isMainBranchCircular || !first.branchId.isCircular)
                     }
@@ -2169,7 +2169,8 @@ class Registry {
         val routeNumber = route.routeNumber
         val co = route.co.firstCo()!!
         val isKmbCtbJoint = route.isKmbCtbJoint
-        val stops = route.stops[co]!!.map { it.asStop(context)!! }
+        val stopIds = route.stops[co]!!
+        val stops = stopIds.map { it.asStop(context)!! }
         return CoroutineScope(Dispatchers.IO).async {
             return@async cachedWaypoints.getOrPut(route) {
                 getJSONResponse<JsonObject>("https://waypoints.hkbuseta.com/waypoints$gzipFolder/$id.json$gzipSuffix", gzip)
@@ -2197,9 +2198,9 @@ class Registry {
                                 }
                             }
                             .map { p -> p.simplified() }
-                        RouteWaypoints(routeNumber, co, isKmbCtbJoint, stops, path, true)
+                        RouteWaypoints(routeNumber, co, isKmbCtbJoint, stopIds, stops, path, true)
                     }
-                    ?: RouteWaypoints(routeNumber, co, isKmbCtbJoint, stops, listOf(element = stops.map { it.location }), false)
+                    ?: RouteWaypoints(routeNumber, co, isKmbCtbJoint, stopIds, stops, listOf(element = stops.map { it.location }), false)
             }
         }
     }

@@ -45,10 +45,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
+import androidx.core.graphics.scale
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -157,23 +165,27 @@ fun GoogleMapRouteInterface(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(sections[selectedSection].stops[selectedStop - 1].stop.location.toGoogleLatLng(), 15F)
     }
-    val icons = remember { sections.map { Bitmap.createScaledBitmap(BitmapFactory.decodeResource(instance.context.resources, when (it.waypoints.co) {
-        Operator.KMB -> when (it.waypoints.routeNumber.getKMBSubsidiary()) {
-            KMBSubsidiary.KMB -> if (it.waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_kmb else R.mipmap.bus_kmb
-            KMBSubsidiary.LWB -> if (it.waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_lwb else R.mipmap.bus_lwb
-            else -> R.mipmap.bus_kmb
-        }
-        Operator.CTB -> R.mipmap.bus_ctb
-        Operator.NLB -> R.mipmap.bus_nlb
-        Operator.GMB -> R.mipmap.minibus
-        Operator.MTR_BUS -> R.mipmap.bus_mtrbus
-        Operator.LRT -> R.mipmap.mtr
-        Operator.MTR -> R.mipmap.mtr
-        Operator.HKKF -> R.mipmap.bus_nlb
-        Operator.SUNFERRY -> R.mipmap.bus_nlb
-        Operator.FORTUNEFERRY -> R.mipmap.bus_nlb
-        else -> R.mipmap.bus_kmb
-    }), 96, 96, false) } }
+    val icons = remember { sections.map {
+        BitmapFactory.decodeResource(
+            instance.context.resources, when (it.waypoints.co) {
+                Operator.KMB -> when (it.waypoints.routeNumber.getKMBSubsidiary()) {
+                    KMBSubsidiary.KMB -> if (it.waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_kmb else R.mipmap.bus_kmb
+                    KMBSubsidiary.LWB -> if (it.waypoints.isKmbCtbJoint) R.mipmap.bus_jointly_lwb else R.mipmap.bus_lwb
+                    else -> R.mipmap.bus_kmb
+                }
+
+                Operator.CTB -> R.mipmap.bus_ctb
+                Operator.NLB -> R.mipmap.bus_nlb
+                Operator.GMB -> R.mipmap.minibus
+                Operator.MTR_BUS -> R.mipmap.bus_mtrbus
+                Operator.LRT -> R.mipmap.mtr
+                Operator.MTR -> R.mipmap.mtr
+                Operator.HKKF -> R.mipmap.bus_nlb
+                Operator.SUNFERRY -> R.mipmap.bus_nlb
+                Operator.FORTUNEFERRY -> R.mipmap.bus_nlb
+                else -> R.mipmap.bus_kmb
+            }
+        ).scale(96, 96, false) } }
     val shouldShowStopIndex = remember { sections.map { !it.waypoints.co.run { isTrain || isFerry } } }
     val anchors = remember { sections.map { if (it.waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) } }
     var init by remember { mutableLongStateOf(-1) }
@@ -524,113 +536,120 @@ fun DefaultMapRouteInterface(
     selectedSectionState: MutableIntState,
     alternateStopNameShowing: Boolean
 ) {
-    val scope = rememberCoroutineScope()
-    val webViewState = rememberWebViewStateWithHTMLData(baseHtml)
-    val webViewNavigator = rememberWebViewNavigator()
-    val webViewJsBridge = rememberWebViewJsBridge()
-    var selectedStop by selectedStopState
-    var selectedSection by selectedSectionState
-    val indexMap by remember(sections) { derivedStateOf { sections.map { it.waypoints.buildStopListMapping(instance, it.stops) }.asImmutableList() } }
-    val script by rememberLeafletScript(sections, alternateStopNameShowing, indexMap)
-    val pathColors by ComposeShared.rememberOperatorColors(sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) to Operator.CTB.getOperatorColor(Color.Yellow).takeIf { s.waypoints.isKmbCtbJoint } }.asImmutableList())
-    val background = platformBackgroundColor
+    val windowSize = LocalWindowInfo.current.containerSize
+    var isInWindow by remember { mutableStateOf(false) }
+    Box(
+        modifier = Modifier.onGloballyPositioned { isInWindow = it.isVisible(windowSize) }
+    ) {
+        key(isInWindow) {
+            val scope = rememberCoroutineScope()
+            val webViewState = rememberWebViewStateWithHTMLData(baseHtml)
+            val webViewNavigator = rememberWebViewNavigator()
+            val webViewJsBridge = rememberWebViewJsBridge()
+            var selectedStop by selectedStopState
+            var selectedSection by selectedSectionState
+            val indexMap by remember(sections) { derivedStateOf { sections.map { it.waypoints.buildStopListMapping(instance, it.stops) }.asImmutableList() } }
+            val script by rememberLeafletScript(sections, alternateStopNameShowing, indexMap)
+            val pathColors by ComposeShared.rememberOperatorColors(sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) to Operator.CTB.getOperatorColor(Color.Yellow).takeIf { s.waypoints.isKmbCtbJoint } }.asImmutableList())
+            val background = platformBackgroundColor
 
-    ImmediateEffect (Unit) {
-        webViewState.webSettings.backgroundColor = background
-    }
-    LaunchedEffect (script, webViewState.loadingState) {
-        if (webViewState.loadingState == LoadingState.Finished) {
-            webViewNavigator.evaluateJavaScript(script)
-        }
-    }
-    LaunchedEffect (pathColors, webViewState.loadingState) {
-        if (webViewState.loadingState == LoadingState.Finished) {
-            for ((index, pathColor) in pathColors.withIndex()) {
-                val colorHex = pathColor.toHexString()
-                val clearness = pathColor.closenessTo(Color(0xFFFDE293))
-                val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
-                webViewNavigator.evaluateJavaScript("""
-                    if (polylinesList[$index] || polylinesOutlineList[$index]) {
-                        polylinesOutlineList[$index].forEach(function(polyline) {
-                            polyline.setStyle({ color: '$outlineHex', opacity: $outlineOpacity });
-                        });
-                        polylinesList[$index].forEach(function(polyline) {
-                            polyline.setStyle({ color: '$colorHex', opacity: 1.0 });
-                        });
+            ImmediateEffect (Unit) {
+                webViewState.webSettings.backgroundColor = background
+            }
+            LaunchedEffect (script, webViewState.loadingState) {
+                if (webViewState.loadingState == LoadingState.Finished) {
+                    webViewNavigator.evaluateJavaScript(script)
+                }
+            }
+            LaunchedEffect (pathColors, webViewState.loadingState) {
+                if (webViewState.loadingState == LoadingState.Finished) {
+                    for ((index, pathColor) in pathColors.withIndex()) {
+                        val colorHex = pathColor.toHexString()
+                        val clearness = pathColor.closenessTo(Color(0xFFFDE293))
+                        val (outlineHex, outlineOpacity) = if (clearness > 0.8F) { Color.Blue.toHexString() to ((clearness - 0.8) / 0.05).toFloat() } else null to 0F
+                        webViewNavigator.evaluateJavaScript("""
+                            if (polylinesList[$index] || polylinesOutlineList[$index]) {
+                                polylinesOutlineList[$index].forEach(function(polyline) {
+                                    polyline.setStyle({ color: '$outlineHex', opacity: $outlineOpacity });
+                                });
+                                polylinesList[$index].forEach(function(polyline) {
+                                    polyline.setStyle({ color: '$colorHex', opacity: 1.0 });
+                                });
+                            }
+                        """.trimIndent())
                     }
+                }
+            }
+            LaunchedEffect (selectedSection, selectedStop, webViewState.loadingState) {
+                if (webViewState.loadingState == LoadingState.Finished) {
+                    val location = sections[selectedSection].stops[selectedStop - 1].stop.location
+                    webViewNavigator.evaluateJavaScript("""
+                        map.flyTo([${location.lat},${location.lng}], 15, {animate: true, duration: 0.5});
+                    """.trimIndent())
+                }
+            }
+            LaunchedEffect (Unit) {
+                webViewJsBridge.register(object : IJsMessageHandler {
+                    override fun methodName(): String = "SelectStop"
+                    override fun handle(message: JsMessage, navigator: WebViewNavigator?, callback: (String) -> Unit) {
+                        val (sectionIndex, stopIndex) = message.params.split(",").map { it.toIntOrNull() }
+                        if (sectionIndex != null && stopIndex != null) {
+                            scope.launch {
+                                selectedSection = sectionIndex
+                                selectedStop = indexMap[sectionIndex][stopIndex] + 1
+                            }
+                        }
+                    }
+                })
+            }
+            LanguageDarkModeChangeEffect (webViewState.loadingState) { language, darkMode ->
+                if (webViewState.loadingState == LoadingState.Finished) {
+                    webViewNavigator.evaluateJavaScript("""
+                        tileLayers.clearLayers();
+                            
+                        const argb = Number(${background.toArgb()});
+                        const alpha = (argb >> 24) & 0xFF;
+                        const red = (argb >> 16) & 0xFF;
+                        const green = (argb >> 8) & 0xFF;
+                        const blue = argb & 0xFF;
+                        const alphaCss = alpha / 255;
+                        mapElement.style.backgroundColor = "rgba(" + red + ", " + green + ", " + blue + ", " + alphaCss + ")";
+                        
+                        L.tileLayer('$darkMode' === 'true' ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
+                        }).addTo(tileLayers);
+                        L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", "$language" === "en" ? "en" : "tc"), {
+                            maxZoom: 19,
+                        }).addTo(tileLayers);
+                        
+                        const mapComponents = document.querySelectorAll('.leaflet-layer, .leaflet-control-zoom, .leaflet-control-attribution');
+                        if ('$darkMode' === 'true') {
+                            mapComponents.forEach(element => element.classList.add('leaflet-dark-theme'));
+                        } else {
+                            mapComponents.forEach(element => element.classList.remove('leaflet-dark-theme'));
+                        }
+                    """.trimIndent())
+                }
+            }
+            ChangedEffect (selectedSection, selectedStop) {
+                val index = indexMap[selectedSection].indexOf(selectedStop - 1)
+                if (index >= 0) {
+                    webViewNavigator.evaluateJavaScript("""
+                    stopMarkersList[$selectedSection][$index].openPopup();
                 """.trimIndent())
-            }
-        }
-    }
-    LaunchedEffect (selectedSection, selectedStop, webViewState.loadingState) {
-        if (webViewState.loadingState == LoadingState.Finished) {
-            val location = sections[selectedSection].stops[selectedStop - 1].stop.location
-            webViewNavigator.evaluateJavaScript("""
-                map.flyTo([${location.lat},${location.lng}], 15, {animate: true, duration: 0.5});
-            """.trimIndent())
-        }
-    }
-    LaunchedEffect (Unit) {
-        webViewJsBridge.clear()
-        webViewJsBridge.register(object : IJsMessageHandler {
-            override fun methodName(): String = "SelectStop"
-            override fun handle(message: JsMessage, navigator: WebViewNavigator?, callback: (String) -> Unit) {
-                val (sectionIndex, stopIndex) = message.params.split(",").map { it.toIntOrNull() }
-                if (sectionIndex != null && stopIndex != null) {
-                    scope.launch {
-                        selectedSection = sectionIndex
-                        selectedStop = indexMap[sectionIndex][stopIndex] + 1
-                    }
                 }
             }
-        })
-    }
-    LanguageDarkModeChangeEffect (webViewState.loadingState) { language, darkMode ->
-        if (webViewState.loadingState == LoadingState.Finished) {
-            webViewNavigator.evaluateJavaScript("""
-                tileLayers.clearLayers();
-                    
-                const argb = Number(${background.toArgb()});
-                const alpha = (argb >> 24) & 0xFF;
-                const red = (argb >> 16) & 0xFF;
-                const green = (argb >> 8) & 0xFF;
-                const blue = argb & 0xFF;
-                const alphaCss = alpha / 255;
-                mapElement.style.backgroundColor = "rgba(" + red + ", " + green + ", " + blue + ", " + alphaCss + ")";
-                
-                L.tileLayer('$darkMode' === 'true' ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
-                }).addTo(tileLayers);
-                L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", "$language" === "en" ? "en" : "tc"), {
-                    maxZoom: 19,
-                }).addTo(tileLayers);
-                
-                const mapComponents = document.querySelectorAll('.leaflet-layer, .leaflet-control-zoom, .leaflet-control-attribution');
-                if ('$darkMode' === 'true') {
-                    mapComponents.forEach(element => element.classList.add('leaflet-dark-theme'));
-                } else {
-                    mapComponents.forEach(element => element.classList.remove('leaflet-dark-theme'));
-                }
-            """.trimIndent())
-        }
-    }
-    ChangedEffect (selectedSection, selectedStop) {
-        val index = indexMap[selectedSection].indexOf(selectedStop - 1)
-        if (index >= 0) {
-            webViewNavigator.evaluateJavaScript("""
-                stopMarkersList[$selectedSection][$index].openPopup();
-            """.trimIndent())
-        }
-    }
 
-    WebView(
-        modifier = Modifier.fillMaxSize(),
-        state = webViewState,
-        navigator = webViewNavigator,
-        webViewJsBridge = webViewJsBridge,
-        captureBackPresses = false
-    )
+            WebView(
+                modifier = Modifier.fillMaxSize(),
+                state = webViewState,
+                navigator = webViewNavigator,
+                webViewJsBridge = webViewJsBridge,
+                captureBackPresses = false
+            )
+        }
+    }
 }
 
 @Composable
@@ -724,101 +743,109 @@ fun DefaultMapSelectInterface(
     currentRadius: Float,
     onMove: (Coordinates, Float) -> Unit
 ) {
-    val webViewState = rememberWebViewStateWithHTMLData(baseHtml)
-    val webViewNavigator = rememberWebViewNavigator()
-    val webViewJsBridge = rememberWebViewJsBridge()
-    var position by remember { mutableStateOf(initialPosition) }
-    var init by remember { mutableStateOf(false) }
-    val background = platformBackgroundColor
+    val windowSize = LocalWindowInfo.current.containerSize
+    var isInWindow by remember { mutableStateOf(false) }
+    Box(
+        modifier = Modifier.onGloballyPositioned { isInWindow = it.isVisible(windowSize) }
+    ) {
+        key(isInWindow) {
+            val webViewState = rememberWebViewStateWithHTMLData(baseHtml)
+            val webViewNavigator = rememberWebViewNavigator()
+            val webViewJsBridge = rememberWebViewJsBridge()
+            var position by remember { mutableStateOf(initialPosition) }
+            var init by remember { mutableStateOf(false) }
+            val background = platformBackgroundColor
 
-    ImmediateEffect (Unit) {
-        webViewState.webSettings.backgroundColor = background
-    }
-    LaunchedEffect (Unit) {
-        webViewJsBridge.register(object : IJsMessageHandler {
-            override fun methodName(): String = "MoveCenter"
-            override fun handle(message: JsMessage, navigator: WebViewNavigator?, callback: (String) -> Unit) {
-                val parts = message.params.split(",")
-                val pos = Coordinates(parts[0].toDouble(), parts[1].toDouble())
-                position = pos
-                onMove.invoke(pos, parts[2].toFloat())
+            ImmediateEffect (Unit) {
+                webViewState.webSettings.backgroundColor = background
             }
-        })
-    }
-    LaunchedEffect (initialPosition, webViewState.loadingState) {
-        if (webViewState.loadingState == LoadingState.Finished) {
-            if (init) {
-                webViewNavigator.evaluateJavaScript("""
-                    map.flyTo([${initialPosition.lat},${initialPosition.lng}], 15, {animate: true, duration: 0.5});
-                """.trimIndent())
-            } else {
-                webViewNavigator.evaluateJavaScript("""
-                    map.flyTo([${initialPosition.lat},${initialPosition.lng}], 15, {animate: false});
-                    
-                    function onMapMove() {
-                        var center = map.getCenter();
-                        var zoom = map.getZoom();
-                        window.kmpJsBridge.callNative("MoveCenter", center.lat + "," + center.lng + "," + zoom, null);
+            LaunchedEffect (Unit) {
+                webViewJsBridge.register(object : IJsMessageHandler {
+                    override fun methodName(): String = "MoveCenter"
+                    override fun handle(message: JsMessage, navigator: WebViewNavigator?, callback: (String) -> Unit) {
+                        val parts = message.params.split(",")
+                        val pos = Coordinates(parts[0].toDouble(), parts[1].toDouble())
+                        position = pos
+                        onMove.invoke(pos, parts[2].toFloat())
                     }
-                    
-                    map.on('moveend', onMapMove);
-                """.trimIndent())
-                init = true
+                })
             }
-        }
-    }
-    LaunchedEffect (position, currentRadius, webViewState.loadingState) {
-        if (webViewState.loadingState == LoadingState.Finished) {
-            webViewNavigator.evaluateJavaScript("""
-                layer.clearLayers();
-                var marker = L.marker([lat, lng]).addTo(layer);
-                var circle = L.circle([lat, lng], {
-                    color: '#199fff',
-                    fillColor: '#199fff',
-                    fillOpacity: 0.3,
-                    radius: radius
-                }).addTo(layer);
-            """.trimIndent())
-        }
-    }
-    LanguageDarkModeChangeEffect (webViewState.loadingState) { language, darkMode ->
-        if (webViewState.loadingState == LoadingState.Finished) {
-            webViewNavigator.evaluateJavaScript("""
-                tileLayers.clearLayers();
-                    
-                const argb = Number(${background.toArgb()});
-                const alpha = (argb >> 24) & 0xFF;
-                const red = (argb >> 16) & 0xFF;
-                const green = (argb >> 8) & 0xFF;
-                const blue = argb & 0xFF;
-                const alphaCss = alpha / 255;
-                mapElement.style.backgroundColor = "rgba(" + red + ", " + green + ", " + blue + ", " + alphaCss + ")";
-                
-                L.tileLayer('$darkMode' === 'true' ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
-                }).addTo(tileLayers);
-                L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", "$language" === "en" ? "en" : "tc"), {
-                    maxZoom: 19,
-                }).addTo(tileLayers);
-                
-                const mapComponents = document.querySelectorAll('.leaflet-layer, .leaflet-control-zoom, .leaflet-control-attribution');
-                if ('$darkMode' === 'true') {
-                    mapComponents.forEach(element => element.classList.add('leaflet-dark-theme'));
-                } else {
-                    mapComponents.forEach(element => element.classList.remove('leaflet-dark-theme'));
+            LaunchedEffect (initialPosition, webViewState.loadingState) {
+                if (webViewState.loadingState == LoadingState.Finished) {
+                    if (init) {
+                        webViewNavigator.evaluateJavaScript("""
+                            map.flyTo([${initialPosition.lat},${initialPosition.lng}], 15, {animate: true, duration: 0.5});
+                        """.trimIndent())
+                            } else {
+                                webViewNavigator.evaluateJavaScript("""
+                            map.flyTo([${initialPosition.lat},${initialPosition.lng}], 15, {animate: false});
+                            
+                            function onMapMove() {
+                                var center = map.getCenter();
+                                var zoom = map.getZoom();
+                                window.kmpJsBridge.callNative("MoveCenter", center.lat + "," + center.lng + "," + zoom, null);
+                            }
+                            
+                            map.on('moveend', onMapMove);
+                        """.trimIndent())
+                        init = true
+                    }
                 }
-            """.trimIndent())
+            }
+            LaunchedEffect (position, currentRadius, webViewState.loadingState) {
+                if (webViewState.loadingState == LoadingState.Finished) {
+                    webViewNavigator.evaluateJavaScript("""
+                        layer.clearLayers();
+                        var marker = L.marker([lat, lng]).addTo(layer);
+                        var circle = L.circle([lat, lng], {
+                            color: '#199fff',
+                            fillColor: '#199fff',
+                            fillOpacity: 0.3,
+                            radius: radius
+                        }).addTo(layer);
+                    """.trimIndent())
+                }
+            }
+            LanguageDarkModeChangeEffect (webViewState.loadingState) { language, darkMode ->
+                if (webViewState.loadingState == LoadingState.Finished) {
+                    webViewNavigator.evaluateJavaScript("""
+                        tileLayers.clearLayers();
+                            
+                        const argb = Number(${background.toArgb()});
+                        const alpha = (argb >> 24) & 0xFF;
+                        const red = (argb >> 16) & 0xFF;
+                        const green = (argb >> 8) & 0xFF;
+                        const blue = argb & 0xFF;
+                        const alphaCss = alpha / 255;
+                        mapElement.style.backgroundColor = "rgba(" + red + ", " + green + ", " + blue + ", " + alphaCss + ")";
+                        
+                        L.tileLayer('$darkMode' === 'true' ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
+                        }).addTo(tileLayers);
+                        L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", "$language" === "en" ? "en" : "tc"), {
+                            maxZoom: 19,
+                        }).addTo(tileLayers);
+                        
+                        const mapComponents = document.querySelectorAll('.leaflet-layer, .leaflet-control-zoom, .leaflet-control-attribution');
+                        if ('$darkMode' === 'true') {
+                            mapComponents.forEach(element => element.classList.add('leaflet-dark-theme'));
+                        } else {
+                            mapComponents.forEach(element => element.classList.remove('leaflet-dark-theme'));
+                        }
+                    """.trimIndent())
+                }
+            }
+
+            WebView(
+                modifier = Modifier.fillMaxSize(),
+                state = webViewState,
+                navigator = webViewNavigator,
+                webViewJsBridge = webViewJsBridge,
+                captureBackPresses = false
+            )
         }
     }
-
-    WebView(
-        modifier = Modifier.fillMaxSize(),
-        state = webViewState,
-        navigator = webViewNavigator,
-        webViewJsBridge = webViewJsBridge,
-        captureBackPresses = false
-    )
 }
 
 @Suppress("NOTHING_TO_INLINE")
@@ -829,6 +856,13 @@ inline fun Coordinates.toGoogleLatLng(): LatLng {
 @Suppress("NOTHING_TO_INLINE")
 inline fun Collection<Coordinates>.toGoogleLatLng(): List<LatLng> {
     return map { it.toGoogleLatLng() }
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun LayoutCoordinates.isVisible(windowSize: IntSize): Boolean {
+    val windowBound = Rect(Offset.Zero, windowSize.toSize())
+    val bound = boundsInWindow()
+    return windowBound.overlaps(bound)
 }
 
 actual val isMapOverlayAlwaysOnTop: Boolean = false

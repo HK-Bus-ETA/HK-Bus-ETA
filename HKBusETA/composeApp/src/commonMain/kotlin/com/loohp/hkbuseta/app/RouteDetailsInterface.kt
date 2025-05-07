@@ -792,7 +792,9 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             userScrollEnabled = pagerScrollEnabled.value
         ) {
             Box(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { consumeWindowInsets(WindowInsets.statusBars) }
             ) {
                 val item = listStopsTabItem[it]
                 when (item.type) {
@@ -882,16 +884,14 @@ fun MapStopsInterface(
     val pipMode = rememberIsInPipMode(instance)
 
     if (Shared.showRouteMap && !pipMode) {
-        val alternateStopNames by remember(listRoute, isKmbCtbJoint) { derivedStateOf { if (isKmbCtbJoint) {
-            Registry.getInstance(instance).findJointAlternateStops(allStops.map { it.stopId }, routeNumber).asImmutableList()
+        val alternateStopNames by remember(listRoute, waypoints, isKmbCtbJoint) { derivedStateOf { if (isKmbCtbJoint) {
+            Registry.getInstance(instance).findJointAlternateStops(waypoints.stopIds, routeNumber).asImmutableList()
         } else {
             null
         }.asImmutableState() } }
 
         AdaptiveTopBottomLayout(
-            modifier = Modifier
-                .fillMaxWidth()
-                .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { consumeWindowInsets(WindowInsets.statusBars) },
+            modifier = Modifier.fillMaxWidth(),
             context = instance,
             animateSize = true,
             bottomSize = { when {

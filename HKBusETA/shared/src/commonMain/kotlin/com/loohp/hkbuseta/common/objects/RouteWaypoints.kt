@@ -32,16 +32,18 @@ data class RouteWaypoints(
     val routeNumber: String,
     val co: Operator,
     val isKmbCtbJoint: Boolean,
+    val stopIds: List<String>,
     val stops: List<Stop>,
     val paths: List<List<Coordinates>> = listOf(element = stops.map { it.location }),
     val isHighRes: Boolean,
-    val firstStopIndexOffset: Int = 0,
+    val firstStopIndexOffset: Int = 0
 ) {
     fun subRoute(staringStopIndex: Int, endingStopIndex: Int, firstStopIndexOffset: Int): RouteWaypoints {
         return RouteWaypoints(
             routeNumber = routeNumber,
             co = co,
             isKmbCtbJoint = isKmbCtbJoint,
+            stopIds = stopIds.subList(staringStopIndex, endingStopIndex + 1),
             stops = stops.subList(staringStopIndex, endingStopIndex + 1),
             paths = paths.subList(staringStopIndex, endingStopIndex),
             isHighRes = isHighRes,
@@ -56,6 +58,7 @@ fun Route.defaultWaypoints(context: AppContext): RouteWaypoints {
         routeNumber = routeNumber,
         co = operator,
         isKmbCtbJoint = isKmbCtbJoint,
+        stopIds = stops[operator]!!,
         stops = stops[operator]!!.map { it.asStop(context)!! },
         isHighRes = false
     )
@@ -65,11 +68,13 @@ fun RouteSearchResultEntry.defaultWaypoints(context: AppContext): RouteWaypoints
     val routeNumber = route!!.routeNumber
     val bound = route!!.idBound(co)
     val gmbRegion = route!!.gmbRegion
+    val stops = Registry.getInstance(context).getAllStops(routeNumber, bound, co, gmbRegion)
     return RouteWaypoints(
         routeNumber = routeNumber,
         co = co,
         isKmbCtbJoint = route!!.isKmbCtbJoint,
-        stops = Registry.getInstance(context).getAllStops(routeNumber, bound, co, gmbRegion).map { it.stop },
+        stopIds = stops.map { it.stopId },
+        stops = stops.map { it.stop },
         isHighRes = false
     )
 }
