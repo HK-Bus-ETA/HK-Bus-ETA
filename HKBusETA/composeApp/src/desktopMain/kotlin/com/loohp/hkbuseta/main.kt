@@ -37,7 +37,6 @@ import com.loohp.hkbuseta.shared.DesktopShared
 import java.awt.Dimension
 
 
-@OptIn(ExperimentalComposeUiApi::class)
 fun main() = application {
     DesktopShared.setSystemFormatProviders()
     DesktopShared.setDefaultExceptionHandler()

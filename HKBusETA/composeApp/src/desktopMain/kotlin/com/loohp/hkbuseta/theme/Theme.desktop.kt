@@ -22,8 +22,14 @@ package com.loohp.hkbuseta.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.LineHeightStyle.Alignment
+import androidx.compose.ui.text.style.LineHeightStyle.Mode
+import androidx.compose.ui.text.style.LineHeightStyle.Trim
 import com.materialkolor.dynamicColorScheme
 
 @Composable
@@ -44,6 +50,11 @@ actual fun AppTheme(
     MaterialTheme(
         colorScheme = resolveColorScheme(useDarkTheme, customColor),
         typography = MaterialTheme.typography,
-        content = content
+        content = {
+            ProvideTextStyle(
+                value = TextStyle(lineHeightStyle = LineHeightStyle(alignment = Alignment.Proportional, trim = Trim.None, mode = Mode.Fixed)),
+                content = content
+            )
+        }
     )
 }
