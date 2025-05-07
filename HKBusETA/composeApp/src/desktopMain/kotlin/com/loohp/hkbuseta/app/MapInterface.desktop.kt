@@ -354,7 +354,7 @@ fun rememberLeafletScript(
         for (var i = 0; i < ${sections.size}; i++) {
             var sectionIndex = i;
             var stopIcon = L.icon({
-                iconUrl: 'file:///android_asset/' + iconFiles[sectionIndex],
+                iconUrl: 'https://data.hkbuseta.com/img/' + iconFiles[sectionIndex],
                 iconSize: [30, 30],
                 iconAnchor: anchors[sectionIndex]
             });
