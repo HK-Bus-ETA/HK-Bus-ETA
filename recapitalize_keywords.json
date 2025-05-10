@@ -1,4 +1,10 @@
 {
+    "recapitalize_regex": [
+        {
+            "regex": "[A-Z]{1,2}[0-9]{1,3}",
+            "case": "UPPER"
+        }
+    ],
     "recapitalize": [
         "BBI",
         "MTR",

@@ -89,7 +89,7 @@ DATA_SHEET_FULL_FORMATTED_FILE_NAME = "data_full_formatted.json"
 CHECKSUM_FILE_NAME = "checksum.md5"
 LAST_UPDATED_FILE = "last_updated.txt"
 
-RECAPITALIZE_KEYWORDS = read_json("recapitalize_keywords.json")["recapitalize"]
+RECAPITALIZE_KEYWORDS = read_json("recapitalize_keywords.json")
 
 NORMALIZE_CHARS = {
     "／": "/",
@@ -797,8 +797,11 @@ def capitalize(input_str, lower=True):
 
 def apply_recapitalize_keywords(input_str):
     global RECAPITALIZE_KEYWORDS
-    for keyword in RECAPITALIZE_KEYWORDS:
-        input_str = re.sub(r"(?i)(?<![0-9a-zA-Z])" + keyword + "(?![0-9a-zA-Z])", keyword, input_str)
+    for entry in RECAPITALIZE_KEYWORDS["recapitalize_regex"]:
+        upper = entry["case"].casefold() == "UPPER".casefold()
+        input_str = re.sub(r"(?i)" + entry["regex"], lambda m: m.group(0).upper() if upper else m.group(0).lower(), input_str)
+    for keyword in RECAPITALIZE_KEYWORDS["recapitalize"]:
+        input_str = re.sub(r"(?i)(?<![0-9a-zA-Z])" + re.escape(keyword) + "(?![0-9a-zA-Z])", keyword, input_str)
     return input_str
 
 
