@@ -104,6 +104,7 @@ LWB_AREA = Polygon([
     (22.18870096192713, 113.82594536826676),
     (22.35273539776945, 113.83145427771888)
 ])
+NOT_LWB_PREFIXES = ["PB", "PN"]
 
 
 # ===========================
@@ -879,6 +880,7 @@ def list_kmb_subsidiary_routes():
     global SUN_BUS_ROUTES
     global KMB_SUBSIDIARY_ROUTES
     global LWB_AREA
+    global NOT_LWB_PREFIXES
     gtfs = get_web_text("https://static.data.gov.hk/td/pt-headway-tc/routes.txt").splitlines()[1:]
     lwb_routes = set()
     for line in gtfs:
@@ -894,7 +896,7 @@ def list_kmb_subsidiary_routes():
             stops = route["stops"]["kmb"]
             first_stop = DATA_SHEET["stopList"][stops[0]]["location"]
             last_stop = DATA_SHEET["stopList"][stops[-1]]["location"]
-            if route_number in lwb_routes or LWB_AREA.contains(Point(first_stop["lat"], first_stop["lng"])) or LWB_AREA.contains(Point(last_stop["lat"], last_stop["lng"])):
+            if route_number in lwb_routes or (not any(route_number.startswith(p) for p in NOT_LWB_PREFIXES) and (LWB_AREA.contains(Point(first_stop["lat"], first_stop["lng"])) or LWB_AREA.contains(Point(last_stop["lat"], last_stop["lng"])))):
                 KMB_SUBSIDIARY_ROUTES["LWB"].add(route_number)
 
 
