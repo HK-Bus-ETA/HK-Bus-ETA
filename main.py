@@ -784,10 +784,19 @@ def download_and_process_data_sheet():
 
 
 def normalize(input_str):
+    return normalize_extract(input_str)[0]
+
+
+def normalize_extract(input_str):
     global NORMALIZE_CHARS
     for keyword, replacement in NORMALIZE_CHARS.items():
         input_str = input_str.replace(keyword, replacement)
-    return input_str
+    match = re.search(r" *(\([A-Z]{2}[0-9]{3}\)) *", input_str)
+    if match:
+        modified_string = input_str.replace(match.group(), "", 1)
+        return modified_string, match.group(1)
+    else:
+        return input_str, None
 
 
 def capitalize(input_str, lower=True):
@@ -825,10 +834,20 @@ def normalize_names():
         route["dest"]["en"] = normalize(route["dest"]["en"])
         route["orig"]["zh"] = normalize(route["orig"]["zh"])
         route["orig"]["en"] = normalize(route["orig"]["en"])
-
     for stopId, stop in DATA_SHEET["stopList"].items():
-        stop["name"]["zh"] = normalize(stop["name"]["zh"])
-        stop["name"]["en"] = normalize(stop["name"]["en"])
+        stop["name"]["zh"], extracted_zh = normalize_extract(stop["name"]["zh"])
+        stop["name"]["en"], extracted_en = normalize_extract(stop["name"]["en"])
+        if extracted_zh is not None or extracted_en is not None:
+            if "remark" not in stop:
+                stop["remark"] = {
+                    "zh": "" if extracted_zh is None else extracted_zh,
+                    "en": "" if extracted_en is None else extracted_en
+                }
+            else:
+                if extracted_zh is not None:
+                    stop["remark"]["zh"] += " " + extracted_zh
+                if extracted_en is not None:
+                    stop["remark"]["en"] += " " + extracted_en
 
 
 def inject_gmb_region():
