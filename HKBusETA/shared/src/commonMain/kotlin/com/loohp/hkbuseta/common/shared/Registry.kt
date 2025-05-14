@@ -2162,15 +2162,15 @@ class Registry {
     private val cachedWaypoints: MutableMap<Route, RouteWaypoints> = ConcurrentMutableMap()
     private val cachedTrafficSnapshots: MutableMap<RouteWaypoints, Array<out List<TrafficSnapshotPoint>>> = ConcurrentMutableMap()
 
-    fun getRouteWaypoints(route: Route, context: AppContext): Deferred<RouteWaypoints> {
+    fun getRouteWaypoints(route: Route, allStops: List<StopData>, context: AppContext): Deferred<RouteWaypoints> {
         val id = route.waypointsId
         val gzip = gzipSupported()
         val (gzipFolder, gzipSuffix) = if (gzip) "_gzip" to ".gz" else "" to ""
         val routeNumber = route.routeNumber
         val co = route.co.firstCo()!!
         val isKmbCtbJoint = route.isKmbCtbJoint
-        val stopIds = route.stops[co]!!
-        val stops = stopIds.map { it.asStop(context)!! }
+        val stopIds = if (co.isTrain) allStops.map { it.stopId } else route.stops[co]!!
+        val stops = if (co.isTrain) allStops.map { it.stop } else stopIds.map { it.asStop(context)!! }
         return CoroutineScope(Dispatchers.IO).async {
             return@async cachedWaypoints.getOrPut(route) {
                 getJSONResponse<JsonObject>("https://waypoints.hkbuseta.com/waypoints$gzipFolder/$id.json$gzipSuffix", gzip)

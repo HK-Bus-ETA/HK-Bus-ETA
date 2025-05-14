@@ -434,7 +434,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
 
     LaunchedEffect (allStops, selectedBranch) {
         CoroutineScope(Dispatchers.IO).launch {
-            val waypointsAsync = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, instance).await()
+            val waypointsAsync = Registry.getInstance(instance).getRouteWaypoints(selectedBranch, allStops, instance).await()
             withContext(Dispatchers.Main) {
                 waypoints = waypointsAsync
             }
@@ -921,7 +921,14 @@ fun MapStopsInterface(
                                 }
                             }
                     ) {
-                        MapRouteInterface(instance, waypoints, allStops.asImmutableList(), selectedStopState, alternateStopNamesShowing, alternateStopNames)
+                        MapRouteInterface(
+                            instance = instance,
+                            waypoints = waypoints,
+                            stops = allStops.asImmutableList(),
+                            selectedStopState = selectedStopState,
+                            alternateStopNameShowing = alternateStopNamesShowing,
+                            alternateStopNames = alternateStopNames
+                        )
                         if (screenSize.isNarrow) {
                             PlatformFilledTonalIconToggleButton(
                                 modifier = Modifier
