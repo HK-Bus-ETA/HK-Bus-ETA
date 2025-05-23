@@ -791,7 +791,7 @@ def normalize_extract(input_str):
     global NORMALIZE_CHARS
     for keyword, replacement in NORMALIZE_CHARS.items():
         input_str = input_str.replace(keyword, replacement)
-    match = re.search(r" *(\([A-Z]{2}[0-9]{3}\)) *", input_str)
+    match = re.search(r"[ 　]*(\([A-Z]{2}[0-9]{3}\))[ 　]*", input_str)
     if match:
         modified_string = input_str.replace(match.group(), "", 1)
         return modified_string, match.group(1)
