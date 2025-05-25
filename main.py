@@ -1436,6 +1436,98 @@ def add_ctb_stops_that_does_not_belong_to_any_route():
     for _ in concurrent.futures.as_completed(futures):
         pass
 
+    added_route_keys_by_route_number = {}
+    has_fake_route = set()
+    is_circular_route = {}
+    for key, data in DATA_SHEET["routeList"].items():
+        route_number = data["route"]
+        if "ctb" in data["bound"] and "ctb" in data["stops"]:
+            if "fakeRoute" in data and data["fakeRoute"]:
+                has_fake_route.add(route_number)
+            if len(data["bound"]["ctb"]) > 1:
+                if route_number in is_circular_route:
+                    is_circular_route[route_number]["length"] = min(len(data["stops"]["ctb"]), is_circular_route[route_number]["length"])
+                    is_circular_route[route_number]["orig"].add(data["stops"]["ctb"][0])
+                    is_circular_route[route_number]["dest"].add(data["stops"]["ctb"][-1])
+                else:
+                    is_circular_route[route_number] = {
+                        "bound": data["bound"]["ctb"],
+                        "length": len(data["stops"]["ctb"]),
+                        "orig": {data["stops"]["ctb"][0]},
+                        "dest": {data["stops"]["ctb"][-1]}
+                    }
+            if route_number in added_route_keys_by_route_number:
+                added_route_keys_by_route_number[route_number].add(key)
+            else:
+                added_route_keys_by_route_number[route_number] = {key}
+
+    for route_number, keys in added_route_keys_by_route_number.items():
+        if route_number in has_fake_route:
+            for key in keys:
+                route = DATA_SHEET["routeList"][key]
+                if route_number in is_circular_route:
+                    if "fakeRoute" in route and route["fakeRoute"] and len(route["bound"]["ctb"]) <= 1:
+                        data = is_circular_route[route_number]
+                        if len(route["stops"]["ctb"]) >= data["length"]:
+                            route["bound"]["ctb"] = data["bound"]
+                        else:
+                            first_stop_id = route["stops"]["ctb"][0]
+                            last_stop_id = route["stops"]["ctb"][-1]
+                            is_circular = False
+                            if first_stop_id in DATA_SHEET["stopList"] and last_stop_id in DATA_SHEET["stopList"]:
+                                first_stop = DATA_SHEET["stopList"][first_stop_id]["location"]
+                                last_stop = DATA_SHEET["stopList"][last_stop_id]["location"]
+                                if any(haversine(first_stop["lat"], first_stop["lng"],
+                                                 DATA_SHEET["stopList"][a]["location"]["lat"],
+                                                 DATA_SHEET["stopList"][a]["location"]["lng"]) < 0.1 for a in
+                                       data["orig"]) and any(haversine(last_stop["lat"], last_stop["lng"],
+                                                                       DATA_SHEET["stopList"][a]["location"]["lat"],
+                                                                       DATA_SHEET["stopList"][a]["location"][
+                                                                           "lng"]) < 0.1 for a in data["dest"]):
+                                    is_circular = True
+                            if is_circular:
+                                route["bound"]["ctb"] = data["bound"]
+                            else:
+                                route["ctbIsCircular"] = True
+
+
+def fix_missing_stops():
+    missing_stops = set()
+    for data in DATA_SHEET["routeList"].values():
+        if "stops" in data and data["stops"] is not None:
+            for stops in data["stops"].values():
+                for stop_id in stops:
+                    if stop_id not in DATA_SHEET["stopList"]:
+                        missing_stops.add(stop_id)
+                        DATA_SHEET["stopList"][stop_id] = {
+                            "location": {
+                                "lat": 22.203615,
+                                "lng": 114.415195
+                            },
+                            "name": {
+                                "zh": f"未有車站資訊",
+                                "en": f"Stop Details TBD"
+                            },
+                            "remark": {
+                                "zh": "(資訊通常會在數日後更新出現)",
+                                "en": "(Usually details will be updated in a few days)"
+                            }
+                        }
+    entry_to_remove = set()
+    for key, stop_map in DATA_SHEET["stopMap"].items():
+        for i in range(len(stop_map) - 1, -1, -1):
+            array = stop_map[i]
+            if array[1] in missing_stops:
+                del stop_map[i]
+        if len(stop_map) <= 0:
+            entry_to_remove.add(key)
+    for key in entry_to_remove:
+        if key in DATA_SHEET["stopMap"]:
+            del DATA_SHEET["stopMap"][key]
+    for stop_id in missing_stops:
+        if stop_id in DATA_SHEET["stopMap"]:
+            del DATA_SHEET["stopMap"][stop_id]
+
 
 print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
@@ -1459,6 +1551,8 @@ print("Adding Route Remarks")
 add_route_remarks()
 print("Add CTB Stops that does not Belong to Any Route")
 add_ctb_stops_that_does_not_belong_to_any_route()
+print("Fix Missing Stops")
+fix_missing_stops()
 print("Capitalizing KMB English Names")
 capitalize_english_names()
 print("Listing KMB Subsidiary Routes")
