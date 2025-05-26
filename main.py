@@ -400,6 +400,16 @@ def generate_numeric_string(seed_string, length, charset, predicate):
             return result
 
 
+def contains(small, big):
+    for i in range(len(big)-len(small)+1):
+        for j in range(len(small)):
+            if big[i+j] != small[j]:
+                break
+        else:
+            return True
+    return False
+
+
 def download_and_process_data_sheet():
     global DATA_SHEET
     global BUS_ROUTE
@@ -453,6 +463,7 @@ def download_and_process_data_sheet():
 
     kmb_ops = {}
     ctb_circular = {}
+    ctb_circular_ref = {}
     mtr_orig = {}
     mtr_dest = {}
     mtr_stops_lists = {}
@@ -586,6 +597,10 @@ def download_and_process_data_sheet():
             if len(bounds["ctb"]) > 1:
                 stops = data["stops"].get("ctb")
                 if stops is not None:
+                    if route_number in ctb_circular_ref:
+                        ctb_circular_ref[route_number].append(stops)
+                    else:
+                        ctb_circular_ref[route_number] = [stops]
                     first_stop_id = stops[0]
                     last_stop_id = stops[-1]
                     if first_stop_id != last_stop_id:
@@ -665,7 +680,10 @@ def download_and_process_data_sheet():
                     if len(bounds["ctb"]) >= 2:
                         bounds["ctb"] = bounds["ctb"][0:1]
                 elif len(bounds["ctb"]) < 2:
-                    data["bound"]["ctb"] = "OI"
+                    if route_number in ctb_circular_ref and any(contains(data["stops"]["ctb"], s) for s in ctb_circular_ref[route_number]):
+                        data["ctbIsCircular"] = True
+                    else:
+                        data["bound"]["ctb"] = "OI"
                 else:
                     data["bound"]["ctb"] = "OI"
                     data["dest"]["zh"] += " (循環線)"
