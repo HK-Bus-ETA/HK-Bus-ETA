@@ -665,8 +665,9 @@ def download_and_process_data_sheet():
                     if len(bounds["ctb"]) >= 2:
                         bounds["ctb"] = bounds["ctb"][0:1]
                 elif len(bounds["ctb"]) < 2:
-                    data["ctbIsCircular"] = True
+                    data["bound"]["ctb"] = "OI"
                 else:
+                    data["bound"]["ctb"] = "OI"
                     data["dest"]["zh"] += " (循環線)"
                     data["dest"]["en"] += " (Circular)"
         elif "kmb" in bounds:
