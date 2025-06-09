@@ -96,3 +96,5 @@ fun Int.getHollowCircledNumber(): String {
 inline fun Int.pad(characters: Int): String {
     return toString().padStart(characters, '0')
 }
+
+expect fun <T: Number> T.toString(decimalPlaces: Int): String

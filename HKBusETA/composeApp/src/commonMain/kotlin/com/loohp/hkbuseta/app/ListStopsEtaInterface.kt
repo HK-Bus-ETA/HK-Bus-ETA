@@ -20,7 +20,6 @@
 
 package com.loohp.hkbuseta.app
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -112,6 +111,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.zIndex
 import coil3.compose.SubcomposeAsyncImage
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.ScreenState
@@ -534,85 +534,87 @@ fun ListStopsEtaInterface(
         )
     } else {
         Scaffold(
-            topBar = {
-                RouteBranchBar(
-                    instance = instance,
-                    type = type,
-                    co = co,
-                    routeBranches = routeBranches,
-                    selectedBranchState = selectedBranchState
-                )
-            },
             content = { padding ->
-                Box(
+                Column(
                     modifier = Modifier
                         .padding(padding)
                         .fillMaxSize()
                 ) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScrollBar(
-                                state = scroll,
-                                scrollbarConfig = ScrollBarConfig(
-                                    indicatorThickness = 6.dp,
-                                    padding = PaddingValues(0.dp, 2.dp, 0.dp, 2.dp)
-                                )
-                            ),
-                        state = scroll
+                    RouteBranchBar(
+                        instance = instance,
+                        type = type,
+                        co = co,
+                        routeBranches = routeBranches,
+                        selectedBranchState = selectedBranchState
+                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        itemsIndexedPossiblySticky(
-                            items = allStops,
-                            key = { i, _ -> i + 1 },
-                            sticky = { i, _ -> type == ListStopsInterfaceType.TIMES && i + 1 == timesStartIndex }
-                        ) { i, stopData, sticky ->
-                            StopEntry(
-                                instance = instance,
-                                type = type,
-                                selectedStopState = selectedStopState,
-                                selectedBranchState = selectedBranchState,
-                                possibleBidirectionalSectionFare = possibleBidirectionalSectionFare,
-                                alertCheckRoute = alertCheckRoute,
-                                alternateStopNames = alternateStopNames,
-                                index = i + 1,
-                                allStops = allStops,
-                                stopData = stopData,
-                                routeBranches = routeBranches,
-                                routeLineData = routeLineData,
-                                mtrStopsInterchange = mtrStopsInterchange,
-                                routeNumber = routeNumber,
-                                co = co,
-                                gmbRegion = gmbRegion,
-                                isKmbCtbJoint = isKmbCtbJoint,
-                                timesStartIndexState = timesStartIndexState,
-                                times = times,
-                                alightReminderHighlightBlinkState = alightReminderHighlightBlinkState,
-                                alightReminderStateState = alightReminderStateState,
-                                alightReminderTimeLeftState = alightReminderTimeLeftState,
-                                alightReminderStopsLeftState = alightReminderStopsLeftState,
-                                lrtDirectionModeState = lrtDirectionModeState,
-                                etaResultsState = etaResults,
-                                etaUpdateTimesState = etaUpdateTimes,
-                                nextBusPositionState = nextBusPositions,
-                                sheetTypeState = sheetTypeState,
-                                togglingAlightReminderState = togglingAlightReminderState,
-                                alternateStopNamesShowingState = alternateStopNamesShowingState,
-                                trafficSnapshots = trafficSnapshotsByAllStops?.getOrNull(i),
-                                sticky = sticky
-                            )
-                            if (sticky) {
-                                AnimatedVisibility(
-                                    visible = scroll.firstVisibleItemIndex >= i
-                                ) {
-                                    HorizontalDivider()
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScrollBar(
+                                    state = scroll,
+                                    scrollbarConfig = ScrollBarConfig(
+                                        indicatorThickness = 6.dp,
+                                        padding = PaddingValues(0.dp, 2.dp, 0.dp, 2.dp)
+                                    )
+                                ),
+                            state = scroll
+                        ) {
+                            itemsIndexedPossiblySticky(
+                                items = allStops,
+                                key = { i, _ -> i + 1 },
+                                sticky = { i, _ -> type == ListStopsInterfaceType.TIMES && i + 1 == timesStartIndex }
+                            ) { i, stopData, sticky ->
+                                StopEntry(
+                                    instance = instance,
+                                    type = type,
+                                    selectedStopState = selectedStopState,
+                                    selectedBranchState = selectedBranchState,
+                                    possibleBidirectionalSectionFare = possibleBidirectionalSectionFare,
+                                    alertCheckRoute = alertCheckRoute,
+                                    alternateStopNames = alternateStopNames,
+                                    index = i + 1,
+                                    allStops = allStops,
+                                    stopData = stopData,
+                                    routeBranches = routeBranches,
+                                    routeLineData = routeLineData,
+                                    mtrStopsInterchange = mtrStopsInterchange,
+                                    routeNumber = routeNumber,
+                                    co = co,
+                                    gmbRegion = gmbRegion,
+                                    isKmbCtbJoint = isKmbCtbJoint,
+                                    timesStartIndexState = timesStartIndexState,
+                                    times = times,
+                                    alightReminderHighlightBlinkState = alightReminderHighlightBlinkState,
+                                    alightReminderStateState = alightReminderStateState,
+                                    alightReminderTimeLeftState = alightReminderTimeLeftState,
+                                    alightReminderStopsLeftState = alightReminderStopsLeftState,
+                                    lrtDirectionModeState = lrtDirectionModeState,
+                                    etaResultsState = etaResults,
+                                    etaUpdateTimesState = etaUpdateTimes,
+                                    nextBusPositionState = nextBusPositions,
+                                    sheetTypeState = sheetTypeState,
+                                    togglingAlightReminderState = togglingAlightReminderState,
+                                    alternateStopNamesShowingState = alternateStopNamesShowingState,
+                                    trafficSnapshots = trafficSnapshotsByAllStops?.getOrNull(i),
+                                    sticky = sticky
+                                )
+                                if (sticky) {
+                                    androidx.compose.animation.AnimatedVisibility(
+                                        visible = scroll.firstVisibleItemIndex >= i
+                                    ) {
+                                        HorizontalDivider()
+                                    }
                                 }
                             }
+                            if (selectedStop >= allStops.size) {
+                                item { HorizontalDivider() }
+                            }
                         }
-                        if (selectedStop >= allStops.size) {
-                            item { HorizontalDivider() }
-                        }
+                        floatingActions?.invoke(this, scroll)
                     }
-                    floatingActions?.invoke(this, scroll)
                 }
                 if (sheetType.show) {
                     ListStopsBottomSheet(
@@ -657,7 +659,8 @@ fun RouteBranchBar(
                 .fillMaxWidth()
                 .platformHorizontalDividerShadow(5.dp)
                 .background(platformPrimaryContainerColor)
-                .animateContentSize(),
+                .animateContentSize()
+                .zIndex(10F),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
@@ -728,13 +731,14 @@ fun RouteBranchBar(
                     }
                 }
                 Column(
-                    modifier = Modifier.verticalScrollWithScrollbar(
-                        state = dropdownScroll,
-                        flingBehavior = ScrollableDefaults.flingBehavior(),
-                        scrollbarConfig = ScrollBarConfig(
-                            indicatorThickness = 4.dp
+                    modifier = Modifier
+                        .verticalScrollWithScrollbar(
+                            state = dropdownScroll,
+                            flingBehavior = ScrollableDefaults.flingBehavior(),
+                            scrollbarConfig = ScrollBarConfig(
+                                indicatorThickness = 4.dp
+                            )
                         )
-                    )
                 ) {
                     for (branch in routeBranches) {
                         if (branch != selectedBranch) {

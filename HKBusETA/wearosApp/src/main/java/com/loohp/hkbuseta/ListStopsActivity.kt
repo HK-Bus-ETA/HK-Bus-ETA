@@ -23,17 +23,13 @@ package com.loohp.hkbuseta
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Stable
-import androidx.compose.ui.Modifier
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.loohp.hkbuseta.app.ListStopsMainElement
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ifFalse
-import com.loohp.hkbuseta.compose.ambientMode
-import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.utils.optInt
 import com.loohp.hkbuseta.utils.optString
@@ -66,18 +62,13 @@ class ListStopsActivity : ComponentActivity() {
         val showEta = intent.extras!!.getBoolean("showEta", true)
 
         setContent {
-            AmbientAware {
-                val ambientMode = rememberIsInAmbientMode(it)
-                Box (
-                    modifier = Modifier.ambientMode(it)
-                ) {
-                    ListStopsMainElement(ambientMode, appContext, route, stopId, stopIndex, showEta, scrollToStop) { isAdd, index, task ->
-                        sync.execute {
-                            if (isAdd) {
-                                etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
-                            } else {
-                                etaUpdatesMap.remove(index)?.first?.cancel(true)
-                            }
+            AmbientAware { ambientState ->
+                ListStopsMainElement(ambientState.isAmbient, appContext, route, stopId, stopIndex, showEta, scrollToStop) { isAdd, index, task ->
+                    sync.execute {
+                        if (isAdd) {
+                            etaUpdatesMap.computeIfAbsent(index) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
+                        } else {
+                            etaUpdatesMap.remove(index)?.first?.cancel(true)
                         }
                     }
                 }

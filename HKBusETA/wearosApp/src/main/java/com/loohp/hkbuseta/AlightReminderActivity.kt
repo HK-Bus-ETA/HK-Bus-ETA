@@ -23,16 +23,12 @@ package com.loohp.hkbuseta
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Stable
-import androidx.compose.ui.Modifier
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.loohp.hkbuseta.app.AlightReminderInterface
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ifFalse
-import com.loohp.hkbuseta.compose.ambientMode
-import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 import com.loohp.hkbuseta.shared.WearOSShared
 
 
@@ -45,13 +41,8 @@ class AlightReminderActivity : ComponentActivity() {
         WearOSShared.setDefaultExceptionHandler(this)
 
         setContent {
-            AmbientAware {
-                val ambientMode = rememberIsInAmbientMode(it)
-                Box (
-                    modifier = Modifier.ambientMode(it)
-                ) {
-                    AlightReminderInterface(appContext, ambientMode)
-                }
+            AmbientAware { ambientState ->
+                AlightReminderInterface(appContext, ambientState.isAmbient)
             }
         }
     }

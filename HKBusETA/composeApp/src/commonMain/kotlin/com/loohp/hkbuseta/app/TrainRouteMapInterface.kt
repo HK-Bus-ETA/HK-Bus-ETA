@@ -597,7 +597,7 @@ fun RouteMapSearchInterface(
                             (if (Shared.language == "en") "Typhoon Timetable" else "颱風時間表") to PlatformIcons.Filled.Error
                         }
                         else -> {
-                            (if (Shared.language == "en") "Good Service" else "正常服務") to PlatformIcons.Filled.CheckCircle
+                            (if (Shared.language == "en") "Good Service" else "服務正常") to PlatformIcons.Filled.CheckCircle
                         }
                     }
                     PlatformFloatingActionButton(
@@ -768,7 +768,7 @@ fun MTRRouteMapInterface(
     var zoomState by mtrRouteMapZoomState.collectAsStateMultiplatform()
     val state = rememberCoilZoomState()
     var mtrRouteMapData by mtrRouteMapDataState.collectAsStateMultiplatform()
-    var allStops: Map<String, Stop?> by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
+    var allStops: Map<String, Stop?> by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }.orEmpty()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
     var closestStop by closestStopState
 
@@ -1853,7 +1853,7 @@ fun LRTRouteMapInterface(
     var zoomState by lrtRouteMapZoomState.collectAsStateMultiplatform()
     val state = rememberCoilZoomState()
     var lightRailRouteMapData by lightRailRouteMapDataState.collectAsStateMultiplatform()
-    var allStops: Map<String, Stop?> by remember { mutableStateOf(lightRailRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
+    var allStops: Map<String, Stop?> by remember { mutableStateOf(lightRailRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }.orEmpty()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
     var closestStop by closestStopState
 
@@ -2318,7 +2318,7 @@ fun LRTETADisplayByPlatformInterface(
                 }
             }
             byPlatform.asSequence().sortedBy { it.key }.associate { it.toPair() }
-        }?: emptyMap()
+        }.orEmpty()
     } }
     var freshness by remember { mutableStateOf(true) }
 
@@ -2440,7 +2440,7 @@ fun LRTETADisplayByRouteInterface(
             byRouteNumber.asSequence()
                 .sortedWith { a, b -> a.key.compareRouteNumber(b.key) }
                 .associate { it.toPair() }
-        }?: emptyMap()
+        }.orEmpty()
     } }
     var freshness by remember { mutableStateOf(true) }
 

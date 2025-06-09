@@ -234,6 +234,10 @@ class Route(
         return result
     }
 
+    override fun toString(): String {
+        val co = co.firstCo()!!
+        return "$co $routeNumber ${idBoundWithRegion(co)} ($serviceType): ${super.toString()}"
+    }
 }
 
 fun Route.toRouteSearchResult(instance: AppContext): RouteSearchResultEntry {

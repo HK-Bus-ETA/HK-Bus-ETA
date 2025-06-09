@@ -165,7 +165,7 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
     }
 
     override suspend fun listFiles(): List<String> {
-        return DATA_FOLDER.listFiles()?.map { it.name }?: emptyList()
+        return DATA_FOLDER.listFiles()?.map { it.name }.orEmpty()
     }
 
     override suspend fun deleteFile(fileName: String): Boolean {

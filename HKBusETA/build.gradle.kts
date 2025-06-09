@@ -29,6 +29,7 @@ plugins {
     alias(libs.plugins.googleServices) apply false
     alias(libs.plugins.googleDevToolsKsp) apply false
     alias(libs.plugins.compose.compiler) apply false
+    alias(libs.plugins.kotlinJvm) apply false
 }
 
 buildscript {

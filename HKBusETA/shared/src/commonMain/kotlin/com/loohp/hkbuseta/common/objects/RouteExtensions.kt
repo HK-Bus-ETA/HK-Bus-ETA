@@ -1042,7 +1042,7 @@ fun RouteSearchResultEntry.findReverse(context: AppContext): RouteSearchResultEn
 
 fun Route.findSimilarRoutes(co: Operator, context: AppContext): List<RouteSearchResultEntry> {
     val registry = Registry.getInstance(context)
-    val stops = stops[co]?.takeIf { it.isNotEmpty() }?: emptyList()
+    val stops = stops[co]?.takeIf { it.isNotEmpty() }.orEmpty()
     val equality: (String, String) -> Boolean = { a, b ->
         a == b || a.asStop(context)!!.location.distance(b.asStop(context)!!.location) < 0.3
     }
@@ -1108,25 +1108,38 @@ fun List<StopIndexedRouteSearchResultEntry>.identifyGeneralDirections(context: A
     return result.asSequence().sortedBy { (k) -> k }.associate { (k, v) -> k to v }
 }
 
+val nightRouteNumberRegex = "(?i)N[0-9].*|.*[0-9]N".toRegex()
+
+fun String.isRouteNumberNight(): Boolean = nightRouteNumberRegex.matches(this)
+
 fun calculateServiceTimeCategory(routeNumber: String, co: Operator, timetableCalculate: () -> ServiceTimeCategory): ServiceTimeCategory {
-    if (co.isBus) {
-        if (routeNumber.firstOrNull() == 'N' || routeNumber.lastOrNull() == 'N') return ServiceTimeCategory.NIGHT
+    return if (co.isBus && routeNumber.isRouteNumberNight()) {
+        ServiceTimeCategory.NIGHT
+    } else {
+        timetableCalculate.invoke()
     }
-    return timetableCalculate.invoke()
 }
 
 val airportExpressExclusiveStations = setOf("AIR", "AWE")
 val changeableAirportExpressStations = listOf("HOK", "KOW", "TSY")
 val airportExpressStations = setOf("HOK", "KOW", "TSY", "AIR", "AWE")
 
+typealias MTRHeavyRailFares = Map<String?, MTRFares>
+typealias MTRFares = Map<FareType, Fare>
+
+val MTRHeavyRailFares.standardFares: MTRFares? get() = this[null]
+val MTRHeavyRailFares.involvesAEL: Boolean get() = !containsKey(null)
+fun MTRHeavyRailFares.aelFaresVia(stopId: String): MTRFares? = this[stopId]
+fun MTRHeavyRailFares.standardFaresOrAelFaresVia(stopId: String?): MTRFares? = standardFares?: stopId?.let { aelFaresVia(it) }
+
 @ReduceDataOmitted
-fun String.findMTRFares(otherStopId: String, context: AppContext): Map<String?, Map<FareType, Fare>> {
+fun String.findMTRFares(otherStopId: String, context: AppContext): MTRHeavyRailFares {
     return if ((airportExpressExclusiveStations.contains(this) || airportExpressExclusiveStations.contains(otherStopId)) && !(airportExpressStations.contains(this) && airportExpressStations.contains(otherStopId))) {
         changeableAirportExpressStations.associateWith {
             val fareTableFirst = Registry.getInstance(context).getMTRData()[this]?.fares?: return emptyMap()
             val fareTableSecond = Registry.getInstance(context).getMTRData()[it]?.fares?: return emptyMap()
-            val fareFirst = fareTableFirst[it]?: emptyMap()
-            val fareSecond = fareTableSecond[otherStopId]?: emptyMap()
+            val fareFirst = fareTableFirst[it].orEmpty()
+            val fareSecond = fareTableSecond[otherStopId].orEmpty()
             if (airportExpressExclusiveStations.contains(this)) {
                 fareFirst.merge(fareSecond, true)
             } else {
@@ -1140,21 +1153,35 @@ fun String.findMTRFares(otherStopId: String, context: AppContext): Map<String?, 
 }
 
 @ReduceDataOmitted
-fun String.findLRTFares(otherStopId: String, context: AppContext): Map<FareType, Fare> {
+fun String.findLRTFares(otherStopId: String, context: AppContext): MTRFares {
     val fareTable = Registry.getInstance(context).getLRTData()[this]?.fares?: return emptyMap()
-    return fareTable[otherStopId]?: emptyMap()
+    return fareTable[otherStopId].orEmpty()
 }
 
-fun Map<FareType, Fare>.findFare(fareCategory: FareCategory, ticketCategory: TicketCategory): Fare? {
+fun MTRFares.findFare(fareCategory: FareCategory, ticketCategory: TicketCategory): Fare? {
     if (isEmpty()) return null
     entries.firstOrNull { it.key.category == fareCategory && it.key.ticketCategory == ticketCategory }?.let { return it.value }
     entries.firstOrNull { it.key.category == FareCategory.ADULT && it.key.ticketCategory == ticketCategory }?.let { return it.value }
     return null
 }
 
+private fun MTRFares.merge(other: MTRFares, octopusFree: Boolean): MTRFares {
+    val result: MutableMap<FareType, Fare> = mutableMapOf()
+    for (key in FareType.entries) {
+        if (containsKey(key) || other.containsKey(key)) {
+            if (octopusFree && key.ticketCategory == TicketCategory.OCTO) {
+                result[key] = findFare(key.category, key.ticketCategory)?: Fare.ZERO
+            } else {
+                result[key] = (findFare(key.category, key.ticketCategory)?: Fare.ZERO) + (other.findFare(key.category, key.ticketCategory)?: Fare.ZERO)
+            }
+        }
+    }
+    return result
+}
+
 @ReduceDataOmitted
 fun String.getMTRStationBarrierFree(context: AppContext): Map<String, StationBarrierFreeFacility> {
-    return Registry.getInstance(context).getMTRData()[this]?.barrierFree?: emptyMap()
+    return Registry.getInstance(context).getMTRData()[this]?.barrierFree.orEmpty()
 }
 
 @ReduceDataOmitted
@@ -1170,20 +1197,6 @@ fun StationBarrierFreeItem.getCategoryDetails(context: AppContext): StationBarri
 @ReduceDataOmitted
 fun getMTRBarrierFreeCategories(context: AppContext): Map<String, StationBarrierFreeCategory> {
     return Registry.getInstance(context).getMTRBarrierFreeMapping().categories
-}
-
-fun Map<FareType, Fare>.merge(other: Map<FareType, Fare>, octopusFree: Boolean): Map<FareType, Fare> {
-    val result: MutableMap<FareType, Fare> = mutableMapOf()
-    for (key in FareType.entries) {
-        if (containsKey(key) || other.containsKey(key)) {
-            if (octopusFree && key.ticketCategory == TicketCategory.OCTO) {
-                result[key] = findFare(key.category, key.ticketCategory)?: Fare.ZERO
-            } else {
-                result[key] = (findFare(key.category, key.ticketCategory)?: Fare.ZERO) + (other.findFare(key.category, key.ticketCategory)?: Fare.ZERO)
-            }
-        }
-    }
-    return result
 }
 
 @ReduceDataOmitted

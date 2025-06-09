@@ -774,12 +774,12 @@ class Registry {
 
     @ReduceDataOmitted
     fun getMTRData(): Map<String, StationInfo> {
-        return DATA!!.mtrData?: emptyMap()
+        return DATA!!.mtrData.orEmpty()
     }
 
     @ReduceDataOmitted
     fun getLRTData(): Map<String, StationInfo> {
-        return DATA!!.lrtData?: emptyMap()
+        return DATA!!.lrtData.orEmpty()
     }
 
     @ReduceDataOmitted
@@ -1076,6 +1076,29 @@ class Registry {
         return DATA!!.dataSheet.stopList.let { it.values.elementAt(Random.nextInt(0, it.size)) }
     }
 
+    fun <T> findNearbyStopsBulk(items: Collection<T>, center: (T) -> Coordinates, radius: Double): List<NearbyStopSearchBulkResult<T>> {
+        val results = mutableListOf<NearbyStopSearchBulkResult<T>>()
+        for ((stopId, stop) in DATA!!.dataSheet.stopList) {
+            var shortestDistance = Double.MAX_VALUE
+            var shortestDistanceStopId: String? = null
+            var shortestDistanceStop: Stop? = null
+            var shortestDistanceItem: T? = null
+            for (item in items) {
+                val distance = stop.location.distance(center.invoke(item))
+                if (distance < shortestDistance) {
+                    shortestDistance = distance
+                    shortestDistanceStopId = stopId
+                    shortestDistanceStop = stop
+                    shortestDistanceItem = item
+                }
+            }
+            if (shortestDistance <= radius && shortestDistanceStop != null && shortestDistanceStopId != null && shortestDistanceItem != null) {
+                results.add(NearbyStopSearchBulkResult(shortestDistanceStopId, shortestDistanceStop, shortestDistance, shortestDistanceItem))
+            }
+        }
+        return results.sortedBy { it.distance }
+    }
+
     fun findNearbyStops(center: Coordinates, radius: Double): List<NearbyStopSearchResult> {
         return DATA!!.dataSheet.stopList.asSequence()
             .map { (i, s) -> NearbyStopSearchResult(i, s, s.location.distance(center)) }
@@ -1123,6 +1146,7 @@ class Registry {
     }
 
     data class NearbyStopSearchResult(val stopId: String, val stop: Stop, val distance: Double)
+    data class NearbyStopSearchBulkResult<T>(val stopId: String, val stop: Stop, val distance: Double, val item: T)
 
     fun findRoutes(input: String, exact: Boolean): List<RouteSearchResultEntry> {
         return findRoutes(input, exact, true, { true }, { _, _, _ -> true })
@@ -1214,7 +1238,7 @@ class Registry {
         val allStopsCache: MutableMap<String, List<StopData>> = mutableMapOf()
         for (nearbyStopOriginal in nearbyStops) {
             val stopId = nearbyStopOriginal.stopId
-            for ((key, branchStopIndex) in DATA!!.dataSheet.routeKeysByStopId.await()[stopId]?: emptyList()) {
+            for ((key, branchStopIndex) in DATA!!.dataSheet.routeKeysByStopId.await()[stopId].orEmpty()) {
                 val data = DATA!!.dataSheet.routeList[key]!!
                 val co = if (data.isKmbCtbJoint) {
                     if (nearbyStopOriginal.co === Operator.CTB) continue
@@ -2105,7 +2129,7 @@ class Registry {
         }
         if (!cachedHourlyPrefixes.contains(prefix)) {
             val (weekday, hour) = currentHourly
-            val data = getJSONResponse<JsonObject>("https://timeinterval.hkbuseta.com/times_hourly/${weekday.sundayZeroDayNumber}/${hour}/$prefix.json")?: return
+            val data = getJSONResponse<JsonObject>("https://timeinterval.hkbuseta.com/times_hourly/${weekday.sundayZeroDayNumber}/${hour.pad(2)}/$prefix.json")?: return
             for ((stopId, nextStopIds) in data) {
                 val cacheMap = cachedHourlyTimes.getOrPut(stopId) { ConcurrentMutableMap() }
                 for ((nextStopId, time) in nextStopIds.jsonObject) {
@@ -2194,7 +2218,14 @@ class Registry {
                                         listOf(element = path)
                                     }
                                 } else {
-                                    this
+                                    val firstStopLocation = stops.first().location
+                                    map { path ->
+                                        if (path.first().distance(firstStopLocation) > path.last().distance(firstStopLocation)) {
+                                            path.reversed()
+                                        } else {
+                                            path
+                                        }
+                                    }
                                 }
                             }
                             .map { p -> p.simplified() }

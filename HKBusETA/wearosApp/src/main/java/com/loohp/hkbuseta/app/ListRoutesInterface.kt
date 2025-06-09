@@ -235,7 +235,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                 }
             }
             CoroutineScope(Dispatchers.IO).launch {
-                val byDirection = result.identifyGeneralDirections(instance).takeIf { it.size > 1 }?: emptyMap()
+                val byDirection = result.identifyGeneralDirections(instance).takeIf { it.size > 1 }.orEmpty()
                 withContext(Dispatchers.Main) { routeGroupedByDirections = byDirection }
             }
         }

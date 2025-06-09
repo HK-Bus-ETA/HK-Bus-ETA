@@ -89,8 +89,8 @@ expect val isMapOverlayAlwaysOnTop: Boolean
 
 fun RouteWaypoints.buildStopListMapping(context: AppContext, allStops: List<Registry.StopData>): ImmutableList<Int> {
     return buildImmutableList {
-        var waypointStopIndex = firstStopIndexOffset
-        for ((index, stopData) in allStops.withIndex()) {
+        var waypointStopIndex = 0
+        for ((index, stopData) in allStops.withIndex().drop(firstStopIndexOffset)) {
             val waypointStop = stops.getOrNull(waypointStopIndex)?: break
             if (waypointStop == stopData.stop || stopData.mergedStopIds.keys.any { it.asStop(context) == waypointStop }) {
                 add(index)

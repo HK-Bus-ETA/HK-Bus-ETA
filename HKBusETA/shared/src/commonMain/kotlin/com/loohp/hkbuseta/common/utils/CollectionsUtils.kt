@@ -427,3 +427,44 @@ inline fun <E, T> Set<E>.asTransformedView(noinline transform: (E) -> T): Set<T>
 inline fun <K, V> Iterable<Pair<K, V>>.toGroupedMap(): Map<K, List<V>> {
     return groupBy({ it.first }, { it.second })
 }
+
+sealed interface BidirectionalIterator<T>: Iterator<T> {
+    fun hasPrevious(): Boolean
+    fun previous(): T
+}
+
+fun <T> BidirectionalIterator<T>.reversed(): BidirectionalIterator<T> {
+    return when (this) {
+        is EmptyBidirectionalIterator -> this
+        is InfiniteBidirectionalIterator -> infiniteBidirectionalIterator(
+            next = previous,
+            previous = next
+        )
+    }
+}
+
+private object EmptyBidirectionalIterator: BidirectionalIterator<Nothing> {
+    override fun hasNext(): Boolean = false
+    override fun next(): Nothing = throw NoSuchElementException()
+    override fun hasPrevious(): Boolean = false
+    override fun previous(): Nothing = throw NoSuchElementException()
+}
+
+@Suppress("UNCHECKED_CAST")
+fun <T> emptyBidirectionalIterator(): BidirectionalIterator<T> {
+    return (EmptyBidirectionalIterator as BidirectionalIterator<*>) as BidirectionalIterator<T>
+}
+
+class InfiniteBidirectionalIterator<T>(
+    internal val next: () -> T,
+    internal val previous: () -> T
+): BidirectionalIterator<T> {
+    override fun hasNext(): Boolean = true
+    override fun next(): T = next.invoke()
+    override fun hasPrevious(): Boolean = true
+    override fun previous(): T = previous.invoke()
+}
+
+fun <T> infiniteBidirectionalIterator(next: () -> T, previous: () -> T): BidirectionalIterator<T> {
+    return InfiniteBidirectionalIterator(next, previous)
+}

@@ -136,7 +136,7 @@ private suspend fun etaQueryKmbCtbJoint(scope: CoroutineScope, stopId: String, s
     }
     run {
         val routeNumber = route.routeNumber
-        val ctbStopIds = precomputedData.ctbStopIds?: emptyList()
+        val ctbStopIds = precomputedData.ctbStopIds.orEmpty()
         val (first, second) = precomputedData.ctbByDirectionResult!!
         val destKeys = second.asSequence().map { it.zh.remove(" ") }.toSet()
         val ctbEtaEntries: ConcurrentMutableMap<String?, MutableSet<LocalDateTime>> = ConcurrentMutableMap()

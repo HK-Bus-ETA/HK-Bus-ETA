@@ -21,52 +21,24 @@
 package com.loohp.hkbuseta.compose
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.google.android.horologist.compose.ambient.AmbientAware
 import com.google.android.horologist.compose.ambient.AmbientState
-import com.google.android.horologist.compose.ambient.AmbientStateUpdate
-import kotlin.random.Random
 
 
 @Composable
-fun rememberBurnInTranslation(
-    ambientStateUpdate: AmbientStateUpdate,
-    burnInOffsetPx: Int = 10
-): Float {
-    return remember(ambientStateUpdate) {
-        when (val state = ambientStateUpdate.ambientState) {
-            AmbientState.Interactive -> 0F
-            is AmbientState.Ambient -> if (state.ambientDetails?.burnInProtectionRequired == true) {
-                Random.nextInt(-burnInOffsetPx, burnInOffsetPx + 1).toFloat()
-            } else {
-                0F
-            }
-        }
-    }
-}
-
-
-@Composable
-fun rememberIsInAmbientMode(
-    ambientStateUpdate: AmbientStateUpdate
-): Boolean {
-    val ambientMode by remember(ambientStateUpdate) { derivedStateOf { ambientStateUpdate.ambientState is AmbientState.Ambient } }
-    return ambientMode
-}
-
-
-fun Modifier.ambientMode(
-    ambientStateUpdate: AmbientStateUpdate
-): Modifier = composed {
-    val translationX = rememberBurnInTranslation(ambientStateUpdate)
-    val translationY = rememberBurnInTranslation(ambientStateUpdate)
-
-    this.graphicsLayer {
-        this.translationX = translationX
-        this.translationY = translationY
+fun AmbientAware(
+    isAlwaysOnScreen: Boolean,
+    lifecycle: Lifecycle = LocalLifecycleOwner.current.lifecycle,
+    content: @Composable (AmbientState) -> Unit,
+) {
+    if (isAlwaysOnScreen) {
+        AmbientAware(
+            lifecycle = lifecycle,
+            content = content
+        )
+    } else {
+        content.invoke(AmbientState.Inactive)
     }
 }

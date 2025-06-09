@@ -25,11 +25,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,7 +54,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.common
+import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
@@ -71,6 +76,7 @@ import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.PriorityHigh
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Sync
+import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.combinedClickable
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
@@ -103,6 +109,9 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                    windowInsetsPadding(WindowInsets.navigationBars)
+                }
                 .verticalScrollWithScrollbar(
                     state = scroll,
                     flingBehavior = ScrollableDefaults.flingBehavior(),
@@ -138,7 +147,6 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                                     instance.handleWebpages(notice.url, false, haptic.common)
                                 }
                                 is RouteNoticeText -> ({ showNoticeText = notice.display })
-                                else -> ({ /* do nothing */})
                             },
                             onLongClick = when (notice) {
                                 is RouteNoticeExternal -> ({
@@ -214,7 +222,6 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                             onClick = when (notice) {
                                 is RouteNoticeExternal -> instance.handleWebpages(notice.url, false, haptic.common)
                                 is RouteNoticeText -> { { showNoticeText = notice.display } }
-                                else -> { { /* do nothing */ } }
                             }
                         )
                         .fillMaxWidth()
@@ -255,7 +262,7 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                     verticalArrangement = Arrangement.Top
                 ) {
                     val text = it.asContentAnnotatedString(
-                        onClickUrls = { instance.handleWebpages(it, false, haptic.common).invoke() }
+                        onClickUrls = { url -> instance.handleWebpages(url, false, haptic.common).invoke() }
                     ).annotatedString
                     SelectionContainer {
                         PlatformText(

@@ -360,7 +360,8 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                         val nearbyStops by remember { derivedStateOf { nearbyRoutesResult?.result?.asSequence()
                             ?.filter { r -> r.stopInfo != null }
                             ?.distinct()
-                            ?.toList()?: emptyList()
+                            ?.toList()
+                            .orEmpty()
                         } }
                         val nearbyStopNames by remember { derivedStateOf { nearbyStops.asSequence()
                             .distinctBy { it.stopInfo!!.data!!.name }

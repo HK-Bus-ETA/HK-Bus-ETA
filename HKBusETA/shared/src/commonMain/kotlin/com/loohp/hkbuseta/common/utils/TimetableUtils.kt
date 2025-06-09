@@ -28,6 +28,7 @@ import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.firstCo
 import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isNotBlank
+import com.loohp.hkbuseta.common.objects.isRouteNumberNight
 import com.loohp.hkbuseta.common.objects.joinBilingualText
 import com.loohp.hkbuseta.common.objects.journeyTimeCircular
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
@@ -39,6 +40,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.atDate
+import kotlinx.datetime.atTime
 import kotlinx.datetime.isoDayNumber
 import kotlin.math.min
 import kotlin.time.Duration.Companion.days
@@ -422,7 +424,7 @@ fun RouteTimetable.getServiceTimeCategory(): ServiceTimeCategory {
 }
 
 fun Collection<TimetableEntry>.getServiceTimeCategory(routeNumber: String, co: Operator): ServiceTimeCategory {
-    if (co.isBus && (routeNumber.firstOrNull() == 'N' || routeNumber.lastOrNull() == 'N')) {
+    if (co.isBus && routeNumber.isRouteNumberNight()) {
         return ServiceTimeCategory.NIGHT
     }
     val filtered = filter { it.hasScheduledServices }
@@ -456,7 +458,7 @@ fun RouteTimetable.getRouteProportions(
     excludeWeekendsForDailyServices: Boolean = true
 ): Map<Route, Float> {
     val byWeekday = DayOfWeek.entries
-        .associateWith { weekday -> asSequence().filter { it.key.contains(weekday) }.firstOrNull()?.value?: emptyList() }
+        .associateWith { weekday -> asSequence().filter { it.key.contains(weekday) }.firstOrNull()?.value.orEmpty() }
     val dropWeekend = excludeWeekendsForDailyServices && byWeekday.any { (d, e) -> !d.isWeekend && e.isNotEmpty() }
     val entries = byWeekday.asSequence()
         .filter { !dropWeekend || !it.key.isWeekend }
@@ -719,4 +721,80 @@ fun Collection<Route>.currentBranchStatus(time: LocalDateTime, serviceDayMap: Ma
         timetable.entries.any { e -> e.value.any { e1 -> e1.route == it } } -> RouteBranchStatus.INACTIVE
         else -> RouteBranchStatus.NO_TIMETABLE
     } }
+}
+
+fun RouteTimetable.getServiceTimesFor(route: Route, day: DayOfWeek): Sequence<LocalTime> {
+    val date = currentLocalDateTime().date
+    return entries.asSequence()
+        .filter { (opDays) -> opDays.contains(day) }
+        .flatMap { it.value.asSequence() }
+        .filter { it.hasScheduledServices && it.route == route }
+        .flatMap {
+            when (it) {
+                is TimetableSingleEntry -> sequenceOf(it.time)
+                is TimetableIntervalEntry -> it.subEntries.asSequence().flatMap { entry ->
+                    val start = entry.start.atDate(date)
+                    val end = entry.end.nextLocalDateTimeAfter(start)
+                    val interval = entry.interval.middle.minutes
+                    generateSequence(start) { prev -> prev.plus(interval) }
+                        .takeWhile { e -> e <= end }
+                        .map { e -> e.time }
+                }
+                else -> emptySequence()
+            }
+        }
+}
+
+fun RouteTimetable.serviceTimesIterator(route: Route, start: LocalDateTime, holidays: Collection<LocalDate>): BidirectionalIterator<LocalDateTime> {
+    val serviceTimes = OperatingWeekdays.SUNDAY_FIRST.associateWith { getServiceTimesFor(route, it).toList() }
+    if (serviceTimes.values.all { it.isEmpty() }) {
+        return emptyBidirectionalIterator()
+    }
+    val reverseServiceTimes = serviceTimes.keys.associateWith { serviceTimes[it]!!.reversed() }
+    val compareMidnight = if (getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
+    val compareMidnightAdjustedTime = start.date.atTime(compareMidnight)
+    val earliestMidnightTime = if (compareMidnightAdjustedTime > start) compareMidnightAdjustedTime.minus(1.days) else compareMidnightAdjustedTime
+
+    var currentElement = start
+    var isFirstElement = true
+
+    fun LocalDateTime.next(): LocalDateTime {
+        var dayOffset = 0
+        while (true) {
+            val todayMidnightTime = earliestMidnightTime.plus(dayOffset.days)
+            val weekday = todayMidnightTime.dayOfWeek(holidays, compareMidnight)
+            val todayNextService = serviceTimes[weekday]
+                ?.map { it.nextLocalDateTimeAfter(todayMidnightTime) }
+                ?.firstOrNull { if (isFirstElement) it >= this else it > this }
+            if (todayNextService != null) {
+                isFirstElement = false
+                currentElement = todayNextService
+                return todayNextService
+            }
+            dayOffset++
+        }
+    }
+
+    fun LocalDateTime.previous(): LocalDateTime {
+        var dayOffset = 0
+        while (true) {
+            val todayMidnightTime = earliestMidnightTime.minus(dayOffset.days)
+            val tomorrowMidnightTime = todayMidnightTime.plus(1.days)
+            val weekday = todayMidnightTime.dayOfWeek(holidays, compareMidnight)
+            val todayPreviousService = reverseServiceTimes[weekday]
+                ?.map { it.previousLocalDateTimeBefore(tomorrowMidnightTime) }
+                ?.firstOrNull { if (isFirstElement) it <= this else it < this }
+            if (todayPreviousService != null) {
+                isFirstElement = false
+                currentElement = todayPreviousService
+                return todayPreviousService
+            }
+            dayOffset++
+        }
+    }
+
+    return infiniteBidirectionalIterator(
+        next = { currentElement.next() },
+        previous = { currentElement.previous() }
+    )
 }

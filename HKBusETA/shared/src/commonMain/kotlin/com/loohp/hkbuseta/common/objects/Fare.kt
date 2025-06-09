@@ -21,6 +21,7 @@
 package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.toString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -35,7 +36,7 @@ import kotlin.math.ceil
 
 @Serializable(with = FareSerializer::class)
 @Immutable
-data class Fare(val value: Float): Number() {
+data class Fare(val value: Float): Number(), Comparable<Fare> {
 
     companion object {
         val ZERO = Fare(0F)
@@ -45,9 +46,7 @@ data class Fare(val value: Float): Number() {
 
     constructor(value: Int) : this(value.toFloat())
 
-    val half: Float get() {
-        return ceil(value * 5F) / 10F
-    }
+    val half: Fare by lazy { Fare(ceil(value * 5F) / 10F) }
 
     override fun toByte(): Byte {
         return value.toInt().toByte()
@@ -73,9 +72,12 @@ data class Fare(val value: Float): Number() {
         return value.toInt().toShort()
     }
 
+    override fun compareTo(other: Fare): Int {
+        return value.compareTo(other.value)
+    }
+
     override fun toString(): String {
-        val scaled = (value * 10).toInt().toString()
-        return "${scaled.substring(0, scaled.length - 1).ifBlank { "0" }}.${scaled.substring(scaled.length - 1).ifBlank { "0" }}"
+        return toString(decimalPlaces = 1)
     }
 
     operator fun plus(other: Fare): Fare {
@@ -105,6 +107,6 @@ object FareSerializer : KSerializer<Fare> {
     }
 
     override fun serialize(encoder: Encoder, value: Fare) {
-        encoder.encodeString(value.value.toString())
+        encoder.encodeString(value.value.toString(decimalPlaces = 1))
     }
 }

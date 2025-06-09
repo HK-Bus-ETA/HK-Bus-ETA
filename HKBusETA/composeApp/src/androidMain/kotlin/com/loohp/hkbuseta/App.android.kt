@@ -21,25 +21,19 @@
 package com.loohp.hkbuseta
 
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import com.loohp.hkbuseta.appcontext.applicationAppContext
 import com.loohp.hkbuseta.appcontext.componentActivity
-import com.loohp.hkbuseta.appcontext.navBarColor
-import com.loohp.hkbuseta.appcontext.statusBarColor
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.shared.Registry
-import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
@@ -53,4 +47,20 @@ actual fun watchDataOverwriteWarningInitialValue(): Boolean = runBlocking(Dispat
 actual fun SnackbarInterface(instance: AppActiveContext, snackbarHostState: SnackbarHostState) = SnackbarHost(snackbarHostState)
 
 @Composable
-actual fun Modifier.platformSafeAreaSidesPaddingAndConsumeWindowInsets(): Modifier = this
+actual fun Modifier.platformSafeAreaSidesPaddingAndConsumeWindowInsets(): Modifier {
+    return platformHorizontalSystemBarPadding().consumeHorizontalSystemBarInsets()
+}
+
+@Composable
+fun Modifier.platformHorizontalSystemBarPadding(): Modifier {
+    return windowInsetsPadding(WindowInsets.horizontalSystemBars)
+}
+
+@Composable
+fun Modifier.consumeHorizontalSystemBarInsets(): Modifier {
+    return consumeWindowInsets(WindowInsets.horizontalSystemBars)
+}
+
+val WindowInsets.Companion.horizontalSystemBars: WindowInsets @Composable get() {
+    return WindowInsets.systemBars.only(WindowInsetsSides.Left + WindowInsetsSides.Right)
+}

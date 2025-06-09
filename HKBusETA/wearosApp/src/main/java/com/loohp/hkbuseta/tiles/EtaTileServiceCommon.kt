@@ -738,7 +738,6 @@ class EtaTileServiceCommon {
         fun handleRecentInteractionEventsAsync(events: MutableList<EventBuilders.TileInteractionEvent>, context: AppContext): ListenableFuture<Void> {
             return Futures.submit(Callable {
                 for (event in events) {
-                    debugLog(event.eventType)
                     when (event.eventType) {
                         EventBuilders.TileInteractionEvent.ENTER -> handleTileEnterEvent(event.tileId, context)
                         EventBuilders.TileInteractionEvent.LEAVE -> handleTileLeaveEvent(event.tileId)

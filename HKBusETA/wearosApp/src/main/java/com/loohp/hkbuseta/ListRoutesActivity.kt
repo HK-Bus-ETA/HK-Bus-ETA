@@ -23,10 +23,7 @@ package com.loohp.hkbuseta
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Stable
-import androidx.compose.ui.Modifier
-import com.google.android.horologist.compose.ambient.AmbientAware
 import com.loohp.hkbuseta.app.ListRouteMainElement
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.objects.RecentSortMode
@@ -39,8 +36,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.ifFalse
 import com.loohp.hkbuseta.common.utils.mapToMutableList
-import com.loohp.hkbuseta.compose.ambientMode
-import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
+import com.loohp.hkbuseta.compose.AmbientAware
 import com.loohp.hkbuseta.shared.WearOSShared
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -97,20 +93,15 @@ class ListRoutesActivity : ComponentActivity() {
         val mtrSearch = intent.extras!!.getString("mtrSearch", null)
 
         setContent {
-            AmbientAware (
+            AmbientAware(
                 isAlwaysOnScreen = allowAmbient
-            ) {
-                val ambientMode = rememberIsInAmbientMode(it)
-                Box (
-                    modifier = Modifier.ambientMode(it)
-                ) {
-                    ListRouteMainElement(ambientMode, appContext, result, listType, showEta, recentSort, proximitySortOrigin, mtrSearch) { isAdd, key, task ->
-                        sync.execute {
-                            if (isAdd) {
-                                etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
-                            } else {
-                                etaUpdatesMap.remove(key)?.first?.cancel(true)
-                            }
+            ) { ambientState ->
+                ListRouteMainElement(ambientState.isAmbient, appContext, result, listType, showEta, recentSort, proximitySortOrigin, mtrSearch) { isAdd, key, task ->
+                    sync.execute {
+                        if (isAdd) {
+                            etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }
+                        } else {
+                            etaUpdatesMap.remove(key)?.first?.cancel(true)
                         }
                     }
                 }

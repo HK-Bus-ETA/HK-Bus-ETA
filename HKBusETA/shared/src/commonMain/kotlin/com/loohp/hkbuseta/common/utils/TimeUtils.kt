@@ -98,15 +98,9 @@ fun LocalTime.nextLocalDateTimeAfter(after: LocalDateTime): LocalDateTime {
     return if (timeAtDate < after) timeAtDate + 1.days else timeAtDate
 }
 
-fun LocalTime.nextLocalTimeAfter(after: LocalTime, interval: Duration): LocalTime {
-    val today = currentLocalDateTime().date
-    val initialResult = atDate(today)
-    val afterDate = after.nextLocalDateTimeAfter(initialResult)
-    val difference = (afterDate - initialResult).inWholeMinutes.toInt()
-    val intervalMinutes = interval.inWholeMinutes.toInt()
-    val intervalsToAdd = (difference / intervalMinutes) + 1
-    val finalResult = initialResult + interval * intervalsToAdd
-    return finalResult.time
+fun LocalTime.previousLocalDateTimeBefore(before: LocalDateTime): LocalDateTime {
+    val timeAtDate = LocalDateTime(before.date, this)
+    return if (timeAtDate > before) timeAtDate - 1.days else timeAtDate
 }
 
 operator fun LocalDateTime.minus(other: LocalDateTime): Duration {
@@ -190,3 +184,8 @@ inline fun String.parseLocalDateTime(): LocalDateTime {
 }
 
 inline val DayOfWeek.sundayZeroDayNumber get() = isoDayNumber % 7
+
+fun LocalTime.plus(duration: Duration): LocalTime {
+    val date = currentLocalDateTime().date
+    return toLocalDateTime(date).plus(duration).time
+}

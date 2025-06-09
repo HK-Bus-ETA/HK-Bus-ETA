@@ -794,7 +794,9 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .applyIf(composePlatform is ComposePlatform.AndroidPlatform) { consumeWindowInsets(WindowInsets.statusBars) }
+                    .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                        consumeWindowInsets(WindowInsets.statusBars)
+                    }
             ) {
                 val item = listStopsTabItem[it]
                 when (item.type) {

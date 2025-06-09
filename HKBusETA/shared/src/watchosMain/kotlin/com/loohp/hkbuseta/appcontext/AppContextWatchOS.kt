@@ -265,7 +265,7 @@ open class AppContextWatchOS internal constructor() : AppContext {
             fileManager.contentsOfDirectoryAtURL(dir, includingPropertiesForKeys = null, options = 0u, error = null)?.mapNotNull {
                 it as NSURL
                 it.lastPathComponent
-            }?: emptyList()
+            }.orEmpty()
         }
     }
 

@@ -23,6 +23,7 @@ package com.loohp.hkbuseta.common.objects
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.debugLog
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -38,14 +39,19 @@ data class RouteWaypoints(
     val isHighRes: Boolean,
     val firstStopIndexOffset: Int = 0
 ) {
-    fun subRoute(staringStopIndex: Int, endingStopIndex: Int, firstStopIndexOffset: Int): RouteWaypoints {
+    fun subRoute(startingStopIndex: Int, endingStopIndex: Int, firstStopIndexOffset: Int): RouteWaypoints {
+        debugLog("$routeNumber ${paths.size} ${stops.size}")
         return RouteWaypoints(
             routeNumber = routeNumber,
             co = co,
             isKmbCtbJoint = isKmbCtbJoint,
-            stopIds = stopIds.subList(staringStopIndex, endingStopIndex + 1),
-            stops = stops.subList(staringStopIndex, endingStopIndex + 1),
-            paths = paths.subList(staringStopIndex, endingStopIndex),
+            stopIds = stopIds.subList(startingStopIndex, endingStopIndex + 1),
+            stops = stops.subList(startingStopIndex, endingStopIndex + 1),
+            paths = if (paths.size == stops.size - 1) {
+                paths.subList(startingStopIndex, endingStopIndex)
+            } else {
+                paths.mapNotNull { it.subPathByClosest(stops[startingStopIndex].location, stops[endingStopIndex].location) }
+            },
             isHighRes = isHighRes,
             firstStopIndexOffset = firstStopIndexOffset
         )
@@ -110,42 +116,85 @@ fun closestPointOnSegment(point: Coordinates, path1: Coordinates, path2: Coordin
 }
 
 fun List<Coordinates>.splitByClosestPoints(referencePoints: List<Coordinates>): List<List<Coordinates>> {
-    val segments = mutableListOf<List<Coordinates>>()
+    val segments = Array<MutableList<Coordinates>>(referencePoints.size - 1) { mutableListOf() }
 
-    var currentSegment = mutableListOf(this[0])
-    var previousClosestIndex = 0
+    var currentIndex = 1
+    var lastPosition = first()
 
     for (refIndex in 1 until referencePoints.size) {
+        val thisSegment = segments[refIndex - 1]
+        thisSegment.add(lastPosition)
         val refPoint = referencePoints[refIndex]
         var minDistance = Double.MAX_VALUE
-        var closestSegmentStartIndex = previousClosestIndex
-
-        for (i in previousClosestIndex until size - 1) {
+        var closestSegmentEndIndex = currentIndex
+        for (i in currentIndex until size - 1) {
             val closest = closestPointOnSegment(refPoint, this[i], this[i + 1])
             val distanceToSegment = refPoint.distance(closest)
             if (distanceToSegment < minDistance) {
                 minDistance = distanceToSegment
-                closestSegmentStartIndex = i
+                closestSegmentEndIndex = i
             }
         }
-
-        if (closestSegmentStartIndex != previousClosestIndex) {
-            for (i in previousClosestIndex + 1..closestSegmentStartIndex) {
-                currentSegment.add(this[i])
-            }
-            segments.add(currentSegment)
-            currentSegment = mutableListOf(this[closestSegmentStartIndex])
+        for (index in currentIndex..closestSegmentEndIndex) {
+            thisSegment.add(this[index])
         }
-
-        previousClosestIndex = closestSegmentStartIndex
+        if (thisSegment.size <= 1) {
+            thisSegment.add(lastPosition)
+        } else {
+            lastPosition = thisSegment.last()
+        }
+        currentIndex = closestSegmentEndIndex + 1
     }
 
-    for (i in previousClosestIndex + 1 until size) {
-        currentSegment.add(this[i])
+    for (index in currentIndex until size) {
+        segments.last().add(this[index])
     }
-    segments.add(currentSegment)
 
-    return segments
+    return segments.asList()
+}
+
+fun List<Coordinates>.subPathByClosest(start: Coordinates, end: Coordinates): List<Coordinates>? {
+    var closestStartIndex = 0
+    var closestStartPoint = first()
+    var minStartDistance = Double.MAX_VALUE
+
+    for (index in 0 until size - 1) {
+        val closestPoint = closestPointOnSegment(start, this[index], this[index + 1])
+        val distance = closestPoint.distance(start)
+        if (distance < minStartDistance) {
+            closestStartIndex = index
+            closestStartPoint = closestPoint
+            minStartDistance = distance
+        }
+    }
+
+    var closestEndIndex = closestStartIndex
+    var closestEndPoint = closestStartPoint
+    var minEndDistance = Double.MAX_VALUE
+
+    for (index in closestStartIndex until size - 1) {
+        val closestPoint = closestPointOnSegment(end, this[index], this[index + 1])
+        val distance = closestPoint.distance(end)
+        if (distance <= minEndDistance) {
+            closestEndIndex = index
+            closestEndPoint = closestPoint
+            minEndDistance = distance
+        }
+    }
+
+    debugLog(closestStartIndex, closestEndIndex, size, minStartDistance, minEndDistance)
+
+    return if (closestStartPoint.distance(closestEndPoint) < 0.001) {
+        null
+    } else {
+        buildList {
+            add(closestStartPoint)
+            for (index in (closestStartIndex + 1)..closestEndIndex) {
+                add(this@subPathByClosest[index])
+            }
+            add(closestEndPoint)
+        }
+    }
 }
 
 fun <T> List<Coordinates>.findPointsWithinDistanceOrdered(items: List<T>, itemLocation: T.() -> Coordinates, threshold: Double): List<T> {

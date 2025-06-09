@@ -23,15 +23,11 @@ package com.loohp.hkbuseta
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Stable
-import androidx.compose.ui.Modifier
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.loohp.hkbuseta.app.TrainRouteMapInterface
 import com.loohp.hkbuseta.app.TrainRouteMapType
 import com.loohp.hkbuseta.appcontext.appContext
-import com.loohp.hkbuseta.compose.ambientMode
-import com.loohp.hkbuseta.compose.rememberIsInAmbientMode
 
 
 @Stable
@@ -43,13 +39,8 @@ class TrainRouteMapActivity : ComponentActivity() {
         val type = TrainRouteMapType.of(intent.extras!!.getString("type")!!)?: TrainRouteMapType.MTR
 
         setContent {
-            AmbientAware {
-                val ambientMode = rememberIsInAmbientMode(it)
-                Box (
-                    modifier = Modifier.ambientMode(it)
-                ) {
-                    TrainRouteMapInterface(appContext, ambientMode, type)
-                }
+            AmbientAware { ambientState ->
+                TrainRouteMapInterface(appContext, ambientState.isAmbient, type)
             }
         }
     }

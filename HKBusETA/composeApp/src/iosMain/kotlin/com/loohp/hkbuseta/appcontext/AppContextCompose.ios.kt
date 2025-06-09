@@ -258,7 +258,7 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
             fileManager.contentsOfDirectoryAtURL(dir, includingPropertiesForKeys = null, options = 0u, error = null)?.mapNotNull {
                 it as NSURL
                 it.lastPathComponent
-            }?: emptyList()
+            }.orEmpty()
         }
     }
 

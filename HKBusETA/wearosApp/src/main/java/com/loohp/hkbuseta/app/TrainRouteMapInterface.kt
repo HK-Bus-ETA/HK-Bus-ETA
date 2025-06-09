@@ -20,6 +20,7 @@
 
 package com.loohp.hkbuseta.app
 
+import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -51,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
@@ -68,7 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.roundToIntSize
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
-import androidx.wear.compose.foundation.rememberActiveFocusRequester
+import androidx.wear.compose.foundation.requestFocusOnHierarchyActive
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.imageLoader
@@ -140,6 +140,24 @@ enum class TrainRouteMapType {
     }
 }
 
+private fun loadImageRequest(resId: Int, context: Context): ImageRequest {
+    return ImageRequest.Builder(context)
+        .data(resId)
+        .unrestrictedBitmapSize()
+        .size(SizeResolver.ORIGINAL)
+        .build()
+        .apply { context.imageLoader.enqueue(this) }
+}
+
+private data class ImageData(
+    val resId: Int,
+    val imageRequest: ImageRequest
+)
+
+private fun Int.asImageData(context: Context): ImageData {
+    return ImageData(this, loadImageRequest(this, context))
+}
+
 @Immutable
 data class RouteMapData(
     val dimension: Size,
@@ -194,7 +212,7 @@ fun MTRRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
     var zoomState by mtrRouteMapZoomState.collectAsStateWithLifecycle()
     val state = rememberZoomState()
     var mtrRouteMapData by mtrRouteMapDataState.collectAsStateWithLifecycle()
-    var allStops: Map<String, Stop?> by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
+    var allStops: Map<String, Stop?> by remember { mutableStateOf(mtrRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }.orEmpty()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
     var closestStop by closestStopState
 
@@ -287,7 +305,6 @@ fun MTRRouteMapMapInterface(
     ambientMode: Boolean,
     show: Boolean
 ) {
-    val focusRequester = rememberActiveFocusRequester()
     val scope = rememberCoroutineScope()
     val infiniteTransition = rememberInfiniteTransition(label = "ClosestStationIndicator")
     val animatedClosestStationRadius by infiniteTransition.animateFloat(
@@ -303,22 +320,19 @@ fun MTRRouteMapMapInterface(
     val typhoonInfo by Registry.getInstance(instance).typhoonInfo.collectAsStateWithLifecycle()
     val closestStop by closestStopState
     var loaded by loadedState
-    val resources = mapOf(
-        false to if (typhoonInfo.isAboveTyphoonSignalNine) R.mipmap.mtr_system_map_watch_typhoon else R.mipmap.mtr_system_map_watch,
-        true to if (typhoonInfo.isAboveTyphoonSignalNine) R.mipmap.mtr_system_map_watch_typhoon_ambient else R.mipmap.mtr_system_map_watch_ambient
-    )
 
     val platformContext = LocalPlatformContext.current
     val context = LocalContext.current
+
+    val resources = mapOf(
+        false to (if (typhoonInfo.isAboveTyphoonSignalNine) R.mipmap.mtr_system_map_watch_typhoon else R.mipmap.mtr_system_map_watch).asImageData(platformContext),
+        true to (if (typhoonInfo.isAboveTyphoonSignalNine) R.mipmap.mtr_system_map_watch_typhoon_ambient else R.mipmap.mtr_system_map_watch_ambient).asImageData(platformContext)
+    )
+
     val sizeCache = remember { ConcurrentHashMap<Int, Pair<ByteArray, IntSizeCompat>>() }
     LaunchedEffect (Unit) {
         CoroutineScope(Dispatchers.IO).launch {
-            val resId = resources[!ambientMode]!!
-            val request = ImageRequest.Builder(platformContext)
-                .data(resId)
-                .size(SizeResolver.ORIGINAL)
-                .build()
-            platformContext.imageLoader.enqueue(request)
+            val (resId) = resources[!ambientMode]!!
             sizeCache.computeIfAbsent(resId) {
                 context.resources.openRawResource(resId).use { it.readBytes() } to BitmapFactory.decodeResource(context.resources, resId).size
             }
@@ -331,7 +345,7 @@ fun MTRRouteMapMapInterface(
     )
 
     LaunchedEffect (transition.currentState) {
-        val resId = transition.currentState.second
+        val (resId) = transition.currentState.second
         val (bytes, size) = CoroutineScope(Dispatchers.IO).async {
             sizeCache.computeIfAbsent(resId) {
                 context.resources.openRawResource(resId).use { it.readBytes() } to BitmapFactory.decodeResource(context.resources, resId).size
@@ -355,7 +369,7 @@ fun MTRRouteMapMapInterface(
                 }
                 true
             }
-            .focusRequester(focusRequester)
+            .requestFocusOnHierarchyActive()
             .focusable(),
         contentAlignment = Alignment.Center
     ) {
@@ -427,7 +441,7 @@ fun MTRRouteMapMapInterface(
                         easing = FastOutSlowInEasing
                     ),
                     contentKey = { (a) -> a },
-                ) { (_, resId) ->
+                ) { (_, imageData) ->
                     AsyncImage(
                         modifier = Modifier
                             .matchParentSize()
@@ -438,10 +452,7 @@ fun MTRRouteMapMapInterface(
                                     placeable.place(placeable.width / 2, placeable.height / 2)
                                 }
                             },
-                        model = ImageRequest.Builder(LocalPlatformContext.current)
-                            .data(resId)
-                            .size(SizeResolver.ORIGINAL)
-                            .build(),
+                        model = imageData.imageRequest,
                         onSuccess = {
                             scope.launch { loaded = true }
                             state.zoomable.contentSize = it.painter.intrinsicSize.roundToIntSize()
@@ -472,7 +483,7 @@ fun LRTRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
     var zoomState by lrtRouteMapZoomState.collectAsStateWithLifecycle()
     val state = rememberZoomState()
     var lrtRouteMapData by lightRailRouteMapDataState.collectAsStateWithLifecycle()
-    var allStops: Map<String, Stop?> by remember { mutableStateOf(lrtRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }?: emptyMap()) }
+    var allStops: Map<String, Stop?> by remember { mutableStateOf(lrtRouteMapData?.let { it.stations.keys.associateWith { s -> s.asStop(instance) } }.orEmpty()) }
     val closestStopState: MutableState<Map.Entry<String, Stop?>?> = remember { mutableStateOf(null) }
     var closestStop by closestStopState
 
@@ -565,7 +576,6 @@ fun LRTRouteMapMapInterface(
     ambientMode: Boolean,
     show: Boolean
 ) {
-    val focusRequester = rememberActiveFocusRequester()
     val scope = rememberCoroutineScope()
     val infiniteTransition = rememberInfiniteTransition(label = "ClosestStationIndicator")
     val animatedClosestStationRadius by infiniteTransition.animateFloat(
@@ -580,22 +590,19 @@ fun LRTRouteMapMapInterface(
     val lrtRouteMapData by lightRailRouteMapDataState.collectAsStateWithLifecycle()
     val closestStop by closestStopState
     var loaded by loadedState
-    val resources = mapOf(
-        false to R.mipmap.light_rail_system_map_watch,
-        true to R.mipmap.light_rail_system_map_watch_ambient
-    )
 
     val platformContext = LocalPlatformContext.current
     val context = LocalContext.current
+
+    val resources = mapOf(
+        false to R.mipmap.light_rail_system_map_watch.asImageData(platformContext),
+        true to R.mipmap.light_rail_system_map_watch_ambient.asImageData(platformContext)
+    )
+
     val sizeCache = remember { ConcurrentHashMap<Int, Pair<ByteArray, IntSizeCompat>>() }
     LaunchedEffect (Unit) {
         CoroutineScope(Dispatchers.IO).launch {
-            val resId = resources[!ambientMode]!!
-            val request = ImageRequest.Builder(platformContext)
-                .data(resId)
-                .size(SizeResolver.ORIGINAL)
-                .build()
-            platformContext.imageLoader.enqueue(request)
+            val (resId) = resources[!ambientMode]!!
             sizeCache.computeIfAbsent(resId) {
                 context.resources.openRawResource(resId).use { it.readBytes() } to BitmapFactory.decodeResource(context.resources, resId).size
             }
@@ -608,7 +615,7 @@ fun LRTRouteMapMapInterface(
     )
 
     LaunchedEffect (transition.currentState) {
-        val resId = transition.currentState.second
+        val (resId) = transition.currentState.second
         val (bytes, size) = CoroutineScope(Dispatchers.IO).async {
             sizeCache.computeIfAbsent(resId) {
                 context.resources.openRawResource(resId).use { it.readBytes() } to BitmapFactory.decodeResource(context.resources, resId).size
@@ -632,7 +639,7 @@ fun LRTRouteMapMapInterface(
                 }
                 true
             }
-            .focusRequester(focusRequester)
+            .requestFocusOnHierarchyActive()
             .focusable(),
         contentAlignment = Alignment.Center
     ) {
@@ -714,7 +721,7 @@ fun LRTRouteMapMapInterface(
                         easing = FastOutSlowInEasing
                     ),
                     contentKey = { (a) -> a },
-                ) { (_, resId) ->
+                ) { (_, imageData) ->
                     AsyncImage(
                         modifier = Modifier
                             .matchParentSize()
@@ -725,11 +732,7 @@ fun LRTRouteMapMapInterface(
                                     placeable.place(placeable.width / 2, placeable.height / 2)
                                 }
                             },
-                        model = ImageRequest.Builder(LocalPlatformContext.current)
-                            .data(resId)
-                            .unrestrictedBitmapSize()
-                            .size(SizeResolver.ORIGINAL)
-                            .build(),
+                        model = imageData.imageRequest,
                         onSuccess = {
                             scope.launch { loaded = true }
                             state.zoomable.contentSize = it.painter.intrinsicSize.roundToIntSize()
