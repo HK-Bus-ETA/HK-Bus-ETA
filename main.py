@@ -28,26 +28,42 @@ def merge(a, b, path=None):
             a[key] = b[key]
 
 
-def get_web_json(url):
-    with urllib.request.urlopen(url) as data:
-        return json.load(data)
+def get_web_json(url, max_retries=1000, delay=5):
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(url) as data:
+                return json.load(data)
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(max(delay * (attempt + 1), delay * 10))
+            else:
+                raise e
+    return None
 
 
-def get_web_text(url, gzip=True):
-    req = urllib.request.Request(url)
-    req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36')
-    if gzip:
-        req.add_header('Accept-Encoding', 'gzip')
-    req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7')
-    req.add_header('Connection', 'keep-alive')
-    response = urllib.request.urlopen(req)
-    text = response.read()
-    encoding = chardet.detect(text)
-    if encoding['encoding'] is None:
-        decompressed_data = zlib.decompress(text, 16 + zlib.MAX_WBITS)
-        return str(decompressed_data)
-    else:
-        return text.decode(encoding['encoding'])
+def get_web_text(url, gzip=True, max_retries=1000, delay=5):
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(url)
+            req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36')
+            if gzip:
+                req.add_header('Accept-Encoding', 'gzip')
+            req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7')
+            req.add_header('Connection', 'keep-alive')
+            response = urllib.request.urlopen(req)
+            text = response.read()
+            encoding = chardet.detect(text)
+            if encoding['encoding'] is None:
+                decompressed_data = zlib.decompress(text, 16 + zlib.MAX_WBITS)
+                return str(decompressed_data)
+            else:
+                return text.decode(encoding['encoding'])
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(max(delay * (attempt + 1), delay * 10))
+            else:
+                raise e
+    return None
 
 
 def read_json(file_path):
