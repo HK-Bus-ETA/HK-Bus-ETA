@@ -193,6 +193,7 @@ import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
+import com.loohp.hkbuseta.common.utils.debugLog
 import com.loohp.hkbuseta.common.utils.floorToInt
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.compose.Add
@@ -443,7 +444,7 @@ fun ListStopsEtaInterface(
     LaunchedEffect (alightReminderService, alightReminderCurrentStop, alightReminderState) {
         alightReminderService?.let { service -> alightReminderCurrentStop?.let { currentStop ->
             alightReminderStopsLeft = service.stopsRemaining
-            alightReminderTimeLeft = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }.toList(), currentStop.index - 1, service.destinationStopId.index - 1, false).await().averageInterval
+            alightReminderTimeLeft = Registry.getInstance(instance).getTimeBetweenStop(allStops.map { it.stopId to it.branchIds.contains(selectedBranch) }, currentStop.index - 1, service.destinationStopId.index - 1, false).await().averageInterval
         } }
     }
     LaunchedEffect (sheetType) {

@@ -2149,6 +2149,7 @@ class Registry {
         constructor(averageInterval: Double, currentHourlyInterval: Double? = null):
                 this(averageInterval.roundToInt(), currentHourlyInterval?.roundToInt())
         val isLoading: Boolean = averageInterval >= Int.MAX_VALUE
+        val interval: Int? = if (isLoading) null else (currentHourlyInterval?: averageInterval)
     }
 
     fun getTimeBetweenStop(stopIds: List<Pair<String, Boolean>>, startIndex: Int, endIndex: Int, lookupHourly: Boolean): Deferred<TimeBetweenStopResult> {
@@ -2291,31 +2292,50 @@ class Registry {
             .minByOrNull { (it - stopIndex).absoluteValue }
             ?: return NextBusPositionQueryTask { null }
         val endingIndex = stopsList.indexOfFirst { it.branchIds.contains(route) }
+        val timeBetweenStopsList = stopsList.map { it.stopId to it.branchIds.contains(route) }
         return NextBusPositionQueryTask {
             var previousStopTimeRounded = Long.MAX_VALUE
             var previousStopTime = previousStopTimeRounded.toDouble()
             var previousStop: String? = null
+            var previousStopIndex = Int.MAX_VALUE
             var type = NextBusStatusType.ARRIVING
+            var etaAtThisStop: Double? = null
             var stopsCount = -1
             for (i in startingIndex downTo endingIndex) {
                 val stopData = stopsList[i]
                 if (!stopData.branchIds.contains(route)) continue
                 val result = buildEtaQuery(stopData.stopId, i, co, route, context, options).query().rawLines[1]
-                when {
-                    result == null || result.etaRounded < 0 -> return@NextBusPositionQueryTask null
-                    result.eta <= previousStopTime -> {
-                        previousStopTime = result.eta
-                        previousStopTimeRounded = result.etaRounded
-                        previousStop = stopData.stopId
-                        if (i <= endingIndex) {
-                            type = NextBusStatusType.DEPARTING
-                        }
-                        stopsCount++
+                if (i == startingIndex) {
+                    etaAtThisStop = result?.eta
+                }
+                if (result != null && result.etaRounded > 0 && result.eta <= previousStopTime) {
+                    previousStopTime = result.eta
+                    previousStopTimeRounded = result.etaRounded
+                    previousStop = stopData.stopId
+                    previousStopIndex = i
+                    if (i <= endingIndex) {
+                        type = NextBusStatusType.DEPARTING
                     }
-                    else -> break
+                    stopsCount++
+                } else {
+                    break
                 }
             }
-            previousStop?.let { NextBusPosition(route.routeNumber, it, previousStopTimeRounded, type, stopsCount) }
+            previousStop
+                ?.takeIf {
+                    if (etaAtThisStop != null) {
+                        val timeToStop = getTimeBetweenStop(timeBetweenStopsList, previousStopIndex, startingIndex, true).await().interval
+                        if (timeToStop != null) {
+                            val time = (timeToStop / 60) + previousStopTimeRounded
+                            time <= (etaAtThisStop + (etaAtThisStop * 0.25).coerceAtLeast(5.0))
+                        } else {
+                            true
+                        }
+                    } else {
+                        true
+                    }
+                }
+                ?.let { NextBusPosition(route.routeNumber, it, previousStopTimeRounded, type, stopsCount) }
         }
     }
 
