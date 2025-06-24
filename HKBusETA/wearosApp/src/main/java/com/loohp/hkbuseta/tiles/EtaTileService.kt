@@ -69,7 +69,7 @@ class EtaTileService : TileService() {
         }
     }
 
-    override fun onRecentInteractionEventsAsync(events: MutableList<EventBuilders.TileInteractionEvent>): ListenableFuture<Void> {
+    override fun onRecentInteractionEventsAsync(events: MutableList<EventBuilders.TileInteractionEvent>): ListenableFuture<Void?> {
         return if (runBlocking { !Registry.isNewInstall(appContext) }) {
             EtaTileServiceCommon.handleRecentInteractionEventsAsync(events, appContext)
         } else {

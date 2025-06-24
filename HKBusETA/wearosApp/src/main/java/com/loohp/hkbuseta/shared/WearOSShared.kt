@@ -254,7 +254,7 @@ object WearOSShared {
 
     fun scheduleBackgroundUpdateService(context: Context, time: Long? = null) {
         val updateRequest = PeriodicWorkRequestBuilder<DailyUpdateWorker>(1, TimeUnit.DAYS, 60, TimeUnit.MINUTES)
-            .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED))
+            .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED, requiresBatteryNotLow = true))
             .setInitialDelay((time?: nextScheduledDataUpdateMillis()) + 3600000 - currentTimeMillis(), TimeUnit.MILLISECONDS)
             .build()
         val existingPolicy = time?.let { ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE }?: ExistingPeriodicWorkPolicy.KEEP

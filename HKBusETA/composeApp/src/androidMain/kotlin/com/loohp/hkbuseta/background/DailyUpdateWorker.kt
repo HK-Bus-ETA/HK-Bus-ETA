@@ -32,7 +32,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.guava.asListenableFuture
 import java.util.concurrent.TimeUnit
 
-class DailyUpdateWorker(private val context: Context, workerParams: WorkerParameters) : ListenableWorker(context, workerParams) {
+class DailyUpdateWorker(
+    private val context: Context,
+    workerParams: WorkerParameters
+): ListenableWorker(context, workerParams) {
 
     override fun startWork(): ListenableFuture<Result> {
         return CoroutineScope(Dispatchers.IO).async {

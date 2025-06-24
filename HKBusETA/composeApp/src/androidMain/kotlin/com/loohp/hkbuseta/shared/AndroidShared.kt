@@ -28,6 +28,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.loohp.hkbuseta.appcontext.applicationAppContext
 import com.loohp.hkbuseta.background.DailyUpdateWorker
+import com.loohp.hkbuseta.background.WidgetUpdateWorker
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.nextScheduledDataUpdateMillis
@@ -50,14 +51,27 @@ object AndroidShared {
     }
 
     private const val BACKGROUND_SERVICE_REQUEST_TAG: String = "HK_BUS_ETA_BG_SERVICE"
+    private const val WIDGET_SERVICE_REQUEST_TAG: String = "HK_BUS_ETA_WG_SERVICE"
 
     fun scheduleBackgroundUpdateService(context: Context, time: Long? = null) {
+        scheduleBackgroundDailyUpdateService(context, time)
+        scheduleBackgroundWidgetUpdateService(context)
+    }
+
+    private fun scheduleBackgroundDailyUpdateService(context: Context, time: Long?) {
         val updateRequest = PeriodicWorkRequestBuilder<DailyUpdateWorker>(1, TimeUnit.DAYS, 60, TimeUnit.MINUTES)
-            .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED))
+            .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED, requiresBatteryNotLow = true))
             .setInitialDelay((time?: nextScheduledDataUpdateMillis()) + 3600000 - currentTimeMillis(), TimeUnit.MILLISECONDS)
             .build()
         val existingPolicy = time?.let { ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE }?: ExistingPeriodicWorkPolicy.KEEP
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(BACKGROUND_SERVICE_REQUEST_TAG, existingPolicy, updateRequest)
+    }
+
+    private fun scheduleBackgroundWidgetUpdateService(context: Context) {
+        val updateRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(5, TimeUnit.MINUTES, 1, TimeUnit.MINUTES)
+            .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED, requiresBatteryNotLow = true))
+            .build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(WIDGET_SERVICE_REQUEST_TAG, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE, updateRequest)
     }
 
 }

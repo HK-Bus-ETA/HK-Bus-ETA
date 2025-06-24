@@ -21,29 +21,26 @@
 package com.loohp.hkbuseta.background
 
 import android.content.Context
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.google.common.util.concurrent.ListenableFuture
-import com.loohp.hkbuseta.appcontext.appContext
-import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.glance.FavouriteRoutesWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.guava.asListenableFuture
-import java.util.concurrent.TimeUnit
 
-class DailyUpdateWorker(
+class WidgetUpdateWorker(
     private val context: Context,
     workerParams: WorkerParameters
 ): ListenableWorker(context, workerParams) {
 
     override fun startWork(): ListenableFuture<Result> {
         return CoroutineScope(Dispatchers.IO).async {
-            val registry = Registry.getInstance(context.appContext)
-            while (registry.state.value.isProcessing) {
-                TimeUnit.MILLISECONDS.sleep(100)
-            }
-            TimeUnit.MILLISECONDS.sleep(10000)
+            GlanceAppWidgetManager(context)
+                .getGlanceIds(FavouriteRoutesWidget.javaClass)
+                .forEach { FavouriteRoutesWidget.update(context, it) }
             Result.success()
         }.asListenableFuture()
     }
