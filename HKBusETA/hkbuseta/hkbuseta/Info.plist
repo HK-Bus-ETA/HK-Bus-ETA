@@ -5,6 +5,7 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.loohp.hkbuseta.dailyrefresh</string>
+		<string>com.loohp.hkbuseta.routestopetalive</string>
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
@@ -21,6 +22,9 @@
 		<string>fetch</string>
 		<string>location</string>
 		<string>processing</string>
+		<string>remote-notification</string>
 	</array>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 </dict>
 </plist>

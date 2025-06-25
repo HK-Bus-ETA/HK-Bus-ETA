@@ -163,6 +163,7 @@ expect val PlatformIcons.Outlined.LocationOn: Painter @Composable get
 expect val PlatformIcons.Outlined.Map: Painter @Composable get
 expect val PlatformIcons.Outlined.MoreHoriz: Painter @Composable get
 expect val PlatformIcons.Outlined.MoreVert: Painter @Composable get
+expect val PlatformIcons.Outlined.MusicNote: Painter @Composable get
 expect val PlatformIcons.Outlined.MyLocation: Painter @Composable get
 expect val PlatformIcons.Outlined.NearMe: Painter @Composable get
 expect val PlatformIcons.Outlined.NotificationImportant: Painter @Composable get
@@ -193,6 +194,8 @@ expect val PlatformIcons.Outlined.UTurnRight: Painter @Composable get
 expect val PlatformIcons.Outlined.Update: Painter @Composable get
 expect val PlatformIcons.Outlined.Upload: Painter @Composable get
 expect val PlatformIcons.Outlined.Watch: Painter @Composable get
+expect val PlatformIcons.Outlined.Widget: Painter @Composable get
+expect val PlatformIcons.Outlined.WidgetAdd: Painter @Composable get
 expect val PlatformIcons.Outlined.LineEndCircle: Painter @Composable get
 expect val PlatformIcons.Outlined.MobileFriendly: Painter @Composable get
 expect val PlatformIcons.Outlined.PhotoLibrary: Painter @Composable get

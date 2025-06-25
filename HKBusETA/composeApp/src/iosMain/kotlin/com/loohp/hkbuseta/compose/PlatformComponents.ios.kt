@@ -172,7 +172,9 @@ import io.github.alexzhirkevich.cupertino.ProvideTextStyle
 import io.github.alexzhirkevich.cupertino.theme.CupertinoColors
 import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
 import io.github.alexzhirkevich.cupertino.theme.systemGray5
+import kotlinx.cinterop.useContents
 import org.jetbrains.compose.resources.painterResource
+import platform.Foundation.NSProcessInfo
 import platform.UIKit.UIImage
 import platform.UIKit.UIImageConfiguration
 import kotlin.math.max
@@ -180,7 +182,6 @@ import androidx.compose.material.CircularProgressIndicator as Material2CircularP
 import androidx.compose.material.LinearProgressIndicator as Material2LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor as LocalMaterialContentColor
 import androidx.compose.material3.LocalTextStyle as LocalMaterialTextStyle
-
 
 
 actual val PointerIcon.Companion.Grab: PointerIcon get() = Crosshair
@@ -288,6 +289,7 @@ actual inline val PlatformIcons.Outlined.LocationOn: Painter @Composable get() =
 actual inline val PlatformIcons.Outlined.Map: Painter @Composable get() = rememberSystemImagePainter("map")
 actual inline val PlatformIcons.Outlined.MoreHoriz: Painter @Composable get() = rememberSystemImagePainter("ellipsis")
 actual inline val PlatformIcons.Outlined.MoreVert: Painter @Composable get() = rememberSystemImagePainter("arrow.down")
+actual inline val PlatformIcons.Outlined.MusicNote: Painter @Composable get() = rememberSystemImagePainter("music.note")
 actual inline val PlatformIcons.Outlined.MyLocation: Painter @Composable get() = rememberSystemImagePainter("dot.scope", "scope")
 actual inline val PlatformIcons.Outlined.NearMe: Painter @Composable get() = rememberSystemImagePainter("location")
 actual inline val PlatformIcons.Outlined.NotificationImportant: Painter @Composable get() = rememberSystemImagePainter("bell.badge")
@@ -318,6 +320,8 @@ actual inline val PlatformIcons.Outlined.UTurnRight: Painter @Composable get() =
 actual inline val PlatformIcons.Outlined.Update: Painter @Composable get() = rememberSystemImagePainter("arrow.triangle.2.circlepath")
 actual inline val PlatformIcons.Outlined.Upload: Painter @Composable get() = rememberSystemImagePainter("arrow.up.to.line")
 actual inline val PlatformIcons.Outlined.Watch: Painter @Composable get() = rememberSystemImagePainter("applewatch")
+actual inline val PlatformIcons.Outlined.Widget: Painter @Composable get() = rememberSystemImagePainter("widget.medium")
+actual inline val PlatformIcons.Outlined.WidgetAdd: Painter @Composable get() = rememberSystemImagePainter("widget.medium.badge.plus")
 actual inline val PlatformIcons.Outlined.LineEndCircle: Painter @Composable get() = rememberSystemImagePainter("arrow.forward.to.line.circle")
 actual inline val PlatformIcons.Outlined.MobileFriendly: Painter @Composable get() = rememberSystemImagePainter("smartphone")
 actual inline val PlatformIcons.Outlined.PhotoLibrary: Painter @Composable get() = rememberSystemImagePainter("photo.stack")

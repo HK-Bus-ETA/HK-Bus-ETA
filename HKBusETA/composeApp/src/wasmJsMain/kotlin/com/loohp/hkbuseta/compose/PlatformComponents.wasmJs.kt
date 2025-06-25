@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -107,6 +106,7 @@ import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.MobileFriendly
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material.icons.outlined.NotificationImportant
@@ -138,6 +138,7 @@ import androidx.compose.material.icons.outlined.UTurnRight
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material.icons.outlined.Watch
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -234,7 +235,6 @@ import com.loohp.hkbuseta.setDownloadAppSheetVisible
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.clearColors
-import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.equivalentDp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -316,6 +316,7 @@ actual inline val PlatformIcons.Outlined.LocationOn: Painter @Composable get() =
 actual inline val PlatformIcons.Outlined.Map: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Map)
 actual inline val PlatformIcons.Outlined.MoreHoriz: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MoreHoriz)
 actual inline val PlatformIcons.Outlined.MoreVert: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MoreVert)
+actual inline val PlatformIcons.Outlined.MusicNote: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MusicNote)
 actual inline val PlatformIcons.Outlined.MyLocation: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MyLocation)
 actual inline val PlatformIcons.Outlined.NearMe: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.NearMe)
 actual inline val PlatformIcons.Outlined.NotificationImportant: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.NotificationImportant)
@@ -346,6 +347,8 @@ actual inline val PlatformIcons.Outlined.UTurnRight: Painter @Composable get() =
 actual inline val PlatformIcons.Outlined.Update: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Update)
 actual inline val PlatformIcons.Outlined.Upload: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Upload)
 actual inline val PlatformIcons.Outlined.Watch: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Watch)
+actual inline val PlatformIcons.Outlined.Widget: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Widgets)
+actual inline val PlatformIcons.Outlined.WidgetAdd: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Widgets)
 actual inline val PlatformIcons.Outlined.LineEndCircle: Painter @Composable get() = painterResource(DrawableResource("baseline_line_end_circle_24.xml"))
 actual inline val PlatformIcons.Outlined.MobileFriendly: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MobileFriendly)
 actual inline val PlatformIcons.Outlined.PhotoLibrary: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.PhotoLibrary)

@@ -74,6 +74,13 @@
 		81D16B3B2B379FC0003D9817 /* FavRouteListViewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B3A2B379FC0003D9817 /* FavRouteListViewView.swift */; };
 		81D16B3F2B37A609003D9817 /* FavView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B3E2B37A609003D9817 /* FavView.swift */; };
 		81D16B432B3A32EE003D9817 /* WatchOSMTRRouteMapUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D16B422B3A32EE003D9817 /* WatchOSMTRRouteMapUtils.swift */; };
+		81D8F9DD2E0B4DBA008157E2 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0162B44C403008EE8AB /* WidgetKit.framework */; };
+		81D8F9DE2E0B4DBA008157E2 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0182B44C403008EE8AB /* SwiftUI.framework */; };
+		81D8F9EB2E0B4DBC008157E2 /* RouteStopETALiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 81D8F9DC2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		81D8FA042E0CAF20008157E2 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 81D8FA032E0CAF20008157E2 /* FirebaseMessaging */; };
+		81D8FA062E0CAF36008157E2 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 81D8FA052E0CAF36008157E2 /* FirebaseAuth */; };
+		81D8FA082E0CAF36008157E2 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 81D8FA072E0CAF36008157E2 /* FirebaseCore */; };
+		81D8FA0A2E0CAF36008157E2 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 81D8FA092E0CAF36008157E2 /* FirebaseFirestore */; };
 		81DF85232BD157DA00248852 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0162B44C403008EE8AB /* WidgetKit.framework */; };
 		81DF85242BD157DA00248852 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0182B44C403008EE8AB /* SwiftUI.framework */; };
 		81DF85272BD157DA00248852 /* FavouriteRoutesWidgetExtensionBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81DF85262BD157DA00248852 /* FavouriteRoutesWidgetExtensionBundle.swift */; };
@@ -128,6 +135,13 @@
 			remoteGlobalIDString = 81AE54DB2CD4FB0E00B6847E;
 			remoteInfo = FavouriteRoutesWidgetWatchExtensionExtension;
 		};
+		81D8F9E92E0B4DBC008157E2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 81D16AA82B33C21D003D9817 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 81D8F9DB2E0B4DBA008157E2;
+			remoteInfo = RouteStopETALiveActivityExtension;
+		};
 		81DF852F2BD157DB00248852 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 81D16AA82B33C21D003D9817 /* Project object */;
@@ -155,6 +169,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				81D8F9EB2E0B4DBC008157E2 /* RouteStopETALiveActivityExtension.appex in Embed Foundation Extensions */,
 				81498D1A2B7EAD23005F0961 /* AlightReminderLiveActivityExtension.appex in Embed Foundation Extensions */,
 				81DF85312BD157DB00248852 /* FavouriteRoutesWidgetExtensionExtension.appex in Embed Foundation Extensions */,
 				8171F08A2B5D4F11005B8F6A /* ShareExtension.appex in Embed Foundation Extensions */,
@@ -255,6 +270,8 @@
 		81D16B3A2B379FC0003D9817 /* FavRouteListViewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavRouteListViewView.swift; sourceTree = "<group>"; };
 		81D16B3E2B37A609003D9817 /* FavView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavView.swift; sourceTree = "<group>"; };
 		81D16B422B3A32EE003D9817 /* WatchOSMTRRouteMapUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchOSMTRRouteMapUtils.swift; sourceTree = "<group>"; };
+		81D8F9DC2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RouteStopETALiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		81D8F9F02E0B4DF0008157E2 /* RouteStopETALiveActivityExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RouteStopETALiveActivityExtension.entitlements; sourceTree = "<group>"; };
 		81DF85222BD157DA00248852 /* FavouriteRoutesWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FavouriteRoutesWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		81DF85262BD157DA00248852 /* FavouriteRoutesWidgetExtensionBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavouriteRoutesWidgetExtensionBundle.swift; sourceTree = "<group>"; };
 		81DF85282BD157DA00248852 /* FavouriteRoutesWidgetExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavouriteRoutesWidgetExtension.swift; sourceTree = "<group>"; };
@@ -283,6 +300,13 @@
 			);
 			target = 81AE54DB2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension */;
 		};
+		81D8F9EC2E0B4DBC008157E2 /* Exceptions for "RouteStopETALiveActivity" folder in "RouteStopETALiveActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 81D8F9DB2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -292,6 +316,14 @@
 				81AE54EA2CD4FB1100B6847E /* Exceptions for "FavouriteRoutesWidgetWatchExtension" folder in "FavouriteRoutesWidgetWatchExtensionExtension" target */,
 			);
 			path = FavouriteRoutesWidgetWatchExtension;
+			sourceTree = "<group>";
+		};
+		81D8F9DF2E0B4DBA008157E2 /* RouteStopETALiveActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				81D8F9EC2E0B4DBC008157E2 /* Exceptions for "RouteStopETALiveActivity" folder in "RouteStopETALiveActivityExtension" target */,
+			);
+			path = RouteStopETALiveActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -319,8 +351,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				81D8FA042E0CAF20008157E2 /* FirebaseMessaging in Frameworks */,
+				81D8FA082E0CAF36008157E2 /* FirebaseCore in Frameworks */,
 				811F95D82B7918B700FC30D6 /* FirebaseAnalytics in Frameworks */,
 				811F95D42B78DEF300FC30D6 /* Gzip in Frameworks */,
+				81D8FA062E0CAF36008157E2 /* FirebaseAuth in Frameworks */,
+				81D8FA0A2E0CAF36008157E2 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,6 +385,15 @@
 				81812AB52B48CA000060A30B /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
 				81812AB92B48CA000060A30B /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
 				81812ABB2B48CA000060A30B /* FirebaseAppCheck in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		81D8F9D92E0B4DBA008157E2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				81D8F9DE2E0B4DBA008157E2 /* SwiftUI.framework in Frameworks */,
+				81D8F9DD2E0B4DBA008157E2 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -432,6 +477,7 @@
 		81D16AA72B33C21D003D9817 = {
 			isa = PBXGroup;
 			children = (
+				81D8F9F02E0B4DF0008157E2 /* RouteStopETALiveActivityExtension.entitlements */,
 				81AE55042CD50AEC00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.entitlements */,
 				81AE55032CD50ADB00B6847E /* TilesWidgetExtension.entitlements */,
 				81DF85382BD162D200248852 /* FavouriteRoutesWidgetExtensionExtension.entitlements */,
@@ -444,6 +490,7 @@
 				81498D0E2B7EAD21005F0961 /* alightreminderliveactivity */,
 				81DF85252BD157DA00248852 /* FavouriteRoutesWidgetExtension */,
 				81AE54DF2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtension */,
+				81D8F9DF2E0B4DBA008157E2 /* RouteStopETALiveActivity */,
 				81D16AAF2B33C21E003D9817 /* Products */,
 				81D16B202B363B01003D9817 /* Frameworks */,
 			);
@@ -459,6 +506,7 @@
 				81498D0B2B7EAD21005F0961 /* AlightReminderLiveActivityExtension.appex */,
 				81DF85222BD157DA00248852 /* FavouriteRoutesWidgetExtensionExtension.appex */,
 				81AE54DC2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension.appex */,
+				81D8F9DC2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -630,11 +678,16 @@
 				81498D192B7EAD23005F0961 /* PBXTargetDependency */,
 				814890212BB3967C00E82FB8 /* PBXTargetDependency */,
 				81DF85302BD157DB00248852 /* PBXTargetDependency */,
+				81D8F9EA2E0B4DBC008157E2 /* PBXTargetDependency */,
 			);
 			name = "HKBusETA Phone App";
 			packageProductDependencies = (
 				811F95D32B78DEF300FC30D6 /* Gzip */,
 				811F95D72B7918B700FC30D6 /* FirebaseAnalytics */,
+				81D8FA032E0CAF20008157E2 /* FirebaseMessaging */,
+				81D8FA052E0CAF36008157E2 /* FirebaseAuth */,
+				81D8FA072E0CAF36008157E2 /* FirebaseCore */,
+				81D8FA092E0CAF36008157E2 /* FirebaseFirestore */,
 			);
 			productName = hkbuseta;
 			productReference = 8171F0722B5C81F4005B8F6A /* HKBusETA Phone App.app */;
@@ -708,6 +761,28 @@
 			productReference = 81D16AB42B33C21E003D9817 /* HKBusETA.app */;
 			productType = "com.apple.product-type.application";
 		};
+		81D8F9DB2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 81D8F9ED2E0B4DBC008157E2 /* Build configuration list for PBXNativeTarget "RouteStopETALiveActivityExtension" */;
+			buildPhases = (
+				81D8F9D82E0B4DBA008157E2 /* Sources */,
+				81D8F9D92E0B4DBA008157E2 /* Frameworks */,
+				81D8F9DA2E0B4DBA008157E2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				81D8F9DF2E0B4DBA008157E2 /* RouteStopETALiveActivity */,
+			);
+			name = RouteStopETALiveActivityExtension;
+			packageProductDependencies = (
+			);
+			productName = RouteStopETALiveActivityExtension;
+			productReference = 81D8F9DC2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		81DF85212BD157DA00248852 /* FavouriteRoutesWidgetExtensionExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 81DF85322BD157DC00248852 /* Build configuration list for PBXNativeTarget "FavouriteRoutesWidgetExtensionExtension" */;
@@ -733,7 +808,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1600;
+				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1510;
 				TargetAttributes = {
 					81498D0A2B7EAD21005F0961 = {
@@ -750,6 +825,9 @@
 					};
 					81D16AB32B33C21E003D9817 = {
 						CreatedOnToolsVersion = 15.1;
+					};
+					81D8F9DB2E0B4DBA008157E2 = {
+						CreatedOnToolsVersion = 16.4;
 					};
 					81DF85212BD157DA00248852 = {
 						CreatedOnToolsVersion = 15.1;
@@ -785,6 +863,7 @@
 				81D16AB32B33C21E003D9817 /* HKBusETA Watch App */,
 				8171F0192B52EC4E005B8F6A /* TilesWidgetExtension */,
 				81AE54DB2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension */,
+				81D8F9DB2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -842,6 +921,13 @@
 				81D16ABE2B33C21F003D9817 /* Assets.xcassets in Resources */,
 				81AB3D8E2BFAB3EB00DB74C6 /* light_rail_system_map.json in Resources */,
 				81812AC12B48D0400060A30B /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		81D8F9DA2E0B4DBA008157E2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1012,6 +1098,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		81D8F9D82E0B4DBA008157E2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81DF851E2BD157DA00248852 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1056,6 +1149,11 @@
 			isa = PBXTargetDependency;
 			target = 81AE54DB2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension */;
 			targetProxy = 81AE550C2CD5110B00B6847E /* PBXContainerItemProxy */;
+		};
+		81D8F9EA2E0B4DBC008157E2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 81D8F9DB2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension */;
+			targetProxy = 81D8F9E92E0B4DBC008157E2 /* PBXContainerItemProxy */;
 		};
 		81DF85302BD157DB00248852 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1191,6 +1289,7 @@
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				EXCLUDED_ARCHS = arm64;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = tileswidget;
@@ -1223,6 +1322,7 @@
 				CURRENT_PROJECT_VERSION = "${BUILD_NUMBER}";
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				EXCLUDED_ARCHS = arm64;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = tileswidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = tileswidget;
@@ -1438,6 +1538,7 @@
 				CURRENT_PROJECT_VERSION = $BUILD_NUMBER;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				EXCLUDED_ARCHS = arm64;
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FavouriteRoutesWidgetWatchExtension/Info.plist;
@@ -1473,6 +1574,7 @@
 				CURRENT_PROJECT_VERSION = $BUILD_NUMBER;
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				EXCLUDED_ARCHS = arm64;
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FavouriteRoutesWidgetWatchExtension/Info.plist;
@@ -1502,7 +1604,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 334;
+				BUILD_NUMBER = 348;
 				BUILD_VERSION = 2.5.3;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1570,7 +1672,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 334;
+				BUILD_NUMBER = 348;
 				BUILD_VERSION = 2.5.3;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1638,7 +1740,7 @@
 				DEVELOPMENT_TEAM = 5Z2275W445;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				EXCLUDED_ARCHS = "";
+				EXCLUDED_ARCHS = arm64;
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "hkbuseta Watch App/Info.plist";
@@ -1704,6 +1806,68 @@
 				TARGETED_DEVICE_FAMILY = 4;
 				VALIDATE_PRODUCT = YES;
 				WATCHOS_DEPLOYMENT_TARGET = 8.5;
+			};
+			name = Release;
+		};
+		81D8F9EE2E0B4DBC008157E2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = RouteStopETALiveActivityExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = $BUILD_NUMBER;
+				DEVELOPMENT_TEAM = 5Z2275W445;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RouteStopETALiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RouteStopETALiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = $BUILD_VERSION;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.RouteStopETALiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		81D8F9EF2E0B4DBC008157E2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = RouteStopETALiveActivityExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = $BUILD_NUMBER;
+				DEVELOPMENT_TEAM = 5Z2275W445;
+				EXCLUDED_ARCHS = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RouteStopETALiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RouteStopETALiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = $BUILD_VERSION;
+				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.RouteStopETALiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -1845,6 +2009,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		81D8F9ED2E0B4DBC008157E2 /* Build configuration list for PBXNativeTarget "RouteStopETALiveActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				81D8F9EE2E0B4DBC008157E2 /* Debug */,
+				81D8F9EF2E0B4DBC008157E2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		81DF85322BD157DC00248852 /* Build configuration list for PBXNativeTarget "FavouriteRoutesWidgetExtensionExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1926,6 +2099,26 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 818FD0292B45C917008EE8AB /* XCRemoteSwiftPackageReference "GzipSwift" */;
 			productName = Gzip;
+		};
+		81D8FA032E0CAF20008157E2 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		81D8FA052E0CAF36008157E2 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		81D8FA072E0CAF36008157E2 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		81D8FA092E0CAF36008157E2 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

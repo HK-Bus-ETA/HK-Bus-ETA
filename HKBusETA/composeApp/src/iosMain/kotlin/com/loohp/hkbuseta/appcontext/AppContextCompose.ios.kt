@@ -38,7 +38,7 @@ import com.loohp.hkbuseta.common.appcontext.withGlobalWritingFilesCounter
 import com.loohp.hkbuseta.common.external.extractShareLink
 import com.loohp.hkbuseta.common.external.shareLaunch
 import com.loohp.hkbuseta.common.objects.Preferences
-import com.loohp.hkbuseta.common.objects.getColor
+import com.loohp.hkbuseta.common.objects.getLineColor
 import com.loohp.hkbuseta.common.services.AlightReminderActiveState
 import com.loohp.hkbuseta.common.services.AlightReminderService
 import com.loohp.hkbuseta.common.shared.Registry
@@ -50,6 +50,8 @@ import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.provideGzipBodyAsTextImpl
 import com.loohp.hkbuseta.common.utils.toStringReadChannel
+import com.loohp.hkbuseta.utils.RouteStopETAData
+import com.loohp.hkbuseta.utils.RouteStopETALiveActivity
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.toByteArray
@@ -117,7 +119,6 @@ import platform.posix.memset
 import platform.posix.sleep
 import platform.posix.sockaddr_in
 import platform.posix.usleep
-import kotlin.collections.set
 import kotlin.math.roundToInt
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -590,7 +591,7 @@ fun getCurrentAlightReminderData(): Pair<AlightReminderData, String?>? {
             content = it.content,
             url = it.deepLink,
             state = it.state.ordinal,
-            color = it.co.getColor(it.routeNumber, 0xFFFF4747),
+            color = it.co.getLineColor(it.selectedRoute.routeNumber, 0xFFFF4747),
             active = it.isActive.ordinal
         ) to it.remoteData.takeUnless { d -> d.active == AlightReminderActiveState.STOPPED }?.serialize()?.toString()
     }
@@ -642,4 +643,16 @@ fun invalidateCacheAndRestart() {
         intent.addFlags(AppIntentFlag.NEW_TASK)
         applicationAppContext.startActivity(intent)
     }
+}
+
+fun setRouteStopETAHandler(handler: (RouteStopETAData?) -> Unit) {
+    RouteStopETALiveActivity.setDataUpdateHandler(handler)
+}
+
+fun terminateRouteStopETA() {
+    RouteStopETALiveActivity.clearCurrentSelectedStop()
+}
+
+fun triggerUpdateRouteStopETA() {
+    runBlocking { RouteStopETALiveActivity.trigger() }
 }

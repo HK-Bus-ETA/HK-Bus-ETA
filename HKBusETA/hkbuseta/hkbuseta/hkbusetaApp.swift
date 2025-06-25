@@ -13,12 +13,16 @@ import ComposeApp
 import Gzip
 import FirebaseCore
 import FirebaseAnalytics
+import FirebaseFirestore
+import FirebaseAuth
+import FirebaseMessaging
 import UserNotifications
 import BackgroundTasks
 import LinkPresentation
 import WidgetKit
 
-class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate {
+@MainActor
+class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate, UNUserNotificationCenterDelegate {
 
     override init() {
         super.init()
@@ -37,20 +41,50 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate {
         configuration.delegateClass = SceneDelegate.self
         return configuration
     }
+    
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        print("Registered for Apple Remote Notifications")
+        Messaging.messaging().setAPNSToken(deviceToken, type: .unknown)
+        
+        Messaging.messaging().subscribe(toTopic: "RouteStopLive") { error in
+            print("Subscribed to RouteStopLive")
+        }
+    }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
 
         BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.loohp.hkbuseta.dailyrefresh", using: nil) { task in
-             handleAppRefresh(task: task as! BGProcessingTask)
+             handleDailyRefresh(task: task as! BGProcessingTask)
         }
-        scheduleAppRefresh()
+        scheduleDailyRefresh()
 
         if let shortcutItem = launchOptions?[UIApplication.LaunchOptionsKey.shortcutItem] as? UIApplicationShortcutItem {
             quickActionLaunchData.url = shortcutItem.userInfo?["url"] as? String
         }
+        
+        let timer = Timer(timeInterval: 1, repeats: true) { _ in
+            AppContextCompose_iosKt.triggerUpdateRouteStopETA()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        
+        UNUserNotificationCenter.current().delegate = self
+        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: authOptions,
+            completionHandler: { _, _ in }
+        )
+        application.registerForRemoteNotifications()
 
         return true
+    }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        print("\(userInfo)")
+        if let action = userInfo["action"] as? String, action == "RouteStopLive" {
+            AppContextCompose_iosKt.triggerUpdateRouteStopETA()
+        }
+        completionHandler(.newData)
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
@@ -62,38 +96,43 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate {
                     await alightReminderActivity!.end(using: state, dismissalPolicy: .default)
                 }
             }
+            if #available(iOS 17, *) {
+                if routeStopEtaLiveActivity != nil {
+                    await routeStopEtaLiveActivity!.end(dismissalPolicy: .immediate)
+                }
+            }
             semaphore.signal()
         }
         semaphore.wait()
     }
 
-    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+    nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
 
     }
 
-    func sessionDidBecomeInactive(_ session: WCSession) {
+    nonisolated func sessionDidBecomeInactive(_ session: WCSession) {
 
     }
 
-    func sessionDidDeactivate(_ session: WCSession) {
+    nonisolated func sessionDidDeactivate(_ session: WCSession) {
 
     }
 
-    func session(_ session: WCSession, didReceiveMessage payload: [String: Any]) {
+    nonisolated func session(_ session: WCSession, didReceiveMessage payload: [String: Any]) {
         handleDataFromWatch(payload: payload)
     }
 
-    func session(_ session: WCSession, didReceiveMessage payload: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
+    nonisolated func session(_ session: WCSession, didReceiveMessage payload: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
         handleDataFromWatch(payload: payload)
     }
 
-    func session(_ session: WCSession, didReceiveApplicationContext payload: [String : Any]) {
+    nonisolated func session(_ session: WCSession, didReceiveApplicationContext payload: [String : Any]) {
         handleDataFromWatch(payload: payload)
     }
 
 }
 
-func scheduleAppRefresh(time: Int64? = nil) {
+func scheduleDailyRefresh(time: Int64? = nil) {
     let request = BGProcessingTaskRequest(identifier: "com.loohp.hkbuseta.dailyrefresh")
     request.requiresNetworkConnectivity = true
     let updateTime = time ?? AppContextCompose_iosKt.nextScheduledDataUpdateMillis()
@@ -117,8 +156,8 @@ func scheduleAppRefresh(time: Int64? = nil) {
     }
 }
 
-func handleAppRefresh(task: BGProcessingTask) {
-    scheduleAppRefresh()
+func handleDailyRefresh(task: BGProcessingTask) {
+    scheduleDailyRefresh()
     AppContextCompose_iosKt.runDailyUpdate {
         task.setTaskCompleted(success: true)
     }
@@ -251,10 +290,25 @@ struct AlightReminderLiveActivityAttributes: ActivityAttributes {
     }
 }
 
+struct RouteStopETALiveActivityAttributes: ActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        let routeNumber: String
+        let hasEta: Bool
+        let eta: [String]
+        let destination: String
+        let stop: String
+        let color: Int64
+        let url: String
+    }
+}
+
 @available(iOS 16.1, *)
 var alightReminderActivity: Activity<AlightReminderLiveActivityAttributes>? = nil
 var alightReminderLastState: Int32 = -1
 var alightReminderLastRemote: String? = nil
+
+@available(iOS 17, *)
+var routeStopEtaLiveActivity: Activity<RouteStopETALiveActivityAttributes>? = nil
 
 @main
 struct hkbusetaApp: App {
@@ -277,7 +331,7 @@ struct hkbusetaApp: App {
             }
         }
         AppContextCompose_iosKt.provideBackgroundUpdateScheduler { c, t in
-            scheduleAppRefresh(time: t.int64Value)
+            scheduleDailyRefresh(time: t.int64Value)
         }
         AppContextCompose_iosKt.setGzipBodyAsTextImpl(impl: { data, charset in
             let decompressedData: Data = data.isGzipped ? try! data.gunzipped() : data
@@ -317,6 +371,36 @@ struct hkbusetaApp: App {
         AppContextCompose_iosKt.setShareUrlDataImpl { data in
             shareUrlData.url = data.url
             shareUrlData.title = data.title
+        }
+        if #available(iOS 17, *) {
+            AppContextCompose_iosKt.setRouteStopETAHandler { data in
+                if data == nil {
+                    if let activity = routeStopEtaLiveActivity {
+                        Task {
+                            await activity.end(dismissalPolicy: .immediate)
+                        }
+                    }
+                } else {
+                    if ActivityAuthorizationInfo().areActivitiesEnabled {
+                        if let activity = routeStopEtaLiveActivity {
+                            let state = RouteStopETALiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, hasEta: data!.hasEta, eta: data!.eta, destination: data!.destination, stop: data!.stop, color: data!.color, url: data!.url)
+                            Task {
+                                await activity.update(using: state)
+                            }
+                        } else {
+                            do {
+                                let initialState = RouteStopETALiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, hasEta: data!.hasEta, eta: data!.eta, destination: data!.destination, stop: data!.stop, color: data!.color, url: data!.url)
+                                routeStopEtaLiveActivity = try Activity.request(
+                                    attributes: RouteStopETALiveActivityAttributes(),
+                                    content: .init(state: initialState, staleDate: nil),
+                                    pushType: nil)
+                            } catch {
+                                print(error)
+                            }
+                        }
+                    }
+                }
+            }
         }
         AppContextCompose_iosKt.setAlightReminderHandler { data, remote in
             let payload = [

@@ -193,7 +193,6 @@ import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentMinuteState
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.debugLog
 import com.loohp.hkbuseta.common.utils.floorToInt
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.compose.Add
@@ -232,6 +231,8 @@ import com.loohp.hkbuseta.compose.TextInputDialog
 import com.loohp.hkbuseta.compose.Train
 import com.loohp.hkbuseta.compose.TransferWithinAStation
 import com.loohp.hkbuseta.compose.Watch
+import com.loohp.hkbuseta.compose.Widget
+import com.loohp.hkbuseta.compose.WidgetAdd
 import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
@@ -263,6 +264,8 @@ import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.MTRLineSection
 import com.loohp.hkbuseta.utils.MTRLineSectionExtension
 import com.loohp.hkbuseta.utils.RouteHighlightType
+import com.loohp.hkbuseta.utils.RouteStopETALiveActivity
+import com.loohp.hkbuseta.utils.RouteStopETASelectedRouteStop
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -1801,40 +1804,81 @@ fun StopEntryExpansionEta(
                     )
                 }
             }
-            if (composePlatform.supportPip) {
-                PlatformFilledTonalIconButton(
-                    modifier = Modifier
-                        .padding(end = 5.dp)
-                        .size(42.dp, 32.dp)
-                        .plainTooltip(if (Shared.language == "en") "Picture-in-picture Display Mode" else "畫中畫顯示模式"),
-                    onClick = { instance.enterPipMode() },
-                    shape = RoundedCornerShape(5.dp)
-                ) {
-                    PlatformIcon(
-                        modifier = Modifier.size(25.dp),
-                        painter = PlatformIcons.Outlined.Fullscreen,
-                        tint = Color(0xFFC4AB48),
-                        contentDescription = if (Shared.language == "en") "Picture-in-picture Display Mode" else "畫中畫顯示模式"
+            when {
+                RouteStopETALiveActivity.isSupported() -> {
+                    val selected = RouteStopETASelectedRouteStop(
+                        stopId = stopData.stopId,
+                        stopIndex = index,
+                        co = co,
+                        route = stopData.route,
+                        context = instance,
+                        etaQueryOptions = etaQueryOptions
                     )
+                    var isCurrentlySelected by remember { mutableStateOf(RouteStopETALiveActivity.isCurrentSelectedStop(selected)) }
+                    PlatformFilledTonalIconButton(
+                        modifier = Modifier
+                            .padding(end = 5.dp)
+                            .size(42.dp, 32.dp)
+                            .plainTooltip(if (Shared.language == "en") "Dynamic Island Display Mode" else "動態島顯示模式"),
+                        onClick = {
+                            if (isCurrentlySelected) {
+                                RouteStopETALiveActivity.clearCurrentSelectedStop()
+                            } else {
+                                RouteStopETALiveActivity.setCurrentSelectedStop(selected)
+                            }
+                            isCurrentlySelected = RouteStopETALiveActivity.isCurrentSelectedStop(selected)
+                            instance.showToastText(if (isCurrentlySelected) {
+                                if (Shared.language == "en") "Enabled Dynamic Island Display Mode" else "已啟用動態島顯示模式"
+                            } else {
+                                if (Shared.language == "en") "Disable Dynamic Island Display Mode" else "已停用動態島顯示模式"
+                            }, ToastDuration.SHORT)
+                        },
+                        shape = RoundedCornerShape(5.dp)
+                    ) {
+                        PlatformIcon(
+                            modifier = Modifier.size(25.dp),
+                            painter = if (isCurrentlySelected) PlatformIcons.Outlined.Widget else PlatformIcons.Outlined.WidgetAdd,
+                            tint = if (isCurrentlySelected) Color(0xFFFF0000) else Color(0xFFC4AB48),
+                            contentDescription = if (Shared.language == "en") "Dynamic Island Display Mode" else "動態島顯示模式"
+                        )
+                    }
                 }
-            } else {
-                PlatformFilledTonalIconButton(
-                    modifier = Modifier
-                        .padding(end = 5.dp)
-                        .size(42.dp, 32.dp)
-                        .plainTooltip(if (Shared.language == "en") "Share Route" else "分享路線"),
-                    onClick = { instance.compose.shareUrl(
-                        url = selectedBranch.getDeepLink(instance, allStops[selectedStop - 1].stopId, selectedStop - 1),
-                        title = "${if (Shared.language == "en") "Share Route" else "分享路線"} - ${co.getDisplayName(routeNumber, isKmbCtbJoint, gmbRegion, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${selectedBranch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${selectedStop}." else ""} ${allStops[selectedStop - 1].stop.name[Shared.language]}"
-                    ) },
-                    shape = RoundedCornerShape(5.dp)
-                ) {
-                    PlatformIcon(
-                        modifier = Modifier.size(25.dp),
-                        painter = PlatformIcons.Outlined.Share,
-                        tint = Color(0xFFC4AB48),
-                        contentDescription = if (Shared.language == "en") "Share Route" else "分享路線"
-                    )
+                composePlatform.supportPip -> {
+                    PlatformFilledTonalIconButton(
+                        modifier = Modifier
+                            .padding(end = 5.dp)
+                            .size(42.dp, 32.dp)
+                            .plainTooltip(if (Shared.language == "en") "Picture-in-picture Display Mode" else "畫中畫顯示模式"),
+                        onClick = { instance.enterPipMode() },
+                        shape = RoundedCornerShape(5.dp)
+                    ) {
+                        PlatformIcon(
+                            modifier = Modifier.size(25.dp),
+                            painter = PlatformIcons.Outlined.Fullscreen,
+                            tint = Color(0xFFC4AB48),
+                            contentDescription = if (Shared.language == "en") "Picture-in-picture Display Mode" else "畫中畫顯示模式"
+                        )
+                    }
+                }
+                else -> {
+                    PlatformFilledTonalIconButton(
+                        modifier = Modifier
+                            .padding(end = 5.dp)
+                            .size(42.dp, 32.dp)
+                            .plainTooltip(if (Shared.language == "en") "Share Route" else "分享路線"),
+                        onClick = { instance.compose.shareUrl(
+                            url = selectedBranch.getDeepLink(instance, allStops[selectedStop - 1].stopId, selectedStop - 1),
+                            title = "${if (Shared.language == "en") "Share Route" else "分享路線"} - ${co.getDisplayName(routeNumber, isKmbCtbJoint, gmbRegion, Shared.language)} ${co.getDisplayRouteNumber(routeNumber)} ${selectedBranch.resolvedDest(true)[Shared.language]} ${if (!co.isTrain) "${selectedStop}." else ""} ${allStops[selectedStop - 1].stop.name[Shared.language]}"
+                        ) },
+                        shape = RoundedCornerShape(5.dp)
+                    ) {
+                        PlatformIcon(
+                            modifier = Modifier.size(25.dp),
+                            painter = PlatformIcons.Outlined.Share,
+                            tint = Color(0xFFC4AB48),
+                            contentDescription = if (Shared.language == "en") "Share Route" else "分享路線"
+                        )
+                    }
                 }
             }
             PlatformFilledTonalIconButton(

@@ -46,9 +46,16 @@ struct AlightReminderLiveActivity: Widget {
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     Text(context.state.routeNumber)
+                        .bold()
+                        .multilineTextAlignment(.leading)
+                        .foregroundStyle(context.state.color.asColor().isLight() ? .black : .white)
+                        .padding(1)
+                        .background(context.state.color.asColor())
+                        .cornerRadius(5)
+                        .padding(.horizontal)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.state.stopsRemaining)
+                    Text(context.state.stopsRemaining).bold().multilineTextAlignment(.trailing).padding(.horizontal)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     Text(context.state.titleLeading).bold().multilineTextAlignment(.center)
@@ -57,10 +64,25 @@ struct AlightReminderLiveActivity: Widget {
                 }
             } compactLeading: {
                 Text(context.state.routeNumber)
+                    .bold()
+                    .multilineTextAlignment(.leading)
+                    .foregroundStyle(context.state.color.asColor().isLight() ? .black : .white)
+                    .padding(1)
+                    .background(context.state.color.asColor())
+                    .cornerRadius(5)
             } compactTrailing: {
-                Text(context.state.stopsRemaining)
+                Text(context.state.stopsRemaining).bold().multilineTextAlignment(.trailing)
             } minimal: {
-                Text("\(context.state.routeNumber) \(context.state.stopsRemaining)")
+                HStack(spacing: 2) {
+                    Text(context.state.routeNumber)
+                        .bold()
+                        .multilineTextAlignment(.leading)
+                        .foregroundStyle(context.state.color.asColor().isLight() ? .black : .white)
+                        .padding(1)
+                        .background(context.state.color.asColor())
+                        .cornerRadius(5)
+                    Text(context.state.stopsRemaining).bold().multilineTextAlignment(.trailing)
+                }
             }
             .widgetURL(URL(string: context.state.url))
             .keylineTint(context.state.color.asColor())

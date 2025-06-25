@@ -32,3 +32,4 @@ actual suspend fun invalidateWatchCache(context: AppContext) {
 
 @Composable
 actual fun rememberWearableConnected(context: AppContext): State<WearableConnectionState> = remember { mutableStateOf(WearableConnectionState.UNSUPPORTED) }
+
