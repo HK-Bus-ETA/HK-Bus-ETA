@@ -20,9 +20,12 @@
 
 package com.loohp.hkbuseta.appcontext
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -34,9 +37,13 @@ import android.util.AtomicFile
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Stable
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import androidx.core.net.toUri
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.google.firebase.Firebase
@@ -260,6 +267,30 @@ open class AppContextWearOS internal constructor(
             .setRank(rank)
             .build()
         ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
+    }
+
+    @SuppressLint("WearRecents")
+    override fun sendLocalNotification(id: Int, channel: String, title: String, content: String, url: String) {
+        val manager = NotificationManagerCompat.from(context)
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED && manager.getNotificationChannel(channel) != null) {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = url.toUri()
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val notification = NotificationCompat.Builder(context, channel)
+                .setSmallIcon(R.mipmap.icon_circle)
+                .setContentTitle(title)
+                .setContentText(content)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .build()
+
+            manager.notify(id, notification)
+        }
     }
 
     override fun removeAppShortcut(id: String) {

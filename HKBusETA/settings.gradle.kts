@@ -52,3 +52,4 @@ rootProject.name = "HKBusETA"
 include(":wearosApp")
 include(":shared")
 include(":composeApp")
+include(":notificationserver")

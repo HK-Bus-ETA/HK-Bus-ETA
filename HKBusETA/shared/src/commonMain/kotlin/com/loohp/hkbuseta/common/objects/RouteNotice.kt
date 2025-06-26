@@ -21,10 +21,8 @@
 package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
-import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.BigSize
 import com.loohp.hkbuseta.common.utils.BoldStyle
-import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.getJSONResponse
@@ -35,6 +33,7 @@ import com.loohp.hkbuseta.common.utils.remove
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
@@ -43,208 +42,202 @@ enum class RouteNoticeImportance {
     IMPORTANT, NORMAL, NOT_IMPORTANT
 }
 
+@Serializable
 @Immutable
-sealed class RouteNotice(
-    val title: String,
-    val co: Operator?,
-    val importance: RouteNoticeImportance,
-    val sort: Int = Int.MAX_VALUE,
-    val possibleTwoWaySectionFareInfo: Boolean
-): Comparable<RouteNotice> {
+sealed interface RouteNotice: Comparable<RouteNotice> {
     companion object {
         private val routeNoticeComparator = compareBy<RouteNotice> { it.importance }
             .thenBy { it.co?.ordinal?: Int.MAX_VALUE }
             .thenBy { it.sort }
     }
+
+    val title: BilingualText
+    val co: Operator?
+    val importance: RouteNoticeImportance
+    val sort: Int
+    val possibleTwoWaySectionFareInfo: Boolean
+    
     override fun compareTo(other: RouteNotice): Int = routeNoticeComparator.compare(this, other)
 }
 
+@Serializable
 @Immutable
 class RouteNoticeExternal(
-    title: String,
-    co: Operator?,
-    important: RouteNoticeImportance,
-    val url: String,
-    sort: Int = Int.MAX_VALUE,
-    possibleTwoWaySectionFareInfo: Boolean = false
-): RouteNotice(title, co, important, sort, possibleTwoWaySectionFareInfo) {
-    val isPdf: Boolean = url.endsWith(".pdf")
+    override val title: BilingualText,
+    override val co: Operator?,
+    override val importance: RouteNoticeImportance,
+    val url: BilingualText,
+    override val sort: Int = Int.MAX_VALUE,
+    override val possibleTwoWaySectionFareInfo: Boolean = false
+): RouteNotice {
+    val isPdf: Boolean = url.zh.endsWith(".pdf") && url.en.endsWith(".pdf")
 }
 
+@Serializable
 @Immutable
 class RouteNoticeText(
-    title: String,
-    co: Operator?,
-    important: RouteNoticeImportance,
-    sort: Int = Int.MAX_VALUE,
+    override val title: BilingualText,
+    override val co: Operator?,
+    override val importance: RouteNoticeImportance,
+    override val sort: Int = Int.MAX_VALUE,
     val isRealTitle: Boolean,
-    val content: String,
-    possibleTwoWaySectionFareInfo: Boolean = false
-): RouteNotice(title, co, important, sort, possibleTwoWaySectionFareInfo) {
-    val display: FormattedText by lazy { buildFormattedString(extractUrls = true) {
-        if (isRealTitle) {
-            append(title, BigSize, BoldStyle)
-            appendLineBreak(2)
+    val content: BilingualText,
+    override val possibleTwoWaySectionFareInfo: Boolean = false
+): RouteNotice {
+    val display: BilingualFormattedText by lazy {
+        buildFormattedString(extractUrls = true) {
+            if (isRealTitle) {
+                append(title.zh, BigSize, BoldStyle)
+                appendLineBreak(2)
+            }
+            append(content.zh)
+        } withEn buildFormattedString(extractUrls = true) {
+            if (isRealTitle) {
+                append(title.en, BigSize, BoldStyle)
+                appendLineBreak(2)
+            }
+            append(content.en)
         }
-        append(content)
-    } }
+    }
 }
 
-val mtrLineStatus: RouteNoticeExternal get() {
-    return RouteNoticeExternal(
-        title = if (Shared.language == "en") "Service Status" else "車務狀況",
-        co = Operator.MTR,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://tnews.mtr.com.hk/alert/service_status${if (Shared.language == "en") "" else "_tc"}_m.html"
-    )
-}
+val mtrLineStatus: RouteNoticeExternal = RouteNoticeExternal(
+    title = "車務狀況" withEn "Service Status",
+    co = Operator.MTR,
+    importance = RouteNoticeImportance.NORMAL,
+    url = "https://tnews.mtr.com.hk/alert/service_status_tc_m.html" withEn "https://tnews.mtr.com.hk/alert/service_status_m.html"
+)
 
 val lrtLineStatus: RouteNoticeExternal get() {
     val status = mtrLineStatus
     return RouteNoticeExternal(
         title = status.title,
         co = Operator.LRT,
-        important = status.importance,
+        importance = status.importance,
         url = status.url
     )
 }
 
-val mtrRouteMapNotice: RouteNoticeExternal get() {
-    return RouteNoticeExternal(
-        title = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖",
-        co = Operator.MTR,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/routemap.pdf"
-    )
-}
+val mtrRouteMapNotice: RouteNoticeExternal = RouteNoticeExternal(
+    title = "港鐵路綫圖" withEn "MTR System Map",
+    co = Operator.MTR,
+    importance = RouteNoticeImportance.NORMAL,
+    url = "https://www.mtr.com.hk/archive/ch/services/routemap.pdf" withEn "https://www.mtr.com.hk/archive/en/services/routemap.pdf"
+)
 
-val lrtRouteMapNotice: RouteNoticeExternal get() {
-    return RouteNoticeExternal(
-        title = if (Shared.language == "en") "Light Rail Route Map" else "輕鐵路綫圖",
-        co = Operator.LRT,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.mtr.com.hk/archive/${if (Shared.language == "en") "en" else "ch"}/services/LR_routemap.pdf"
-    )
-}
+val lrtRouteMapNotice: RouteNoticeExternal = RouteNoticeExternal(
+    title = "輕鐵路綫圖" withEn "Light Rail Route Map",
+    co = Operator.LRT,
+    importance = RouteNoticeImportance.NORMAL,
+    url = "https://www.mtr.com.hk/archive/ch/services/LR_routemap.pdf" withEn "https://www.mtr.com.hk/archive/en/services/LR_routemap.pdf"
+)
 
-val kmbBbiPage: RouteNoticeExternal get() {
-    return RouteNoticeExternal(
-        title = if (Shared.language == "en") "KMB Octopus and E-payment Bus-Bus Interchange Schemes" else "九巴八達通及電子支付巴士轉乘計劃",
-        co = Operator.KMB,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.kmb.hk/interchange_bbi.html"
-    )
-}
+val kmbBbiPage: RouteNoticeExternal = RouteNoticeExternal(
+    title = "九巴八達通及電子支付巴士轉乘計劃" withEn "KMB Octopus and E-payment Bus-Bus Interchange Schemes",
+    co = Operator.KMB,
+    importance = RouteNoticeImportance.NORMAL,
+    url = "https://www.kmb.hk/interchange_bbi.html".asBilingualText()
+)
 
 fun ctbRouteNotice(route: Route): RouteNoticeExternal {
     return RouteNoticeExternal(
-        title = if (Shared.language == "en") "Citybus Route Updates" else "城巴路線最新資訊",
+        title = "城巴路線最新資訊" withEn "Citybus Route Updates",
         co = Operator.CTB,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://mobile.citybus.com.hk/nwp3/specialNote.php?r=${route.routeNumber}"
+        importance = RouteNoticeImportance.NORMAL,
+        url = "https://mobile.citybus.com.hk/nwp3/specialNote.php?r=${route.routeNumber}".asBilingualText()
     )
 }
 
 fun ctbRouteInterchangePage(route: Route): RouteNoticeExternal {
     return RouteNoticeExternal(
-        title = if (Shared.language == "en") "Citybus Route Interchange Discount" else "城巴路線轉乘優惠",
+        title = "城巴路線轉乘優惠" withEn "Citybus Route Interchange Discount",
         co = Operator.CTB,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.citybus.com.hk/concession/${if (Shared.language == "en") "en" else "tc"}/route/${route.routeNumber}"
+        importance = RouteNoticeImportance.NORMAL,
+        url = "https://www.citybus.com.hk/concession/tc/route/${route.routeNumber}" withEn "https://www.citybus.com.hk/concession/en/route/${route.routeNumber}"
     )
 }
 
 fun kmbRouteInfo(route: Route): RouteNoticeExternal {
     return RouteNoticeExternal(
-        title = if (Shared.language == "en") "KMB Route Info" else "九巴路線資訊",
+        title = "九巴路線資訊" withEn "KMB Route Info",
         co = Operator.KMB,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://search.kmb.hk/KMBWebSite/?action=routesearch&route=${route.routeNumber}&lang=${if (Shared.language == "en") "en" else "zh-hk"}"
+        importance = RouteNoticeImportance.NORMAL,
+        url = "https://search.kmb.hk/KMBWebSite/?action=routesearch&route=${route.routeNumber}&lang=zh-hk" withEn "https://search.kmb.hk/KMBWebSite/?action=routesearch&route=${route.routeNumber}&lang=en"
     )
 }
 
 fun ctbRouteInfo(route: Route): RouteNoticeExternal {
     return RouteNoticeExternal(
-        title = if (Shared.language == "en") "Citybus Route Info" else "城巴路線資訊",
+        title = "城巴路線資訊" withEn "Citybus Route Info",
         co = Operator.CTB,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://mobile.citybus.com.hk/nwp3/?f=1&ds=${route.routeNumber}&dsmode=1&l=${if (Shared.language == "en") 1 else 0}",
+        importance = RouteNoticeImportance.NORMAL,
+        url = "https://mobile.citybus.com.hk/nwp3/?f=1&ds=${route.routeNumber}&dsmode=1&l=0" withEn "https://mobile.citybus.com.hk/nwp3/?f=1&ds=${route.routeNumber}&dsmode=1&l=1",
         possibleTwoWaySectionFareInfo = true
     )
 }
 
 fun nlbRouteInfo(route: Route): RouteNoticeExternal {
     return RouteNoticeExternal(
-        title = if (Shared.language == "en") "NLB Route Info" else "嶼巴路線資訊",
+        title = "嶼巴路線資訊" withEn "NLB Route Info",
         co = Operator.NLB,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.nlb.com.hk/route/detail/${route.nlbId}",
+        importance = RouteNoticeImportance.NORMAL,
+        url = "https://www.nlb.com.hk/route/detail/${route.nlbId}".asBilingualText(),
         possibleTwoWaySectionFareInfo = true
     )
 }
 
 fun gmbRouteInfo(route: Route): RouteNoticeExternal {
     return RouteNoticeExternal(
-        title = if (Shared.language == "en") "GMB Route Info" else "專線小巴路線資訊",
+        title = "專線小巴路線資訊" withEn "GMB Route Info",
         co = Operator.GMB,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.16seats.net/${if (Shared.language === "en") "eng" else "chi"}/gmb/g${route.gmbRegion?.name?.take(1)?.lowercase()}_${route.routeNumber.lowercase()}.html"
+        importance = RouteNoticeImportance.NORMAL,
+        url = "https://www.16seats.net/chi/gmb/g${route.gmbRegion?.name?.take(1)?.lowercase()}_${route.routeNumber.lowercase()}.html" withEn "https://www.16seats.net/eng/gmb/g${route.gmbRegion?.name?.take(1)?.lowercase()}_${route.routeNumber.lowercase()}.html"
     )
 }
 
 fun mtrBusRouteInfo(route: Route): RouteNoticeExternal {
     return RouteNoticeExternal(
-        title = if (Shared.language == "en") "MTR Bus Route Info" else "港鐵巴士路線資訊",
+        title = "港鐵巴士路線資訊" withEn "MTR Bus Route Info",
         co = Operator.MTR_BUS,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.mtr.com.hk/${if (Shared.language === "en") "en" else "ch"}/customer/services/searchBusRouteDetails.php?routeID=${route.routeNumber}"
+        importance = RouteNoticeImportance.NORMAL,
+        url = "https://www.mtr.com.hk/ch/customer/services/searchBusRouteDetails.php?routeID=${route.routeNumber}" withEn "https://www.mtr.com.hk/en/customer/services/searchBusRouteDetails.php?routeID=${route.routeNumber}"
     )
 }
 
-val lrtRouteInfo: RouteNoticeExternal get() {
-    return RouteNoticeExternal(
-        title = if (Shared.language == "en") "Light Rail Route Info" else "輕鐵路線資訊",
-        co = Operator.LRT,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.mtr.com.hk/${if (Shared.language === "en") "en" else "ch"}/customer/services/schedule_index.html"
-    )
-}
+val lrtRouteInfo: RouteNoticeExternal = RouteNoticeExternal(
+    title = "輕鐵路線資訊" withEn "Light Rail Route Info",
+    co = Operator.LRT,
+    importance = RouteNoticeImportance.NORMAL,
+    url = "https://www.mtr.com.hk/ch/customer/services/schedule_index.html" withEn "https://www.mtr.com.hk/en/customer/services/schedule_index.html"
+)
 
-val mtrRouteInfo: RouteNoticeExternal get() {
-    return RouteNoticeExternal(
-        title = if (Shared.language == "en") "MTR Route Info" else "港鐵路線資訊",
-        co = Operator.MTR,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.mtr.com.hk/${if (Shared.language === "en") "en" else "ch"}/customer/services/train_service_index.html"
-    )
-}
+val mtrRouteInfo: RouteNoticeExternal = RouteNoticeExternal(
+    title = "港鐵路線資訊" withEn "MTR Route Info",
+    co = Operator.MTR,
+    importance = RouteNoticeImportance.NORMAL,
+    url = "https://www.mtr.com.hk/ch/customer/services/train_service_index.html" withEn "https://www.mtr.com.hk/en/customer/services/train_service_index.html"
+)
 
-val sunFerryInfo: RouteNoticeExternal get() {
-    return RouteNoticeExternal(
-        title = if (Shared.language == "en") "Sun Ferry Info" else "新渡輪資訊",
-        co = Operator.SUNFERRY,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.sunferry.com.hk/${if (Shared.language === "en") "en" else "zh"}/route-and-fare"
-    )
-}
+val sunFerryInfo: RouteNoticeExternal = RouteNoticeExternal(
+    title = "新渡輪資訊" withEn "Sun Ferry Info",
+    co = Operator.SUNFERRY,
+    importance = RouteNoticeImportance.NORMAL,
+    url = "https://www.sunferry.com.hk/zh/route-and-fare" withEn "https://www.sunferry.com.hk/en/route-and-fare"
+)
 
-val hkkfInfo: RouteNoticeExternal get() {
-    return RouteNoticeExternal(
-        title = if (Shared.language == "en") "Hong Kong and Kowloon Ferry Info" else "港九小輪資訊",
-        co = Operator.HKKF,
-        important = RouteNoticeImportance.NORMAL,
-        url = if (Shared.language == "en") "https://hkkf.com.hk/en/timetables/" else "https://hkkf.com.hk/%e8%88%aa%e7%8f%ad%e8%b3%87%e8%a8%8a/"
-    )
-}
+val hkkfInfo: RouteNoticeExternal = RouteNoticeExternal(
+    title = "港九小輪資訊" withEn "Hong Kong and Kowloon Ferry Info",
+    co = Operator.HKKF,
+    importance = RouteNoticeImportance.NORMAL,
+    url = "https://hkkf.com.hk/%e8%88%aa%e7%8f%ad%e8%b3%87%e8%a8%8a/" withEn "https://hkkf.com.hk/en/timetables/"
+)
 
-val fortuneFerryInfo: RouteNoticeExternal get() {
-    return RouteNoticeExternal(
-        title = if (Shared.language == "en") "Fortune Ferry Info" else "富裕小輪資訊",
-        co = Operator.FORTUNEFERRY,
-        important = RouteNoticeImportance.NORMAL,
-        url = "https://www.fortuneferry.com.hk/${if (Shared.language === "en") "en" else "zh"}/route-and-fare"
-    )
-}
+val fortuneFerryInfo: RouteNoticeExternal = RouteNoticeExternal(
+    title = "富裕小輪資訊" withEn "Fortune Ferry Info",
+    co = Operator.FORTUNEFERRY,
+    importance = RouteNoticeImportance.NORMAL,
+    url = "https://www.fortuneferry.com.hk/zh/route-and-fare" withEn "https://www.fortuneferry.com.hk/en/route-and-fare"
+)
 
 private val operatorNoticeDefaults: Map<Operator, Route.(MutableList<RouteNotice>) -> Unit> = buildMap {
     this[Operator.KMB] = {
@@ -321,14 +314,19 @@ fun TrafficNewsEntry.getOperators(): Set<Operator> {
     }
 }
 
-fun TrafficNewsEntry.getTitle(): String {
-    return (if (Shared.language == "en") incidentDetailEN else incidentDetailCN)
-        .takeIf { it.isNotBlank() }?: if (Shared.language == "en") incidentHeadingEN else incidentHeadingCN
+fun TrafficNewsEntry.getTitle(): BilingualText {
+    return BilingualText(
+        zh = incidentDetailCN.takeIf { it.isNotBlank() }?: incidentHeadingCN,
+        en = incidentDetailEN.takeIf { it.isNotBlank() }?: incidentHeadingEN
+    )
 }
 
-fun TrafficNewsEntry.getBody(instance: AppContext): String {
+fun TrafficNewsEntry.getBody(instance: AppContext): BilingualText {
     val time = instance.formatDateTime(LocalDateTime.parse(announcementDate), true)
-    return "${if (Shared.language == "en") contentEN else contentCN}\n\n${if (Shared.language == "en") "Last Updated" else "更新時間"}: $time"
+    return BilingualText(
+        zh = "$contentCN\n\n更新時間: $time",
+        en = "$contentEN\n\nLast Updated: $time"
+    )
 }
 
 fun SpecialTrafficNewsEntry.getOperators(): Set<Operator> {
@@ -347,12 +345,14 @@ fun SpecialTrafficNewsEntry.getOperators(): Set<Operator> {
     }
 }
 
-fun SpecialTrafficNewsEntry.getTitle(): String {
-    return (if (Shared.language == "en") engText else chinText)
-        .split("\\R".toRegex()).firstOrNull()?: if (Shared.language == "en") "Special Arrangement" else "特別安排"
+fun SpecialTrafficNewsEntry.getTitle(): BilingualText {
+    return BilingualText(
+        zh = chinText.split("\\R".toRegex()).firstOrNull()?: "特別安排",
+        en = engText.split("\\R".toRegex()).firstOrNull()?: "Special Arrangement"
+    )
 }
 
-fun SpecialTrafficNewsEntry.getBody(instance: AppContext): String {
+fun SpecialTrafficNewsEntry.getBody(instance: AppContext): BilingualText {
     val parts = "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2}) (.{2}) ([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2})".toRegex().matchEntire(referenceDate.trim())
     val time = if (parts?.groupValues?.size != 8) {
         referenceDate
@@ -373,7 +373,10 @@ fun SpecialTrafficNewsEntry.getBody(instance: AppContext): String {
             referenceDate
         }
     }
-    return "${if (Shared.language == "en") engText else chinText}\n\n${if (Shared.language == "en") "Last Updated" else "更新時間"}: $time"
+    return BilingualText(
+        zh = "$chinText\n\n更新時間: $time",
+        en = "$engText\n\nLast Updated: $time"
+    )
 }
 
 private val ctbNoticePattern = "onclick=\\\"javascript:window\\.open\\('([^']+)'\\).*?<br>(.*?)</td>".toRegex()
@@ -385,47 +388,56 @@ private val operatorNoticeFetchers: Map<Operator, suspend Route.(MutableList<Rou
         for ((index, obj) in notices.withIndex()) {
             val notice = obj.jsonObject
             val url = "https://search.kmb.hk/KMBWebSite/AnnouncementPicture.ashx?url=${notice.optString("kpi_noticeimageurl")}"
-            val title = notice.optString(if (Shared.language == "en") "kpi_title" else "kpi_title_chi")
+            val titleZh = notice.optString("kpi_title_chi")
+            val titleEn = notice.optString("kpi_title")
             list.add(RouteNoticeExternal(
-                title = title,
+                title = titleZh withEn titleEn,
                 co = Operator.KMB,
-                important = RouteNoticeImportance.IMPORTANT,
-                url = url,
+                importance = RouteNoticeImportance.IMPORTANT,
+                url = url.asBilingualText(),
                 sort = index,
-                possibleTwoWaySectionFareInfo = title.lowercase().contains("section fare") || title.contains("分段收費")
+                possibleTwoWaySectionFareInfo = titleEn.lowercase().contains("section fare") || titleZh.contains("分段收費")
             ))
         }
     }
     this[Operator.CTB] = { list ->
-        val data = getTextResponse("https://mobile.citybus.com.hk/nwp3/getnotice.php?id=${routeNumber}&l=${if (Shared.language == "en") 1 else 0}")!!.string()
-        for ((index, match) in ctbNoticePattern.findAll(data.remove("\\n|\\t".toRegex())).withIndex()) {
+        val dataZh = getTextResponse("https://mobile.citybus.com.hk/nwp3/getnotice.php?id=${routeNumber}&l=0")!!.string()
+        val dataEn = getTextResponse("https://mobile.citybus.com.hk/nwp3/getnotice.php?id=${routeNumber}&l=1")!!.string()
+        val matchesZh = ctbNoticePattern.findAll(dataZh.remove("\\n|\\t".toRegex())).toList()
+        val matchesEn = ctbNoticePattern.findAll(dataEn.remove("\\n|\\t".toRegex())).toList()
+        for ((index, matchZh) in matchesZh.withIndex()) {
+            val matchEn = matchesEn.getOrNull(index)
             list.add(RouteNoticeExternal(
-                title = match.groupValues[2],
+                title = matchZh.groupValues[2] withEn (matchEn?.groupValues[2]?: matchZh.groupValues[2]),
                 co = Operator.CTB,
-                important = RouteNoticeImportance.IMPORTANT,
-                url = match.groupValues[1],
+                importance = RouteNoticeImportance.IMPORTANT,
+                url = matchZh.groupValues[1] withEn (matchEn?.groupValues[1]?: matchZh.groupValues[1]),
                 sort = index
             ))
         }
     }
     this[Operator.LRT] = { list ->
         val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
-        data.optString("red_alert_message_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.let { title ->
-            data.optString("red_alert_url_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.also { url ->
-                list.add(RouteNoticeExternal(
-                    title = title,
+        val titleZh = data.optString("red_alert_message_ch").ifBlank { null }
+        val titleEn = data.optString("red_alert_message_en").ifBlank { null }
+        val urlZh = data.optString("red_alert_url_ch").ifBlank { null }
+        val urlEn = data.optString("red_alert_url_en").ifBlank { null }
+        if (titleZh != null && titleEn != null) {
+            if (urlZh == null || urlEn == null) {
+                list.add(RouteNoticeText(
+                    title = titleZh withEn titleEn,
                     co = Operator.LRT,
-                    important = RouteNoticeImportance.IMPORTANT,
-                    url = url,
+                    importance = RouteNoticeImportance.IMPORTANT,
+                    content = "".asBilingualText(),
+                    isRealTitle = true,
                     sort = 0
                 ))
-            }?: run {
-                list.add(RouteNoticeText(
-                    title = title,
+            } else {
+                list.add(RouteNoticeExternal(
+                    title = titleZh withEn titleEn,
                     co = Operator.LRT,
-                    important = RouteNoticeImportance.IMPORTANT,
-                    content = "",
-                    isRealTitle = true,
+                    importance = RouteNoticeImportance.IMPORTANT,
+                    url = urlZh withEn urlEn,
                     sort = 0
                 ))
             }

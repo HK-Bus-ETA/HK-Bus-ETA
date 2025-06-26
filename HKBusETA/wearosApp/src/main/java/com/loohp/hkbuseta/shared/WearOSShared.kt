@@ -62,6 +62,8 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.ktx.messaging
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.appContext
@@ -265,7 +267,7 @@ object WearOSShared {
 
     fun registryNotificationChannel(context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = NotificationChannel(
+        val alightReminderChannel = NotificationChannel(
             "alight_reminder_channel",
             context.resources.getString(R.string.alight_reminder_channel_name),
             NotificationManager.IMPORTANCE_HIGH
@@ -273,7 +275,20 @@ object WearOSShared {
             enableVibration(true)
             enableLights(true)
         }
-        notificationManager.createNotificationChannel(channel)
+        notificationManager.createNotificationChannel(alightReminderChannel)
+
+        val generalChannel = NotificationChannel(
+            "general_channel",
+            context.resources.getString(R.string.general_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            enableVibration(true)
+            enableLights(true)
+        }
+        notificationManager.createNotificationChannel(generalChannel)
+
+        Firebase.messaging.subscribeToTopic("General")
+        Firebase.messaging.subscribeToTopic("Refresh")
     }
 
 }

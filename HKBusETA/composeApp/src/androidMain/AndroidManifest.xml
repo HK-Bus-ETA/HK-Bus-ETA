@@ -127,6 +127,20 @@
             android:exported="false">
         </service>
 
+        <service
+            android:name=".MainFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+            <meta-data
+                android:name="com.google.firebase.messaging.default_notification_icon"
+                android:resource="@mipmap/icon_max" />
+            <meta-data
+                android:name="com.google.firebase.messaging.default_notification_channel_id"
+                android:value="general_channel" />
+        </service>
+
         <receiver android:name=".background.WorkManagerStartReceiver"
             android:exported="true">
             <intent-filter>

@@ -9,11 +9,13 @@ import SwiftUI
 import shared
 import Gzip
 import FirebaseCore
+import FirebaseMessaging
+import UserNotifications
 import WidgetKit
 import WatchKit
 import WatchConnectivity
 
-class ApplicationDelegate: NSObject, WKApplicationDelegate, WCSessionDelegate {
+class ApplicationDelegate: NSObject, WKApplicationDelegate, WCSessionDelegate, UNUserNotificationCenterDelegate {
     
     override init() {
         super.init()
@@ -30,6 +32,14 @@ class ApplicationDelegate: NSObject, WKApplicationDelegate, WCSessionDelegate {
     
     func applicationDidFinishLaunching() {
         FirebaseApp.configure()
+        
+        UNUserNotificationCenter.current().delegate = self
+        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: authOptions,
+            completionHandler: { _, _ in }
+        )
+        WKApplication.shared().registerForRemoteNotifications()
     }
     
     func session(_ session: WCSession, didReceiveMessage payload: [String: Any]) {
@@ -42,6 +52,27 @@ class ApplicationDelegate: NSObject, WKApplicationDelegate, WCSessionDelegate {
     
     func session(_ session: WCSession, didReceiveApplicationContext payload: [String : Any]) {
         handleDataFromPhone(payload: payload)
+    }
+    
+    func didRegisterForRemoteNotifications(withDeviceToken deviceToken: Data) {
+        print("Registered for Apple Remote Notifications")
+        Messaging.messaging().setAPNSToken(deviceToken, type: .unknown)
+        
+        Messaging.messaging().subscribe(toTopic: "General") { error in
+            print("Subscribed to General")
+        }
+        Messaging.messaging().subscribe(toTopic: "Refresh") { error in
+            print("Subscribed to Refresh")
+        }
+    }
+    
+    func didReceiveRemoteNotification(_ userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (WKBackgroundFetchResult) -> Void) {
+        print("\(userInfo)")
+        if let action = userInfo["action"] as? String, action == "Refresh" {
+            AppContextWatchOSKt.runDailyUpdate { completionHandler(.newData) }
+        } else {
+            completionHandler(.newData)
+        }
     }
     
 }

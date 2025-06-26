@@ -30,6 +30,7 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.objects.AlertNotification
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.FavouriteResolvedStop
@@ -56,13 +57,16 @@ import com.loohp.hkbuseta.common.objects.getMtrLineName
 import com.loohp.hkbuseta.common.objects.getMtrLineSortingIndex
 import com.loohp.hkbuseta.common.objects.getRouteKey
 import com.loohp.hkbuseta.common.objects.isFerry
+import com.loohp.hkbuseta.common.objects.isInterested
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.putExtra
 import com.loohp.hkbuseta.common.objects.resolveStop
 import com.loohp.hkbuseta.common.objects.uniqueKey
+import com.loohp.hkbuseta.common.objects.url
 import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.SmallSize
@@ -539,6 +543,21 @@ object Shared {
             } else {
                 orElse.invoke()
             }
+        }
+    }
+
+    suspend fun handleAlertRemoteNotification(payload: String, context: AppContext) {
+        try {
+            val registry = Registry.getInstanceNoUpdateCheck(context)
+            while (registry.state.value.isProcessing) {
+                delay(10)
+            }
+            val notification = JsonIgnoreUnknownKeys.decodeFromString<AlertNotification>(payload)
+            if (notification.isInterested()) {
+                context.sendLocalNotification(notification.id, "alert_channel", notification.title[language], notification.content[language], notification.url[language])
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 

@@ -109,12 +109,17 @@ import platform.Foundation.NSURL
 import platform.Foundation.create
 import platform.Foundation.currentLocale
 import platform.Foundation.writeToURL
+import platform.UserNotifications.UNMutableNotificationContent
+import platform.UserNotifications.UNNotificationRequest
+import platform.UserNotifications.UNUserNotificationCenter
 import platform.WatchConnectivity.WCSession
 import platform.WatchKit.WKHapticType
 import platform.WatchKit.WKInterfaceDevice
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 import platform.posix.memcpy
+import platform.posix.sleep
+import platform.posix.usleep
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -358,6 +363,21 @@ open class AppContextWatchOS internal constructor() : AppContext {
         //do nothing
     }
 
+    override fun sendLocalNotification(id: Int, channel: String, title: String, content: String, url: String) {
+        val notificationContent = UNMutableNotificationContent()
+        notificationContent.setTitle(title)
+        notificationContent.setBody(content)
+        notificationContent.setUserInfo(mapOf("url" to url))
+
+        val request = UNNotificationRequest.requestWithIdentifier(
+            identifier = "Standard_$id",
+            content = notificationContent,
+            trigger = null
+        )
+
+        UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request) { /* do nothing */ }
+    }
+
     override fun removeAppShortcut(id: String) {
         //do nothing
     }
@@ -504,6 +524,16 @@ fun isNewInstall(context: AppContext): Boolean {
 
 fun invalidateCache(context: AppContext) {
     runBlocking { Shared.invalidateCache(context) }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+fun runDailyUpdate(onComplete: () -> Unit) {
+    val registry = Registry.getInstance(applicationContext)
+    while (registry.state.value.isProcessing) {
+        usleep(100000.convert())
+    }
+    sleep(2.convert())
+    onComplete.invoke()
 }
 
 val remoteAlightReminderService: MutableNullableStateFlow<AlightReminderRemoteData> = MutableNullableStateFlow(null)

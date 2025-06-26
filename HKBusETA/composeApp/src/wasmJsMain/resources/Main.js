@@ -265,3 +265,15 @@ function getLocation(position, error) {
         error(false);
     }
 }
+
+function showNotification(title, content) {
+    if (!("Notification" in window)) {
+        return;
+    }
+    Notification.requestPermission().then((result) => {
+        if (permission === "granted") {
+            const img = "icon-512.png";
+            const notification = new Notification(title, { body: content, icon: img });
+        }
+    });
+}

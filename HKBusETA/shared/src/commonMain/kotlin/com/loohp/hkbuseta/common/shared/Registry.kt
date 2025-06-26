@@ -75,6 +75,7 @@ import com.loohp.hkbuseta.common.objects.TrainServiceStatus
 import com.loohp.hkbuseta.common.objects.TrainServiceStatusMessage
 import com.loohp.hkbuseta.common.objects.TrainServiceStatusMessageStatus
 import com.loohp.hkbuseta.common.objects.TrainServiceStatusType
+import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.calculateServiceTimeCategory
 import com.loohp.hkbuseta.common.objects.defaultOperatorNotices
@@ -1966,22 +1967,26 @@ class Registry {
                         when {
                             co.contains(Operator.LRT) -> {
                                 val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
-                                data.optString("red_alert_message_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.let { title ->
-                                    data.optString("red_alert_url_${if (Shared.language == "en") "en" else "ch"}").ifBlank { null }?.also { url ->
-                                        add(RouteNoticeExternal(
-                                            title = title,
+                                val titleZh = data.optString("red_alert_message_ch").ifBlank { null }
+                                val titleEn = data.optString("red_alert_message_en").ifBlank { null }
+                                val urlZh = data.optString("red_alert_url_ch").ifBlank { null }
+                                val urlEn = data.optString("red_alert_url_en").ifBlank { null }
+                                if (titleZh != null && titleEn != null) {
+                                    if (urlZh == null || urlEn == null) {
+                                        add(RouteNoticeText(
+                                            title = titleZh withEn titleEn,
                                             co = Operator.LRT,
-                                            important = RouteNoticeImportance.IMPORTANT,
-                                            url = url,
+                                            importance = RouteNoticeImportance.IMPORTANT,
+                                            content = "".asBilingualText(),
+                                            isRealTitle = true,
                                             sort = 0
                                         ))
-                                    }?: run {
-                                        add(RouteNoticeText(
-                                            title = title,
+                                    } else {
+                                        add(RouteNoticeExternal(
+                                            title = titleZh withEn titleEn,
                                             co = Operator.LRT,
-                                            important = RouteNoticeImportance.IMPORTANT,
-                                            content = "",
-                                            isRealTitle = true,
+                                            importance = RouteNoticeImportance.IMPORTANT,
+                                            url = urlZh withEn urlEn,
                                             sort = 0
                                         ))
                                     }
@@ -2001,7 +2006,7 @@ class Registry {
                                     title = news.getTitle(),
                                     co = null,
                                     isRealTitle = true,
-                                    important = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
+                                    importance = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
                                     content = news.getBody(context)
                                 ))
                             }
@@ -2019,7 +2024,7 @@ class Registry {
                                     title = news.getTitle(),
                                     co = null,
                                     isRealTitle = false,
-                                    important = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
+                                    importance = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
                                     content = news.getBody(context)
                                 ))
                             }
@@ -2051,7 +2056,7 @@ class Registry {
                                         title = news.getTitle(),
                                         co = null,
                                         isRealTitle = true,
-                                        important = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
+                                        importance = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
                                         content = news.getBody(context)
                                     ))
                                 }
@@ -2071,7 +2076,7 @@ class Registry {
                                         title = news.getTitle(),
                                         co = null,
                                         isRealTitle = false,
-                                        important = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
+                                        importance = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
                                         content = news.getBody(context)
                                     ))
                                 }

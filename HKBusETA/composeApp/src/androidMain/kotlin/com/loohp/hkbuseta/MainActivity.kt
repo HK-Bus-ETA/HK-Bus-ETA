@@ -22,7 +22,6 @@ package com.loohp.hkbuseta
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -33,6 +32,7 @@ import androidx.glance.appwidget.updateAll
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.ktx.messaging
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.componentActivityPaused
 import com.loohp.hkbuseta.appcontext.context
@@ -60,9 +60,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         firebaseAnalytics = Firebase.analytics
+
         setApplicationContext(applicationContext)
         setComponentActivity(this)
+
         AndroidShared.setDefaultExceptionHandler()
         AndroidShared.scheduleBackgroundUpdateService(this)
         Shared.provideBackgroundUpdateScheduler { c, t -> AndroidShared.scheduleBackgroundUpdateService(c.context, t) }
@@ -71,8 +74,9 @@ class MainActivity : ComponentActivity() {
                 FavouriteRoutesWidget.updateAll(this@MainActivity)
             }
         }
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = NotificationChannel(
+
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val alightReminderChannel = NotificationChannel(
             "alight_reminder_channel",
             resources.getString(R.string.alight_reminder_channel_name),
             NotificationManager.IMPORTANCE_HIGH
@@ -80,8 +84,34 @@ class MainActivity : ComponentActivity() {
             enableVibration(true)
             enableLights(true)
         }
-        notificationManager.createNotificationChannel(channel)
+        notificationManager.createNotificationChannel(alightReminderChannel)
+
+        val alertChannel = NotificationChannel(
+            "alert_channel",
+            resources.getString(R.string.alert_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            enableVibration(true)
+            enableLights(true)
+        }
+        notificationManager.createNotificationChannel(alertChannel)
+
+        val generalChannel = NotificationChannel(
+            "general_channel",
+            resources.getString(R.string.general_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            enableVibration(true)
+            enableLights(true)
+        }
+        notificationManager.createNotificationChannel(generalChannel)
+
+        Firebase.messaging.subscribeToTopic("Alert")
+        Firebase.messaging.subscribeToTopic("General")
+        Firebase.messaging.subscribeToTopic("Refresh")
+
         enableEdgeToEdge()
+
         setContent {
             App()
         }

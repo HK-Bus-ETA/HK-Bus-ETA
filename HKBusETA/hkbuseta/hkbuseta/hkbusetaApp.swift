@@ -13,8 +13,6 @@ import ComposeApp
 import Gzip
 import FirebaseCore
 import FirebaseAnalytics
-import FirebaseFirestore
-import FirebaseAuth
 import FirebaseMessaging
 import UserNotifications
 import BackgroundTasks
@@ -40,15 +38,6 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate, U
         let configuration = UISceneConfiguration(name: connectingSceneSession.configuration.name, sessionRole: connectingSceneSession.role)
         configuration.delegateClass = SceneDelegate.self
         return configuration
-    }
-    
-    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        print("Registered for Apple Remote Notifications")
-        Messaging.messaging().setAPNSToken(deviceToken, type: .unknown)
-        
-        Messaging.messaging().subscribe(toTopic: "RouteStopLive") { error in
-            print("Subscribed to RouteStopLive")
-        }
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
@@ -79,12 +68,44 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate, U
         return true
     }
     
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        print("Registered for Apple Remote Notifications")
+        Messaging.messaging().setAPNSToken(deviceToken, type: .unknown)
+        
+        Messaging.messaging().subscribe(toTopic: "Alert") { error in
+            print("Subscribed to Alert")
+        }
+        Messaging.messaging().subscribe(toTopic: "General") { error in
+            print("Subscribed to General")
+        }
+        Messaging.messaging().subscribe(toTopic: "Refresh") { error in
+            print("Subscribed to Refresh")
+        }
+    }
+    
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         print("\(userInfo)")
         if let action = userInfo["action"] as? String, action == "RouteStopLive" {
             AppContextCompose_iosKt.triggerUpdateRouteStopETA()
+            completionHandler(.newData)
+        } else if let action = userInfo["action"] as? String, action == "Alert", let payload = userInfo["data"] as? String {
+            AppContextCompose_iosKt.handleAlertRemoteNotification(payload: payload)
+            completionHandler(.newData)
+        } else if let action = userInfo["action"] as? String, action == "Refresh" {
+            AppContextCompose_iosKt.runDailyUpdate { completionHandler(.newData) }
+        } else {
+            completionHandler(.newData)
         }
-        completionHandler(.newData)
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        guard
+            let urlString = response.notification.request.content.userInfo["url"] as? String,
+            let url = URL(string: urlString)
+        else {
+            return
+        }
+        await UIApplication.shared.open(url)
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
@@ -99,6 +120,10 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate, U
             if #available(iOS 17, *) {
                 if routeStopEtaLiveActivity != nil {
                     await routeStopEtaLiveActivity!.end(dismissalPolicy: .immediate)
+                    do {
+                        try await Messaging.messaging().unsubscribe(fromTopic: "RouteStopLive")
+                    } catch {
+                    }
                 }
             }
             semaphore.signal()
@@ -378,6 +403,11 @@ struct hkbusetaApp: App {
                     if let activity = routeStopEtaLiveActivity {
                         Task {
                             await activity.end(dismissalPolicy: .immediate)
+                            routeStopEtaLiveActivity = nil
+                            do {
+                                try await Messaging.messaging().unsubscribe(fromTopic: "RouteStopLive")
+                            } catch {
+                            }
                         }
                     }
                 } else {
@@ -394,6 +424,9 @@ struct hkbusetaApp: App {
                                     attributes: RouteStopETALiveActivityAttributes(),
                                     content: .init(state: initialState, staleDate: nil),
                                     pushType: nil)
+                                Messaging.messaging().subscribe(toTopic: "RouteStopLive") { error in
+                                    print("Subscribed to RouteStopLive")
+                                }
                             } catch {
                                 print(error)
                             }

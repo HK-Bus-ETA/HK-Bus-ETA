@@ -23,6 +23,8 @@
     <string name="favourite_routes_widget_name">Favourite Route Stops</string>
     <string name="favourite_routes_widget_description">Shows you your favourite route stops right on your home screen.</string>
     <string name="alight_reminder_channel_name">Alight Reminder Notifications</string>
+    <string name="alert_channel_name">Transit Alert Notifications</string>
+    <string name="general_channel_name">General Notifications</string>
     <string name="send_to_watch_label">Open on Watch</string>
     <string name="send_no_watch">Unable to connect to watch</string>
     <string name="send_failed">Failed to connect to watch</string>

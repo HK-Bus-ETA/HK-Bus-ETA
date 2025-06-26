@@ -31,6 +31,8 @@ render.experimental.xml
 .DS_Store
 *.xcuserstate
 
+**firebase-adminsdk**
+
 CURRENT
 HKBusETA/composeApp/hkbuseta-kcef
 HKBusETA/composeApp/hkbuseta-data
@@ -47,3 +49,5 @@ secrets.properties
 **/release
 
 **/JourneyPlanner*
+
+HKBusETA/notificationserver/data

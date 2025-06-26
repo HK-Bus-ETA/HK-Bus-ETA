@@ -607,11 +607,11 @@ fun RouteMapSearchInterface(
                             .graphicsLayer { translationY = offset.toPx() },
                         onClick = if (statusNotice.isPdf) ({
                             instance.startActivity(AppIntent(instance, AppScreen.PDF).apply {
-                                putExtra("title", statusNotice.title)
-                                putExtra("url", statusNotice.url)
+                                putExtra("title", statusNotice.title[Shared.language])
+                                putExtra("url", statusNotice.url[Shared.language])
                             })
                         }) else {
-                            instance.handleWebpages(statusNotice.url, false, LocalHapticFeedback.current.common)
+                            instance.handleWebpages(statusNotice.url[Shared.language], false, LocalHapticFeedback.current.common)
                         },
                     ) {
                         Row(
@@ -623,7 +623,7 @@ fun RouteMapSearchInterface(
                             Column {
                                 PlatformText(
                                     fontSize = 17.sp,
-                                    text = statusNotice.title,
+                                    text = statusNotice.title[Shared.language],
                                     fontWeight = FontWeight.Bold
                                 )
                                 when {

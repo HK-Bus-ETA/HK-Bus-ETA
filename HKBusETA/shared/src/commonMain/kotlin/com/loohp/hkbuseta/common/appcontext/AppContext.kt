@@ -128,6 +128,8 @@ interface AppContext {
 
     fun setAppShortcut(id: String, shortLabel: String, longLabel: String, icon: AppShortcutIcon, tint: Long? = null, rank: Int, url: String)
 
+    fun sendLocalNotification(id: Int, channel: String, title: String, content: String, url: String)
+
     fun removeAppShortcut(id: String)
 
     suspend fun <T> withHighBandwidthNetwork(block: suspend () -> T): T

@@ -22,4 +22,6 @@
     <string name="app_name">HK Bus ETA</string>
     <string name="route_stop_eta_tile_name">Favourite Route ETA</string>
     <string name="alight_reminder_channel_name">Alight Reminder Notifications</string>
+    <string name="alert_channel_name">Transit Alert Notifications</string>
+    <string name="general_channel_name">General Notifications</string>
 </resources>

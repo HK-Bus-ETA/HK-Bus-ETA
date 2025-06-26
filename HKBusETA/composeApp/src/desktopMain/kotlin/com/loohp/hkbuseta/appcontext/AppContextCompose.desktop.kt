@@ -47,20 +47,8 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.jvm.javaio.copyTo
 import io.ktor.utils.io.jvm.javaio.toByteReadChannel
-import java.awt.Toolkit
-import java.awt.datatransfer.StringSelection
-import java.io.File
-import java.net.URI
-import java.text.DateFormat
-import java.text.SimpleDateFormat
-import java.time.format.DateTimeFormatter
 import javafx.application.Platform
 import javafx.stage.FileChooser
-import javax.swing.JOptionPane
-import javax.swing.filechooser.FileSystemView
-import kotlin.math.roundToInt
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -74,6 +62,23 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
+import org.jetbrains.compose.resources.InternalResourceApi
+import org.jetbrains.compose.resources.readResourceBytes
+import java.awt.SystemTray
+import java.awt.Toolkit
+import java.awt.TrayIcon
+import java.awt.TrayIcon.MessageType
+import java.awt.datatransfer.StringSelection
+import java.io.File
+import java.net.URI
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
+import javax.swing.JOptionPane
+import javax.swing.filechooser.FileSystemView
+import kotlin.math.roundToInt
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 private var versionImpl: () -> Triple<String, String, Long> = { Triple("Unknown", "Unknown", -1) }
@@ -224,6 +229,21 @@ open class AppContextComposeDesktop internal constructor() : AppContextCompose {
 
     override fun setAppShortcut(id: String, shortLabel: String, longLabel: String, icon: AppShortcutIcon, tint: Long?, rank: Int, url: String) {
         //do nothing
+    }
+
+    @OptIn(InternalResourceApi::class)
+    override fun sendLocalNotification(id: Int, channel: String, title: String, content: String, url: String) {
+        try {
+            val tray = SystemTray.getSystemTray()
+            val image = Toolkit.getDefaultToolkit().createImage(runBlocking { readResourceBytes("icon_full_smaller.png") })
+            val trayIcon = TrayIcon(image, "HK Bus ETA")
+            trayIcon.isImageAutoSize = true
+            trayIcon.toolTip = "HK Bus ETA"
+            tray.add(trayIcon)
+            trayIcon.displayMessage(title, content, MessageType.INFO)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
     }
 
     override fun removeAppShortcut(id: String) {

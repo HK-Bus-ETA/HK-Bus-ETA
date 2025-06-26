@@ -65,6 +65,7 @@ external fun readFile(callback: (String) -> Unit)
 external fun writeFile(fileName: String, fileContent: String)
 external fun logFirebase(name: String, keyValues: String)
 external fun shareUrlMenu(url: String, title: String?): Boolean
+external fun showNotification(title: String, content: String)
 
 
 private var versionImpl: () -> Triple<String, String, Long> = { Triple("Unknown", "Unknown", -1) }
@@ -190,6 +191,10 @@ open class AppContextComposeWeb internal constructor() : AppContextCompose {
 
     override fun setAppShortcut(id: String, shortLabel: String, longLabel: String, icon: AppShortcutIcon, tint: Long?, rank: Int, url: String) {
         //do nothing
+    }
+
+    override fun sendLocalNotification(id: Int, channel: String, title: String, content: String, url: String) {
+        showNotification(title, content)
     }
 
     override fun removeAppShortcut(id: String) {

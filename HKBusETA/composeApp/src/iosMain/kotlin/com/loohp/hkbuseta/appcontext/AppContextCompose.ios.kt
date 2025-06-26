@@ -110,6 +110,9 @@ import platform.UIKit.UINotificationFeedbackGenerator
 import platform.UIKit.UINotificationFeedbackType
 import platform.UIKit.UIScreen
 import platform.UIKit.shortcutItems
+import platform.UserNotifications.UNMutableNotificationContent
+import platform.UserNotifications.UNNotificationRequest
+import platform.UserNotifications.UNUserNotificationCenter
 import platform.WatchConnectivity.WCSession
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
@@ -386,6 +389,21 @@ open class AppContextComposeIOS internal constructor() : AppContextCompose {
         }
     }
 
+    override fun sendLocalNotification(id: Int, channel: String, title: String, content: String, url: String) {
+        val notificationContent = UNMutableNotificationContent()
+        notificationContent.setTitle(title)
+        notificationContent.setBody(content)
+        notificationContent.setUserInfo(mapOf("url" to url))
+
+        val request = UNNotificationRequest.requestWithIdentifier(
+            identifier = "Standard_$id",
+            content = notificationContent,
+            trigger = null
+        )
+
+        UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request) { /* do nothing */ }
+    }
+
     override fun removeAppShortcut(id: String) {
         val existingItems = UIApplication.sharedApplication.shortcutItems?: return
         UIApplication.sharedApplication.shortcutItems = existingItems.filterNot { (it as? UIApplicationShortcutItem)?.type == id }
@@ -655,4 +673,8 @@ fun terminateRouteStopETA() {
 
 fun triggerUpdateRouteStopETA() {
     runBlocking { RouteStopETALiveActivity.trigger() }
+}
+
+fun handleAlertRemoteNotification(payload: String) {
+    runBlocking { Shared.handleAlertRemoteNotification(payload, applicationAppContext) }
 }

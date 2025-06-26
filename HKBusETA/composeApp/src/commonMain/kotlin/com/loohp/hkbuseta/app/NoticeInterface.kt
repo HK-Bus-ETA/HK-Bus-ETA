@@ -140,18 +140,18 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                             onClick = when (notice) {
                                 is RouteNoticeExternal -> if (notice.isPdf) ({
                                     instance.startActivity(AppIntent(instance, AppScreen.PDF).apply {
-                                        putExtra("title", notice.title)
-                                        putExtra("url", notice.url)
+                                        putExtra("title", notice.title[Shared.language])
+                                        putExtra("url", notice.url[Shared.language])
                                     })
                                 }) else {
-                                    instance.handleWebpages(notice.url, false, haptic.common)
+                                    instance.handleWebpages(notice.url[Shared.language], false, haptic.common)
                                 }
-                                is RouteNoticeText -> ({ showNoticeText = notice.display })
+                                is RouteNoticeText -> ({ showNoticeText = notice.display[Shared.language] })
                             },
                             onLongClick = when (notice) {
                                 is RouteNoticeExternal -> ({
                                     scope.launch {
-                                        val result = copyToClipboard(notice.url)
+                                        val result = copyToClipboard(notice.url[Shared.language])
                                         instance.showToastText(if (result) {
                                             if (Shared.language == "en") "Copied to clipboard" else "已複製到剪貼簿"
                                         } else {
@@ -174,7 +174,7 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                         textAlign = TextAlign.Start,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        text = notice.title
+                        text = notice.title[Shared.language]
                     )
                     if (possibleBidirectionalSectionFare && notice.possibleTwoWaySectionFareInfo) {
                         PlatformIcon(
@@ -220,8 +220,8 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                         }
                         .clickable(
                             onClick = when (notice) {
-                                is RouteNoticeExternal -> instance.handleWebpages(notice.url, false, haptic.common)
-                                is RouteNoticeText -> { { showNoticeText = notice.display } }
+                                is RouteNoticeExternal -> instance.handleWebpages(notice.url[Shared.language], false, haptic.common)
+                                is RouteNoticeText -> { { showNoticeText = notice.display[Shared.language] } }
                             }
                         )
                         .fillMaxWidth()
@@ -234,7 +234,7 @@ fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNoti
                         textAlign = TextAlign.Start,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        text = notice.title
+                        text = notice.title[Shared.language]
                     )
                 }
                 HorizontalDivider()

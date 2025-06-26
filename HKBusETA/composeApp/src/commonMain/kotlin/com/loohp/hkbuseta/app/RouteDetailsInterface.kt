@@ -375,7 +375,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     var notices: List<RouteNotice>? by remember { mutableStateOf(null) }
     var ctbHasTwoWaySectionFare by remember { mutableStateOf(false) }
     val importantNoticeCount by remember { derivedStateOf { notices?.count { it.importance == RouteNoticeImportance.IMPORTANT }?: 0 } }
-    val possibleBidirectionalSectionFare by remember { derivedStateOf { co == Operator.NLB || ctbHasTwoWaySectionFare || notices?.any { it.title.lowercase().contains("section fare") || it.title.contains("分段收費") } == true } }
+    val possibleBidirectionalSectionFare by remember { derivedStateOf { co == Operator.NLB || ctbHasTwoWaySectionFare || notices?.any { it.title.en.lowercase().contains("section fare") || it.title.zh.contains("分段收費") } == true } }
 
     val alertCheckRoute by remember { derivedStateOf { route.route!!.getSpecialRouteAlerts(instance).contains(SpecialRouteAlerts.CheckRoute) } }
 

@@ -34,7 +34,7 @@ android {
         minSdk = 30
         //noinspection OldTargetApi
         targetSdk = 35
-        versionCode = 1105
+        versionCode = 1109
         versionName = "2.5.3"
         vectorDrawables {
             useSupportLibrary = true
@@ -117,4 +117,5 @@ dependencies {
     implementation(libs.horologist.compose.layout)
     implementation(project.dependencies.platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging)
 }
