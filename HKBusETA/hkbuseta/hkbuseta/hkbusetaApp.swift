@@ -113,7 +113,7 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate, U
         Task.detached {
             if #available(iOS 16.2, *) {
                 if alightReminderActivity != nil {
-                    let state = AlightReminderLiveActivityAttributes.ContentState(routeNumber: ":(", stopsRemaining: "X", titleLeading: ":(", titleTrailing: "香港巴士到站預報被終止", content: "HK Bus ETA was terminated", color: 0xFFFF4747, url: "https://app.hkbuseta.com")
+                    let state = AlightReminderLiveActivityAttributes.ContentState(routeNumber: ":(", stopsRemaining: "X", minimal: "X", titleLeading: ":(", titleTrailing: "香港巴士到站預報被終止", content: "HK Bus ETA was terminated", color: 0xFFFF4747, url: "https://app.hkbuseta.com")
                     await alightReminderActivity!.end(using: state, dismissalPolicy: .default)
                 }
             }
@@ -307,6 +307,7 @@ struct AlightReminderLiveActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         let routeNumber: String
         let stopsRemaining: String
+        let minimal: String
         let titleLeading: String
         let titleTrailing: String
         let content: String
@@ -320,6 +321,7 @@ struct RouteStopETALiveActivityAttributes: ActivityAttributes {
         let routeNumber: String
         let hasEta: Bool
         let eta: [String]
+        let minimal: String
         let destination: String
         let stop: String
         let color: Int64
@@ -413,13 +415,13 @@ struct hkbusetaApp: App {
                 } else {
                     if ActivityAuthorizationInfo().areActivitiesEnabled {
                         if let activity = routeStopEtaLiveActivity {
-                            let state = RouteStopETALiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, hasEta: data!.hasEta, eta: data!.eta, destination: data!.destination, stop: data!.stop, color: data!.color, url: data!.url)
+                            let state = RouteStopETALiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, hasEta: data!.hasEta, eta: data!.eta, minimal: data!.minimal, destination: data!.destination, stop: data!.stop, color: data!.color, url: data!.url)
                             Task {
                                 await activity.update(using: state)
                             }
                         } else {
                             do {
-                                let initialState = RouteStopETALiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, hasEta: data!.hasEta, eta: data!.eta, destination: data!.destination, stop: data!.stop, color: data!.color, url: data!.url)
+                                let initialState = RouteStopETALiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, hasEta: data!.hasEta, eta: data!.eta, minimal: data!.minimal, destination: data!.destination, stop: data!.stop, color: data!.color, url: data!.url)
                                 routeStopEtaLiveActivity = try Activity.request(
                                     attributes: RouteStopETALiveActivityAttributes(),
                                     content: .init(state: initialState, staleDate: nil),
@@ -449,7 +451,7 @@ struct hkbusetaApp: App {
                     if alightReminderActivity != nil {
                         let killed = data!.active == 2
                         if data != nil {
-                            let state = AlightReminderLiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, stopsRemaining: data!.stopsRemaining, titleLeading: data!.titleLeading, titleTrailing: data!.titleTrailing, content: data!.content, color: data!.color, url: data!.url)
+                            let state = AlightReminderLiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, stopsRemaining: data!.stopsRemaining, minimal: data!.minimal, titleLeading: data!.titleLeading, titleTrailing: data!.titleTrailing, content: data!.content, color: data!.color, url: data!.url)
                             let alertConfig = data!.state == alightReminderLastState || killed ? nil : AlertConfiguration(
                                 title: "\(data!.titleLeading) - \(data!.titleTrailing)",
                                 body: "\(data!.content)",
@@ -474,7 +476,7 @@ struct hkbusetaApp: App {
                     if ActivityAuthorizationInfo().areActivitiesEnabled {
                         if alightReminderActivity == nil {
                             do {
-                                let initialState = AlightReminderLiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, stopsRemaining: data!.stopsRemaining, titleLeading: data!.titleLeading, titleTrailing: data!.titleTrailing, content: data!.content, color: data!.color, url: data!.url)
+                                let initialState = AlightReminderLiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, stopsRemaining: data!.stopsRemaining, minimal: data!.minimal, titleLeading: data!.titleLeading, titleTrailing: data!.titleTrailing, content: data!.content, color: data!.color, url: data!.url)
 
                                 alightReminderActivity = try Activity.request(
                                     attributes: AlightReminderLiveActivityAttributes(),
@@ -490,7 +492,7 @@ struct hkbusetaApp: App {
                                 print(error)
                             }
                         } else {
-                            let state = AlightReminderLiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, stopsRemaining: data!.stopsRemaining, titleLeading: data!.titleLeading, titleTrailing: data!.titleTrailing, content: data!.content, color: data!.color, url: data!.url)
+                            let state = AlightReminderLiveActivityAttributes.ContentState(routeNumber: data!.routeNumber, stopsRemaining: data!.stopsRemaining, minimal: data!.minimal, titleLeading: data!.titleLeading, titleTrailing: data!.titleTrailing, content: data!.content, color: data!.color, url: data!.url)
                             let alertConfig = data!.state == alightReminderLastState ? nil : AlertConfiguration(
                                 title: "\(data!.titleLeading) - \(data!.titleTrailing)",
                                 body: "\(data!.content)",

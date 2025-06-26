@@ -56,6 +56,7 @@ data class RouteStopETAData(
     val routeNumber: String,
     val hasEta: Boolean,
     val eta: List<String>,
+    val minimal: String,
     val destination: String,
     val stop: String,
     val color: Long,
@@ -104,6 +105,7 @@ object RouteStopETALiveActivity {
                 routeNumber = selected.co.getDisplayRouteNumber(selected.route.routeNumber, shortened = true),
                 hasEta = eta.nextScheduledBus in 0..59,
                 eta = eta.buildETAText(selected.context),
+                minimal = if (eta.nextScheduledBus <= 0) "-" else eta.nextScheduledBus.toString(),
                 destination = selected.route.resolvedDestWithBranch(
                     prependTo = true,
                     branch = selected.route,

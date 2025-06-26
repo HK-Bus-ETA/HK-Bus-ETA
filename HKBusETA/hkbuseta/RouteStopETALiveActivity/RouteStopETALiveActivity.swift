@@ -14,6 +14,7 @@ struct RouteStopETALiveActivityAttributes: ActivityAttributes {
         let routeNumber: String
         let hasEta: Bool
         let eta: [String]
+        let minimal: String
         let destination: String
         let stop: String
         let color: Int64
@@ -117,19 +118,10 @@ struct RouteStopETALiveActivity: Widget {
                     Image(systemName: "clock")
                 }
             } minimal: {
-                HStack(spacing: 2) {
-                    Text(context.state.routeNumber)
-                        .bold()
-                        .multilineTextAlignment(.leading)
-                        .foregroundStyle(context.state.color.asColor().isLight() ? .black : .white)
-                        .padding(1)
-                        .background(context.state.color.asColor())
-                        .cornerRadius(5)
-                    if context.state.hasEta {
-                        Text(context.state.eta[0]).bold().multilineTextAlignment(.trailing)
-                    } else {
-                        Image(systemName: "clock")
-                    }
+                if context.state.hasEta {
+                    Text(context.state.minimal).bold().multilineTextAlignment(.trailing)
+                } else {
+                    Image(systemName: "clock")
                 }
             }
             .widgetURL(URL(string: context.state.url))

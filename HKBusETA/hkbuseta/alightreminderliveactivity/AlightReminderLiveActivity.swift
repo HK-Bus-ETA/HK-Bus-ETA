@@ -13,6 +13,7 @@ struct AlightReminderLiveActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         let routeNumber: String
         let stopsRemaining: String
+        let minimal: String
         let titleLeading: String
         let titleTrailing: String
         let content: String
@@ -73,16 +74,7 @@ struct AlightReminderLiveActivity: Widget {
             } compactTrailing: {
                 Text(context.state.stopsRemaining).bold().multilineTextAlignment(.trailing)
             } minimal: {
-                HStack(spacing: 2) {
-                    Text(context.state.routeNumber)
-                        .bold()
-                        .multilineTextAlignment(.leading)
-                        .foregroundStyle(context.state.color.asColor().isLight() ? .black : .white)
-                        .padding(1)
-                        .background(context.state.color.asColor())
-                        .cornerRadius(5)
-                    Text(context.state.stopsRemaining).bold().multilineTextAlignment(.trailing)
-                }
+                Text(context.state.minimal).bold().multilineTextAlignment(.trailing)
             }
             .widgetURL(URL(string: context.state.url))
             .keylineTint(context.state.color.asColor())
