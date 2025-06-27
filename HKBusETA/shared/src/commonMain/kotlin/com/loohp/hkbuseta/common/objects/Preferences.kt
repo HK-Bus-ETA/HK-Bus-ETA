@@ -56,6 +56,7 @@ class Preferences(
     var viewFavTab: Int,
     var disableMarquee: Boolean,
     var disableBoldDest: Boolean,
+    var receiveAlerts: Boolean,
     var historyEnabled: Boolean,
     var showRouteMap: Boolean,
     var downloadSplash: Boolean,
@@ -82,6 +83,7 @@ class Preferences(
             val viewFavTab = json.optInt("viewFavTab", 0)
             val disableMarquee = json.optBoolean("disableMarquee", false)
             val disableBoldDest = json.optBoolean("disableBoldDest", false)
+            val receiveAlerts = json.optBoolean("receiveAlerts", false)
             val historyEnabled = json.optBoolean("historyEnabled", true)
             val showRouteMap = json.optBoolean("showRouteMap", true)
             val downloadSplash = json.optBoolean("downloadSplash", true)
@@ -104,7 +106,7 @@ class Preferences(
             val lastLookupRoutes = ConcurrentMutableList<LastLookupRoute>().apply { addAll(json.optJsonArray("lastLookupRoutes")!!.mapToMutableList { if (it is JsonObject) (if (it.containsKey("routeKey")) LastLookupRoute.deserialize(it) else null) else LastLookupRoute.fromLegacy(it.jsonPrimitive.content) }.filterNotNull()) }
             val etaTileConfigurations = ConcurrentMutableMap<Int, List<Int>>().apply { if (json.contains("etaTileConfigurations")) putAll(json.optJsonObject("etaTileConfigurations")!!.mapToMutableMap<Int, List<Int>>({ it.toInt() }) { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.int } }) }
             val routeSortModePreference = ConcurrentMutableMap<RouteListType, RouteSortPreference>().apply { if (json.contains("routeSortModePreference")) putAll(json.optJsonObject("routeSortModePreference")!!.mapToMutableMap({ RouteListType.valueOf(it) }, { if (it is JsonPrimitive) RouteSortPreference.fromLegacy(it) else RouteSortPreference.deserialize(it.jsonObject) })) }
-            return Preferences(referenceChecksum, lastSaved, language, etaDisplayMode, lrtDirectionMode, theme, color, viewFavTab, disableMarquee, disableBoldDest, historyEnabled, showRouteMap, downloadSplash, alternateStopName, lastNearbyLocation, disableNavBarQuickActions, favouriteStops, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
+            return Preferences(referenceChecksum, lastSaved, language, etaDisplayMode, lrtDirectionMode, theme, color, viewFavTab, disableMarquee, disableBoldDest, receiveAlerts, historyEnabled, showRouteMap, downloadSplash, alternateStopName, lastNearbyLocation, disableNavBarQuickActions, favouriteStops, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
         }
 
         fun createDefault(): Preferences {
@@ -119,6 +121,7 @@ class Preferences(
                 viewFavTab = 0,
                 disableMarquee = false,
                 disableBoldDest = false,
+                receiveAlerts = false,
                 historyEnabled = true,
                 showRouteMap = true,
                 downloadSplash = true,
@@ -146,6 +149,7 @@ class Preferences(
             this.viewFavTab = preferences.viewFavTab
             this.disableMarquee = preferences.disableMarquee
             this.disableBoldDest = preferences.disableBoldDest
+            this.receiveAlerts = preferences.receiveAlerts
             this.historyEnabled = preferences.historyEnabled
             this.showRouteMap = preferences.showRouteMap
             this.downloadSplash = preferences.downloadSplash
@@ -174,6 +178,7 @@ class Preferences(
             put("viewFavTab", viewFavTab)
             put("disableMarquee", disableMarquee)
             put("disableBoldDest", disableBoldDest)
+            put("receiveAlerts", receiveAlerts)
             put("historyEnabled", historyEnabled)
             put("showRouteMap", showRouteMap)
             put("downloadSplash", downloadSplash)
@@ -203,6 +208,7 @@ class Preferences(
         if (disableMarquee != other.disableMarquee) return false
         if (historyEnabled != other.historyEnabled) return false
         if (disableBoldDest != other.disableBoldDest) return false
+        if (receiveAlerts != other.receiveAlerts) return false
         if (showRouteMap != other.showRouteMap) return false
         if (downloadSplash != other.downloadSplash) return false
         if (alternateStopName != other.alternateStopName) return false
@@ -226,6 +232,7 @@ class Preferences(
         result = 31 * result + viewFavTab
         result = 31 * result + disableMarquee.hashCode()
         result = 31 * result + disableBoldDest.hashCode()
+        result = 31 * result + receiveAlerts.hashCode()
         result = 31 * result + historyEnabled.hashCode()
         result = 31 * result + showRouteMap.hashCode()
         result = 31 * result + downloadSplash.hashCode()

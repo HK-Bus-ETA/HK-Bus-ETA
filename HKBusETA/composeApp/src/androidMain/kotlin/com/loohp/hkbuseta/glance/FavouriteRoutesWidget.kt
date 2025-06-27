@@ -362,7 +362,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                     route.resolvedDest(false, instance)
                 }[Shared.language]
                 val isNightRoute = co.isBus && calculateServiceTimeCategory(routeNumber, co) {
-                    Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).getServiceTimeCategory()
+                    Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance, false).getServiceTimeCategory()
                 } == ServiceTimeCategory.NIGHT
                 val secondLine = if (route.stopInfo != null) {
                     val stopName = if (kmbCtbJoint && alternateStopNamesShowing) {

@@ -1081,11 +1081,7 @@ fun RouteRow(
     val gmbRegion = route.route!!.gmbRegion
     val secondLineCoColor = co.getColor(routeNumber, Color.White).adjustBrightness(if (Shared.theme.isDarkMode) 1F else 0.7F)
     val localContentColor = LocalContentColor.current
-    val isNightRoute = co.isBus && remember(route, routeNumber, co) {
-        calculateServiceTimeCategory(routeNumber, co) {
-            Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).getServiceTimeCategory()
-        } == ServiceTimeCategory.NIGHT
-    }
+    var isNightRoute by remember { mutableStateOf(false) }
     val secondLine = remember(route, co, kmbCtbJoint, routeNumber, dest, secondLineCoColor, listType, localContentColor, alternateStopNamesShowing) { buildList {
         if (listType == RouteListType.RECENT) {
             add(instance.formatDateTime((Shared.findLookupRouteTime(route.routeKey)?: 0).toLocalDateTime(), true).asAnnotatedString(SpanStyle(color = localContentColor.adjustAlpha(0.6F))))
@@ -1135,6 +1131,18 @@ fun RouteRow(
             CoroutineScope(Dispatchers.IO).launch {
                 val alerts = route.getSpecialRouteAlerts(instance)
                 withContext(Dispatchers.Main) { specialRouteAlerts = alerts }
+            }
+        }
+    }
+    LaunchedEffect (route, routeNumber, co) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val nightRoute = co.isBus && calculateServiceTimeCategory(routeNumber, co) {
+                Registry.getInstance(instance)
+                    .getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion)
+                    .createTimetable(instance, false).getServiceTimeCategory()
+            } == ServiceTimeCategory.NIGHT
+            withContext(Dispatchers.Main) {
+                isNightRoute = nightRoute
             }
         }
     }

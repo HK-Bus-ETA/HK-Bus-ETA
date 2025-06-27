@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +73,7 @@ import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.checkLocationPermission
+import com.loohp.hkbuseta.utils.checkNotificationPermission
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.scaledSize
@@ -81,6 +83,9 @@ import com.loohp.hkbuseta.utils.sp
 @Composable
 fun HKBusETAApp(instance: AppActiveContext) {
     HKBusETATheme {
+        LaunchedEffect (Unit) {
+            checkNotificationPermission(instance, true)
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()

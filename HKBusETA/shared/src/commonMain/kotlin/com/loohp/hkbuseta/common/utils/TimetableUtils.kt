@@ -611,15 +611,17 @@ inline fun buildTimetableEntryMap(
     builder: (TimetableEntryMapBuilder).() -> Unit
 ): RouteTimetable = TimetableEntryMapBuilder(defaultRoute, noTimetableText).apply(builder).build()
 
-fun Collection<Route>.createTimetable(context: AppContext): RouteTimetable {
+fun Collection<Route>.createTimetable(context: AppContext, resolveSpecialRemark: Boolean = true): RouteTimetable {
     val registry = Registry.getInstance(context)
     val route = first()
     return createTimetable(
         serviceDayMap = registry.getServiceDayMap(),
         noTimetableText = registry.getRouteRemarks()[route.co.firstCo()!!]?.get(route.routeNumber),
-        resolveSpecialRemark = {
+        resolveSpecialRemark = if (resolveSpecialRemark) ({
             it.resolveSpecialRemark(context).takeIf { r -> r.isNotBlank() }
-        }
+        }) else ({
+            null
+        })
     )
 }
 

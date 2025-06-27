@@ -203,6 +203,7 @@ import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
+import com.loohp.hkbuseta.utils.checkNotificationPermission
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.clearColors
 import com.loohp.hkbuseta.utils.dp
@@ -366,9 +367,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val co by remember { derivedStateOf { route.co } }
     val bound by remember { derivedStateOf { route.route!!.idBound(co) } }
     val gmbRegion by remember { derivedStateOf { route.route!!.gmbRegion } }
-    val isNightRoute by remember { derivedStateOf { co.isBus && calculateServiceTimeCategory(routeNumber, co) {
-        Registry.getInstance(instance).getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion).createTimetable(instance).getServiceTimeCategory()
-    } == ServiceTimeCategory.NIGHT } }
+    var isNightRoute by remember { mutableStateOf(false) }
     val rawColor by remember { derivedStateOf { co.getColor(routeNumber, Color.White) } }
     val color by ComposeShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { route.route!!.isKmbCtbJoint })
 
@@ -444,6 +443,21 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                 trafficSnapshotsLoading = false
             }
         }
+    }
+    LaunchedEffect (route, routeNumber, co) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val nightRoute = co.isBus && calculateServiceTimeCategory(routeNumber, co) {
+                Registry.getInstance(instance)
+                    .getAllBranchRoutes(routeNumber, route.route!!.idBound(co), co, gmbRegion)
+                    .createTimetable(instance, false).getServiceTimeCategory()
+            } == ServiceTimeCategory.NIGHT
+            withContext(Dispatchers.Main) {
+                isNightRoute = nightRoute
+            }
+        }
+    }
+    LaunchedEffect (Unit) {
+        checkNotificationPermission(instance, true) { /* do nothing */ }
     }
 
     instance.compose.setStatusNavBarColor(

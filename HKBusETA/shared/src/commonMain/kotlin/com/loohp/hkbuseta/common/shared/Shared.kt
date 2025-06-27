@@ -285,6 +285,7 @@ object Shared {
     var lastNearbyLocation: RadiusCenterPosition? = null
     var disableNavBarQuickActions = false
     var disableBoldDest = false
+    var receiveAlerts = false
 
     val alternateStopNamesShowingState: MutableNonNullStateFlow<Boolean> = MutableStateFlow(false).wrap()
 
@@ -552,9 +553,11 @@ object Shared {
             while (registry.state.value.isProcessing) {
                 delay(10)
             }
-            val notification = JsonIgnoreUnknownKeys.decodeFromString<AlertNotification>(payload)
-            if (notification.isInterested()) {
-                context.sendLocalNotification(notification.id, "alert_channel", notification.title[language], notification.content[language], notification.url[language])
+            if (receiveAlerts) {
+                val notification = JsonIgnoreUnknownKeys.decodeFromString<AlertNotification>(payload)
+                if (notification.isInterested()) {
+                    context.sendLocalNotification(notification.id, "alert_channel", notification.title[language], notification.content[language], notification.url[language])
+                }
             }
         } catch (e: Throwable) {
             e.printStackTrace()

@@ -422,6 +422,7 @@ class Registry {
         Shared.color = PREFERENCES!!.color
         Shared.disableMarquee = PREFERENCES!!.disableMarquee
         Shared.disableBoldDest = PREFERENCES!!.disableBoldDest
+        Shared.receiveAlerts = PREFERENCES!!.receiveAlerts
         Shared.historyEnabled = PREFERENCES!!.historyEnabled
         Shared.showRouteMap = PREFERENCES!!.showRouteMap
         Shared.downloadSplash = PREFERENCES!!.downloadSplash
@@ -558,6 +559,12 @@ class Registry {
     fun setDisableBoldDest(disableBoldDest: Boolean, context: AppContext) {
         Shared.disableBoldDest = disableBoldDest
         PREFERENCES!!.disableBoldDest = disableBoldDest
+        savePreferences(context)
+    }
+
+    fun setReceiveAlerts(receiveAlerts: Boolean, context: AppContext) {
+        Shared.receiveAlerts = receiveAlerts
+        PREFERENCES!!.receiveAlerts = receiveAlerts
         savePreferences(context)
     }
 
@@ -812,6 +819,7 @@ class Registry {
         Shared.lastNearbyLocation = PREFERENCES!!.lastNearbyLocation
         Shared.disableMarquee = PREFERENCES!!.disableMarquee
         Shared.disableBoldDest = PREFERENCES!!.disableBoldDest
+        Shared.receiveAlerts = PREFERENCES!!.receiveAlerts
         Shared.historyEnabled = PREFERENCES!!.historyEnabled
         Shared.showRouteMap = PREFERENCES!!.showRouteMap
         Shared.disableNavBarQuickActions = PREFERENCES!!.disableNavBarQuickActions

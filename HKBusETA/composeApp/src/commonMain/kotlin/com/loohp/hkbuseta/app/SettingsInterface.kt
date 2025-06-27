@@ -95,6 +95,8 @@ import com.loohp.hkbuseta.compose.FormatBold
 import com.loohp.hkbuseta.compose.LightMode
 import com.loohp.hkbuseta.compose.Map
 import com.loohp.hkbuseta.compose.MobileFriendly
+import com.loohp.hkbuseta.compose.NotificationsActive
+import com.loohp.hkbuseta.compose.NotificationsOff
 import com.loohp.hkbuseta.compose.Palette
 import com.loohp.hkbuseta.compose.PhotoLibrary
 import com.loohp.hkbuseta.compose.PlatformAlertDialog
@@ -256,6 +258,20 @@ fun SettingsInterface(instance: AppActiveContext) {
                     ETADisplayMode.COUNTDOWN -> (if (Shared.language == "en") "Countdown" else "倒數時間").asAnnotatedString()
                     ETADisplayMode.CLOCK_TIME -> (if (Shared.language == "en") "Clock Time" else "時鐘時間").asAnnotatedString()
                     ETADisplayMode.CLOCK_TIME_WITH_COUNTDOWN -> (if (Shared.language == "en") "Clock Time + Countdown" else "時鐘+倒數時間").asAnnotatedString()
+                }
+            )
+            var receiveAlerts by remember { mutableStateOf(Shared.receiveAlerts) }
+            SettingsRow(
+                onClick = {
+                    Registry.getInstance(instance).setReceiveAlerts(!Shared.receiveAlerts, instance)
+                    receiveAlerts = Shared.receiveAlerts
+                },
+                icon = if (receiveAlerts) PlatformIcons.Outlined.NotificationsActive else PlatformIcons.Outlined.NotificationsOff,
+                text = (if (Shared.language == "en") "Receive Alerts for Favourite Routes" else "接收喜愛路線交通狀況通知").asAnnotatedString(),
+                subText = if (receiveAlerts) {
+                    (if (Shared.language == "en") "Enable Alert Notifications" else "已啟用").asAnnotatedString()
+                } else {
+                    (if (Shared.language == "en") "Disabled Alert Notifications" else "已停用").asAnnotatedString()
                 }
             )
             var disableMarquee by remember { mutableStateOf(Shared.disableMarquee) }

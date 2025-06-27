@@ -124,6 +124,7 @@ import com.loohp.hkbuseta.compose.rememberAutoResizeTextState
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
+import com.loohp.hkbuseta.utils.checkNotificationPermission
 import com.loohp.hkbuseta.utils.equivalentDp
 import com.loohp.hkbuseta.utils.keyChar
 import com.loohp.hkbuseta.utils.pixelsToDp
@@ -243,6 +244,9 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
         if (visible) {
             keyPressFocus.requestFocus()
         }
+    }
+    LaunchedEffect (Unit) {
+        checkNotificationPermission(instance, true) { /* do nothing */ }
     }
 
     AdaptiveTopBottomLayout(

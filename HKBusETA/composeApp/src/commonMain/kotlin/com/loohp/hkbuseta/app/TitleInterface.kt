@@ -102,6 +102,7 @@ import com.loohp.hkbuseta.compose.rememberAutoResizeTextState
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
+import com.loohp.hkbuseta.utils.checkNotificationPermission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -236,6 +237,9 @@ fun TitleInterface(instance: AppActiveContext) {
                 Splash.downloadMissingImages(instance)
             }
         }
+    }
+    LaunchedEffect (Unit) {
+        checkNotificationPermission(instance, true) { /* do nothing */ }
     }
 
     val autoFontSizeState = rememberAutoResizeTextState(
