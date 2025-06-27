@@ -4,6 +4,7 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.ANRouteId
 import com.loohp.hkbuseta.common.objects.ANRouteIdUrl
 import com.loohp.hkbuseta.common.objects.AlertNotification
+import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteNotice
@@ -20,7 +21,6 @@ import com.loohp.hkbuseta.common.objects.getDeepLink
 import com.loohp.hkbuseta.common.objects.getOperators
 import com.loohp.hkbuseta.common.objects.getTitle
 import com.loohp.hkbuseta.common.objects.lrtLineStatus
-import com.loohp.hkbuseta.common.objects.merge
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
 import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.BASE_URL
@@ -64,6 +64,25 @@ data class OperatorNotices(
     val notices: Set<RouteNotice>
 )
 
+data class AlertNotificationBuilder(
+    val id: Int,
+    val routes: List<ANRouteIdUrl>,
+    val title: BilingualText,
+    val content: BilingualText,
+    val contentUrl: BilingualText?,
+    val fallbackUrl: BilingualText,
+) {
+    fun toAlertNotification(): AlertNotification {
+        return AlertNotification(
+            id = id,
+            routes = routes,
+            title = title,
+            content = content,
+            fallbackUrl = fallbackUrl
+        )
+    }
+}
+
 private val executor = Executors.newFixedThreadPool(8)
 
 suspend fun checkNoticeUpdates(): List<AlertNotification> {
@@ -87,20 +106,21 @@ suspend fun checkNoticeUpdates(): List<AlertNotification> {
         delay(1000)
     }
     val previousSeenNotices = previousSeenNotices()
-    val notifications = mutableListOf<AlertNotification>()
+    val notifications = mutableListOf<AlertNotificationBuilder>()
     val now = currentLocalDateTime()
     val timeLabel = "(${now.hour.pad(2)}:${now.minute.pad(2)}) ".asBilingualText()
     if (previousSeenNotices != null) {
         for ((id, notices) in routeNotices) {
             val previousNotices = previousSeenNotices.routeNoticesMapView[id].orEmpty()
             for (notice in notices) {
-                if (previousNotices.none { it.title == notice.title } && notice.importance == RouteNoticeImportance.IMPORTANT) {
+                if (previousNotices.none { it isSimilarTo notice } && notice.importance == RouteNoticeImportance.IMPORTANT) {
                     val url = idToRoute[id]!!.getDeepLink(ServerAppContext, null, null).asBilingualText()
-                    val notification = AlertNotification(
+                    val notification = AlertNotificationBuilder(
                         id = Random.nextInt(),
                         routes = listOf(ANRouteIdUrl(id, url)),
                         title = timeLabel + notice.title,
                         content = (notice as? RouteNoticeText)?.content?: "".asBilingualText(),
+                        contentUrl = (notice as? RouteNoticeExternal)?.url?: "".asBilingualText(),
                         fallbackUrl = url
                     )
                     notifications.add(notification)
@@ -110,12 +130,13 @@ suspend fun checkNoticeUpdates(): List<AlertNotification> {
         for ((co, notices) in operatorNotices) {
             val previousNotices = previousSeenNotices.operatorNoticesMapView[co].orEmpty()
             for (notice in notices) {
-                if (previousNotices.none { it.title == notice.title } && notice.importance == RouteNoticeImportance.IMPORTANT) {
-                    val notification = AlertNotification(
+                if (previousNotices.none { it isSimilarTo notice } && notice.importance == RouteNoticeImportance.IMPORTANT) {
+                    val notification = AlertNotificationBuilder(
                         id = Random.nextInt(),
                         routes = emptyList(),
                         title = timeLabel + notice.title,
                         content = (notice as? RouteNoticeText)?.content?: "".asBilingualText(),
+                        contentUrl = (notice as? RouteNoticeExternal)?.url?: "".asBilingualText(),
                         fallbackUrl = BASE_URL.asBilingualText()
                     )
                     notifications.add(notification)
@@ -128,7 +149,7 @@ suspend fun checkNoticeUpdates(): List<AlertNotification> {
         operatorNotices = operatorNotices.map { (k, v) -> OperatorNotices(k, v) }
     )
     saveSeenNotices(seenNotices)
-    return notifications.merge()
+    return notifications.mergeToAlertNotifications()
 }
 
 suspend fun previousSeenNotices(): SeenNotices? {
@@ -145,6 +166,28 @@ suspend fun saveSeenNotices(seenNotices: SeenNotices) {
 }
 
 fun Route.toANRouteId(): ANRouteId = ANRouteId(routeNumber, co)
+
+fun Collection<AlertNotificationBuilder>.mergeToAlertNotifications(): List<AlertNotification> {
+    val grouped = groupBy { Triple(it.title, it.content, it.contentUrl) }
+    return grouped.values.map {
+        val first = it.first()
+        AlertNotification(
+            id = first.id,
+            routes = it.asSequence().flatMap { r -> r.routes }.distinctBy { r -> r.id }.toList(),
+            title = first.title,
+            content = first.content,
+            fallbackUrl = first.fallbackUrl
+        )
+    }
+}
+
+infix fun RouteNotice.isSimilarTo(other: RouteNotice): Boolean {
+    if (title != other.title) return false
+    if (this is RouteNoticeExternal && other is RouteNoticeExternal) {
+        if (url != other.url) return false
+    }
+    return true
+}
 
 suspend fun getOperatorNotices(co: Set<Operator>, context: AppContext): List<RouteNotice> {
     return buildList {

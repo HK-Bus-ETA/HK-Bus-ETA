@@ -49,17 +49,3 @@ val AlertNotification.url: BilingualText get() {
 fun AlertNotification.url(): Boolean {
     return routes.isEmpty() || Shared.favoriteRouteStops.value.any { g -> g.favouriteRouteStops.any { r -> routes.any { i -> i.id.matches(r.route) } } }
 }
-
-fun Collection<AlertNotification>.merge(): List<AlertNotification> {
-    val grouped = groupBy { it.title to it.content }
-    return grouped.values.map {
-        val first = it.first()
-        AlertNotification(
-            id = first.id,
-            routes = it.asSequence().flatMap { r -> r.routes }.distinctBy { r -> r.id }.toList(),
-            title = first.title,
-            content = first.content,
-            fallbackUrl = first.fallbackUrl
-        )
-    }
-}
