@@ -137,6 +137,7 @@ import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
+import com.loohp.hkbuseta.common.utils.debugLog
 import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
 import com.loohp.hkbuseta.common.utils.distinctBy
 import com.loohp.hkbuseta.common.utils.doRetry
@@ -2405,7 +2406,8 @@ class Registry {
         var kmbFirstScheduledBus = Long.MAX_VALUE
         coroutineScope {
             val kmbFuture = launch {
-                val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
+                val now = currentTimeMillis()
+                val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId?t=$now")
                 val buses = data!!.optJsonArray("data")!!
                 val stopSequences: MutableSet<Int> = HashSet()
                 for (u in 0 until buses.size) {
@@ -2693,6 +2695,7 @@ class Registry {
     }
 
     private suspend fun etaQueryKmb(typhoonInfo: TyphoonInfo, rawStopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext): ETAQueryResult {
+        val now = currentTimeMillis()
         val allStops = getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion, false)
         val stopData = allStops.first { it.stopId == rawStopId }
         val sameStops = allStops
@@ -2727,7 +2730,8 @@ class Registry {
         var suspendedMessage: ETALineEntry? = null
         for ((stopId, branchRemark) in stopIds) {
             val special = branchRemark.isNotEmpty()
-            val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId")
+            val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId?t=$now")
+            debugLog(data)
             val buses = data!!.optJsonArray("data")!!
             val stopSequences: MutableSet<Int> = HashSet()
             for (u in 0 until buses.size) {

@@ -181,6 +181,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
 import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.IO
+import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.MTRStopSectionData
 import com.loohp.hkbuseta.common.utils.Optional
@@ -301,6 +302,13 @@ import kotlinx.datetime.DateTimeUnit
 import org.jetbrains.compose.resources.painterResource
 
 
+@Immutable
+data class KeyedNextBusPosition(
+    val position: Registry.NextBusPosition,
+    val branch: Route,
+    val etaQueryOptions: Registry.EtaQueryOptions
+)
+
 enum class ListStopsInterfaceType(val showBranches: Boolean, val canChangeBranch: Boolean) {
     ETA(true, true),
     TIMES(false, false),
@@ -393,7 +401,7 @@ fun ListStopsEtaInterface(
 
     val etaResults = remember { ConcurrentMap<Int, Registry.ETAQueryResult>().asImmutableState() }
     val etaUpdateTimes = remember { ConcurrentMap<Int, Long>().asImmutableState() }
-    val nextBusPositions = remember { ConcurrentMap<Int, Optional<Registry.NextBusPosition>>().asImmutableState() }
+    val nextBusPositions = remember { ConcurrentMap<Int, Optional<KeyedNextBusPosition>>().asImmutableState() }
 
     val times: SnapshotStateMap<Int, Registry.TimeBetweenStopResult> = remember { mutableStateMapOf() }
     var timesStartIndex by timesStartIndexState
@@ -1123,7 +1131,7 @@ fun StopEntry(
     lrtDirectionModeState: MutableState<Boolean>,
     etaResultsState: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
-    nextBusPositionState: ImmutableState<out MutableMap<Int, Optional<Registry.NextBusPosition>>>,
+    nextBusPositionState: ImmutableState<out MutableMap<Int, Optional<KeyedNextBusPosition>>>,
     sheetTypeState: MutableState<BottomSheetType>,
     togglingAlightReminderState: MutableState<Boolean>,
     alternateStopNamesShowingState: MutableState<Boolean>,
@@ -1416,7 +1424,7 @@ fun StopEntryExpansion(
     lrtDirectionModeState: MutableState<Boolean>,
     etaResultsState: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
-    nextBusPositionState: ImmutableState<out MutableMap<Int, Optional<Registry.NextBusPosition>>>,
+    nextBusPositionState: ImmutableState<out MutableMap<Int, Optional<KeyedNextBusPosition>>>,
     sheetTypeState: MutableState<BottomSheetType>,
     togglingAlightReminderState: MutableState<Boolean>,
     trafficSnapshots: List<TrafficSnapshotPoint>?
@@ -1526,7 +1534,7 @@ fun StopEntryExpansionEta(
     lrtDirectionModeState: MutableState<Boolean>,
     etaResultsState: ImmutableState<out MutableMap<Int, Registry.ETAQueryResult>>,
     etaUpdateTimesState: ImmutableState<out MutableMap<Int, Long>>,
-    nextBusPositionState: ImmutableState<out MutableMap<Int, Optional<Registry.NextBusPosition>>>,
+    nextBusPositionState: ImmutableState<out MutableMap<Int, Optional<KeyedNextBusPosition>>>,
     sheetTypeState: MutableState<BottomSheetType>,
     togglingAlightReminderState: MutableState<Boolean>
 ) {
@@ -1552,33 +1560,44 @@ fun StopEntryExpansionEta(
 
     val alternateStopNameShowing by Shared.alternateStopNamesShowingState.collectAsStateMultiplatform()
 
-    var nextBusPosition by remember(selectedStop, selectedBranch) { mutableStateOf(nextBusPositions[selectedStop]?.value) }
+    var keyedNextBusPosition: KeyedNextBusPosition? by remember(selectedStop, selectedBranch) { mutableStateOf(null) }
 
     var sheetType by sheetTypeState
 
     val pipMode = rememberIsInPipMode(instance)
 
     LaunchedEffect (Unit) {
-        etaUpdateTimes[index]?.apply {
-            delay(etaUpdateTimes[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+        val previous = nextBusPositions[selectedStop]?.value
+        if (previous?.branch == selectedBranch && previous.etaQueryOptions == etaQueryOptions) {
+            val waitTime = etaUpdateTimes[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (currentTimeMillis() - it)).coerceAtLeast(0) }?: 0
+            if (waitTime > 1000) {
+                keyedNextBusPosition = previous
+            }
+            etaUpdateTimes[index]?.apply {
+                delay(waitTime)
+            }
         }
         while (true) {
-            nextBusPosition = if (co.isBus && stopData.branchIds.contains(selectedBranch)) {
+            val nextBusPosition = if (co.isBus && stopData.branchIds.contains(selectedBranch)) {
                 Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, selectedBranch, allStops, instance, etaQueryOptions).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             } else {
                 null
             }
-            nextBusPositions[selectedStop] = Optional(nextBusPosition)
+            val keyed = nextBusPosition?.let { KeyedNextBusPosition(it, selectedBranch, etaQueryOptions) }
+            keyedNextBusPosition = keyed
+            nextBusPositions[selectedStop] = Optional(keyed)
             delay(Shared.ETA_UPDATE_INTERVAL.toLong())
         }
     }
-    LaunchedEffect (selectedStop, selectedBranch, etaQueryOptions) {
-        nextBusPosition = if (co.isBus && stopData.branchIds.contains(selectedBranch)) {
+    LaunchedEffect (selectedBranch, etaQueryOptions) {
+        val nextBusPosition = if (co.isBus && stopData.branchIds.contains(selectedBranch)) {
             Registry.getInstance(instance).findNextBusPosition(stopData.stopId, index, co, selectedBranch, allStops, instance, etaQueryOptions).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
         } else {
             null
         }
-        nextBusPositions[selectedStop] = Optional(nextBusPosition)
+        val keyed = nextBusPosition?.let { KeyedNextBusPosition(it, selectedBranch, etaQueryOptions) }
+        keyedNextBusPosition = keyed
+        nextBusPositions[selectedStop] = Optional(keyed)
     }
 
     Column(
@@ -1640,7 +1659,7 @@ fun StopEntryExpansionEta(
                 )
             }
             if (co.isBus) {
-                val nextBusText = nextBusPosition.getDisplayText(
+                val nextBusText = keyedNextBusPosition?.position.getDisplayText(
                     allStops = allStops,
                     alternateStopNames = alternateStopNames.value,
                     alternateStopNamesShowing = alternateStopNameShowing && isKmbCtbJoint,

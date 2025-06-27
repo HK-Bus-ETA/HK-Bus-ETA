@@ -6,6 +6,7 @@ class WebMap {
         this.mapElement.id = this.mapId;
         this.mapElement.style.display = "none";
         this.mapElement.style.position = "absolute";
+        this.mapElement.classList.add("prevent-select");
         document.body.appendChild(this.mapElement);
 
         this.map = L.map(this.mapId).setView([22.2906812,114.1732862], 13);

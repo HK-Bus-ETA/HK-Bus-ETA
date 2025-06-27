@@ -248,3 +248,9 @@ body {
 .leaflet-dark-theme.leaflet-control-zoom {
     filter: brightness(0.6) invert(1) contrast(3);
 }
+
+.prevent-select {
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}

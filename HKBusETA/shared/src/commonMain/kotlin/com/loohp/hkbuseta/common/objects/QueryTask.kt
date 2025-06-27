@@ -50,7 +50,7 @@ open class QueryTask<T>(
                 callback.invoke(withTimeout(unit.duration.times(timeout).inWholeMilliseconds) { deferred.await() })
             } catch (e: Exception) {
                 e.printStackTrace()
-                try { deferred.cancel() } catch (ignore: Throwable) { }
+                try { deferred.cancel() } catch (_: Throwable) { }
                 callback.invoke(errorResult)
             }
         }

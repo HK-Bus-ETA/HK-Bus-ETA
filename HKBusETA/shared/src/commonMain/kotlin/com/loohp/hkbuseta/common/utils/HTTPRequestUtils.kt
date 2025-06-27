@@ -40,7 +40,6 @@ import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.KtorDsl
 import io.ktor.utils.io.charsets.Charsets
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import nl.adaptivity.xmlutil.serialization.XML
