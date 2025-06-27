@@ -81,6 +81,7 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate, U
         Messaging.messaging().subscribe(toTopic: "Refresh") { error in
             print("Subscribed to Refresh")
         }
+        Messaging.messaging().unsubscribe(fromTopic: "RouteStopLive")
     }
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
