@@ -32,7 +32,7 @@ class StateFlowObservable<T: AnyObject>: ObservableObject {
             return
         }
         stateWatcher = stateFlow.watch { [weak self] state in
-            DispatchQueue.main.async {
+            Task.detached { @MainActor in
                 self?.state = state
             }
         }
@@ -81,7 +81,7 @@ class StateFlowNullableObservable<T: AnyObject>: ObservableObject {
             return
         }
         stateWatcher = stateFlow.watch { [weak self] state in
-            DispatchQueue.main.async {
+            Task.detached { @MainActor in
                 self?.state = state.value
             }
         }
@@ -130,7 +130,7 @@ class StateFlowListObservable<T: AnyObject>: ObservableObject {
             return
         }
         stateWatcher = stateFlow.watch { [weak self] state in
-            DispatchQueue.main.async {
+            Task.detached { @MainActor in
                 self?.state = state as! [T]
             }
         }

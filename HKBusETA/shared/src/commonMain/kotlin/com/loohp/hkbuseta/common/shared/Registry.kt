@@ -2731,7 +2731,6 @@ class Registry {
         for ((stopId, branchRemark) in stopIds) {
             val special = branchRemark.isNotEmpty()
             val data = getJSONResponse<JsonObject>("https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/$stopId?t=$now")
-            debugLog(data)
             val buses = data!!.optJsonArray("data")!!
             val stopSequences: MutableSet<Int> = HashSet()
             for (u in 0 until buses.size) {

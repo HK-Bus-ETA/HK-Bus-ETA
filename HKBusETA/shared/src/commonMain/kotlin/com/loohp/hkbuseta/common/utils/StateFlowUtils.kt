@@ -23,6 +23,7 @@ package com.loohp.hkbuseta.common.utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +65,7 @@ class MutableNonNullStateFlowList<T>(
     }
 }
 
+@OptIn(ExperimentalForInheritanceCoroutinesApi::class)
 open class MutableNonNullStateFlow<T: Any>(
     internal val handle: MutableStateFlow<T>
 ): MutableStateFlow<T> {
