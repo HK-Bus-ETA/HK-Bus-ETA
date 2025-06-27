@@ -71,7 +71,7 @@ fun main() {
         Shared.ETA_UPDATE_INTERVAL.toLong()
     )
 
-    Timer().scheduleAtFixedRate(
+    Timer().schedule(
         TimerTask {
             runBlocking {
                 println("Checking notice updates")

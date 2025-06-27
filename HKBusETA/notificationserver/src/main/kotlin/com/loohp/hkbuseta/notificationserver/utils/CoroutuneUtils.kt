@@ -16,7 +16,7 @@ suspend inline fun awaitUntil(
 }
 
 suspend inline fun <T> retryUntil(
-    retry: Long = 2000,
+    retry: Long = 10000,
     maxTries: Int = 50,
     block: () -> T,
     predicate: (T) -> Boolean,
