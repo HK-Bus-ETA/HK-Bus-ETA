@@ -611,7 +611,7 @@ inline fun buildTimetableEntryMap(
     builder: (TimetableEntryMapBuilder).() -> Unit
 ): RouteTimetable = TimetableEntryMapBuilder(defaultRoute, noTimetableText).apply(builder).build()
 
-fun Collection<Route>.createTimetable(context: AppContext, resolveSpecialRemark: Boolean = true): RouteTimetable {
+fun List<Route>.createTimetable(context: AppContext, resolveSpecialRemark: Boolean = true): RouteTimetable {
     val registry = Registry.getInstance(context)
     val route = first()
     return createTimetable(
@@ -625,19 +625,20 @@ fun Collection<Route>.createTimetable(context: AppContext, resolveSpecialRemark:
     )
 }
 
-fun Collection<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>, noTimetableText: BilingualText?, resolveSpecialRemark: (Route) -> BilingualText?): RouteTimetable {
-    return cache("createTimetable", this, serviceDayMap, resolveSpecialRemark) {
+fun List<Route>.createTimetable(serviceDayMap: Map<String, List<String>?>, noTimetableText: BilingualText?, resolveSpecialRemark: (Route) -> BilingualText?): RouteTimetable {
+    val remarks = map { resolveSpecialRemark.invoke(it) }
+    return cache("createTimetable", this, serviceDayMap, remarks) {
         buildTimetableEntryMap(first(), noTimetableText) {
-            forEach {
-                it.freq?.let { f ->
-                    val remark = resolveSpecialRemark.invoke(it)
+            forEachIndexed { index, route ->
+                route.freq?.let { f ->
+                    val specialRouteRemark = remarks[index]
                     f.forEach { (k, v) ->
                         val weekdays = OperatingWeekdays.fromBinaryStrings(serviceDayMap[k]!!)
                         val entries = v.map { (start, list) ->
                             if (list == null || start == list[0]) {
-                                TimetableSingleEntry(it, start.parseLocalTime(), remark)
+                                TimetableSingleEntry(route, start.parseLocalTime(), specialRouteRemark)
                             } else {
-                                TimetableIntervalEntry(it, start.parseLocalTime(), list[0].parseLocalTime(), list[1].parseInterval().asRange(), remark)
+                                TimetableIntervalEntry(route, start.parseLocalTime(), list[0].parseLocalTime(), list[1].parseInterval().asRange(), specialRouteRemark)
                             }
                         }
                         insert(weekdays, entries)
@@ -652,12 +653,12 @@ operator fun <T> Map<OperatingWeekdays, T>.get(week: DayOfWeek): T? {
     return asSequence().firstOrNull { it.key.contains(week) }?.value
 }
 
-fun Collection<Route>.isTimetableActive(time: LocalDateTime, context: AppContext): Boolean {
+fun List<Route>.isTimetableActive(time: LocalDateTime, context: AppContext): Boolean {
     val registry = Registry.getInstance(context)
     return isTimetableActive(time, registry.getServiceDayMap(), registry.getHolidays())
 }
 
-fun Collection<Route>.isTimetableActive(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>): Boolean {
+fun List<Route>.isTimetableActive(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>): Boolean {
     if (isEmpty()) throw IllegalArgumentException("Route list is empty")
     val timetable = createTimetable(serviceDayMap, null) { null }
     val compareMidnight = if (timetable.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight
@@ -667,13 +668,13 @@ fun Collection<Route>.isTimetableActive(time: LocalDateTime, serviceDayMap: Map<
     return entries.currentEntry(timetable.routeNumber, timetable.co, time, 60, (-jt)..60, 1).isNotEmpty()
 }
 
-fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): List<Route> {
+fun List<Route>.currentFirstActiveBranch(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): List<Route> {
     val registry = Registry.getInstance(context)
     val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.isNotBlank() } }) else ({ null })
     return currentFirstActiveBranch(time, registry.getServiceDayMap(), registry.getHolidays(), resolveRemark)
 }
 
-fun Collection<Route>.currentFirstActiveBranch(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): List<Route> {
+fun List<Route>.currentFirstActiveBranch(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): List<Route> {
     if (isEmpty()) throw IllegalArgumentException("Route list is empty")
     if (size == 1) return toList()
     val timetable = createTimetable(serviceDayMap, null, resolveSpecialRemark)
@@ -699,13 +700,13 @@ enum class RouteBranchStatus(
     NO_TIMETABLE(0)
 }
 
-fun Collection<Route>.currentBranchStatus(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): Map<Route, RouteBranchStatus> {
+fun List<Route>.currentBranchStatus(time: LocalDateTime, context: AppContext, resolveSpecialRemark: Boolean = true): Map<Route, RouteBranchStatus> {
     val registry = Registry.getInstance(context)
     val resolveRemark: (Route) -> BilingualText? = if (resolveSpecialRemark) ({ it.resolveSpecialRemark(context).takeIf { r -> r.isNotBlank() } }) else ({ null })
     return currentBranchStatus(time, registry.getServiceDayMap(), registry.getHolidays(), resolveRemark)
 }
 
-fun Collection<Route>.currentBranchStatus(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): Map<Route, RouteBranchStatus> {
+fun List<Route>.currentBranchStatus(time: LocalDateTime, serviceDayMap: Map<String, List<String>?>, holidays: Collection<LocalDate>, resolveSpecialRemark: (Route) -> BilingualText?): Map<Route, RouteBranchStatus> {
     if (isEmpty()) return emptyMap()
     val timetable = createTimetable(serviceDayMap, null, resolveSpecialRemark)
     val compareMidnight = if (timetable.getServiceTimeCategory().day) dayServiceMidnight else nightServiceMidnight

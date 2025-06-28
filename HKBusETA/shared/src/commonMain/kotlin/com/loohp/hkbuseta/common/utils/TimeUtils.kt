@@ -42,7 +42,7 @@ import kotlin.time.Duration.Companion.days
 
 expect val hongKongZoneId: String
 
-val hongKongTimeZone: TimeZone get() = TimeZone.of(hongKongZoneId)
+val hongKongTimeZone: TimeZone = TimeZone.of(hongKongZoneId)
 val secondsInDay: Int = 1.days.inWholeSeconds.toInt()
 
 private val weekdayNames = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
@@ -57,28 +57,31 @@ fun Int.toChineseWeekdayNumber(publicHolidays: Boolean = false): String {
     return value.toChineseNumber().let { if (value == 7) (if (publicHolidays) "日及公眾假期" else "日") else it }
 }
 
+fun currentInstant(): Instant {
+    return Clock.System.now()
+}
+
 val currentEpochSeconds: Long get() {
-    return Clock.System.now().epochSeconds
+    return currentInstant().epochSeconds
 }
 
 fun currentTimeMillis(): Long {
-    return Clock.System.now().toEpochMilliseconds()
+    return currentInstant().toEpochMilliseconds()
 }
 
 fun nextScheduledDataUpdateMillis(): Long {
-    val hongKongZone = hongKongTimeZone
-    val currentTime = Clock.System.now().toLocalDateTime(hongKongZone)
+    val currentTime = currentLocalDateTime()
     val today430 = LocalDateTime(currentTime.year, currentTime.month, currentTime.dayOfMonth, 4, 30)
-    val today430Milli = today430.toInstant(hongKongZone).toEpochMilliseconds()
+    val today430Milli = today430.toInstant(hongKongTimeZone).toEpochMilliseconds()
     return if (today430 > currentTime) today430Milli else today430Milli + 86400000
 }
 
 fun currentLocalDateTime(): LocalDateTime {
-    return Clock.System.now().toLocalDateTime(hongKongTimeZone)
+    return currentInstant().toLocalDateTime(hongKongTimeZone)
 }
 
 fun currentLocalDateTime(plusDuration: Duration): LocalDateTime {
-    return Clock.System.now().plus(plusDuration).toLocalDateTime(hongKongTimeZone)
+    return currentInstant().plus(plusDuration).toLocalDateTime(hongKongTimeZone)
 }
 
 val LocalDateTime.epochSeconds: Long get() {
@@ -104,18 +107,15 @@ fun LocalTime.previousLocalDateTimeBefore(before: LocalDateTime): LocalDateTime 
 }
 
 operator fun LocalDateTime.minus(other: LocalDateTime): Duration {
-    val hongKongZone = hongKongTimeZone
-    return this.toInstant(hongKongZone) - other.toInstant(hongKongZone)
+    return this.toInstant(hongKongTimeZone) - other.toInstant(hongKongTimeZone)
 }
 
 operator fun LocalDateTime.plus(duration: Duration): LocalDateTime {
-    val hongKongZone = hongKongTimeZone
-    return (toInstant(hongKongZone) + duration).toLocalDateTime(hongKongZone)
+    return (toInstant(hongKongTimeZone) + duration).toLocalDateTime(hongKongTimeZone)
 }
 
 operator fun LocalDateTime.minus(duration: Duration): LocalDateTime {
-    val hongKongZone = hongKongTimeZone
-    return (toInstant(hongKongZone) - duration).toLocalDateTime(hongKongZone)
+    return (toInstant(hongKongTimeZone) - duration).toLocalDateTime(hongKongTimeZone)
 }
 
 operator fun LocalTime.minus(earlierTime: LocalTime): Duration {
