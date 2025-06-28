@@ -27,30 +27,18 @@ import kotlinx.collections.immutable.ImmutableSet
 
 
 @Immutable
-data class ImmutableState<T>(val value: T) {
+data class ImmutableState<T>(val value: T)
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is ImmutableState<*>) return false
-
-        return value == other.value
-    }
-
-    override fun hashCode(): Int {
-        return value?.hashCode()?: 0
-    }
-}
-
-inline fun <T> T.asImmutableState(): ImmutableState<T> {
+inline fun <reified T> T.asImmutableState(): ImmutableState<T> {
     @Suppress("UNCHECKED_CAST")
-    return if (this is ImmutableState<*>) this as ImmutableState<T> else ImmutableState(this)
+    return if (this is ImmutableState<*> && value is T) this as ImmutableState<T> else ImmutableState(this)
 }
 
 @Immutable
 class DelegatedImmutableCollection<E>(collection: Collection<E>): ImmutableCollection<E>, Collection<E> by collection
 
 inline fun <T> Collection<T>.asImmutableCollection(): ImmutableCollection<T> {
-    return if (this is ImmutableCollection<T>) this else DelegatedImmutableCollection(this)
+    return (this as? ImmutableCollection<T>)?: DelegatedImmutableCollection(this)
 }
 
 @Immutable
@@ -59,7 +47,7 @@ class DelegatedImmutableList<E>(list: List<E>): ImmutableList<E>, List<E> by lis
 }
 
 inline fun <T> List<T>.asImmutableList(): ImmutableList<T> {
-    return if (this is ImmutableList<T>) this else DelegatedImmutableList(this)
+    return (this as? ImmutableList<T>)?: DelegatedImmutableList(this)
 }
 
 inline fun <E> buildImmutableList(builderAction: MutableList<E>.() -> Unit): ImmutableList<E> {
@@ -70,7 +58,7 @@ inline fun <E> buildImmutableList(builderAction: MutableList<E>.() -> Unit): Imm
 class DelegatedImmutableSet<E>(set: Set<E>): ImmutableSet<E>, Set<E> by set
 
 inline fun <T> Set<T>.asImmutableSet(): ImmutableSet<T> {
-    return if (this is ImmutableSet<T>) this else DelegatedImmutableSet(this)
+    return (this as? ImmutableSet<T>)?: DelegatedImmutableSet(this)
 }
 
 @Immutable
@@ -81,7 +69,7 @@ class DelegatedImmutableMap<K, V>(private val map: Map<K, V>): ImmutableMap<K, V
 }
 
 inline fun <K, V> Map<K, V>.asImmutableMap(): ImmutableMap<K, V> {
-    return if (this is ImmutableMap<K, V>) this else DelegatedImmutableMap(this)
+    return this as? ImmutableMap<K, V>?: DelegatedImmutableMap(this)
 }
 
 inline fun <K, V> buildImmutableMap(builderAction: MutableMap<K, V>.() -> Unit): ImmutableMap<K, V> {
