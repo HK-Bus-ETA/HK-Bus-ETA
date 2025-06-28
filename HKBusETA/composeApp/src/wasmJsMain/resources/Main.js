@@ -72,6 +72,10 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
+function isStandaloneApp() {
+    return window.matchMedia('(display-mode: standalone)').matches;
+}
+
 function shareUrlMenu(url, title) {
     if (navigator.share) {
         navigator.share({title: title, url: url});

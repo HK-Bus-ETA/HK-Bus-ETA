@@ -1,3 +1,3 @@
 isWasmSupported((wasmSupported) => {
-    setDownloadAppSheetVisible(isAppleDevice(), isMobileDevice() || !wasmSupported, undefined, wasmSupported);
+    setDownloadAppSheetVisible(isAppleDevice(), (isMobileDevice() && !isStandaloneApp()) || !wasmSupported, undefined, wasmSupported);
 });

@@ -56,6 +56,7 @@ external fun canDecodeGzip(): Boolean
 external fun decodeGzip(data: String, callback: (String) -> Unit)
 external fun isAppleDevice(): Boolean
 external fun isMobileDevice(): Boolean
+external fun isStandaloneApp(): Boolean
 external fun setDownloadAppSheetVisible(isApple: Boolean, visible: Boolean, forceDarkMode: Boolean, wasmSupported: Boolean)
 external fun isDownloadAppSheetVisible(): Boolean
 external fun isWasmSupported(callback: (Boolean) -> Unit)
