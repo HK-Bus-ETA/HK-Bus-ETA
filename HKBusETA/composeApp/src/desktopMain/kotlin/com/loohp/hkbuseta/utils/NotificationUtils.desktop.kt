@@ -25,3 +25,5 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 actual fun checkNotificationPermission(appContext: AppContext, askIfNotGranted: Boolean, callback: (Boolean) -> Unit) {
     callback.invoke(true)
 }
+
+actual fun canReceiveRemoteNotifications(appContext: AppContext): Boolean = false

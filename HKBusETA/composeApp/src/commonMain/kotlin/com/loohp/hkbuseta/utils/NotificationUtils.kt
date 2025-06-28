@@ -23,3 +23,5 @@ package com.loohp.hkbuseta.utils
 import com.loohp.hkbuseta.common.appcontext.AppContext
 
 expect fun checkNotificationPermission(appContext: AppContext, askIfNotGranted: Boolean = true, callback: (Boolean) -> Unit)
+
+expect fun canReceiveRemoteNotifications(appContext: AppContext): Boolean

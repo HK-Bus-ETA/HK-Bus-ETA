@@ -116,6 +116,7 @@ import com.loohp.hkbuseta.compose.Translate
 import com.loohp.hkbuseta.compose.Update
 import com.loohp.hkbuseta.compose.Upload
 import com.loohp.hkbuseta.compose.Watch
+import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.colorpicker.ClassicColorPicker
 import com.loohp.hkbuseta.compose.colorpicker.HsvColor
 import com.loohp.hkbuseta.compose.combinedClickable
@@ -125,6 +126,7 @@ import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.asAnnotatedString
+import com.loohp.hkbuseta.utils.canReceiveRemoteNotifications
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.toHexString
 import kotlinx.coroutines.CoroutineScope
@@ -260,18 +262,26 @@ fun SettingsInterface(instance: AppActiveContext) {
                     ETADisplayMode.CLOCK_TIME_WITH_COUNTDOWN -> (if (Shared.language == "en") "Clock Time + Countdown" else "時鐘+倒數時間").asAnnotatedString()
                 }
             )
-            var receiveAlerts by remember { mutableStateOf(Shared.receiveAlerts) }
+            val canReceiveRemoteNotifications = remember { canReceiveRemoteNotifications(instance) }
+            var receiveAlerts by remember { mutableStateOf(canReceiveRemoteNotifications && Shared.receiveAlerts) }
             SettingsRow(
                 onClick = {
-                    Registry.getInstance(instance).setReceiveAlerts(!Shared.receiveAlerts, instance)
-                    receiveAlerts = Shared.receiveAlerts
+                    if (canReceiveRemoteNotifications) {
+                        Registry.getInstance(instance).setReceiveAlerts(!Shared.receiveAlerts, instance)
+                        receiveAlerts = Shared.receiveAlerts
+                    }
                 },
+                enabled = canReceiveRemoteNotifications,
                 icon = if (receiveAlerts) PlatformIcons.Outlined.NotificationsActive else PlatformIcons.Outlined.NotificationsOff,
                 text = (if (Shared.language == "en") "Receive Alerts for Favourite Routes" else "接收喜愛路線交通狀況通知").asAnnotatedString(),
-                subText = if (receiveAlerts) {
-                    (if (Shared.language == "en") "Enable Alert Notifications" else "已啟用").asAnnotatedString()
+                subText = if (canReceiveRemoteNotifications) {
+                    if (receiveAlerts) {
+                        (if (Shared.language == "en") "Enable Alert Notifications" else "已啟用").asAnnotatedString()
+                    } else {
+                        (if (Shared.language == "en") "Disabled Alert Notifications" else "已停用").asAnnotatedString()
+                    }
                 } else {
-                    (if (Shared.language == "en") "Disabled Alert Notifications" else "已停用").asAnnotatedString()
+                    (if (Shared.language == "en") "Unsupported on this Platform" else "不支援此平台").asAnnotatedString()
                 }
             )
             var disableMarquee by remember { mutableStateOf(Shared.disableMarquee) }
@@ -446,6 +456,7 @@ fun SettingsInterface(instance: AppActiveContext) {
 fun SettingsRow(
     onClick: () -> Unit = { /* do nothing */ },
     onLongClick: () -> Unit = { /* do nothing */ },
+    enabled: Boolean = true,
     icon: DrawableResource,
     text: AnnotatedString,
     subText: AnnotatedString? = null
@@ -453,6 +464,7 @@ fun SettingsRow(
     SettingsRow(
         onClick = onClick,
         onLongClick = onLongClick,
+        enabled = enabled,
         icon = painterResource(icon),
         text = text,
         subText = subText
@@ -463,6 +475,7 @@ fun SettingsRow(
 fun SettingsRow(
     onClick: () -> Unit = { /* do nothing */ },
     onLongClick: () -> Unit = { /* do nothing */ },
+    enabled: Boolean = true,
     icon: Painter,
     text: AnnotatedString,
     subText: AnnotatedString? = null
@@ -470,10 +483,12 @@ fun SettingsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
+            .applyIf(enabled) {
+                combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                )
+            },
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -22,7 +22,6 @@ package com.loohp.hkbuseta.app
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -58,8 +57,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import androidx.core.graphics.scale
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -108,6 +105,8 @@ import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.closenessTo
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
+import com.loohp.hkbuseta.utils.hasGooglePlayService
+import com.loohp.hkbuseta.utils.isHuaweiDevice
 import com.loohp.hkbuseta.utils.toHexString
 import com.loohp.hkbuseta.utils.withAlpha
 import com.multiplatform.webview.jsbridge.IJsMessageHandler
@@ -127,14 +126,7 @@ import kotlin.math.roundToInt
 @Suppress("NOTHING_TO_INLINE")
 @Composable
 inline fun rememberGooglePlayServicesAvailable(context: AppActiveContext): Boolean {
-    return rememberSaveable {
-        !isHuaweiDevice() && GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context.context) == ConnectionResult.SUCCESS
-    }
-}
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun isHuaweiDevice(): Boolean {
-    return Build.MANUFACTURER.lowercase().contains("huawei") || Build.BRAND.lowercase().contains("huawei")
+    return rememberSaveable { !isHuaweiDevice() && hasGooglePlayService(context.context) }
 }
 
 @Composable
