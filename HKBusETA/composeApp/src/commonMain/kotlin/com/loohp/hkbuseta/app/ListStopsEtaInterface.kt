@@ -1829,7 +1829,9 @@ fun StopEntryExpansionEta(
                         stopId = stopData.stopId,
                         stopIndex = index,
                         co = co,
-                        route = stopData.route,
+                        stopRoute = stopData.route,
+                        stopBranches = stopData.branchIds,
+                        allBranches = routeBranches.toList(),
                         context = instance,
                         etaQueryOptions = etaQueryOptions
                     )

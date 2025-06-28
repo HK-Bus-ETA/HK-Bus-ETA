@@ -1,6 +1,7 @@
 package com.loohp.hkbuseta.utils
 
 import co.touchlab.stately.concurrency.Lock
+import co.touchlab.stately.concurrency.withLock
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.Operator
@@ -14,6 +15,9 @@ import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
+import com.loohp.hkbuseta.common.utils.Immutable
+import com.loohp.hkbuseta.common.utils.currentBranchStatus
+import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,11 +25,14 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 
 
+@Immutable
 data class RouteStopETASelectedRouteStop(
     val stopId: String,
     val stopIndex: Int,
     val co: Operator,
-    val route: Route,
+    val stopRoute: Route,
+    val stopBranches: Set<Route>,
+    val allBranches: List<Route>,
     val context: AppContext,
     val etaQueryOptions: Registry.EtaQueryOptions? = null
 ) {
@@ -36,7 +43,8 @@ data class RouteStopETASelectedRouteStop(
         if (stopIndex != other.stopIndex) return false
         if (stopId != other.stopId) return false
         if (co != other.co) return false
-        if (route != other.route) return false
+        if (stopBranches != other.stopBranches) return false
+        if (allBranches != other.allBranches) return false
         if (etaQueryOptions != other.etaQueryOptions) return false
 
         return true
@@ -46,12 +54,14 @@ data class RouteStopETASelectedRouteStop(
         var result = stopIndex
         result = 31 * result + stopId.hashCode()
         result = 31 * result + co.hashCode()
-        result = 31 * result + route.hashCode()
+        result = 31 * result + stopBranches.hashCode()
+        result = 31 * result + allBranches.hashCode()
         result = 31 * result + (etaQueryOptions?.hashCode() ?: 0)
         return result
     }
 }
 
+@Immutable
 data class RouteStopETAData(
     val routeNumber: String,
     val hasEta: Boolean,
@@ -90,32 +100,40 @@ object RouteStopETALiveActivity {
         if (selected == null) {
             handler.invoke(null)
         } else {
+            val now = currentLocalDateTime()
             val registry = Registry.getInstanceNoUpdateCheck(selected.context)
+            val branchByActiveness = selected.allBranches
+                .currentBranchStatus(now, selected.context, false)
+                .asSequence()
+                .sortedByDescending { it.value.activeness }
+                .map { it.key }
+                .toList()
+            val route = branchByActiveness.firstOrNull { selected.stopBranches.contains(it) }?: selected.stopRoute
             val query = registry.buildEtaQuery(
                 stopId = selected.stopId,
                 stopIndex = selected.stopIndex,
                 co = selected.co,
-                route = selected.route,
+                route = route,
                 context = selected.context,
                 options = selected.etaQueryOptions
             )
             val eta = query.query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND)
             val stopName = selected.stopId.asStop(selected.context)!!.name[Shared.language]
             val data = RouteStopETAData(
-                routeNumber = selected.co.getDisplayRouteNumber(selected.route.routeNumber, shortened = true),
+                routeNumber = selected.co.getDisplayRouteNumber(route.routeNumber, shortened = true),
                 hasEta = eta.nextScheduledBus in 0..59,
                 eta = eta.buildETAText(selected.context),
                 minimal = if (eta.nextScheduledBus <= 0) "-" else eta.nextScheduledBus.toString(),
-                destination = selected.route.resolvedDestWithBranch(
+                destination = route.resolvedDestWithBranch(
                     prependTo = true,
-                    branch = selected.route,
+                    branch = route,
                     selectedStop = selected.stopIndex,
                     selectedStopId = selected.stopId,
                     context = selected.context
                 )[Shared.language],
                 stop = if (selected.co.isTrain) stopName else "${selected.stopIndex}. $stopName",
-                color = eta.nextCo.getLineColor(selected.route.routeNumber, 0xFF000000),
-                url = selected.route.getDeepLink(selected.context, selected.stopId, selected.stopIndex)
+                color = eta.nextCo.getLineColor(route.routeNumber, 0xFF000000),
+                url = route.getDeepLink(selected.context, selected.stopId, selected.stopIndex)
             )
             handler.invoke(data)
         }
@@ -134,16 +152,20 @@ object RouteStopETALiveActivity {
     }
 
     fun setCurrentSelectedStop(selected: RouteStopETASelectedRouteStop) {
-        if (currentSelectedRouteStop != null) {
-            clearCurrentSelectedStop()
+        lock.withLock {
+            if (currentSelectedRouteStop != null) {
+                clearCurrentSelectedStop()
+            }
+            currentSelectedRouteStop = selected
+            run()
         }
-        currentSelectedRouteStop = selected
-        run()
     }
 
     fun clearCurrentSelectedStop() {
-        currentSelectedRouteStop = null
-        run()
+        lock.withLock {
+            currentSelectedRouteStop = null
+            run()
+        }
     }
 
 }

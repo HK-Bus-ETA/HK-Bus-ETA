@@ -379,7 +379,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
     val alertCheckRoute by remember { derivedStateOf { route.route!!.getSpecialRouteAlerts(instance).contains(SpecialRouteAlerts.CheckRoute) } }
 
     val routeBranches by remember { derivedStateOf { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) } }
-    val selectedBranchState = remember { mutableStateOf(routeBranches.currentBranchStatus(currentLocalDateTime(), instance).asSequence().sortedByDescending { it.value.activeness }.first().key) }
+    val selectedBranchState = remember { mutableStateOf(routeBranches.currentBranchStatus(currentLocalDateTime(), instance, false).asSequence().sortedByDescending { it.value.activeness }.first().key) }
     var selectedBranch by selectedBranchState
     val selectedStop = remember { mutableIntStateOf(
         ((instance.compose.data["scrollToStop"] as? String)?: (instance.compose.data["stopId"] as? String))

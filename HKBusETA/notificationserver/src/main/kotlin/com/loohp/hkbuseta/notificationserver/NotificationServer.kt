@@ -68,7 +68,7 @@ fun main() {
                 .plusMinutes(1)
                 .toEpochSecond() * 1000
         ),
-        Shared.ETA_UPDATE_INTERVAL.toLong()
+        Shared.ETA_UPDATE_INTERVAL.toLong() + 5000
     )
 
     Timer().schedule(

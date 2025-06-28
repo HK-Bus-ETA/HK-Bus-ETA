@@ -145,7 +145,7 @@ fun TemporaryPinInterface(
         items(items, key = { it.key }) { item ->
             val allStops by remember(item) { derivedStateOf { Registry.getInstance(instance).getAllStops(item.routeNumber, item.bound, item.co, item.gmbRegion) } }
             val stopData by remember { derivedStateOf { allStops[item.stopIndex - 1] } }
-            val branchByActiveness by remember(item) { derivedStateOf { item.branches.currentBranchStatus(now, instance).asSequence().sortedByDescending { it.value.activeness }.map { it.key }.toList() } }
+            val branchByActiveness by remember(item) { derivedStateOf { item.branches.currentBranchStatus(now, instance, false).asSequence().sortedByDescending { it.value.activeness }.map { it.key }.toList() } }
 
             val route by remember { derivedStateOf { branchByActiveness.firstOrNull { stopData.branchIds.contains(it) }?: stopData.route } }
             val routeKey by remember(item) { derivedStateOf { route.getRouteKey(instance)!! } }

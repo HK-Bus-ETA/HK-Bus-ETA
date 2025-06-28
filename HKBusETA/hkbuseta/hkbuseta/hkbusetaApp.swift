@@ -81,7 +81,9 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate, U
         Messaging.messaging().subscribe(toTopic: "Refresh") { error in
             print("Subscribed to Refresh")
         }
-        Messaging.messaging().unsubscribe(fromTopic: "RouteStopLive")
+        Messaging.messaging().unsubscribe(fromTopic: "RouteStopLive") { error in
+            print("Unsubscribed from RouteStopLive")
+        }
     }
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
@@ -123,6 +125,7 @@ class ApplicationDelegate: NSObject, UIApplicationDelegate, WCSessionDelegate, U
                     await routeStopEtaLiveActivity!.end(dismissalPolicy: .immediate)
                     do {
                         try await Messaging.messaging().unsubscribe(fromTopic: "RouteStopLive")
+                        print("Unsubscribed from RouteStopLive")
                     } catch {
                     }
                 }
@@ -409,6 +412,7 @@ struct hkbusetaApp: App {
                             routeStopEtaLiveActivity = nil
                             do {
                                 try await Messaging.messaging().unsubscribe(fromTopic: "RouteStopLive")
+                                print("Unsubscribed from RouteStopLive")
                             } catch {
                             }
                         }
