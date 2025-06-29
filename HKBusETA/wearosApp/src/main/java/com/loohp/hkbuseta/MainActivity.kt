@@ -45,6 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.Text
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.ktx.Firebase
 import com.loohp.hkbuseta.app.MainLoading
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.appcontext.context
@@ -74,9 +77,14 @@ import kotlinx.coroutines.runBlocking
 @Stable
 open class MainActivity : ComponentActivity() {
 
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        firebaseAnalytics = Firebase.analytics
+
         WearOSShared.setDefaultExceptionHandler(this)
         WearOSShared.scheduleBackgroundUpdateService(this)
         Shared.setIsWearOS()

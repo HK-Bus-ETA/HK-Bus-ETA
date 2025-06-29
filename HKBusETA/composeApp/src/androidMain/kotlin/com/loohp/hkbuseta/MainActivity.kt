@@ -24,11 +24,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.glance.appwidget.updateAll
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
@@ -47,6 +49,8 @@ import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.glance.FavouriteRoutesWidget
 import com.loohp.hkbuseta.shared.AndroidShared
+import com.loohp.hkbuseta.utils.hasGooglePlayService
+import com.loohp.hkbuseta.utils.isHuaweiDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -60,20 +64,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        firebaseAnalytics = Firebase.analytics
-
-        setApplicationContext(applicationContext)
-        setComponentActivity(this)
-
-        AndroidShared.setDefaultExceptionHandler()
-        AndroidShared.scheduleBackgroundUpdateService(this)
-        Shared.provideBackgroundUpdateScheduler { c, t -> AndroidShared.scheduleBackgroundUpdateService(c.context, t) }
-        Tiles.providePlatformUpdate {
-            CoroutineScope(Dispatchers.Main).launch {
-                FavouriteRoutesWidget.updateAll(this@MainActivity)
-            }
-        }
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val alightReminderChannel = NotificationChannel(
@@ -105,6 +95,38 @@ class MainActivity : ComponentActivity() {
             enableLights(true)
         }
         notificationManager.createNotificationChannel(generalChannel)
+
+        if (isHuaweiDevice() || !hasGooglePlayService(this)) {
+            val gmsChannel = NotificationChannel(
+                "gms_availability_channel",
+                resources.getString(R.string.gms_availability_channel_name),
+                NotificationManager.IMPORTANCE_NONE
+            ).apply {
+                enableVibration(false)
+                enableLights(false)
+                setSound(null, null)
+                setShowBadge(false)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    setAllowBubbles(false)
+                }
+            }
+            notificationManager.createNotificationChannel(gmsChannel)
+            GoogleApiAvailability.getInstance().setDefaultNotificationChannelId(this, gmsChannel.id)
+        }
+
+        firebaseAnalytics = Firebase.analytics
+
+        setApplicationContext(applicationContext)
+        setComponentActivity(this)
+
+        AndroidShared.setDefaultExceptionHandler()
+        AndroidShared.scheduleBackgroundUpdateService(this)
+        Shared.provideBackgroundUpdateScheduler { c, t -> AndroidShared.scheduleBackgroundUpdateService(c.context, t) }
+        Tiles.providePlatformUpdate {
+            CoroutineScope(Dispatchers.Main).launch {
+                FavouriteRoutesWidget.updateAll(this@MainActivity)
+            }
+        }
 
         Firebase.messaging.subscribeToTopic("Alert")
         Firebase.messaging.subscribeToTopic("General")
