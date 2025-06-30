@@ -81,13 +81,16 @@ import com.loohp.hkbuseta.appcontext.isDarkMode
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.Coordinates
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.StopIndexedRouteSearchResultEntry
+import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.getDisplayName
 import com.loohp.hkbuseta.common.objects.toStopIndexed
+import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.getPossibleNextChar
@@ -109,7 +112,6 @@ import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.applyIf
-import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import com.loohp.hkbuseta.compose.isNarrow
@@ -386,7 +388,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(10.dp)
-                            .plainTooltip(if (Shared.language == "en") "Recents Searches" else "最近瀏覽"),
+                            .plainTooltip(if (Shared.language == "en") "Recent Searches" else "最近瀏覽"),
                         onClick = {
                             instance.startActivity(AppIntent(instance, AppScreen.RECENT))
                         },
@@ -394,7 +396,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                         Image(
                             modifier = Modifier.size(27.dp),
                             painter = PlatformIcons.Outlined.History,
-                            contentDescription = if (Shared.language == "en") "Recents Searches" else "最近瀏覽"
+                            contentDescription = if (Shared.language == "en") "Recent Searches" else "最近瀏覽"
                         )
                     }
                 }
@@ -407,7 +409,6 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
             Spacer(
                 modifier = Modifier
                     .matchParentSize()
-                    .clickable { /* do nothing */ }
                     .pointerHoverIcon(PointerIcon.Default)
             )
             Column(
@@ -549,7 +550,7 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, color: Color, icon
                     PlatformIcon(
                         modifier = Modifier.requiredSize(26.dp),
                         painter = icon,
-                        contentDescription = content.toString(),
+                        contentDescription = content.description()[Shared.language],
                         tint = actualColor,
                     )
                 }
@@ -557,10 +558,27 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, color: Color, icon
                     Image(
                         modifier = Modifier.requiredSize(26.dp),
                         painter = painterResource(DrawableResource(icon)),
-                        contentDescription = content.toString()
+                        contentDescription = content.description()[Shared.language]
                     )
                 }
             }
         }
     )
+}
+
+private fun Char.description(isLookupButton: Boolean = false): BilingualText {
+    return when (this) {
+        '!' -> "港鐵" withEn "MTR"
+        '~' -> "渡輪" withEn "Ferry"
+        '<' -> {
+            if (isLookupButton) {
+                "最近瀏覽" withEn "Recent Searches"
+            } else {
+                "刪除" withEn "Backspace"
+            }
+        }
+        '-' -> "清除" withEn "Delete"
+        '/' -> "完成" withEn "Done"
+        else -> toString().asBilingualText()
+    }
 }

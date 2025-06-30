@@ -21,6 +21,8 @@
 package com.loohp.hkbuseta.utils
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
 import kotlinx.coroutines.CompletableDeferred
@@ -43,4 +45,11 @@ actual fun getGPSLocationUnrecorded(appContext: AppContext, priority: LocationPr
 
 actual fun getGPSLocationUnrecorded(appContext: AppContext, interval: Long, listener: (LocationResult) -> Unit): Deferred<() -> Unit> {
     return CompletableDeferred { /* do nothing */ }
+}
+
+actual fun isGPSServiceEnabled(appContext: AppContext, notifyUser: Boolean): Boolean {
+    if (notifyUser) {
+        appContext.showToastText(if (Shared.language == "en") "Device does not support location" else "裝置不支援定位位置", ToastDuration.LONG)
+    }
+    return false
 }

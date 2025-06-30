@@ -86,8 +86,11 @@ import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.RecentSortMode
 import com.loohp.hkbuseta.common.objects.RouteListType
+import com.loohp.hkbuseta.common.objects.asBilingualText
+import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.PossibleNextCharResult
 import com.loohp.hkbuseta.common.shared.Shared
@@ -388,7 +391,7 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, longContent: Char?
                 isLookupButton -> Icon(
                     modifier = Modifier.size(19F.sp.dp),
                     painter = painterResource(icons[1].value as Int),
-                    contentDescription = if (Shared.language == "en") "Recents" else "最近瀏覽",
+                    contentDescription = content.description()[Shared.language],
                     tint = Color(0xFF03A9F4),
                 )
                 else -> when (icon) {
@@ -402,17 +405,34 @@ fun KeyboardButton(instance: AppActiveContext, content: Char, longContent: Char?
                     is ImageVector -> Icon(
                         modifier = Modifier.size(19F.sp.dp),
                         imageVector = icon,
-                        contentDescription = content.toString(),
+                        contentDescription = content.description()[Shared.language],
                         tint = actualColor?: LocalContentColor.current,
                     )
                     is Int -> Image(
                         modifier = Modifier.size(19F.sp.dp),
                         painter = painterResource(icon),
-                        contentDescription = content.toString(),
+                        contentDescription = content.description()[Shared.language],
                         colorFilter = actualColor?.let { ColorFilter.tint(it) }
                     )
                 }
             }
         }
     )
+}
+
+private fun Char.description(isLookupButton: Boolean = false): BilingualText {
+    return when (this) {
+        '!' -> "港鐵" withEn "MTR"
+        '~' -> "渡輪" withEn "Ferry"
+        '<' -> {
+            if (isLookupButton) {
+                "最近瀏覽" withEn "Recent Searches"
+            } else {
+                "刪除" withEn "Backspace"
+            }
+        }
+        '-' -> "清除" withEn "Delete"
+        '/' -> "完成" withEn "Done"
+        else -> toString().asBilingualText()
+    }
 }

@@ -284,6 +284,7 @@ import com.loohp.hkbuseta.utils.getColor
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
+import com.loohp.hkbuseta.utils.isGPSServiceEnabled
 import com.loohp.hkbuseta.utils.joinToAnnotatedString
 import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.sp
@@ -2957,39 +2958,41 @@ fun handleToggleAlightReminder(
             AlightReminderService.kill()
         }
         co.isTrain || stopData.branchIds.contains(selectedBranch) -> {
-            checkNotificationPermission(instance, true) { result ->
-                if (result) {
-                    togglingAlightReminderState.value = true
-                    CoroutineScope(Dispatchers.Main).launch {
-                        val job = CoroutineScope(Dispatchers.IO).launch {
-                            delay(500)
-                            instance.showToastText(if (Shared.language == "en") "Getting alight reminder service ready..." else "正在啟動落車提示...", ToastDuration.LONG)
-                        }
-                        try {
-                            val originStopId = getGPSLocation(instance).await()?.location?.let { location ->
-                                val closestStop = allStops.asSequence().take(selectedStop).filter { it.branchIds.contains(selectedBranch) }.minBy { location.distance(it.stop.location) }
-                                StopIdIndexed(closestStop.stopId, allStops.indexOf(closestStop) + 1)
-                            }?: run {
-                                val firstStop = selectedBranch.stops[co]!!.first()
-                                val firstStopIndex = allStops.indexOfFirst { firstStop == it.stopId } + 1
-                                StopIdIndexed(firstStop, firstStopIndex)
+            if (isGPSServiceEnabled(instance, true)) {
+                checkNotificationPermission(instance, true) { result ->
+                    if (result) {
+                        togglingAlightReminderState.value = true
+                        CoroutineScope(Dispatchers.Main).launch {
+                            val job = CoroutineScope(Dispatchers.IO).launch {
+                                delay(500)
+                                instance.showToastText(if (Shared.language == "en") "Getting alight reminder service ready..." else "正在啟動落車提示...", ToastDuration.LONG)
                             }
-                            AlightReminderService.startNewService(
-                                context = applicationAppContext,
-                                locationUpdater = { a, i, c -> getGPSLocation(a, i, c) },
-                                selectedRoute = selectedBranch,
-                                co = co,
-                                originStopId = originStopId,
-                                destinationStopId = StopIdIndexed(stopData.stopId, selectedStop)
-                            )
-                            instance.showToastText(if (Shared.language == "en") "Alight reminder service started" else "落車提示啟動", ToastDuration.SHORT)
-                        } finally {
-                            job.cancelAndJoin()
-                            togglingAlightReminderState.value = false
+                            try {
+                                val originStopId = getGPSLocation(instance).await()?.location?.let { location ->
+                                    val closestStop = allStops.asSequence().take(selectedStop).filter { it.branchIds.contains(selectedBranch) }.minBy { location.distance(it.stop.location) }
+                                    StopIdIndexed(closestStop.stopId, allStops.indexOf(closestStop) + 1)
+                                }?: run {
+                                    val firstStop = selectedBranch.stops[co]!!.first()
+                                    val firstStopIndex = allStops.indexOfFirst { firstStop == it.stopId } + 1
+                                    StopIdIndexed(firstStop, firstStopIndex)
+                                }
+                                AlightReminderService.startNewService(
+                                    context = applicationAppContext,
+                                    locationUpdater = { a, i, c -> getGPSLocation(a, i, c) },
+                                    selectedRoute = selectedBranch,
+                                    co = co,
+                                    originStopId = originStopId,
+                                    destinationStopId = StopIdIndexed(stopData.stopId, selectedStop)
+                                )
+                                instance.showToastText(if (Shared.language == "en") "Alight reminder service started" else "落車提示啟動", ToastDuration.SHORT)
+                            } finally {
+                                job.cancelAndJoin()
+                                togglingAlightReminderState.value = false
+                            }
                         }
+                    } else {
+                        instance.showToastText(if (Shared.language == "en") "Notification Permission Denied" else "推送通知權限被拒絕", ToastDuration.LONG)
                     }
-                } else {
-                    instance.showToastText(if (Shared.language == "en") "Notification Permission Denied" else "推送通知權限被拒絕", ToastDuration.LONG)
                 }
             }
         }

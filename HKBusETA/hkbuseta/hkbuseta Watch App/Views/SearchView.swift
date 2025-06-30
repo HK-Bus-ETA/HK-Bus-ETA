@@ -99,10 +99,12 @@ struct SearchView: AppScreenView {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 17.scaled(appContext, true)))
                         .foregroundColor(colorInt(0xFF03A9F4).asColor())
+                        .accessibilityLabel(content.description(isLookupButton).get(language: Shared().language))
                 } else {
                     Image(systemName: "trash")
                         .font(.system(size: 17.scaled(appContext, true)))
                         .foregroundColor(.red)
+                        .accessibilityLabel(content.description(isLookupButton).get(language: Shared().language))
                 }
             case "/":
                 if state.showLoadingIndicator {
@@ -113,19 +115,23 @@ struct SearchView: AppScreenView {
                     Image(systemName: "checkmark")
                         .font(.system(size: 17.scaled(appContext, true)))
                         .foregroundColor(state.nextCharResult.hasExactMatch ? .green : colorInt(0xFF444444).asColor())
+                        .accessibilityLabel(content.description().get(language: Shared().language))
                 }
             case "!":
                 Image("mtr")
                     .resizable()
                     .frame(width: 20.0.scaled(appContext, true), height: 20.0.scaled(appContext, true))
+                    .accessibilityLabel(content.description().get(language: Shared().language))
             case "~":
                 Image(systemName: "ferry.fill")
                     .font(.system(size: 16.scaled(appContext, true)))
                     .foregroundColor(colorInt(0xFF66CCFF).asColor())
+                    .accessibilityLabel(content.description().get(language: Shared().language))
             default:
                 Text(content.description)
                     .font(.system(size: 20.scaled(appContext, true), weight: .bold))
                     .foregroundColor(!state.nextCharResult.characters.filter { $0.description == content.description }.isEmpty ? .white : colorInt(0xFF444444).asColor())
+                    .accessibilityLabel(content.description().get(language: Shared().language))
             }
         }
         .frame(width: 35.scaled(appContext), height: (content.isLetter || content == "!" || content == "~" ? 35 : 40).scaled(appContext))
@@ -193,4 +199,29 @@ struct RouteKeyboardState {
     let nextCharResult: Registry.PossibleNextCharResult
     let isLoading: Bool
     let showLoadingIndicator: Bool
+}
+
+private extension Character {
+    
+    func description(_ isLookupButton: Bool = false) -> BilingualText {
+        switch self {
+        case "!":
+            return BilingualText(zh: "港鐵", en: "MTR")
+        case "~":
+            return BilingualText(zh: "渡輪", en: "Ferry")
+        case "<":
+            if isLookupButton {
+                return BilingualText(zh: "最近瀏覽", en: "Recent Searches")
+            } else {
+                return BilingualText(zh: "刪除", en: "Backspace")
+            }
+        case "-":
+            return BilingualText(zh: "清除", en: "Delete")
+        case "/":
+            return BilingualText(zh: "完成", en: "Done")
+        default:
+            return BilingualTextKt.asBilingualText(String(self))
+        }
+    }
+    
 }

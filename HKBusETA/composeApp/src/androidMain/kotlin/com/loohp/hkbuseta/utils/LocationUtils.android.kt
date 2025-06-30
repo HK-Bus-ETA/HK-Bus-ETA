@@ -39,7 +39,9 @@ import com.google.android.gms.tasks.Task
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.ToastDuration
 import com.loohp.hkbuseta.common.objects.GPSLocation
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
 import kotlinx.coroutines.CompletableDeferred
@@ -269,4 +271,19 @@ fun LocationPriority.toGMSPriority(): Int {
         LocationPriority.FASTEST, LocationPriority.FASTER -> Priority.PRIORITY_BALANCED_POWER_ACCURACY
         LocationPriority.ACCURATE, LocationPriority.MOST_ACCURATE -> Priority.PRIORITY_HIGH_ACCURACY
     }
+}
+
+actual fun isGPSServiceEnabled(appContext: AppContext, notifyUser: Boolean): Boolean {
+    val locationManager = appContext.context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    try {
+        val enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        if (enabled) {
+            return true
+        }
+    } catch (_: Exception) {
+    }
+    if (notifyUser) {
+        appContext.showToastText(if (Shared.language == "en") "Unable to read your location" else "無法讀取你的位置", ToastDuration.LONG)
+    }
+    return false
 }

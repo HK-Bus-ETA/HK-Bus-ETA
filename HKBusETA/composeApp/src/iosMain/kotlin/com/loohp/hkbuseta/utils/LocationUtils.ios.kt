@@ -24,6 +24,8 @@ import co.touchlab.stately.collections.ConcurrentMutableList
 import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -224,4 +226,15 @@ fun LocationPriority.toCLLocationAccuracy(): CLLocationAccuracy {
             LocationPriority.MOST_ACCURATE -> kCLLocationAccuracyBestForNavigation
         }
     }
+}
+
+actual fun isGPSServiceEnabled(appContext: AppContext, notifyUser: Boolean): Boolean {
+    val enabled = CLLocationManager.locationServicesEnabled()
+    if (enabled) {
+        return true
+    }
+    if (notifyUser) {
+        appContext.showToastText(if (Shared.language == "en") "Unable to read your location" else "無法讀取你的位置", ToastDuration.LONG)
+    }
+    return false
 }

@@ -68,3 +68,7 @@ actual fun getGPSLocationUnrecorded(appContext: AppContext, interval: Long, list
     }
     return CompletableDeferred { job.cancel() }
 }
+
+actual fun isGPSServiceEnabled(appContext: AppContext, notifyUser: Boolean): Boolean {
+    return true
+}

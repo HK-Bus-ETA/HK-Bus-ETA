@@ -22,7 +22,6 @@ package com.loohp.hkbuseta.utils
 
 import co.touchlab.stately.concurrency.AtomicReference
 import co.touchlab.stately.concurrency.Lock
-import co.touchlab.stately.concurrency.value
 import co.touchlab.stately.concurrency.withLock
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.utils.LocationPriority
@@ -32,7 +31,6 @@ import com.loohp.hkbuseta.common.utils.getCompletedOrNull
 import com.loohp.hkbuseta.common.utils.getValue
 import com.loohp.hkbuseta.common.utils.setValue
 import kotlinx.coroutines.Deferred
-import kotlin.concurrent.Volatile
 
 
 data class LastLocationResult(
@@ -78,3 +76,5 @@ fun getGPSLocation(appContext: AppContext, interval: Long, listener: (LocationRe
         updateLocationLocation(it)
     }
 }
+
+expect fun isGPSServiceEnabled(appContext: AppContext, notifyUser: Boolean = false): Boolean
