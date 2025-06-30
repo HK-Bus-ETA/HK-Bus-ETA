@@ -24,6 +24,7 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.debugLog
+import com.loohp.hkbuseta.common.utils.getOrClosest
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -128,7 +129,7 @@ fun List<Coordinates>.splitByClosestPoints(referencePoints: List<Coordinates>): 
         var minDistance = Double.MAX_VALUE
         var closestSegmentEndIndex = currentIndex
         for (i in currentIndex until size - 1) {
-            val closest = closestPointOnSegment(refPoint, this[i], this[i + 1])
+            val closest = closestPointOnSegment(refPoint, getOrClosest(i), getOrClosest(i + 1))
             val distanceToSegment = refPoint.distance(closest)
             if (distanceToSegment < minDistance) {
                 minDistance = distanceToSegment
@@ -136,7 +137,7 @@ fun List<Coordinates>.splitByClosestPoints(referencePoints: List<Coordinates>): 
             }
         }
         for (index in currentIndex..closestSegmentEndIndex) {
-            thisSegment.add(this[index])
+            thisSegment.add(getOrClosest(index))
         }
         if (thisSegment.size <= 1) {
             thisSegment.add(lastPosition)
@@ -147,7 +148,7 @@ fun List<Coordinates>.splitByClosestPoints(referencePoints: List<Coordinates>): 
     }
 
     for (index in currentIndex until size) {
-        segments.last().add(this[index])
+        segments.last().add(getOrClosest(index))
     }
 
     return segments.asList()

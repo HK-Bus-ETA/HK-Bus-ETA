@@ -468,3 +468,7 @@ class InfiniteBidirectionalIterator<T>(
 fun <T> infiniteBidirectionalIterator(next: () -> T, previous: () -> T): BidirectionalIterator<T> {
     return InfiniteBidirectionalIterator(next, previous)
 }
+
+fun <T> List<T>.getOrClosest(index: Int): T {
+    return this[index.coerceIn(0, size - 1)]
+}
