@@ -76,6 +76,13 @@ function isStandaloneApp() {
     return window.matchMedia('(display-mode: standalone)').matches;
 }
 
+function setThemeColor(color, useDarkTheme) {
+    const themeName = useDarkTheme ? "dark" : "light";
+    const metaTag = document.querySelector(`meta[name="theme-color"][media="(prefers-color-scheme: ${themeName})"]`);
+    const hex = (color & 0xFFFFFF).toString(16).padStart(6, '0');
+    metaTag.setAttribute("content", `#${hex}`);
+}
+
 function shareUrlMenu(url, title) {
     if (navigator.share) {
         navigator.share({title: title, url: url});

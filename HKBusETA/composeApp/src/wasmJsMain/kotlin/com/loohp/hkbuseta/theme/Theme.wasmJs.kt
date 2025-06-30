@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.style.LineHeightStyle.Mode
 import androidx.compose.ui.text.style.LineHeightStyle.Trim
 import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.asImmutableList
+import com.loohp.hkbuseta.setThemeColor
 import com.loohp.hkbuseta.utils.FontResource
 import com.materialkolor.dynamicColorScheme
 import kotlinx.collections.immutable.ImmutableList
@@ -195,6 +197,7 @@ actual fun AppTheme(
     content: @Composable () -> Unit
 ) {
     val environment = rememberResourceEnvironment()
+    val colorScheme = resolveColorScheme(useDarkTheme, customColor)
     val fontFamilyResolver = LocalFontFamilyResolver.current
     val platformTypography = MaterialTheme.typography
 
@@ -213,10 +216,13 @@ actual fun AppTheme(
     LaunchedEffect (loadedScFont) {
         loadedScFont?.apply { fontFamilyResolver.preload(this) }
     }
+    LaunchedEffect (colorScheme) {
+        setThemeColor(colorScheme.primaryContainer.toArgb(), useDarkTheme)
+    }
 
     appliedTypography?.let {
         MaterialTheme(
-            colorScheme = resolveColorScheme(useDarkTheme, customColor),
+            colorScheme = colorScheme,
             typography = it,
             content = {
                 ProvideTextStyle(

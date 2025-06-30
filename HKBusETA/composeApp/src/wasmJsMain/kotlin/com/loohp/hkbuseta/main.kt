@@ -60,6 +60,7 @@ external fun isStandaloneApp(): Boolean
 external fun setDownloadAppSheetVisible(isApple: Boolean, visible: Boolean, forceDarkMode: Boolean, wasmSupported: Boolean)
 external fun isDownloadAppSheetVisible(): Boolean
 external fun isWasmSupported(callback: (Boolean) -> Unit)
+external fun setThemeColor(color: Int, useDarkTheme: Boolean)
 
 suspend fun isWasmSupported(): Boolean = awaitCallback { isWasmSupported { complete(it) } }
 
