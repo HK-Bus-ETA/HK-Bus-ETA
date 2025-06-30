@@ -41,7 +41,7 @@ fun main() = application {
     DesktopShared.setSystemFormatProviders()
     DesktopShared.setDefaultExceptionHandler()
     DesktopShared.startupJavaFX()
-    setVersionImpl { Triple("HKBusETA", "2.5.3", 48) }
+    setVersionImpl { Triple("HKBusETA", "2.5.4", 49) }
     Window(
         onCloseRequest = ::exitApplication,
         title = if (Shared.language == "en") "HK Bus ETA" else "香港巴士到站預報",

@@ -40,7 +40,6 @@ import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.objects.GPSLocation
-import com.loohp.hkbuseta.common.utils.IO
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
 import kotlinx.coroutines.CompletableDeferred
@@ -138,48 +137,55 @@ actual fun getGPSLocationUnrecorded(appContext: AppContext, priority: LocationPr
             val context = appContext.context
             val client = LocationServices.getFusedLocationProviderClient(context)
             CoroutineScope(Dispatchers.IO).launch {
-                client.locationAvailability.addOnCompleteListener { task ->
-                    if (task.isSuccessful && task.result.isLocationAvailable) {
-                        client.getCurrentLocation(
-                            CurrentLocationRequest.Builder()
-                                .setMaxUpdateAgeMillis(priority.toMaxUpdateAgeMillis())
-                                .setDurationMillis(60000)
-                                .setPriority(priority.toGMSPriority())
-                                .build(),
-                            null
-                        ).addOnCompleteListener { defer.complete(LocationResult.fromTask(it)) }
-                    } else {
-                        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, Dispatchers.IO.asExecutor()) { defer.complete(LocationResult.fromLocationNullable(it)) }
-                            } else {
-                                @Suppress("DEPRECATION")
-                                locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, object : LocationListener {
-                                    override fun onLocationChanged(location: Location) {
-                                        defer.complete(LocationResult.fromLocationNullable(location))
-                                    }
-                                    @Deprecated("Deprecated in Java")
-                                    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
-                                    }
-                                }, null)
-                            }
-                        } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, Dispatchers.IO.asExecutor()) { defer.complete(LocationResult.fromLocationNullable(it)) }
-                            } else {
-                                @Suppress("DEPRECATION")
-                                locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, object : LocationListener {
-                                    override fun onLocationChanged(location: Location) {
-                                        defer.complete(LocationResult.fromLocationNullable(location))
-                                    }
-                                    @Deprecated("Deprecated in Java")
-                                    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
-                                    }
-                                }, null)
-                            }
+                val withoutGMS = {
+                    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            locationManager.getCurrentLocation(LocationManager.GPS_PROVIDER, null, Dispatchers.IO.asExecutor()) { defer.complete(LocationResult.fromLocationNullable(it)) }
                         } else {
-                            defer.complete(LocationResult.FAILED_RESULT)
+                            @Suppress("DEPRECATION")
+                            locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, object : LocationListener {
+                                override fun onLocationChanged(location: Location) {
+                                    defer.complete(LocationResult.fromLocationNullable(location))
+                                }
+                                @Deprecated("Deprecated in Java")
+                                override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
+                                }
+                            }, null)
+                        }
+                    } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            locationManager.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, Dispatchers.IO.asExecutor()) { defer.complete(LocationResult.fromLocationNullable(it)) }
+                        } else {
+                            @Suppress("DEPRECATION")
+                            locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, object : LocationListener {
+                                override fun onLocationChanged(location: Location) {
+                                    defer.complete(LocationResult.fromLocationNullable(location))
+                                }
+                                @Deprecated("Deprecated in Java")
+                                override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
+                                }
+                            }, null)
+                        }
+                    } else {
+                        defer.complete(LocationResult.FAILED_RESULT)
+                    }
+                }
+                if (isHuaweiDevice() || !hasGooglePlayService(context)) {
+                    withoutGMS.invoke()
+                } else {
+                    client.locationAvailability.addOnCompleteListener { task ->
+                        if (task.isSuccessful && task.result.isLocationAvailable) {
+                            client.getCurrentLocation(
+                                CurrentLocationRequest.Builder()
+                                    .setMaxUpdateAgeMillis(priority.toMaxUpdateAgeMillis())
+                                    .setDurationMillis(60000)
+                                    .setPriority(priority.toGMSPriority())
+                                    .build(),
+                                null
+                            ).addOnCompleteListener { defer.complete(LocationResult.fromTask(it)) }
+                        } else {
+                            withoutGMS.invoke()
                         }
                     }
                 }
@@ -198,29 +204,36 @@ actual fun getGPSLocationUnrecorded(appContext: AppContext, interval: Long, list
             val context = appContext.context
             val client = LocationServices.getFusedLocationProviderClient(context)
             CoroutineScope(Dispatchers.IO).launch {
-                client.locationAvailability.addOnCompleteListener { task ->
-                    val callback: (Location) -> Unit = { listener.invoke(LocationResult.fromLocationNullable(it)) }
-                    if (task.isSuccessful && task.result.isLocationAvailable) {
-                        client.requestLocationUpdates(com.google.android.gms.location.LocationRequest.Builder(interval).setMaxUpdateAgeMillis(2000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), Dispatchers.IO.asExecutor(), callback)
-                        defer.complete { client.removeLocationUpdates(callback) }
-                    } else {
-                        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LocationRequest.Builder(interval).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).setMaxUpdateDelayMillis(2000).build(), Dispatchers.IO.asExecutor(), callback)
-                            } else {
-                                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0F, callback)
-                            }
-                            defer.complete { locationManager.removeUpdates(callback) }
-                        } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LocationRequest.Builder(interval).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).setMaxUpdateDelayMillis(2000).build(), Dispatchers.IO.asExecutor(), callback)
-                            } else {
-                                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0F, callback)
-                            }
-                            defer.complete { locationManager.removeUpdates(callback) }
+                val callback: (Location) -> Unit = { listener.invoke(LocationResult.fromLocationNullable(it)) }
+                val withoutGMS = {
+                    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LocationRequest.Builder(interval).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).setMaxUpdateDelayMillis(2000).build(), Dispatchers.IO.asExecutor(), callback)
                         } else {
-                            defer.complete { /* do nothing */ }
+                            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0F, callback)
+                        }
+                        defer.complete { locationManager.removeUpdates(callback) }
+                    } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LocationRequest.Builder(interval).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).setMaxUpdateDelayMillis(2000).build(), Dispatchers.IO.asExecutor(), callback)
+                        } else {
+                            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0F, callback)
+                        }
+                        defer.complete { locationManager.removeUpdates(callback) }
+                    } else {
+                        defer.complete { /* do nothing */ }
+                    }
+                }
+                if (isHuaweiDevice() || !hasGooglePlayService(context)) {
+                    withoutGMS.invoke()
+                } else {
+                    client.locationAvailability.addOnCompleteListener { task ->
+                        if (task.isSuccessful && task.result.isLocationAvailable) {
+                            client.requestLocationUpdates(com.google.android.gms.location.LocationRequest.Builder(interval).setMaxUpdateAgeMillis(2000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build(), Dispatchers.IO.asExecutor(), callback)
+                            defer.complete { client.removeLocationUpdates(callback) }
+                        } else {
+                            withoutGMS.invoke()
                         }
                     }
                 }
