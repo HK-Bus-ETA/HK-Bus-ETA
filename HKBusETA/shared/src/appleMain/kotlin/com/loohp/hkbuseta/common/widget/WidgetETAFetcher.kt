@@ -39,6 +39,7 @@ import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.epochSeconds
 import com.loohp.hkbuseta.common.utils.getJSONResponse
 import com.loohp.hkbuseta.common.utils.hongKongTimeZone
+import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.common.utils.minus
 import com.loohp.hkbuseta.common.utils.nextLocalDateTimeAfter
@@ -134,65 +135,130 @@ private suspend fun etaQueryKmbCtbJoint(scope: CoroutineScope, stopId: String, s
             }
         }
     }
-    run {
-        val routeNumber = route.routeNumber
-        val ctbStopIds = precomputedData.ctbStopIds.orEmpty()
-        val (first, second) = precomputedData.ctbByDirectionResult!!
-        val destKeys = second.asSequence().map { it.zh.remove(" ") }.toSet()
-        val ctbEtaEntries: ConcurrentMutableMap<String?, MutableSet<LocalDateTime>> = ConcurrentMutableMap()
-        val stopQueryData = buildList {
-            for (ctbStopId in ctbStopIds) {
-                add(scope.async { getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber") })
-            }
-        }.awaitAll()
-        val stopSequences: MutableMap<String, MutableSet<Int>> = mutableMapOf()
-        val queryBusDests: Array<Array<String?>?> = arrayOfNulls(stopQueryData.size)
-        for (i in stopQueryData.indices) {
-            val data = stopQueryData[i]
-            val buses = data!!.optJsonArray("data")!!
-            val busDests = arrayOfNulls<String>(buses.size)
-            for (u in 0 until buses.size) {
-                val bus = buses.optJsonObject(u)!!
-                if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
-                    val rawBusDest = bus.optString("dest_tc").remove(" ")
-                    val busDest = destKeys.asSequence().minBy { it.editDistance(rawBusDest) }
-                    busDests[u] = busDest
-                    stopSequences.getOrPut(busDest) { HashSet() }.add(bus.optInt("seq"))
+    val routeNumber = route.routeNumber
+    val allBranches = precomputedData.allBranches
+    val ctbBound = allBranches.asSequence().mapNotNull { it.bound[Operator.CTB] }.firstOrNull()
+    if (ctbBound == null) {
+        run {
+            val ctbStopIds = precomputedData.ctbStopIds.orEmpty()
+            val (first, second) = precomputedData.ctbByDirectionResult!!
+            val destKeys = second.asSequence().map { it.zh.remove(" ") }.toSet()
+            val ctbEtaEntries: ConcurrentMutableMap<String?, MutableSet<LocalDateTime>> = ConcurrentMutableMap()
+            val stopQueryData = buildList {
+                for (ctbStopId in ctbStopIds) {
+                    add(scope.async { getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber") })
                 }
+            }.awaitAll()
+            val stopSequences: MutableMap<String, MutableSet<Int>> = mutableMapOf()
+            val queryBusDests: Array<Array<String?>?> = arrayOfNulls(stopQueryData.size)
+            for (i in stopQueryData.indices) {
+                val data = stopQueryData[i]
+                val buses = data!!.optJsonArray("data")!!
+                val busDests = arrayOfNulls<String>(buses.size)
+                for (u in 0 until buses.size) {
+                    val bus = buses.optJsonObject(u)!!
+                    if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
+                        val rawBusDest = bus.optString("dest_tc").remove(" ")
+                        val busDest = destKeys.asSequence().minBy { it.editDistance(rawBusDest) }
+                        busDests[u] = busDest
+                        stopSequences.getOrPut(busDest) { HashSet() }.add(bus.optInt("seq"))
+                    }
+                }
+                queryBusDests[i] = busDests
             }
-            queryBusDests[i] = busDests
-        }
-        val matchingSeq = stopSequences.entries.asSequence()
-            .map { (key, value) -> key to (value.minByOrNull { (it - stopIndex).absoluteValue }?: -1) }
-            .toMap()
-        for (i in stopQueryData.indices) {
-            val data = stopQueryData[i]!!
-            val buses = data.optJsonArray("data")!!
-            val usedRealSeq: MutableMap<String?, MutableSet<Int>> = mutableMapOf()
-            for (u in 0 until buses.size) {
-                val bus = buses.optJsonObject(u)!!
-                if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
-                    val busDest = queryBusDests[i]!![u]!!
-                    val stopSeq = bus.optInt("seq")
-                    if ((stopSeq == (matchingSeq[busDest]?: 0)) && usedRealSeq.getOrPut(busDest) { HashSet() }.add(bus.optInt("eta_seq"))) {
-                        val eta = bus.optString("eta")
-                        if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
-                            val mins = (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0
-                            if (mins.isFinite() && mins < -10.0) continue
-                            ctbEtaEntries.synchronize {
-                                ctbEtaEntries.getOrPut(busDest) { ConcurrentMutableSet() }.add(
-                                    currentLocalDateTime(mins.minutes)
-                                )
+            val matchingSeq = stopSequences.entries.asSequence()
+                .map { (key, value) -> key to (value.minByOrNull { (it - stopIndex).absoluteValue }?: -1) }
+                .toMap()
+            for (i in stopQueryData.indices) {
+                val data = stopQueryData[i]!!
+                val buses = data.optJsonArray("data")!!
+                val usedRealSeq: MutableMap<String?, MutableSet<Int>> = mutableMapOf()
+                for (u in 0 until buses.size) {
+                    val bus = buses.optJsonObject(u)!!
+                    if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
+                        val busDest = queryBusDests[i]!![u]!!
+                        val stopSeq = bus.optInt("seq")
+                        if ((stopSeq == (matchingSeq[busDest]?: 0)) && usedRealSeq.getOrPut(busDest) { HashSet() }.add(bus.optInt("eta_seq"))) {
+                            val eta = bus.optString("eta")
+                            if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
+                                val mins = (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0
+                                if (mins.isFinite() && mins < -10.0) continue
+                                ctbEtaEntries.synchronize {
+                                    ctbEtaEntries.getOrPut(busDest) { ConcurrentMutableSet() }.add(
+                                        currentLocalDateTime(mins.minutes)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        first.asSequence().map { ctbEtaEntries[it.zh.remove(" ")] }.forEach {
-            if (it != null) {
-                jointOperated.addAll(it)
+            first.asSequence().map { ctbEtaEntries[it.zh.remove(" ")] }.forEach {
+                if (it != null) {
+                    jointOperated.addAll(it)
+                }
             }
+        }
+    } else {
+        run {
+            val ctbStopIds: MutableList<String> = mutableListOf()
+            for (branch in allBranches) {
+                val kmbStops = branch.stops[Operator.KMB]
+                val ctbStops = branch.stops[Operator.CTB]
+                if (kmbStops.isNotNullAndNotEmpty() && ctbStops.isNotNullAndNotEmpty()) {
+                    val indexes = kmbStops.indexesOf(stopId)
+                    if (indexes.firstOrNull() != -1) {
+                        for (i in indexes) {
+                            val ctbStopId = ctbStops.getOrNull(i)
+                            if (ctbStopId != null) {
+                                ctbStopIds.add(ctbStopId)
+                            }
+                        }
+                    }
+                }
+            }
+            val ctbEtaEntries: ConcurrentMutableSet<LocalDateTime> = ConcurrentMutableSet()
+            val stopQueryData = buildList {
+                for (ctbStopId in ctbStopIds) {
+                    add(scope.async { getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$ctbStopId/$routeNumber") })
+                }
+            }.awaitAll()
+            val stopSequences: MutableSet<Int> = HashSet()
+            for (i in stopQueryData.indices) {
+                val data = stopQueryData[i]
+                val buses = data!!.optJsonArray("data")!!
+                for (u in 0 until buses.size) {
+                    val bus = buses.optJsonObject(u)!!
+                    val busBound = bus.optString("dir")
+                    if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route") && (ctbBound.length > 1 || ctbBound == busBound)) {
+                        stopSequences.add(bus.optInt("seq"))
+                    }
+                }
+            }
+            val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
+            for (i in stopQueryData.indices) {
+                val data = stopQueryData[i]!!
+                val buses = data.optJsonArray("data")!!
+                val usedRealSeq: MutableSet<Int> = HashSet()
+                for (u in 0 until buses.size) {
+                    val bus = buses.optJsonObject(u)!!
+                    if (Operator.CTB === Operator.valueOf(bus.optString("co")) && routeNumber == bus.optString("route")) {
+                        val busBound = bus.optString("dir")
+                        val stopSeq = bus.optInt("seq")
+                        if (stopSeq == matchingSeq && (ctbBound.length > 1 || ctbBound == busBound) && usedRealSeq.add(bus.optInt("eta_seq"))) {
+                            val eta = bus.optString("eta")
+                            if (eta.isNotEmpty() && !eta.equals("null", ignoreCase = true)) {
+                                val mins = (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0
+                                if (mins.isFinite() && mins < -10.0) continue
+                                ctbEtaEntries.synchronize {
+                                    ctbEtaEntries.add(currentLocalDateTime(mins.minutes))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            jointOperated.addAll(ctbEtaEntries)
         }
     }
     kmbFuture.join()

@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk",
       "state" : {
-        "revision" : "45d327fcbe7793747295346c2209ad419bdead74",
-        "version" : "11.14.0"
+        "revision" : "fdc352fabaf5916e7faa1f96ad02b1957e93e5a5",
+        "version" : "11.15.0"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleAppMeasurement.git",
       "state" : {
-        "revision" : "406f72d0d5e9445fd1cf782db3e9e338cee2bed4",
-        "version" : "11.14.0"
+        "revision" : "45ce435e9406d3c674dd249a042b932bee006f60",
+        "version" : "11.15.0"
       }
     },
     {
@@ -106,7 +106,7 @@
       "location" : "https://github.com/rickclephas/KMP-NativeCoroutines.git",
       "state" : {
         "branch" : "master",
-        "revision" : "2373e5add0026d89d938cc35ebf17a203d5ce859"
+        "revision" : "131f600110c4ba215585cb03ec5d7b6ad1c1fde2"
       }
     },
     {
