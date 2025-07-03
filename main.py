@@ -1551,6 +1551,49 @@ def fix_missing_stops():
         if stop_id in DATA_SHEET["stopMap"]:
             del DATA_SHEET["stopMap"][stop_id]
 
+def fix_ctb_route_bounds():
+    ctb_route_numbers = set()
+    for data in DATA_SHEET["routeList"].values():
+        if "stops" in data and data["stops"] is not None and "ctb" in data["stops"]:
+            if "ctbIsCircular" not in data and len(data["bound"]["ctb"]) == 1:
+                ctb_route_numbers.add(data["route"])
+
+    ctb_stops_by_bound = {}
+
+    def process(route_number):
+        for bound_key in ['O', 'I']:
+            url = f"https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/{route_number}/{'in' if bound_key == 'I' else 'out'}bound"
+            stops_json = get_web_json(url)
+            stops = []
+            for stop_json in stops_json["data"]:
+                stops.append(stop_json["stop"])
+            ctb_stops_by_bound[f"{route_number}_{bound_key}"] = stops
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(process, route_number) for route_number in ctb_route_numbers]
+    for _ in concurrent.futures.as_completed(futures):
+        pass
+
+    for key, data in DATA_SHEET["routeList"].items():
+        if "stops" in data and data["stops"] is not None and "ctb" in data["stops"]:
+            if "ctbIsCircular" not in data and len(data["bound"]["ctb"]) == 1:
+                route_number = data["route"]
+                original_bound = data["bound"]["ctb"]
+                reverse_bound = 'I' if original_bound == 'O' else 'O'
+                ctb_stops = data["stops"]["ctb"]
+                right_bound_stops = ctb_stops_by_bound[f"{route_number}_{original_bound}"]
+                wrong_bound_stops = ctb_stops_by_bound[f"{route_number}_{reverse_bound}"]
+                right_bound_count = 0
+                wrong_bound_count = 0
+                for stop in ctb_stops:
+                    if stop in right_bound_stops:
+                        right_bound_count += 1
+                    if stop in wrong_bound_stops:
+                        wrong_bound_count += 1
+                if wrong_bound_count > right_bound_count:
+                    data["bound"]["ctb"] = reverse_bound
+                    print(f"Flipped {key} from {original_bound} (Matched {right_bound_count}) to {reverse_bound} (Matched {wrong_bound_count})")
+
 
 print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
@@ -1568,6 +1611,8 @@ print("Downloading & Processing MTR & LRT Data")
 download_and_process_mtr_data()
 print("Downloading & Processing Traffic Snapshots")
 download_and_process_traffic_snapshot()
+print("Fix CTB Route Bounds")
+fix_ctb_route_bounds()
 print("Creating Missing Routes")
 create_missing_routes()
 print("Adding Route Remarks")
