@@ -228,7 +228,7 @@ struct ListStopsView: AppScreenView {
                 }.min(by: {
                     $0.distance < $1.distance
                 })
-                if closest!.distance <= 0.3 {
+                if closest!.distance <= 0.75 {
                     let target = Int(closest!.stopIndex)
                     closestIndex = target
                     scrollTarget = target - 1

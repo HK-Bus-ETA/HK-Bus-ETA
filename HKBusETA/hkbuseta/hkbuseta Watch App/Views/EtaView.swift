@@ -139,7 +139,7 @@ struct EtaView: AppScreenView {
                             registry(appContext).setLrtDirectionMode(lrtDirectionMode: !lrtDirectionMode, context: appContext)
                             lrtDirectionMode = Shared().lrtDirectionMode
                             appContext.showToastText(text: lrtDirectionMode ? (Shared().language == "en" ? "Display all Light Rail routes in the same direction" : "顯示所有相同方向輕鐵路線") : (Shared().language == "en" ? "Display only the select Light Rail route" : "只顯示該輕鐵路線"), duration: ToastDuration.short_)
-                            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
+                            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false, selectedBranch: nil)
                             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
                             if let stopData = stopData {
                                 if co.isBus && stopData.branchIds.contains(currentBranch) {
@@ -219,7 +219,7 @@ struct EtaView: AppScreenView {
         }
         .frame(height: Double(appContext.screenHeight) * 0.8)
         .onReceive(etaTimer) { _ in
-            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
+            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false, selectedBranch: nil)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
             if let stopData = stopData {
                 if co.isBus && stopData.branchIds.contains(currentBranch) {
@@ -233,7 +233,7 @@ struct EtaView: AppScreenView {
             freshness = eta?.isOutdated() != true
         }
         .onAppear {
-            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false)
+            let options = Registry.EtaQueryOptions(lrtDirectionMode: Shared().lrtDirectionMode, lrtAllMode: false, selectedBranch: nil)
             fetchEta(appContext: appContext, stopId: stopId, stopIndex: index, co: co, route: route, options: options) { eta = $0 }
             if let stopData = stopData {
                 if co.isBus && stopData.branchIds.contains(currentBranch) {

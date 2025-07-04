@@ -53,6 +53,7 @@ import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.objects.QueryTask
 import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
+import com.loohp.hkbuseta.common.objects.RemarkType
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
 import com.loohp.hkbuseta.common.objects.RouteNotice
@@ -96,6 +97,7 @@ import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isCircular
+import com.loohp.hkbuseta.common.objects.isNotEmpty
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.lrtLineStatus
 import com.loohp.hkbuseta.common.objects.mtrLineStatus
@@ -137,7 +139,6 @@ import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
-import com.loohp.hkbuseta.common.utils.debugLog
 import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
 import com.loohp.hkbuseta.common.utils.distinctBy
 import com.loohp.hkbuseta.common.utils.doRetry
@@ -155,6 +156,7 @@ import com.loohp.hkbuseta.common.utils.getXMLResponse
 import com.loohp.hkbuseta.common.utils.gzipSupported
 import com.loohp.hkbuseta.common.utils.hongKongTimeZone
 import com.loohp.hkbuseta.common.utils.ifFalse
+import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.common.utils.minus
@@ -2356,7 +2358,8 @@ class Registry {
     @Immutable
     data class EtaQueryOptions(
         val lrtDirectionMode: Boolean = false,
-        val lrtAllMode: Boolean = false
+        val lrtAllMode: Boolean = false,
+        val selectedBranch: Route? = null
     )
 
     fun buildEtaQuery(stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext, options: EtaQueryOptions? = null): ETAQueryTask {
@@ -2378,7 +2381,7 @@ class Registry {
                     co === Operator.CTB -> etaQueryCtb(typhoonInfo, stopId, stopIndex, co, route)
                     co === Operator.NLB -> etaQueryNlb(typhoonInfo, stopId, co, route)
                     co === Operator.MTR_BUS -> etaQueryMtrBus(typhoonInfo, stopId, co, route)
-                    co === Operator.GMB -> etaQueryGmb(typhoonInfo, stopId, stopIndex, co, route, context)
+                    co === Operator.GMB -> etaQueryGmb(typhoonInfo, stopId, stopIndex, co, route, options, context)
                     co === Operator.LRT -> etaQueryLrt(typhoonInfo, stopId, stopIndex, co, route, options)
                     co === Operator.MTR -> etaQueryMtr(typhoonInfo, stopId, co, route)
                     co === Operator.SUNFERRY -> etaQuerySunFerry(typhoonInfo, stopId, co, route)
@@ -3284,7 +3287,9 @@ class Registry {
         val branch: Route
     )
 
-    private suspend fun etaQueryGmb(typhoonInfo: TyphoonInfo, stopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext): ETAQueryResult {
+    private suspend fun etaQueryGmb(typhoonInfo: TyphoonInfo, stopId: String, stopIndex: Int, co: Operator, route: Route, options: EtaQueryOptions?, context: AppContext): ETAQueryResult {
+        val allBranches = getAllBranchRoutes(route.routeNumber, route.idBound(Operator.GMB), Operator.GMB, route.gmbRegion)
+        val specialBranchRemarks = allBranches.associateWith { lazy { it.resolveSpecialRemark(context, RemarkType.LABEL_MAIN_BRANCH) } }
         val allStops = getAllStops(route.routeNumber, route.idBound(Operator.GMB), Operator.GMB, route.gmbRegion)
         val branches = allStops.indexesOf { it.stopId == stopId }
             .minByOrNull { (it - stopIndex).absoluteValue }
@@ -3298,22 +3303,30 @@ class Registry {
         val data = getJSONResponse<JsonObject>("https://data.etagmb.gov.hk/eta/stop/$stopId")
         val stopSequences: MutableMap<String, MutableSet<Int>> = mutableMapOf()
         val busList: MutableList<GMBETAEntry> = mutableListOf()
+        val branchRemarks: MutableMap<String, BilingualText> = mutableMapOf()
         for (i in 0 until data!!.optJsonArray("data")!!.size) {
             val routeData = data.optJsonArray("data")!!.optJsonObject(i)!!
             val buses = routeData.optJsonArray("eta")
             val bound = if (routeData.optInt("route_seq") <= 1) "O" else "I"
             val routeId = routeData.optString("route_id")
+            val descriptionZh = routeData.optString("description_tc")
+            val descriptionEn = routeData.optString("description_en")
             val branch = branches[routeId]
-            if (route.bound[co] == bound && branch != null && buses != null) {
-                val routeNumber = route.routeNumber
-                val stopSeq = routeData.optInt("stop_seq")
-                for (u in 0 until buses.size) {
-                    val bus = buses.optJsonObject(u)!!
-                    if (routeNumber == route.routeNumber) {
-                        val eta = bus.optString("timestamp")
-                        val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0
-                        stopSequences.getOrPut(branch.gtfsId) { mutableSetOf() }.add(stopSeq)
-                        busList.add(GMBETAEntry(stopSeq, mins, bus, branch))
+            if (route.bound[co] == bound && branch != null) {
+                if (descriptionZh.isNotBlank() || descriptionEn.isNotBlank()) {
+                    branchRemarks[routeId] = descriptionZh withEn descriptionEn
+                }
+                if (buses != null) {
+                    val routeNumber = route.routeNumber
+                    val stopSeq = routeData.optInt("stop_seq")
+                    for (u in 0 until buses.size) {
+                        val bus = buses.optJsonObject(u)!!
+                        if (routeNumber == route.routeNumber) {
+                            val eta = bus.optString("timestamp")
+                            val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0
+                            stopSequences.getOrPut(branch.gtfsId) { mutableSetOf() }.add(stopSeq)
+                            busList.add(GMBETAEntry(stopSeq, mins, bus, branch))
+                        }
                     }
                 }
             }
@@ -3324,11 +3337,9 @@ class Registry {
                 busList.removeAll { it.branch.gtfsId == r && it.stopSeq != matchingSeq }
             }
         }
-        val sortedBusList = busList.asSequence()
-            .sortedBy { it.mins }
-            .distinctBy({ it }, { (_, m1, _, b1), (_, m2, _, b2) -> (m1 - m2).absoluteValue < 0.33 && b1 != b2 })
+        busList.sortBy { it.mins }
         var counter = 0
-        for ((_, mins, bus) in sortedBusList) {
+        for ((_, mins, bus, branch) in busList) {
             if (mins.isFinite() && mins < -10.0) continue
             val seq = ++counter
             var remark = if (language == "en") bus.optString("remarks_en") else bus.optString("remarks_tc")
@@ -3363,6 +3374,12 @@ class Registry {
                     }
                 }
             }
+            if (timeMessage.isNotEmpty() && options?.selectedBranch != null && branch != options.selectedBranch) {
+                val specialBranchRemark by specialBranchRemarks[branch]!!
+                remarkMessage += buildFormattedString {
+                    append(" - ${specialBranchRemark[Shared.language]}", SmallSize, BoldStyle)
+                }
+            }
             if (remark.isNotEmpty()) {
                 remarkMessage += buildFormattedString {
                     if (timeMessage.isEmpty()) {
@@ -3391,6 +3408,27 @@ class Registry {
                 "".asFormattedText(BoldStyle) + remarkMessage
             }
             lines[seq] = ETALineEntry.etaEntry(ETALineEntryText.bus(timeMessage, remarkMessage), toShortText(language, minsRounded.toLong(), 0), route.routeNumber, mins, minsRounded.toLong())
+        }
+        val remarks = branchRemarks.asSequence()
+            .filter { (_, v) -> v.isNotEmpty() }
+            .mapNotNull { (k, v) -> allBranches.indexOf { r -> r.gtfsId == k }.takeIf { it >= 0 }?.let { it to v } }
+            .sortedBy { (k) -> k }
+            .groupBy(
+                keySelector = { (_, v) -> v },
+                valueTransform = { (k) -> allBranches[k] }
+            )
+        for ((remark, branches) in remarks) {
+            val seq = ++counter
+            lines[seq] = ETALineEntry.textEntry(buildFormattedString {
+                append(remark[Shared.language])
+                if (!branches.contains(options?.selectedBranch)) {
+                    val specialBranchRemark = branches.joinToString(
+                        separator = "/",
+                        transform = { specialBranchRemarks[it]!!.value[Shared.language] }
+                    )
+                    append(" - $specialBranchRemark", SmallSize, BoldStyle)
+                }
+            })
         }
         return ETAQueryResult.result(isMtrEndOfLine, isTyphoonSchedule, co, lines)
     }

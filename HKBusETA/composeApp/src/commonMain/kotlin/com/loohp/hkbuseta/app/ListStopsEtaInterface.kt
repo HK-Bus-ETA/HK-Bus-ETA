@@ -472,7 +472,7 @@ fun ListStopsEtaInterface(
                 .minBy { it.third }
             when (type) {
                 ListStopsInterfaceType.ETA -> {
-                    if (!location.onlyInRange || distance < 0.3) {
+                    if (!location.onlyInRange || distance < 0.75) {
                         scroll.scrollToItem(index)
                         selectedStop = index + 1
                     }
@@ -1552,7 +1552,7 @@ fun StopEntryExpansionEta(
     val togglingAlightReminder by togglingAlightReminderState
 
     var lrtDirectionMode by lrtDirectionModeState
-    val etaQueryOptions by remember { derivedStateOf { Registry.EtaQueryOptions(lrtDirectionMode) } }
+    val etaQueryOptions by remember { derivedStateOf { Registry.EtaQueryOptions(lrtDirectionMode = lrtDirectionMode, selectedBranch = selectedBranch) } }
 
     val favouriteStopAlreadySet by remember { derivedStateOf { favouriteStops.hasStop(stopData.stopId) || favouriteRouteStops.hasStop(stopData.stopId, co, selectedStop, stopData.stop, stopData.route) } }
 

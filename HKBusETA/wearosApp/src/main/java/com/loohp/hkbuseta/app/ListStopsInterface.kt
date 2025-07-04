@@ -241,7 +241,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                     }.minBy {
                         it.distance
                     }.let {
-                        if (!origin.onlyInRange || it.distance <= 0.3) {
+                        if (!origin.onlyInRange || it.distance <= 0.75) {
                             closestIndex = it.stopIndex
                             scope.launch {
                                 scroll.animateScrollToItem(it.stopIndex + 1, (-window.height / 2) - 15F.scaledSize(instance).spToPixels(instance).roundToInt())
