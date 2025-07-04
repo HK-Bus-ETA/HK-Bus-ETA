@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -135,7 +136,9 @@ actual fun MapRouteInterface(
     sections: ImmutableList<MapRouteSection>,
     selectedStopState: MutableIntState,
     selectedSectionState: MutableIntState,
-    alternateStopNameShowing: Boolean
+    alternateStopNameShowing: Boolean,
+    useSizeToggle: Boolean,
+    sizeToggleState: MutableState<Boolean>
 ) {
     val hasGooglePlayServices = rememberGooglePlayServicesAvailable(instance)
     if (hasGooglePlayServices) {

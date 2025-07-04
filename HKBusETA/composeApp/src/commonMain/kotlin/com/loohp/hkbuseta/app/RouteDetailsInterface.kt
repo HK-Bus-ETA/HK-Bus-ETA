@@ -884,7 +884,8 @@ fun MapStopsInterface(
     alternateStopNamesShowingState: MutableState<Boolean>,
     pinnedSectionSize: IntSize
 ) {
-    var mapExpanded by remember { mutableStateOf(false) }
+    val mapExpandedState = remember { mutableStateOf(false) }
+    var mapExpanded by mapExpandedState
 
     val window = currentLocalWindowSize
 
@@ -943,7 +944,9 @@ fun MapStopsInterface(
                             stops = allStops.asImmutableList(),
                             selectedStopState = selectedStopState,
                             alternateStopNameShowing = alternateStopNamesShowing,
-                            alternateStopNames = alternateStopNames
+                            alternateStopNames = alternateStopNames,
+                            useSizeToggle = screenSize.isNarrow,
+                            sizeToggleState = mapExpandedState
                         )
                         if (screenSize.isNarrow) {
                             PlatformFilledTonalIconToggleButton(

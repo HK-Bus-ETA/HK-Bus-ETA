@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -119,7 +120,9 @@ actual fun MapRouteInterface(
     sections: ImmutableList<MapRouteSection>,
     selectedStopState: MutableIntState,
     selectedSectionState: MutableIntState,
-    alternateStopNameShowing: Boolean
+    alternateStopNameShowing: Boolean,
+    useSizeToggle: Boolean,
+    sizeToggleState: MutableState<Boolean>
 ) {
     var selectedSection by selectedSectionState
     var selectedStop by selectedStopState

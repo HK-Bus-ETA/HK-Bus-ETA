@@ -1,5 +1,5 @@
 class WebMap {
-    constructor(language, darkMode, backgroundColor) {
+    constructor(language, darkMode, backgroundColor, sizeToggleCallback) {
         this.valid = true;
         this.mapElement = document.createElement("div");
         this.mapId = "map_" + Math.floor(Math.random() * Math.floor(1000000));
@@ -22,6 +22,41 @@ class WebMap {
 
         this.resizeCallback = () => this.map.invalidateSize();
         window.addEventListener("resize", this.resizeCallback);
+
+        this.sizeToggleCallback = sizeToggleCallback;
+        this.sizeToggleIsLarge = false;
+
+        this.sizeToggleContainer = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        this.sizeToggleContainer.style.display = "none";
+        this.sizeToggleButton = L.DomUtil.create('a', 'leaflet-size-toggle', this.sizeToggleContainer);
+        this.sizeToggleButton.innerText = "↧";
+        this.sizeToggleButton.href = '#';
+        L.DomEvent.disableClickPropagation(this.sizeToggleContainer);
+        L.DomEvent.on(this.sizeToggleButton, 'click', L.DomEvent.stopPropagation)
+            .on(this.sizeToggleButton, 'click', L.DomEvent.preventDefault)
+            .on(this.sizeToggleButton, 'click', () => {
+                this.sizeToggleIsLarge = !this.sizeToggleIsLarge;
+                this.sizeToggleButton.innerText = this.sizeToggleIsLarge ? "↥" : "↧";
+                this.sizeToggleCallback(this.sizeToggleIsLarge);
+            });
+        const SizeToggleControl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: () => this.sizeToggleContainer
+        });
+        this.map.addControl(new SizeToggleControl());
+    }
+
+    getMapElementId() {
+        return this.mapElement.id;
+    }
+
+    setUseSizeToggleContainer(useSizeToggle, sizeToggleIsLarge) {
+        this.sizeToggleIsLarge = sizeToggleIsLarge;
+        if (useSizeToggle) {
+            this.sizeToggleContainer.style.display = "";
+        } else {
+            this.sizeToggleContainer.style.display = "none";
+        }
     }
 
     reloadTiles(language, darkMode, backgroundColor) {
@@ -62,6 +97,7 @@ class WebMap {
         this.mapElement.style.top = y + "px";
         this.mapElement.style.width = width + "px";
         this.mapElement.style.height = height + "px";
+        this.map.invalidateSize();
     }
 
     show() {

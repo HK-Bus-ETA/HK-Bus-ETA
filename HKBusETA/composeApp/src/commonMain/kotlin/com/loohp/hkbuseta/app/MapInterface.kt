@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.app
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -53,7 +54,9 @@ fun MapRouteInterface(
     stops: ImmutableList<Registry.StopData>,
     selectedStopState: MutableIntState,
     alternateStopNameShowing: Boolean,
-    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>
+    alternateStopNames: ImmutableState<ImmutableList<Registry.NearbyStopSearchResult>?>,
+    useSizeToggle: Boolean,
+    sizeToggleState: MutableState<Boolean>
 ) {
     val sections = remember(waypoints, stops, alternateStopNames) {
         persistentListOf(MapRouteSection(waypoints, stops, alternateStopNames.value))
@@ -64,7 +67,9 @@ fun MapRouteInterface(
         sections = sections,
         selectedStopState = selectedStopState,
         selectedSectionState = selectedSectionState,
-        alternateStopNameShowing = alternateStopNameShowing
+        alternateStopNameShowing = alternateStopNameShowing,
+        useSizeToggle = useSizeToggle,
+        sizeToggleState = sizeToggleState
     )
 }
 
@@ -74,7 +79,9 @@ expect fun MapRouteInterface(
     sections: ImmutableList<MapRouteSection>,
     selectedStopState: MutableIntState,
     selectedSectionState: MutableIntState,
-    alternateStopNameShowing: Boolean
+    alternateStopNameShowing: Boolean,
+    useSizeToggle: Boolean,
+    sizeToggleState: MutableState<Boolean>
 )
 
 @Composable

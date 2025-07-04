@@ -14,13 +14,25 @@
     font-family: "Noto Sans HK", "Roboto", sans-serif;
 }
 
+html {
+    height: 100%;
+}
+
 body {
     background-color: #FFFBFF;
+    height: 100%;
+    margin: 0
 }
+
 @media (prefers-color-scheme: dark) {
     body {
         background-color: #201A1A;
     }
+}
+
+.compose-target {
+    height: 100%;
+    overflow: hidden;
 }
 
 #splash {
@@ -247,6 +259,11 @@ body {
 
 .leaflet-dark-theme.leaflet-control-zoom {
     filter: brightness(0.6) invert(1) contrast(3);
+}
+
+.leaflet-size-toggle {
+    line-height: 23px !important;
+    font-size: 24px !important;
 }
 
 .prevent-select {

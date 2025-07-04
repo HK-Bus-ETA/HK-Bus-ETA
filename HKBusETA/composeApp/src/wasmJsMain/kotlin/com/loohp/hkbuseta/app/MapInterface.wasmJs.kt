@@ -26,12 +26,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -70,7 +72,9 @@ actual fun MapRouteInterface(
     sections: ImmutableList<MapRouteSection>,
     selectedStopState: MutableIntState,
     selectedSectionState: MutableIntState,
-    alternateStopNameShowing: Boolean
+    alternateStopNameShowing: Boolean,
+    useSizeToggle: Boolean,
+    sizeToggleState: MutableState<Boolean>
 ) {
     val shouldHide by ScreenState.hasInterruptElement.collectAsStateMultiplatform()
 
@@ -104,8 +108,18 @@ actual fun MapRouteInterface(
     val indexMap by remember(sections) { derivedStateOf { sections.map { s -> s.waypoints.buildStopListMapping(instance, s.stops) } } }
     val scope = rememberCoroutineScope()
     val backgroundColor = platformBackgroundColor
+    var sizeToggle by sizeToggleState
 
-    val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode, backgroundColor.toArgb())
+    val webMap = rememberWebMap(
+        language = Shared.language,
+        darkMode = Shared.theme.isDarkMode,
+        backgroundColor = backgroundColor.toArgb(),
+        sizeToggleCallback = { sizeToggle = it }
+    )
+
+    LaunchedEffect (useSizeToggle, sizeToggle) {
+        webMap.setUseSizeToggleContainer(useSizeToggle, sizeToggle)
+    }
 
     LaunchedEffect (sections, stopNames) {
         webMap.show()
@@ -171,7 +185,12 @@ actual fun MapSelectInterface(
     val scope = rememberCoroutineScope()
     val backgroundColor = platformBackgroundColor
 
-    val webMap = rememberWebMap(Shared.language, Shared.theme.isDarkMode, backgroundColor.toArgb())
+    val webMap = rememberWebMap(
+        language = Shared.language,
+        darkMode = Shared.theme.isDarkMode,
+        backgroundColor = backgroundColor.toArgb(),
+        sizeToggleCallback = { /* do nothing */ }
+    )
 
     LaunchedEffect (Unit) {
         webMap.show()
@@ -212,8 +231,14 @@ actual fun MapSelectInterface(
 
 @Suppress("NOTHING_TO_INLINE")
 @Composable
-inline fun rememberWebMap(language: String, darkMode: Boolean, backgroundColor: Int): WebMap = remember { WebMap(language, darkMode, backgroundColor) }
+inline fun rememberWebMap(
+    language: String,
+    darkMode: Boolean,
+    backgroundColor: Int,
+    noinline sizeToggleCallback: (Boolean) -> Unit
+): WebMap = remember { WebMap(language, darkMode, backgroundColor, sizeToggleCallback) }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Suppress("NOTHING_TO_INLINE")
 @Composable
 inline fun WebMapContainer(webMap: WebMap) {
@@ -239,8 +264,15 @@ inline fun WebMapContainer(webMap: WebMap) {
 actual val isMapOverlayAlwaysOnTop: Boolean = true
 
 @Stable
-external class WebMap(language: String, darkMode: Boolean, backgroundColor: Int): JsAny {
+external class WebMap(
+    language: String,
+    darkMode: Boolean,
+    backgroundColor: Int,
+    sizeToggleCallback: (Boolean) -> Unit
+): JsAny {
     val valid: Boolean
+    fun getMapElementId(): String
+    fun setUseSizeToggleContainer(useSizeToggle: Boolean, sizeToggleIsLarge: Boolean)
     fun reloadTiles(language: String, darkMode: Boolean, backgroundColor: Int)
     fun remove()
     fun setMapPosition(x: Float, y: Float, width: Float, height: Float)

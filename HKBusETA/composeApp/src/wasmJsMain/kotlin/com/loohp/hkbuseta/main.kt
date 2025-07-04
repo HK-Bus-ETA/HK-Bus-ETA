@@ -26,7 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.window.CanvasBasedWindow
+import androidx.compose.ui.window.ComposeViewport
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.setVersionImpl
 import com.loohp.hkbuseta.common.external.extractShareLink
@@ -89,7 +89,7 @@ fun main() {
             }
         }
     }
-    CanvasBasedWindow(canvasElementId = "ComposeTarget") {
+    ComposeViewport(viewportContainerId = "compose-target") {
         var language by remember { mutableStateOf(Shared.language) }
         val historyStack by HistoryStack.historyStack.collectAsStateMultiplatform()
 
