@@ -44,6 +44,7 @@ import com.loohp.hkbuseta.common.objects.GPSLocation
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.LocationPriority
 import com.loohp.hkbuseta.common.utils.LocationResult
+import com.loohp.hkbuseta.common.utils.ignoreExceptions
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -275,12 +276,11 @@ fun LocationPriority.toGMSPriority(): Int {
 
 actual fun isGPSServiceEnabled(appContext: AppContext, notifyUser: Boolean): Boolean {
     val locationManager = appContext.context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-    try {
+    ignoreExceptions {
         val enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
         if (enabled) {
             return true
         }
-    } catch (_: Exception) {
     }
     if (notifyUser) {
         appContext.showToastText(if (Shared.language == "en") "Unable to read your location" else "無法讀取你的位置", ToastDuration.LONG)

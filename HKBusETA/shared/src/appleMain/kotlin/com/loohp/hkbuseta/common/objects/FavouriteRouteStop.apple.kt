@@ -123,7 +123,8 @@ fun FavouriteRouteStop.buildWidgetPrecomputedData(): WidgetPrecomputedData {
                 allBranches = allBranches,
                 allStops = allStops.map { WidgetStopData(it.stopId, it.stop, allBranches.indexOf(it.route)) },
                 ctbStopIds = ctbStopIds,
-                ctbByDirectionResult = registry.getAllDestinationsByDirection(route.routeNumber, Operator.KMB, null, null, route, stopId)
+                ctbByDirectionResult = registry.getAllDestinationsByDirection(route.routeNumber, Operator.KMB, null, null, route, stopId),
+                ctbEtaStops = registry.getOptDataContainer()!!.ctbEtaStops[route.routeNumber]
             )
         }
         co === Operator.KMB -> {
@@ -148,6 +149,18 @@ fun FavouriteRouteStop.buildWidgetPrecomputedData(): WidgetPrecomputedData {
                 allBranches = allBranches,
                 allStops = allStops.map { WidgetStopData(it.stopId, it.stop, allBranches.indexOf(it.route)) },
                 kmbStopIds = stopIds
+            )
+        }
+        co === Operator.CTB -> {
+            WidgetPrecomputedData(
+                language = Shared.language,
+                fav = this,
+                serviceDayMap = serviceDayMap,
+                holidays = holidays,
+                co = co,
+                allBranches = allBranches,
+                allStops = allStops.map { WidgetStopData(it.stopId, it.stop, allBranches.indexOf(it.route)) },
+                ctbEtaStops = registry.getOptDataContainer()!!.ctbEtaStops[route.routeNumber]
             )
         }
         co === Operator.MTR_BUS -> {
@@ -242,6 +255,7 @@ data class WidgetPrecomputedData(
     val allStops: List<WidgetStopData>,
     val ctbStopIds: List<String>? = null,
     val ctbByDirectionResult: Pair<Set<BilingualText>, Set<BilingualText>>? = null,
+    val ctbEtaStops: Map<String, List<String>>? = null,
     val kmbStopIds: List<String>? = null,
     val mtrBusStopAlias: List<String>? = null,
     val gmbBranches: List<String>? = null,

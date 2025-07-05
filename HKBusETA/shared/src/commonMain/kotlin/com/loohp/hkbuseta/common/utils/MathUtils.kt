@@ -20,6 +20,7 @@
 package com.loohp.hkbuseta.common.utils
 
 import kotlin.math.PI
+import kotlin.math.absoluteValue
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.ceil
@@ -127,3 +128,8 @@ inline fun Int.asRange(): IntRange = this..this
 inline infix fun IntRange.maxDifference(other: IntRange): Int = max(other.last - first, last - other.first)
 inline infix fun IntRange.merge(other: IntRange): IntRange = min(first, other.first)..max(last, other.last)
 inline fun IntRange.toDisplayText(): String = if (isRange) "$first-$last" else first.toString()
+
+fun MutableCollection<Int>.removeClosest(target: Int) {
+    val closest = minByOrNull { (it - target).absoluteValue }
+    remove(closest)
+}

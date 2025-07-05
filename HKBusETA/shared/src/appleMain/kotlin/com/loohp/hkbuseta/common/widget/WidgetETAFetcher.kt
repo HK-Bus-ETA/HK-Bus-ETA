@@ -52,6 +52,7 @@ import com.loohp.hkbuseta.common.utils.parseInstant
 import com.loohp.hkbuseta.common.utils.parseLocalDateTime
 import com.loohp.hkbuseta.common.utils.postJSONResponse
 import com.loohp.hkbuseta.common.utils.remove
+import com.loohp.hkbuseta.common.utils.removeClosest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -82,7 +83,7 @@ fun getEtaWidget(stopId: String, stopIndex: Int, co: Operator, route: Route, pre
             when {
                 route.isKmbCtbJoint -> etaQueryKmbCtbJoint(this, stopId, stopIndex, route, precomputedData)
                 co === Operator.KMB -> etaQueryKmb(stopId, stopIndex, route, precomputedData)
-                co === Operator.CTB -> etaQueryCtb(stopId, stopIndex, route)
+                co === Operator.CTB -> etaQueryCtb(stopId, stopIndex, route, precomputedData)
                 co === Operator.NLB -> etaQueryNlb(stopId, route, precomputedData)
                 co === Operator.MTR_BUS -> etaQueryMtrBus(route, precomputedData)
                 co === Operator.GMB -> etaQueryGmb(stopId, stopIndex, co, route, precomputedData)
@@ -166,6 +167,18 @@ private suspend fun etaQueryKmbCtbJoint(scope: CoroutineScope, stopId: String, s
                 }
                 queryBusDests[i] = busDests
             }
+            val ctbStopList = sequenceOf("O", "I").flatMap { bound ->
+                precomputedData.ctbEtaStops?.get(bound)
+                    ?.mapIndexedNotNull { index, thisStopId -> (index + 1).takeIf { thisStopId == stopId } }
+                    .orEmpty()
+            }.toMutableSet()
+            for (value in stopSequences.values) {
+                val ctbStopListCopy = ctbStopList.toMutableSet()
+                for (seq in value) {
+                    ctbStopListCopy.removeClosest(seq)
+                }
+                value.addAll(ctbStopListCopy)
+            }
             val matchingSeq = stopSequences.entries.asSequence()
                 .map { (key, value) -> key to (value.minByOrNull { (it - stopIndex).absoluteValue }?: -1) }
                 .toMap()
@@ -235,6 +248,15 @@ private suspend fun etaQueryKmbCtbJoint(scope: CoroutineScope, stopId: String, s
                     }
                 }
             }
+            val ctbStopList = sequenceOf("O", "I").flatMap { bound ->
+                precomputedData.ctbEtaStops?.get(bound)
+                    ?.mapIndexedNotNull { index, thisStopId -> (index + 1).takeIf { thisStopId == stopId } }
+                    .orEmpty()
+            }.toMutableSet()
+            for (seq in stopSequences) {
+                ctbStopList.removeClosest(seq)
+            }
+            stopSequences.addAll(ctbStopList)
             val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
             for (i in stopQueryData.indices) {
                 val data = stopQueryData[i]!!
@@ -310,7 +332,7 @@ private suspend fun etaQueryKmb(rawStopId: String, stopIndex: Int, route: Route,
     )
 }
 
-private suspend fun etaQueryCtb(stopId: String, stopIndex: Int, route: Route): WidgetETAResult {
+private suspend fun etaQueryCtb(stopId: String, stopIndex: Int, route: Route, precomputedData: WidgetPrecomputedData): WidgetETAResult {
     val routeNumber = route.routeNumber
     val routeBound = route.bound[Operator.CTB]
     val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$stopId/$routeNumber")
@@ -325,6 +347,15 @@ private suspend fun etaQueryCtb(stopId: String, stopIndex: Int, route: Route): W
             }
         }
     }
+    val ctbStopList = sequenceOf("O", "I").flatMap { bound ->
+        precomputedData.ctbEtaStops?.get(bound)
+            ?.mapIndexedNotNull { index, thisStopId -> (index + 1).takeIf { thisStopId == stopId } }
+            .orEmpty()
+    }.toMutableSet()
+    for (seq in stopSequences) {
+        ctbStopList.removeClosest(seq)
+    }
+    stopSequences.addAll(ctbStopList)
     val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
     val lines = mutableListOf<WidgetLineEntry>()
     val usedRealSeq: MutableSet<Int> = HashSet()
@@ -393,24 +424,6 @@ private suspend fun etaQueryMtrBus(route: Route, precomputedData: WidgetPrecompu
                 var eta = bus.optDouble("arrivalTimeInSecond")
                 if (eta >= 108000) {
                     eta = bus.optDouble("departureTimeInSecond")
-                }
-                var remark = bus.optString("busRemark")
-                if (remark.isEmpty() || remark.equals("null", ignoreCase = true)) {
-                    remark = ""
-                }
-                val isScheduled = bus.optString("isScheduled") == "1"
-                if (isScheduled) {
-                    if (remark.isNotEmpty()) {
-                        remark += "/"
-                    }
-                    remark += if (language == "en") "Scheduled Bus" else "預定班次"
-                }
-                val isDelayed = bus.optString("isDelayed") == "1"
-                if (isDelayed) {
-                    if (remark.isNotEmpty()) {
-                        remark += "/"
-                    }
-                    remark += if (language == "en") "Bus Delayed" else "行車緩慢"
                 }
                 val mins = eta / 60.0
                 if (mins.isFinite() && mins < -10.0) continue

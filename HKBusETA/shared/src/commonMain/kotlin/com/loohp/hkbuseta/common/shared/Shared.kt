@@ -72,6 +72,7 @@ import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
+import com.loohp.hkbuseta.common.utils.ignoreExceptions
 import com.loohp.hkbuseta.common.utils.plus
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.wrap
@@ -118,9 +119,9 @@ object Shared {
     val RECENT_ROUTE_FILTER: (String, Route, Operator) -> Boolean = { k, _, _ -> lastLookupRoutes.value.any { it.routeKey == k } }
 
     suspend fun invalidateCache(context: AppContext) {
-        try {
+        ignoreExceptions {
             Registry.invalidateCache(context)
-        } catch (_: Throwable) {}
+        }
     }
 
     private val backgroundUpdateScheduler: AtomicReference<(AppContext, Long) -> Unit> = AtomicReference { _, _ -> }

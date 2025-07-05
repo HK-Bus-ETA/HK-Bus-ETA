@@ -156,6 +156,7 @@ import com.loohp.hkbuseta.common.utils.getXMLResponse
 import com.loohp.hkbuseta.common.utils.gzipSupported
 import com.loohp.hkbuseta.common.utils.hongKongTimeZone
 import com.loohp.hkbuseta.common.utils.ifFalse
+import com.loohp.hkbuseta.common.utils.ignoreExceptions
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.indexesOf
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
@@ -173,6 +174,7 @@ import com.loohp.hkbuseta.common.utils.performGC
 import com.loohp.hkbuseta.common.utils.plus
 import com.loohp.hkbuseta.common.utils.postJSONResponse
 import com.loohp.hkbuseta.common.utils.remove
+import com.loohp.hkbuseta.common.utils.removeClosest
 import com.loohp.hkbuseta.common.utils.runIfNotNull
 import com.loohp.hkbuseta.common.utils.strEq
 import com.loohp.hkbuseta.common.utils.sundayZeroDayNumber
@@ -278,9 +280,8 @@ class Registry {
         }
 
         suspend fun invalidateCache(context: AppContext) {
-            try {
+            ignoreExceptions {
                 context.deleteFile(CHECKSUM_FILE_NAME)
-            } catch (ignore: Throwable) {
             }
         }
 
@@ -906,7 +907,7 @@ class Registry {
                         state.value = State.ERROR
                         try {
                             context.deleteFile(CHECKSUM_FILE_NAME)
-                        } catch (ignore: Throwable) {
+                        } catch (_: Throwable) {
                         }
                     } else {
                         state.value = State.UPDATING
@@ -1206,7 +1207,7 @@ class Registry {
                                 existingMatchingRoute.co = co
                             }
                         }
-                    } catch (ignore: NumberFormatException) {
+                    } catch (_: NumberFormatException) {
                     }
                 } else {
                     matchingRoutes[routeGroupKey] = RouteSearchResultEntry(key, data, co)
@@ -2253,7 +2254,7 @@ class Registry {
         return CoroutineScope(Dispatchers.IO).async {
             try {
                 getJSONResponse<AppAlert>("https://app-alerts.hkbuseta.com/alert.json")
-            } catch (e: Throwable) {
+            } catch (_: Throwable) {
                 null
             }
         }
@@ -2577,6 +2578,18 @@ class Registry {
                         }
                         queryBusDests[i] = busDests
                     }
+                    val ctbStopList = sequenceOf("O", "I").flatMap { bound ->
+                        DATA!!.ctbEtaStops[routeNumber]?.get(bound)
+                            ?.mapIndexedNotNull { index, thisStopId -> (index + 1).takeIf { thisStopId == stopId } }
+                            .orEmpty()
+                    }.toMutableSet()
+                    for (value in stopSequences.values) {
+                        val ctbStopListCopy = ctbStopList.toMutableSet()
+                        for (seq in value) {
+                            ctbStopListCopy.removeClosest(seq)
+                        }
+                        value.addAll(ctbStopListCopy)
+                    }
                     val matchingSeq = stopSequences.entries.asSequence()
                         .map { (key, value) -> key to (value.minByOrNull { (it - stopIndex).absoluteValue }?: -1) }
                         .toMap()
@@ -2697,6 +2710,15 @@ class Registry {
                             }
                         }
                     }
+                    val ctbStopList = sequenceOf("O", "I").flatMap { bound ->
+                        DATA!!.ctbEtaStops[routeNumber]?.get(bound)
+                            ?.mapIndexedNotNull { index, thisStopId -> (index + 1).takeIf { thisStopId == stopId } }
+                            .orEmpty()
+                    }.toMutableSet()
+                    for (seq in stopSequences) {
+                        ctbStopList.removeClosest(seq)
+                    }
+                    stopSequences.addAll(ctbStopList)
                     val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
                     for (i in stopQueryData.indices) {
                         val data = stopQueryData[i]!!
@@ -2984,7 +3006,7 @@ class Registry {
         lines[1] = ETALineEntry.textEntry(getNoScheduledDepartureMessage(language, null, typhoonInfo.isAboveTyphoonSignalEight, typhoonInfo.typhoonWarningTitle))
         val isTyphoonSchedule = typhoonInfo.isAboveTyphoonSignalEight
         val routeNumber = route.routeNumber
-        val routeBound = route.bound[Operator.CTB]
+        val routeBound = route.bound[Operator.CTB]!!
         val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$stopId/$routeNumber")
         val buses = data!!.optJsonArray("data")!!
         val stopSequences: MutableSet<Int> = HashSet()
@@ -2992,11 +3014,20 @@ class Registry {
             val bus = buses.optJsonObject(u)!!
             if (Operator.CTB === Operator.valueOf(bus.optString("co"))) {
                 val bound = bus.optString("dir")
-                if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound)) {
+                if (routeNumber == bus.optString("route") && (routeBound.length > 1 || bound == routeBound)) {
                     stopSequences.add(bus.optInt("seq"))
                 }
             }
         }
+        val ctbStopList = sequenceOf("O", "I").flatMap { bound ->
+            DATA!!.ctbEtaStops[routeNumber]?.get(bound)
+                ?.mapIndexedNotNull { index, thisStopId -> (index + 1).takeIf { thisStopId == stopId } }
+                .orEmpty()
+        }.toMutableSet()
+        for (seq in stopSequences) {
+            ctbStopList.removeClosest(seq)
+        }
+        stopSequences.addAll(ctbStopList)
         val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
         var counter = 0
         val usedRealSeq: MutableSet<Int> = HashSet()
@@ -3004,7 +3035,7 @@ class Registry {
             if (Operator.CTB === Operator.valueOf(bus.optString("co"))) {
                 val bound = bus.optString("dir")
                 val stopSeq = bus.optInt("seq")
-                if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound) && stopSeq == matchingSeq) {
+                if (routeNumber == bus.optString("route") && (routeBound.length > 1 || bound == routeBound) && stopSeq == matchingSeq) {
                     if (usedRealSeq.add(bus.optInt("eta_seq"))) {
                         val eta = bus.optString("eta")
                         val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0
@@ -3550,7 +3581,7 @@ class Registry {
                                 append("${lrt.dest}  ", SmallSize)
                             },
                             carts = buildFormattedString {
-                                for (u in 0 until lrt.trainLength) {
+                                repeat(lrt.trainLength) {
                                     appendInlineContent(InlineImage.LRV, "\uD83D\uDE83")
                                 }
                                 if (lrt.trainLength == 1) {
@@ -3574,7 +3605,7 @@ class Registry {
                                 append("${lrt.dest}  ")
                             },
                             carts = buildFormattedString {
-                                for (u in 0 until lrt.trainLength) {
+                                repeat(lrt.trainLength) {
                                     appendInlineContent(InlineImage.LRV, "\uD83D\uDE83")
                                 }
                                 if (lrt.trainLength == 1) {
@@ -3592,7 +3623,7 @@ class Registry {
                                 append(NQSP)
                             },
                             carts = buildFormattedString {
-                                for (u in 0 until lrt.trainLength) {
+                                repeat(lrt.trainLength) {
                                     appendInlineContent(InlineImage.LRV, "\uD83D\uDE83")
                                 }
                                 if (lrt.trainLength == 1) {
