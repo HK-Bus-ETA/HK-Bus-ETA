@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
@@ -315,7 +316,7 @@ inline fun (() -> Int).logPossibleStopMarkerIndexMapException(
 ): Int? {
     return try {
         invoke()
-    } catch (e: Throwable) {
+    } catch (_: Throwable) {
         instance.logFirebaseEvent("stop_marker_crash_v2_${waypoints.co.name}_${waypoints.routeNumber}", AppBundle())
         null
     }
@@ -586,8 +587,8 @@ fun DefaultMapRouteInterface(
                     """.trimIndent())
                 }
             }
-            LaunchedEffect (Unit) {
-                webViewJsBridge.register(object : IJsMessageHandler {
+            DisposableEffect (indexMap) {
+                val handler = object : IJsMessageHandler {
                     override fun methodName(): String = "SelectStop"
                     override fun handle(message: JsMessage, navigator: WebViewNavigator?, callback: (String) -> Unit) {
                         val (sectionIndex, stopIndex) = message.params.split(",").map { it.toIntOrNull() }
@@ -598,7 +599,9 @@ fun DefaultMapRouteInterface(
                             }
                         }
                     }
-                })
+                }
+                webViewJsBridge.register(handler)
+                onDispose { webViewJsBridge.unregister(handler) }
             }
             LanguageDarkModeChangeEffect (webViewState.loadingState) { language, darkMode ->
                 if (webViewState.loadingState == LoadingState.Finished) {

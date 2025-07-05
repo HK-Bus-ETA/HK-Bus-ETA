@@ -190,7 +190,7 @@ android {
         minSdk = 26
         //noinspection OldTargetApi
         targetSdk = 35
-        versionCode = 1140
+        versionCode = 1143
         versionName = "2.5.6"
     }
     packaging {
