@@ -95,6 +95,7 @@ MTR_DATA = {}
 MTR_BARRIER_FREE_MAPPING = {}
 LRT_DATA = {}
 TRAFFIC_SNAPSHOTS = []
+CTB_ETA_STOPS = {}
 
 MISSING_ROUTES = {}
 
@@ -1595,6 +1596,31 @@ def fix_ctb_route_bounds():
                     print(f"Flipped {key} from {original_bound} (Matched {right_bound_count}) to {reverse_bound} (Matched {wrong_bound_count})")
 
 
+def add_ctb_eta_stops():
+    global CTB_ETA_STOPS
+
+    ctb_route_numbers = set()
+    for data in DATA_SHEET["routeList"].values():
+        if "ctb" in data["co"]:
+            ctb_route_numbers.add(data["route"])
+
+    def process(route_number):
+        entry = {}
+        for bound_key in ['O', 'I']:
+            url = f"https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/{route_number}/{'in' if bound_key == 'I' else 'out'}bound"
+            stops_json = get_web_json(url)
+            stops = []
+            for stop_json in stops_json["data"]:
+                stops.append(stop_json["stop"])
+            entry[bound_key] = stops
+        CTB_ETA_STOPS[route_number] = entry
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(process, route_number) for route_number in ctb_route_numbers]
+    for _ in concurrent.futures.as_completed(futures):
+        pass
+
+
 print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
 print("Downloading & Processing CTB Routes")
@@ -1629,6 +1655,8 @@ print("Normalizing Names")
 normalize_names()
 print("Searching & Injecting GMB Region")
 inject_gmb_region()
+print("Added CTB ETA Stops")
+add_ctb_eta_stops()
 
 output = {
     "dataSheet": DATA_SHEET,
@@ -1639,7 +1667,8 @@ output = {
     "mtrData": MTR_DATA,
     "mtrBarrierFreeMapping": MTR_BARRIER_FREE_MAPPING,
     "lrtData": LRT_DATA,
-    "trafficSnapshot": TRAFFIC_SNAPSHOTS
+    "trafficSnapshot": TRAFFIC_SNAPSHOTS,
+    "ctbEtaStops": CTB_ETA_STOPS
 }
 
 mtr_data = requests.get("https://mtrdata.hkbuseta.com/mtr_data.json").json()
