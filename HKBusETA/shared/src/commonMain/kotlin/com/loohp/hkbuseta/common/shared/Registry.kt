@@ -1546,7 +1546,9 @@ class Registry {
         val co: Operator
     ): Comparable<BranchData> {
         companion object {
-            val COMPARATOR = compareBy<BranchData> { it.serviceType }.thenBy { !it.route.isCircular }.thenBy { it.route.stops[it.co]?.size?: 0 }
+            val COMPARATOR = compareBy<BranchData> { !it.route.isCircular }
+                .thenBy { it.serviceType }
+                .thenBy { it.route.stops[it.co]?.size?: 0 }
         }
         override fun compareTo(other: BranchData): Int {
             return COMPARATOR.compare(this, other)
