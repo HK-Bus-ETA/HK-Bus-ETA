@@ -63,5 +63,5 @@ actual fun checkNotificationPermission(appContext: AppContext, askIfNotGranted: 
 }
 
 actual fun canReceiveRemoteNotifications(appContext: AppContext): Boolean {
-    return !isHuaweiDevice() && hasGooglePlayService(appContext.context)
+    return hasGooglePlayService(appContext.context)
 }

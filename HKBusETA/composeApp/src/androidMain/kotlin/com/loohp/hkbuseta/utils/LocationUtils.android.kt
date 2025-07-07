@@ -174,7 +174,7 @@ actual fun getGPSLocationUnrecorded(appContext: AppContext, priority: LocationPr
                         defer.complete(LocationResult.FAILED_RESULT)
                     }
                 }
-                if (isHuaweiDevice() || !hasGooglePlayService(context)) {
+                if (!hasGooglePlayService(context)) {
                     withoutGMS.invoke()
                 } else {
                     client.locationAvailability.addOnCompleteListener { task ->
@@ -228,7 +228,7 @@ actual fun getGPSLocationUnrecorded(appContext: AppContext, interval: Long, list
                         defer.complete { /* do nothing */ }
                     }
                 }
-                if (isHuaweiDevice() || !hasGooglePlayService(context)) {
+                if (!hasGooglePlayService(context)) {
                     withoutGMS.invoke()
                 } else {
                     client.locationAvailability.addOnCompleteListener { task ->
