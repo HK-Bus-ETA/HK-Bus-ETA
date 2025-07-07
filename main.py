@@ -1554,10 +1554,14 @@ def fix_missing_stops():
 
 def fix_ctb_route_bounds():
     ctb_route_numbers = set()
+    ctb_circular_route_numbers = set()
     for data in DATA_SHEET["routeList"].values():
         if "stops" in data and data["stops"] is not None and "ctb" in data["stops"]:
+            route_number = data["route"]
             if "ctbIsCircular" not in data and len(data["bound"]["ctb"]) == 1:
-                ctb_route_numbers.add(data["route"])
+                ctb_route_numbers.add(route_number)
+            else:
+                ctb_circular_route_numbers.add(route_number)
 
     ctb_stops_by_bound = {}
 
@@ -1571,14 +1575,14 @@ def fix_ctb_route_bounds():
             ctb_stops_by_bound[f"{route_number}_{bound_key}"] = stops
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(process, route_number) for route_number in ctb_route_numbers]
+        futures = [executor.submit(process, route_number) for route_number in (ctb_route_numbers | ctb_circular_route_numbers)]
     for _ in concurrent.futures.as_completed(futures):
         pass
 
     for key, data in DATA_SHEET["routeList"].items():
         if "stops" in data and data["stops"] is not None and "ctb" in data["stops"]:
-            if "ctbIsCircular" not in data and len(data["bound"]["ctb"]) == 1:
-                route_number = data["route"]
+            route_number = data["route"]
+            if route_number in ctb_route_numbers:
                 original_bound = data["bound"]["ctb"]
                 reverse_bound = 'I' if original_bound == 'O' else 'O'
                 ctb_stops = data["stops"]["ctb"]
@@ -1594,6 +1598,56 @@ def fix_ctb_route_bounds():
                 if wrong_bound_count > right_bound_count:
                     data["bound"]["ctb"] = reverse_bound
                     print(f"Flipped {key} from {original_bound} (Matched {right_bound_count}) to {reverse_bound} (Matched {wrong_bound_count})")
+            elif route_number in ctb_circular_route_numbers:
+                if "循環線" not in data["dest"]["zh"]:
+                    ctb_stops = data["stops"]["ctb"]
+                    outbound_stops = ctb_stops_by_bound[f"{route_number}_O"]
+                    inbound_stops = ctb_stops_by_bound[f"{route_number}_I"]
+                    outbound_count = 0
+                    inbound_count = 0
+                    circular_count = 0
+                    for stop in ctb_stops:
+                        if stop in outbound_stops:
+                            outbound_count += 1
+                            circular_count += 1
+                        if stop in inbound_stops:
+                            inbound_count += 1
+                            circular_count += 1
+                    circular_percentage = circular_count / (len(outbound_stops) + len(inbound_stops))
+                    if circular_percentage > 0.75:
+                        pass
+                    else:
+                        original_bound = data["bound"]["ctb"]
+                        data["bound"]["ctb"] = "O" if outbound_count > inbound_count else "I"
+                        data["ctbIsCircular"] = True
+                        if original_bound != data["bound"]["ctb"]:
+                            print(f"Flipped {key} (Circular) from {original_bound} to {data['bound']['ctb']} (Matched O: {outbound_count} I: {inbound_count})")
+
+    ctb_circular_stripped = set()
+
+    for key, data in DATA_SHEET["routeList"].items():
+        if "ctb" in data["co"]:
+            route_number = data["route"]
+            if route_number in ctb_circular_route_numbers and len(data["bound"]["ctb"]) > 1:
+                if len(ctb_stops_by_bound[f"{route_number}_O"]) > 0 and len(ctb_stops_by_bound[f"{route_number}_I"]) > 0:
+                    if "循環線" not in data["dest"]["zh"]:
+                        data["dest"]["zh"] += " (循環線)"
+                        data["dest"]["en"] += " (Circular)"
+                    data["bound"]["ctb"] = "O"
+                    data["ctbIsCircular"] = True
+                    data["ctbCircularStripped"] = True
+                    ctb_circular_stripped.add(route_number)
+                    print(f"Updated {key} (Circular) to O for CTB display as bi-direction")
+
+    for key, data in DATA_SHEET["routeList"].items():
+        route_number = data["route"]
+        if "ctb" in data["co"] and route_number in ctb_circular_stripped:
+            if "ctbIsCircular" in data and "ctbCircularStripped" not in data:
+                del data["ctbIsCircular"]
+                if "freq" not in data or data["freq"] is None:
+                    data["fakeRoute"] = True
+            if "ctbCircularStripped" in data:
+                del data["ctbCircularStripped"]
 
 
 def add_ctb_eta_stops():
