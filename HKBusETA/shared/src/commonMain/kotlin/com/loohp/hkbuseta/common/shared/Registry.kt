@@ -229,20 +229,24 @@ class Registry {
         const val CHECKSUM_FILE_NAME = "checksum.json"
         const val DATA_FILE_NAME = "data.json"
 
+        val dataPrefix: String get() {
+            return if (Shared.useExperimentalData) "experimental_" else ""
+        }
+
         fun checksumUrl(): String {
-            return "${Shared.DATA_DOMAIN}/checksum.md5"
+            return "${Shared.DATA_DOMAIN}/${dataPrefix}checksum.md5"
         }
 
         fun dataLengthUrl(full: Boolean, gzip: Boolean = gzipSupported()): String {
-            return "${Shared.DATA_DOMAIN}/size${if (full) "_full" else ""}${if (gzip) ".gz" else ""}.dat"
+            return "${Shared.DATA_DOMAIN}/${dataPrefix}size${if (full) "_full" else ""}${if (gzip) ".gz" else ""}.dat"
         }
 
         fun dataUrl(full: Boolean, gzip: Boolean = gzipSupported()): String {
-            return "${Shared.DATA_DOMAIN}/data${if (full) "_full" else ""}.json${if (gzip) ".gz" else ""}"
+            return "${Shared.DATA_DOMAIN}/${dataPrefix}data${if (full) "_full" else ""}.json${if (gzip) ".gz" else ""}"
         }
 
         fun lastUpdatedUrl(): String {
-            return "${Shared.DATA_DOMAIN}/last_updated.txt"
+            return "${Shared.DATA_DOMAIN}/${dataPrefix}last_updated.txt"
         }
 
         private val INSTANCE: AtomicReference<Registry?> = AtomicReference(null)
@@ -433,6 +437,7 @@ class Registry {
         Shared.alternateStopNamesShowingState.value = PREFERENCES!!.alternateStopName
         Shared.lastNearbyLocation = PREFERENCES!!.lastNearbyLocation
         Shared.disableNavBarQuickActions = PREFERENCES!!.disableNavBarQuickActions
+        Shared.useExperimentalData = PREFERENCES!!.useExperimentalData
         Shared.updateFavoriteStops {
             if (it.value != PREFERENCES!!.favouriteStops) {
                 it.value = PREFERENCES!!.favouriteStops.toImmutableList()
@@ -612,6 +617,12 @@ class Registry {
     fun setDisableNavBarQuickActions(disableNavBarQuickActions: Boolean, context: AppContext) {
         Shared.disableNavBarQuickActions = disableNavBarQuickActions
         PREFERENCES!!.disableNavBarQuickActions = disableNavBarQuickActions
+        savePreferences(context)
+    }
+
+    fun setUseExperimentalData(useExperimentalData: Boolean, context: AppContext) {
+        Shared.useExperimentalData = useExperimentalData
+        PREFERENCES!!.useExperimentalData = useExperimentalData
         savePreferences(context)
     }
 
@@ -827,6 +838,7 @@ class Registry {
         Shared.historyEnabled = PREFERENCES!!.historyEnabled
         Shared.showRouteMap = PREFERENCES!!.showRouteMap
         Shared.disableNavBarQuickActions = PREFERENCES!!.disableNavBarQuickActions
+        Shared.useExperimentalData = PREFERENCES!!.useExperimentalData
         Shared.updateFavoriteStops {
             it.value = PREFERENCES!!.favouriteStops.toImmutableList()
         }

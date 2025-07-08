@@ -285,6 +285,7 @@ object Shared {
     var downloadSplash = true
     var lastNearbyLocation: RadiusCenterPosition? = null
     var disableNavBarQuickActions = false
+    var useExperimentalData = false
     var disableBoldDest = false
     var receiveAlerts = false
 

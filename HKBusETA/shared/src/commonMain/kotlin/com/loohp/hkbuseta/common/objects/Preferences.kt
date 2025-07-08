@@ -63,6 +63,7 @@ class Preferences(
     var alternateStopName: Boolean,
     var lastNearbyLocation: RadiusCenterPosition?,
     var disableNavBarQuickActions: Boolean,
+    var useExperimentalData: Boolean,
     val favouriteStops: ConcurrentMutableList<FavouriteStop>,
     val favouriteRouteStops: ConcurrentMutableList<FavouriteRouteGroup>,
     val lastLookupRoutes: ConcurrentMutableList<LastLookupRoute>,
@@ -90,6 +91,7 @@ class Preferences(
             val alternateStopName = json.optBoolean("alternateStopName", false)
             val lastNearbyLocation = if (json.containsKey("lastNearbyLocation")) RadiusCenterPosition.deserialize(json.optJsonObject("lastNearbyLocation")!!) else null
             val disableNavBarQuickActions = json.optBoolean("disableNavBarQuickActions", false)
+            val useExperimentalData = json.optBoolean("useExperimentalData", false)
             val favouriteStops = ConcurrentMutableList<FavouriteStop>().apply {
                 if (json.optJsonArray("favouriteStops")?.getOrNull(0) is JsonPrimitive) {
                     addAll(json.optJsonArray("favouriteStops")?.mapToMutableList { FavouriteStop.fromLegacy(it.jsonPrimitive.content) }?: mutableListOf())
@@ -106,7 +108,7 @@ class Preferences(
             val lastLookupRoutes = ConcurrentMutableList<LastLookupRoute>().apply { addAll(json.optJsonArray("lastLookupRoutes")!!.mapToMutableList { if (it is JsonObject) (if (it.containsKey("routeKey")) LastLookupRoute.deserialize(it) else null) else LastLookupRoute.fromLegacy(it.jsonPrimitive.content) }.filterNotNull()) }
             val etaTileConfigurations = ConcurrentMutableMap<Int, List<Int>>().apply { if (json.contains("etaTileConfigurations")) putAll(json.optJsonObject("etaTileConfigurations")!!.mapToMutableMap<Int, List<Int>>({ it.toInt() }) { it.jsonArray.mapToMutableList { e -> e.jsonPrimitive.int } }) }
             val routeSortModePreference = ConcurrentMutableMap<RouteListType, RouteSortPreference>().apply { if (json.contains("routeSortModePreference")) putAll(json.optJsonObject("routeSortModePreference")!!.mapToMutableMap({ RouteListType.valueOf(it) }, { if (it is JsonPrimitive) RouteSortPreference.fromLegacy(it) else RouteSortPreference.deserialize(it.jsonObject) })) }
-            return Preferences(referenceChecksum, lastSaved, language, etaDisplayMode, lrtDirectionMode, theme, color, viewFavTab, disableMarquee, disableBoldDest, receiveAlerts, historyEnabled, showRouteMap, downloadSplash, alternateStopName, lastNearbyLocation, disableNavBarQuickActions, favouriteStops, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
+            return Preferences(referenceChecksum, lastSaved, language, etaDisplayMode, lrtDirectionMode, theme, color, viewFavTab, disableMarquee, disableBoldDest, receiveAlerts, historyEnabled, showRouteMap, downloadSplash, alternateStopName, lastNearbyLocation, disableNavBarQuickActions, useExperimentalData, favouriteStops, favouriteRouteStops, lastLookupRoutes, etaTileConfigurations, routeSortModePreference)
         }
 
         fun createDefault(): Preferences {
@@ -128,6 +130,7 @@ class Preferences(
                 alternateStopName = false,
                 lastNearbyLocation = null,
                 disableNavBarQuickActions = false,
+                useExperimentalData = false,
                 favouriteStops = ConcurrentMutableList(),
                 favouriteRouteStops = ConcurrentMutableList<FavouriteRouteGroup>().apply { add(FavouriteRouteGroup.DEFAULT_GROUP) },
                 lastLookupRoutes = ConcurrentMutableList(),
@@ -156,6 +159,7 @@ class Preferences(
             this.alternateStopName = preferences.alternateStopName
             this.lastNearbyLocation = preferences.lastNearbyLocation
             this.disableNavBarQuickActions = preferences.disableNavBarQuickActions
+            this.useExperimentalData = preferences.useExperimentalData
             this.favouriteStops.apply { clear(); addAll(preferences.favouriteStops) }
             this.favouriteRouteStops.apply { clear(); addAll(preferences.favouriteRouteStops) }
             this.lastLookupRoutes.apply { clear(); addAll(preferences.lastLookupRoutes) }
@@ -185,6 +189,7 @@ class Preferences(
             put("alternateStopName", alternateStopName)
             lastNearbyLocation?.apply { put("lastNearbyLocation", serialize()) }
             put("disableNavBarQuickActions", disableNavBarQuickActions)
+            put("useExperimentalData", useExperimentalData)
             favouriteStops.synchronize { put("favouriteStops", favouriteStops.toJsonArray()) }
             favouriteRouteStops.synchronize { put("favouriteRouteStops", favouriteRouteStops.toJsonArray()) }
             lastLookupRoutes.synchronize { put("lastLookupRoutes", lastLookupRoutes.toJsonArray()) }
@@ -214,6 +219,7 @@ class Preferences(
         if (alternateStopName != other.alternateStopName) return false
         if (lastNearbyLocation != other.lastNearbyLocation) return false
         if (disableNavBarQuickActions != other.disableNavBarQuickActions) return false
+        if (useExperimentalData != other.useExperimentalData) return false
         if (favouriteStops != other.favouriteStops) return false
         if (favouriteRouteStops != other.favouriteRouteStops) return false
         if (lastLookupRoutes != other.lastLookupRoutes) return false
@@ -239,6 +245,7 @@ class Preferences(
         result = 31 * result + alternateStopName.hashCode()
         result = 31 * result + lastNearbyLocation.hashCode()
         result = 31 * result + disableNavBarQuickActions.hashCode()
+        result = 31 * result + useExperimentalData.hashCode()
         result = 31 * result + favouriteStops.hashCode()
         result = 31 * result + favouriteRouteStops.hashCode()
         result = 31 * result + lastLookupRoutes.hashCode()

@@ -86,6 +86,7 @@ import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.compose.Bolt
 import com.loohp.hkbuseta.compose.Computer
+import com.loohp.hkbuseta.compose.Dangerous
 import com.loohp.hkbuseta.compose.DarkMode
 import com.loohp.hkbuseta.compose.DirectionsBus
 import com.loohp.hkbuseta.compose.DismissRequestType
@@ -121,6 +122,7 @@ import com.loohp.hkbuseta.compose.colorpicker.ClassicColorPicker
 import com.loohp.hkbuseta.compose.colorpicker.HsvColor
 import com.loohp.hkbuseta.compose.combinedClickable
 import com.loohp.hkbuseta.compose.platformShowDownloadAppBottomSheet
+import com.loohp.hkbuseta.compose.rememberSpamClickDetector
 import com.loohp.hkbuseta.compose.shouldBeTintedForIcons
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.utils.DrawableResource
@@ -432,7 +434,29 @@ fun SettingsInterface(instance: AppActiveContext) {
                 icon = PlatformIcons.Outlined.Fingerprint,
                 text = (if (Shared.language == "en") "Privacy Policy" else "隱私權聲明").asAnnotatedString()
             )
+            val useExperimentalDataSpamClick = rememberSpamClickDetector(requiredClicks = 10, timeWindowMillis = 5000)
+            var useExperimentalData by remember { mutableStateOf(Shared.useExperimentalData) }
             SettingsRow(
+                onClick = {
+                    val clicksLeft: (Int) -> Unit = {
+                        if (it <= 5) {
+                            instance.showToastText(if (Shared.language == "en") {
+                                "You are $it click(s) away from using Experimental Data."
+                            } else {
+                                "距離使用測試版路線數據還需點擊${it}次"
+                            }, ToastDuration.SHORT)
+                        }
+                    }
+                    if (!useExperimentalData && useExperimentalDataSpamClick.onClick(clicksLeft)) {
+                        Registry.getInstance(instance).setUseExperimentalData(true, instance)
+                        useExperimentalData = Shared.useExperimentalData
+                        instance.showToastText(if (Shared.language == "en") {
+                            "Using Experimental Data. Experimental data might cause the app to be unstable."
+                        } else {
+                            "使用測試版路線數據 測試版路線數據可能導致程式不穩定"
+                        }, ToastDuration.LONG)
+                    }
+                },
                 icon = when (composePlatform.type) {
                     PlatformType.PHONE -> PlatformIcons.Outlined.Smartphone
                     PlatformType.TABLET -> PlatformIcons.Outlined.Tablet
@@ -441,6 +465,17 @@ fun SettingsInterface(instance: AppActiveContext) {
                 text = (if (Shared.language == "en") "App Platform" else "應用程式平台").asAnnotatedString(),
                 subText = composePlatform.displayName.asAnnotatedString()
             )
+            if (useExperimentalData) {
+                SettingsRow(
+                    onClick = {
+                        Registry.getInstance(instance).setUseExperimentalData(false, instance)
+                        useExperimentalData = Shared.useExperimentalData
+                    },
+                    icon = PlatformIcons.Filled.Dangerous,
+                    text = (if (Shared.language == "en") "Using Experimental Data" else "正在使用測試版路線數據").asAnnotatedString(),
+                    subText = (if (Shared.language == "en") "Might be unstable (Click to disable)" else "可能導致程式不穩定 (點擊關閉)").asAnnotatedString()
+                )
+            }
             SettingsRow(
                 onClick = platformShowDownloadAppBottomSheet?: instance.handleWebpages(if (composePlatform.appleEnvironment) "https://apps.apple.com/app/id6475241017" else "https://play.google.com/store/apps/details?id=com.loohp.hkbuseta", false, haptic.common),
                 onLongClick = instance.handleWebpages("https://loohpjames.com", true, haptic.common),
