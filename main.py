@@ -1623,7 +1623,15 @@ def fix_ctb_route_bounds():
                     inbound_percentage = inbound_count / len(inbound_stops)
                     circular_percentage = circular_count / len(circular_stops)
                     if circular_percentage > 0.75 and outbound_percentage > 0.75 and inbound_percentage > 0.75:
-                        pass
+                        original_bound = data["bound"]["ctb"]
+                        if len(original_bound) == 1:
+                            data["bound"]["ctb"] = "OI"
+                            if "ctbIsCircular" in data:
+                                del data["ctbIsCircular"]
+                            if "循環線" not in data["dest"]["zh"]:
+                                data["dest"]["zh"] += " (循環線)"
+                                data["dest"]["en"] += " (Circular)"
+                            print(f"Flipped {key} from {original_bound} to {data['bound']['ctb']} (Matched C: {circular_percentage} O: {outbound_percentage} I: {inbound_percentage})")
                     else:
                         original_bound = data["bound"]["ctb"]
                         data["bound"]["ctb"] = "O" if outbound_count > inbound_count else "I"
