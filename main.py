@@ -1623,31 +1623,31 @@ def fix_ctb_route_bounds():
                         if original_bound != data["bound"]["ctb"]:
                             print(f"Flipped {key} (Circular) from {original_bound} to {data['bound']['ctb']} (Matched O: {outbound_count} I: {inbound_count})")
 
-    ctb_circular_stripped = set()
-
-    for key, data in DATA_SHEET["routeList"].items():
-        if "ctb" in data["co"]:
-            route_number = data["route"]
-            if route_number in ctb_circular_route_numbers and len(data["bound"]["ctb"]) > 1:
-                if len(ctb_stops_by_bound[f"{route_number}_O"]) > 0 and len(ctb_stops_by_bound[f"{route_number}_I"]) > 0:
-                    if "循環線" not in data["dest"]["zh"]:
-                        data["dest"]["zh"] += " (循環線)"
-                        data["dest"]["en"] += " (Circular)"
-                    data["bound"]["ctb"] = "O"
-                    data["ctbIsCircular"] = True
-                    data["ctbCircularStripped"] = True
-                    ctb_circular_stripped.add(route_number)
-                    print(f"Updated {key} (Circular) to O for CTB display as bi-direction")
-
-    for key, data in DATA_SHEET["routeList"].items():
-        route_number = data["route"]
-        if "ctb" in data["co"] and route_number in ctb_circular_stripped:
-            if "ctbIsCircular" in data and "ctbCircularStripped" not in data:
-                del data["ctbIsCircular"]
-                if "freq" not in data or data["freq"] is None:
-                    data["fakeRoute"] = True
-            if "ctbCircularStripped" in data:
-                del data["ctbCircularStripped"]
+    # ctb_circular_stripped = set()
+    #
+    # for key, data in DATA_SHEET["routeList"].items():
+    #     if "ctb" in data["co"]:
+    #         route_number = data["route"]
+    #         if route_number in ctb_circular_route_numbers and len(data["bound"]["ctb"]) > 1:
+    #             if len(ctb_stops_by_bound[f"{route_number}_O"]) > 0 and len(ctb_stops_by_bound[f"{route_number}_I"]) > 0:
+    #                 if "循環線" not in data["dest"]["zh"]:
+    #                     data["dest"]["zh"] += " (循環線)"
+    #                     data["dest"]["en"] += " (Circular)"
+    #                 data["bound"]["ctb"] = "O"
+    #                 data["ctbIsCircular"] = True
+    #                 data["ctbCircularStripped"] = True
+    #                 ctb_circular_stripped.add(route_number)
+    #                 print(f"Updated {key} (Circular) to O for CTB display as bi-direction")
+    #
+    # for key, data in DATA_SHEET["routeList"].items():
+    #     route_number = data["route"]
+    #     if "ctb" in data["co"] and route_number in ctb_circular_stripped:
+    #         if "ctbIsCircular" in data and "ctbCircularStripped" not in data:
+    #             del data["ctbIsCircular"]
+    #             if "freq" not in data or data["freq"] is None:
+    #                 data["fakeRoute"] = True
+    #         if "ctbCircularStripped" in data:
+    #             del data["ctbCircularStripped"]
 
 
 def add_ctb_eta_stops():
