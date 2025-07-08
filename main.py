@@ -1604,27 +1604,32 @@ def fix_ctb_route_bounds():
                     data["bound"]["ctb"] = reverse_bound
                     print(f"Flipped {key} from {original_bound} (Matched {right_bound_count}) to {reverse_bound} (Matched {wrong_bound_count})")
             elif route_number in ctb_circular_route_numbers:
-                if "循環線" not in data["dest"]["zh"]:
-                    ctb_stops = data["stops"]["ctb"]
-                    outbound_stops = ctb_stops_by_bound[f"{route_number}_O"]
-                    inbound_stops = ctb_stops_by_bound[f"{route_number}_I"]
+                ctb_stops = data["stops"]["ctb"]
+                if ctb_stops[0] != ctb_stops[-1]:
+                    outbound_stops = set(ctb_stops_by_bound[f"{route_number}_O"])
+                    inbound_stops = set(ctb_stops_by_bound[f"{route_number}_I"])
+                    circular_stops = set(outbound_stops) | set(inbound_stops)
                     outbound_count = 0
                     inbound_count = 0
                     circular_count = 0
                     for stop in ctb_stops:
                         if stop in outbound_stops:
                             outbound_count += 1
-                            circular_count += 1
                         if stop in inbound_stops:
                             inbound_count += 1
+                        if stop in circular_stops:
                             circular_count += 1
-                    circular_percentage = circular_count / (len(outbound_stops) + len(inbound_stops))
-                    if circular_percentage > 0.75:
+                    outbound_percentage = outbound_count / len(outbound_stops)
+                    inbound_percentage = inbound_count / len(inbound_stops)
+                    circular_percentage = circular_count / len(circular_stops)
+                    if circular_percentage > 0.75 and outbound_percentage > 0.75 and inbound_percentage > 0.75:
                         pass
                     else:
                         original_bound = data["bound"]["ctb"]
                         data["bound"]["ctb"] = "O" if outbound_count > inbound_count else "I"
                         data["ctbIsCircular"] = True
+                        data["dest"]["zh"] = re.sub(r" *\(?循環線\)?$", "", data["dest"]["zh"])
+                        data["dest"]["en"] = re.sub(r" *\(?Circular\)?$", "", data["dest"]["en"])
                         if original_bound != data["bound"]["ctb"]:
                             print(f"Flipped {key} (Circular) from {original_bound} to {data['bound']['ctb']} (Matched O: {outbound_count} I: {inbound_count})")
 
