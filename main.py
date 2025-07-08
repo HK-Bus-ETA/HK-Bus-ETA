@@ -5,6 +5,7 @@ import math
 import random
 import re
 import string
+import sys
 import time
 import urllib.request
 import zlib
@@ -86,6 +87,10 @@ def haversine(lat1, lon1, lat2, lon2):
 # ===========================
 
 
+IS_EXPERIMENTAL = "--experimental" in sys.argv[1:]
+
+DATA_PREFIX = "experimental_" if IS_EXPERIMENTAL else ""
+
 BUS_ROUTE = {}
 MTR_BUS_STOP_ALIAS = {}
 DATA_SHEET = {}
@@ -99,12 +104,12 @@ CTB_ETA_STOPS = {}
 
 MISSING_ROUTES = {}
 
-DATA_SHEET_FILE_NAME = "data.json"
-DATA_SHEET_FORMATTED_FILE_NAME = "data_formatted.json"
-DATA_SHEET_FULL_FILE_NAME = "data_full.json"
-DATA_SHEET_FULL_FORMATTED_FILE_NAME = "data_full_formatted.json"
-CHECKSUM_FILE_NAME = "checksum.md5"
-LAST_UPDATED_FILE = "last_updated.txt"
+DATA_SHEET_FILE_NAME = DATA_PREFIX + "data.json"
+DATA_SHEET_FORMATTED_FILE_NAME = DATA_PREFIX + "data_formatted.json"
+DATA_SHEET_FULL_FILE_NAME = DATA_PREFIX + "data_full.json"
+DATA_SHEET_FULL_FORMATTED_FILE_NAME = DATA_PREFIX + "data_full_formatted.json"
+CHECKSUM_FILE_NAME = DATA_PREFIX + "checksum.md5"
+LAST_UPDATED_FILE = DATA_PREFIX + "last_updated.txt"
 
 RECAPITALIZE_KEYWORDS = read_json("recapitalize_keywords.json")
 
@@ -1623,31 +1628,32 @@ def fix_ctb_route_bounds():
                         if original_bound != data["bound"]["ctb"]:
                             print(f"Flipped {key} (Circular) from {original_bound} to {data['bound']['ctb']} (Matched O: {outbound_count} I: {inbound_count})")
 
-    # ctb_circular_stripped = set()
-    #
-    # for key, data in DATA_SHEET["routeList"].items():
-    #     if "ctb" in data["co"]:
-    #         route_number = data["route"]
-    #         if route_number in ctb_circular_route_numbers and len(data["bound"]["ctb"]) > 1:
-    #             if len(ctb_stops_by_bound[f"{route_number}_O"]) > 0 and len(ctb_stops_by_bound[f"{route_number}_I"]) > 0:
-    #                 if "循環線" not in data["dest"]["zh"]:
-    #                     data["dest"]["zh"] += " (循環線)"
-    #                     data["dest"]["en"] += " (Circular)"
-    #                 data["bound"]["ctb"] = "O"
-    #                 data["ctbIsCircular"] = True
-    #                 data["ctbCircularStripped"] = True
-    #                 ctb_circular_stripped.add(route_number)
-    #                 print(f"Updated {key} (Circular) to O for CTB display as bi-direction")
-    #
-    # for key, data in DATA_SHEET["routeList"].items():
-    #     route_number = data["route"]
-    #     if "ctb" in data["co"] and route_number in ctb_circular_stripped:
-    #         if "ctbIsCircular" in data and "ctbCircularStripped" not in data:
-    #             del data["ctbIsCircular"]
-    #             if "freq" not in data or data["freq"] is None:
-    #                 data["fakeRoute"] = True
-    #         if "ctbCircularStripped" in data:
-    #             del data["ctbCircularStripped"]
+    if IS_EXPERIMENTAL:
+        ctb_circular_stripped = set()
+
+        for key, data in DATA_SHEET["routeList"].items():
+            if "ctb" in data["co"]:
+                route_number = data["route"]
+                if route_number in ctb_circular_route_numbers and len(data["bound"]["ctb"]) > 1:
+                    if len(ctb_stops_by_bound[f"{route_number}_O"]) > 0 and len(ctb_stops_by_bound[f"{route_number}_I"]) > 0:
+                        if "循環線" not in data["dest"]["zh"]:
+                            data["dest"]["zh"] += " (循環線)"
+                            data["dest"]["en"] += " (Circular)"
+                        data["bound"]["ctb"] = "O"
+                        data["ctbIsCircular"] = True
+                        data["ctbCircularStripped"] = True
+                        ctb_circular_stripped.add(route_number)
+                        print(f"Updated {key} (Circular) to O for CTB display as bi-direction")
+
+        for key, data in DATA_SHEET["routeList"].items():
+            route_number = data["route"]
+            if "ctb" in data["co"] and route_number in ctb_circular_stripped:
+                if "ctbIsCircular" in data and "ctbCircularStripped" not in data:
+                    del data["ctbIsCircular"]
+                    if "freq" not in data or data["freq"] is None:
+                        data["fakeRoute"] = True
+                if "ctbCircularStripped" in data:
+                    del data["ctbCircularStripped"]
 
 
 def add_ctb_eta_stops():
@@ -1674,6 +1680,10 @@ def add_ctb_eta_stops():
     for _ in concurrent.futures.as_completed(futures):
         pass
 
+if IS_EXPERIMENTAL:
+    print("============================")
+    print("Running in Experimental Mode")
+    print("============================")
 
 print("Downloading & Processing KMB Routes")
 download_and_process_kmb_route()
