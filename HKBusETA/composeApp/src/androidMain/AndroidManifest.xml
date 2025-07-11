@@ -30,6 +30,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:ignore="ForegroundServicesPolicy" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
@@ -123,6 +124,12 @@
 
         <service
             android:name=".AlightReminderForegroundService"
+            android:foregroundServiceType="location"
+            android:exported="false">
+        </service>
+
+        <service
+            android:name=".RouteStopETALiveForegroundService"
             android:foregroundServiceType="location"
             android:exported="false">
         </service>

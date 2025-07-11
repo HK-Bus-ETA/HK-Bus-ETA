@@ -25,6 +25,7 @@
     <string name="alight_reminder_channel_name">落車提示通知</string>
     <string name="alert_channel_name">交通狀況通知</string>
     <string name="general_channel_name">一般通知</string>
+    <string name="route_stop_eta_channel_name">路線巴士站到站預報即時通知</string>
     <string name="gms_availability_channel_name">Google Play服務可用性通知</string>
     <string name="send_to_watch_label">手錶上開啟</string>
     <string name="send_no_watch">無法連接手錶</string>

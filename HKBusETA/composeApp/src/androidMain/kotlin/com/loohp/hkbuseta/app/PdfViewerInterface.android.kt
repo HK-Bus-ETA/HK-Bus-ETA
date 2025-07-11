@@ -20,7 +20,6 @@
 
 package com.loohp.hkbuseta.app
 
-import android.graphics.drawable.ColorDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -49,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.graphics.drawable.toDrawable
 import com.github.barteksc.pdfviewer.PDFView
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -179,7 +179,7 @@ actual fun PdfViewerInterface(title: String, url: String, instance: AppActiveCon
                                         .autoSpacing(false)
                                         .load()
                                     maxZoom = 10F
-                                    background = ColorDrawable(backgroundColor.toArgb())
+                                    background = backgroundColor.toArgb().toDrawable()
                                 }
                             }
                         )

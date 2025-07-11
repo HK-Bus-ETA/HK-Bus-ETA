@@ -39,6 +39,7 @@ import com.loohp.hkbuseta.common.external.extractShareLink
 import com.loohp.hkbuseta.common.external.shareLaunch
 import com.loohp.hkbuseta.common.objects.Preferences
 import com.loohp.hkbuseta.common.objects.getLineColor
+import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.services.AlightReminderActiveState
 import com.loohp.hkbuseta.common.services.AlightReminderService
 import com.loohp.hkbuseta.common.shared.Registry
@@ -666,7 +667,10 @@ fun invalidateCacheAndRestart() {
 }
 
 fun setRouteStopETAHandler(handler: (RouteStopETAData?) -> Unit) {
-    RouteStopETALiveActivity.setDataUpdateHandler(handler)
+    RouteStopETALiveActivity.setDataUpdateHandler(
+        name = "動態島" withEn "Dynamic Island",
+        handler = handler
+    )
 }
 
 fun terminateRouteStopETA() {

@@ -28,6 +28,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.googleServices)
+    alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleDevToolsKsp)
     alias(libs.plugins.compose.compiler)
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
@@ -102,6 +103,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.lifecycle.runtime.ktx)
             implementation(libs.androidx.lifecycle.runtime.compose)
+            implementation(libs.androidx.core.ktx)
             implementation(libs.play.services.location)
             implementation(libs.play.services.wearable)
             implementation(libs.maps.compose)
@@ -179,7 +181,7 @@ kotlin {
 
 android {
     namespace = "com.loohp.hkbuseta"
-    compileSdk = 35
+    compileSdk = 36
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     sourceSets["main"].res.srcDirs("src/androidMain/res")
@@ -189,8 +191,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 26
         //noinspection OldTargetApi
-        targetSdk = 35
-        versionCode = 1158
+        targetSdk = 36
+        versionCode = 1166
         versionName = "2.5.6"
     }
     packaging {

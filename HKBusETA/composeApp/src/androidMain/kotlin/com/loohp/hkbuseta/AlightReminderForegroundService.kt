@@ -25,15 +25,18 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.net.Uri
 import android.os.IBinder
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import com.loohp.hkbuseta.common.services.AlightReminderActiveState
 import com.loohp.hkbuseta.common.services.AlightReminderRemoteData
 import com.loohp.hkbuseta.common.services.AlightReminderService
 import com.loohp.hkbuseta.common.services.AlightReminderServiceState
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.utils.RemoteActivityUtils
+import com.loohp.hkbuseta.utils.getLineColor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -42,18 +45,20 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 
-data class NotificationData(
+private data class AlightReminderNotificationData(
     val title: String,
     val content: String,
     val url: String,
-    val state: AlightReminderServiceState
+    val state: AlightReminderServiceState,
+    val shortText: String,
+    val color: Int
 )
 
 @OptIn(ExperimentalUuidApi::class)
 class AlightReminderForegroundService: Service() {
 
     private val listenerId = Uuid.random().toString()
-    private var notificationData: NotificationData? = null
+    private var notificationData: AlightReminderNotificationData? = null
     private var remoteData: AlightReminderRemoteData? = null
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -68,17 +73,23 @@ class AlightReminderForegroundService: Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun buildNotificationData(service: AlightReminderService): NotificationData {
+    private fun buildNotificationData(service: AlightReminderService): AlightReminderNotificationData {
         val title = "${service.titleLeading} - ${service.titleTrailing}"
         val content = service.content
         val url = service.deepLink
         val state = service.state
-        return NotificationData(title, content, url, state)
+        val shortText = if (Shared.language == "en") {
+            "${service.stopsRemaining} stop${if (service.stopsRemaining == 1) "" else "s"}"
+        } else {
+            "${service.stopsRemaining}個站"
+        }
+        val color = service.co.getLineColor(service.routeNumber, Color.White).toArgb()
+        return AlightReminderNotificationData(title, content, url, state, shortText, color)
     }
 
-    private fun buildNotification(notificationData: NotificationData, notify: Boolean): Notification {
+    private fun buildNotification(notificationData: AlightReminderNotificationData, notify: Boolean): Notification {
         val intent = Intent(Intent.ACTION_VIEW)
-        intent.setData(Uri.parse(notificationData.url))
+        intent.setData(notificationData.url.toUri())
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         return NotificationCompat.Builder(this, "alight_reminder_channel")
             .setSmallIcon(R.mipmap.icon_launcher)
@@ -87,6 +98,8 @@ class AlightReminderForegroundService: Service() {
             .setOngoing(notificationData.state != AlightReminderServiceState.ARRIVED)
             .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(!notify)
+            .setRequestPromotedOngoing(true)
+            .setShortCriticalText(notificationData.shortText)
             .build()
     }
 

@@ -980,6 +980,19 @@ fun ListStopsBottomSheet(
                                 icon = if (pinnedItems.any { it.key == pinItem.key }) PlatformIcons.Filled.PushPin else PlatformIcons.Outlined.PushPin,
                                 text = (if (Shared.language == "en") "Pin to Top" else "置頂").asAnnotatedString()
                             )
+                            if (RouteStopETALiveActivity.isSupported() && composePlatform.supportPip) {
+                                ActionRow(
+                                    onClick = {
+                                        scope.launch {
+                                            instance.enterPipMode()
+                                            sheetState.hide()
+                                            sheetType = BottomSheetType.NONE
+                                        }
+                                    },
+                                    icon = PlatformIcons.Outlined.Fullscreen,
+                                    text = (if (Shared.language == "en") "Picture-in-picture Display Mode" else "畫中畫顯示模式").asAnnotatedString()
+                                )
+                            }
                             ActionRow(
                                 onClick = {
                                     instance.compose.shareUrl(
@@ -1837,11 +1850,12 @@ fun StopEntryExpansionEta(
                         etaQueryOptions = etaQueryOptions
                     )
                     var isCurrentlySelected by remember { mutableStateOf(RouteStopETALiveActivity.isCurrentSelectedStop(selected)) }
+                    val name = RouteStopETALiveActivity.getPlatformName()?: BilingualText.EMPTY
                     PlatformFilledTonalIconButton(
                         modifier = Modifier
                             .padding(end = 5.dp)
                             .size(42.dp, 32.dp)
-                            .plainTooltip(if (Shared.language == "en") "Dynamic Island Display Mode" else "動態島顯示模式"),
+                            .plainTooltip(if (Shared.language == "en") "${name.en} Display" else "${name.zh}顯示"),
                         onClick = {
                             if (isCurrentlySelected) {
                                 RouteStopETALiveActivity.clearCurrentSelectedStop()
@@ -1850,9 +1864,9 @@ fun StopEntryExpansionEta(
                             }
                             isCurrentlySelected = RouteStopETALiveActivity.isCurrentSelectedStop(selected)
                             instance.showToastText(if (isCurrentlySelected) {
-                                if (Shared.language == "en") "Enabled Dynamic Island Display Mode" else "已啟用動態島顯示模式"
+                                if (Shared.language == "en") "Enabled ${name.en} Display" else "已啟用${name.zh}顯示"
                             } else {
-                                if (Shared.language == "en") "Disable Dynamic Island Display Mode" else "已停用動態島顯示模式"
+                                if (Shared.language == "en") "Disable ${name.en} Display" else "已停用${name.zh}顯示"
                             }, ToastDuration.SHORT)
                         },
                         shape = RoundedCornerShape(5.dp)

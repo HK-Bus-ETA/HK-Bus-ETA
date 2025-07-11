@@ -44,17 +44,22 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.external.extractShareLink
 import com.loohp.hkbuseta.common.external.shareLaunch
+import com.loohp.hkbuseta.common.objects.withEn
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.glance.FavouriteRoutesWidget
 import com.loohp.hkbuseta.shared.AndroidShared
+import com.loohp.hkbuseta.utils.RouteStopETALiveActivity
 import com.loohp.hkbuseta.utils.hasGooglePlayService
 import com.loohp.hkbuseta.utils.isHuaweiDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.util.Timer
+import java.util.TimerTask
 import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
@@ -75,6 +80,18 @@ class MainActivity : ComponentActivity() {
             enableLights(true)
         }
         notificationManager.createNotificationChannel(alightReminderChannel)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            val routeStopEtaChannel = NotificationChannel(
+                "route_stop_eta_channel",
+                resources.getString(R.string.route_stop_eta_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                enableVibration(true)
+                enableLights(true)
+            }
+            notificationManager.createNotificationChannel(routeStopEtaChannel)
+        }
 
         val alertChannel = NotificationChannel(
             "alert_channel",
@@ -126,6 +143,13 @@ class MainActivity : ComponentActivity() {
             CoroutineScope(Dispatchers.Main).launch {
                 FavouriteRoutesWidget.updateAll(this@MainActivity)
             }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            RouteStopETALiveActivity.setDataUpdateHandler(
+                name = "即時通知" withEn "Live Notification",
+                handler = { RouteStopETALiveForegroundService.updateOrStart(it, this) }
+            )
+            Timer().schedule(TimerTask { RouteStopETALiveActivity.trigger() }, 0, 10000)
         }
 
         Firebase.messaging.subscribeToTopic("Alert")
@@ -212,4 +236,12 @@ private sealed interface PipModeState {
 
 private fun PipModeState.matchesJustLeft(id: Int): Boolean {
     return this is PipModeState.JustLeft && this.id == id
+}
+
+private inline fun TimerTask(crossinline block: suspend () -> Unit): TimerTask {
+    return object : TimerTask() {
+        override fun run() {
+            runBlocking { block.invoke() }
+        }
+    }
 }

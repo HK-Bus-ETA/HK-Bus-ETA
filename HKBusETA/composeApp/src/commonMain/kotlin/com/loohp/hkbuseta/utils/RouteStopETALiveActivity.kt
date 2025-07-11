@@ -3,6 +3,7 @@ package com.loohp.hkbuseta.utils
 import co.touchlab.stately.concurrency.Lock
 import co.touchlab.stately.concurrency.withLock
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
@@ -23,6 +24,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.serialization.Serializable
 
 
 @Immutable
@@ -62,11 +64,13 @@ data class RouteStopETASelectedRouteStop(
 }
 
 @Immutable
+@Serializable
 data class RouteStopETAData(
     val routeNumber: String,
     val hasEta: Boolean,
     val eta: List<String>,
     val minimal: String,
+    val remark: String,
     val destination: String,
     val stop: String,
     val color: Long,
@@ -77,6 +81,7 @@ object RouteStopETALiveActivity {
 
     private var currentSelectedRouteStop: RouteStopETASelectedRouteStop? = null
     private var dataUpdateHandler: ((RouteStopETAData?) -> Unit)? = null
+    private var platformName: BilingualText? = null
     private val lock = Lock()
     private var lastTrigger = 0L
 
@@ -123,7 +128,8 @@ object RouteStopETALiveActivity {
                 routeNumber = selected.co.getDisplayRouteNumber(route.routeNumber, shortened = true),
                 hasEta = eta.nextScheduledBus in 0..59,
                 eta = eta.buildETAText(selected.context),
-                minimal = if (eta.nextScheduledBus <= 0) "-" else eta.nextScheduledBus.toString(),
+                minimal = if (eta.nextScheduledBus <= 0L) "-" else eta.nextScheduledBus.toString(),
+                remark = if (eta.nextScheduledBus < 0) eta.firstLine.text.string else "",
                 destination = route.resolvedDestWithBranch(
                     prependTo = true,
                     branch = route,
@@ -139,12 +145,17 @@ object RouteStopETALiveActivity {
         }
     }
 
-    fun setDataUpdateHandler(handler: ((RouteStopETAData?) -> Unit)?) {
+    fun setDataUpdateHandler(name: BilingualText, handler: ((RouteStopETAData?) -> Unit)?) {
+        platformName = name
         dataUpdateHandler = handler
     }
 
     fun isSupported(): Boolean {
         return dataUpdateHandler != null
+    }
+
+    fun getPlatformName(): BilingualText? {
+        return platformName
     }
 
     fun isCurrentSelectedStop(selected: RouteStopETASelectedRouteStop): Boolean {

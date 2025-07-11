@@ -27,14 +27,13 @@ plugins {
 
 android {
     namespace = "com.loohp.hkbuseta"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
-        //noinspection OldTargetApi
-        targetSdk = 35
-        versionCode = 1159
+        targetSdk = 36
+        versionCode = 1167
         versionName = "2.5.6"
         vectorDrawables {
             useSupportLibrary = true

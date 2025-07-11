@@ -23,7 +23,6 @@ package com.loohp.hkbuseta.common.objects
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.utils.Immutable
-import com.loohp.hkbuseta.common.utils.debugLog
 import com.loohp.hkbuseta.common.utils.getOrClosest
 import kotlin.math.max
 import kotlin.math.min
@@ -41,7 +40,6 @@ data class RouteWaypoints(
     val firstStopIndexOffset: Int = 0
 ) {
     fun subRoute(startingStopIndex: Int, endingStopIndex: Int, firstStopIndexOffset: Int): RouteWaypoints {
-        debugLog("$routeNumber ${paths.size} ${stops.size}")
         return RouteWaypoints(
             routeNumber = routeNumber,
             co = co,
@@ -182,8 +180,6 @@ fun List<Coordinates>.subPathByClosest(start: Coordinates, end: Coordinates): Li
             minEndDistance = distance
         }
     }
-
-    debugLog(closestStartIndex, closestEndIndex, size, minStartDistance, minEndDistance)
 
     return if (closestStartPoint.distance(closestEndPoint) < 0.001) {
         null

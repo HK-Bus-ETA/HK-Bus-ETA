@@ -25,6 +25,7 @@
     <string name="alight_reminder_channel_name">Alight Reminder Notifications</string>
     <string name="alert_channel_name">Transit Alert Notifications</string>
     <string name="general_channel_name">General Notifications</string>
+    <string name="route_stop_eta_channel_name">Route Stop ETA Live Notifications</string>
     <string name="gms_availability_channel_name">Google Play Service Availability Notifications</string>
     <string name="send_to_watch_label">Open on Watch</string>
     <string name="send_no_watch">Unable to connect to watch</string>
