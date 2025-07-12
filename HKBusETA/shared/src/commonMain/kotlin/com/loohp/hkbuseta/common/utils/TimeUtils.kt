@@ -141,14 +141,20 @@ fun LocalTime.isBetweenInclusive(start: LocalTime, end: LocalTime): Boolean {
     val timeSec = toSecondOfDay()
     val startSec = start.toSecondOfDay()
     val endSec = end.toSecondOfDay().let { if (it < startSec) it + secondsInDay else it }
-    return timeSec in startSec..endSec
+    return (-1..1).any { sign ->
+        val offset = secondsInDay * sign
+        timeSec in (startSec + offset)..(endSec + offset)
+    }
 }
 
 fun LocalTime.isBetweenExclusive(start: LocalTime, end: LocalTime): Boolean {
     val timeSec = toSecondOfDay()
     val startSec = start.toSecondOfDay()
     val endSec = end.toSecondOfDay().let { if (it < startSec) it + secondsInDay else it }
-    return timeSec in (startSec + 1) until endSec
+    return (-1..1).any { sign ->
+        val offset = secondsInDay * sign
+        timeSec in (startSec + 1 + offset) until (endSec + offset)
+    }
 }
 
 fun Pair<LocalTime, LocalTime>.isBetweenInclusive(start: LocalTime, end: LocalTime): Boolean {
@@ -156,7 +162,10 @@ fun Pair<LocalTime, LocalTime>.isBetweenInclusive(start: LocalTime, end: LocalTi
     val timeEndSec = second.toSecondOfDay().let { if (it < timeStartSec) it + secondsInDay else it }
     val startSec = start.toSecondOfDay()
     val endSec = end.toSecondOfDay().let { if (it < startSec) it + secondsInDay else it }
-    return (startSec <= timeStartSec && timeEndSec <= endSec) || (startSec + secondsInDay <= timeStartSec && timeEndSec <= endSec + secondsInDay)
+    return (-1..1).any { sign ->
+        val offset = secondsInDay * sign
+        startSec + offset <= timeStartSec && timeEndSec <= endSec + offset
+    }
 }
 
 fun Pair<LocalTime, LocalTime>.intersects(start: LocalTime, end: LocalTime): Pair<LocalTime, LocalTime>? {

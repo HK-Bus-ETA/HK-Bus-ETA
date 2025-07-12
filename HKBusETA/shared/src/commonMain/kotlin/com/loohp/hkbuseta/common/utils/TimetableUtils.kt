@@ -184,6 +184,7 @@ sealed class TimetableEntry(
     abstract val hasScheduledServices: Boolean
     abstract fun toString(language: String): String
     abstract fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean
+    abstract fun intersect(windowStart: LocalTime, windowEnd: LocalTime): Boolean
     abstract infix fun overlap(other: TimetableEntry): Boolean
     abstract fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int
     abstract fun numberOfServicesWithin(windowStart: LocalTime, windowEnd: LocalTime, firstServiceCheck: (LocalTime) -> Boolean): Int
@@ -221,6 +222,9 @@ class TimetableIntervalEntry(
     }
     override fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean {
         return (start to end).isBetweenInclusive(windowStart, windowEnd)
+    }
+    override fun intersect(windowStart: LocalTime, windowEnd: LocalTime): Boolean {
+        return (start to end).intersects(windowStart, windowEnd) != null
     }
     override fun overlap(other: TimetableEntry): Boolean {
         if (other !is TimetableIntervalEntry) return false
@@ -287,6 +291,9 @@ class TimetableSingleEntry(
     override fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean {
         return time.isBetweenInclusive(windowStart, windowEnd)
     }
+    override fun intersect(windowStart: LocalTime, windowEnd: LocalTime): Boolean {
+        return time.isBetweenInclusive(windowStart, windowEnd)
+    }
     override infix fun overlap(other: TimetableEntry): Boolean {
         return other is TimetableSingleEntry && time == other.time
     }
@@ -318,6 +325,7 @@ class TimetableSpecialEntry(
     override val hasScheduledServices: Boolean = false
     override fun toString(language: String): String = notice[language]
     override fun within(windowStart: LocalTime, windowEnd: LocalTime): Boolean = false
+    override fun intersect(windowStart: LocalTime, windowEnd: LocalTime): Boolean = false
     override infix fun overlap(other: TimetableEntry): Boolean = false
     override fun numberOfServices(firstServiceCheck: (LocalTime) -> Boolean): Int = 0
     override fun numberOfServicesWithin(windowStart: LocalTime, windowEnd: LocalTime, firstServiceCheck: (LocalTime) -> Boolean): Int = 0
@@ -433,19 +441,19 @@ fun Collection<TimetableEntry>.getServiceTimeCategory(routeNumber: String, co: O
     }
     if (
         filtered.all { it.within(LocalTime(0, 0), LocalTime(6, 0)) } &&
-        filtered.any { it.within(LocalTime(0, 1), LocalTime(5, 59)) }
+        filtered.any { it.intersect(LocalTime(0, 1), LocalTime(5, 59)) }
     ) {
         return ServiceTimeCategory.NIGHT
     }
     if (
         filtered.all { it.within(LocalTime(22, 0), LocalTime(7, 0)) } &&
-        filtered.any { it.within(LocalTime(1, 1), LocalTime(4, 59)) }
+        filtered.any { it.intersect(LocalTime(1, 1), LocalTime(4, 59)) }
     ) {
         return ServiceTimeCategory.NIGHT
     }
     if (
-        filtered.any { it.numberOfServicesWithin(LocalTime(7, 0), LocalTime(19, 59)) { true } > 0 } &&
-        filtered.any { it.numberOfServicesWithin(LocalTime(2, 0), LocalTime(3, 59)) { true } > 0 }
+        filtered.any { it.intersect(LocalTime(7, 0), LocalTime(19, 59)) } &&
+        filtered.any { it.intersect(LocalTime(2, 0), LocalTime(3, 59)) }
     ) {
         return ServiceTimeCategory.TWENTY_FOUR_HOURS
     }
