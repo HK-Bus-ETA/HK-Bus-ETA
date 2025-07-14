@@ -44,6 +44,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.Immutable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
@@ -111,7 +112,19 @@ fun LanguageDarkModeChangeEffect(vararg key: Any?, block: CoroutineScope.(String
 }
 
 @Composable
-expect fun BackButtonEffect(enabled: Boolean = true, onBack: () -> Unit)
+expect fun BackButtonHandler(enabled: Boolean = true, onBack: () -> Unit)
+
+expect class PlatformBackEvent {
+    val touchX: Float
+    val touchY: Float
+    val progress: Float
+    val swipeEdge: Int
+}
+
+expect val allowRightSwipeBackGesture: Boolean
+
+@Composable
+expect fun PredicativeBackGestureHandler(enabled: Boolean = true, onBack: suspend (Flow<PlatformBackEvent>) -> Unit)
 
 expect val currentLocalWindowSize: IntSize @Composable get
 

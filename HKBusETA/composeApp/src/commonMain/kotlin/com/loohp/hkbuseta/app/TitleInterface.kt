@@ -59,10 +59,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.loohp.hkbuseta.appcontext.AppScreenGroup
 import com.loohp.hkbuseta.appcontext.ComposePlatform
+import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
 import com.loohp.hkbuseta.appcontext.isTopOfStack
+import com.loohp.hkbuseta.appcontext.screenGroup
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
@@ -94,6 +97,7 @@ import com.loohp.hkbuseta.compose.Settings
 import com.loohp.hkbuseta.compose.Star
 import com.loohp.hkbuseta.compose.StarOutline
 import com.loohp.hkbuseta.compose.applyIf
+import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.mutableSignalStateOf
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.platformSurfaceContainerColor
@@ -197,8 +201,10 @@ fun TitleInterface(instance: AppActiveContext) {
         initialPage = titleTabItems.indexOfFirst { it.appScreens.contains(instance.compose.screen) }.takeIf { it >= 0 }?: 0,
         pageCount = { titleTabItems.size }
     )
+    val historyStack by HistoryStack.historyStack.collectAsStateMultiplatform()
     val scope = rememberCoroutineScope()
     val signal = remember { mutableSignalStateOf() }
+    val frontGroup by remember { derivedStateOf { historyStack.last().screenGroup == AppScreenGroup.TITLE } }
 
     val routes by remember(instance) { derivedStateOf { instance.compose.data["result"] as? List<*> } }
     var showBottomRouteSheet by rememberSaveable { mutableStateOf(false) }
@@ -312,7 +318,7 @@ fun TitleInterface(instance: AppActiveContext) {
                     Box(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        val isOnPage = pagerState.currentPage == it && titleTabItems[it].appScreens.contains(instance.compose.screen)
+                        val isOnPage = frontGroup && pagerState.currentPage == it && titleTabItems[it].appScreens.contains(instance.compose.screen)
                         when (it) {
                             0 -> NearbyInterface(instance, isOnPage)
                             1 -> FavouriteInterface(instance, isOnPage, signal.signal)

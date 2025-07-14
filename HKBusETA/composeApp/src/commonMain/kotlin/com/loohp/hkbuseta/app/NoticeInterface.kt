@@ -75,10 +75,10 @@ import com.loohp.hkbuseta.compose.PlatformModalBottomSheet
 import com.loohp.hkbuseta.compose.PlatformText
 import com.loohp.hkbuseta.compose.PriorityHigh
 import com.loohp.hkbuseta.compose.ScrollBarConfig
-import com.loohp.hkbuseta.compose.Sync
 import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.combinedClickable
+import com.loohp.hkbuseta.compose.loadingPlaceholder
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
@@ -86,16 +86,59 @@ import com.loohp.hkbuseta.utils.copyToClipboard
 import com.loohp.hkbuseta.utils.getOperatorColor
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoticeInterface(instance: AppActiveContext, notices: ImmutableList<RouteNotice>?, possibleBidirectionalSectionFare: Boolean) {
     if (notices == null) {
-        EmptyBackgroundInterfaceProgress(
-            instance = instance,
-            icon = PlatformIcons.Filled.Sync,
-            text = if (Shared.language == "en") "Loading" else "載入中"
-        )
+        val count = remember { Random.nextInt(1, 4) }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                    windowInsetsPadding(WindowInsets.navigationBars)
+                },
+        ) {
+            for (i in 0 until count) {
+                val repeat = remember { Random.nextInt(5, 20) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(60.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start)
+                ) {
+                    PlatformText(
+                        modifier = Modifier
+                            .weight(1F)
+                            .size(25.dp)
+                            .loadingPlaceholder(true),
+                        fontSize = 17.sp,
+                        textAlign = TextAlign.Start,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        text = "A".repeat(repeat)
+                    )
+                    PlatformIcon(
+                        modifier = Modifier
+                            .size(25.dp)
+                            .loadingPlaceholder(true),
+                        painter = PlatformIcons.Outlined.CurrencyExchange,
+                        contentDescription = null
+                    )
+                    PlatformIcon(
+                        modifier = Modifier
+                            .size(25.dp)
+                            .loadingPlaceholder(true),
+                        painter = PlatformIcons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = null
+                    )
+                }
+                HorizontalDivider()
+            }
+        }
     } else {
         val importantNotices by remember(notices) { derivedStateOf { notices.asSequence().filter { it.importance != RouteNoticeImportance.NOT_IMPORTANT }.sortedBy { it.importance }.toList() } }
         val notImportantNotices by remember(notices) { derivedStateOf { notices.filter { it.importance == RouteNoticeImportance.NOT_IMPORTANT } } }

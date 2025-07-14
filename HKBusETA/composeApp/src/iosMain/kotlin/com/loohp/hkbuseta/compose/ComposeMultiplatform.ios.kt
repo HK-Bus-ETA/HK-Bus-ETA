@@ -26,10 +26,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.backhandler.BackEventCompat
 import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.ui.backhandler.PredictiveBackHandler
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
 
@@ -39,8 +42,19 @@ actual fun <T> StateFlow<T>.collectAsStateMultiplatform(context: CoroutineContex
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-actual fun BackButtonEffect(enabled: Boolean, onBack: () -> Unit) {
+actual fun BackButtonHandler(enabled: Boolean, onBack: () -> Unit) {
     BackHandler(enabled, onBack)
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+actual typealias PlatformBackEvent = BackEventCompat
+
+actual val allowRightSwipeBackGesture: Boolean = false
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+actual fun PredicativeBackGestureHandler(enabled: Boolean, onBack: suspend (Flow<BackEventCompat>) -> Unit) {
+    PredictiveBackHandler(enabled, onBack)
 }
 
 actual inline val currentLocalWindowSize: IntSize

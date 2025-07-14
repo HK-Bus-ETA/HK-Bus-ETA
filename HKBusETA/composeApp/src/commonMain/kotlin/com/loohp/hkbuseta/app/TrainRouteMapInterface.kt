@@ -387,19 +387,21 @@ fun RouteMapSearchInterface(
 
     var stopLaunch: String? by remember { mutableStateOf(null) }
 
-    LaunchedEffect (Unit) {
-        val stopId = instance.compose.data["stopLaunch"] as? String
-        if (stopId != null) {
-            val operators = stopId.identifyStopCo()
-            if (operators.isNotEmpty()) {
-                val co = operators.first()
-                if (co.isTrain) {
-                    when (co) {
-                        Operator.MTR -> pagerState.animateScrollToPage(0)
-                        Operator.LRT -> pagerState.animateScrollToPage(1)
+    LaunchedEffect (visible) {
+        if (visible) {
+            val stopId = instance.compose.data["stopLaunch"] as? String
+            if (stopId != null) {
+                val operators = stopId.identifyStopCo()
+                if (operators.isNotEmpty()) {
+                    val co = operators.first()
+                    if (co.isTrain) {
+                        when (co) {
+                            Operator.MTR -> pagerState.animateScrollToPage(0)
+                            Operator.LRT -> pagerState.animateScrollToPage(1)
+                        }
+                        stopLaunch = stopId
+                        instance.compose.data.remove("stopLaunch")
                     }
-                    stopLaunch = stopId
-                    instance.compose.data.remove("stopLaunch")
                 }
             }
         }
@@ -569,8 +571,8 @@ fun RouteMapSearchInterface(
                         verticalAlignment = Alignment.Top,
                     ) {
                         when (it) {
-                            0 -> MTRRouteMapInterface(instance, location, stopLaunch, false)
-                            1 -> LRTRouteMapInterface(instance, location, stopLaunch, false)
+                            0 -> MTRRouteMapInterface(instance, location, stopLaunch, false, visible)
+                            1 -> LRTRouteMapInterface(instance, location, stopLaunch, false, visible)
                             2 -> NoticeInterface(instance, notices?.asImmutableList(), false)
                             else -> PlatformText(trainRouteMapItems[it].title[Shared.language])
                         }
@@ -763,7 +765,8 @@ fun MTRRouteMapInterface(
     instance: AppActiveContext,
     location: Coordinates?,
     stopLaunch: String?,
-    isPreview: Boolean
+    isPreview: Boolean,
+    visible: Boolean
 ) {
     var zoomState by mtrRouteMapZoomState.collectAsStateMultiplatform()
     val state = rememberCoilZoomState()
@@ -865,10 +868,12 @@ fun MTRRouteMapInterface(
             }
         }
     }
-    LaunchedEffect (showingSheet) {
-        delay(1000)
-        if (showingSheet && sheetState.currentValue == SheetValue.Hidden) {
-            showingSheet = false
+    LaunchedEffect (showingSheet, visible) {
+        if (visible) {
+            delay(1000)
+            if (showingSheet && sheetState.currentValue == SheetValue.Hidden) {
+                showingSheet = false
+            }
         }
     }
 
@@ -876,7 +881,7 @@ fun MTRRouteMapInterface(
 
     selectedStopId?.let { stopId ->
         val stop by remember(stopId) { derivedStateOf { stopId.asStop(instance)!! } }
-        if (showingSheet) {
+        if (visible && showingSheet) {
             PlatformModalBottomSheet(
                 onDismissRequest = { showingSheet = false },
                 sheetState = sheetState,
@@ -885,7 +890,7 @@ fun MTRRouteMapInterface(
                 MTRETADisplayInterface(stopId, stop, mtrSheetInfoTypeState, isPreview, instance)
             }
         }
-        if (mtrSheetInfoType.showing) {
+        if (visible && mtrSheetInfoType.showing) {
             PlatformModalBottomSheet(
                 onDismissRequest = { mtrSheetInfoType = StationInfoSheetType.NONE },
                 sheetState = mtrSheetInfoState,
@@ -1848,7 +1853,8 @@ fun LRTRouteMapInterface(
     instance: AppActiveContext,
     location: Coordinates?,
     stopLaunch: String?,
-    isPreview: Boolean
+    isPreview: Boolean,
+    visible: Boolean
 ) {
     var zoomState by lrtRouteMapZoomState.collectAsStateMultiplatform()
     val state = rememberCoilZoomState()
@@ -1950,10 +1956,12 @@ fun LRTRouteMapInterface(
             }
         }
     }
-    LaunchedEffect (showingSheet) {
-        delay(1000)
-        if (showingSheet && sheetState.currentValue == SheetValue.Hidden) {
-            showingSheet = false
+    LaunchedEffect (showingSheet, visible) {
+        if (visible) {
+            delay(1000)
+            if (showingSheet && sheetState.currentValue == SheetValue.Hidden) {
+                showingSheet = false
+            }
         }
     }
 
@@ -1961,7 +1969,7 @@ fun LRTRouteMapInterface(
 
     selectedStopId?.let { stopId ->
         val stop by remember(stopId) { derivedStateOf { stopId.asStop(instance)!! } }
-        if (showingSheet) {
+        if (visible && showingSheet) {
             PlatformModalBottomSheet(
                 onDismissRequest = { showingSheet = false },
                 sheetState = sheetState,
@@ -1970,7 +1978,7 @@ fun LRTRouteMapInterface(
                 LRTETADisplayInterface(instance, stopId, stop, lrtSheetInfoTypeState, isPreview)
             }
         }
-        if (lrtSheetInfoType.showing) {
+        if (visible && lrtSheetInfoType.showing) {
             PlatformModalBottomSheet(
                 onDismissRequest = { lrtSheetInfoType = StationInfoSheetType.NONE },
                 sheetState = lrtSheetInfoState,

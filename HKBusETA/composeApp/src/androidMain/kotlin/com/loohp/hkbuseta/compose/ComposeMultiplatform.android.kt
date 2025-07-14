@@ -25,8 +25,10 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Rect
 import android.util.Rational
+import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
@@ -47,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.context
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
 
@@ -55,8 +58,17 @@ import kotlin.coroutines.CoroutineContext
 actual fun <T> StateFlow<T>.collectAsStateMultiplatform(context: CoroutineContext): State<T> = collectAsStateWithLifecycle(context = context)
 
 @Composable
-actual fun BackButtonEffect(enabled: Boolean, onBack: () -> Unit) {
+actual fun BackButtonHandler(enabled: Boolean, onBack: () -> Unit) {
     BackHandler(enabled, onBack)
+}
+
+actual typealias PlatformBackEvent = BackEventCompat
+
+actual val allowRightSwipeBackGesture: Boolean = true
+
+@Composable
+actual fun PredicativeBackGestureHandler(enabled: Boolean, onBack: suspend (Flow<BackEventCompat>) -> Unit) {
+    PredictiveBackHandler(enabled, onBack)
 }
 
 actual inline val currentLocalWindowSize: IntSize

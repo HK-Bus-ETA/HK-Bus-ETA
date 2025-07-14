@@ -74,6 +74,16 @@ object HistoryStack {
 
 }
 
+fun List<AppActiveContextCompose>.previous(): AppActiveContextCompose? {
+    val currentKey = lastOrNull()?.screenGroup?: return null
+    for (screen in asReversed().asSequence().drop(1)) {
+        if (currentKey == AppScreenGroup.MAIN || screen.screenGroup != currentKey) {
+            return screen
+        }
+    }
+    return null
+}
+
 fun AppActiveContext.isOnStack(): Boolean {
     return HistoryStack.historyStack.value.contains(this)
 }
