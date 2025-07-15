@@ -1547,6 +1547,8 @@
 				INFOPLIST_FILE = FavouriteRoutesWidgetWatchExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FavouriteRoutesWidgetWatchExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1583,6 +1585,8 @@
 				INFOPLIST_FILE = FavouriteRoutesWidgetWatchExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FavouriteRoutesWidgetWatchExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1607,7 +1611,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 373;
+				BUILD_NUMBER = 374;
 				BUILD_VERSION = 2.5.7;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1675,7 +1679,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 373;
+				BUILD_NUMBER = 374;
 				BUILD_VERSION = 2.5.7;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1892,6 +1896,8 @@
 				INFOPLIST_FILE = FavouriteRoutesWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FavouriteRoutesWidgetExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1928,6 +1934,8 @@
 				INFOPLIST_FILE = FavouriteRoutesWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FavouriteRoutesWidgetExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
