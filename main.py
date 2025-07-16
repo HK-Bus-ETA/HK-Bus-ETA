@@ -1619,6 +1619,11 @@ def fix_ctb_route_bounds():
                         data["dest"]["en"] = re.sub(r" *\(?Circular\)?$", "", data["dest"]["en"])
                         if original_bound != data["bound"]["ctb"]:
                             print(f"Flipped {key} (Circular) from {original_bound} to {data['bound']['ctb']} (Matched O: {outbound_count} I: {inbound_count})")
+                else:
+                    original_bound = data["bound"]["ctb"]
+                    if len(original_bound) == 1:
+                        data["bound"]["ctb"] = "OI"
+                        print(f"Changed {key} from {original_bound} to {data['bound']['ctb']} (FIRST = LAST)")
             elif route_number in ctb_route_numbers:
                 original_bound = data["bound"]["ctb"]
                 reverse_bound = 'I' if original_bound == 'O' else 'O'
@@ -1642,7 +1647,7 @@ def fix_ctb_route_bounds():
         for key, data in DATA_SHEET["routeList"].items():
             if "ctb" in data["co"]:
                 route_number = data["route"]
-                if route_number in ctb_circular_route_numbers and len(data["bound"]["ctb"]) > 1:
+                if route_number in ctb_circular_route_numbers and "ctb" in data["bound"] and len(data["bound"]["ctb"]) > 1:
                     if len(ctb_stops_by_bound[f"{route_number}_O"]) > 0 and len(ctb_stops_by_bound[f"{route_number}_I"]) > 0:
                         if "循環線" not in data["dest"]["zh"]:
                             data["dest"]["zh"] += " (循環線)"
