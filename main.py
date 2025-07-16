@@ -1563,7 +1563,7 @@ def fix_ctb_route_bounds():
     for data in DATA_SHEET["routeList"].values():
         if "stops" in data and data["stops"] is not None and "ctb" in data["stops"]:
             route_number = data["route"]
-            if "ctbIsCircular" not in data and len(data["bound"]["ctb"]) == 1:
+            if "ctbIsCircular" not in data and len(data["bound"]["ctb"]) == 1 and "循環線" not in data["dest"]["zh"]:
                 ctb_route_numbers.add(route_number)
             else:
                 ctb_circular_route_numbers.add(route_number)
@@ -1587,23 +1587,7 @@ def fix_ctb_route_bounds():
     for key, data in DATA_SHEET["routeList"].items():
         if "stops" in data and data["stops"] is not None and "ctb" in data["stops"]:
             route_number = data["route"]
-            if route_number in ctb_route_numbers:
-                original_bound = data["bound"]["ctb"]
-                reverse_bound = 'I' if original_bound == 'O' else 'O'
-                ctb_stops = data["stops"]["ctb"]
-                right_bound_stops = ctb_stops_by_bound[f"{route_number}_{original_bound}"]
-                wrong_bound_stops = ctb_stops_by_bound[f"{route_number}_{reverse_bound}"]
-                right_bound_count = 0
-                wrong_bound_count = 0
-                for stop in ctb_stops:
-                    if stop in right_bound_stops:
-                        right_bound_count += 1
-                    if stop in wrong_bound_stops:
-                        wrong_bound_count += 1
-                if wrong_bound_count > right_bound_count:
-                    data["bound"]["ctb"] = reverse_bound
-                    print(f"Flipped {key} from {original_bound} (Matched {right_bound_count}) to {reverse_bound} (Matched {wrong_bound_count})")
-            elif route_number in ctb_circular_route_numbers:
+            if route_number in ctb_circular_route_numbers:
                 ctb_stops = data["stops"]["ctb"]
                 if ctb_stops[0] != ctb_stops[-1]:
                     outbound_stops = set(ctb_stops_by_bound[f"{route_number}_O"])
@@ -1623,7 +1607,10 @@ def fix_ctb_route_bounds():
                     inbound_percentage = inbound_count / len(inbound_stops)
                     circular_percentage = circular_count / len(circular_stops)
                     if circular_percentage > 0.75 and outbound_percentage > 0.75 and inbound_percentage > 0.75:
-                        pass
+                        original_bound = data["bound"]["ctb"]
+                        if len(original_bound) == 1:
+                            data["bound"]["ctb"] = "OI"
+                            print(f"Changed {key} from {original_bound} to {data['bound']['ctb']} (C:{circular_percentage} O:{outbound_percentage} I:{inbound_percentage})")
                     else:
                         original_bound = data["bound"]["ctb"]
                         data["bound"]["ctb"] = "O" if outbound_count > inbound_count else "I"
@@ -1632,6 +1619,22 @@ def fix_ctb_route_bounds():
                         data["dest"]["en"] = re.sub(r" *\(?Circular\)?$", "", data["dest"]["en"])
                         if original_bound != data["bound"]["ctb"]:
                             print(f"Flipped {key} (Circular) from {original_bound} to {data['bound']['ctb']} (Matched O: {outbound_count} I: {inbound_count})")
+            elif route_number in ctb_route_numbers:
+                original_bound = data["bound"]["ctb"]
+                reverse_bound = 'I' if original_bound == 'O' else 'O'
+                ctb_stops = data["stops"]["ctb"]
+                right_bound_stops = ctb_stops_by_bound[f"{route_number}_{original_bound}"]
+                wrong_bound_stops = ctb_stops_by_bound[f"{route_number}_{reverse_bound}"]
+                right_bound_count = 0
+                wrong_bound_count = 0
+                for stop in ctb_stops:
+                    if stop in right_bound_stops:
+                        right_bound_count += 1
+                    if stop in wrong_bound_stops:
+                        wrong_bound_count += 1
+                if wrong_bound_count > right_bound_count:
+                    data["bound"]["ctb"] = reverse_bound
+                    print(f"Flipped {key} from {original_bound} (Matched {right_bound_count}) to {reverse_bound} (Matched {wrong_bound_count})")
 
     if IS_EXPERIMENTAL:
         ctb_circular_stripped = set()
