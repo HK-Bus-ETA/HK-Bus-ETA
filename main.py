@@ -1081,6 +1081,8 @@ def download_and_process_traffic_snapshot():
         key = row[0].strip('"')
         name_zh = row[3].strip('"')
         name_en = en_names[key] if key in en_names else ""
+        name_zh = re.sub(r'\s*\[[0-9A-Z]+]\s*$', '', name_zh)
+        name_en = re.sub(r'\s*\[[0-9A-Z]+]\s*$', '', name_en)
         lat = float(row[6].strip('"'))
         lng = float(row[7].strip('"'))
         TRAFFIC_SNAPSHOTS.append({
