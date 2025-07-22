@@ -39,7 +39,7 @@ struct EtaTileConfigurationView: AppScreenView {
                             .lineLimit(2)
                             .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
                         Spacer().frame(fixedSize: 5.scaled(appContext))
-                        Text(Shared().language == "en" ? "Selected Favourite Routes will display in the Tile" : "所選最喜愛路線將顯示在資訊方塊中")
+                        Text(Shared().language == "en" ? "Selected Favourite Routes will display in the Tile" : "所選收藏路線將顯示在資訊方塊中")
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
@@ -70,7 +70,7 @@ struct EtaTileConfigurationView: AppScreenView {
                         Spacer().frame(fixedSize: 10.scaled(appContext))
                         let routeStops = FavouriteRouteGroupKt.getByName(favouriteRouteStops.state, name: selectedGroup)!.favouriteRouteStops
                         if routeStops.isEmpty {
-                            Text(Shared().language == "en" ? "No favourite routes" : "沒有最喜愛路線")
+                            Text(Shared().language == "en" ? "No favourite routes" : "沒有收藏路線")
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                                 .lineLimit(2)

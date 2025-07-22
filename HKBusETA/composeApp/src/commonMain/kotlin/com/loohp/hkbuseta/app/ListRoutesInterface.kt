@@ -102,6 +102,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -180,7 +181,6 @@ import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.asImmutableSet
 import com.loohp.hkbuseta.common.utils.asImmutableState
-import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.createTimetable
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
@@ -215,6 +215,11 @@ import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.Schedule
 import com.loohp.hkbuseta.compose.ScrollBarConfig
 import com.loohp.hkbuseta.compose.Sort
+import com.loohp.hkbuseta.compose.Table
+import com.loohp.hkbuseta.compose.TableColumn
+import com.loohp.hkbuseta.compose.TableColumnWidth
+import com.loohp.hkbuseta.compose.TableRow
+import com.loohp.hkbuseta.compose.TableRowAlignment
 import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.combinedClickable
@@ -228,9 +233,6 @@ import com.loohp.hkbuseta.compose.platformLargeShape
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformTopBarColor
 import com.loohp.hkbuseta.compose.rememberIsInPipMode
-import com.loohp.hkbuseta.compose.table.DataColumn
-import com.loohp.hkbuseta.compose.table.DataTable
-import com.loohp.hkbuseta.compose.table.TableColumnWidth
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
 import com.loohp.hkbuseta.compose.verticalScrollBar
@@ -711,7 +713,7 @@ fun EmptyListRouteInterface(
         EmptyBackgroundInterface(
             instance = instance,
             icon = PlatformIcons.Filled.NoTransfer,
-            text = if (Shared.language == "en") "No Routes to Display" else "沒有可顯示的路線"
+            text = if (Shared.language == "en") "No Routes to Display" else "沒有路線顯示"
         )
     } else {
         val count = remember { Random.nextInt(3, 9) }
@@ -724,6 +726,7 @@ fun EmptyListRouteInterface(
                 Row (
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(3.dp)
                         .heightIn(min = (if (showEta) 65 else 55).dp)
                         .padding(horizontal = 5.dp),
                     horizontalArrangement = Arrangement.Start,
@@ -1038,6 +1041,7 @@ fun LazyItemScope.RouteEntry(
                 },
                 onLongClick = onLongClick
             )
+            .padding(3.dp)
     ) {
         RouteRow(
             key = key,
@@ -1639,44 +1643,23 @@ fun PipETADisplay(
     val hasOperator by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.operator.isNotEmpty() } } }
     val hasRemark by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.third.remark.isNotEmpty() } } }
 
-    val columns by remember(resolvedText) { derivedStateOf {
-        buildImmutableList {
-            if (hasPrefix) {
-                add(DataColumn(
-                    width = TableColumnWidth.Wrap
-                ) {})
-                add(DataColumn(
-                    width = TableColumnWidth.Wrap
-                ) {})
-            }
-            if (hasClockTime) add(DataColumn(
-                alignment = Alignment.End,
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasPlatform) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasRouteNumber) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasDestination) add(DataColumn(
-                width = TableColumnWidth.Flex(1F)
-            ) {})
-            if (hasCarts) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasTime) add(DataColumn(
-                alignment = if ((lines?.nextScheduledBus?: -1) < 0) Alignment.Start else Alignment.End,
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasOperator) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasRemark) add(DataColumn(
-                width = TableColumnWidth.Flex(1F)
-            ) {})
+    val columns by remember(resolvedText) { derivedStateOf { buildList {
+        if (hasPrefix) {
+            add(TableColumn(width = TableColumnWidth.Wrap))
+            add(TableColumn(width = TableColumnWidth.Wrap))
         }
-    } }
+        if (hasClockTime) add(TableColumn(width = TableColumnWidth.Wrap, alignment = Alignment.End))
+        if (hasPlatform) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasRouteNumber) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasDestination) add(TableColumn(width = TableColumnWidth.Weight(1F)))
+        if (hasCarts) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasTime) add(TableColumn(
+            width = TableColumnWidth.Wrap,
+            alignment = if ((lines?.nextScheduledBus?: -1) < 0) Alignment.Start else Alignment.End
+        ))
+        if (hasOperator) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasRemark) add(TableColumn(width = TableColumnWidth.Weight(1F)))
+    } } }
 
     LaunchedEffect (lines) {
         while (true) {
@@ -1692,48 +1675,41 @@ fun PipETADisplay(
         } else {
             lineRange
         }
-        DataTable(
+        Table(
             modifier = modifier.fillMaxWidth(),
-            columns = columns,
-            rowHeight = rowHeight,
-            headerHeight = 0.dp,
-            horizontalPadding = 0.dp,
-            separator = { Spacer(modifier = Modifier.size(1.dp)) }
+            columns = { columns[it] },
+            columnsCount = columns.size,
+            rowDivider = { Spacer(modifier = Modifier.size(1.dp)) },
+            rows = { TableRow(alignment = TableRowAlignment.Baseline(FirstBaseline)) }
         ) {
             for (seq in range) {
-                row {
-                    if (hasPrefix) {
-                        cell {
-                            EtaText(resolvedText[seq]!!.second, seq, updating, freshness, fontSize)
-                        }
-                        cell {
-                            Spacer(modifier = Modifier.width(5.dp))
-                        }
-                    }
-                    if (hasClockTime) cell {
-                        EtaText(resolvedText[seq]!!.third.clockTime, seq, updating, freshness, fontSize)
-                    }
-                    if (hasPlatform) cell {
-                        EtaText(resolvedText[seq]!!.third.platform, seq, updating, freshness, fontSize)
-                    }
-                    if (hasRouteNumber) cell {
-                        EtaText(resolvedText[seq]!!.third.routeNumber, seq, updating, freshness, fontSize)
-                    }
-                    if (hasDestination) cell {
-                        EtaText(resolvedText[seq]!!.third.destination, seq, updating, freshness, fontSize)
-                    }
-                    if (hasCarts) cell {
-                        EtaText(resolvedText[seq]!!.third.carts, seq, updating, freshness, fontSize)
-                    }
-                    if (hasTime) cell {
-                        EtaText(resolvedText[seq]!!.third.time, seq, updating, freshness, fontSize)
-                    }
-                    if (hasOperator) cell {
-                        EtaText(resolvedText[seq]!!.third.operator, seq, updating, freshness, fontSize)
-                    }
-                    if (hasRemark) cell {
-                        EtaText(resolvedText[seq]!!.third.remark, seq, updating, freshness, fontSize)
-                    }
+                if (hasPrefix) {
+                    EtaText(resolvedText[seq]!!.second, seq, updating, freshness, fontSize)
+                    Spacer(modifier = Modifier.width(5.dp))
+                }
+                if (hasClockTime) {
+                    EtaText(resolvedText[seq]!!.third.clockTime, seq, updating, freshness, fontSize)
+                }
+                if (hasPlatform) {
+                    EtaText(resolvedText[seq]!!.third.platform, seq, updating, freshness, fontSize)
+                }
+                if (hasRouteNumber) {
+                    EtaText(resolvedText[seq]!!.third.routeNumber, seq, updating, freshness, fontSize)
+                }
+                if (hasDestination) {
+                    EtaText(resolvedText[seq]!!.third.destination, seq, updating, freshness, fontSize)
+                }
+                if (hasCarts) {
+                    EtaText(resolvedText[seq]!!.third.carts, seq, updating, freshness, fontSize)
+                }
+                if (hasTime) {
+                    EtaText(resolvedText[seq]!!.third.time, seq, updating, freshness, fontSize)
+                }
+                if (hasOperator) {
+                    EtaText(resolvedText[seq]!!.third.operator, seq, updating, freshness, fontSize)
+                }
+                if (hasRemark) {
+                    EtaText(resolvedText[seq]!!.third.remark, seq, updating, freshness, fontSize)
                 }
             }
         }

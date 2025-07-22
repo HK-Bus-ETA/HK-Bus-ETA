@@ -81,6 +81,7 @@ import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.BilingualFormattedText
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.GMBRegion
 import com.loohp.hkbuseta.common.objects.Operator
@@ -99,7 +100,7 @@ import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.isNotBlank
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
-import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
@@ -153,7 +154,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.collections.set
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -177,7 +177,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
         val branches = remember { Registry.getInstance(instance).getAllBranchRoutes(routeNumber, bound, co, gmbRegion) }
         val currentBranch = remember { branches.currentBranchStatus(currentLocalDateTime(), instance, false).asSequence().sortedByDescending { it.value.activeness }.first().key }
 
-        val resolvedDestName = remember { route.route!!.resolvedDestWithBranch(true, currentBranch) }
+        val resolvedDestName = remember { route.route!!.resolvedDestWithBranchFormatted(true, currentBranch) }
         val specialRoutesRemarks = remember { branches
             .associateWith {
                 it.resolveSpecialRemark(instance, labelType = RemarkType.LABEL_ALL_AND_MAIN) to it.resolveSpecialRemark(instance, labelType = RemarkType.LABEL_ALL)
@@ -391,7 +391,7 @@ fun HeaderElement(
     co: Operator,
     gmbRegion: GMBRegion?,
     coColor: Color,
-    destName: BilingualText,
+    destName: BilingualFormattedText,
     currentBranch: Route,
     specialRoutesRemarks: ImmutableMap<Route, Pair<BilingualText, BilingualText>>,
     alternateStopNames: ImmutableList<Registry.NearbyStopSearchResult>?,
@@ -451,7 +451,7 @@ fun HeaderElement(
             ),
             color = Color(0xFFFFFFFF).adjustBrightness(if (ambientMode) 0.7F else 1F),
             maxLines = 2,
-            text = destName[Shared.language]
+            text = destName[Shared.language].asContentAnnotatedString().annotatedString
         )
         if (!co.isTrain && !co.isFerry) {
             specialRoutesRemarks[currentBranch]?.second?.takeIf { it.isNotBlank() }?.let {

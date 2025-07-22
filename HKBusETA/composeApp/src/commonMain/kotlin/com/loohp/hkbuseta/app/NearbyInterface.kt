@@ -418,7 +418,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                 modifier = Modifier
                                     .width(45.dp)
                                     .fillMaxHeight()
-                                    .plainTooltip(if (Shared.language == "en") "Add to Favourite Stops" else "設置為最喜愛車站"),
+                                    .plainTooltip(if (Shared.language == "en") "Add to Favourite Stops" else "設置為收藏車站"),
                                 onClick = {
                                     if (favouriteStopAlreadySet) {
                                         Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopId) }, instance)
@@ -433,7 +433,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                                     PlatformIcon(
                                         modifier = Modifier.size(23.dp),
                                         painter = if (favouriteStopAlreadySet) PlatformIcons.Filled.Star else PlatformIcons.Outlined.StarOutline,
-                                        contentDescription = if (Shared.language == "en") "Add to Favourite Stops" else "設置為最喜愛車站"
+                                        contentDescription = if (Shared.language == "en") "Add to Favourite Stops" else "設置為收藏車站"
                                     )
                                 }
                             )

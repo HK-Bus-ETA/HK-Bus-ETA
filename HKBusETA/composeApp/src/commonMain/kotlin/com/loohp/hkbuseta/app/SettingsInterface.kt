@@ -275,7 +275,7 @@ fun SettingsInterface(instance: AppActiveContext) {
                 },
                 enabled = canReceiveRemoteNotifications,
                 icon = if (receiveAlerts) PlatformIcons.Outlined.NotificationsActive else PlatformIcons.Outlined.NotificationsOff,
-                text = (if (Shared.language == "en") "Receive Alerts for Favourite Routes" else "接收喜愛路線交通狀況通知").asAnnotatedString(),
+                text = (if (Shared.language == "en") "Receive Alerts for Favourite Routes" else "接收收藏路線交通狀況通知").asAnnotatedString(),
                 subText = if (canReceiveRemoteNotifications) {
                     if (receiveAlerts) {
                         (if (Shared.language == "en") "Enable Alert Notifications" else "已啟用").asAnnotatedString()

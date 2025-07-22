@@ -63,6 +63,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,19 +87,21 @@ import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppIntentFlag
 import com.loohp.hkbuseta.common.appcontext.AppScreen
 import com.loohp.hkbuseta.common.appcontext.ToastDuration
+import com.loohp.hkbuseta.common.objects.BilingualFormattedText
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.ETADisplayMode
 import com.loohp.hkbuseta.common.objects.NextBusTextDisplayMode
 import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.Stop
+import com.loohp.hkbuseta.common.objects.asFormattedText
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getDisplayText
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isTrain
-import com.loohp.hkbuseta.common.objects.resolvedDest
-import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
+import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
@@ -154,11 +157,11 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
     val currentBranch = remember { branches.currentBranchStatus(currentLocalDateTime(), instance, false).asSequence().sortedByDescending { it.value.activeness }.first().key }
     val resolvedDestName = remember {
         if (co.isTrain) {
-            Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true)
+            Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true).asFormattedText()
         } else if (stopData?.branchIds?.contains(currentBranch) != false) {
-            route.resolvedDestWithBranch(true, currentBranch, index, stopId, instance)
+            route.resolvedDestWithBranchFormatted(true, currentBranch, index, stopId, instance)
         } else {
-            route.resolvedDest(true)
+            route.resolvedDestFormatted(true)
         }
     }
     val stopName = remember {
@@ -530,16 +533,21 @@ fun Title(ambientMode: Boolean, index: Int, stopName: BilingualText, lat: Double
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SubTitle(ambientMode: Boolean, destName: BilingualText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: AppActiveContext) {
+fun SubTitle(ambientMode: Boolean, destName: BilingualFormattedText, lat: Double, lng: Double, routeNumber: String, co: Operator, instance: AppActiveContext) {
     val haptic = LocalHapticFeedback.current
-    val name = co.getDisplayRouteNumber(routeNumber).plus(" ").plus(destName[Shared.language])
+    val name = buildAnnotatedString {
+        append(co.getDisplayRouteNumber(routeNumber))
+        append(" ")
+        append(destName[Shared.language].asContentAnnotatedString().annotatedString)
+    }
+    val label = name.text
     AutoResizeText(
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp, 0.dp)
             .combinedClickable(
-                onClick = instance.handleOpenMaps(lat, lng, name, false, haptic.common),
-                onLongClick = instance.handleOpenMaps(lat, lng, name, true, haptic.common)
+                onClick = instance.handleOpenMaps(lat, lng, label, false, haptic.common),
+                onLongClick = instance.handleOpenMaps(lat, lng, label, true, haptic.common)
             ),
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),

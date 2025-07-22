@@ -158,6 +158,7 @@ fun RecentInterface(instance: AppActiveContext, visible: Boolean = true) {
                 if (routes.isNotEmpty()) {
                     PlatformButton(
                         modifier = Modifier
+                            .padding(end = 3.dp)
                             .size(50F.dp)
                             .clip(CircleShape)
                             .align(Alignment.CenterEnd)

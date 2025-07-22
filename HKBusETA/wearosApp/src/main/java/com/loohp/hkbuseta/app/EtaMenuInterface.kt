@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +73,7 @@ import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.common.appcontext.AppIntent
 import com.loohp.hkbuseta.common.appcontext.AppScreen
+import com.loohp.hkbuseta.common.objects.BilingualFormattedText
 import com.loohp.hkbuseta.common.objects.BilingualText
 import com.loohp.hkbuseta.common.objects.FavouriteRouteGroup
 import com.loohp.hkbuseta.common.objects.FavouriteRouteStop
@@ -81,6 +83,7 @@ import com.loohp.hkbuseta.common.objects.Operator
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.add
+import com.loohp.hkbuseta.common.objects.asFormattedText
 import com.loohp.hkbuseta.common.objects.findSame
 import com.loohp.hkbuseta.common.objects.getByName
 import com.loohp.hkbuseta.common.objects.getDeepLink
@@ -90,8 +93,8 @@ import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.indexOfName
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.remove
-import com.loohp.hkbuseta.common.objects.resolvedDest
-import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
+import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
+import com.loohp.hkbuseta.common.objects.resolvedDestWithBranchFormatted
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.asImmutableList
@@ -107,6 +110,7 @@ import com.loohp.hkbuseta.compose.rotaryScroll
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.theme.HKBusETATheme
 import com.loohp.hkbuseta.utils.adjustBrightness
+import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.clamp
 import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.scaledSize
@@ -136,11 +140,11 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
         val currentBranch = remember { branches.currentBranchStatus(currentLocalDateTime(), instance, false).asSequence().sortedByDescending { it.value.activeness }.first().key }
         val resolvedDestName = remember {
             if (co.isTrain) {
-                Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true)
+                Registry.getInstance(instance).getStopSpecialDestinations(stopId, co, route, true).asFormattedText()
             } else if (stopData?.branchIds?.contains(currentBranch) != false) {
-                route.resolvedDestWithBranch(true, currentBranch, index, stopId, instance)
+                route.resolvedDestWithBranchFormatted(true, currentBranch, index, stopId, instance)
             } else {
-                route.resolvedDest(true)
+                route.resolvedDestFormatted(true)
             }
         }
         val stopName = remember {
@@ -578,8 +582,12 @@ fun Title(index: Int, stopName: BilingualText, stopRemark: BilingualText?, route
 }
 
 @Composable
-fun SubTitle(destName: BilingualText, routeNumber: String, co: Operator, instance: AppActiveContext) {
-    val name = co.getDisplayRouteNumber(routeNumber).plus(" ").plus(destName[Shared.language])
+fun SubTitle(destName: BilingualFormattedText, routeNumber: String, co: Operator, instance: AppActiveContext) {
+    val name = buildAnnotatedString {
+        append(co.getDisplayRouteNumber(routeNumber))
+        append(" ")
+        append(destName[Shared.language].asContentAnnotatedString().annotatedString)
+    }
     AutoResizeText(
         modifier = Modifier
             .fillMaxWidth()
@@ -603,7 +611,7 @@ fun FavHeader(instance: AppActiveContext) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = 14F.scaledSize(instance).sp,
-        text = if (Shared.language == "en") "Set Favourite Routes" else "設置最喜愛路線"
+        text = if (Shared.language == "en") "Set Favourite Routes" else "設置收藏路線"
     )
     Text(
         modifier = Modifier
@@ -615,7 +623,7 @@ fun FavHeader(instance: AppActiveContext) {
         text = if (Shared.language == "en") {
             "Route stops can be used in Tiles"
         } else {
-            "最喜愛路線可在資訊方塊中顯示"
+            "收藏路線可在資訊方塊中顯示"
         }
     )
 }

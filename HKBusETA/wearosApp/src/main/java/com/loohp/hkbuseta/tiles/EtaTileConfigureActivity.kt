@@ -319,7 +319,7 @@ fun SelectDescription(instance: AppActiveContext) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = 11F.scaledSize(instance).sp.clamp(max = 11.dp),
-        text = if (Shared.language == "en") "Selected Favourite Routes will display in the Tile" else "所選最喜愛路線將顯示在資訊方塊中"
+        text = if (Shared.language == "en") "Selected Favourite Routes will display in the Tile" else "所選收藏路線將顯示在資訊方塊中"
     )
     Text(
         modifier = Modifier
@@ -341,7 +341,7 @@ fun NoFavText(instance: AppActiveContext) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = 17F.scaledSize(instance).sp.clamp(max = 17.dp),
-        text = if (Shared.language == "en") "No favourite routes" else "沒有最喜愛路線"
+        text = if (Shared.language == "en") "No favourite routes" else "沒有收藏路線"
     )
 }
 

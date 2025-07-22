@@ -273,7 +273,7 @@ fun NoFavText(instance: AppActiveContext) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary,
         fontSize = 17F.scaledSize(instance).sp.clamp(max = 17.dp),
-        text = if (Shared.language == "en") "No favourite routes" else "沒有最喜愛路線"
+        text = if (Shared.language == "en") "No favourite routes" else "沒有收藏路線"
     )
 }
 
@@ -317,7 +317,7 @@ fun FavTitle(ambientMode: Boolean, instance: AppActiveContext) {
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.primary.adjustBrightness(if (ambientMode) 0.7F else 1F),
         fontSize = 17F.scaledSize(instance).sp,
-        text = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"
+        text = if (Shared.language == "en") "Favourite Routes" else "收藏路線"
     )
 }
 
@@ -406,7 +406,7 @@ fun FavButton(numIndex: Int, favouriteRouteStop: FavouriteRouteStop, etaResults:
             if (deleteState) {
                 if (Shared.favoriteRouteStops.value.getFavouriteRouteStop(favouriteId) != null) {
                     Registry.getInstance(instance).setFavouriteRouteGroups(Shared.favoriteRouteStops.value.removeFavouriteRouteStop(favouriteId), instance)
-                    instance.showToastText(if (Shared.language == "en") "Cleared Favourite Route ".plus(numIndex) else "已清除最喜愛路線".plus(numIndex), ToastDuration.SHORT)
+                    instance.showToastText(if (Shared.language == "en") "Cleared Favourite Route ".plus(numIndex) else "已清除收藏路線".plus(numIndex), ToastDuration.SHORT)
                 }
                 anyTileUses = Tiles.getTileUseState(favouriteId)
                 scope.launch { deleteAnimatable.snapTo(0F) }
@@ -512,7 +512,7 @@ fun FavButton(numIndex: Int, favouriteRouteStop: FavouriteRouteStop, etaResults:
                                     modifier = Modifier.size(21.scaledSize(instance).sp.dp),
                                     imageVector = Icons.Filled.Clear,
                                     tint = Color(0xFFFF0000),
-                                    contentDescription = if (Shared.language == "en") "Clear Route Stop ETA ".plus(favouriteId).plus(" Tile") else "清除資訊方塊最喜愛路線預計到達時間".plus(favouriteId)
+                                    contentDescription = if (Shared.language == "en") "Clear Route Stop ETA ".plus(favouriteId).plus(" Tile") else "清除資訊方塊收藏路線預計到達時間".plus(favouriteId)
                                 )
                             } else {
                                 Text(

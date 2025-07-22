@@ -160,7 +160,7 @@ val titleTabItems = listOf(
         appScreens = setOf(AppScreen.NEARBY, AppScreen.TITLE)
     ),
     TitleTabItem(
-        title = "喜愛" withEn "Favourites",
+        title = "收藏" withEn "Favourites",
         unselectedIcon = { PlatformIcons.Outlined.StarOutline },
         selectedIcon = { PlatformIcons.Filled.Star },
         appScreens = setOf(AppScreen.FAV, AppScreen.FAV_ROUTE_LIST_VIEW),

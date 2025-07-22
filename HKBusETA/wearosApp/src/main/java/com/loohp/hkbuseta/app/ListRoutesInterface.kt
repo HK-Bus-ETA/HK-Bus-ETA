@@ -120,13 +120,14 @@ import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
 import com.loohp.hkbuseta.common.objects.identifyStopCo
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.next
-import com.loohp.hkbuseta.common.objects.resolvedDest
+import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
 import com.loohp.hkbuseta.common.objects.shouldPrependTo
 import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Registry.ETAQueryResult
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Shared.getResolvedText
+import com.loohp.hkbuseta.common.utils.FormattedText
 import com.loohp.hkbuseta.common.utils.ImmutableState
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableMap
@@ -168,7 +169,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.collections.set
 
 
 @OptIn(ExperimentalWearFoundationApi::class)
@@ -622,7 +622,7 @@ fun LazyItemScope.RouteRow(
     val gmbRegion = route.route!!.gmbRegion
     val routeTextWidth = if (Shared.language != "en" && co == Operator.MTR) mtrTextWidth else defaultTextWidth
     val rawColor = co.getColor(route.route!!.routeNumber, Color.White)
-    val dest = route.resolvedDest(false, instance)[Shared.language]
+    val dest = route.resolvedDestFormatted(false, instance)[Shared.language]
     val operatorName = remember(route, co, kmbCtbJoint) { co.getDisplayFormattedName(route.route!!.routeNumber, kmbCtbJoint, gmbRegion, Shared.language).asContentAnnotatedString().annotatedString }
 
     val secondLine = remember(route, co, kmbCtbJoint, routeNumber, rawColor, listType) { buildImmutableList {
@@ -718,11 +718,12 @@ fun RowScope.RouteRowText(
     routeNumber: String,
     operatorName: AnnotatedString,
     secondLine: ImmutableList<AnnotatedString>,
-    dest: String,
+    dest: FormattedText,
     co: Operator,
     route: StopIndexedRouteSearchResultEntry,
     instance: AppActiveContext
 ) {
+    val destText by remember(dest) { derivedStateOf { dest.asContentAnnotatedString().annotatedString } }
     val color by WearOSShared.rememberOperatorColor(rawColor, Operator.CTB.getOperatorColor(Color.White).takeIf { kmbCtbJoint })
     Column {
         DrawPhaseColorText(
@@ -775,14 +776,14 @@ fun RowScope.RouteRowText(
                 fontSize = fontSize,
                 color = { color },
                 maxLines = userMarqueeMaxLines(),
-                text = dest
+                text = destText
             )
         }
     } else {
         WithSecondLine(
             color = color,
             secondLine = secondLine,
-            dest = dest,
+            dest = destText,
             co = co,
             route = route,
             instance = instance
@@ -794,7 +795,7 @@ fun RowScope.RouteRowText(
 fun RowScope.WithSecondLine(
     color: Color,
     secondLine: ImmutableList<AnnotatedString>,
-    dest: String,
+    dest: AnnotatedString,
     co: Operator,
     route: StopIndexedRouteSearchResultEntry,
     instance: AppActiveContext

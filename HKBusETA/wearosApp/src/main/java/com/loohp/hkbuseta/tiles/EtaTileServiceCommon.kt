@@ -276,7 +276,7 @@ class EtaTileServiceCommon {
                                             .setText(if (Shared.language == "en") {
                                                 "Display selected favourite routes here\n"
                                             } else {
-                                                "選擇最喜愛路線在此顯示\n"
+                                                "選擇收藏路線在此顯示\n"
                                             })
                                             .build()
                                     )

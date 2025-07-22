@@ -19,8 +19,6 @@
  */
 package com.loohp.hkbuseta.common.shared
 
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import co.touchlab.stately.collections.ConcurrentMutableList
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.collections.ConcurrentMutableSet
@@ -56,42 +54,30 @@ import com.loohp.hkbuseta.common.objects.RadiusCenterPosition
 import com.loohp.hkbuseta.common.objects.RemarkType
 import com.loohp.hkbuseta.common.objects.Route
 import com.loohp.hkbuseta.common.objects.RouteListType
-import com.loohp.hkbuseta.common.objects.RouteNotice
-import com.loohp.hkbuseta.common.objects.RouteNoticeExternal
-import com.loohp.hkbuseta.common.objects.RouteNoticeImportance
-import com.loohp.hkbuseta.common.objects.RouteNoticeText
 import com.loohp.hkbuseta.common.objects.RouteSearchResultEntry
 import com.loohp.hkbuseta.common.objects.RouteSortMode
 import com.loohp.hkbuseta.common.objects.RouteSortPreference
 import com.loohp.hkbuseta.common.objects.RouteWaypoints
-import com.loohp.hkbuseta.common.objects.SpecialTrafficNews
 import com.loohp.hkbuseta.common.objects.StationBarrierFreeMapping
 import com.loohp.hkbuseta.common.objects.StationInfo
 import com.loohp.hkbuseta.common.objects.Stop
 import com.loohp.hkbuseta.common.objects.StopInfo
 import com.loohp.hkbuseta.common.objects.Theme
-import com.loohp.hkbuseta.common.objects.TrafficNews
 import com.loohp.hkbuseta.common.objects.TrafficSnapshotPoint
 import com.loohp.hkbuseta.common.objects.TrainServiceStatus
 import com.loohp.hkbuseta.common.objects.TrainServiceStatusMessage
 import com.loohp.hkbuseta.common.objects.TrainServiceStatusMessageStatus
 import com.loohp.hkbuseta.common.objects.TrainServiceStatusType
-import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.calculateServiceTimeCategory
-import com.loohp.hkbuseta.common.objects.defaultOperatorNotices
 import com.loohp.hkbuseta.common.objects.endOfLineText
-import com.loohp.hkbuseta.common.objects.fetchOperatorNotices
 import com.loohp.hkbuseta.common.objects.findPointsWithinDistanceOrdered
 import com.loohp.hkbuseta.common.objects.firstCo
-import com.loohp.hkbuseta.common.objects.getBody
 import com.loohp.hkbuseta.common.objects.getCircularPivotIndex
 import com.loohp.hkbuseta.common.objects.getColor
 import com.loohp.hkbuseta.common.objects.getDeepLink
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getKMBSubsidiary
-import com.loohp.hkbuseta.common.objects.getOperators
-import com.loohp.hkbuseta.common.objects.getTitle
 import com.loohp.hkbuseta.common.objects.hkkfStopCode
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyStopCo
@@ -99,8 +85,6 @@ import com.loohp.hkbuseta.common.objects.isBus
 import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isNotEmpty
 import com.loohp.hkbuseta.common.objects.isTrain
-import com.loohp.hkbuseta.common.objects.lrtLineStatus
-import com.loohp.hkbuseta.common.objects.mtrLineStatus
 import com.loohp.hkbuseta.common.objects.prependTo
 import com.loohp.hkbuseta.common.objects.resolveSpecialRemark
 import com.loohp.hkbuseta.common.objects.resolvedDest
@@ -113,7 +97,6 @@ import com.loohp.hkbuseta.common.objects.strictEquals
 import com.loohp.hkbuseta.common.objects.uniqueKey
 import com.loohp.hkbuseta.common.objects.waypointsId
 import com.loohp.hkbuseta.common.objects.withEn
-import com.loohp.hkbuseta.common.utils.AutoSortedList
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.BoldStyle
 import com.loohp.hkbuseta.common.utils.Colored
@@ -127,7 +110,6 @@ import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.NQSP
 import com.loohp.hkbuseta.common.utils.SmallSize
 import com.loohp.hkbuseta.common.utils.any
-import com.loohp.hkbuseta.common.utils.asAutoSortedList
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.cache
@@ -152,7 +134,6 @@ import com.loohp.hkbuseta.common.utils.getJSONResponse
 import com.loohp.hkbuseta.common.utils.getServiceTimeCategory
 import com.loohp.hkbuseta.common.utils.getTextResponse
 import com.loohp.hkbuseta.common.utils.getTextResponseWithPercentageCallback
-import com.loohp.hkbuseta.common.utils.getXMLResponse
 import com.loohp.hkbuseta.common.utils.gzipSupported
 import com.loohp.hkbuseta.common.utils.hongKongTimeZone
 import com.loohp.hkbuseta.common.utils.ifFalse
@@ -1949,145 +1930,6 @@ class Registry {
                 null
             }
         }.await()
-    }
-
-    private val routeNoticeCache: MutableMap<Any, Triple<AutoSortedList<RouteNotice, SnapshotStateList<RouteNotice>>, Long, String>> = ConcurrentMutableMap()
-
-    fun getOperatorNotices(co: Set<Operator>, context: AppContext): SnapshotStateList<RouteNotice> {
-        val now = currentTimeMillis()
-        return (routeNoticeCache[co]?.takeIf { now - it.second < 300000 && it.third == Shared.language }?.first?: run {
-            mutableStateListOf<RouteNotice>().asAutoSortedList().apply {
-                routeNoticeCache[co] = Triple(this, now, Shared.language)
-                when {
-                    co.contains(Operator.MTR) -> add(mtrLineStatus)
-                    co.contains(Operator.LRT) -> add(lrtLineStatus)
-                }
-                CoroutineScope(Dispatchers.IO).launch {
-                    try {
-                        when {
-                            co.contains(Operator.LRT) -> {
-                                val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
-                                val titleZh = data.optString("red_alert_message_ch").ifBlank { null }
-                                val titleEn = data.optString("red_alert_message_en").ifBlank { null }
-                                val urlZh = data.optString("red_alert_url_ch").ifBlank { null }
-                                val urlEn = data.optString("red_alert_url_en").ifBlank { null }
-                                if (titleZh != null && titleEn != null) {
-                                    if (urlZh == null || urlEn == null) {
-                                        add(RouteNoticeText(
-                                            title = titleZh withEn titleEn,
-                                            co = Operator.LRT,
-                                            importance = RouteNoticeImportance.IMPORTANT,
-                                            content = "".asBilingualText(),
-                                            isRealTitle = true,
-                                            sort = 0
-                                        ))
-                                    } else {
-                                        add(RouteNoticeExternal(
-                                            title = titleZh withEn titleEn,
-                                            co = Operator.LRT,
-                                            importance = RouteNoticeImportance.IMPORTANT,
-                                            url = urlZh withEn urlEn,
-                                            sort = 0
-                                        ))
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e: Throwable) {
-                        e.printStackTrace()
-                    }
-                    try {
-                        val data = getXMLResponse<TrafficNews>("https://td.gov.hk/tc/special_news/trafficnews.xml")!!
-                        for (news in data.messages) {
-                            val operators = news.getOperators()
-                            val important = operators.any { co.contains(it) }
-                            if (operators.isEmpty() || important) {
-                                this@apply.add(RouteNoticeText(
-                                    title = news.getTitle(),
-                                    co = null,
-                                    isRealTitle = true,
-                                    importance = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
-                                    content = news.getBody(context)
-                                ))
-                            }
-                        }
-                    } catch (e: Throwable) {
-                        e.printStackTrace()
-                    }
-                    try {
-                        val data = getXMLResponse<SpecialTrafficNews>("https://resource.data.one.gov.hk/td/en/specialtrafficnews.xml")!!
-                        for (news in data.messages) {
-                            val operators = news.getOperators()
-                            val important = operators.any { co.contains(it) }
-                            if (operators.isEmpty() || important) {
-                                this@apply.add(RouteNoticeText(
-                                    title = news.getTitle(),
-                                    co = null,
-                                    isRealTitle = false,
-                                    importance = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
-                                    content = news.getBody(context)
-                                ))
-                            }
-                        }
-                    } catch (e: Throwable) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }).backingList
-    }
-
-    fun getRouteNotices(route: Route, context: AppContext): SnapshotStateList<RouteNotice> {
-        val now = currentTimeMillis()
-        return (routeNoticeCache[route]?.takeIf { now - it.second < 300000 && it.third == Shared.language }?.first?: run {
-            mutableStateListOf<RouteNotice>().asAutoSortedList().apply {
-                routeNoticeCache[route] = Triple(this, now, Shared.language)
-                route.defaultOperatorNotices(this)
-                CoroutineScope(Dispatchers.IO).launch {
-                    route.fetchOperatorNotices(this, this@apply)
-                    launch {
-                        try {
-                            val data = getXMLResponse<TrafficNews>("https://td.gov.hk/tc/special_news/trafficnews.xml")!!
-                            for (news in data.messages) {
-                                val operators = news.getOperators()
-                                val important = operators.any { route.co.contains(it) }
-                                if (operators.isEmpty() || important) {
-                                    this@apply.add(RouteNoticeText(
-                                        title = news.getTitle(),
-                                        co = null,
-                                        isRealTitle = true,
-                                        importance = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
-                                        content = news.getBody(context)
-                                    ))
-                                }
-                            }
-                        } catch (e: Throwable) {
-                            e.printStackTrace()
-                        }
-                    }
-                    launch {
-                        try {
-                            val data = getXMLResponse<SpecialTrafficNews>("https://resource.data.one.gov.hk/td/en/specialtrafficnews.xml")!!
-                            for (news in data.messages) {
-                                val operators = news.getOperators()
-                                val important = operators.any { route.co.contains(it) }
-                                if (operators.isEmpty() || important) {
-                                    this@apply.add(RouteNoticeText(
-                                        title = news.getTitle(),
-                                        co = null,
-                                        isRealTitle = false,
-                                        importance = if (important) RouteNoticeImportance.IMPORTANT else RouteNoticeImportance.NOT_IMPORTANT,
-                                        content = news.getBody(context)
-                                    ))
-                                }
-                            }
-                        } catch (e: Throwable) {
-                            e.printStackTrace()
-                        }
-                    }
-                }
-            }
-        }).backingList
     }
 
     fun getCtbHasTwoWaySectionFare(routeNumber: String, callback: (Boolean) -> Unit) {

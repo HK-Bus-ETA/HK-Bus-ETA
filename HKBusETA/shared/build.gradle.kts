@@ -20,6 +20,7 @@
 
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
@@ -29,6 +30,10 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleDevToolsKsp)
     alias(libs.plugins.compose.compiler)
+}
+
+composeCompiler {
+    targetKotlinPlatforms = targetKotlinPlatforms.get() - setOf(KotlinPlatformType.native)
 }
 
 kotlin {
@@ -44,7 +49,8 @@ kotlin {
         watchosSimulatorArm64(),
         watchosX64(),
         watchosArm64(),
-        watchosArm32()
+        watchosArm32(),
+        watchosDeviceArm64()
     ).forEach {
         it.binaries.framework {
             baseName = "shared"
@@ -58,8 +64,8 @@ kotlin {
         iosX64(),
         iosArm64(),
         iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    ).forEach {
+        it.binaries.framework {
             baseName = "shared"
             isStatic = true
         }
@@ -76,18 +82,22 @@ kotlin {
 
         androidMain.dependencies {
             implementation(libs.ktor.client.android)
+            implementation(compose.runtime)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            implementation(compose.runtime)
         }
         watchosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
         desktopMain.dependencies {
             implementation(libs.ktor.client.java)
+            implementation(compose.runtime)
         }
         wasmJsMain.dependencies {
             implementation(libs.ktor.client.js)
+            implementation(compose.runtime)
         }
         commonMain.dependencies {
             implementation(libs.kotlinx.collections.immutable)
@@ -99,7 +109,6 @@ kotlin {
             implementation(libs.stately.concurrent.collections)
             implementation(libs.xmlCore)
             implementation(libs.serialization.xml)
-            implementation(compose.runtime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -112,7 +121,7 @@ kotlin {
 
 android {
     namespace = "com.loohp.hkbuseta.common"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         minSdk = 24
     }

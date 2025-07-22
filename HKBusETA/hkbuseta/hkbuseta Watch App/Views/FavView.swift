@@ -42,7 +42,7 @@ struct FavView: AppScreenView {
             ScrollView(.vertical) {
                 LazyVStack(alignment: .center, spacing: 1.scaled(appContext)) {
                     Spacer().frame(fixedSize: 10.scaled(appContext))
-                    Text(Shared().language == "en" ? "Favourite Routes" : "最喜愛路線")
+                    Text(Shared().language == "en" ? "Favourite Routes" : "收藏路線")
                         .multilineTextAlignment(.center)
                         .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                         .lineLimit(2)
@@ -100,7 +100,7 @@ struct FavView: AppScreenView {
                     Spacer().frame(fixedSize: 5.scaled(appContext))
                     let routeStops = FavouriteRouteGroupKt.getByName(favouriteRouteStops.state, name: selectedGroup)!.favouriteRouteStops
                     if routeStops.isEmpty {
-                        Text(Shared().language == "en" ? "No favourite routes" : "沒有最喜愛路線")
+                        Text(Shared().language == "en" ? "No favourite routes" : "沒有收藏路線")
                             .multilineTextAlignment(.center)
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(2)
@@ -322,7 +322,7 @@ struct FavView: AppScreenView {
                     if deleteState > 0.0 {
                         if (FavouriteRouteGroupKt.getFavouriteRouteStop(typedValue(Shared().favoriteRouteStops), favouriteId: favIndex) != nil) {
                             registry(appContext).setFavouriteRouteGroups(favouriteRouteStops: FavouriteRouteGroupKt.removeFavouriteRouteStop(typedValue(Shared().favoriteRouteStops), favouriteId: favIndex), context: appContext)
-                            appContext.showToastText(text: Shared().language == "en" ? "Cleared Favourite Route \(numIndex)" : "已清除最喜愛路線\(numIndex)", duration: ToastDuration.short_)
+                            appContext.showToastText(text: Shared().language == "en" ? "Cleared Favourite Route \(numIndex)" : "已清除收藏路線\(numIndex)", duration: ToastDuration.short_)
                         }
                         DispatchQueue.main.async {
                             deleteStates.removeValue(forKey: Int(favIndex))

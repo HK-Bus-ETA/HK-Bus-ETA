@@ -198,6 +198,7 @@ import com.loohp.hkbuseta.compose.rememberIsInPipMode
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.shared.ComposeShared
+import com.loohp.hkbuseta.shared.getRouteNotices
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.Small
 import com.loohp.hkbuseta.utils.adjustBrightness
@@ -912,9 +913,9 @@ fun MapStopsInterface(
             context = instance,
             animateSize = true,
             bottomSize = { when {
-                !it.isNarrow -> min(412F, (window.width / 2F).pixelsToDp(instance)).dp
-                mapExpanded -> 200.dp
-                else -> ((window.height - pinnedSectionSize.height) / 11F * 6F).pixelsToDp(instance).dp
+                !it.isNarrow -> min(432F, (window.width / 2F).pixelsToDp(instance) + 20F).dp
+                mapExpanded -> 220.dp
+                else -> ((window.height - pinnedSectionSize.height) / 11F * 6F + 20F).pixelsToDp(instance).dp
             } },
             top = { screenSize ->
                 Column(
@@ -968,7 +969,7 @@ fun MapStopsInterface(
                         }
                     }
                     if (screenSize.isNarrow) {
-                        HorizontalDivider(thickness = 10.dp)
+                        HorizontalDivider()
                     }
                 }
             },

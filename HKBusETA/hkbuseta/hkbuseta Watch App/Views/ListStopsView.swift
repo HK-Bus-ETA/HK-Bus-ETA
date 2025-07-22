@@ -44,7 +44,7 @@ struct ListStopsView: AppScreenView {
     @State private var interchangeSearch: Bool
     @State private var origName: BilingualText
     @State private var destName: BilingualText
-    @State private var resolvedDestName: BilingualText
+    @State private var resolvedDestName: BilingualFormattedText
     @State private var currentBranch: Route
     @State private var specialRoutesRemarks: [Route: (BilingualText, BilingualText)]
     @State private var specialRoutes: [BilingualText]
@@ -108,7 +108,7 @@ struct ListStopsView: AppScreenView {
         let branches = registry(appContext).getAllBranchRoutes(routeNumber: routeNumber, bound: bound, co: co, gmbRegion: gmbRegion, includeFakeRoutes: false)
         let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
         self.currentBranch = currentBranch
-        self.resolvedDestName = route.route!.resolvedDestWithBranch(prependTo: true, branch: currentBranch)
+        self.resolvedDestName = route.route!.resolvedDestWithBranchFormatted(prependTo: true, branch: currentBranch, style: KotlinArray(size: 0) { _ in nil })
         let specialRoutesRemarks: [Route: (BilingualText, BilingualText)] = Dictionary(
             uniqueKeysWithValues: branches.map { branch in
                 (branch, (
@@ -244,7 +244,7 @@ struct ListStopsView: AppScreenView {
                 .foregroundColor(coColor.adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(1)
                 .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
-            Text(resolvedDestName.get(language: Shared().language))
+            Text(resolvedDestName.get(language: Shared().language).asAttributedString(defaultFontSize: 15.scaled(appContext, true)))
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)

@@ -27,7 +27,7 @@ struct EtaView: AppScreenView {
     @State private var route: Route
     @State private var offsetStart: Int
 
-    @State private var resolvedDestName: BilingualText
+    @State private var resolvedDestName: BilingualFormattedText
     @State private var stopList: [Registry.StopData]
     @State private var stopData: Registry.StopData?
     @State private var etaDisplayMode: ETADisplayMode
@@ -59,11 +59,11 @@ struct EtaView: AppScreenView {
         self.currentBranch = currentBranch
         self.resolvedDestName = {
             if co.isTrain {
-                return registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
+                return registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true).asFormattedText(style: KotlinArray(size: 0) { _ in nil })
             } else if stopData?.branchIds.contains(currentBranch) != false {
-                return route.resolvedDestWithBranch(prependTo: true, branch: currentBranch, selectedStop: index.asInt32(), selectedStopId: stopId, context: appContext)
+                return route.resolvedDestWithBranchFormatted(prependTo: true, branch: currentBranch, selectedStop: index.asInt32(), selectedStopId: stopId, context: appContext, style: KotlinArray(size: 0) { _ in nil })
             } else {
-                return route.resolvedDest(prependTo: true)
+                return route.resolvedDestFormatted(prependTo: true, style: KotlinArray(size: 0) { _ in nil })
             }
         }()
         self.etaDisplayMode = Shared().etaDisplayMode
@@ -86,7 +86,7 @@ struct EtaView: AppScreenView {
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(2)
                 .autoResizing(maxSize: 23.scaled(appContext, true), weight: .bold)
-            Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + resolvedDestName.get(language: Shared().language))
+            Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false).asAttributedString() + " ".asAttributedString() + resolvedDestName.get(language: Shared().language).asAttributedString(defaultFontSize: 12.scaled(appContext, true)))
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(1)
                 .autoResizing(maxSize: 12.scaled(appContext, true))

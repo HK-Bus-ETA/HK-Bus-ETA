@@ -372,7 +372,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                             PlatformIcon(
                                 modifier = Modifier.size(27.dp),
                                 painter = PlatformIcons.Filled.EditNote,
-                                contentDescription = if (Shared.language == "en") "Edit Favourite Route Stop Groups" else "編輯最喜愛路線巴士站分類"
+                                contentDescription = if (Shared.language == "en") "Edit Favourite Route Stop Groups" else "編輯收藏路線巴士站分類"
                             )
                             PlatformText(
                                 fontSize = 20.sp,
@@ -453,7 +453,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                 ) {
                                     PlatformText(
                                         modifier = Modifier.fillMaxWidth(),
-                                        text = if (Shared.language == "en") "Edit Favourite Route Stop Groups" else "編輯最喜愛路線巴士站分類",
+                                        text = if (Shared.language == "en") "Edit Favourite Route Stop Groups" else "編輯收藏路線巴士站分類",
                                         fontSize = 25.sp,
                                         textAlign = TextAlign.Center
                                     )
@@ -696,7 +696,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
         EmptyBackgroundInterface(
             instance = instance,
             icon = PlatformIcons.Filled.WrongLocation,
-            text = if (Shared.language == "en") "No Favourite Stops" else "沒有最喜愛巴士站"
+            text = if (Shared.language == "en") "No Favourite Stops" else "沒有收藏巴士站"
         )
     } else {
         val pagerState = rememberPagerState { favouriteStops.size }
@@ -826,7 +826,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                 modifier = Modifier
                                     .width(45.dp)
                                     .fillMaxHeight()
-                                    .plainTooltip(if (Shared.language == "en") "Edit Favourite Stops" else "編輯最喜愛巴士站"),
+                                    .plainTooltip(if (Shared.language == "en") "Edit Favourite Stops" else "編輯收藏巴士站"),
                                 onClick = { editingStops = true },
                                 contentPadding = PaddingValues(10.dp),
                                 shape = platformLargeShape,
@@ -840,7 +840,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                             Operator.LRT -> Color(0xFF001F50)
                                             else -> null
                                         },
-                                        contentDescription = if (Shared.language == "en") "Edit Favourite Stops" else "編輯最喜愛巴士站"
+                                        contentDescription = if (Shared.language == "en") "Edit Favourite Stops" else "編輯收藏巴士站"
                                     )
                                 }
                             )
@@ -952,7 +952,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                         PlatformText(
                             modifier = Modifier.fillMaxWidth(),
                             text = buildAnnotatedString {
-                                append(if (Shared.language == "en") "Edit Favourite Stops" else "編輯最喜愛巴士站")
+                                append(if (Shared.language == "en") "Edit Favourite Stops" else "編輯收藏巴士站")
                                 appendLine()
                                 append(if (Shared.language == "en") "(Nearby Stops will always be shown first)" else "(應用程式會首先排列鄰近的巴士站)", SpanStyle(fontSize = TextUnit.Small))
                             },

@@ -93,6 +93,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -188,7 +189,6 @@ import com.loohp.hkbuseta.common.utils.Optional
 import com.loohp.hkbuseta.common.utils.RouteBranchStatus
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableState
-import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.createMTRLineSectionData
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentEpochSeconds
@@ -228,6 +228,11 @@ import com.loohp.hkbuseta.compose.StarOutline
 import com.loohp.hkbuseta.compose.Streetview
 import com.loohp.hkbuseta.compose.SwipeRightAlt
 import com.loohp.hkbuseta.compose.SyncAlt
+import com.loohp.hkbuseta.compose.Table
+import com.loohp.hkbuseta.compose.TableColumn
+import com.loohp.hkbuseta.compose.TableColumnWidth
+import com.loohp.hkbuseta.compose.TableRow
+import com.loohp.hkbuseta.compose.TableRowAlignment
 import com.loohp.hkbuseta.compose.TextInputDialog
 import com.loohp.hkbuseta.compose.Train
 import com.loohp.hkbuseta.compose.TransferWithinAStation
@@ -249,9 +254,6 @@ import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.rememberIsInPipMode
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
-import com.loohp.hkbuseta.compose.table.DataColumn
-import com.loohp.hkbuseta.compose.table.DataTable
-import com.loohp.hkbuseta.compose.table.TableColumnWidth
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
 import com.loohp.hkbuseta.compose.verticalScrollBar
@@ -285,7 +287,6 @@ import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.isGPSServiceEnabled
-import com.loohp.hkbuseta.utils.joinToAnnotatedString
 import com.loohp.hkbuseta.utils.px
 import com.loohp.hkbuseta.utils.sp
 import io.ktor.util.collections.ConcurrentMap
@@ -961,7 +962,7 @@ fun ListStopsBottomSheet(
                                     }
                                 },
                                 icon = if (favouriteStopAlreadySet) PlatformIcons.Outlined.Star else PlatformIcons.Outlined.StarOutline,
-                                text = (if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站").asAnnotatedString()
+                                text = (if (Shared.language == "en") "Add to Favourites" else "設置收藏路線/巴士站").asAnnotatedString()
                             )
                             val pinnedItems by Shared.pinnedItems.collectAsStateMultiplatform()
                             val pinItem by remember(allStops) { derivedStateOf {
@@ -1580,6 +1581,18 @@ fun StopEntryExpansionEta(
 
     val pipMode = rememberIsInPipMode(instance)
 
+    val alerts by remember(possibleBidirectionalSectionFare, alertCheckRoute) { derivedStateOf { buildList {
+        if (possibleBidirectionalSectionFare) {
+            add((if (Shared.language == "en") "Possible Two-way Section Fare" else "留意雙向分段收費").asAnnotatedString())
+        }
+        if (alertCheckRoute) {
+            add((if (Shared.language == "en") "Check Actual Route on Bus" else "留意巴士實際路線").asAnnotatedString(SpanStyle(fontWeight = FontWeight.Bold)))
+        }
+        if (co.isFerry) {
+            add((if (Shared.language == "en") "Check Actual Fare on Ferry" else "檢查渡輪實際票價").asAnnotatedString(SpanStyle(fontWeight = FontWeight.Bold)))
+        }
+    } } }
+
     LaunchedEffect (Unit) {
         val previous = nextBusPositions[selectedStop]?.value
         if (previous?.branch == selectedBranch && previous.etaQueryOptions == etaQueryOptions) {
@@ -1626,10 +1639,11 @@ fun StopEntryExpansionEta(
                 .onSizeChanged { height = it.height },
             verticalArrangement = Arrangement.Top
         ) {
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(15.dp, Alignment.Start),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.Center,
+                itemVerticalAlignment = Alignment.CenterVertically
             ) {
                 if (stopData.fare != null) {
                     if (co.isFerry) {
@@ -1653,24 +1667,13 @@ fun StopEntryExpansionEta(
                         text = "${if (Shared.language == "en") "Holiday Fare: " else "假日車費: "} $${stopData.holidayFare}"
                     )
                 }
-            }
-            val alerts by remember(possibleBidirectionalSectionFare, alertCheckRoute) { derivedStateOf { buildList {
-                if (possibleBidirectionalSectionFare) {
-                    add((if (Shared.language == "en") "Possible Two-way Section Fare" else "留意雙向分段收費").asAnnotatedString())
+                for (alert in alerts) {
+                    PlatformText(
+                        fontSize = 14.sp,
+                        lineHeight = 1.3F.em,
+                        text = alert
+                    )
                 }
-                if (alertCheckRoute) {
-                    add((if (Shared.language == "en") "Check Actual Route on Bus" else "留意巴士實際路線").asAnnotatedString(SpanStyle(fontWeight = FontWeight.Bold)))
-                }
-                if (co.isFerry) {
-                    add((if (Shared.language == "en") "Check Actual Fare on Ferry" else "檢查渡輪實際票價").asAnnotatedString(SpanStyle(fontWeight = FontWeight.Bold)))
-                }
-            } } }
-            if (alerts.isNotEmpty()) {
-                PlatformText(
-                    fontSize = 14.sp,
-                    lineHeight = 1.3F.em,
-                    text = alerts.joinToAnnotatedString("\n".asAnnotatedString())
-                )
             }
             if (co.isBus) {
                 val nextBusText = keyedNextBusPosition?.position.getDisplayText(
@@ -1802,7 +1805,7 @@ fun StopEntryExpansionEta(
                 modifier = Modifier
                     .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
-                    .plainTooltip(if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站"),
+                    .plainTooltip(if (Shared.language == "en") "Add to Favourites" else "設置收藏路線/巴士站"),
                 onClick = { sheetType = BottomSheetType.FAV },
                 shape = RoundedCornerShape(5.dp)
             ) {
@@ -1810,7 +1813,7 @@ fun StopEntryExpansionEta(
                     modifier = Modifier.size(25.dp),
                     painter = if (favouriteStopAlreadySet) PlatformIcons.Outlined.Star else PlatformIcons.Outlined.StarOutline,
                     tint = Color(0xFFC4AB48),
-                    contentDescription = if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站"
+                    contentDescription = if (Shared.language == "en") "Add to Favourites" else "設置收藏路線/巴士站"
                 )
             }
             if (co !== Operator.LRT) {
@@ -1945,38 +1948,49 @@ fun StopEntryExpansionTimes(
     var timesStartIndex by timesStartIndexState
 
     Column(
-        modifier = Modifier.padding(vertical = 10.dp),
+        modifier = Modifier
+            .padding(vertical = 10.dp)
+            .animateContentSize(),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         when {
             index > timesStartIndex -> {
-                val timesText = times
-                    ?.takeIf { it.averageInterval >= 0 }
-                    ?.let {
-                        if (it.isLoading) {
-                            if (Shared.language == "en") "Journey Times: Loading..." else "車程: 載入中..."
-                        } else {
-                            buildString {
-                                val interval = (it.averageInterval / 60).coerceAtLeast(1)
-                                append(if (Shared.language == "en") "Journey Times: $interval Minutes (Ref. Only)" else "車程: ${interval}分鐘 (只供參考)")
-                                it.currentHourlyInterval?.let { hourTime ->
-                                    val intervalHour = (hourTime / 60).coerceAtLeast(1)
-                                    append("\n")
-                                    append(if (Shared.language == "en") "Average at this hour: $intervalHour Minutes (Experimental)" else "本小時平均: ${intervalHour}分鐘 (試驗版)")
-                                }
-                            }
+                val time = times?.takeIf { it.averageInterval >= 0 }
+                val timeText = when {
+                    time == null -> (if (Shared.language == "en") "Unable to provide Journey Times" else "未能提供車程").asAnnotatedString()
+                    time.isLoading -> (if (Shared.language == "en") "Journey Times: Loading..." else "車程: 載入中...").asAnnotatedString()
+                    else -> {
+                        val interval = (time.averageInterval / 60).coerceAtLeast(1)
+                        buildAnnotatedString {
+                            append(if (Shared.language == "en") "Journey Times: $interval Minutes" else "車程: ${interval}分鐘")
+                            append(if (Shared.language == "en") " (Ref. Only)" else " (只供參考)", SpanStyle(fontSize = TextUnit.Small))
                         }
                     }
-                    ?: if (Shared.language == "en") "Unable to provide Journey Times" else "未能提供車程"
+                }
                 PlatformText(
                     modifier = Modifier.fillMaxWidth(),
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Start,
                     fontSize = 16.sp,
                     lineHeight = 1.1F.em,
-                    text = timesText
+                    text = timeText
                 )
+                time?.currentHourlyInterval?.let { hourTime ->
+                    val intervalHour = (hourTime / 60).coerceAtLeast(1)
+                    val hourlyText = buildAnnotatedString {
+                        append(if (Shared.language == "en") "Average at this hour: $intervalHour Minutes" else "本小時平均: ${intervalHour}分鐘")
+                        append(if (Shared.language == "en") " (Ref. Only)" else " (只供參考)", SpanStyle(fontSize = TextUnit.Small))
+                    }
+                    PlatformText(
+                        modifier = Modifier.fillMaxWidth(),
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Start,
+                        fontSize = 16.sp,
+                        lineHeight = 1.1F.em,
+                        text = hourlyText
+                    )
+                }
             }
             index == timesStartIndex -> {
                 PlatformText(
@@ -2058,7 +2072,10 @@ fun StopEntryExpansionTrafficSnapshots(
                         PlatformText(
                             fontSize = 16.sp,
                             lineHeight = 1.1F.em,
-                            text = name[Shared.language]
+                            text = buildAnnotatedString {
+                                append(name[Shared.language])
+                                append(" [$key]", SpanStyle(fontSize = TextUnit.Small))
+                            }
                         )
                     }
                     Box(
@@ -2301,7 +2318,7 @@ fun StopEntryExpansionAlightReminder(
                 modifier = Modifier
                     .padding(end = 5.dp)
                     .size(42.dp, 32.dp)
-                    .plainTooltip(if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站"),
+                    .plainTooltip(if (Shared.language == "en") "Add to Favourites" else "設置收藏路線/巴士站"),
                 onClick = { sheetType = BottomSheetType.FAV },
                 shape = RoundedCornerShape(5.dp)
             ) {
@@ -2309,7 +2326,7 @@ fun StopEntryExpansionAlightReminder(
                     modifier = Modifier.size(25.dp),
                     painter = if (favouriteStopAlreadySet) PlatformIcons.Outlined.Star else PlatformIcons.Outlined.StarOutline,
                     tint = Color(0xFFC4AB48),
-                    contentDescription = if (Shared.language == "en") "Add to Favourites" else "設置最喜愛路線/巴士站"
+                    contentDescription = if (Shared.language == "en") "Add to Favourites" else "設置收藏路線/巴士站"
                 )
             }
             val pinnedItems by Shared.pinnedItems.collectAsStateMultiplatform()
@@ -2449,7 +2466,7 @@ fun SetFavouriteInterface(instance: AppActiveContext, co: Operator, stopIndex: I
                 PlatformText(
                     modifier = Modifier.padding(vertical = 2.dp, horizontal = 8.dp),
                     fontSize = 22.sp,
-                    text = if (Shared.language == "en") "Favourite Stops" else "最喜愛巴士站"
+                    text = if (Shared.language == "en") "Favourite Stops" else "收藏巴士站"
                 )
                 HorizontalDivider()
                 ActionRow(
@@ -2462,8 +2479,8 @@ fun SetFavouriteInterface(instance: AppActiveContext, co: Operator, stopIndex: I
                     },
                     icon = PlatformIcons.Outlined.Star,
                     iconColor = Color.Yellow.takeIf { favouriteStopAlreadySet },
-                    text = (if (Shared.language == "en") "Add to Favourite Stops" else "設置為最喜愛巴士站").asAnnotatedString(),
-                    subText = (if (Shared.language == "en") "Favourite Stops Count: ${favouriteStops.size}" else "最喜愛巴士站數量: ${favouriteStops.size}").asAnnotatedString()
+                    text = (if (Shared.language == "en") "Add to Favourite Stops" else "設置為收藏巴士站").asAnnotatedString(),
+                    subText = (if (Shared.language == "en") "Favourite Stops Count: ${favouriteStops.size}" else "收藏巴士站數量: ${favouriteStops.size}").asAnnotatedString()
                 )
                 HorizontalDivider(thickness = 5.dp)
                 Box(
@@ -2474,7 +2491,7 @@ fun SetFavouriteInterface(instance: AppActiveContext, co: Operator, stopIndex: I
                 ) {
                     PlatformText(
                         fontSize = 22.sp,
-                        text = if (Shared.language == "en") "Favourite Route Stops" else "最喜愛路線巴士站"
+                        text = if (Shared.language == "en") "Favourite Route Stops" else "收藏路線巴士站"
                     )
                     PlatformButton(
                         modifier = Modifier
@@ -2717,41 +2734,21 @@ fun ETADisplay(
     val hasTime by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.time.isNotEmpty() } } }
     val hasOperator by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.operator.isNotEmpty() } } }
     val hasRemark by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.remark.isNotEmpty() } } }
-
-    val columns by remember(resolvedText) { derivedStateOf {
-        buildImmutableList {
-            if (hasClockTime && !isTrain) add(DataColumn(
-                alignment = Alignment.End,
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasPlatform) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasRouteNumber) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasDestination) add(DataColumn(
-                width = TableColumnWidth.Flex(1F)
-            ) {})
-            if (hasCarts) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasClockTime && isTrain) add(DataColumn(
-                alignment = Alignment.End,
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasTime) add(DataColumn(
-                alignment = if ((lines?.nextScheduledBus?: -1) < 0) Alignment.Start else Alignment.End,
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasOperator) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasRemark) add(DataColumn(
-                width = TableColumnWidth.Flex(1F)
-            ) {})
-        }
-    } }
+    
+    val columns by remember(resolvedText) { derivedStateOf { buildList {
+        if (hasClockTime && !isTrain) add(TableColumn(width = TableColumnWidth.Wrap, alignment = Alignment.End))
+        if (hasPlatform) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasRouteNumber) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasDestination) add(TableColumn(width = TableColumnWidth.Weight(1F)))
+        if (hasCarts) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasClockTime && isTrain) add(TableColumn(width = TableColumnWidth.Wrap, alignment = Alignment.End))
+        if (hasTime) add(TableColumn(
+            width = TableColumnWidth.Wrap,
+            alignment = if ((lines?.nextScheduledBus?: -1) < 0) Alignment.Start else Alignment.End
+        ))
+        if (hasOperator) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasRemark) add(TableColumn(width = TableColumnWidth.Weight(1F)))
+    } } }
 
     LaunchedEffect (lines) {
         while (true) {
@@ -2767,43 +2764,42 @@ fun ETADisplay(
         } else {
             lineRange
         }
-        DataTable(
+        Table(
             modifier = modifier.fillMaxWidth(),
-            columns = columns,
-            rowHeight = rowHeight,
-            headerHeight = 0.dp,
-            horizontalPadding = 0.dp,
-            separator = { Spacer(modifier = Modifier.size(1.dp)) }
+            columns = { columns[it] },
+            columnsCount = columns.size,
+            rowDivider = { Spacer(modifier = Modifier.size(1.dp)) },
+            rows = { TableRow(alignment = TableRowAlignment.Baseline(FirstBaseline)) },
+            rowSpacing = 2.dp,
+            columnSpacing = 2.dp,
         ) {
             for (seq in range) {
-                row {
-                    if (hasClockTime && !isTrain) cell {
-                        EtaText(resolvedText[seq]!!.clockTime, seq, updating, freshness, fontSize)
-                    }
-                    if (hasPlatform) cell {
-                        EtaText(resolvedText[seq]!!.platform, seq, updating, freshness, fontSize)
-                    }
-                    if (hasRouteNumber) cell {
-                        EtaText(resolvedText[seq]!!.routeNumber, seq, updating, freshness, fontSize)
-                    }
-                    if (hasDestination) cell {
-                        EtaText(resolvedText[seq]!!.destination, seq, updating, freshness, fontSize)
-                    }
-                    if (hasCarts) cell {
-                        EtaText(resolvedText[seq]!!.carts, seq, updating, freshness, fontSize)
-                    }
-                    if (hasClockTime && isTrain) cell {
-                        EtaText(resolvedText[seq]!!.clockTime, seq, updating, freshness, fontSize)
-                    }
-                    if (hasTime) cell {
-                        EtaText(resolvedText[seq]!!.time, seq, updating, freshness, fontSize)
-                    }
-                    if (hasOperator) cell {
-                        EtaText(resolvedText[seq]!!.operator, seq, updating, freshness, fontSize)
-                    }
-                    if (hasRemark) cell {
-                        EtaText(resolvedText[seq]!!.remark, seq, updating, freshness, fontSize)
-                    }
+                if (hasClockTime && !isTrain) {
+                    EtaText(resolvedText[seq]!!.clockTime, seq, updating, freshness, fontSize)
+                }
+                if (hasPlatform) {
+                    EtaText(resolvedText[seq]!!.platform, seq, updating, freshness, fontSize)
+                }
+                if (hasRouteNumber) {
+                    EtaText(resolvedText[seq]!!.routeNumber, seq, updating, freshness, fontSize)
+                }
+                if (hasDestination) {
+                    EtaText(resolvedText[seq]!!.destination, seq, updating, freshness, fontSize)
+                }
+                if (hasCarts) {
+                    EtaText(resolvedText[seq]!!.carts, seq, updating, freshness, fontSize)
+                }
+                if (hasClockTime && isTrain) {
+                    EtaText(resolvedText[seq]!!.clockTime, seq, updating, freshness, fontSize)
+                }
+                if (hasTime) {
+                    EtaText(resolvedText[seq]!!.time, seq, updating, freshness, fontSize)
+                }
+                if (hasOperator) {
+                    EtaText(resolvedText[seq]!!.operator, seq, updating, freshness, fontSize)
+                }
+                if (hasRemark) {
+                    EtaText(resolvedText[seq]!!.remark, seq, updating, freshness, fontSize)
                 }
             }
         }

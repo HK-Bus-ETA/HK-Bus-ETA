@@ -5,9 +5,9 @@
   Created by LOOHP on 18/4/2024.
   
 */
-"selected.route" = "選擇最喜愛路線";
-"configuration.title" = "設置最喜愛路線小工具";
+"selected.route" = "選擇收藏路線";
+"configuration.title" = "設置收藏路線小工具";
 "configuration.description" = "設置小工具中顯示的路線";
-"type.display.representation" = "喜愛路線";
-"widget.name" = "最喜愛路線";
-"widget.description" = "顯示所選最喜愛路線在小工具中\n點擊可快速開啟查看路線";
+"type.display.representation" = "收藏路線";
+"widget.name" = "收藏路線";
+"widget.description" = "顯示所選收藏路線在小工具中\n點擊可快速開啟查看路線";

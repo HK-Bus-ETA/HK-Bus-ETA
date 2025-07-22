@@ -262,7 +262,7 @@ fun FavButton(instance: AppActiveContext) {
                 modifier = Modifier.size(21.scaledSize(instance).sp.dp),
                 imageVector = Icons.Filled.Star,
                 tint = Color(0xFFFFFF00),
-                contentDescription = if (Shared.language == "en") "Favourite Routes" else "最喜愛路線"
+                contentDescription = if (Shared.language == "en") "Favourite Routes" else "收藏路線"
             )
         }
     )

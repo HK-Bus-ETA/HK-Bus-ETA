@@ -133,8 +133,8 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
             )
             instance.setAppShortcut(
                 id = "Favourite",
-                shortLabel = if (Shared.language == "en") "Favourites" else "喜愛路線",
-                longLabel = if (Shared.language == "en") "Favourites" else "喜愛路線",
+                shortLabel = if (Shared.language == "en") "Favourites" else "收藏路線",
+                longLabel = if (Shared.language == "en") "Favourites" else "收藏路線",
                 icon = AppShortcutIcon.STAR,
                 tint = iconColor,
                 rank = 2,

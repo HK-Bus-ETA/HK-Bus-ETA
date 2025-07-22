@@ -358,6 +358,12 @@ fun Route.getCircularPivotIndex(stops: List<Registry.StopData>): Int {
         }
 }
 
+fun BilingualText.removeCircularBracket(): BilingualText {
+    val zh = this.zh.remove(circularBracketRegex)
+    val en = this.en.remove(circularBracketRegex)
+    return zh withEn en
+}
+
 fun BilingualText.extractCircularBracket(): BilingualText {
     val zh = circularBracketRegex.findAll(this.zh).lastOrNull()?.groupValues?.get(1)
     val en = circularBracketRegex.findAll(this.en).lastOrNull()?.groupValues?.get(1)
@@ -369,7 +375,12 @@ fun Route.resolvedDest(prependTo: Boolean): BilingualText {
 }
 
 fun Route.resolvedDestFormatted(prependTo: Boolean, vararg style: FormattingTextContentStyle): BilingualFormattedText {
-    return lrtCircular?.asFormattedText(*style)?: dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) }
+    return lrtCircular?.asFormattedText(*style)?: run {
+        val circular = dest.extractCircularBracket()
+        val dest = dest.removeCircularBracket()
+            .let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) }
+        dest + circular.asFormattedText(SmallSize, *style)
+    }
 }
 
 fun StopIndexedRouteSearchResultEntry.resolvedDest(prependTo: Boolean, context: AppContext): BilingualText {
@@ -410,7 +421,7 @@ fun StopIndexedRouteSearchResultEntry.resolvedDestFormatted(prependTo: Boolean, 
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
                 }
                 dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
-                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + route!!.dest.extractCircularBracket().asFormattedText(*style)
+                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + route!!.dest.extractCircularBracket().asFormattedText(SmallSize, *style)
             } else {
                 route!!.resolvedDestFormatted(prependTo, *style)
             }
@@ -425,7 +436,12 @@ fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route): BilingualTe
 }
 
 fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, vararg style: FormattingTextContentStyle): BilingualFormattedText {
-    return lrtCircular?.asFormattedText(*style)?: branch.dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) }
+    return lrtCircular?.asFormattedText(*style)?: run {
+        val circular = branch.dest.extractCircularBracket()
+        val dest = branch.dest.removeCircularBracket()
+            .let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) }
+        dest + circular.asFormattedText(SmallSize, *style)
+    }
 }
 
 fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop: Int, selectedStopId: String, context: AppContext): BilingualText {
@@ -468,7 +484,7 @@ fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, sel
                     dest = dest.zh.remove(bracketsRemovalRegex) withEn dest.en.replace(bracketsRemovalRegex, " ")
                 }
                 dest = dest.zh.remove(busTerminusZhRegex) withEn dest.en.remove(busTerminusEnRegex)
-                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + branch.dest.extractCircularBracket().asFormattedText(*style)
+                dest.let { if (prependTo) it.prependToFormatted(*style) else it.asFormattedText(*style) } + branch.dest.extractCircularBracket().asFormattedText(SmallSize, *style)
             } else {
                 resolvedDestWithBranchFormatted(prependTo, branch, *style)
             }

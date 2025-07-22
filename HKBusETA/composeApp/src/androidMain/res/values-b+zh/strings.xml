@@ -20,8 +20,8 @@
 
 <resources>
     <string name="app_name">香港巴士到站預報</string>
-    <string name="favourite_routes_widget_name">最喜愛路線巴士站</string>
-    <string name="favourite_routes_widget_description">在主畫面上顯示你的最喜愛路線巴士站</string>
+    <string name="favourite_routes_widget_name">收藏路線巴士站</string>
+    <string name="favourite_routes_widget_description">在主畫面上顯示你的收藏路線巴士站</string>
     <string name="alight_reminder_channel_name">落車提示通知</string>
     <string name="alert_channel_name">交通狀況通知</string>
     <string name="general_channel_name">一般通知</string>

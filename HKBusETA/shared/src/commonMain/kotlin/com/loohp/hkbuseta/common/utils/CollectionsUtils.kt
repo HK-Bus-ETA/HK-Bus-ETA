@@ -20,7 +20,6 @@
 
 package com.loohp.hkbuseta.common.utils
 
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import co.touchlab.stately.concurrency.Lock
 import co.touchlab.stately.concurrency.withLock
 import kotlin.contracts.ExperimentalContracts
@@ -88,10 +87,6 @@ class AutoSortedList<E: Comparable<E>, T: MutableList<E>>(
 
 inline fun <E: Comparable<E>, T: MutableList<E>> T.asAutoSortedList(comparator: Comparator<E> = naturalOrder(), sync: Boolean = false): AutoSortedList<E, T> {
     return AutoSortedList(this, comparator, sync)
-}
-
-inline fun <E: Comparable<E>, T: SnapshotStateList<E>> T.asAutoSortedList(comparator: Comparator<E> = naturalOrder()): AutoSortedList<E, T> {
-    return AutoSortedList(this, comparator, true)
 }
 
 inline fun <T> List<T>.sequenceSimilarity(sequence: List<T>, equality: (T, T) -> Boolean = { a, b -> a == b }): Float {

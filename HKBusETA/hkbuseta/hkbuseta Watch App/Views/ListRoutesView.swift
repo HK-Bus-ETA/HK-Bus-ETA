@@ -349,7 +349,7 @@ struct ListRoutesView: AppScreenView {
         let kmbCtbJoint = route.route!.isKmbCtbJoint
         let gmbRegion = route.route!.gmbRegion
         let color = operatorColor(route.co.getColor(routeNumber: route.route!.routeNumber, elseColor: 0xFFFFFFFF as Int64), Operator.Companion().CTB.getOperatorColor(elseColor: 0xFFFFFFFF as Int64), jointOperatedColorFraction.state.floatValue) { _ in kmbCtbJoint }.asColor()
-        let dest = route.resolvedDest(prependTo: false, context: appContext).get(language: Shared().language)
+        let dest = route.resolvedDestFormatted(prependTo: false, context: appContext, style: KotlinArray(size: 0) { _ in nil }).get(language: Shared().language)
         let altSize = route.co == Operator.Companion().MTR && Shared().language != "en"
         let routeNumber = route.co.getListDisplayRouteNumber(routeNumber: route.route!.routeNumber, shortened: true)
         let operatorName = route.co.getDisplayFormattedName(routeNumber: route.route!.routeNumber, kmbCtbJoint: kmbCtbJoint, gmbRegion: gmbRegion, language: Shared().language, elseName: FormattedTextKt.asFormattedText("???", style: [].asKt()), elseColor: 0xFFFFFFFF as Int64)
@@ -422,7 +422,7 @@ struct ListRoutesView: AppScreenView {
                                 .foregroundColor(color)
                         }
                         UserMarqueeText(
-                            text: dest,
+                            text: dest.asAttributedString(defaultFontSize: 17.scaled(appContext, true)),
                             font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: Shared().disableBoldDest ? .regular : .bold),
                             marqueeStartDelay: 2,
                             marqueeAlignment: .leadingFirstTextBaseline
@@ -439,7 +439,7 @@ struct ListRoutesView: AppScreenView {
                                     .foregroundColor(color)
                             }
                             UserMarqueeText(
-                                text: dest,
+                                text: dest.asAttributedString(defaultFontSize: 17.scaled(appContext, true)),
                                 font: UIFont.systemFont(ofSize: 17.scaled(appContext, true), weight: Shared().disableBoldDest ? .regular : .bold),
                                 marqueeStartDelay: 2,
                                 marqueeAlignment: .leadingFirstTextBaseline

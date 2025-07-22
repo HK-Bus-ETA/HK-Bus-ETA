@@ -47,6 +47,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -108,7 +109,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -153,6 +154,7 @@ import com.loohp.hkbuseta.common.objects.TicketCategory
 import com.loohp.hkbuseta.common.objects.TrainServiceStatus
 import com.loohp.hkbuseta.common.objects.TrainServiceStatusMessageStatus
 import com.loohp.hkbuseta.common.objects.TrainServiceStatusType
+import com.loohp.hkbuseta.common.objects.asBilingualText
 import com.loohp.hkbuseta.common.objects.asStop
 import com.loohp.hkbuseta.common.objects.compareRouteNumber
 import com.loohp.hkbuseta.common.objects.findFare
@@ -191,7 +193,6 @@ import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.asImmutableList
 import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.awaitWithTimeout
-import com.loohp.hkbuseta.common.utils.buildImmutableList
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.indexOf
@@ -230,7 +231,13 @@ import com.loohp.hkbuseta.compose.Star
 import com.loohp.hkbuseta.compose.StarOutline
 import com.loohp.hkbuseta.compose.Start
 import com.loohp.hkbuseta.compose.Streetview
+import com.loohp.hkbuseta.compose.Table
+import com.loohp.hkbuseta.compose.TableColumn
+import com.loohp.hkbuseta.compose.TableColumnWidth
+import com.loohp.hkbuseta.compose.TableRow
+import com.loohp.hkbuseta.compose.TableRowAlignment
 import com.loohp.hkbuseta.compose.Train
+import com.loohp.hkbuseta.compose.VerticalGrid
 import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
@@ -239,13 +246,11 @@ import com.loohp.hkbuseta.compose.platformComponentBackgroundColor
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.rememberPlatformModalBottomSheetState
-import com.loohp.hkbuseta.compose.table.DataColumn
-import com.loohp.hkbuseta.compose.table.DataTable
-import com.loohp.hkbuseta.compose.table.TableColumnWidth
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.compose.userMarqueeMaxLines
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.shared.ComposeShared
+import com.loohp.hkbuseta.shared.getOperatorNotices
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
@@ -1289,7 +1294,7 @@ fun MTRRouteMapETAInterface(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.fontScaledDp(0.5F))
+                    .height(124.fontScaledDp(0.5F))
                     .padding(5.dp),
                 contentAlignment = Alignment.TopStart
             ) {
@@ -1340,7 +1345,7 @@ fun MTRRouteMapETAInterface(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(120.fontScaledDp(0.5F))
+                                .height(124.fontScaledDp(0.5F))
                                 .padding(5.dp),
                             contentAlignment = Alignment.TopStart
                         ) {
@@ -1360,7 +1365,7 @@ fun MTRRouteMapETAInterface(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(120.fontScaledDp(0.5F))
+                                .height(124.fontScaledDp(0.5F))
                                 .padding(5.dp),
                             contentAlignment = Alignment.TopStart
                         ) {
@@ -1427,75 +1432,53 @@ fun MTRRouteMapOptionsInterface(
                 "${instance.formatTime(open.toLocalDateTime())} - ${instance.formatTime(close.toLocalDateTime())}"
             }?: if (Shared.language == "en") "Depending on Schedule of the Day" else "查看當天時間表"
         )
-        Spacer(modifier = Modifier.size(30.dp))
-        PlatformButton(
+    }
+    Spacer(modifier = Modifier.size(30.dp))
+    VerticalGrid(
+        modifier = Modifier
+            .padding(vertical = 25.dp)
+            .fillMaxWidth(),
+        columns = 3
+    ) {
+        OptionButton(
             onClick = { startingStation = stopId },
             enabled = startingStation != stopId,
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Start,
-                    contentDescription = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (startingStation == stopId) {
-                        if (Shared.language == "en") "Starting Station" else "已設定為起點"
-                    } else {
-                        if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    }
-                )
+            icon = PlatformIcons.Outlined.Start,
+            title = if (startingStation == stopId) {
+                "已設定為起點" withEn "Starting Station"
+            } else {
+                "設定為起點" withEn "Set Starting Station"
             }
         )
-        PlatformButton(
+        OptionButton(
             onClick = { sheetInfoType = StationInfoSheetType.FARE },
             enabled = startingStation != null && startingStation != stopId,
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Paid,
-                    contentDescription = if (Shared.language == "en") "Fares" else "車費"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "Fares" else "車費"
-                )
-            }
+            icon = PlatformIcons.Outlined.Paid,
+            title = "車費" withEn "Fares",
+            subTitle = startingStation?.let { startingStation ->
+                ("起點: " withEn "Starting Station: ") + (startingStation.asStop(instance)?.name?: "?".asBilingualText())
+            }?: ("未設定起點" withEn "Starting Station not set")
         )
-        PlatformButton(
+        OptionButton(
             onClick = { sheetInfoType = StationInfoSheetType.OPENING_FIRST_LAST_TRAIN },
             enabled = startingStation != null && startingStation != stopId,
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Bedtime,
-                    contentDescription = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
-                )
-            }
+            icon = PlatformIcons.Outlined.Bedtime,
+            title = "首/尾班車" withEn "First/Last Train",
+            subTitle = startingStation?.let { startingStation ->
+                ("起點: " withEn "Starting Station: ") + (startingStation.asStop(instance)?.name?: "?".asBilingualText())
+            }?: ("未設定起點" withEn "Starting Station not set")
+
         )
-        PlatformButton(
+        OptionButton(
             onClick = instance.handleWebpages(getRedirectToMTRJourneyPlannerUrl(startingStation, stopId, instance), false, haptic.common),
             enabled = startingStation != null,
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Route,
-                    contentDescription = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
-                )
-            }
+            icon = PlatformIcons.Outlined.Route,
+            title = "港鐵行程指南" withEn "MTR Journey Planner"
         )
 
         val favouriteStops by Shared.favoriteStops.collectAsStateMultiplatform()
         val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.hasStop(stopId) } }
-        PlatformButton(
+        OptionButton(
             onClick = {
                 if (favouriteStopAlreadySet) {
                     Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopId) }, instance)
@@ -1503,84 +1486,39 @@ fun MTRRouteMapOptionsInterface(
                     Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopId, stop, null)) }, instance)
                 }
             },
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    tint = if (favouriteStopAlreadySet) Color.Yellow else null,
-                    painter = if (favouriteStopAlreadySet) PlatformIcons.Filled.Star else PlatformIcons.Outlined.StarOutline,
-                    contentDescription = if (Shared.language == "en") "Add to Favourite Stops" else "設置為最喜愛車站"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "Add to Favourite Stops" else "設置為最喜愛車站"
-                )
-            }
+            icon = if (favouriteStopAlreadySet) PlatformIcons.Filled.Star else PlatformIcons.Outlined.StarOutline,
+            iconColor = if (favouriteStopAlreadySet) Color.Yellow else null,
+            title = "設置為收藏車站" withEn "Add to Favourite Stops"
         )
-        PlatformButton(
+        OptionButton(
             onClick = {
                 instance.startActivity(AppIntent(instance, AppScreen.PDF).apply {
                     putExtra("title", if (Shared.language == "en") "${stop.name.en} Station Layout Map" else "${stop.name.zh}站位置圖")
                     putExtra("url", stopId.getMTRStationLayoutUrl())
                 })
             },
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Train,
-                    contentDescription = if (Shared.language == "en") "MTR Station Layout Map" else "港鐵站位置圖"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "MTR Station Layout Map" else "港鐵站位置圖"
-                )
-            }
+            icon = PlatformIcons.Outlined.Train,
+            title = "港鐵站位置圖" withEn "MTR Station Layout Map"
         )
-        PlatformButton(
+        OptionButton(
             onClick = {
                 instance.startActivity(AppIntent(instance, AppScreen.PDF).apply {
                     putExtra("title", if (Shared.language == "en") "${stop.name.en} Station Street Map" else "${stop.name.zh}站街道圖")
                     putExtra("url", stopId.getMTRStationStreetMapUrl())
                 })
             },
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Streetview,
-                    contentDescription = if (Shared.language == "en") "MTR Station Street Map" else "港鐵站街道圖"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "MTR Station Street Map" else "港鐵站街道圖"
-                )
-            }
+            icon = PlatformIcons.Outlined.Streetview,
+            title = "港鐵站街道圖" withEn "MTR Station Street Map"
         )
-        PlatformButton(
+        OptionButton(
             onClick = instance.handleOpenMaps(stop.location.lat, stop.location.lng, stop.name[Shared.language], false, haptic.common),
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Map,
-                    contentDescription = if (Shared.language == "en") "Open on Maps" else "在地圖上顯示"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "Open on Maps" else "在地圖上顯示"
-                )
-            }
+            icon = PlatformIcons.Outlined.Map,
+            title = "在地圖上顯示" withEn "Open on Maps"
         )
-        PlatformButton(
+        OptionButton(
             onClick = { sheetInfoType = StationInfoSheetType.BARRIER_FREE },
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.AutoMirrored.Outlined.Accessible,
-                    contentDescription = if (Shared.language == "en") "Barrier-free Facilities" else "無障礙設施"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "Barrier-free Facilities" else "無障礙設施"
-                )
-            }
+            icon = PlatformIcons.AutoMirrored.Outlined.Accessible,
+            title = "無障礙設施" withEn "Barrier-free Facilities"
         )
     }
 }
@@ -1626,6 +1564,7 @@ fun MTRRouteMapInfoSheetInterface(
                         )
                         TrainFareTableDisplay(
                             modifier = Modifier
+                                .padding(8.dp)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(platformPrimaryContainerColor)
                                 .padding(3.dp),
@@ -1645,6 +1584,7 @@ fun MTRRouteMapInfoSheetInterface(
                             )
                             TrainFareTableDisplay(
                                 modifier = Modifier
+                                    .padding(8.dp)
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(Operator.MTR.getLineColor("AEL", Color.White).withAlpha(100))
                                     .padding(3.dp),
@@ -2566,81 +2506,50 @@ fun LRTETADisplayOptionsInterface(
     val haptic = LocalHapticFeedback.current
     var startingStation by selectedLrtStartingStationState.collectAsStateMultiplatform()
     var sheetInfoType by sheetInfoTypeState
-    Column(
+
+    VerticalGrid(
         modifier = Modifier
             .padding(vertical = 25.dp)
             .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically)
+        columns = 3
     ) {
-        PlatformButton(
+        OptionButton(
             onClick = { startingStation = stopId },
             enabled = startingStation != stopId,
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Start,
-                    contentDescription = if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (startingStation == stopId) {
-                        if (Shared.language == "en") "Starting Station" else "已設定為起點"
-                    } else {
-                        if (Shared.language == "en") "Set Starting Station" else "設定為起點"
-                    }
-                )
+            icon = PlatformIcons.Outlined.Start,
+            title = if (startingStation == stopId) {
+                "已設定為起點" withEn "Starting Station"
+            } else {
+                "設定為起點" withEn "Set Starting Station"
             }
         )
-        PlatformButton(
+        OptionButton(
             onClick = { sheetInfoType = StationInfoSheetType.FARE },
             enabled = startingStation != null && startingStation != stopId,
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Paid,
-                    contentDescription = if (Shared.language == "en") "Fares" else "車費"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "Fares" else "車費"
-                )
-            }
+            icon = PlatformIcons.Outlined.Paid,
+            title = "車費" withEn "Fares",
+            subTitle = startingStation?.let { startingStation ->
+                ("起點: " withEn "Starting Station: ") + (startingStation.asStop(instance)?.name?: "?".asBilingualText())
+            }?: ("未設定起點" withEn "Starting Station not set")
         )
-        PlatformButton(
+        OptionButton(
             onClick = { sheetInfoType = StationInfoSheetType.OPENING_FIRST_LAST_TRAIN },
             enabled = startingStation != null && startingStation != stopId,
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Bedtime,
-                    contentDescription = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "First/Last Train" else "首/尾班車"
-                )
-            }
+            icon = PlatformIcons.Outlined.Bedtime,
+            title = "首/尾班車" withEn "First/Last Train",
+            subTitle = startingStation?.let { startingStation ->
+                ("起點: " withEn "Starting Station: ") + (startingStation.asStop(instance)?.name?: "?".asBilingualText())
+            }?: ("未設定起點" withEn "Starting Station not set")
         )
-        PlatformButton(
+        OptionButton(
             onClick = instance.handleWebpages(getRedirectToMTRJourneyPlannerUrl(startingStation, stopId, instance), false, haptic.common),
             enabled = startingStation != null,
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Route,
-                    contentDescription = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "MTR Journey Planner" else "港鐵行程指南"
-                )
-            }
+            icon = PlatformIcons.Outlined.Route,
+            title = "港鐵行程指南" withEn "MTR Journey Planner"
         )
-
         val favouriteStops by Shared.favoriteStops.collectAsStateMultiplatform()
         val favouriteStopAlreadySet by remember(stopId) { derivedStateOf { favouriteStops.hasStop(stopId) } }
-        PlatformButton(
+        OptionButton(
             onClick = {
                 if (favouriteStopAlreadySet) {
                     Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { removeStop(stopId) }, instance)
@@ -2648,32 +2557,13 @@ fun LRTETADisplayOptionsInterface(
                     Registry.getInstance(instance).setFavouriteStops(Shared.favoriteStops.value.toMutableList().apply { add(FavouriteStop(stopId, stop, null)) }, instance)
                 }
             },
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    tint = if (favouriteStopAlreadySet) Color.Yellow else null,
-                    painter = if (favouriteStopAlreadySet) PlatformIcons.Filled.Star else PlatformIcons.Outlined.StarOutline,
-                    contentDescription = if (Shared.language == "en") "Add to Favourite Stops" else "設置為最喜愛車站"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "Add to Favourite Stops" else "設置為最喜愛車站"
-                )
-            }
+            icon = if (favouriteStopAlreadySet) PlatformIcons.Filled.Star else PlatformIcons.Outlined.StarOutline,
+            title = "設置為收藏車站" withEn "Add to Favourite Stops"
         )
-        PlatformButton(
+        OptionButton(
             onClick = instance.handleOpenMaps(stop.location.lat, stop.location.lng, stop.name[Shared.language], false, haptic.common),
-            content = {
-                PlatformIcon(
-                    modifier = Modifier.padding(end = 5.dp),
-                    painter = PlatformIcons.Outlined.Map,
-                    contentDescription = if (Shared.language == "en") "Open on Maps" else "在地圖上顯示"
-                )
-                PlatformText(
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "Open on Maps" else "在地圖上顯示"
-                )
-            }
+            icon = PlatformIcons.Outlined.Map,
+            title = "在地圖上顯示" withEn "Open on Maps",
         )
     }
 }
@@ -2718,18 +2608,19 @@ fun LRTETADisplayInfoSheetInterface(
                     )
                     TrainFareTableDisplay(
                         modifier = Modifier
+                            .padding(8.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(platformPrimaryContainerColor)
+                            .background(Operator.LRT.getOperatorColor(Color.White).withAlpha(100))
                             .padding(3.dp),
                         fareTable = fareTable.asImmutableMap()
                     )
                     PlatformText(
                         modifier = Modifier.padding(horizontal = 20.dp),
                         text = if (Shared.language == "en") {
-                            "Each Octopus or single journey ticket is valid for a single journey from the stop where the Octopus is validated or ticket is issued to one other stop in a single direction without repeating any stop.\n" +
+                            "Each Octopus or single journey ticket is valid for a single journey from the stop where the Octopus is validated or ticket is issued to one other stop in a single direction without repeating any stop.\n\n" +
                                     "A passenger is required to re-validate Octopus or buy another appropriate single journey ticket for return or another journey (including all circular routes)."
                         } else {
-                            "已確認之八達通或單程車票祇適用於從確認入站或購票車站起，作單一方向乘車前往另一車站，期間不可重複車站\n乘客在回程或再乘車時(包括所有循環路綫)，必須重新確認八達通或另外購買合適車票"
+                            "已確認之八達通或單程車票祇適用於從確認入站或購票車站起，作單一方向乘車前往另一車站，期間不可重複車站\n\n乘客在回程或再乘車時(包括所有循環路綫)，必須重新確認八達通或另外購買合適車票"
                         },
                         fontSize = 17.sp
                     )
@@ -2983,102 +2874,71 @@ fun TrainFareTableDisplay(
     modifier: Modifier,
     fareTable: ImmutableMap<FareType, Fare>
 ) {
-    var columnHeight by remember { mutableIntStateOf(100) }
-    val columns by remember(fareTable) { derivedStateOf {
-        buildImmutableList {
-            add(DataColumn(
-                width = TableColumnWidth.Min(TableColumnWidth.MaxIntrinsic, TableColumnWidth.Fraction(0.5F)),
+    val columns = remember {
+        listOf(
+            TableColumn(
+                width = TableColumnWidth.Weight(1F),
                 alignment = Alignment.Start
-            ) {
-                PlatformText(
-                    modifier = Modifier.onSizeChanged {
-                        columnHeight = it.height
-                    },
-                    textAlign = TextAlign.Start,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 1.1.em,
-                    fontSize = 17.sp,
-                    text = if (Shared.language == "en") "Fares" else "車費"
-                )
-            })
-            add(DataColumn(
-                width = TableColumnWidth.Min(TableColumnWidth.MaxIntrinsic, TableColumnWidth.Fraction(0.25F)),
+            ),
+            TableColumn(
+                width = TableColumnWidth.Wrap,
                 alignment = Alignment.CenterHorizontally
-            ) {
-                PlatformText(
-                    modifier = Modifier.onSizeChanged {
-                        columnHeight = it.height
-                    },
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 1.1.em,
-                    fontSize = 17.sp,
-                    text = TicketCategory.OCTO.displayName[Shared.language]
-                )
-            })
-            add(DataColumn(
-                width = TableColumnWidth.Min(TableColumnWidth.MaxIntrinsic, TableColumnWidth.Fraction(0.25F)),
+            ),
+            TableColumn(
+                width = TableColumnWidth.Wrap,
                 alignment = Alignment.CenterHorizontally
-            ) {
-                PlatformText(
-                    modifier = Modifier.onSizeChanged {
-                        columnHeight = it.height
-                    },
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 1.1.em,
-                    fontSize = 17.sp,
-                    text = TicketCategory.SINGLE.displayName[Shared.language]
-                )
-            })
-        }
-    } }
-    var rowHeight by remember { mutableIntStateOf(100) }
-
-    DataTable(
+            )
+        )
+    }
+    Table(
         modifier = modifier,
-        columns = columns,
-        rowHeight = rowHeight.equivalentDp * 1.25F,
-        headerHeight = columnHeight.equivalentDp * 1.25F,
-        horizontalPadding = 3.dp,
-        separator = { HorizontalDivider() }
+        columnsCount = 3,
+        columns = { columns[it] },
+        rowSpacing = 5.dp,
+        columnSpacing = 5.dp,
+        rowDivider = { HorizontalDivider() },
+        rows = { TableRow(TableRowAlignment.Vertical(Alignment.CenterVertically)) }
     ) {
+        PlatformText(
+            textAlign = TextAlign.Start,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 1.1.em,
+            fontSize = 17.sp,
+            text = if (Shared.language == "en") "Fares" else "車費"
+        )
+        PlatformText(
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 1.1.em,
+            fontSize = 17.sp,
+            text = TicketCategory.OCTO.displayName[Shared.language]
+        )
+        PlatformText(
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 1.1.em,
+            fontSize = 17.sp,
+            text = TicketCategory.SINGLE.displayName[Shared.language]
+        )
         for (fareCategory in FareCategory.entries) {
-            row {
-                cell {
-                    PlatformText(
-                        modifier = Modifier.onSizeChanged {
-                            rowHeight = it.height
-                        },
-                        textAlign = TextAlign.Start,
-                        lineHeight = 1.1.em,
-                        fontSize = 17.sp,
-                        text = fareCategory.displayName[Shared.language]
-                    )
-                }
-                cell {
-                    PlatformText(
-                        modifier = Modifier.onSizeChanged {
-                            rowHeight = it.height
-                        },
-                        textAlign = TextAlign.Center,
-                        lineHeight = 1.1.em,
-                        fontSize = 17.sp,
-                        text = "$${fareTable.findFare(fareCategory, TicketCategory.OCTO)?: "-"}"
-                    )
-                }
-                cell {
-                    PlatformText(
-                        modifier = Modifier.onSizeChanged {
-                            rowHeight = it.height
-                        },
-                        textAlign = TextAlign.Center,
-                        lineHeight = 1.1.em,
-                        fontSize = 17.sp,
-                        text = "$${fareTable.findFare(fareCategory, TicketCategory.SINGLE)?: "-"}"
-                    )
-                }
-            }
+            PlatformText(
+                textAlign = TextAlign.Start,
+                lineHeight = 1.1.em,
+                fontSize = 17.sp,
+                text = fareCategory.displayName[Shared.language]
+            )
+            PlatformText(
+                textAlign = TextAlign.Center,
+                lineHeight = 1.1.em,
+                fontSize = 17.sp,
+                text = "$${fareTable.findFare(fareCategory, TicketCategory.OCTO)?: "-"}"
+            )
+            PlatformText(
+                textAlign = TextAlign.Center,
+                lineHeight = 1.1.em,
+                fontSize = 17.sp,
+                text = "$${fareTable.findFare(fareCategory, TicketCategory.SINGLE)?: "-"}"
+            )
         }
     }
 }
@@ -3106,49 +2966,24 @@ fun TrainETADisplay(
     val hasOperator by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.operator.isNotEmpty() } } }
     val hasRemark by remember(resolvedText) { derivedStateOf { resolvedText.any { it.value.remark.isNotEmpty() } } }
 
-    val columns by remember(resolvedText) { derivedStateOf {
-        buildImmutableList {
-            if (hasPlatform) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasRouteNumber) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasDestination) add(DataColumn(
-                width = TableColumnWidth.Flex(1F)
-            ) {})
-            if (hasCarts) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasClockTime) add(DataColumn(
-                alignment = Alignment.End,
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasTime) add(DataColumn(
-                alignment = if (lines.first().platform <= 0) Alignment.Start else Alignment.End,
-                width = TableColumnWidth.Max(TableColumnWidth.Wrap, TableColumnWidth.Fixed(80.dp))
-            ) {})
-            if (hasOperator) add(DataColumn(
-                width = TableColumnWidth.Wrap
-            ) {})
-            if (hasRemark) add(DataColumn(
-                width = TableColumnWidth.Flex(1F)
-            ) {})
-        }
-    } }
+    val columns by remember(resolvedText) { derivedStateOf { buildList {
+        if (hasPlatform) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasRouteNumber) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasDestination) add(TableColumn(width = TableColumnWidth.Weight(1F)))
+        if (hasCarts) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasClockTime) add(TableColumn(width = TableColumnWidth.Wrap, alignment = Alignment.End))
+        if (hasTime) add(TableColumn(
+            width = TableColumnWidth.Max(TableColumnWidth.Wrap, TableColumnWidth.Fixed(80.dp)),
+            alignment = if (lines.first().platform <= 0) Alignment.Start else Alignment.End
+        ))
+        if (hasOperator) add(TableColumn(width = TableColumnWidth.Wrap))
+        if (hasRemark) add(TableColumn(width = TableColumnWidth.Weight(1F)))
+    } } }
 
-    DataTable(
-        modifier = modifier.fillMaxWidth(),
-        columns = columns,
-        rowHeight = 26.fontScaledDp(0.5F),
-        headerHeight = 0.dp,
-        horizontalPadding = 0.dp,
-        separator = { Spacer(modifier = Modifier.size(1.dp)) }
-    ) {
+    val rows by remember(resolvedText) { derivedStateOf { buildList {
         for (seq in 1..lines.size) {
             val entry = resolvedText[seq]!!
-            val isEmpty = entry == Registry.ETALineEntryText.EMPTY
-            row(
+            add(TableRow(
                 onClick = if (co == Operator.LRT) ({
                     scope.launch {
                         Registry.getInstance(instance).findRoutes(lines[seq - 1].routeNumber, true).asSequence()
@@ -3172,7 +3007,7 @@ fun TrainETADisplay(
                         val color = platformPrimaryContainerColor
                         Spacer(
                             modifier = Modifier
-                                .matchParentSize()
+                                .fillMaxSize()
                                 .drawWithCache {
                                     onDrawWithContent {
                                         drawRect(
@@ -3184,32 +3019,46 @@ fun TrainETADisplay(
                                 }
                         )
                     }
-                }
-            ) {
-                if (hasPlatform) cell {
-                    TrainEtaText(entry.platform, freshness)
-                }
-                if (hasRouteNumber) cell {
-                    TrainEtaText(entry.routeNumber, freshness)
-                }
-                if (hasDestination) cell {
-                    TrainEtaText(entry.destination, freshness)
-                }
-                if (hasCarts) cell {
-                    TrainEtaText(entry.carts, freshness)
-                }
-                if (hasClockTime) cell {
-                    TrainEtaText(entry.clockTime, freshness)
-                }
-                if (hasTime) cell {
-                    TrainEtaText(if (isEmpty) "".asFormattedText() else entry.time, freshness)
-                }
-                if (hasOperator) cell {
-                    TrainEtaText(entry.operator, freshness)
-                }
-                if (hasRemark) cell {
-                    TrainEtaText(entry.remark, freshness)
-                }
+                },
+                horizontalExtension = 5.dp,
+                alignment = TableRowAlignment.Baseline(FirstBaseline)
+            ))
+        }
+    } } }
+
+    Table(
+        modifier = modifier.fillMaxWidth(),
+        columns = { columns[it] },
+        columnsCount = columns.size,
+        rowDivider = { Spacer(modifier = Modifier.size(1.dp)) },
+        rows = { rows[it] }
+    ) {
+        for (seq in 1..lines.size) {
+            val entry = resolvedText[seq]!!
+            val isEmpty = entry == Registry.ETALineEntryText.EMPTY
+            if (hasPlatform) {
+                TrainEtaText(entry.platform, freshness)
+            }
+            if (hasRouteNumber) {
+                TrainEtaText(entry.routeNumber, freshness)
+            }
+            if (hasDestination) {
+                TrainEtaText(entry.destination, freshness)
+            }
+            if (hasCarts) {
+                TrainEtaText(entry.carts, freshness)
+            }
+            if (hasClockTime) {
+                TrainEtaText(entry.clockTime, freshness)
+            }
+            if (hasTime) {
+                TrainEtaText(if (isEmpty) "".asFormattedText() else entry.time, freshness)
+            }
+            if (hasOperator) {
+                TrainEtaText(entry.operator, freshness)
+            }
+            if (hasRemark) {
+                TrainEtaText(entry.remark, freshness)
             }
         }
     }
@@ -3223,7 +3072,7 @@ fun TrainEtaText(
     val content = text.asContentAnnotatedString()
     PlatformText(
         modifier = Modifier
-            .heightIn(min = 18F.dp)
+            .heightIn(min = 24F.dp)
             .basicMarquee(Int.MAX_VALUE),
         overflow = TextOverflow.Ellipsis,
         textAlign = TextAlign.Start,
@@ -3388,5 +3237,55 @@ fun PreviewDetailsButton(
                 )
             }
         )
+    }
+}
+
+@Composable
+fun OptionButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: Painter,
+    iconColor: Color? = null,
+    title: BilingualText,
+    subTitle: BilingualText? = null
+) {
+    PlatformButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = RoundedCornerShape(10.dp),
+        contentPadding = PaddingValues(8.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Top),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            PlatformIcon(
+                modifier = Modifier.padding(5.dp),
+                tint = iconColor,
+                painter = icon,
+                contentDescription = title[Shared.language]
+            )
+            Column(
+                modifier = Modifier.weight(1F),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                PlatformText(
+                    fontSize = 15.sp,
+                    textAlign = TextAlign.Center,
+                    text = title[Shared.language]
+                )
+                if (subTitle != null) {
+                    PlatformText(
+                        fontSize = 10.sp,
+                        textAlign = TextAlign.Center,
+                        text = subTitle[Shared.language]
+                    )
+                }
+            }
+        }
     }
 }

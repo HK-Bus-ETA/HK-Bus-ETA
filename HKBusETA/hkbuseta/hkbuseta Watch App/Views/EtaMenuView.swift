@@ -21,7 +21,7 @@ struct EtaMenuView: AppScreenView {
     @State private var index: Int
     @State private var stop: Stop
     @State private var route: Route
-    @State private var resolvedDestName: BilingualText
+    @State private var resolvedDestName: BilingualFormattedText
     @State private var offsetStart: Int
 
     @State private var stopList: [Registry.StopData]
@@ -49,11 +49,11 @@ struct EtaMenuView: AppScreenView {
         let currentBranch = AppContextWatchOSKt.findMostActiveRoute(TimetableUtilsKt.currentBranchStatus(branches, time: TimeUtilsKt.currentLocalDateTime(), context: appContext, resolveSpecialRemark: false))
         self.resolvedDestName = {
             if co.isTrain {
-                return registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true)
+                return registry(appContext).getStopSpecialDestinations(stopId: stopId, co: co, route: route, prependTo: true).asFormattedText(style: KotlinArray(size: 0) { _ in nil })
             } else if stopData?.branchIds.contains(currentBranch) != false {
-                return route.resolvedDestWithBranch(prependTo: true, branch: currentBranch, selectedStop: index.asInt32(), selectedStopId: stopId, context: appContext)
+                return route.resolvedDestWithBranchFormatted(prependTo: true, branch: currentBranch, selectedStop: index.asInt32(), selectedStopId: stopId, context: appContext, style: KotlinArray(size: 0) { _ in nil })
             } else {
-                return route.resolvedDest(prependTo: true)
+                return route.resolvedDestFormatted(prependTo: true, style: KotlinArray(size: 0) { _ in nil })
             }
         }()
         self.offsetStart = data["offsetStart"] as? Int ?? 0
@@ -85,7 +85,7 @@ struct EtaMenuView: AppScreenView {
                                 .lineLimit(1)
                                 .autoResizing(maxSize: 13.scaled(appContext, true))
                         }
-                        Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false) + " " + resolvedDestName.get(language: Shared().language))
+                        Text(co.getDisplayRouteNumber(routeNumber: route.routeNumber, shortened: false).asAttributedString() + " ".asAttributedString() + resolvedDestName.get(language: Shared().language).asAttributedString(defaultFontSize: 12.scaled(appContext, true)))
                             .foregroundColor(colorInt(0xFFFFFFFF).asColor())
                             .lineLimit(1)
                             .autoResizing(maxSize: 12.scaled(appContext, true))
@@ -104,12 +104,12 @@ struct EtaMenuView: AppScreenView {
                     Spacer().frame(fixedSize: 5.scaled(appContext))
                     OpenOnMapsButton(stopName: stop.name, lat: stop.location.lat, lng: stop.location.lng)
                     Spacer().frame(fixedSize: 10.scaled(appContext))
-                    Text(Shared().language == "en" ? "Set Favourite Routes" : "設置最喜愛路線")
+                    Text(Shared().language == "en" ? "Set Favourite Routes" : "設置收藏路線")
                         .font(.system(size: 14.scaled(appContext, true)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20.scaled(appContext))
-                    Text(Shared().language == "en" ? "Route stops can be used in Tiles" : "最喜愛路線可在資訊方塊中顯示")
+                    Text(Shared().language == "en" ? "Route stops can be used in Tiles" : "收藏路線可在資訊方塊中顯示")
                         .font(.system(size: 10.scaled(appContext, true)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
