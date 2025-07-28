@@ -35,7 +35,8 @@ data class TableRow(
     val alignment: TableRowAlignment = TableRowAlignment.Vertical(Alignment.CenterVertically),
     val onClick: (() -> Unit)? = null,
     val background: @Composable () -> Unit = { /* do nothing */ },
-    val horizontalExtension: Dp = 0.dp
+    val horizontalExtension: Dp = 0.dp,
+    val minHeight: Dp = 0.dp
 )
 
 @Immutable
@@ -134,7 +135,8 @@ fun Table(
 
             when (val ra = rows(r).alignment) {
                 is TableRowAlignment.Baseline -> {
-                    var above = 0; var below = 0
+                    var above = 0
+                    var below = 0
                     for (placeable in rowPlaceables) {
                         val b = placeable[ra.alignment]
                         above = maxOf(above, b)
@@ -146,6 +148,12 @@ fun Table(
                 is TableRowAlignment.Vertical -> {
                     rowHeights[r] = rowPlaceables.maxOfOrNull { it.height }?: 0
                 }
+            }
+
+            val diff = rows(r).minHeight.roundToPx() - rowHeights[r]
+            if (diff > 0) {
+                rowHeights[r] += diff
+                baselineAbove[r] += diff / 2
             }
         }
 

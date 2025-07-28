@@ -2980,6 +2980,8 @@ fun TrainETADisplay(
         if (hasRemark) add(TableColumn(width = TableColumnWidth.Weight(1F)))
     } } }
 
+    val minHeight = 28F.fontScaledDp(0.5F)
+
     val rows by remember(resolvedText) { derivedStateOf { buildList {
         for (seq in 1..lines.size) {
             val entry = resolvedText[seq]!!
@@ -3021,7 +3023,8 @@ fun TrainETADisplay(
                     }
                 },
                 horizontalExtension = 5.dp,
-                alignment = TableRowAlignment.Baseline(FirstBaseline)
+                alignment = TableRowAlignment.Baseline(FirstBaseline),
+                minHeight = minHeight
             ))
         }
     } } }
