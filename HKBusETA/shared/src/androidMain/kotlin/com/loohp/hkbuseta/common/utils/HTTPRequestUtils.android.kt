@@ -23,9 +23,11 @@ package com.loohp.hkbuseta.common.utils
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.http.HeadersBuilder
 import io.ktor.http.HttpHeaders
 import io.ktor.utils.io.KtorDsl
+import java.net.UnknownHostException
 
 
 @Suppress("FunctionName")
@@ -33,7 +35,15 @@ import io.ktor.utils.io.KtorDsl
 actual fun PlatformHttpClient(block: HttpClientConfig<*>.() -> Unit): HttpClient {
     return HttpClient(Android) {
         block.invoke(this)
+        install(HttpRequestRetry) {
+            retryOnExceptionIf(maxRetries = 3) { _, e -> e.isRetryableCause() }
+            exponentialDelay()
+        }
     }
+}
+
+private fun Throwable.isRetryableCause(): Boolean {
+    return this is UnknownHostException || cause?.isRetryableCause() == true
 }
 
 actual fun HeadersBuilder.applyPlatformHeaders() {

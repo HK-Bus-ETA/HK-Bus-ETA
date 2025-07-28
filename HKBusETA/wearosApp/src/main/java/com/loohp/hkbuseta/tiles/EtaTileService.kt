@@ -40,6 +40,7 @@ import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.appContext
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Registry
+import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.shared.WearOSShared
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +48,7 @@ import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Callable
 
-class EtaTileService : TileService() {
+class EtaTileService: TileService() {
 
     override fun onCreate() {
         WearOSShared.setDefaultExceptionHandler(this)
@@ -57,6 +58,7 @@ class EtaTileService : TileService() {
         return if (runBlocking { Registry.isNewInstall(appContext) }) {
             firstInstallTile(packageName, appContext)
         } else {
+            EtaTileServiceCommon.handleTileEnterEvent(requestParams.tileId, appContext)
             EtaTileServiceCommon.buildTileRequest(requestParams.tileId, packageName, appContext)
         }
     }
@@ -69,13 +71,13 @@ class EtaTileService : TileService() {
         }
     }
 
-    override fun onRecentInteractionEventsAsync(events: MutableList<EventBuilders.TileInteractionEvent>): ListenableFuture<Void?> {
-        return if (runBlocking { !Registry.isNewInstall(appContext) }) {
-            EtaTileServiceCommon.handleRecentInteractionEventsAsync(events, appContext)
-        } else {
-            Futures.immediateFuture(null)
-        }
-    }
+//    override fun onRecentInteractionEventsAsync(events: MutableList<EventBuilders.TileInteractionEvent>): ListenableFuture<Void?> {
+//        return if (runBlocking { !Registry.isNewInstall(appContext) }) {
+//            EtaTileServiceCommon.handleRecentInteractionEventsAsync(events, appContext)
+//        } else {
+//            Futures.immediateFuture(null)
+//        }
+//    }
 
     override fun onTileRemoveEvent(requestParams: EventBuilders.TileRemoveEvent) {
         if (runBlocking { !Registry.isNewInstall(appContext) }) {
@@ -89,7 +91,7 @@ private fun firstInstallTile(packageName: String, context: AppContext): Listenab
     return Futures.submit(Callable {
         TileBuilders.Tile.Builder()
             .setResourcesVersion("-1")
-            .setFreshnessIntervalMillis(0)
+            .setFreshnessIntervalMillis(Shared.ETA_UPDATE_INTERVAL + 2000L)
             .setTileTimeline(
                 TimelineBuilders.Timeline.Builder().addTimelineEntry(
                     TimelineBuilders.TimelineEntry.Builder().setLayout(

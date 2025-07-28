@@ -44,6 +44,7 @@ import co.touchlab.stately.concurrency.AtomicBoolean
 import co.touchlab.stately.concurrency.AtomicInt
 import co.touchlab.stately.concurrency.AtomicLong
 import co.touchlab.stately.concurrency.AtomicReference
+import co.touchlab.stately.concurrency.synchronize
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.loohp.hkbuseta.MainActivity
@@ -123,6 +124,10 @@ class TileState {
         updateTask.updateAndGet { it?.cancel(false); null }
     }
 
+    fun hasUpdateTask(): Boolean {
+        return updateTask.get() != null
+    }
+
     fun markLastUpdated() {
         lastUpdated.set(System.currentTimeMillis())
     }
@@ -179,11 +184,25 @@ class EtaTileServiceCommon {
 
     companion object {
 
+        private val init = AtomicBoolean(false)
+
         private val resourceVersion: AtomicReference<String> = AtomicReference(Uuid.random().toString())
         private val inlineImageResources: MutableMap<String, Int> = ConcurrentHashMap()
 
         private val executor = Executors.newScheduledThreadPool(16)
         private val internalTileStates: MutableMap<Int, TileState> = ConcurrentHashMap()
+
+        private fun init(context: AppContext) {
+            init.synchronize {
+                if (!init.value) {
+                    Tiles.providePlatformUpdate { requestTileUpdate() }
+                    Shared.setIsWearOS()
+                    Shared.provideBackgroundUpdateScheduler { c, t -> WearOSShared.scheduleBackgroundUpdateService(c.context, t) }
+                    WearOSShared.registryNotificationChannel(context.context)
+                    init.value = true
+                }
+            }
+        }
 
         private fun tileState(etaIndex: Int): TileState {
             return internalTileStates.computeIfAbsent(etaIndex) { TileState() }
@@ -657,7 +676,7 @@ class EtaTileServiceCommon {
                     }
                     TileBuilders.Tile.Builder()
                         .setResourcesVersion(resourceVersion.get().toString())
-                        .setFreshnessIntervalMillis(0)
+                        .setFreshnessIntervalMillis(Shared.ETA_UPDATE_INTERVAL + 2000L)
                         .setTileTimeline(
                             TimelineBuilders.Timeline.Builder().addTimelineEntry(
                                 TimelineBuilders.TimelineEntry.Builder().setLayout(
@@ -691,35 +710,34 @@ class EtaTileServiceCommon {
         }
 
         fun handleTileEnterEvent(tileId: Int, context: AppContext) {
-            Tiles.providePlatformUpdate { requestTileUpdate() }
-            Shared.setIsWearOS()
-            Shared.provideBackgroundUpdateScheduler { c, t -> WearOSShared.scheduleBackgroundUpdateService(c.context, t) }
-            WearOSShared.registryNotificationChannel(context.context)
+            init(context)
             tileState(tileId).let {
-                if (!it.getLastUpdateSuccessful()) {
-                    it.markShouldUpdate()
-                }
-                it.setUpdateTask(executor.scheduleWithFixedDelay({
-                    while (Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
-                        TimeUnit.MILLISECONDS.sleep(10)
+                if (!it.hasUpdateTask()) {
+                    if (!it.getLastUpdateSuccessful()) {
+                        it.markShouldUpdate()
                     }
-                    if (it.shouldUpdate()) {
-                        val favouriteRoutes = Tiles.getEtaTileConfiguration(tileId)
-                        if (favouriteRoutes.isNotEmpty()) {
-                            val favouriteRouteStops = favouriteRoutes
-                                .mapNotNull { favouriteRoute -> Shared.favoriteRouteStops.value.flatMap { l -> l.favouriteRouteStops }.firstOrNull { s -> s.favouriteId == favouriteRoute } }
-                                .resolveStops(context) { it.setLastLocationOrGetLast(getGPSLocation(context).asCompletableFuture().getOr(7, TimeUnit.SECONDS) { null }?.location) }
-                            it.cacheETAQueryResult(Registry.MergedETAQueryResult.merge(
-                                favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { (favStop, resolved) ->
-                                    val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
-                                    (resolved to favStop) to runBlocking(Dispatchers.IO) { Registry.getInstanceNoUpdateCheck(context).buildEtaQuery(stopId, index, favStop.co, route, context).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
-                                }
-                            ))
-                            it.markLastUpdated()
-                            TileService.getUpdater(context.context).requestUpdate((context.context as TileService).javaClass)
+                    it.setUpdateTask(executor.scheduleWithFixedDelay({
+                        while (Registry.getInstanceNoUpdateCheck(context).state.value.isProcessing) {
+                            TimeUnit.MILLISECONDS.sleep(10)
                         }
-                    }
-                }, 0, 1000, TimeUnit.MILLISECONDS))
+                        if (it.shouldUpdate()) {
+                            val favouriteRoutes = Tiles.getEtaTileConfiguration(tileId)
+                            if (favouriteRoutes.isNotEmpty()) {
+                                val favouriteRouteStops = favouriteRoutes
+                                    .mapNotNull { favouriteRoute -> Shared.favoriteRouteStops.value.flatMap { l -> l.favouriteRouteStops }.firstOrNull { s -> s.favouriteId == favouriteRoute } }
+                                    .resolveStops(context) { it.setLastLocationOrGetLast(getGPSLocation(context).asCompletableFuture().getOr(7, TimeUnit.SECONDS) { null }?.location) }
+                                it.cacheETAQueryResult(Registry.MergedETAQueryResult.merge(
+                                    favouriteRouteStops.parallelMapNotNull(executor.asCoroutineDispatcher()) { (favStop, resolved) ->
+                                        val (index, stopId, _, route) = resolved?: return@parallelMapNotNull null
+                                        (resolved to favStop) to runBlocking(Dispatchers.IO) { Registry.getInstanceNoUpdateCheck(context).buildEtaQuery(stopId, index, favStop.co, route, context).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }
+                                    }
+                                ))
+                                it.markLastUpdated()
+                                TileService.getUpdater(context.context).requestUpdate((context.context as TileService).javaClass)
+                            }
+                        }
+                    }, 0, 1000, TimeUnit.MILLISECONDS))
+                }
             }
         }
 
@@ -734,12 +752,11 @@ class EtaTileServiceCommon {
 
         fun handleRecentInteractionEventsAsync(events: MutableList<EventBuilders.TileInteractionEvent>, context: AppContext): ListenableFuture<Void?> {
             return Futures.submit(Callable {
-                for (event in events) {
-                    when (event.eventType) {
-                        EventBuilders.TileInteractionEvent.ENTER -> handleTileEnterEvent(event.tileId, context)
-                        EventBuilders.TileInteractionEvent.LEAVE -> handleTileLeaveEvent(event.tileId)
-                        EventBuilders.TileInteractionEvent.UNKNOWN -> { /* Do nothing */ }
-                    }
+                events.firstOrNull { it.eventType == EventBuilders.TileInteractionEvent.ENTER }?.let {
+                    handleTileEnterEvent(it.tileId, context)
+                }
+                events.firstOrNull { it.eventType == EventBuilders.TileInteractionEvent.LEAVE }?.let {
+                    handleTileLeaveEvent(it.tileId)
                 }
                 null
             }, executor)

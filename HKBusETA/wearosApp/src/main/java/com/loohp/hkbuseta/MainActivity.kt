@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.material.Text
+import androidx.wear.tiles.TileService
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
@@ -61,6 +62,7 @@ import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.asImmutableState
 import com.loohp.hkbuseta.common.utils.remove
 import com.loohp.hkbuseta.shared.WearOSShared
+import com.loohp.hkbuseta.tiles.EtaTileService
 import com.loohp.hkbuseta.tiles.EtaTileServiceCommon
 import com.loohp.hkbuseta.utils.RemoteActivityUtils.Companion.hasPhoneApp
 import com.loohp.hkbuseta.utils.optBoolean
@@ -95,6 +97,8 @@ open class MainActivity : ComponentActivity() {
         setShowWhenLocked(true)
         setTurnScreenOn(true)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        TileService.getUpdater(this).requestUpdate(EtaTileService::class.java)
 
         val stopId = intent.extras?.getString("stopId")
         val co = intent.extras?.getString("co")?.operator

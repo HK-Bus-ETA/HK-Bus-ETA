@@ -161,12 +161,13 @@ fun Table(
             for (r in 0 until rowCount) {
                 val rowInfo = rows(r)
                 val horizontalExtension = rowInfo.horizontalExtension.roundToPx()
+                val verticalPadding = (dividerHeight + rowSpacingPx) / 2
 
                 // 8a. Draw background composable for this row
                 subcompose("background_$r", rowInfo.background)
                     .firstOrNull()
-                    ?.measure(Constraints.fixed(layoutWidth + horizontalExtension * 2, rowHeights[r] + (dividerHeight + rowSpacingPx)))
-                    ?.place(-horizontalExtension, y)
+                    ?.measure(Constraints.fixed(layoutWidth + horizontalExtension * 2, rowHeights[r] + verticalPadding))
+                    ?.place(-horizontalExtension, y - verticalPadding)
 
                 // 8b. Draw clickable composable for this row
                 rowInfo.onClick?.let { onClick ->
@@ -178,8 +179,8 @@ fun Table(
                         )
                     }
                         .firstOrNull()
-                        ?.measure(Constraints.fixed(layoutWidth + horizontalExtension * 2, rowHeights[r] + (dividerHeight + rowSpacingPx)))
-                        ?.place(-horizontalExtension, y)
+                        ?.measure(Constraints.fixed(layoutWidth + horizontalExtension * 2, rowHeights[r] + verticalPadding))
+                        ?.place(-horizontalExtension, y - verticalPadding)
                 }
 
                 // 8c. Place each cell in that row
