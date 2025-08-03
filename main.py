@@ -820,7 +820,7 @@ def normalize_extract(input_str):
     global NORMALIZE_CHARS
     for keyword, replacement in NORMALIZE_CHARS.items():
         input_str = input_str.replace(keyword, replacement)
-    match = re.search(r"[ 　]*(\([A-Z]{2}[0-9]{3}[A-Z]?\))[ 　]*", input_str)
+    match = re.search(r"[ 　]*(\([A-Z]{2}[0-9]{3}[a-z]?\))[ 　]*", input_str)
     if match:
         modified_string = input_str.replace(match.group(), "", 1)
         return modified_string, match.group(1)
@@ -834,12 +834,20 @@ def capitalize(input_str, lower=True):
     return re.sub(r"(?:^|\s|[\"(\[{/\-]|'(?!s))+\S", lambda m: m.group().upper(), input_str)
 
 
+def apply_case(matcher, case):
+    result = ""
+    for index, group in enumerate(matcher.groups()):
+        if group is not None:
+            lower = index >= len(case) or case[index].casefold() == "L".casefold()
+            result += group.lower() if lower else group.upper()
+    return result
+
+
 def apply_recapitalize_keywords(input_str, is_zh):
     global RECAPITALIZE_KEYWORDS
     for entry in RECAPITALIZE_KEYWORDS["recapitalize_regex"]:
         if not is_zh or entry.get("apply_to_zh", False):
-            upper = entry["case"].casefold() == "UPPER".casefold()
-            input_str = re.sub(r"(?i)" + entry["regex"], lambda m: m.group(0).upper() if upper else m.group(0).lower(), input_str)
+            input_str = re.sub(entry["regex"], lambda m: apply_case(m, entry["case"]), input_str)
     if not is_zh:
         for keyword in RECAPITALIZE_KEYWORDS["recapitalize"]:
             input_str = re.sub(r"(?i)(?<![0-9a-zA-Z])" + re.escape(keyword) + "(?![0-9a-zA-Z])", keyword, input_str)
