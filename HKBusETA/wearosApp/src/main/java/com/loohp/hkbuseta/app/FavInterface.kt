@@ -29,6 +29,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -163,7 +164,6 @@ import kotlin.math.absoluteValue
 @Composable
 fun FavElements(ambientMode: Boolean, instance: AppActiveContext, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
-        val focusRequester = rememberActiveFocusRequester()
         val state = rememberLazyListState()
 
         val favouriteRouteStops by Shared.favoriteRouteStops.collectAsStateWithLifecycle()
@@ -205,7 +205,7 @@ fun FavElements(ambientMode: Boolean, instance: AppActiveContext, schedule: (Boo
                         state = state,
                         context = instance
                     )
-                    .rotaryScroll(state, focusRequester),
+                    .rotaryScroll(state),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 state = state
             ) {

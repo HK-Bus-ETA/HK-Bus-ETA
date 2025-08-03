@@ -39,12 +39,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
-import androidx.wear.compose.foundation.rememberActiveFocusRequester
+import androidx.wear.compose.foundation.hierarchicalFocusGroup
+import androidx.wear.compose.foundation.requestFocusOnHierarchyActive
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import com.loohp.hkbuseta.appcontext.context
@@ -60,12 +62,14 @@ import me.saket.telephoto.zoomable.zoomable
 @Composable
 fun ImageElement(url: String, instance: AppActiveContext) {
     HKBusETATheme {
-        val focusRequester = rememberActiveFocusRequester()
+        val focusRequester = remember { FocusRequester() }
         var zoom by remember { mutableStateOf(false) }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .hierarchicalFocusGroup(active = true)
+                .requestFocusOnHierarchyActive()
                 .focusRequester(focusRequester)
                 .focusable()
         ) {

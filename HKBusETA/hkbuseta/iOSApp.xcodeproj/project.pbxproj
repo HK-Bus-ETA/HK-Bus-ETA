@@ -20,7 +20,7 @@
 		81498D102B7EAD21005F0961 /* AlightReminderLiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81498D0F2B7EAD21005F0961 /* AlightReminderLiveActivityBundle.swift */; };
 		81498D122B7EAD21005F0961 /* AlightReminderLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81498D112B7EAD21005F0961 /* AlightReminderLiveActivity.swift */; };
 		81498D162B7EAD23005F0961 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81498D152B7EAD23005F0961 /* Assets.xcassets */; };
-		81498D1A2B7EAD23005F0961 /* AlightReminderLiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 81498D0B2B7EAD21005F0961 /* AlightReminderLiveActivityExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		81498D1A2B7EAD23005F0961 /* AlightReminderLiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 81498D0B2B7EAD21005F0961 /* AlightReminderLiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		81498D1F2B7F0EEA005F0961 /* AlightReminderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81498D1E2B7F0EEA005F0961 /* AlightReminderView.swift */; };
 		8171F01B2B52EC4E005B8F6A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0162B44C403008EE8AB /* WidgetKit.framework */; };
 		8171F01C2B52EC4E005B8F6A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 818FD0182B44C403008EE8AB /* SwiftUI.framework */; };
@@ -666,7 +666,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8171F06F2B5C81F4005B8F6A /* Build configuration list for PBXNativeTarget "HKBusETA Phone App" */;
 			buildPhases = (
-				814374772B6AB629007C823A /* ShellScript */,
+				814374772B6AB629007C823A /* Run Script */,
 				8171F0652B5C81F4005B8F6A /* Sources */,
 				8171F0672B5C81F4005B8F6A /* Frameworks */,
 				8171F0682B5C81F4005B8F6A /* Resources */,
@@ -849,10 +849,8 @@
 			);
 			mainGroup = 81D16AA72B33C21D003D9817;
 			packageReferences = (
-				81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */,
 				818FD0292B45C917008EE8AB /* XCRemoteSwiftPackageReference "GzipSwift" */,
 				81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
-				81498CE62B7AF648005F0961 /* XCRemoteSwiftPackageReference "MKZoomLevel" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 81D16AAF2B33C21E003D9817 /* Products */;
@@ -862,11 +860,11 @@
 				8171F0602B5C81F4005B8F6A /* HKBusETA Phone App */,
 				81498D0A2B7EAD21005F0961 /* AlightReminderLiveActivityExtension */,
 				81DF85212BD157DA00248852 /* FavouriteRoutesWidgetExtensionExtension */,
+				81D8F9DB2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension */,
 				8171F07F2B5D4F11005B8F6A /* ShareExtension */,
 				81D16AB32B33C21E003D9817 /* HKBusETA Watch App */,
 				8171F0192B52EC4E005B8F6A /* TilesWidgetExtension */,
 				81AE54DB2CD4FB0E00B6847E /* FavouriteRoutesWidgetWatchExtensionExtension */,
-				81D8F9DB2E0B4DBA008157E2 /* RouteStopETALiveActivityExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -962,9 +960,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
 		};
-		814374772B6AB629007C823A /* ShellScript */ = {
+		814374772B6AB629007C823A /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -973,6 +971,7 @@
 			);
 			inputPaths = (
 			);
+			name = "Run Script";
 			outputFileListPaths = (
 			);
 			outputPaths = (
@@ -997,7 +996,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode -x :shared:syncComposeResourcesForIos\n";
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
 		};
 		81D16AD22B33CC85003D9817 /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1015,7 +1014,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode -x :shared:syncComposeResourcesForIos\n";
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1133,7 +1132,6 @@
 		};
 		81498D192B7EAD23005F0961 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			platformFilter = ios;
 			target = 81498D0A2B7EAD21005F0961 /* AlightReminderLiveActivityExtension */;
 			targetProxy = 81498D182B7EAD23005F0961 /* PBXContainerItemProxy */;
 		};
@@ -1306,6 +1304,7 @@
 				MARKETING_VERSION = "${BUILD_VERSION}";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.tileswidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -1339,6 +1338,7 @@
 				MARKETING_VERSION = "${BUILD_VERSION}";
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.tileswidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -1558,6 +1558,7 @@
 				MARKETING_VERSION = $BUILD_VERSION;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.FavouriteRoutesWidgetWatchExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -1596,6 +1597,7 @@
 				MARKETING_VERSION = $BUILD_VERSION;
 				PRODUCT_BUNDLE_IDENTIFIER = com.loohp.hkbuseta.watchkitapp.FavouriteRoutesWidgetWatchExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -1611,8 +1613,8 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 380;
-				BUILD_VERSION = 2.5.9;
+				BUILD_NUMBER = 387;
+				BUILD_VERSION = 2.5.12;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -1666,7 +1668,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = watchos;
+				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				WATCHOS_DEPLOYMENT_TARGET = 10.2;
@@ -1679,8 +1681,8 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUILD_NUMBER = 380;
-				BUILD_VERSION = 2.5.9;
+				BUILD_NUMBER = 387;
+				BUILD_VERSION = 2.5.12;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -1727,7 +1729,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				SDKROOT = watchos;
+				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				WATCHOS_DEPLOYMENT_TARGET = 10.2;
 			};
@@ -1770,7 +1772,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 8.5;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Debug;
 		};
@@ -1812,7 +1814,7 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				VALIDATE_PRODUCT = YES;
-				WATCHOS_DEPLOYMENT_TARGET = 8.5;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Release;
 		};
@@ -2041,14 +2043,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		81498CE62B7AF648005F0961 /* XCRemoteSwiftPackageReference "MKZoomLevel" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/stleamist/MKZoomLevel.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.0;
-			};
-		};
 		81812AB12B48CA000060A30B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -2063,14 +2057,6 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 6.0.0;
-			};
-		};
-		81D16AFC2B34982B003D9817 /* XCRemoteSwiftPackageReference "KMP-NativeCoroutines" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/rickclephas/KMP-NativeCoroutines.git";
-			requirement = {
-				branch = master;
-				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

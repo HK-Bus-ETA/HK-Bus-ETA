@@ -1,5 +1,5 @@
 {
-  "originHash" : "a153311645bfed977ebf46c2fb2c725a2564f1eac92e2f6a68ac5757d9052f88",
+  "originHash" : "87b7ba7e88c4f793522f7ecdf30519c20be8b5859773be7bd15fc29901a6ae2c",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
       "state" : {
-        "revision" : "428d8bb138e00f9a3f4f61cc6cd8863607524f65",
-        "version" : "2.1.0"
+        "revision" : "e15f979c3eaf477d24e5bfec9d87f1d76fbac297",
+        "version" : "2.2.0"
       }
     },
     {
@@ -101,30 +101,12 @@
       }
     },
     {
-      "identity" : "kmp-nativecoroutines",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/rickclephas/KMP-NativeCoroutines.git",
-      "state" : {
-        "branch" : "master",
-        "revision" : "389998f49c7c97a7deed0cb7145b31659db3ff9b"
-      }
-    },
-    {
       "identity" : "leveldb",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/leveldb.git",
       "state" : {
         "revision" : "a0bc79961d7be727d258d33d5a6b2f1023270ba1",
         "version" : "1.22.5"
-      }
-    },
-    {
-      "identity" : "mkzoomlevel",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stleamist/MKZoomLevel.git",
-      "state" : {
-        "revision" : "229d57521957e566f98b7345989da1db961127fd",
-        "version" : "1.2.0"
       }
     },
     {
@@ -143,15 +125,6 @@
       "state" : {
         "revision" : "540318ecedd63d883069ae7f1ed811a2df00b6ac",
         "version" : "2.4.0"
-      }
-    },
-    {
-      "identity" : "rxswift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ReactiveX/RxSwift.git",
-      "state" : {
-        "revision" : "5dd1907d64f0d36f158f61a466bab75067224893",
-        "version" : "6.9.0"
       }
     },
     {

@@ -30,6 +30,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -165,7 +166,6 @@ class EtaTileConfigureActivity : ComponentActivity() {
 @Composable
 fun SelectElements(tileId: Int, instance: AppActiveContext) {
     HKBusETATheme {
-        val focusRequester = rememberActiveFocusRequester()
         val state = rememberLazyListState()
 
         val favouriteRouteStops by Shared.favoriteRouteStops.collectAsStateWithLifecycle()
@@ -185,7 +185,7 @@ fun SelectElements(tileId: Int, instance: AppActiveContext) {
                     state = state,
                     context = instance
                 )
-                .rotaryScroll(state, focusRequester),
+                .rotaryScroll(state),
             horizontalAlignment = Alignment.CenterHorizontally,
             state = state
         ) {

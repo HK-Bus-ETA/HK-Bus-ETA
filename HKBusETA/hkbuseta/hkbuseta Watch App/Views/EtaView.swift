@@ -73,7 +73,7 @@ struct EtaView: AppScreenView {
 
     var body: some View {
         VStack(alignment: .center, spacing: 3.scaled(appContext)) {
-            Spacer().frame(fixedSize: 3.scaled(appContext))
+            Spacer().frame(fixedSize: 14.scaled(appContext))
             let stopName = {
                 if route.isKmbCtbJoint && alternateStopNamesShowingState.state.boolValue {
                     return registry(appContext).findJointAlternateStop(stopId: stopId, routeNumber: route.routeNumber).stop.name
@@ -93,6 +93,7 @@ struct EtaView: AppScreenView {
             Spacer().frame(fixedSize: 2.scaled(appContext))
             let nextBusText = nextBus?.getDisplayText(allStops: stopList, alternateStopNames: nil, alternateStopNamesShowing: alternateStopNamesShowingState.state.boolValue && route.isKmbCtbJoint, mode: NextBusTextDisplayMode.compact, context: appContext, language: Shared().language)
             Text((co.isBus ? nextBusText : nil)?.asAttributedString(defaultFontSize: 11.scaled(appContext, true)) ?? "".asAttributedString())
+                .multilineTextAlignment(.center)
                 .foregroundColor(colorInt(0xFFFFFFFF).asColor().adjustBrightness(percentage: 0.8).adjustBrightness(percentage: ambientMode ? 0.7 : 1))
                 .lineLimit(2)
                 .autoResizing(maxSize: 11.scaled(appContext, true))

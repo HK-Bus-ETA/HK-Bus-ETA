@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.app
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -144,7 +145,6 @@ fun rememberPhoneConnected(context: AppContext): State<WearableConnectionState> 
 @OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun SettingsInterface(instance: AppActiveContext) {
-    val focusRequester = rememberActiveFocusRequester()
     val scroll = rememberLazyListState()
     val haptic = LocalHapticFeedback.current
     val phoneConnection by rememberPhoneConnected(instance)
@@ -159,7 +159,7 @@ fun SettingsInterface(instance: AppActiveContext) {
                     state = scroll,
                     context = instance
                 )
-                .rotaryScroll(scroll, focusRequester),
+                .rotaryScroll(scroll),
             horizontalAlignment = Alignment.CenterHorizontally,
             state = scroll
         ) {

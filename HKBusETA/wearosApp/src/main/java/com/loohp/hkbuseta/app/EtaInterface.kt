@@ -57,6 +57,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -72,7 +73,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.hierarchicalFocusGroup
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
+import androidx.wear.compose.foundation.requestFocusOnHierarchyActive
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.ExperimentalWearMaterialApi
 import androidx.wear.compose.material.Icon
@@ -199,7 +202,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
         swiping = false
     }
 
-    val focusRequester = rememberActiveFocusRequester()
+    val focusRequester = remember { FocusRequester() }
     var currentOffset by remember { mutableFloatStateOf(offsetStart * window.height.toFloat()) }
     var animatedOffsetTask: (Float) -> Unit by remember { mutableStateOf({}) }
     val animatedOffset by animateFloatAsState(
@@ -255,6 +258,8 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                     }
                     true
                 }
+                .hierarchicalFocusGroup(active = true)
+                .requestFocusOnHierarchyActive()
                 .focusRequester(focusRequester)
                 .focusable()
         ) {

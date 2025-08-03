@@ -93,7 +93,7 @@ inline fun clearGlobalCache() = CacheStore.globalCache?.clear()
 
 inline fun <reified T> cache(function: String, vararg keys: Any?, block: () -> T): T {
     return CacheStore.globalCache?.run {
-        val key = CacheKey(function, CacheType.FUNCTION, keys.asList(), currentTimeMillis())
+        val key = CacheKey(function, CacheType.FUNCTION, keys.toList(), currentTimeMillis())
         val cachedValue = this[key]
         (if (cachedValue == null || cachedValue !is T) block.invoke() else cachedValue).also { this[key] = it }
     }?: block.invoke()

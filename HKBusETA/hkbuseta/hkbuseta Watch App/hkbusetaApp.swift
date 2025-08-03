@@ -85,7 +85,7 @@ struct hkbuseta_Watch_AppApp: App {
     @Environment(\.scenePhase) var scenePhase
     
     @StateObject private var historyStackState = StateFlowListObservable(stateFlow: HistoryStack().historyStack, initSubscribe: true)
-    @State private var historyStackLocal: [KotlinUuid] = []
+    @State private var historyStackLocal: [Int64] = []
     
     @StateObject private var globalWritingFilesCounterState = StateFlowObservable(stateFlow: AppContextKt.globalWritingFilesCounterState, initSubscribe: true)
     @State private var globalWritingFiles = false
@@ -111,10 +111,8 @@ struct hkbuseta_Watch_AppApp: App {
             return String(data: decompressedData, encoding: encoding(from: charset))!
         })
         AppContextWatchOSKt.setTilesUpdateImpl {
-            if #available(watchOS 9.0, *) {
-                WidgetCenter.shared.invalidateConfigurationRecommendations()
-                WidgetCenter.shared.reloadAllTimelines()
-            }
+            WidgetCenter.shared.invalidateConfigurationRecommendations()
+            WidgetCenter.shared.reloadAllTimelines()
         }
         AppContextWatchOSKt.setOpenMapsImpl(handler: { lat, lng, label, longClick, haptics in
             if Bool(truncating: longClick) {
@@ -161,55 +159,35 @@ struct hkbuseta_Watch_AppApp: App {
                             .font(.system(size: min(17.scaled(applicationContext(), true), 21.scaled(applicationContext()))))
                     }
                 } else {
-                    if #available(watchOS 9.0, *) {
-                        NavigationStack(path: $historyStackLocal) {
-                            ZStack { /* do nothing */ }
-                                .navigationDestination(for: KotlinUuid.self) { id in
-                                    if let context = historyStackState.state.first(where: { $0.activeContextId == id }) {
-                                        ZStack {
-                                            context.screen.newView(context: context)
-                                            TopOverlayBar(context)
-                                            if toastShowTimeLeft > 0 {
-                                                Text(toastText)
-                                                    .multilineTextAlignment(.center)
-                                                    .autoResizing(maxSize: 17.scaled(context, true))
-                                                    .padding(10.scaled(context))
-                                                    .background(colorInt(0xFF333333).asColor())
-                                                    .cornerRadius(10.scaled(context))
-                                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                                    .background(Color.clear)
-                                                    .ignoresSafeArea(.all)
-                                                    .transition(.opacity.animation(.linear(duration: 0.4)))
-                                                    .allowsHitTesting(false)
-                                                    .offset(y: Double(context.screenHeight) * 0.25)
-                                                    .zIndex(1)
-                                            }
+                    NavigationStack(path: $historyStackLocal) {
+                        ZStack { /* do nothing */ }
+                            .navigationDestination(for: Int64.self) { id in
+                                if let context = historyStackState.state.first(where: { $0.activeContextId == id }) {
+                                    ZStack {
+                                        context.screen.newView(context: context)
+                                        TopOverlayBar(context)
+                                        if toastShowTimeLeft > 0 {
+                                            Text(toastText)
+                                                .multilineTextAlignment(.center)
+                                                .autoResizing(maxSize: 17.scaled(context, true))
+                                                .padding(10.scaled(context))
+                                                .background(colorInt(0xFF333333).asColor())
+                                                .cornerRadius(10.scaled(context))
+                                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                .background(Color.clear)
+                                                .ignoresSafeArea(.all)
+                                                .transition(.opacity.animation(.linear(duration: 0.4)))
+                                                .allowsHitTesting(false)
+                                                .offset(y: Double(context.screenHeight) * 0.25)
+                                                .zIndex(1)
                                         }
-                                        .navigationBarBackButtonHidden(!context.screen.needBackButton())
-                                    } else {
-                                        ZStack { /* do nothing */ }
-                                            .navigationBarBackButtonHidden(true)
                                     }
+                                    .navigationBarBackButtonHidden(!context.screen.needBackButton())
+                                } else {
+                                    ZStack { /* do nothing */ }
+                                        .navigationBarBackButtonHidden(true)
                                 }
-                        }
-                    } else if let context = historyStackState.state.last {
-                        context.screen.newView(context: context)
-                        TopOverlayBar(context)
-                        if toastShowTimeLeft > 0 {
-                            Text(toastText)
-                                .multilineTextAlignment(.center)
-                                .autoResizing(maxSize: 17.scaled(context, true))
-                                .padding(10.scaled(context))
-                                .background(colorInt(0xFF333333).asColor())
-                                .cornerRadius(10.scaled(context))
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .background(Color.clear)
-                                .ignoresSafeArea(.all)
-                                .transition(.opacity.animation(.linear(duration: 0.4)))
-                                .allowsHitTesting(false)
-                                .offset(y: Double(context.screenHeight) * 0.25)
-                                .zIndex(1)
-                        }
+                            }
                     }
                 }
             }
@@ -291,28 +269,6 @@ struct hkbuseta_Watch_AppApp: App {
     @ViewBuilder func TopOverlayBar(_ appContext: AppActiveContextWatchOS) -> some View {
         if appContext.screen.needBackButton() || globalWritingFiles {
             ZStack {
-                if #unavailable(watchOS 9.0) {
-                    if appContext.screen.needBackButton() {
-                        Button(action: {
-                            HistoryStack().popHistoryStack()
-                        }) {
-                            Image(systemName: "arrow.left")
-                                .font(.system(size: 17.scaled(appContext, true), weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                        .frame(width: 30.scaled(appContext), height: 30.scaled(appContext))
-                        .contentShape(Rectangle())
-                        .buttonStyle(PlainButtonStyle())
-                        .position(x: 23.scaled(appContext), y: 23.scaled(appContext))
-                        .highPriorityGesture(
-                            TapGesture()
-                                .onEnded { _ in
-                                    HistoryStack().popHistoryStack()
-                                }
-                        )
-                        .zIndex(1)
-                    }
-                }
                 if globalWritingFiles {
                     Circle()
                         .fill(colorInt(0xFF00FF00).asColor())
@@ -386,14 +342,7 @@ func handleDataFromPhone(payload: [String: Any]) {
 extension View {
     
     @ViewBuilder func defaultStyle() -> some View {
-        if #available(watchOS 9.0, *) {
-            self
-                .background { colorInt(0xFF000000).asColor() }
-        } else {
-            self
-                .transition(.scale.animation(.easeInOut(duration: 0.25)))
-                .background { colorInt(0xFF000000).asColor() }
-        }
+        self.background { colorInt(0xFF000000).asColor() }
     }
     
 }

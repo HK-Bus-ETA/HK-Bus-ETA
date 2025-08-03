@@ -44,8 +44,8 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
-import com.google.firebase.analytics.ktx.analytics
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.analytics
 import com.loohp.hkbuseta.AlightReminderForegroundService
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext

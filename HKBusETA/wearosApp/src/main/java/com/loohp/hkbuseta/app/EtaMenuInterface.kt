@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.app
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -122,7 +123,6 @@ import kotlin.math.absoluteValue
 @Composable
 fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: Route, instance: AppActiveContext) {
     HKBusETATheme {
-        val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
 
         val alternateStopNameShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle()
@@ -162,7 +162,7 @@ fun EtaMenuElement(stopId: String, co: Operator, index: Int, stop: Stop, route: 
                     state = scroll,
                     context = instance
                 )
-                .rotaryScroll(scroll, focusRequester),
+                .rotaryScroll(scroll),
             horizontalAlignment = Alignment.CenterHorizontally,
             state = scroll
         ) {

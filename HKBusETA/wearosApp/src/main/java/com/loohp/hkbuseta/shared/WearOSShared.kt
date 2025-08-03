@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.curvedComposable
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnState
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.TimeTextDefaults
 import androidx.work.Constraints
@@ -62,8 +63,8 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.messaging.ktx.messaging
+import com.google.firebase.Firebase
+import com.google.firebase.messaging.messaging
 import com.loohp.hkbuseta.FatalErrorActivity
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.appcontext.appContext
@@ -80,6 +81,8 @@ import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.interpolateColor
 import com.loohp.hkbuseta.common.utils.nextScheduledDataUpdateMillis
 import com.loohp.hkbuseta.compose.collectAsStateWithLifecycle
+import com.loohp.hkbuseta.compose.firstVisibleItemIndex
+import com.loohp.hkbuseta.compose.firstVisibleItemScrollOffset
 import com.loohp.hkbuseta.utils.HongKongTimeSource
 import com.loohp.hkbuseta.utils.adjustAlpha
 import com.loohp.hkbuseta.utils.dp
@@ -132,6 +135,12 @@ object WearOSShared {
     @Composable
     fun MainTime(lazyListState: LazyListState, modifier: Modifier = Modifier) {
         val hidden by remember { derivedStateOf { lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0 } }
+        MainTime(hidden, modifier)
+    }
+
+    @Composable
+    fun MainTime(lazyColumnState: TransformingLazyColumnState, modifier: Modifier = Modifier) {
+        val hidden by remember { derivedStateOf { lazyColumnState.firstVisibleItemIndex > 0 || lazyColumnState.firstVisibleItemScrollOffset > 0 } }
         MainTime(hidden, modifier)
     }
 

@@ -31,6 +31,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,7 +75,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
-import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Text
 import com.loohp.hkbuseta.R
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
@@ -161,7 +161,6 @@ import kotlin.math.roundToInt
 @Composable
 fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route: RouteSearchResultEntry, stopId: String?, stopIndex: Int?, showEta: Boolean, scrollToStop: String?, schedule: (Boolean, Int, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
-        val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
         val scope = rememberCoroutineScope()
         val window = currentLocalWindowSize
@@ -296,7 +295,7 @@ fun ListStopsMainElement(ambientMode: Boolean, instance: AppActiveContext, route
                             alpha = if (ambientMode) 0F else null
                         )
                     )
-                    .rotaryScroll(scroll, focusRequester, ambientMode = ambientMode),
+                    .rotaryScroll(scroll),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 state = scroll
             ) {

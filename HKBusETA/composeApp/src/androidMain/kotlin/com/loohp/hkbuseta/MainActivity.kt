@@ -31,10 +31,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.glance.appwidget.updateAll
 import com.google.android.gms.common.GoogleApiAvailability
+import com.google.firebase.Firebase
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.ktx.analytics
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.messaging.ktx.messaging
+import com.google.firebase.analytics.analytics
+import com.google.firebase.messaging.messaging
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.componentActivityPaused
 import com.loohp.hkbuseta.appcontext.context

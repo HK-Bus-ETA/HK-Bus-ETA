@@ -22,11 +22,11 @@ weak = "3.0.0"
 xmlCore = "0.91.1"
 coreKtx = "1.17.0-beta01"
 coreSplashscreen = "1.1.0-rc01"
-foundation = "1.8.2"
 compose = "1.8.2"
 composeMaterial = "1.4.1"
 composeFoundation = "1.4.1"
-compose-plugin = "1.8.2"
+compose-plugin = "1.9.0-beta01"
+compose-material3-plugin = "1.9.0-alpha04"
 horologistComposeLayout = "0.7.14-beta"
 kotlin = "2.1.21"
 kotlinxCollectionsImmutable = "0.4.0"
@@ -54,13 +54,14 @@ wearPhoneInteractions = "1.1.0"
 workRuntimeKtx = "2.10.1"
 zoomable = "0.9.0"
 googleDevToolsKsp = "2.1.21-2.0.1"
-firebase-bom = "33.16.0"
+firebase-bom = "34.0.0"
 zoomimageComposeCoil3 = "1.1.0"
 logback-version = "1.5.18"
 guava-version = "33.4.8-jre"
 commons-io-version = "2.19.0"
 commons-codec-version = "1.18.0"
 geoip2-version = "4.3.0"
+composeMaterial3 = "1.5.0-beta06"
 
 [libraries]
 android-pdf-viewer = { module = "com.github.mhiew:android-pdf-viewer", version.ref = "androidPdfViewer" }
@@ -71,7 +72,6 @@ androidx-compose-material = { module = "androidx.wear.compose:compose-material",
 androidx-concurrent-futures-ktx = { module = "androidx.concurrent:concurrent-futures-ktx", version.ref = "concurrentFuturesKtx" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
-androidx-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
 androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glanceAppwidget" }
 androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glanceMaterial3" }
 androidx-legacy-support-v4 = { module = "androidx.legacy:legacy-support-v4", version.ref = "legacySupportV4" }
@@ -85,6 +85,7 @@ androidx-protolayout = { module = "androidx.wear.protolayout:protolayout", versi
 androidx-protolayout-expression = { module = "androidx.wear.protolayout:protolayout-expression", version.ref = "protolayoutExpression" }
 androidx-protolayout-material = { module = "androidx.wear.protolayout:protolayout-material", version.ref = "protolayoutExpression" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+androidx-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "compose-plugin" }
 androidx-tiles = { module = "androidx.wear.tiles:tiles", version.ref = "tiles" }
 androidx-wear = { module = "androidx.wear:wear", version.ref = "wear" }
 androidx-wear-input = { module = "androidx.wear:wear-input", version.ref = "wearInput" }
@@ -106,7 +107,7 @@ jetbrains-kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-co
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "kotlinxCoroutinesGuava" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinxCoroutinesSwing" }
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
-material3-window-size-clazz = { module = "org.jetbrains.compose.material3:material3-window-size-class", version.ref = "compose-plugin" }
+material3-window-size-clazz = { module = "org.jetbrains.compose.material3:material3-window-size-class", version.ref = "compose-material3-plugin" }
 weak = { module = "dev.opensavvy.pedestal:weak", version.ref = "weak" }
 xmlCore = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xmlCore" }
 horologist-compose-layout = { module = "com.google.android.horologist:horologist-compose-layout", version.ref = "horologistComposeLayout" }
@@ -142,6 +143,7 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 zoomimage-compose-coil3 = { module = "io.github.panpf.zoomimage:zoomimage-compose-coil3", version.ref = "zoomimageComposeCoil3" }
+androidx-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "composeMaterial3" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

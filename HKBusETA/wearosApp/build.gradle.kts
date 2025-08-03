@@ -33,8 +33,8 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1189
-        versionName = "2.5.9"
+        versionCode = 1191
+        versionName = "2.5.12"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.androidx.material3.window.size.clazz)
     implementation(libs.androidx.compose.material)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.wear)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)

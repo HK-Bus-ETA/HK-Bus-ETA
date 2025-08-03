@@ -47,6 +47,7 @@ import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.shared.Tiles
 import com.loohp.hkbuseta.common.utils.BackgroundRestrictionType
 import com.loohp.hkbuseta.common.utils.StringReadChannel
+import com.loohp.hkbuseta.common.utils.ignoreExceptions
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
 import com.loohp.hkbuseta.common.utils.pad
 import com.loohp.hkbuseta.common.utils.provideGzipBodyAsTextImpl
@@ -575,11 +576,13 @@ fun String.extractShareLinkAndLaunch() = runBlocking(Dispatchers.IO) { extractSh
 
 fun syncPreference(context: AppContext, preferenceJson: String, sync: Boolean) {
     runBlocking(Dispatchers.IO) {
-        if (Registry.isNewInstall(applicationAppContext)) {
-            Registry.writeRawPreference(preferenceJson, applicationAppContext)
-        } else {
-            val data = Preferences.deserialize(Json.decodeFromString(preferenceJson))
-            Registry.getInstance(context).syncPreference(context, data, sync)
+        ignoreExceptions {
+            if (Registry.isNewInstall(context)) {
+                Registry.writeRawPreference(preferenceJson, context)
+            } else {
+                val data = Preferences.deserialize(Json.decodeFromString(preferenceJson))
+                Registry.getInstance(context).syncPreference(context, data, sync)
+            }
         }
     }
 }

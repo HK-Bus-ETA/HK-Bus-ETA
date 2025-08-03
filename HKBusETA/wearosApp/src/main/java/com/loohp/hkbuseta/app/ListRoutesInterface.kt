@@ -33,6 +33,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -87,7 +88,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
-import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
@@ -138,7 +138,6 @@ import com.loohp.hkbuseta.compose.AutoResizeText
 import com.loohp.hkbuseta.compose.DrawPhaseColorText
 import com.loohp.hkbuseta.compose.FontSizeRange
 import com.loohp.hkbuseta.compose.FullPageScrollBarConfig
-import com.loohp.hkbuseta.compose.HapticsController
 import com.loohp.hkbuseta.compose.RestartEffect
 import com.loohp.hkbuseta.compose.fullPageVerticalLazyScrollbar
 import com.loohp.hkbuseta.compose.rotaryScroll
@@ -175,8 +174,6 @@ import java.util.concurrent.ConcurrentHashMap
 @Composable
 fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, mtrSearch: String?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
     HKBusETATheme {
-        val focusRequester = rememberActiveFocusRequester()
-        val hapticsController = remember { HapticsController() }
         val scroll = rememberLazyListState()
         val scope = rememberCoroutineScope()
 
@@ -224,11 +221,6 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                 val newSorted = sortedByModeProvider.invoke()
                 if (newSorted != sortedByMode) {
                     withContext(Dispatchers.Main) { sortedByMode = newSorted }
-                    hapticsController.enabled = false
-                    hapticsController.invokedCallback = {
-                        it.enabled = true
-                        it.invokedCallback = { /* do nothing */ }
-                    }
                     scope.launch {
                         scroll.scrollToItem(0)
                     }
@@ -243,11 +235,6 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
             val newSorted = sortedByModeProvider.invoke()
             if (newSorted != sortedByMode) {
                 sortedByMode = newSorted
-                hapticsController.enabled = false
-                hapticsController.invokedCallback = {
-                    it.enabled = true
-                    it.invokedCallback = { /* do nothing */ }
-                }
                 scope.launch {
                     scroll.scrollToItem(0)
                 }
@@ -258,11 +245,6 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
             if (newSorted != sortedByMode) {
                 sortedByMode = newSorted
                 if (scroll.firstVisibleItemIndex in 0..2) {
-                    hapticsController.enabled = false
-                    hapticsController.invokedCallback = {
-                        it.enabled = true
-                        it.invokedCallback = {}
-                    }
                     scope.launch {
                         scroll.scrollToItem(0)
                     }
@@ -283,7 +265,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                             alpha = if (ambientMode) 0F else null
                         )
                     )
-                    .rotaryScroll(scroll, focusRequester, hapticsController, ambientMode = ambientMode)
+                    .rotaryScroll(scroll)
                     .composed {
                         LaunchedEffect (activeSortMode) {
                             Shared.routeSortModePreference[listType].let {

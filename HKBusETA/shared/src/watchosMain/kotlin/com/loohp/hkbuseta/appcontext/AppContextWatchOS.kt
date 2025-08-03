@@ -58,6 +58,7 @@ import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlowList
 import com.loohp.hkbuseta.common.utils.MutableNullableStateFlow
 import com.loohp.hkbuseta.common.utils.RouteBranchStatus
 import com.loohp.hkbuseta.common.utils.StringReadChannel
+import com.loohp.hkbuseta.common.utils.ignoreExceptions
 import com.loohp.hkbuseta.common.utils.isReachable
 import com.loohp.hkbuseta.common.utils.mapToMutableMap
 import com.loohp.hkbuseta.common.utils.normalizeUrlScheme
@@ -120,8 +121,7 @@ import platform.darwin.dispatch_get_main_queue
 import platform.posix.memcpy
 import platform.posix.sleep
 import platform.posix.usleep
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import kotlin.random.Random
 
 
 object HistoryStack {
@@ -388,7 +388,6 @@ open class AppContextWatchOS internal constructor() : AppContext {
 
 }
 
-@OptIn(ExperimentalUuidApi::class)
 class AppActiveContextWatchOS internal constructor(
     val screen: AppScreen,
     val data: Map<String, Any?>,
@@ -404,7 +403,7 @@ class AppActiveContextWatchOS internal constructor(
 
     }
 
-    val activeContextId = Uuid.random()
+    val activeContextId = Random.nextLong()
     internal var result: AppIntentResult = AppIntentResult.NORMAL
 
     override fun runOnUiThread(runnable: () -> Unit) {
@@ -505,11 +504,13 @@ val hapticFeedback: HapticFeedback = object : HapticFeedback {
 
 fun syncPreference(context: AppContext, preferenceJson: String, sync: Boolean) {
     runBlocking(Dispatchers.IO) {
-        if (Registry.isNewInstall(applicationContext)) {
-            Registry.writeRawPreference(preferenceJson, applicationContext)
-        } else {
-            val data = Preferences.deserialize(Json.decodeFromString(preferenceJson))
-            Registry.getInstance(context).syncPreference(context, data, sync)
+        ignoreExceptions {
+            if (Registry.isNewInstall(context)) {
+                Registry.writeRawPreference(preferenceJson, context)
+            } else {
+                val data = Preferences.deserialize(Json.decodeFromString(preferenceJson))
+                Registry.getInstance(context).syncPreference(context, data, sync)
+            }
         }
     }
 }

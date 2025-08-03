@@ -20,20 +20,13 @@
 
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleDevToolsKsp)
-    alias(libs.plugins.compose.compiler)
-}
-
-composeCompiler {
-    targetKotlinPlatforms = targetKotlinPlatforms.get() - setOf(KotlinPlatformType.native)
 }
 
 kotlin {
@@ -46,11 +39,11 @@ kotlin {
     }
 
     listOf(
-        watchosSimulatorArm64(),
         watchosX64(),
-        watchosArm64(),
-        watchosArm32(),
-        watchosDeviceArm64()
+        watchosArm32(),         // armv7k
+        watchosArm64(),         // arm64_32
+        watchosDeviceArm64(),   // arm64
+        watchosSimulatorArm64()
     ).forEach {
         it.binaries.framework {
             baseName = "shared"
@@ -82,22 +75,18 @@ kotlin {
 
         androidMain.dependencies {
             implementation(libs.ktor.client.android)
-            implementation(compose.runtime)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
-            implementation(compose.runtime)
         }
         watchosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
         desktopMain.dependencies {
             implementation(libs.ktor.client.java)
-            implementation(compose.runtime)
         }
         wasmJsMain.dependencies {
             implementation(libs.ktor.client.js)
-            implementation(compose.runtime)
         }
         commonMain.dependencies {
             implementation(libs.kotlinx.collections.immutable)
@@ -109,6 +98,7 @@ kotlin {
             implementation(libs.stately.concurrent.collections)
             implementation(libs.xmlCore)
             implementation(libs.serialization.xml)
+            implementation(libs.androidx.runtime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

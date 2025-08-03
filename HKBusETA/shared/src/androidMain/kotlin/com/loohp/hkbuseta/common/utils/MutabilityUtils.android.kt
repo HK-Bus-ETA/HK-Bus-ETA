@@ -20,6 +20,8 @@
 
 package com.loohp.hkbuseta.common.utils
 
-actual typealias Immutable = androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Immutable
+
+actual typealias Immutable = Immutable
 
 actual typealias Stable = androidx.compose.runtime.Stable

@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -60,7 +61,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.hierarchicalFocusGroup
 import androidx.wear.compose.foundation.rememberActiveFocusRequester
+import androidx.wear.compose.foundation.requestFocusOnHierarchyActive
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
@@ -134,7 +137,7 @@ fun Message(instance: AppActiveContext, zh: String?, en: String?, exception: Str
                 )
             }
             if (exception != null) {
-                val focusRequester = rememberActiveFocusRequester()
+                val focusRequester = remember { FocusRequester() }
                 val scroll = rememberScrollState()
                 val scope = rememberCoroutineScope()
                 val haptic = LocalHapticFeedback.current
@@ -177,6 +180,8 @@ fun Message(instance: AppActiveContext, zh: String?, en: String?, exception: Str
                             }
                             true
                         }
+                        .hierarchicalFocusGroup(active = true)
+                        .requestFocusOnHierarchyActive()
                         .focusRequester(
                             focusRequester = focusRequester
                         )

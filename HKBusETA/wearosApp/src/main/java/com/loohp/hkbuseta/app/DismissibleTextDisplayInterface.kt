@@ -36,7 +36,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
-import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
@@ -60,7 +59,6 @@ private val defaultDismissText = "確認" withEn "OK"
 fun TextElement(text: BilingualFormattedText, optDismissText: BilingualText?, instance: AppActiveContext) {
     HKBusETATheme {
         val dismissText = optDismissText?: defaultDismissText
-        val focusRequester = rememberActiveFocusRequester()
         val scroll = rememberLazyListState()
 
         LazyColumn (
@@ -70,7 +68,7 @@ fun TextElement(text: BilingualFormattedText, optDismissText: BilingualText?, in
                     state = scroll,
                     context = instance
                 )
-                .rotaryScroll(scroll, focusRequester),
+                .rotaryScroll(scroll),
             horizontalAlignment = Alignment.CenterHorizontally,
             state = scroll
         ) {

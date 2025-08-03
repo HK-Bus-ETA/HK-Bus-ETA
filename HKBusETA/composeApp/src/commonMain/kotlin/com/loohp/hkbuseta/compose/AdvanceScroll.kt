@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.dp
 fun Modifier.scrollbar(
     state: LazyListState,
     direction: Orientation,
-    indicatorThickness: Dp = 4.dp,
+    indicatorThickness: Dp = 3.dp,
     indicatorColor: Color = Color.LightGray,
     alpha: Float = if (state.isScrollInProgress) 0.8f else 0f,
     alphaAnimationSpec: AnimationSpec<Float> = tween(
@@ -153,11 +153,10 @@ fun Modifier.scrollbar(
     }
 }
 
-
 fun Modifier.scrollbar(
     state: ScrollState,
     direction: Orientation,
-    indicatorThickness: Dp = 4.dp,
+    indicatorThickness: Dp = 3.dp,
     indicatorColor: Color = Color.LightGray,
     alpha: Float = if (state.isScrollInProgress) 0.8f else 0f,
     alphaAnimationSpec: AnimationSpec<Float> = tween(
@@ -230,16 +229,14 @@ fun Modifier.scrollbar(
     }
 }
 
-
 @Immutable
 data class ScrollBarConfig(
-    val indicatorThickness: Dp = 4.dp,
+    val indicatorThickness: Dp = 3.dp,
     val indicatorColor: Color = Color.LightGray,
     val alpha: Float? = null,
     val alphaAnimationSpec: AnimationSpec<Float>? = null,
     val padding: PaddingValues = PaddingValues(all = 0.dp)
 )
-
 
 fun Modifier.verticalScrollWithScrollbar(
     state: ScrollState,
@@ -276,7 +273,6 @@ fun Modifier.verticalScrollBar(
         ),
         padding = scrollbarConfig.padding
     )
-
 
 fun Modifier.horizontalScrollWithScrollbar(
     state: ScrollState,
