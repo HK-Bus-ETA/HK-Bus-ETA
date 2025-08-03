@@ -1,8 +1,9 @@
 {
     "recapitalize_regex": [
         {
-            "regex": "[A-Z]{1,2}[0-9]{1,3}",
-            "case": "UPPER"
+            "regex": "[A-Z]{1,2}[0-9]{1,3}[A-Z]?",
+            "case": "UPPER",
+            "apply_to_zh": true
         }
     ],
     "recapitalize": [

@@ -820,7 +820,7 @@ def normalize_extract(input_str):
     global NORMALIZE_CHARS
     for keyword, replacement in NORMALIZE_CHARS.items():
         input_str = input_str.replace(keyword, replacement)
-    match = re.search(r"[ 　]*(\([A-Z]{2}[0-9]{3}\))[ 　]*", input_str)
+    match = re.search(r"[ 　]*(\([A-Z]{2}[0-9]{3}[A-Z]?\))[ 　]*", input_str)
     if match:
         modified_string = input_str.replace(match.group(), "", 1)
         return modified_string, match.group(1)
@@ -834,13 +834,15 @@ def capitalize(input_str, lower=True):
     return re.sub(r"(?:^|\s|[\"(\[{/\-]|'(?!s))+\S", lambda m: m.group().upper(), input_str)
 
 
-def apply_recapitalize_keywords(input_str):
+def apply_recapitalize_keywords(input_str, is_zh):
     global RECAPITALIZE_KEYWORDS
     for entry in RECAPITALIZE_KEYWORDS["recapitalize_regex"]:
-        upper = entry["case"].casefold() == "UPPER".casefold()
-        input_str = re.sub(r"(?i)" + entry["regex"], lambda m: m.group(0).upper() if upper else m.group(0).lower(), input_str)
-    for keyword in RECAPITALIZE_KEYWORDS["recapitalize"]:
-        input_str = re.sub(r"(?i)(?<![0-9a-zA-Z])" + re.escape(keyword) + "(?![0-9a-zA-Z])", keyword, input_str)
+        if not is_zh or entry.get("apply_to_zh", False):
+            upper = entry["case"].casefold() == "UPPER".casefold()
+            input_str = re.sub(r"(?i)" + entry["regex"], lambda m: m.group(0).upper() if upper else m.group(0).lower(), input_str)
+    if not is_zh:
+        for keyword in RECAPITALIZE_KEYWORDS["recapitalize"]:
+            input_str = re.sub(r"(?i)(?<![0-9a-zA-Z])" + re.escape(keyword) + "(?![0-9a-zA-Z])", keyword, input_str)
     return input_str
 
 
@@ -848,12 +850,13 @@ def capitalize_english_names():
     global DATA_SHEET
     for route in DATA_SHEET["routeList"].values():
         if "kmb" in route["bound"] or "sunferry" in route["bound"] or "fortuneferry" in route["bound"]:
-            route["dest"]["en"] = apply_recapitalize_keywords(capitalize(route["dest"]["en"]))
-            route["orig"]["en"] = apply_recapitalize_keywords(capitalize(route["orig"]["en"]))
+            route["dest"]["en"] = apply_recapitalize_keywords(capitalize(route["dest"]["en"]), False)
+            route["orig"]["en"] = apply_recapitalize_keywords(capitalize(route["orig"]["en"]), False)
 
     for stopId, stop in DATA_SHEET["stopList"].items():
         if len(stopId) == 16:
-            stop["name"]["en"] = apply_recapitalize_keywords(capitalize(stop["name"]["en"]))
+            stop["name"]["en"] = apply_recapitalize_keywords(capitalize(stop["name"]["en"]), False)
+            stop["name"]["zh"] = apply_recapitalize_keywords(stop["name"]["zh"], True)
 
 
 def normalize_names():
