@@ -20,11 +20,13 @@ jobs:
             architecture: 'x64'
       - name: Install dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils tesseract-ocr
           python -m pip install --upgrade pip
           pip install -r ./requirements.txt
       - name: Fetching & Processing resources
         run: |
-          python ./main.py
+          python -u ./main.py
       - name: Update MD5
         run: md5sum data_full.json | cut -f1 -d ' ' | tr -d $'\n' > checksum.md5
       - name: Update Data Length

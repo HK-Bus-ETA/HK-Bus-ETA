@@ -51,3 +51,4 @@ secrets.properties
 **/JourneyPlanner*
 
 HKBusETA/notificationserver/data
+/__pycache__
