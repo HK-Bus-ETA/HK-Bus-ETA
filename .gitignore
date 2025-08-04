@@ -6,3 +6,4 @@ checksum.md5
 data_full.json
 data_full_formatted.json
 last_updated.txt
+/__pycache__

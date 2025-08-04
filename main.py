@@ -15,6 +15,8 @@ import requests
 from bs4 import BeautifulSoup
 from shapely.geometry import Point, Polygon
 
+from mtr_station_facilities_extraction import collect_mtr_station_facilities_mapping, collect_mtr_station_facilities
+
 
 def merge(a, b, path=None):
     if path is None:
@@ -98,6 +100,7 @@ KMB_SUBSIDIARY_ROUTES = {"LWB": set(), "SUNB": set()}
 ROUTE_REMARKS = {}
 MTR_DATA = {}
 MTR_BARRIER_FREE_MAPPING = {}
+MTR_FACILITIES_MAPPING = []
 LRT_DATA = {}
 TRAFFIC_SNAPSHOTS = []
 CTB_ETA_STOPS = {}
@@ -962,13 +965,14 @@ def list_kmb_subsidiary_routes():
 def download_and_process_mtr_data():
     global MTR_DATA
     global MTR_BARRIER_FREE_MAPPING
+    global MTR_FACILITIES_MAPPING
     global LRT_DATA
     MTR_BARRIER_FREE_MAPPING["categories"] = {}
     MTR_BARRIER_FREE_MAPPING["items"] = {}
     all_mtr_stations = get_web_text("https://opendata.mtr.com.hk/data/mtr_lines_and_stations.csv").splitlines()[1:]
     station_id_to_code = {70: "RAC"}
     station_code_to_id = {"RAC": {70}}
-    MTR_DATA["RAC"] = {"fares": {}, "barrier_free": {}}
+    MTR_DATA["RAC"] = {"fares": {}, "barrier_free": {}, "facilities": 0}
     for line in all_mtr_stations:
         try:
             row = line.split(",")
@@ -981,7 +985,8 @@ def download_and_process_mtr_data():
                 station_code_to_id[station_code].add(station_id)
             MTR_DATA[station_code] = {
                 "fares": {},
-                "barrier_free": {}
+                "barrier_free": {},
+                "facilities": 0
             }
         except ValueError:
             pass
@@ -1075,6 +1080,13 @@ def download_and_process_mtr_data():
                 "single_child": float(row[9].strip('"')),
                 "single_elderly": float(row[10].strip('"'))
             }
+    MTR_FACILITIES_MAPPING = collect_mtr_station_facilities_mapping()
+    def process_station(process_station_code):
+        MTR_DATA[process_station_code]["facilities"] = collect_mtr_station_facilities(process_station_code, MTR_FACILITIES_MAPPING)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(process_station, station_code) for station_code in station_code_to_id.keys()]
+    for _ in concurrent.futures.as_completed(futures):
+        pass
 
 
 def download_and_process_traffic_snapshot():
@@ -1701,7 +1713,7 @@ def add_ctb_eta_stops():
             entry[bound_key] = stops
         CTB_ETA_STOPS[route_number] = entry
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         futures = [executor.submit(process, route_number) for route_number in ctb_route_numbers]
     for _ in concurrent.futures.as_completed(futures):
         pass
@@ -1756,6 +1768,7 @@ output = {
     "kmbSubsidiary": {key: sorted(value) for key, value in KMB_SUBSIDIARY_ROUTES.items()},
     "mtrData": MTR_DATA,
     "mtrBarrierFreeMapping": MTR_BARRIER_FREE_MAPPING,
+    "mtrFacilitiesMapping": MTR_FACILITIES_MAPPING,
     "lrtData": LRT_DATA,
     "trafficSnapshot": TRAFFIC_SNAPSHOTS,
     "ctbEtaStops": CTB_ETA_STOPS
@@ -1779,6 +1792,7 @@ with open(DATA_SHEET_FULL_FORMATTED_FILE_NAME, "w", encoding="utf-8") as f:
 strip_data_sheet(DATA_SHEET)
 del output["mtrData"]
 del output["mtrBarrierFreeMapping"]
+del output["mtrFacilitiesMapping"]
 del output["lrtData"]
 del output["splashEntries"]
 del output["trafficSnapshot"]
