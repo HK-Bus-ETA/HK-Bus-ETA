@@ -40,9 +40,10 @@ fun VerticalGrid(
             )
             val placeables = measurables.map { it.measure(individualConstraint) }
             val height = (individualMaxHeight + verticalPadding.roundToPx()) * (placeables.size / columns.toFloat()).ceilToInt()
+            val itemsPerRow = width / individualWidth
             layout(width, height) {
                 for ((index, placeable) in placeables.withIndex()) {
-                    val x = ((individualWidth + horizontalPadding.roundToPx()) * index) % width + startPadding.roundToPx()
+                    val x = ((individualWidth + horizontalPadding.roundToPx()) * (index % itemsPerRow)) + startPadding.roundToPx()
                     val y = (index / columns) * (individualMaxHeight + verticalPadding.roundToPx()) + topPadding.roundToPx()
                     placeable.placeRelative(x, y)
                 }

@@ -39,6 +39,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
@@ -52,18 +53,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -109,9 +112,12 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -128,6 +134,7 @@ import com.github.panpf.zoomimage.CoilZoomState
 import com.github.panpf.zoomimage.rememberCoilZoomState
 import com.github.panpf.zoomimage.zoom.ScalesCalculator
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
+import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.common
 import com.loohp.hkbuseta.appcontext.compose
@@ -165,6 +172,7 @@ import com.loohp.hkbuseta.common.objects.findMTRFares
 import com.loohp.hkbuseta.common.objects.findMTRFirstTrain
 import com.loohp.hkbuseta.common.objects.findMTRLastTrain
 import com.loohp.hkbuseta.common.objects.findMTROpeningTimes
+import com.loohp.hkbuseta.common.objects.findMTRStationFacilities
 import com.loohp.hkbuseta.common.objects.getDisplayRouteNumber
 import com.loohp.hkbuseta.common.objects.getMTRBarrierFreeCategories
 import com.loohp.hkbuseta.common.objects.getMTRStationBarrierFree
@@ -195,6 +203,7 @@ import com.loohp.hkbuseta.common.utils.asImmutableMap
 import com.loohp.hkbuseta.common.utils.awaitWithTimeout
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.editDistance
+import com.loohp.hkbuseta.common.utils.getCircledNumber
 import com.loohp.hkbuseta.common.utils.indexOf
 import com.loohp.hkbuseta.common.utils.isNotNullAndNotEmpty
 import com.loohp.hkbuseta.common.utils.mapToMutableMap
@@ -238,6 +247,7 @@ import com.loohp.hkbuseta.compose.TableRow
 import com.loohp.hkbuseta.compose.TableRowAlignment
 import com.loohp.hkbuseta.compose.Train
 import com.loohp.hkbuseta.compose.VerticalGrid
+import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.applyIfNotNull
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
@@ -253,6 +263,7 @@ import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.shared.getOperatorNotices
 import com.loohp.hkbuseta.utils.DrawableResource
 import com.loohp.hkbuseta.utils.adjustAlpha
+import com.loohp.hkbuseta.utils.append
 import com.loohp.hkbuseta.utils.asContentAnnotatedString
 import com.loohp.hkbuseta.utils.coordinatesNullableStateSaver
 import com.loohp.hkbuseta.utils.dp
@@ -901,11 +912,7 @@ fun MTRRouteMapInterface(
                 sheetState = mtrSheetInfoState,
                 desktopCloseColor = Color.White.takeIf { mtrSheetInfoType.textCloseColor }
             ) {
-                Box(
-                    modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
-                ) {
-                    MTRRouteMapInfoSheetInterface(stopId, stop, mtrSheetInfoType, instance)
-                }
+                MTRRouteMapInfoSheetInterface(stopId, stop, mtrSheetInfoType, instance)
             }
         }
     }
@@ -1130,7 +1137,13 @@ fun MTRETADisplayInterface(
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                this
+                    .consumeWindowInsets(WindowInsets.systemBars)
+                    .consumeWindowInsets(WindowInsets.displayCutout)
+            }
+            .fillMaxSize(),
         topBar = {
             Column(
                 modifier = Modifier.fillMaxWidth()
@@ -1399,6 +1412,7 @@ fun MTRRouteMapOptionsInterface(
     val haptic = LocalHapticFeedback.current
     var startingStation by selectedMtrStartingStationState.collectAsStateMultiplatform()
     val serviceTime by remember(stopId) { derivedStateOf { stopId.findMTROpeningTimes(instance) } }
+    val facilities by remember(stopId) { derivedStateOf { stopId.findMTRStationFacilities(instance) } }
     var sheetInfoType by sheetInfoTypeState
     Column(
         modifier = Modifier
@@ -1432,6 +1446,49 @@ fun MTRRouteMapOptionsInterface(
                 "${instance.formatTime(open.toLocalDateTime())} - ${instance.formatTime(close.toLocalDateTime())}"
             }?: if (Shared.language == "en") "Depending on Schedule of the Day" else "查看當天時間表"
         )
+        Spacer(modifier = Modifier.size(10.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF001F50))
+                .padding(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            PlatformText(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFFFFFFFF),
+                text = if (Shared.language == "en") "Station Facilities" else "車站設施",
+                fontSize = 25.sp,
+                textAlign = TextAlign.Center
+            )
+        }
+        Spacer(modifier = Modifier.size(10.dp))
+        Table(
+            modifier = Modifier.padding(horizontal = 25.dp),
+            columns = { TableColumn(width = TableColumnWidth.Wrap) },
+            columnsCount = 2,
+            columnSpacing = 10.dp,
+            rowSpacing = 5.dp
+        ) {
+            for (facility in facilities) {
+                if (facility.icon == null) {
+                    Spacer(modifier = Modifier.size(30.dp))
+                } else {
+                    Image(
+                        modifier = Modifier.requiredHeight(30.dp),
+                        painter = painterResource(DrawableResource("facilities/${facility.icon}")),
+                        contentScale = ContentScale.FillHeight,
+                        contentDescription = facility.displayName[Shared.language]
+                    )
+                }
+                PlatformText(
+                    fontSize = 20F.sp,
+                    lineHeight = 1.1F.em,
+                    text = facility.displayName[Shared.language]
+                )
+            }
+        }
     }
     Spacer(modifier = Modifier.size(30.dp))
     VerticalGrid(
@@ -1924,11 +1981,7 @@ fun LRTRouteMapInterface(
                 sheetState = lrtSheetInfoState,
                 desktopCloseColor = Color(0xFF001F50).takeIf { lrtSheetInfoType.textCloseColor }
             ) {
-                Box(
-                    modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
-                ) {
-                    LRTETADisplayInfoSheetInterface(stopId, stop, lrtSheetInfoType, instance)
-                }
+                LRTETADisplayInfoSheetInterface(stopId, stop, lrtSheetInfoType, instance)
             }
         }
     }
@@ -2141,7 +2194,13 @@ fun LRTETADisplayInterface(
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                this
+                    .consumeWindowInsets(WindowInsets.systemBars)
+                    .consumeWindowInsets(WindowInsets.displayCutout)
+            }
+            .fillMaxSize(),
         topBar = {
             Column(
                 modifier = Modifier.fillMaxWidth()
@@ -2326,10 +2385,9 @@ fun LRTETADisplayByPlatformInterface(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         PlatformText(
-                            text = if (Shared.language == "en") {
-                                "Platform $i"
-                            } else {
-                                "${i}號月台"
+                            text = buildAnnotatedString {
+                                append(if (Shared.language == "en") "Platform " else "月台 ")
+                                append(i.getCircledNumber(), SpanStyle(color = Operator.LRT.getOperatorColor(Color.White)))
                             },
                             fontSize = 21.sp
                         )

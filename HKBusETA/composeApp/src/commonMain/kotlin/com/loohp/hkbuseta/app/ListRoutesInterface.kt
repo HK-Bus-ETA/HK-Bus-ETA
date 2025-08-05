@@ -53,12 +53,17 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.requiredWidth
@@ -122,6 +127,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
+import com.loohp.hkbuseta.appcontext.ComposePlatform
 import com.loohp.hkbuseta.appcontext.HistoryStack
 import com.loohp.hkbuseta.appcontext.compose
 import com.loohp.hkbuseta.appcontext.composePlatform
@@ -346,7 +352,11 @@ fun ListRoutesInterface(
     val appAlert by ComposeShared.rememberAppAlert(instance)
 
     Scaffold(
-        modifier = Modifier.background(platformComponentBackgroundColor),
+        modifier = Modifier
+            .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                consumeWindowInsets(WindowInsets.displayCutout.only(WindowInsetsSides.Left))
+            }
+            .background(platformComponentBackgroundColor),
         topBar = {
             Column {
                 ListRouteTopBar(

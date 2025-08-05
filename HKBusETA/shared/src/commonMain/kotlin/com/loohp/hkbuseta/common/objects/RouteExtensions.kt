@@ -1223,6 +1223,17 @@ fun String.findMTROpeningTimes(context: AppContext): Pair<LocalTime, LocalTime>?
 }
 
 @ReduceDataOmitted
+fun String.findMTRStationFacilities(context: AppContext): List<StationFacility> {
+    val registry = Registry.getInstance(context)
+    val mapping = registry.getOptDataContainer()!!.mtrFacilitiesMapping
+    return if (mapping == null) {
+        emptyList()
+    } else {
+        registry.getMTRData()[this]?.facilities(mapping)?: emptyList()
+    }
+}
+
+@ReduceDataOmitted
 fun String.findMTRFirstTrain(destinationId: String, context: AppContext): FirstLastTrain? {
     return Registry.getInstance(context).getMTRData()[this]?.firstTrains?.get(destinationId)
 }

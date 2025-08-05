@@ -36,6 +36,7 @@ data class DataContainer(
     @ReduceDataOmitted val lrtData: Map<String, StationInfo>? = null,
     @ReduceDataOmitted val mtrData: Map<String, StationInfo>? = null,
     @ReduceDataOmitted val mtrBarrierFreeMapping: StationBarrierFreeMapping? = null,
+    @ReduceDataOmitted val mtrFacilitiesMapping: List<StationFacility>? = null,
     @ReduceDataOmitted val splashEntries: List<SplashEntry>? = null,
     @ReduceDataOmitted val trafficSnapshot: List<TrafficSnapshotPoint>? = null,
     val updatedTime: Long = currentTimeMillis()
