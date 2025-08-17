@@ -474,6 +474,13 @@ def download_and_process_data_sheet():
     DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai (Circular)"]["stops"]["lightRail"].append(lrt_706_start)
     DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai (Circular)"]["lrtCircular"] = {"en": "TSW Circular", "zh": "天水圍循環綫"}
 
+    if "HK1+1+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI,MONG KOK,WONG TAI SIN" in DATA_SHEET["routeList"]:
+        DATA_SHEET["routeList"]["HK1+1+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI,MONG KOK,WONG TAI SIN"]["dest"]["zh"] = "尖沙咀, 旺角及黃大仙 [九巴遊香港]"
+        DATA_SHEET["routeList"]["HK1+1+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI,MONG KOK,WONG TAI SIN"]["dest"]["en"] = "Tsim Sha Tsui, Mong Kok, Wong Tai Sin [KMB Tour HK]"
+    if "HK1+2+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI,MONG KOK" in DATA_SHEET["routeList"]:
+        DATA_SHEET["routeList"]["HK1+2+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI,MONG KOK"]["dest"]["zh"] = "尖沙咀及旺角 [九巴遊香港]"
+        DATA_SHEET["routeList"]["HK1+2+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI,MONG KOK"]["dest"]["en"] = "Tsim Sha Tsui, Mong Kok [KMB Tour HK]"
+
     kmb_ops = {}
     ctb_circular = {}
     ctb_circular_ref = {}
