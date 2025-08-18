@@ -25,13 +25,13 @@ class MutableBranchedList<K, V, B> private constructor(
     private val delegate: MutableList<BranchedListEntry<K, V, B>>,
     val branchId: B,
     private val conflictResolve: (V, V) -> V = { a, _ -> a },
-    private val equalityPredicate: (K, K) -> Boolean = { a, b -> a == b }
+    private val equalityPredicate: (BranchedListEntry<K, V, B>, BranchedListEntry<K, V, B>) -> Boolean = { a, b -> a.key == b.key }
 ) : MutableList<BranchedListEntry<K, V, B>> by delegate {
 
     constructor(
         branchId: B,
         conflictResolve: (V, V) -> V = { a, _ -> a },
-        equalityPredicate: (K, K) -> Boolean = { a, b -> a == b }
+        equalityPredicate: (BranchedListEntry<K, V, B>, BranchedListEntry<K, V, B>) -> Boolean = { a, b -> a.key == b.key }
     ): this(mutableListOf(), branchId, conflictResolve, equalityPredicate)
 
     fun add(key: K, value: V): Boolean {
@@ -42,11 +42,11 @@ class MutableBranchedList<K, V, B> private constructor(
         return add(key, value)
     }
 
-    private fun keyIndexOf(key: K, from: Int): Int {
+    private fun keyIndexOf(entry: BranchedListEntry<K, V, B>, from: Int): Int {
         val itr = listIterator(from)
         while (itr.hasNext()) {
             val i = itr.nextIndex()
-            if (equalityPredicate.invoke(key, itr.next().key)) {
+            if (equalityPredicate.invoke(entry, itr.next())) {
                 return i
             }
         }
@@ -55,7 +55,7 @@ class MutableBranchedList<K, V, B> private constructor(
 
     private fun match(other: MutableBranchedList<K, V, B>, searchFrom: Int): IntArray? {
         for ((i, entry) in other.withIndex()) {
-            val indexOf = keyIndexOf(entry.key, searchFrom)
+            val indexOf = keyIndexOf(entry, searchFrom)
             if (indexOf >= 0) {
                 return intArrayOf(indexOf, i)
             }

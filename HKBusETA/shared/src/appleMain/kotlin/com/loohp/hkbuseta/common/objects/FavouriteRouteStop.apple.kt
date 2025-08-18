@@ -24,7 +24,6 @@ import com.loohp.hkbuseta.common.appcontext.AppContext
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ColorContentStyle
-import com.loohp.hkbuseta.common.utils.distinctBy
 import com.loohp.hkbuseta.common.utils.indexesOf
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
@@ -128,18 +127,12 @@ fun FavouriteRouteStop.buildWidgetPrecomputedData(): WidgetPrecomputedData {
             )
         }
         co === Operator.KMB -> {
-            val nonMergingAllStops = registry.getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion, false)
-            val stopData = nonMergingAllStops.first { it.stopId == stopId }
-            val stopIds = nonMergingAllStops
-                .asSequence()
-                .filter { it.stop.name == stopData.stop.name && it.stop.location.distance(stopData.stop.location) < 0.1 }
-                .distinctBy(
-                    selector = { it.branchIds },
-                    equalityPredicate = { a, b -> a.intersect(b).isNotEmpty() }
-                )
-                .map { it.stopId }
-                .distinct()
-                .toList()
+            val stopData = allStops.first { it.stopId == stopId }
+            val stopIds = if (stopData.mergedStopIds.size > 1) {
+                stopData.mergedStopIds.keys.toList()
+            } else {
+                listOf(stopId)
+            }
             WidgetPrecomputedData(
                 language = Shared.language,
                 fav = this,

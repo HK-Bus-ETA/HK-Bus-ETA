@@ -192,8 +192,8 @@ android {
         minSdk = 26
         //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 1192
-        versionName = "2.6.0"
+        versionCode = 1194
+        versionName = "2.6.1"
     }
     packaging {
         resources {
@@ -226,7 +226,7 @@ compose.desktop {
             modules("java.net.http")
 
             packageName = "HK Bus ETA"
-            packageVersion = "2.6.0"
+            packageVersion = "2.6.1"
             vendor = "HK Bus ETA"
 
             macOS {

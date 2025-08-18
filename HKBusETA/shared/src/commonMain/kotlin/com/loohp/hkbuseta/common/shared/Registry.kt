@@ -109,7 +109,6 @@ import com.loohp.hkbuseta.common.utils.JsonIgnoreUnknownKeys
 import com.loohp.hkbuseta.common.utils.MutableNonNullStateFlow
 import com.loohp.hkbuseta.common.utils.NQSP
 import com.loohp.hkbuseta.common.utils.SmallSize
-import com.loohp.hkbuseta.common.utils.any
 import com.loohp.hkbuseta.common.utils.asFormattedText
 import com.loohp.hkbuseta.common.utils.buildFormattedString
 import com.loohp.hkbuseta.common.utils.cache
@@ -122,11 +121,11 @@ import com.loohp.hkbuseta.common.utils.currentEpochSeconds
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
 import com.loohp.hkbuseta.common.utils.decodeFromStringReadChannel
-import com.loohp.hkbuseta.common.utils.distinctBy
 import com.loohp.hkbuseta.common.utils.doRetry
 import com.loohp.hkbuseta.common.utils.editDistance
 import com.loohp.hkbuseta.common.utils.elementsTo
 import com.loohp.hkbuseta.common.utils.epochSeconds
+import com.loohp.hkbuseta.common.utils.filterToSet
 import com.loohp.hkbuseta.common.utils.firstNonNull
 import com.loohp.hkbuseta.common.utils.getCircledNumber
 import com.loohp.hkbuseta.common.utils.getCompletedOrNull
@@ -159,7 +158,6 @@ import com.loohp.hkbuseta.common.utils.removeClosest
 import com.loohp.hkbuseta.common.utils.runIfNotNull
 import com.loohp.hkbuseta.common.utils.strEq
 import com.loohp.hkbuseta.common.utils.sundayZeroDayNumber
-import com.loohp.hkbuseta.common.utils.toGroupedMap
 import com.loohp.hkbuseta.common.utils.toIntOrElse
 import com.loohp.hkbuseta.common.utils.toLocalDateTime
 import com.loohp.hkbuseta.common.utils.toLongOrElse
@@ -1439,11 +1437,7 @@ class Registry {
     }
 
     fun getAllStops(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?): List<StopData> {
-        return getAllStops(routeNumber, bound, co, gmbRegion, true)
-    }
-
-    fun getAllStops(routeNumber: String, bound: String, co: Operator, gmbRegion: GMBRegion?, mergeEtaSeparateIds: Boolean): List<StopData> {
-        return cache("getAllStops", routeNumber, bound, co, gmbRegion, mergeEtaSeparateIds) {
+        return cache("getAllStops", routeNumber, bound, co, gmbRegion) {
             try {
                 val branches = getAllBranchRoutes(routeNumber, bound, co, gmbRegion, true)
                 val stopList = DATA!!.dataSheet.stopList
@@ -1462,38 +1456,10 @@ class Registry {
                 if (lists.isEmpty()) {
                     emptyList()
                 } else {
-                    val mergedStopIds: Set<Set<String>>
-                    val mergedStopIdBranch: Map<String, List<Route>>
-                    if (mergeEtaSeparateIds) {
-                        val excludeStops = branches.asSequence()
-                            .mapNotNull { it.stops[co] }
-                            .flatMapTo(mutableSetOf()) {
-                                it.asSequence()
-                                    .filter { i ->
-                                        val stopI = stopList[i]?.name
-                                        it.any(2) { d -> stopI == stopList[d]?.name }
-                                    }
-                            }
-                        val mapped = branches.asSequence()
-                            .mapNotNull {
-                                val stops = it.stops[co]?: return@mapNotNull null
-                                stops.asSequence()
-                                    .filterNot { i -> excludeStops.contains(i) }
-                                    .map { i -> i to it }
-                                    .toSet()
-                            }
-                            .flatten()
-                            .toList()
-                        mergedStopIds = mapped.asSequence()
-                            .map { it.first }
-                            .groupBy { stopList[it]?.name }
-                            .values
-                            .mapNotNullTo(mutableSetOf()) { if (it.size > 1) it.toSet() else null }
-                        mergedStopIdBranch = mapped.toGroupedMap()
-                    } else {
-                        mergedStopIds = emptySet()
-                        mergedStopIdBranch = emptyMap()
-                    }
+                    val stopBranches = branches.asSequence()
+                        .flatMap { it.stops[co].orEmpty() }
+                        .associateWith { s -> branches.filterToSet { it.stops[co]?.contains(s) == true } }
+                    val mergedStopIds = mutableMapOf<String, MutableMap<String, MutableSet<Route>>>()
                     lists.sortWith(naturalOrder())
                     val result: MutableBranchedList<String, StopData, Route> = MutableBranchedList(
                         branchId = lists.first().branchedList.branchId,
@@ -1508,8 +1474,19 @@ class Registry {
                                 if (aType > bType) b else a
                             }
                         },
-                        equalityPredicate = { a, b ->
-                            a == b || mergedStopIds.any { it.contains(a) && it.contains(b) }
+                        equalityPredicate = { (a, _, aRoute), (b, _, bRoute) ->
+                            a == b || (stopList[a]?.name == stopList[b]?.name && stopBranches[a].orEmpty().intersect(stopBranches[b].orEmpty()).isEmpty()).apply {
+                                if (this) {
+                                    mergedStopIds.getOrPut(a) { mutableMapOf() }.apply {
+                                        getOrPut(a) { mutableSetOf() }.addAll(aRoute)
+                                        getOrPut(b) { mutableSetOf() }.addAll(bRoute)
+                                    }
+                                    mergedStopIds.getOrPut(b) { mutableMapOf() }.apply {
+                                        getOrPut(a) { mutableSetOf() }.addAll(aRoute)
+                                        getOrPut(b) { mutableSetOf() }.addAll(bRoute)
+                                    }
+                                }
+                            }
                         }
                     )
                     val isMainBranchCircular = lists.firstOrNull { !it.route.fakeRoute }?.branchedList?.branchId?.isCircular == true
@@ -1520,7 +1497,9 @@ class Registry {
                         .map { (f, s) ->
                             f.with(
                                 branchIds = s.filterNotTo(mutableSetOf()) { it.fakeRoute },
-                                mergedStopIds = mergedStopIds.firstOrNull { it.contains(f.stopId) }?.associateWith { mergedStopIdBranch[it]!! }
+                                mergedStopIds = mergedStopIds[f.stopId]?.asSequence()
+                                    ?.sortedBy { (k) -> stopBranches[k]?.minOf { branches.indexOf(it) } }
+                                    ?.associate { (k, v) -> k to v.sortedBy { branches.indexOf(it) } }
                             )
                         }
                         .toList()
@@ -2695,20 +2674,11 @@ class Registry {
 
     private suspend fun etaQueryKmb(typhoonInfo: TyphoonInfo, rawStopId: String, stopIndex: Int, co: Operator, route: Route, context: AppContext): ETAQueryResult {
         val now = currentTimeMillis()
-        val allStops = getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion, false)
+        val allStops = getAllStops(route.routeNumber, route.idBound(co), co, route.gmbRegion)
         val stopData = allStops.first { it.stopId == rawStopId }
-        val sameStops = allStops
-            .asSequence()
-            .filter { it.stop.name == stopData.stop.name && it.stop.location.distance(stopData.stop.location) < 0.1 }
-            .distinctBy(
-                selector = { it.branchIds },
-                equalityPredicate = { a, b -> a.intersect(b).isNotEmpty() }
-            )
-            .groupBy { it.stopId }
-        val stopIds = if (sameStops.size > 1) {
-            sameStops.asSequence()
+        val stopIds = if (stopData.mergedStopIds.size > 1) {
+            stopData.mergedStopIds.asSequence()
                 .map { (k, v) -> k to if (k == rawStopId) "" else (v.asSequence()
-                    .flatMap { it.branchIds.asSequence() }
                     .map { b -> b.resolveSpecialRemark(context)[Shared.language] }
                     .filter { r -> r.isNotEmpty() }
                     .distinct()
