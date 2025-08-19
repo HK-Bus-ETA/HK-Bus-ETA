@@ -38,10 +38,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -322,7 +325,7 @@ fun TitleInterface(instance: AppActiveContext) {
                         when (it) {
                             0 -> NearbyInterface(instance, isOnPage)
                             1 -> FavouriteInterface(instance, isOnPage, signal.signal)
-                            2 -> SearchInterface(instance, isOnPage)
+                            2 -> SearchInterface(instance, isOnPage, pagerState.isScrollInProgress)
                             3 -> RouteMapSearchInterface(instance, isOnPage, signal.signal)
                             4 -> SettingsInterface(instance)
                             else -> PlatformText(titleTabItems[it].title[Shared.language])
@@ -348,12 +351,16 @@ fun TitleInterface(instance: AppActiveContext) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        PlatformText(
-                            modifier = Modifier.fillMaxWidth(),
-                            text = if (Shared.language == "en") "Routes" else "路線",
-                            fontSize = 25.sp,
-                            textAlign = TextAlign.Center
-                        )
+                        CompositionLocalProvider(
+                            LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                        ) {
+                            PlatformText(
+                                modifier = Modifier.fillMaxWidth(),
+                                text = if (Shared.language == "en") "Routes" else "路線",
+                                fontSize = 25.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 },
                 content = { padding ->

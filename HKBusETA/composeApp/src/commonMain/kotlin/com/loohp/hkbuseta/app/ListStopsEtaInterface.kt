@@ -68,7 +68,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
@@ -677,128 +679,132 @@ fun RouteBranchBar(
                 .zIndex(10F),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(platformPrimaryContainerColor)
-                    .combinedClickable(
-                        role = Role.DropdownList,
-                        onClick = {
-                            if (type.canChangeBranch && routeBranches.size > 1) {
-                                dropdownExpanded = !dropdownExpanded && type.canChangeBranch
-                            } else {
+            CompositionLocalProvider(
+                LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(platformPrimaryContainerColor)
+                        .combinedClickable(
+                            role = Role.DropdownList,
+                            onClick = {
+                                if (type.canChangeBranch && routeBranches.size > 1) {
+                                    dropdownExpanded = !dropdownExpanded && type.canChangeBranch
+                                } else {
+                                    instance.showToastText(branchStatus[selectedBranch].description[Shared.language], ToastDuration.SHORT)
+                                }
+                            },
+                            onLongClick = {
                                 instance.showToastText(branchStatus[selectedBranch].description[Shared.language], ToastDuration.SHORT)
                             }
-                        },
-                        onLongClick = {
-                            instance.showToastText(branchStatus[selectedBranch].description[Shared.language], ToastDuration.SHORT)
-                        }
-                    )
-                    .padding(5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)
-            ) {
-                branchStatus[selectedBranch].let {
-                    if (it != RouteBranchStatus.NO_TIMETABLE) {
-                        Box(
-                            modifier = Modifier
-                                .size(width = 20.fontScaledDp, height = 29.fontScaledDp)
-                                .align(Alignment.Top),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Spacer(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .size(14.fontScaledDp)
-                                    .background(it.indicatorColor)
-                                    .border(1.dp, LocalContentColor.current, CircleShape)
-                            )
-                        }
-                    }
-                }
-                AutoResizeText(
-                    modifier = Modifier
-                        .weight(1F)
-                        .userMarquee(),
-                    overflow = TextOverflow.Ellipsis,
-                    fontSizeRange = FontSizeRange(max = 19.sp),
-                    maxLines = 2,
-                    lineHeight = 1.1F.em,
-                    text = selectedBranch.resolveSpecialRemark(instance, RemarkType.LABEL_ALL)[Shared.language]
-                )
-                if (routeBranches.size > 1 && type.canChangeBranch) {
-                    PlatformIcon(
-                        modifier = Modifier
-                            .rotate(dropdownIconDegree)
-                            .size(29.fontScaledDp)
-                            .align(Alignment.Top),
-                        painter = PlatformIcons.Filled.ArrowDropDown,
-                        contentDescription = null
-                    )
-                }
-            }
-            if (dropdownExpanded && type.canChangeBranch) {
-                val dropdownScroll = rememberScrollState()
-                with(LocalDensity.current) {
-                    if (dropdownScroll.value > DividerDefaults.Thickness.toPx()) {
-                        HorizontalDivider()
-                    }
-                }
-                Column(
-                    modifier = Modifier
-                        .verticalScrollWithScrollbar(
-                            state = dropdownScroll,
-                            flingBehavior = ScrollableDefaults.flingBehavior(),
-                            scrollbarConfig = ScrollBarConfig(
-                                indicatorThickness = 4.dp
-                            )
                         )
+                        .padding(5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)
                 ) {
-                    for (branch in routeBranches) {
-                        if (branch != selectedBranch) {
-                            HorizontalDivider()
-                            Row(
+                    branchStatus[selectedBranch].let {
+                        if (it != RouteBranchStatus.NO_TIMETABLE) {
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(platformPrimaryContainerColor)
-                                    .combinedClickable(
-                                        role = Role.DropdownList,
-                                        onClick = {
-                                            dropdownExpanded = !dropdownExpanded
-                                            selectedBranch = branch
-                                        },
-                                        onLongClick = {
-                                            instance.showToastText(branchStatus[branch].description[Shared.language], ToastDuration.SHORT)
-                                        }
-                                    )
-                                    .padding(5.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)
+                                    .size(width = 20.fontScaledDp, height = 29.fontScaledDp)
+                                    .align(Alignment.Top),
+                                contentAlignment = Alignment.Center
                             ) {
-                                branchStatus[branch].let {
-                                    if (it != RouteBranchStatus.NO_TIMETABLE) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(width = 20.fontScaledDp, height = 22.fontScaledDp)
-                                                .align(Alignment.Top),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Spacer(
+                                Spacer(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .size(14.fontScaledDp)
+                                        .background(it.indicatorColor)
+                                        .border(1.dp, LocalContentColor.current, CircleShape)
+                                )
+                            }
+                        }
+                    }
+                    AutoResizeText(
+                        modifier = Modifier
+                            .weight(1F)
+                            .userMarquee(),
+                        overflow = TextOverflow.Ellipsis,
+                        fontSizeRange = FontSizeRange(max = 19.sp),
+                        maxLines = 2,
+                        lineHeight = 1.1F.em,
+                        text = selectedBranch.resolveSpecialRemark(instance, RemarkType.LABEL_ALL)[Shared.language]
+                    )
+                    if (routeBranches.size > 1 && type.canChangeBranch) {
+                        PlatformIcon(
+                            modifier = Modifier
+                                .rotate(dropdownIconDegree)
+                                .size(29.fontScaledDp)
+                                .align(Alignment.Top),
+                            painter = PlatformIcons.Filled.ArrowDropDown,
+                            contentDescription = null
+                        )
+                    }
+                }
+                if (dropdownExpanded && type.canChangeBranch) {
+                    val dropdownScroll = rememberScrollState()
+                    with(LocalDensity.current) {
+                        if (dropdownScroll.value > DividerDefaults.Thickness.toPx()) {
+                            HorizontalDivider()
+                        }
+                    }
+                    Column(
+                        modifier = Modifier
+                            .verticalScrollWithScrollbar(
+                                state = dropdownScroll,
+                                flingBehavior = ScrollableDefaults.flingBehavior(),
+                                scrollbarConfig = ScrollBarConfig(
+                                    indicatorThickness = 4.dp
+                                )
+                            )
+                    ) {
+                        for (branch in routeBranches) {
+                            if (branch != selectedBranch) {
+                                HorizontalDivider()
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(platformPrimaryContainerColor)
+                                        .combinedClickable(
+                                            role = Role.DropdownList,
+                                            onClick = {
+                                                dropdownExpanded = !dropdownExpanded
+                                                selectedBranch = branch
+                                            },
+                                            onLongClick = {
+                                                instance.showToastText(branchStatus[branch].description[Shared.language], ToastDuration.SHORT)
+                                            }
+                                        )
+                                        .padding(5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)
+                                ) {
+                                    branchStatus[branch].let {
+                                        if (it != RouteBranchStatus.NO_TIMETABLE) {
+                                            Box(
                                                 modifier = Modifier
-                                                    .clip(CircleShape)
-                                                    .size(12.fontScaledDp)
-                                                    .background(it.indicatorColor)
-                                                    .border(1.dp, LocalContentColor.current, CircleShape)
-                                            )
+                                                    .size(width = 20.fontScaledDp, height = 22.fontScaledDp)
+                                                    .align(Alignment.Top),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Spacer(
+                                                    modifier = Modifier
+                                                        .clip(CircleShape)
+                                                        .size(12.fontScaledDp)
+                                                        .background(it.indicatorColor)
+                                                        .border(1.dp, LocalContentColor.current, CircleShape)
+                                                )
+                                            }
                                         }
                                     }
+                                    PlatformText(
+                                        modifier = Modifier.userMarquee(),
+                                        overflow = TextOverflow.Ellipsis,
+                                        fontSize = 16.sp,
+                                        text = branch.resolveSpecialRemark(instance, RemarkType.LABEL_ALL)[Shared.language]
+                                    )
                                 }
-                                PlatformText(
-                                    modifier = Modifier.userMarquee(),
-                                    overflow = TextOverflow.Ellipsis,
-                                    fontSize = 16.sp,
-                                    text = branch.resolveSpecialRemark(instance, RemarkType.LABEL_ALL)[Shared.language]
-                                )
                             }
                         }
                     }
@@ -871,13 +877,16 @@ fun ListStopsBottomSheet(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-
-                            PlatformText(
-                                modifier = Modifier.fillMaxWidth(),
-                                text = stopName[Shared.language],
-                                fontSize = 25.sp,
-                                textAlign = TextAlign.Center
-                            )
+                            CompositionLocalProvider(
+                                LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                            ) {
+                                PlatformText(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    text = stopName[Shared.language],
+                                    fontSize = 25.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     },
                     content = { padding ->
@@ -1087,12 +1096,16 @@ fun ListStopsBottomSheet(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            PlatformText(
-                                modifier = Modifier.fillMaxWidth(),
-                                text = "${stopName[Shared.language]}${if (Shared.language == "en") " - Nearby Routes" else " - 附近路線"}",
-                                fontSize = 25.sp,
-                                textAlign = TextAlign.Center
-                            )
+                            CompositionLocalProvider(
+                                LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                            ) {
+                                PlatformText(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    text = "${stopName[Shared.language]}${if (Shared.language == "en") " - Nearby Routes" else " - 附近路線"}",
+                                    fontSize = 25.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     },
                     content = { padding ->
@@ -2442,12 +2455,16 @@ fun SetFavouriteInterface(instance: AppActiveContext, co: Operator, stopIndex: I
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                PlatformText(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stopName[Shared.language],
-                    fontSize = 25.sp,
-                    textAlign = TextAlign.Center
-                )
+                CompositionLocalProvider(
+                    LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                ) {
+                    PlatformText(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stopName[Shared.language],
+                        fontSize = 25.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         },
         content = { padding ->

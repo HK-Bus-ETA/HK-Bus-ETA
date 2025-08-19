@@ -515,7 +515,8 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                         PlatformIcon(
                             modifier = Modifier.size(27.dp),
                             painter = PlatformIcons.Outlined.Route,
-                            contentDescription = if (Shared.language == "en") "Journey Planner" else "行程規劃"
+                            contentDescription = if (Shared.language == "en") "Journey Planner" else "行程規劃",
+                            tint = LocalContentColor.current
                         )
                     }
                 }
@@ -526,7 +527,8 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                     PlatformIcon(
                         modifier = Modifier.size(27.dp),
                         painter = if (customCenterPosition == null) PlatformIcons.Outlined.PinDrop else PlatformIcons.Filled.PinDrop,
-                        contentDescription = if (Shared.language == "en") "Custom Location" else "自訂位置"
+                        contentDescription = if (Shared.language == "en") "Custom Location" else "自訂位置",
+                        tint = LocalContentColor.current
                     )
                 }
             }

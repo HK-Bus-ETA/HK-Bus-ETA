@@ -1004,7 +1004,8 @@ fun ListRouteInterfaceInternal(
                     PlatformIcon(
                         modifier = Modifier.size(27.dp),
                         painter = PlatformIcons.Filled.ArrowUpward,
-                        contentDescription = if (Shared.language == "en") "Scroll to Top" else "返回頂部"
+                        contentDescription = if (Shared.language == "en") "Scroll to Top" else "返回頂部",
+                        tint = LocalContentColor.current
                     )
                 }
             }

@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -59,6 +60,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.key.Key
@@ -121,7 +123,6 @@ import com.loohp.hkbuseta.compose.platformExtraLargeShape
 import com.loohp.hkbuseta.compose.platformHorizontalDividerShadow
 import com.loohp.hkbuseta.compose.platformLargeShape
 import com.loohp.hkbuseta.compose.platformLocalContentColor
-import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
 import com.loohp.hkbuseta.compose.rememberAutoResizeTextState
 import com.loohp.hkbuseta.compose.verticalScrollWithScrollbar
 import com.loohp.hkbuseta.utils.DrawableResource
@@ -208,7 +209,7 @@ private val floatingKeyboardState: MutableStateFlow<Offset> = MutableStateFlow(O
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
+fun SearchInterface(instance: AppActiveContext, visible: Boolean, isChangingPage: Boolean) {
     val scope = rememberCoroutineScope()
 
     val listType = instance.compose.data["listType"] as? RouteListType ?: RouteListType.NORMAL
@@ -264,9 +265,9 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
             aspectRatio = 4F / 3F,
             offsetState = keyboardOffsetState
         ),
-        animateSize = sizeInit,
+        animateSize = sizeInit && visible,
         bottomSize = {
-            if (keyboardHidden) {
+            if (keyboardHidden || (!visible && !isChangingPage)) {
                 0.dp
             } else if (it.isNarrow) {
                 (size.height / 11F * 4F).pixelsToDp(instance).dp.coerceIn(178.dp, 248.dp)
@@ -352,7 +353,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                                     .fillMaxHeight()
                                     .weight(1F),
                                 colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = platformPrimaryContainerColor
+                                    containerColor = ButtonDefaults.filledTonalButtonColors().containerColor
                                         .adjustAlpha(if (state.categories.contains(category)) 1F else 0.2F)
                                 ),
                                 shape = platformLargeShape,
@@ -396,7 +397,8 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean) {
                         Image(
                             modifier = Modifier.size(27.dp),
                             painter = PlatformIcons.Outlined.History,
-                            contentDescription = if (Shared.language == "en") "Recent Searches" else "最近瀏覽"
+                            contentDescription = if (Shared.language == "en") "Recent Searches" else "最近瀏覽",
+                            colorFilter = ColorFilter.tint(LocalContentColor.current)
                         )
                     }
                 }

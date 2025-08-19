@@ -74,10 +74,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
@@ -1625,7 +1628,8 @@ fun MTRRouteMapInfoSheetInterface(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(platformPrimaryContainerColor)
                                 .padding(3.dp),
-                            fareTable = fareTable[null]!!.asImmutableMap()
+                            fareTable = fareTable[null]!!.asImmutableMap(),
+                            contentColor = contentColorFor(platformPrimaryContainerColor)
                         )
                     } else {
                         for ((viaStopId, optionFareTable) in fareTable) {
@@ -1726,12 +1730,16 @@ fun MTRRouteMapInfoSheetInterface(
                             .background(platformPrimaryContainerColor),
                         contentAlignment = Alignment.Center
                     ) {
-                        PlatformText(
-                            fontSize = 25F.sp,
-                            lineHeight = 1.1F.em,
-                            maxLines = 1,
-                            text = firstTrain?.let { instance.formatTime(it.time.toLocalDateTime()) }?: "-"
-                        )
+                        CompositionLocalProvider(
+                            LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                        ) {
+                            PlatformText(
+                                fontSize = 25F.sp,
+                                lineHeight = 1.1F.em,
+                                maxLines = 1,
+                                text = firstTrain?.let { instance.formatTime(it.time.toLocalDateTime()) }?: "-"
+                            )
+                        }
                     }
                     firstTrain?.let {
                         PlatformText(
@@ -1788,12 +1796,16 @@ fun MTRRouteMapInfoSheetInterface(
                             .background(platformPrimaryContainerColor),
                         contentAlignment = Alignment.Center
                     ) {
-                        PlatformText(
-                            fontSize = 25F.sp,
-                            lineHeight = 1.1F.em,
-                            maxLines = 1,
-                            text = lastTrain?.let { instance.formatTime(it.time.toLocalDateTime()) }?: "-"
-                        )
+                        CompositionLocalProvider(
+                            LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                        ) {
+                            PlatformText(
+                                fontSize = 25F.sp,
+                                lineHeight = 1.1F.em,
+                                maxLines = 1,
+                                text = lastTrain?.let { instance.formatTime(it.time.toLocalDateTime()) }?: "-"
+                            )
+                        }
                     }
                     lastTrain?.let {
                         PlatformText(
@@ -2749,12 +2761,16 @@ fun LRTETADisplayInfoSheetInterface(
                             .background(platformPrimaryContainerColor),
                         contentAlignment = Alignment.Center
                     ) {
-                        PlatformText(
-                            fontSize = 25F.sp,
-                            lineHeight = 1.1F.em,
-                            maxLines = 1,
-                            text = firstTrain?.let { instance.formatTime(it.time.toLocalDateTime()) }?: "-"
-                        )
+                        CompositionLocalProvider(
+                            LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                        ) {
+                            PlatformText(
+                                fontSize = 25F.sp,
+                                lineHeight = 1.1F.em,
+                                maxLines = 1,
+                                text = firstTrain?.let { instance.formatTime(it.time.toLocalDateTime()) }?: "-"
+                            )
+                        }
                     }
                     firstTrain?.let {
                         PlatformText(
@@ -2811,12 +2827,16 @@ fun LRTETADisplayInfoSheetInterface(
                             .background(platformPrimaryContainerColor),
                         contentAlignment = Alignment.Center
                     ) {
-                        PlatformText(
-                            fontSize = 25F.sp,
-                            lineHeight = 1.1F.em,
-                            maxLines = 1,
-                            text = lastTrain?.let { instance.formatTime(it.time.toLocalDateTime()) }?: "-"
-                        )
+                        CompositionLocalProvider(
+                            LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                        ) {
+                            PlatformText(
+                                fontSize = 25F.sp,
+                                lineHeight = 1.1F.em,
+                                maxLines = 1,
+                                text = lastTrain?.let { instance.formatTime(it.time.toLocalDateTime()) }?: "-"
+                            )
+                        }
                     }
                     lastTrain?.let {
                         PlatformText(
@@ -2930,73 +2950,78 @@ fun TrainStationBarrierFreeDisplay(
 @Composable
 fun TrainFareTableDisplay(
     modifier: Modifier,
-    fareTable: ImmutableMap<FareType, Fare>
+    fareTable: ImmutableMap<FareType, Fare>,
+    contentColor: Color? = null
 ) {
-    val columns = remember {
-        listOf(
-            TableColumn(
-                width = TableColumnWidth.Weight(1F),
-                alignment = Alignment.Start
-            ),
-            TableColumn(
-                width = TableColumnWidth.Wrap,
-                alignment = Alignment.CenterHorizontally
-            ),
-            TableColumn(
-                width = TableColumnWidth.Wrap,
-                alignment = Alignment.CenterHorizontally
-            )
-        )
-    }
-    Table(
-        modifier = modifier,
-        columnsCount = 3,
-        columns = { columns[it] },
-        rowSpacing = 5.dp,
-        columnSpacing = 5.dp,
-        rowDivider = { HorizontalDivider() },
-        rows = { TableRow(TableRowAlignment.Vertical(Alignment.CenterVertically)) }
+    CompositionLocalProvider(
+        LocalContentColor provides (contentColor?: LocalContentColor.current)
     ) {
-        PlatformText(
-            textAlign = TextAlign.Start,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 1.1.em,
-            fontSize = 17.sp,
-            text = if (Shared.language == "en") "Fares" else "車費"
-        )
-        PlatformText(
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 1.1.em,
-            fontSize = 17.sp,
-            text = TicketCategory.OCTO.displayName[Shared.language]
-        )
-        PlatformText(
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 1.1.em,
-            fontSize = 17.sp,
-            text = TicketCategory.SINGLE.displayName[Shared.language]
-        )
-        for (fareCategory in FareCategory.entries) {
+        val columns = remember {
+            listOf(
+                TableColumn(
+                    width = TableColumnWidth.Weight(1F),
+                    alignment = Alignment.Start
+                ),
+                TableColumn(
+                    width = TableColumnWidth.Wrap,
+                    alignment = Alignment.CenterHorizontally
+                ),
+                TableColumn(
+                    width = TableColumnWidth.Wrap,
+                    alignment = Alignment.CenterHorizontally
+                )
+            )
+        }
+        Table(
+            modifier = modifier,
+            columnsCount = 3,
+            columns = { columns[it] },
+            rowSpacing = 5.dp,
+            columnSpacing = 5.dp,
+            rowDivider = { HorizontalDivider() },
+            rows = { TableRow(TableRowAlignment.Vertical(Alignment.CenterVertically)) }
+        ) {
             PlatformText(
                 textAlign = TextAlign.Start,
+                fontWeight = FontWeight.Bold,
                 lineHeight = 1.1.em,
                 fontSize = 17.sp,
-                text = fareCategory.displayName[Shared.language]
+                text = if (Shared.language == "en") "Fares" else "車費"
             )
             PlatformText(
                 textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
                 lineHeight = 1.1.em,
                 fontSize = 17.sp,
-                text = "$${fareTable.findFare(fareCategory, TicketCategory.OCTO)?: "-"}"
+                text = TicketCategory.OCTO.displayName[Shared.language]
             )
             PlatformText(
                 textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
                 lineHeight = 1.1.em,
                 fontSize = 17.sp,
-                text = "$${fareTable.findFare(fareCategory, TicketCategory.SINGLE)?: "-"}"
+                text = TicketCategory.SINGLE.displayName[Shared.language]
             )
+            for (fareCategory in FareCategory.entries) {
+                PlatformText(
+                    textAlign = TextAlign.Start,
+                    lineHeight = 1.1.em,
+                    fontSize = 17.sp,
+                    text = fareCategory.displayName[Shared.language]
+                )
+                PlatformText(
+                    textAlign = TextAlign.Center,
+                    lineHeight = 1.1.em,
+                    fontSize = 17.sp,
+                    text = "$${fareTable.findFare(fareCategory, TicketCategory.OCTO)?: "-"}"
+                )
+                PlatformText(
+                    textAlign = TextAlign.Center,
+                    lineHeight = 1.1.em,
+                    fontSize = 17.sp,
+                    text = "$${fareTable.findFare(fareCategory, TicketCategory.SINGLE)?: "-"}"
+                )
+            }
         }
     }
 }
