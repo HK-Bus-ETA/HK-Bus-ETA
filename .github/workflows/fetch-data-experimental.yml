@@ -1,7 +1,7 @@
 name: Experimental Data Fetching Processing
 on:
   schedule:
-    - cron: "45 23 * * *" # 07:45 (HKT) daily
+    - cron: "45 11,23 * * *" # 07:45 and 19:45 (HKT) daily
   workflow_dispatch:
 
 jobs:
