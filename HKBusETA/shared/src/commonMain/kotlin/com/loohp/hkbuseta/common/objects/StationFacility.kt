@@ -163,7 +163,7 @@ data class StationFacility private constructor(
         ))
         val WHEELCHAIR_VERTICAL_LIFTING_PLATFORM = register(StationFacility(
             displayName = "輪椅垂直升降台" withEn "Wheelchair Vertical Lifting Platform",
-            icon = "wheelchair_lifting_platform.png"
+            icon = "wheelchair_vertical_lifting_platform.png"
         ))
         val ACCESSIBLE_TOILET = register(StationFacility(
             displayName = "無障礙洗手間" withEn "Accessible Toilet",

@@ -1658,26 +1658,26 @@ fun StopEntryExpansionEta(
                 verticalArrangement = Arrangement.Center,
                 itemVerticalAlignment = Alignment.CenterVertically
             ) {
-                if (stopData.fare != null) {
+                if (stopData.fare(selectedBranch) != null) {
                     if (co.isFerry) {
                         PlatformText(
                             fontSize = 14.sp,
                             lineHeight = 1.3F.em,
-                            text = "${if (Shared.language == "en") "Fare: " else "票價: "} $${stopData.fare}"
+                            text = "${if (Shared.language == "en") "Fare: " else "票價: "} $${stopData.fare(selectedBranch)}"
                         )
                     } else {
                         PlatformText(
                             fontSize = 14.sp,
                             lineHeight = 1.3F.em,
-                            text = "${if (Shared.language == "en") "Fare: " else "車費: "} $${stopData.fare}"
+                            text = "${if (Shared.language == "en") "Fare: " else "車費: "} $${stopData.fare(selectedBranch)}"
                         )
                     }
                 }
-                if (stopData.holidayFare != null) {
+                if (stopData.holidayFare(selectedBranch) != null) {
                     PlatformText(
                         fontSize = 14.sp,
                         lineHeight = 1.3F.em,
-                        text = "${if (Shared.language == "en") "Holiday Fare: " else "假日車費: "} $${stopData.holidayFare}"
+                        text = "${if (Shared.language == "en") "Holiday Fare: " else "假日車費: "} $${stopData.holidayFare(selectedBranch)}"
                     )
                 }
                 for (alert in alerts) {

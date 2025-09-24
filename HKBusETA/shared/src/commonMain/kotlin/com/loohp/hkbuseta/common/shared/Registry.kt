@@ -1447,8 +1447,8 @@ class Registry {
                     val stops = route.stops[co]
                     val serviceType = route.serviceType.toIntOrElse(1)
                     for ((index, stopId) in stops!!.withIndex()) {
-                        val fare = route.fares?.getOrNull(index)
-                        val holidayFare = route.faresHoliday?.getOrNull(index)
+                        val fare = route.fares?.getOrNull(index)?.let { mapOf(route to it) }.orEmpty()
+                        val holidayFare = route.faresHoliday?.getOrNull(index)?.let { mapOf(route to it) }.orEmpty()
                         localStops.add(stopId, StopData(stopId, serviceType, stopList[stopId]!!, route, fare = fare, holidayFare = holidayFare))
                     }
                     lists.add(BranchData(localStops, route, serviceType, co))
@@ -1469,9 +1469,9 @@ class Registry {
                             if (aType == bType) {
                                 val aGtfs = a.route.gtfsId.toIntOrElse(Int.MAX_VALUE)
                                 val bGtfs = b.route.gtfsId.toIntOrElse(Int.MAX_VALUE)
-                                if (aGtfs > bGtfs) b else a
+                                if (aGtfs > bGtfs) b.merge(a) else a.merge(b)
                             } else {
-                                if (aType > bType) b else a
+                                if (aType > bType) b.merge(a) else a.merge(b)
                             }
                         },
                         equalityPredicate = { (a, _, aRoute), (b, _, bRoute) ->
@@ -1535,9 +1535,21 @@ class Registry {
         val route: Route,
         val branchIds: Set<Route> = emptySet(),
         val mergedStopIds: Map<String, List<Route>> = mapOf(stopId to listOf(route)),
-        val fare: Fare?,
-        val holidayFare: Fare?
+        val fare: Map<Route, Fare>,
+        val holidayFare: Map<Route, Fare>
     ) {
+        fun merge(other: StopData): StopData {
+            return copy(
+                fare = buildMap {
+                    putAll(other.fare)
+                    putAll(fare)
+                },
+                holidayFare = buildMap {
+                    putAll(other.holidayFare)
+                    putAll(holidayFare)
+                }
+            )
+        }
         fun with(branchIds: Set<Route>?, mergedStopIds: Map<String, List<Route>>?): StopData {
             return StopData(
                 stopId = stopId,
@@ -1549,6 +1561,12 @@ class Registry {
                 fare = fare,
                 holidayFare = holidayFare
             )
+        }
+        fun fare(branch: Route): Fare? {
+            return fare[branch]?: fare[route]
+        }
+        fun holidayFare(branch: Route): Fare? {
+            return holidayFare[branch]?: holidayFare[route]
         }
     }
 
@@ -3540,10 +3558,12 @@ class Registry {
                                     dest = "Airport & AsiaWorld-Expo"
                                 }
                             }
+                            var special = !route.dest.zh.contains(dest)
                             var annotatedDest = dest.asFormattedText()
                             if (specialRoute.isNotEmpty() && !isMtrStopOnOrAfter(stopId, specialRoute, lineName, bound)) {
                                 val via: String = DATA!!.dataSheet.stopList[specialRoute]!!.name[language]
                                 annotatedDest += ((if (language == "en") " via " else " 經") + via).asFormattedText(SmallSize)
+                                special = true
                             }
                             val timeType = trainData.optString("timeType")
                             val eta = trainData.optString("time").let { "${it.substring(0, 10)}T${it.substring(11)}" }
@@ -3579,7 +3599,7 @@ class Registry {
                                     "".asFormattedText()
                                 }
                             )
-                            lines[seq] = ETALineEntry.etaEntry(message, toShortText(language, minsRounded.toLong(), 1), platform, route.routeNumber, mins, minsRounded.toLong())
+                            lines[seq] = ETALineEntry.etaEntry(message, toShortText(language, minsRounded.toLong(), 1, special), platform, route.routeNumber, mins, minsRounded.toLong())
                         }
                     }
                 }

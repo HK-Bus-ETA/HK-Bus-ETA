@@ -1,7 +1,7 @@
 [versions]
 activityCompose = "1.10.1"
 agp = "8.9.3"
-androidPdfViewer = "3.2.0-beta.3"
+androidPdfViewer = "3.2.8"
 browser = "1.8.0"
 coilCompose = "3.2.0"
 colormath = "3.6.1"
@@ -25,8 +25,8 @@ coreSplashscreen = "1.1.0-rc01"
 compose = "1.8.2"
 composeMaterial = "1.4.1"
 composeFoundation = "1.4.1"
-compose-plugin = "1.9.0-beta01"
-compose-material3-plugin = "1.9.0-alpha04"
+compose-plugin = "1.9.0"
+compose-material3-plugin = "1.9.0-beta06"
 horologistComposeLayout = "0.7.14-beta"
 kotlin = "2.1.21"
 kotlinxCollectionsImmutable = "0.4.0"
@@ -54,7 +54,7 @@ wearPhoneInteractions = "1.1.0"
 workRuntimeKtx = "2.10.1"
 zoomable = "0.9.0"
 googleDevToolsKsp = "2.1.21-2.0.1"
-firebase-bom = "34.0.0"
+firebase-bom = "34.3.0"
 zoomimageComposeCoil3 = "1.1.0"
 logback-version = "1.5.18"
 guava-version = "33.4.8-jre"
@@ -64,7 +64,7 @@ geoip2-version = "4.3.0"
 composeMaterial3 = "1.5.0-beta06"
 
 [libraries]
-android-pdf-viewer = { module = "com.github.mhiew:android-pdf-viewer", version.ref = "androidPdfViewer" }
+android-pdf-viewer = { module = "com.github.marain87:AndroidPdfViewer", version.ref = "androidPdfViewer" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 androidx-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "composeFoundation" }

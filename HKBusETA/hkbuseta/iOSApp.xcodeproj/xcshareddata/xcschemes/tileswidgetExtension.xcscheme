@@ -30,7 +30,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "81D16AB32B33C21E003D9817"
-               BuildableName = "HKBusETA.app"
+               BuildableName = "HKBusETA Watch App"
                BlueprintName = "HKBusETA Watch App"
                ReferencedContainer = "container:iOSApp.xcodeproj">
             </BuildableReference>

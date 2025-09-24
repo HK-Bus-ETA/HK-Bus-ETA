@@ -32,6 +32,7 @@ pluginManagement {
         maven("https://jogamp.org/deployment/maven")
         maven("https://s01.oss.sonatype.org/content/repositories/releases/")
         maven("https://androidx.dev/storage/compose-compiler/repository/")
+        maven("https://jitpack.io")
     }
 }
 dependencyResolutionManagement {
@@ -45,6 +46,7 @@ dependencyResolutionManagement {
         maven("https://jogamp.org/deployment/maven")
         maven("https://s01.oss.sonatype.org/content/repositories/releases/")
         maven("https://androidx.dev/storage/compose-compiler/repository/")
+        maven("https://jitpack.io")
     }
 }
 
