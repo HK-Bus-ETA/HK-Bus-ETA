@@ -48,7 +48,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -451,12 +453,16 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
-                                    PlatformText(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        text = if (Shared.language == "en") "Edit Favourite Route Stop Groups" else "編輯收藏路線巴士站分類",
-                                        fontSize = 25.sp,
-                                        textAlign = TextAlign.Center
-                                    )
+                                    CompositionLocalProvider(
+                                        LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                                    ) {
+                                        PlatformText(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            text = if (Shared.language == "en") "Edit Favourite Route Stop Groups" else "編輯收藏路線巴士站分類",
+                                            fontSize = 25.sp,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
                                 }
                             },
                             content = { padding ->
@@ -949,16 +955,20 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        PlatformText(
-                            modifier = Modifier.fillMaxWidth(),
-                            text = buildAnnotatedString {
-                                append(if (Shared.language == "en") "Edit Favourite Stops" else "編輯收藏巴士站")
-                                appendLine()
-                                append(if (Shared.language == "en") "(Nearby Stops will always be shown first)" else "(應用程式會首先排列鄰近的巴士站)", SpanStyle(fontSize = TextUnit.Small))
-                            },
-                            fontSize = 25.sp,
-                            textAlign = TextAlign.Center
-                        )
+                        CompositionLocalProvider(
+                            LocalContentColor provides contentColorFor(platformPrimaryContainerColor)
+                        ) {
+                            PlatformText(
+                                modifier = Modifier.fillMaxWidth(),
+                                text = buildAnnotatedString {
+                                    append(if (Shared.language == "en") "Edit Favourite Stops" else "編輯收藏巴士站")
+                                    appendLine()
+                                    append(if (Shared.language == "en") "(Nearby Stops will always be shown first)" else "(應用程式會首先排列鄰近的巴士站)", SpanStyle(fontSize = TextUnit.Small))
+                                },
+                                fontSize = 25.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 },
                 content = { padding ->
