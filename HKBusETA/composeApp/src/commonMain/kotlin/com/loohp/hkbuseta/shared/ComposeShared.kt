@@ -113,7 +113,7 @@ object ComposeShared {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .applyIfNotNull(appAlert?.url?.takeIf { it.isNotBlank() }) { clickable(
+                    .applyIfNotNull(appAlert?.url(Shared.language)?.takeIf { it.isNotBlank() }) { clickable(
                         onClick = context.handleWebpages(it, false, haptics.common),
                         role = Role.Button
                     ) }

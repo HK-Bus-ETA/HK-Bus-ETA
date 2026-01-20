@@ -115,7 +115,7 @@ struct TitleView: AppScreenView {
             }
             VStack {
                 if let alert = appAlert {
-                    if let url = alert.url {
+                    if let url = alert.url(language: Shared().language) {
                         Text(alert.content?.get(language: Shared().language) ?? "")
                             .lineLimit(2)
                             .lineSpacing(0)

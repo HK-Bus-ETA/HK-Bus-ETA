@@ -30,7 +30,7 @@ func MTRLineSection(appContext: AppContext, sectionData: MTRStopSectionData, amb
         let lineWidth = 6.0.scaled(appContext, true)
         let outlineWidth = lineWidth * 0.6
         let lineOffset = 6.0.scaled(appContext, true)
-        let dashEffect: [CGFloat] = [10.0.scaled(appContext, true), 5.0.scaled(appContext, true)]
+        let dashEffect: [CGFloat] = [CGFloat(10.0.scaled(appContext, true)), CGFloat(5.0.scaled(appContext, true))]
         
         var useSpurStopCircle = false
         if mainLine != nil {
@@ -334,7 +334,7 @@ func MTRLineSection(appContext: AppContext, sectionData: MTRStopSectionData, amb
                     with: .color(colorInt(0xFF003180).asColor().adjustBrightness(percentage: ambientMode ? 1.5 : 1)),
                     style: StrokeStyle(
                         lineWidth: connectionLineWidth,
-                        dash: [2.0.scaled(appContext, true), 1.0.scaled(appContext, true)]
+                        dash: [CGFloat(2.0.scaled(appContext, true)), CGFloat(1.0.scaled(appContext, true))]
                     )
                 )
             }

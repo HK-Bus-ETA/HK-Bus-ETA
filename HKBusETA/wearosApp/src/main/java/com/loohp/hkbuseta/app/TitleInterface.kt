@@ -280,7 +280,7 @@ fun BottomText(instance: AppActiveContext) {
                 .padding(30.dp, 0.dp)
                 .fillMaxWidth()
                 .height(25.scaledSize(instance).dp)
-                .applyIfNotNull(alert.url) {
+                .applyIfNotNull(alert.url(Shared.language)) {
                     combinedClickable(
                         onClick = instance.handleWebpages(it, false, haptic.common),
                         onLongClick = instance.handleWebpages(it, true, haptic.common)

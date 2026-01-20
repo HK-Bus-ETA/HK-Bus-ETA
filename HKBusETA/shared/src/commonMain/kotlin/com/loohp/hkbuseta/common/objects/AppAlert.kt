@@ -20,15 +20,21 @@
 
 package com.loohp.hkbuseta.common.objects
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class AppAlert(
     val content: BilingualText? = null,
-    val url: String? = null
+    @SerialName("url")
+    private val urlZh: String? = null,
+    private val urlEn: String? = null
 ) {
     companion object {
-        val EMPTY = AppAlert(null, null)
+        val EMPTY = AppAlert(null, null, null)
+    }
+    fun url(language: String): String? {
+        return if (language == "en") (urlEn?: urlZh) else urlZh
     }
 }
 
