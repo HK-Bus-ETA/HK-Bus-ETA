@@ -104,6 +104,7 @@ import com.loohp.hkbuseta.common.objects.getRouteRemarks
 import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.isBus
+import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isTrain
 import com.loohp.hkbuseta.common.objects.resolvedDest
 import com.loohp.hkbuseta.common.objects.resolvedDestWithBranch
@@ -375,7 +376,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                     null
                 }
                 val coSpecialRemark = when {
-                    co == Operator.NLB -> if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出"
+                    co == Operator.NLB || (route.route!!.isCircular && co != Operator.CTB) -> if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出"
                     co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB -> if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)"
                     else -> co.getRouteRemarks(instance, routeNumber)?.get(Shared.language)
                 }

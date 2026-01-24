@@ -652,7 +652,7 @@ data class RouteDifferenceVia(
                 1 -> stopList[it.first()]!!.name
                 else -> stopList[it.first()]!!.name + ("至" withEn " to ") + stopList[it.last()]!!.name
             }
-        }.joinBilingualText(", ".asBilingualText(), "經" withEn "Via ")
+        }.distinct().joinBilingualText(", ".asBilingualText(), "經" withEn "Via ")
     }
 }
 data class RouteDifferenceOmit(
@@ -665,7 +665,7 @@ data class RouteDifferenceOmit(
                 1 -> stopList[it.first()]!!.name
                 else -> stopList[it.first()]!!.name + ("至" withEn " to ") + stopList[it.last()]!!.name
             }
-        }.joinBilingualText(", ".asBilingualText(), "不經" withEn "Omit ")
+        }.distinct().joinBilingualText(", ".asBilingualText(), "不經" withEn "Omit ")
     }
 }
 data class RouteDifferenceViaFirst(
@@ -765,7 +765,17 @@ fun Route.resolveSpecialRemark(context: AppContext, labelType: RemarkType = Rema
         val proportions = timetable.takeIf { co == Operator.KMB || co == Operator.CTB }?.getRouteProportions()?: mapOf(routeList.first() to 1F)
         val mainRoute = proportions.maxBy { it.value }.takeIf { (_, v) -> v > 0.9F }?.key?: routeList.first()
         if (proportions[mainRoute]?.let { it > 0.4F } == true) {
-            val remark = (if (this != mainRoute) findDifference(mainRoute, stopList, true) else RouteDifferenceMain).displayText(stopList)
+            val remark = if (this != mainRoute) {
+                buildList {
+                    for (branch in routeList.sortedBy { proportions[it]?: 0F }) {
+                        if (this@resolveSpecialRemark != branch) {
+                            add(findDifference(branch, stopList, true))
+                        }
+                    }
+                }.displayText(allStops, stopList)
+            } else {
+                RouteDifferenceMain.displayText(stopList)
+            }
             when (labelType) {
                 RemarkType.RAW -> remark
                 RemarkType.LABEL_MAIN_BRANCH -> remark.let {

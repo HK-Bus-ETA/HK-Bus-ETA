@@ -21,6 +21,7 @@
 package com.loohp.hkbuseta.common.objects
 
 import com.loohp.hkbuseta.common.appcontext.AppContext
+import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.shared.Registry
 import com.loohp.hkbuseta.common.shared.Shared
 import com.loohp.hkbuseta.common.utils.ColorContentStyle
@@ -54,7 +55,7 @@ actual val FavouriteRouteStop.platformDisplayInfo: JsonObject? get() = buildJson
     route.resolvedDest(false).let {
         put("dest", it[Shared.language])
     }
-    if (co == Operator.NLB) {
+    if (co == Operator.NLB || (route.isCircular && co != Operator.CTB)) {
         if (Shared.language == "en") {
             put("coSpecialRemark", "From ${route.orig.en}")
         } else {

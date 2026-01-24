@@ -167,6 +167,7 @@ import com.loohp.hkbuseta.common.objects.getSpecialRouteAlerts
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
 import com.loohp.hkbuseta.common.objects.isBus
+import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isDefault
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.prependTo
@@ -1123,7 +1124,7 @@ fun RouteRow(
                 append(fare?.let { "  $$it" }?: "", SpanStyle(fontSize = TextUnit.Small))
             })
         }
-        if (co == Operator.NLB || co.isFerry) {
+        if (co == Operator.NLB || co.isFerry || (route.route!!.isCircular && co != Operator.CTB)) {
             add((if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
         }
         if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {

@@ -118,6 +118,7 @@ import com.loohp.hkbuseta.common.objects.getRouteRemarks
 import com.loohp.hkbuseta.common.objects.idBound
 import com.loohp.hkbuseta.common.objects.identifyGeneralDirections
 import com.loohp.hkbuseta.common.objects.identifyStopCo
+import com.loohp.hkbuseta.common.objects.isCircular
 import com.loohp.hkbuseta.common.objects.isFerry
 import com.loohp.hkbuseta.common.objects.next
 import com.loohp.hkbuseta.common.objects.resolvedDestFormatted
@@ -619,7 +620,7 @@ fun LazyItemScope.RouteRow(
             }
             add(stopName[Shared.language].asAnnotatedString())
         }
-        if (co == Operator.NLB || co.isFerry) {
+        if (co == Operator.NLB || co.isFerry || (route.route!!.isCircular && co != Operator.CTB)) {
             add((if (Shared.language == "en") "From ".plus(route.route!!.orig.en) else "從".plus(route.route!!.orig.zh).plus("開出")).asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
         }
         if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {

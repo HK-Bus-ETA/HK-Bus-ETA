@@ -367,7 +367,7 @@ struct ListRoutesView: AppScreenView {
                 }
                 list.append(stopName.get(language: Shared().language).asAttributedString())
             }
-            if route.co == Operator.Companion().NLB || route.co.isFerry {
+            if route.co == Operator.Companion().NLB || route.co.isFerry || (route.route!.isCircular && route.co != Operator.Companion().CTB) {
                 list.append((Shared().language == "en" ? "From \(route.route!.orig.en)" : "從\(route.route!.orig.zh)開出").asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
             }
             if route.co == Operator.Companion().KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.sunb {
