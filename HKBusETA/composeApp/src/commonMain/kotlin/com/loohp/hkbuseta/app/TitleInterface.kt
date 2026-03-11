@@ -374,6 +374,7 @@ fun TitleInterface(instance: AppActiveContext) {
                             checkSpecialDest = false,
                             listType = RouteListType.NORMAL,
                             showEta = false,
+                            showCircularOrigin = true,
                             recentSort = RecentSortMode.DISABLED,
                             proximitySortOrigin = null
                         )

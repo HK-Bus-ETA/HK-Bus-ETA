@@ -865,6 +865,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                             checkSpecialDest = false,
                             listType = RouteListType.NORMAL,
                             showEta = false,
+                            showCircularOrigin = false,
                             recentSort = RecentSortMode.DISABLED,
                             proximitySortOrigin = null,
                             showEmptyText = true

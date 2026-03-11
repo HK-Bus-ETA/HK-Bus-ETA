@@ -232,6 +232,7 @@ fun TemporaryPinInterface(
                     listType = RouteListType.NORMAL,
                     routeNumberWidth = routeNumberWidth.size.width,
                     showEta = true,
+                    showCircularOrigin = false,
                     deleteFunction = null,
                     route = routeEntry,
                     checkSpecialDest = true,

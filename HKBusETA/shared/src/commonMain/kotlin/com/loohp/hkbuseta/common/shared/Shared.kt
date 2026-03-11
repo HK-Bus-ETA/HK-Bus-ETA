@@ -502,10 +502,12 @@ object Shared {
                     }
                     if (filteredResult.isEmpty()) {
                         val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
+                        intent.putExtra("showCircularOrigin", true)
                         intent.putExtra("result", result.asSequence().map { it.deepClone() })
                         instance.startActivity(intent)
                     } else {
                         val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
+                        intent.putExtra("showCircularOrigin", true)
                         intent.putExtra("result", filteredResult.asSequence().map { it.deepClone() })
                         instance.startActivity(intent)
 

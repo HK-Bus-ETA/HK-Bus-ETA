@@ -402,6 +402,7 @@ fun NearbyInterfaceBody(instance: AppActiveContext, visible: Boolean) {
                     checkSpecialDest = true,
                     listType = RouteListType.NEARBY,
                     showEta = true,
+                    showCircularOrigin = false,
                     recentSort = RecentSortMode.CHOICE,
                     proximitySortOrigin = customCenterPosition?: location,
                     proximitySortOriginIsRealLocation = customCenterPosition == null,

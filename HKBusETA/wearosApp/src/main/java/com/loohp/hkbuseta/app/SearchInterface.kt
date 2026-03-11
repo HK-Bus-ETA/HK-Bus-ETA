@@ -236,6 +236,7 @@ suspend fun handleInput(instance: AppActiveContext, state: MutableState<RouteKey
         }
         if (result.isNotEmpty()) {
             val intent = AppIntent(instance, AppScreen.LIST_ROUTES)
+            intent.putExtra("showCircularOrigin", true)
             intent.putExtra("result", result.map { it.strip(); it.serialize() }.toJsonArray().toString())
             if (input == '<') {
                 intent.putExtra("recentSort", RecentSortMode.FORCED.ordinal)

@@ -166,6 +166,7 @@ struct SearchView: AppScreenView {
             }, launch: { result in
                 let data = newAppDataConatiner()
                 data["result"] = result
+                data["showCircularOrigin"] = true
                 if input == "<" {
                     data["recentSort"] = RecentSortMode.forced
                     data["listType"] = RouteListType.Companion().RECENT

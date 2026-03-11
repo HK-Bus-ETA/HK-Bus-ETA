@@ -30,6 +30,7 @@ struct ListRoutesView: AppScreenView {
     @State var result: [StopIndexedRouteSearchResultEntry]
     @State var listType: RouteListType
     @State var showEta: Bool
+    @State var showCircularOrigin: Bool
     @State var recentSort: RecentSortMode
     @State var proximitySortOrigin: Coordinates?
     @State var allowAmbient: Bool
@@ -82,6 +83,7 @@ struct ListRoutesView: AppScreenView {
         let listType = data["listType"] as? RouteListType ?? RouteListType.Companion().NORMAL
         self.listType = listType
         self.showEta = data["showEta"] as? Bool ?? false
+        self.showCircularOrigin = data["showCircularOrigin"] as? Bool ?? false
         let recentSort = data["recentSort"] as? RecentSortMode ?? RecentSortMode.disabled
         self.recentSort = recentSort
         let proximitySortOrigin = data["proximitySortOrigin"] as? Coordinates
@@ -367,7 +369,7 @@ struct ListRoutesView: AppScreenView {
                 }
                 list.append(stopName.get(language: Shared().language).asAttributedString())
             }
-            if route.co == Operator.Companion().NLB || route.co.isFerry || (route.route!.isCircular && route.co != Operator.Companion().CTB) {
+            if route.co == Operator.Companion().NLB || route.co.isFerry || (showCircularOrigin && route.route!.isCircular && route.co != Operator.Companion().CTB) {
                 list.append((Shared().language == "en" ? "From \(route.route!.orig.en)" : "從\(route.route!.orig.zh)開出").asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
             }
             if route.co == Operator.Companion().KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.sunb {

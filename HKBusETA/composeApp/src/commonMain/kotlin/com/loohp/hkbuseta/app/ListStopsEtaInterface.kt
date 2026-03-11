@@ -1118,6 +1118,7 @@ fun ListStopsBottomSheet(
                                 checkSpecialDest = true,
                                 listType = RouteListType.NEARBY,
                                 showEta = true,
+                                showCircularOrigin = false,
                                 recentSort = RecentSortMode.CHOICE,
                                 proximitySortOrigin = origin,
                                 showEmptyText = routes != null

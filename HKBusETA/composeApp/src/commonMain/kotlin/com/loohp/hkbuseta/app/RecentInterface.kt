@@ -189,6 +189,7 @@ fun RecentInterface(instance: AppActiveContext, visible: Boolean = true) {
                     checkSpecialDest = false,
                     listType = RouteListType.RECENT,
                     showEta = false,
+                    showCircularOrigin = false,
                     recentSort = RecentSortMode.FORCED,
                     proximitySortOrigin = null,
                     showEmptyText = realVisible,

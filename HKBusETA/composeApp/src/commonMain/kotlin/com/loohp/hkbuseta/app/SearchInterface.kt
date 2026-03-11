@@ -193,7 +193,7 @@ fun Set<OperatorCategory>.toggle(operatorCategory: OperatorCategory): Set<Operat
         if (!copy.remove(operatorCategory)) {
             copy.add(operatorCategory)
         }
-        return copy.ifEmpty { OperatorCategory.entries.toSet() }
+        copy.ifEmpty { OperatorCategory.entries.toSet() }
     }
 }
 
@@ -214,6 +214,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean, isChangingPage
 
     val listType = instance.compose.data["listType"] as? RouteListType ?: RouteListType.NORMAL
     val showEta = instance.compose.data["showEta"] as? Boolean?: false
+    val showCircularOrigin = instance.compose.data["showCircularOrigin"] as? Boolean?: true
     val recentSort = instance.compose.data["recentSort"] as? RecentSortMode ?: RecentSortMode.DISABLED
     val proximitySortOrigin = instance.compose.data["proximitySortOrigin"] as? Coordinates
 
@@ -379,6 +380,7 @@ fun SearchInterface(instance: AppActiveContext, visible: Boolean, isChangingPage
                         checkSpecialDest = false,
                         listType = listType,
                         showEta = showEta,
+                        showCircularOrigin = showCircularOrigin,
                         recentSort = recentSort,
                         proximitySortOrigin = proximitySortOrigin,
                         showEmptyText = showEmptyText,

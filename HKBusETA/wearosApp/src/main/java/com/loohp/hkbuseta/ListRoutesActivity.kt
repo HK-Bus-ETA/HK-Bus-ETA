@@ -87,6 +87,7 @@ class ListRoutesActivity : ComponentActivity() {
             .asImmutableList()
         val listType = intent.extras!!.getString("listType")?.let { RouteListType.valueOf(it) }?: RouteListType.NORMAL
         val showEta = intent.extras!!.getBoolean("showEta", false)
+        val showCircularOrigin = intent.extras!!.getBoolean("showCircularOrigin", false)
         val recentSort = RecentSortMode.entries[intent.extras!!.getInt("recentSort", RecentSortMode.DISABLED.ordinal)]
         val proximitySortOrigin = intent.extras!!.getDoubleArray("proximitySortOrigin")?.toCoordinates()
         val allowAmbient = intent.extras!!.getBoolean("allowAmbient", false)
@@ -96,7 +97,17 @@ class ListRoutesActivity : ComponentActivity() {
             AmbientAware(
                 isAlwaysOnScreen = allowAmbient
             ) { ambientState ->
-                ListRouteMainElement(ambientState.isAmbient, appContext, result, listType, showEta, recentSort, proximitySortOrigin, mtrSearch) { isAdd, key, task ->
+                ListRouteMainElement(
+                    ambientMode = ambientState.isAmbient,
+                    instance = appContext,
+                    result = result,
+                    listType = listType,
+                    showEta = showEta,
+                    showCircularOrigin = showCircularOrigin,
+                    recentSort = recentSort,
+                    proximitySortOrigin = proximitySortOrigin,
+                    mtrSearch = mtrSearch
+                ) { isAdd, key, task ->
                     sync.execute {
                         if (isAdd) {
                             etaUpdatesMap.computeIfAbsent(key) { executor.scheduleWithFixedDelay(task, 0, Shared.ETA_UPDATE_INTERVAL.toLong(), TimeUnit.MILLISECONDS) to task!! }

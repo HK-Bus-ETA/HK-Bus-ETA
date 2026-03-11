@@ -33,7 +33,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -173,7 +172,18 @@ import java.util.concurrent.ConcurrentHashMap
 
 @OptIn(ExperimentalWearFoundationApi::class)
 @Composable
-fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, result: ImmutableList<StopIndexedRouteSearchResultEntry>, listType: RouteListType, showEta: Boolean, recentSort: RecentSortMode, proximitySortOrigin: Coordinates?, mtrSearch: String?, schedule: (Boolean, String, (() -> Unit)?) -> Unit) {
+fun ListRouteMainElement(
+    ambientMode: Boolean,
+    instance: AppActiveContext,
+    result: ImmutableList<StopIndexedRouteSearchResultEntry>,
+    listType: RouteListType,
+    showEta: Boolean,
+    showCircularOrigin: Boolean,
+    recentSort: RecentSortMode,
+    proximitySortOrigin: Coordinates?,
+    mtrSearch: String?,
+    schedule: (Boolean, String, (() -> Unit)?) -> Unit
+) {
     HKBusETATheme {
         val scroll = rememberLazyListState()
         val scope = rememberCoroutineScope()
@@ -524,6 +534,7 @@ fun ListRouteMainElement(ambientMode: Boolean, instance: AppActiveContext, resul
                         key = route.uniqueKey,
                         listType = listType,
                         showEta = showEta,
+                        showCircularOrigin = showCircularOrigin,
                         defaultTextWidth = defaultTextWidth,
                         mtrTextWidth = mtrTextWidth,
                         route = route,
@@ -587,6 +598,7 @@ fun LazyItemScope.RouteRow(
     key: String,
     listType: RouteListType,
     showEta: Boolean,
+    showCircularOrigin: Boolean,
     defaultTextWidth: Float,
     mtrTextWidth: Float,
     route: StopIndexedRouteSearchResultEntry,
@@ -620,7 +632,7 @@ fun LazyItemScope.RouteRow(
             }
             add(stopName[Shared.language].asAnnotatedString())
         }
-        if (co == Operator.NLB || co.isFerry || (route.route!!.isCircular && co != Operator.CTB)) {
+        if (co == Operator.NLB || co.isFerry || (showCircularOrigin && route.route!!.isCircular && co != Operator.CTB)) {
             add((if (Shared.language == "en") "From ".plus(route.route!!.orig.en) else "從".plus(route.route!!.orig.zh).plus("開出")).asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
         }
         if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {

@@ -295,6 +295,7 @@ fun ListRoutesInterface(
     checkSpecialDest: Boolean,
     listType: RouteListType,
     showEta: Boolean,
+    showCircularOrigin: Boolean,
     recentSort: RecentSortMode,
     proximitySortOrigin: Coordinates?,
     proximitySortOriginIsRealLocation: Boolean = false,
@@ -431,6 +432,7 @@ fun ListRoutesInterface(
                             checkSpecialDest = checkSpecialDest,
                             listType = listType,
                             showEta = showEta,
+                            showCircularOrigin = showCircularOrigin,
                             recentSort = recentSort,
                             proximitySortOrigin = proximitySortOrigin,
                             maintainScrollPosition = maintainScrollPosition,
@@ -807,6 +809,7 @@ fun ListRouteInterfaceInternal(
     checkSpecialDest: Boolean,
     listType: RouteListType,
     showEta: Boolean,
+    showCircularOrigin: Boolean,
     recentSort: RecentSortMode,
     proximitySortOrigin: Coordinates?,
     maintainScrollPosition: Boolean,
@@ -928,6 +931,7 @@ fun ListRouteInterfaceInternal(
                                 listType = listType,
                                 routeNumberWidth = width,
                                 showEta = showEta,
+                                showCircularOrigin = showCircularOrigin,
                                 deleteFunction = deleteFunction,
                                 onLongClick = null,
                                 route = route,
@@ -944,6 +948,7 @@ fun ListRouteInterfaceInternal(
                             listType = listType,
                             routeNumberWidth = width,
                             showEta = showEta,
+                            showCircularOrigin = showCircularOrigin,
                             deleteFunction = deleteFunction,
                             onLongClick = if (reorderable != null) ({
                                 instance.compose.showToastText(
@@ -1021,6 +1026,7 @@ fun LazyItemScope.RouteEntry(
     listType: RouteListType,
     routeNumberWidth: Int,
     showEta: Boolean,
+    showCircularOrigin: Boolean,
     deleteFunction: (() -> Unit)?,
     onLongClick: (() -> Unit)?,
     route: StopIndexedRouteSearchResultEntry,
@@ -1066,6 +1072,7 @@ fun LazyItemScope.RouteEntry(
             etaResults = etaResults,
             etaUpdateTimes = etaUpdateTimes,
             simpleStyle = false,
+            showCircularOrigin = showCircularOrigin,
             instance = instance
         )
     }
@@ -1084,6 +1091,7 @@ fun RouteRow(
     etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>,
     etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>,
     simpleStyle: Boolean,
+    showCircularOrigin: Boolean,
     instance: AppActiveContext
 ) {
     val alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsStateWithLifecycle()
@@ -1124,7 +1132,7 @@ fun RouteRow(
                 append(fare?.let { "  $$it" }?: "", SpanStyle(fontSize = TextUnit.Small))
             })
         }
-        if (co == Operator.NLB || co.isFerry || (route.route!!.isCircular && co != Operator.CTB)) {
+        if (co == Operator.NLB || co.isFerry || (showCircularOrigin && route.route!!.isCircular && co != Operator.CTB)) {
             add((if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
         }
         if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
