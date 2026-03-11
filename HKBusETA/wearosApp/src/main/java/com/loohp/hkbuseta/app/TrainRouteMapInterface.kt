@@ -237,12 +237,12 @@ fun MTRRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
 
     LaunchedEffect (Unit) {
         state.zoomable.apply {
-            threeStepScale = true
-            scalesCalculator = ScalesCalculator.predefined(
+            setThreeStepScale(true)
+            setScalesCalculator(ScalesCalculator.predefined(
                 minScale = 0.5F,
                 mediumScale = 1.0F,
                 maxScale = 1.3F
-            )
+            ))
         }
     }
     LaunchedEffect (loaded) {
@@ -455,7 +455,7 @@ fun MTRRouteMapMapInterface(
                         model = imageData.imageRequest,
                         onSuccess = {
                             scope.launch { loaded = true }
-                            state.zoomable.contentSize = it.painter.intrinsicSize.roundToIntSize()
+                            state.zoomable.setContentSize(it.painter.intrinsicSize.roundToIntSize())
                         },
                         contentScale = ContentScale.None,
                         contentDescription = if (Shared.language == "en") "MTR System Map" else "港鐵路綫圖"
@@ -508,12 +508,12 @@ fun LRTRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
 
     LaunchedEffect (Unit) {
         state.zoomable.apply {
-            threeStepScale = true
-            scalesCalculator = ScalesCalculator.predefined(
+            setThreeStepScale(true)
+            setScalesCalculator(ScalesCalculator.predefined(
                 minScale = 0.5F,
                 mediumScale = 0.9F,
                 maxScale = 1.2F
-            )
+            ))
         }
     }
     LaunchedEffect (loaded) {
@@ -735,7 +735,7 @@ fun LRTRouteMapMapInterface(
                         model = imageData.imageRequest,
                         onSuccess = {
                             scope.launch { loaded = true }
-                            state.zoomable.contentSize = it.painter.intrinsicSize.roundToIntSize()
+                            state.zoomable.setContentSize(it.painter.intrinsicSize.roundToIntSize())
                         },
                         contentScale = ContentScale.None,
                         contentDescription = if (Shared.language == "en") "Light Rail Route Map" else "輕鐵路綫圖"

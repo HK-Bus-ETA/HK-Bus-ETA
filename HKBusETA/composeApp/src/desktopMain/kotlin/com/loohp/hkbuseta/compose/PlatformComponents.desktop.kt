@@ -120,6 +120,7 @@ import androidx.compose.material.icons.outlined.Reorder
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Smartphone
@@ -337,8 +338,8 @@ actual inline val PlatformIcons.Outlined.UTurnRight: Painter @Composable get() =
 actual inline val PlatformIcons.Outlined.Update: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Update)
 actual inline val PlatformIcons.Outlined.Upload: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Upload)
 actual inline val PlatformIcons.Outlined.Watch: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Watch)
-actual inline val PlatformIcons.Outlined.Widget: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Widgets)
-actual inline val PlatformIcons.Outlined.WidgetAdd: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Widgets)
+actual inline val PlatformIcons.Outlined.Widget: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Sensors)
+actual inline val PlatformIcons.Outlined.WidgetAdd: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.Sensors)
 actual inline val PlatformIcons.Outlined.LineEndCircle: Painter @Composable get() = painterResource(DrawableResource("baseline_line_end_circle_24.xml"))
 actual inline val PlatformIcons.Outlined.MobileFriendly: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.MobileFriendly)
 actual inline val PlatformIcons.Outlined.PhotoLibrary: Painter @Composable get() = rememberVectorPainter(Icons.Outlined.PhotoLibrary)

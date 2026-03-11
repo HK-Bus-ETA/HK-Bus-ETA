@@ -135,6 +135,7 @@ import coil3.size.SizeResolver
 import com.github.panpf.zoomimage.CoilZoomAsyncImage
 import com.github.panpf.zoomimage.CoilZoomState
 import com.github.panpf.zoomimage.rememberCoilZoomState
+import com.github.panpf.zoomimage.zoom.DefaultMouseWheelScaleCalculator
 import com.github.panpf.zoomimage.zoom.ScalesCalculator
 import com.loohp.hkbuseta.appcontext.AppScreenGroup
 import com.loohp.hkbuseta.appcontext.ComposePlatform
@@ -811,13 +812,13 @@ fun MTRRouteMapInterface(
 
     LaunchedEffect (Unit) {
         state.zoomable.apply {
-            threeStepScale = true
-            mouseWheelScaleScrollDeltaConverter = { it * 0.004F }
-            scalesCalculator = ScalesCalculator.predefined(
+            setThreeStepScale(true)
+            setMouseWheelScaleCalculator(DefaultMouseWheelScaleCalculator(stepScaleFactor = 0.05F))
+            setScalesCalculator(ScalesCalculator.predefined(
                 minScale = 0.7F,
                 mediumScale = 1F,
                 maxScale = 1.5F
-            )
+            ))
         }
     }
     LaunchedEffect (loaded) {
@@ -1889,13 +1890,13 @@ fun LRTRouteMapInterface(
 
     LaunchedEffect (Unit) {
         state.zoomable.apply {
-            threeStepScale = true
-            mouseWheelScaleScrollDeltaConverter = { it * 0.004F }
-            scalesCalculator = ScalesCalculator.predefined(
+            setThreeStepScale(true)
+            setMouseWheelScaleCalculator(DefaultMouseWheelScaleCalculator(stepScaleFactor = 0.05F))
+            setScalesCalculator(ScalesCalculator.predefined(
                 minScale = 0.8F,
                 mediumScale = 1F,
                 maxScale = 1.5F
-            )
+            ))
         }
     }
     LaunchedEffect (loaded) {
