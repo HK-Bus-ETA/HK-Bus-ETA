@@ -134,6 +134,11 @@
             android:exported="false">
         </service>
 
+        <receiver
+            android:name=".RouteStopETALiveDeleteHandler"
+            android:exported="false">
+        </receiver>
+
         <service
             android:name=".MainFirebaseMessagingService"
             android:exported="false">
