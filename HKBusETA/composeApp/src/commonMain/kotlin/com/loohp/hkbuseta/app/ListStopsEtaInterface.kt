@@ -1867,9 +1867,6 @@ fun StopEntryExpansionEta(
                     )
                     var isCurrentlySelected by remember { mutableStateOf(RouteStopETALiveActivity.isCurrentSelectedStop(selected)) }
                     val name = RouteStopETALiveActivity.getPlatformName()?: BilingualText.EMPTY
-                    RestartEffect {
-                        isCurrentlySelected = RouteStopETALiveActivity.isCurrentSelectedStop(selected)
-                    }
                     PlatformFilledTonalIconButton(
                         modifier = Modifier
                             .padding(end = 5.dp)

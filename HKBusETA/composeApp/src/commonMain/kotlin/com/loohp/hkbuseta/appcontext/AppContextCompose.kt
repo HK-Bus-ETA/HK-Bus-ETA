@@ -25,7 +25,6 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.loohp.hkbuseta.app.DummyInterface
-import com.loohp.hkbuseta.app.JourneyPlannerInterface
 import com.loohp.hkbuseta.app.MainLoading
 import com.loohp.hkbuseta.app.PdfViewerInterface
 import com.loohp.hkbuseta.app.RecentInterface
@@ -163,7 +162,7 @@ fun AppActiveContextCompose.newScreen() {
         AppScreen.DUMMY -> DummyInterface(this)
         AppScreen.RECENT -> RecentInterface(this)
         AppScreen.PDF -> PdfViewerInterface(this)
-        AppScreen.JOURNEY_PLANNER -> JourneyPlannerInterface(this)
+//        AppScreen.JOURNEY_PLANNER -> JourneyPlannerInterface(this)
         else -> MainLoading(this, stopId = null, co = null, index = null, stop = ImmutableState(null), route = ImmutableState(null), listStopRoute = ImmutableState(null), listStopScrollToStop = null, listStopShowEta = null, listStopIsAlightReminder = null, queryKey = null, queryRouteNumber = null, queryBound = null, queryCo = null, queryDest = null, queryGMBRegion = null, queryStop = null, queryStopIndex = 0, queryStopDirectLaunch = false)
     }
 }

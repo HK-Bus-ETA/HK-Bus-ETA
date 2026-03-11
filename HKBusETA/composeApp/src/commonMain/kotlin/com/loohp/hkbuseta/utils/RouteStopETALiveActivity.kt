@@ -101,12 +101,6 @@ object RouteStopETALiveActivity {
 
     private suspend fun tick() {
         val handler = dataUpdateHandler?: return
-        if (!isLiveNotificationBackgroundUpdateSystemAllowed()) {
-            handler.invoke(null)
-            lock.withLock {
-                currentSelectedRouteStop = null
-            }
-        }
         val selected = currentSelectedRouteStop
         if (selected == null) {
             handler.invoke(null)
@@ -157,7 +151,7 @@ object RouteStopETALiveActivity {
     }
 
     fun isSupported(): Boolean {
-        return dataUpdateHandler != null && isLiveNotificationBackgroundUpdateSystemAllowed()
+        return dataUpdateHandler != null
     }
 
     fun getPlatformName(): BilingualText? {
@@ -229,5 +223,3 @@ private fun Registry.ETAQueryResult.buildETAText(context: AppContext): List<Stri
         }
     }
 }
-
-expect fun isLiveNotificationBackgroundUpdateSystemAllowed(): Boolean

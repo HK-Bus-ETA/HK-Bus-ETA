@@ -69,10 +69,9 @@ class RouteStopETALiveForegroundService: Service() {
     }
 
     private fun buildNotification(notificationData: RouteStopETANotificationData): Notification {
-        val intent = Intent(Intent.ACTION_VIEW).apply { setData(notificationData.url.toUri()) }
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.setData(notificationData.url.toUri())
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val deleteIntent = Intent(this, RouteStopETALiveDeleteHandler::class.java)
-        val deletePendingIntent = PendingIntent.getBroadcast(this, 0, deleteIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         return NotificationCompat.Builder(this, "route_stop_eta_channel")
             .setSmallIcon(R.mipmap.icon_launcher)
             .setContentTitle(notificationData.title)
@@ -83,7 +82,6 @@ class RouteStopETALiveForegroundService: Service() {
             .setRequestPromotedOngoing(true)
             .setShortCriticalText(notificationData.shortText)
             .setColor(notificationData.color)
-            .setDeleteIntent(deletePendingIntent)
             .build()
     }
 
