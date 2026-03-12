@@ -70,7 +70,7 @@ import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.resize
-import io.github.alexzhirkevich.cupertino.toUIColor
+import com.slapps.cupertino.toUIColor
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi

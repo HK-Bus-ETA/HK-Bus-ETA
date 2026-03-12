@@ -25,9 +25,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.materialkolor.dynamicColorScheme
-import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
-import io.github.alexzhirkevich.cupertino.theme.darkColorScheme
-import io.github.alexzhirkevich.cupertino.theme.lightColorScheme
+import com.slapps.cupertino.theme.CupertinoTheme
+import com.slapps.cupertino.theme.darkColorScheme
+import com.slapps.cupertino.theme.lightColorScheme
 
 @Composable
 fun resolveColorScheme(useDarkTheme: Boolean, customColor: Color?): ColorScheme {

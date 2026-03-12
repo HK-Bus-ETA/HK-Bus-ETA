@@ -66,7 +66,7 @@ import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.compose.platformLocalContentColor
 import com.loohp.hkbuseta.compose.userMarquee
 import com.loohp.hkbuseta.utils.sp
-import io.github.alexzhirkevich.cupertino.toUIColor
+import com.slapps.cupertino.toUIColor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO

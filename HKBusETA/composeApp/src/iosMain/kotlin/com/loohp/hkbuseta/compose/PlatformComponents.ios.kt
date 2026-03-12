@@ -137,44 +137,42 @@ import com.loohp.hkbuseta.utils.UIImagePainter
 import com.loohp.hkbuseta.utils.adjustBrightness
 import com.loohp.hkbuseta.utils.asPainter
 import com.loohp.hkbuseta.utils.equivalentDp
-import io.github.alexzhirkevich.LocalContentColor
-import io.github.alexzhirkevich.LocalTextStyle
-import io.github.alexzhirkevich.cupertino.CupertinoActionSheet
-import io.github.alexzhirkevich.cupertino.CupertinoAlertDialog
-import io.github.alexzhirkevich.cupertino.CupertinoBorderedTextField
-import io.github.alexzhirkevich.cupertino.CupertinoButton
-import io.github.alexzhirkevich.cupertino.CupertinoButtonDefaults
-import io.github.alexzhirkevich.cupertino.CupertinoCheckBox
-import io.github.alexzhirkevich.cupertino.CupertinoCheckboxDefaults
-import io.github.alexzhirkevich.cupertino.CupertinoDividerDefaults
-import io.github.alexzhirkevich.cupertino.CupertinoDropdownMenu
-import io.github.alexzhirkevich.cupertino.CupertinoDropdownMenuDefaults
-import io.github.alexzhirkevich.cupertino.CupertinoIcon
-import io.github.alexzhirkevich.cupertino.CupertinoMenuScope
-import io.github.alexzhirkevich.cupertino.CupertinoNavigationBar
-import io.github.alexzhirkevich.cupertino.CupertinoNavigationBarDefaults
-import io.github.alexzhirkevich.cupertino.CupertinoNavigationBarItem
-import io.github.alexzhirkevich.cupertino.CupertinoScaffold
-import io.github.alexzhirkevich.cupertino.CupertinoScaffoldDefaults
-import io.github.alexzhirkevich.cupertino.CupertinoSegmentedControl
-import io.github.alexzhirkevich.cupertino.CupertinoSegmentedControlTab
-import io.github.alexzhirkevich.cupertino.CupertinoSlider
-import io.github.alexzhirkevich.cupertino.CupertinoSwitch
-import io.github.alexzhirkevich.cupertino.CupertinoText
-import io.github.alexzhirkevich.cupertino.CupertinoTextFieldDefaults
-import io.github.alexzhirkevich.cupertino.CupertinoTopAppBar
-import io.github.alexzhirkevich.cupertino.CupertinoTopAppBarDefaults
-import io.github.alexzhirkevich.cupertino.ExperimentalCupertinoApi
-import io.github.alexzhirkevich.cupertino.MenuAction
-import io.github.alexzhirkevich.cupertino.MenuDivider
-import io.github.alexzhirkevich.cupertino.MenuTitle
-import io.github.alexzhirkevich.cupertino.ProvideTextStyle
-import io.github.alexzhirkevich.cupertino.theme.CupertinoColors
-import io.github.alexzhirkevich.cupertino.theme.CupertinoTheme
-import io.github.alexzhirkevich.cupertino.theme.systemGray5
-import kotlinx.cinterop.useContents
+import com.slapps.cupertino.CupertinoActionSheet
+import com.slapps.cupertino.CupertinoAlertDialog
+import com.slapps.cupertino.CupertinoBorderedTextField
+import com.slapps.cupertino.CupertinoButton
+import com.slapps.cupertino.CupertinoButtonDefaults
+import com.slapps.cupertino.CupertinoCheckBox
+import com.slapps.cupertino.CupertinoCheckboxDefaults
+import com.slapps.cupertino.CupertinoDividerDefaults
+import com.slapps.cupertino.CupertinoDropdownMenu
+import com.slapps.cupertino.CupertinoDropdownMenuDefaults
+import com.slapps.cupertino.CupertinoIcon
+import com.slapps.cupertino.CupertinoMenuScope
+import com.slapps.cupertino.CupertinoNavigationBar
+import com.slapps.cupertino.CupertinoNavigationBarDefaults
+import com.slapps.cupertino.CupertinoNavigationBarItem
+import com.slapps.cupertino.CupertinoScaffold
+import com.slapps.cupertino.CupertinoScaffoldDefaults
+import com.slapps.cupertino.CupertinoSegmentedControl
+import com.slapps.cupertino.CupertinoSegmentedControlTab
+import com.slapps.cupertino.CupertinoSlider
+import com.slapps.cupertino.CupertinoSwitch
+import com.slapps.cupertino.CupertinoText
+import com.slapps.cupertino.CupertinoTextFieldDefaults
+import com.slapps.cupertino.CupertinoTopAppBar
+import com.slapps.cupertino.CupertinoTopAppBarDefaults
+import com.slapps.cupertino.ExperimentalCupertinoApi
+import com.slapps.cupertino.LocalContentColor
+import com.slapps.cupertino.LocalTextStyle
+import com.slapps.cupertino.MenuAction
+import com.slapps.cupertino.MenuDivider
+import com.slapps.cupertino.MenuTitle
+import com.slapps.cupertino.ProvideTextStyle
+import com.slapps.cupertino.theme.CupertinoColors
+import com.slapps.cupertino.theme.CupertinoTheme
+import com.slapps.cupertino.theme.systemGray5
 import org.jetbrains.compose.resources.painterResource
-import platform.Foundation.NSProcessInfo
 import platform.UIKit.UIImage
 import platform.UIKit.UIImageConfiguration
 import kotlin.math.max
@@ -454,8 +452,8 @@ actual fun PlatformScaffold(
         snackbarHost = snackbarHost,
         floatingActionButton = floatingActionButton,
         floatingActionButtonPosition = when (floatingActionButtonPosition) {
-            FabPosition.Center -> io.github.alexzhirkevich.cupertino.FabPosition.Center
-            else -> io.github.alexzhirkevich.cupertino.FabPosition.End
+            FabPosition.Center -> com.slapps.cupertino.FabPosition.Center
+            else -> com.slapps.cupertino.FabPosition.End
         },
         containerColor = containerColor?: CupertinoScaffoldDefaults.containerColor,
         contentColor = contentColor?: CupertinoScaffoldDefaults.contentColor,

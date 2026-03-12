@@ -62,6 +62,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -894,7 +895,11 @@ fun ListRouteInterfaceInternal(
         )
     } else {
         Box(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                    consumeWindowInsets(WindowInsets.navigationBars)
+                },
             contentAlignment = Alignment.TopCenter
         ) {
             LazyColumn(
