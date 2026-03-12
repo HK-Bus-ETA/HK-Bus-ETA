@@ -88,6 +88,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -354,101 +355,109 @@ fun ListRoutesInterface(
     val pipMode = rememberIsInPipMode(instance)
     val appAlert by ComposeShared.rememberAppAlert(instance)
 
-    Scaffold(
-        modifier = Modifier
-            .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
-                consumeWindowInsets(WindowInsets.displayCutout.only(WindowInsetsSides.Left))
-            }
-            .background(platformComponentBackgroundColor),
-        topBar = {
-            Column {
-                ListRouteTopBar(
-                    instance = instance,
-                    routesEmpty = filterRoutes.isEmpty(),
-                    listType = listType,
-                    recentSort = recentSort,
-                    filterDirectionsState = filterDirectionsState,
-                    availableDirections = routeGroupedByDirections.keys.asImmutableSet(),
-                    proximitySortOrigin = proximitySortOrigin,
-                    proximitySortOriginIsRealLocation = proximitySortOriginIsRealLocation,
-                    extraActions = extraActions,
-                    activeSortModeState = activeSortModeState,
-                    pipModeAllowed = pipModeListName != null
-                )
-                ComposeShared.AnimatedVisibilityColumnAppAlert(
-                    context = instance,
-                    appAlert = appAlert
-                )
-            }
-        },
-        content = { padding ->
-            AnimatedContent(
-                modifier = Modifier.padding(padding),
-                targetState = filterRoutes to showEmptyText,
-                contentKey = { (routesList, showEmpty) -> routesList.isEmpty() to showEmpty },
-                transitionSpec = {
-                    fadeIn(spring(stiffness = Spring.StiffnessMediumLow))
-                        .togetherWith(fadeOut(spring(stiffness = Spring.StiffnessMediumLow)))
-                }
-            ) { (routesList, showEmpty) ->
-                @Suppress("RemoveExplicitTypeArguments")
-                ConditionalComposable<BoxScope>(
-                    condition = pullToRefreshState != null && !pipMode,
-                    ifTrue = {
-                        PullToRefreshBox(
-                            state = pullToRefreshState?: rememberPullToRefreshState(),
-                            isRefreshing = pullRefreshing,
-                            onRefresh = {
-                                scope.launch {
-                                    try {
-                                        pullRefreshing = true
-                                        onPullToRefresh?.invoke()
-                                    } finally {
-                                        pullRefreshing = false
-                                    }
-                                }
-                            },
-                            content = it
-                        )
-                    },
-                    ifFalse = {
-                        Box(
-                            content = it
-                        )
+    var refresh by remember { mutableIntStateOf(0) }
+
+    Box (
+        modifier = Modifier.onSizeChanged { refresh++ }
+    ) {
+        key(refresh) {
+            Scaffold(
+                modifier = Modifier
+                    .applyIf(composePlatform is ComposePlatform.AndroidPlatform) {
+                        consumeWindowInsets(WindowInsets.displayCutout.only(WindowInsetsSides.Left))
                     }
-                ) {
-                    if (routesList.isEmpty()) {
-                        EmptyListRouteInterface(
+                    .background(platformComponentBackgroundColor),
+                topBar = {
+                    Column {
+                        ListRouteTopBar(
                             instance = instance,
-                            showEta = showEta,
-                            recentSort = recentSort,
-                            showEmptyText = showEmpty,
-                            pipMode = pipMode,
-                            pipModeListName = pipModeListName
-                        )
-                    } else {
-                        ListRouteInterfaceInternal(
-                            instance = instance,
-                            routes = routesList,
-                            checkSpecialDest = checkSpecialDest,
+                            routesEmpty = filterRoutes.isEmpty(),
                             listType = listType,
-                            showEta = showEta,
-                            showCircularOrigin = showCircularOrigin,
                             recentSort = recentSort,
-                            proximitySortOrigin = proximitySortOrigin,
-                            maintainScrollPosition = maintainScrollPosition,
-                            bottomExtraSpace = bottomExtraSpace,
-                            reorderable = reorderable,
-                            activeSortModeState = activeSortModeState,
                             filterDirectionsState = filterDirectionsState,
-                            pipMode = pipMode,
-                            pipModeListName = pipModeListName
+                            availableDirections = routeGroupedByDirections.keys.asImmutableSet(),
+                            proximitySortOrigin = proximitySortOrigin,
+                            proximitySortOriginIsRealLocation = proximitySortOriginIsRealLocation,
+                            extraActions = extraActions,
+                            activeSortModeState = activeSortModeState,
+                            pipModeAllowed = pipModeListName != null
+                        )
+                        ComposeShared.AnimatedVisibilityColumnAppAlert(
+                            context = instance,
+                            appAlert = appAlert
                         )
                     }
+                },
+                content = { padding ->
+                    AnimatedContent(
+                        modifier = Modifier.padding(padding),
+                        targetState = filterRoutes to showEmptyText,
+                        contentKey = { (routesList, showEmpty) -> routesList.isEmpty() to showEmpty },
+                        transitionSpec = {
+                            fadeIn(spring(stiffness = Spring.StiffnessMediumLow))
+                                .togetherWith(fadeOut(spring(stiffness = Spring.StiffnessMediumLow)))
+                        }
+                    ) { (routesList, showEmpty) ->
+                        @Suppress("RemoveExplicitTypeArguments")
+                        ConditionalComposable<BoxScope>(
+                            condition = pullToRefreshState != null && !pipMode,
+                            ifTrue = {
+                                PullToRefreshBox(
+                                    state = pullToRefreshState?: rememberPullToRefreshState(),
+                                    isRefreshing = pullRefreshing,
+                                    onRefresh = {
+                                        scope.launch {
+                                            try {
+                                                pullRefreshing = true
+                                                onPullToRefresh?.invoke()
+                                            } finally {
+                                                pullRefreshing = false
+                                            }
+                                        }
+                                    },
+                                    content = it
+                                )
+                            },
+                            ifFalse = {
+                                Box(
+                                    content = it
+                                )
+                            }
+                        ) {
+                            if (routesList.isEmpty()) {
+                                EmptyListRouteInterface(
+                                    instance = instance,
+                                    showEta = showEta,
+                                    recentSort = recentSort,
+                                    showEmptyText = showEmpty,
+                                    pipMode = pipMode,
+                                    pipModeListName = pipModeListName
+                                )
+                            } else {
+                                ListRouteInterfaceInternal(
+                                    instance = instance,
+                                    routes = routesList,
+                                    checkSpecialDest = checkSpecialDest,
+                                    listType = listType,
+                                    showEta = showEta,
+                                    showCircularOrigin = showCircularOrigin,
+                                    recentSort = recentSort,
+                                    proximitySortOrigin = proximitySortOrigin,
+                                    maintainScrollPosition = maintainScrollPosition,
+                                    bottomExtraSpace = bottomExtraSpace,
+                                    reorderable = reorderable,
+                                    activeSortModeState = activeSortModeState,
+                                    filterDirectionsState = filterDirectionsState,
+                                    pipMode = pipMode,
+                                    pipModeListName = pipModeListName
+                                )
+                            }
+                        }
+                    }
                 }
-            }
+            )
         }
-    )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -35,7 +35,7 @@ android {
         applicationId = "com.loohp.hkbuseta"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1216
+        versionCode = 1218
         versionName = "2.6.7"
         vectorDrawables {
             useSupportLibrary = true
