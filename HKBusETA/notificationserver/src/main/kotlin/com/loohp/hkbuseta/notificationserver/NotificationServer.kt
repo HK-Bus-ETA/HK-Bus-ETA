@@ -80,7 +80,7 @@ fun main() {
                 .plusMinutes(1)
                 .toEpochSecond() * 1000
         ),
-        Shared.ETA_UPDATE_INTERVAL.toLong() + 5000
+        Shared.ETA_UPDATE_INTERVAL.toLong() * 2
     )
 
     Timer().schedule(
@@ -198,6 +198,7 @@ fun pushRouteStopLive() {
         .setTopic("RouteStopLive")
         .setApnsConfig(
             ApnsConfig.builder()
+                .putHeader("apns-priority", "10")
                 .setAps(
                     Aps.builder()
                         .setContentAvailable(true)

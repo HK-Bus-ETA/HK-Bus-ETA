@@ -20,11 +20,14 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.common.utils.currentBranchStatus
 import com.loohp.hkbuseta.common.utils.currentLocalDateTime
 import com.loohp.hkbuseta.common.utils.currentTimeMillis
+import com.loohp.hkbuseta.common.utils.pad
+import com.loohp.hkbuseta.common.utils.plus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.serialization.Serializable
+import kotlin.time.Duration.Companion.minutes
 
 
 @Immutable
@@ -133,8 +136,8 @@ object RouteStopETALiveActivity {
             val data = RouteStopETAData(
                 routeNumber = selected.co.getDisplayRouteNumber(route.routeNumber, shortened = true),
                 hasEta = eta.nextScheduledBus in 0..59,
-                eta = eta.buildETAText(selected.context),
-                minimal = if (eta.nextScheduledBus <= 0L) "-" else eta.nextScheduledBus.toString(),
+                eta = eta.buildETAText(selected.context, ETADisplayMode.CLOCK_TIME),
+                minimal = if (eta.nextScheduledBus <= 0L) "-" else (now + eta.nextScheduledBus.minutes).minute.pad(2),
                 remark = if (eta.nextScheduledBus < 0) eta.firstLine.text.string else "",
                 destination = route.resolvedDestWithBranch(
                     prependTo = true,
@@ -187,8 +190,8 @@ object RouteStopETALiveActivity {
 
 }
 
-private fun Registry.ETAQueryResult.buildETAText(context: AppContext): List<String> {
-    return when (Shared.etaDisplayMode) {
+private fun Registry.ETAQueryResult.buildETAText(context: AppContext, etaDisplayMode: ETADisplayMode = Shared.etaDisplayMode): List<String> {
+    return when (etaDisplayMode) {
         ETADisplayMode.COUNTDOWN -> {
             val (text1, text2) = this.firstLine.shortText
             buildList {
@@ -202,11 +205,11 @@ private fun Registry.ETAQueryResult.buildETAText(context: AppContext): List<Stri
             }
         }
         ETADisplayMode.CLOCK_TIME -> {
-            val text1 = this.getResolvedText(1, Shared.etaDisplayMode, context).resolvedClockTime.string.trim()
+            val text1 = this.getResolvedText(1, etaDisplayMode, context).resolvedClockTime.string.trim()
             buildList {
                 add(text1)
                 (2..3).forEach {
-                    val eText1 = this@buildETAText.getResolvedText(it, Shared.etaDisplayMode, context).resolvedClockTime.string.trim()
+                    val eText1 = this@buildETAText.getResolvedText(it, etaDisplayMode, context).resolvedClockTime.string.trim()
                     if (eText1.length > 1) {
                         add(eText1)
                     }
@@ -214,12 +217,12 @@ private fun Registry.ETAQueryResult.buildETAText(context: AppContext): List<Stri
             }
         }
         ETADisplayMode.CLOCK_TIME_WITH_COUNTDOWN -> {
-            val text1 = this.getResolvedText(1, Shared.etaDisplayMode, context).resolvedClockTime.string.trim()
+            val text1 = this.getResolvedText(1, etaDisplayMode, context).resolvedClockTime.string.trim()
             val (text2, text3) = this.firstLine.shortText
             buildList {
                 add("$text1  $text2$text3")
                 (2..3).forEach {
-                    val eText1 = this@buildETAText.getResolvedText(it, Shared.etaDisplayMode, context).resolvedClockTime.string.trim()
+                    val eText1 = this@buildETAText.getResolvedText(it, etaDisplayMode, context).resolvedClockTime.string.trim()
                     if (eText1.length > 1) {
                         val (eText2, eText3) = this@buildETAText[it].shortText
                         add("$eText1  $eText2$eText3")
