@@ -417,7 +417,7 @@ private val operatorNoticeFetchers: Map<Operator, suspend Route.(MutableList<Rou
         }
     }
     this[Operator.LRT] = { list ->
-        val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
+        val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?with_special=1&station_id=001")!!
         val titleZh = data.optString("red_alert_message_ch").ifBlank { null }
         val titleEn = data.optString("red_alert_message_en").ifBlank { null }
         val urlZh = data.optString("red_alert_url_ch").ifBlank { null }
