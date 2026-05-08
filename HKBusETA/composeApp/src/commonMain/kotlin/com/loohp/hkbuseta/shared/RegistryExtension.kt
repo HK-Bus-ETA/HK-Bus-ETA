@@ -51,7 +51,7 @@ fun Registry.getOperatorNotices(co: Set<Operator>, context: AppContext): Snapsho
                 try {
                     when {
                         co.contains(Operator.LRT) -> {
-                            val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001")!!
+                            val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?with_special=1&station_id=001")!!
                             val titleZh = data.optString("red_alert_message_ch").ifBlank { null }
                             val titleEn = data.optString("red_alert_message_en").ifBlank { null }
                             val urlZh = data.optString("red_alert_url_ch").ifBlank { null }
