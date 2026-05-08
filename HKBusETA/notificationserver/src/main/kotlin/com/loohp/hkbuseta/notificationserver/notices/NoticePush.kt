@@ -220,7 +220,7 @@ suspend fun getOperatorNotices(co: Set<Operator>, context: AppContext): List<Rou
                 }
                 co.contains(Operator.LRT) -> {
                     val data = retryUntil(
-                        block = { getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=001") },
+                        block = { getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?with_special=1&station_id=001") },
                         predicate = { it != null },
                         fallbackValue = null
                     )!!
