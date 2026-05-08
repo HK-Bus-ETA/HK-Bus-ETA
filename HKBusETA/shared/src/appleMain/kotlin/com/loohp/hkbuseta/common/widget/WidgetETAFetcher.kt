@@ -500,7 +500,7 @@ private suspend fun etaQueryLrt(stopId: String, route: Route, precomputedData: W
         )
     } else {
         val results: MutableList<LocalDateTime> = mutableListOf()
-        val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=${stopId.substring(2)}")
+        val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?with_special=1&station_id=${stopId.substring(2)}")
         if (data!!.optInt("status") != 0) {
             val platformList = data.optJsonArray("platform_list")!!
             val matchRoutes = setOf(route)
