@@ -1764,7 +1764,7 @@ def fix_ctb_route_bounds():
         route_number = data.get("route")
         if route_number not in citybus_route_names:
             continue
-        if "ctb" not in data.get("co", []) or not "循環" in data["dest"]["zh"]:
+        if len(data["co"]) > 1 or "ctb" not in data["co"] or not "循環" in data["dest"]["zh"]:
             continue
         citybus_names = citybus_route_names[route_number]
         data["orig"] = citybus_names["orig"].copy()
