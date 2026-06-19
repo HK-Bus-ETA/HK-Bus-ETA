@@ -72,6 +72,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.LocalDateTime
+import kotlin.time.Duration.Companion.milliseconds
 
 object ComposeShared {
 
@@ -82,7 +83,7 @@ object ComposeShared {
         LaunchedEffect (Unit) {
             while (true) {
                 appAlertsState.value = Registry.getInstance(context).getAppAlerts().await()?.atTime(currentLocalDateTime())
-                delay(30000)
+                delay(30000.milliseconds)
             }
         }
         return appAlertsState.collectAsStateMultiplatform()

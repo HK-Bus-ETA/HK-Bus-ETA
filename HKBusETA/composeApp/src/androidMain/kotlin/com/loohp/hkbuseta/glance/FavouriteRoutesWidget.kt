@@ -376,7 +376,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                     null
                 }
                 val coSpecialRemark = when {
-                    co == Operator.NLB || (route.route!!.isCircular && co != Operator.CTB) -> if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出"
+                    co == Operator.NLB || route.route!!.isCircular -> if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出"
                     co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB -> if (Shared.language == "en") "Sun Bus (NR$routeNumber)" else "陽光巴士 (NR$routeNumber)"
                     else -> co.getRouteRemarks(instance, routeNumber)?.get(Shared.language)
                 }

@@ -99,6 +99,7 @@ import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.milliseconds
 
 data class CurrentActivityData(val cls: Class<Activity>, val extras: Bundle?, val shouldRelaunch: Boolean = extras?.getBoolean("shouldRelaunch", true)?: true) {
 
@@ -129,7 +130,7 @@ object WearOSShared {
         LaunchedEffect (Unit) {
             while (true) {
                 appAlertsState.value = Registry.getInstance(context).getAppAlerts().await()?.atTime(currentLocalDateTime())
-                delay(30000)
+                delay(30000.milliseconds)
             }
         }
         return appAlertsState.collectAsStateWithLifecycle()
@@ -176,7 +177,7 @@ object WearOSShared {
         )
         LaunchedEffect (globalWritingFilesCounter) {
             if (globalWritingFilesCounter > 0) {
-                delay(500)
+                delay(500.milliseconds)
                 globalWritingFiles = true
             } else {
                 globalWritingFiles = false

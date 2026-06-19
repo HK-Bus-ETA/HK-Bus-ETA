@@ -169,6 +169,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @OptIn(ExperimentalWearFoundationApi::class)
@@ -634,7 +635,7 @@ fun LazyItemScope.RouteRow(
             }
             add(stopName[Shared.language].asAnnotatedString())
         }
-        if (co == Operator.NLB || co.isFerry || (showCircularOrigin && route.route!!.isCircular && co != Operator.CTB && co != Operator.LRT)) {
+        if (co == Operator.NLB || co.isFerry || (showCircularOrigin && route.route!!.isCircular && co != Operator.LRT)) {
             add((if (Shared.language == "en") "From ".plus(route.route!!.orig.en) else "從".plus(route.route!!.orig.zh).plus("開出")).asAnnotatedString(SpanStyle(color = rawColor.adjustBrightness(0.75F))))
         }
         if (co == Operator.KMB && routeNumberDisplay.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
@@ -899,7 +900,7 @@ fun ETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults
     LaunchedEffect (Unit) {
         val eta = etaStateFlow.value
         if (eta != null && !eta.isConnectionError) {
-            delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+            delay((etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0).milliseconds)
         }
         schedule.invoke(true, key) {
             val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).buildEtaQuery(route.stopInfo!!.stopId, route.stopInfoIndex, route.co, route.route!!, instance).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }

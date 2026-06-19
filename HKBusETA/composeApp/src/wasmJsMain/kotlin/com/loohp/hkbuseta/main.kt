@@ -50,6 +50,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 
 external fun canDecodeGzip(): Boolean
@@ -64,9 +65,9 @@ external fun setThemeColor(color: Int, useDarkTheme: Boolean)
 
 suspend fun isWasmSupported(): Boolean = awaitCallback { isWasmSupported { complete(it) } }
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalWasmJsInterop::class)
 fun main() {
-    setVersionImpl { Triple("HKBusETA", "2.7.0", 84) }
+    setVersionImpl { Triple("HKBusETA", "2.7.1", 85) }
     if (canDecodeGzip()) {
         provideGzipBodyAsTextImpl { data, charset ->
             val defer = CompletableDeferred<String>()
@@ -83,7 +84,7 @@ fun main() {
     window.history.replaceState(null, "", "${BASE_URL.remove("/#")}/#$URL_ROUTE")
     window.addEventListener("popstate") {
         CoroutineScope(Dispatchers.Main).launch {
-            delay(100)
+            delay(100.milliseconds)
             if (URL_STACK_COUNT < HistoryStack.historyStack.value.size) {
                 HistoryStack.historyStack.value.lastOrNull()?.finish()
             }
@@ -99,7 +100,7 @@ fun main() {
         LaunchedEffect (Unit) {
             while (true) {
                 language = Shared.language
-                delay(500)
+                delay(500.milliseconds)
             }
         }
         LaunchedEffect (language) {
@@ -107,12 +108,12 @@ fun main() {
             window.document.documentElement?.setAttribute("lang", language)
         }
         LaunchedEffect (historyStack) {
-            delay(100)
+            delay(100.milliseconds)
             val url = "${BASE_URL.remove("/#")}${"/#".repeat(historyStack.size + 1)}$URL_ROUTE"
             if (window.location.href.decodeURLPart() != url.decodeURLPart()) {
                 if (URL_STACK_COUNT > historyStack.size) {
                     window.history.back()
-                    delay(100)
+                    delay(100.milliseconds)
                     window.history.replaceState(null, "", url)
                 } else {
                     window.history.pushState(null, "", url)
@@ -130,7 +131,7 @@ fun main() {
                         setDownloadAppSheetVisible(isAppleDevice(), true, value, wasmSupported)
                     }
                 }
-                delay(100)
+                delay(100.milliseconds)
             }
         }
 

@@ -158,6 +158,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.absoluteValue
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @OptIn(ExperimentalWearFoundationApi::class)
@@ -641,7 +642,7 @@ fun ETAElement(favouriteRouteStop: FavouriteRouteStop, resolvedStop: FavouriteRe
     LaunchedEffect (Unit) {
         val eta = etaStateFlow.value
         if (eta != null && !eta.isConnectionError) {
-            delay(etaUpdateTimes.value[favoriteId]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+            delay((etaUpdateTimes.value[favoriteId]?.let { (Shared.ETA_UPDATE_INTERVAL - (System.currentTimeMillis() - it)).coerceAtLeast(0) }?: 0).milliseconds)
         }
         schedule.invoke(true, favoriteId) {
             val result = runBlocking(Dispatchers.IO) { Registry.getInstance(instance).buildEtaQuery(stopId, index, favouriteRouteStop.co, route, instance).query(Shared.ETA_UPDATE_INTERVAL, DateTimeUnit.MILLISECOND) }

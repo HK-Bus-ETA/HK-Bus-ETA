@@ -306,6 +306,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import org.jetbrains.compose.resources.painterResource
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @Immutable
@@ -454,7 +455,7 @@ fun ListStopsEtaInterface(
                     alightReminderCurrentStop = it.currentStop
                     alightReminderState = it.state
                 }
-                delay(1000)
+                delay(1000.milliseconds)
             }
         }
     }
@@ -526,7 +527,7 @@ fun ListStopsEtaInterface(
     LaunchedEffect (selectedStop) {
         if (!pipMode) {
             if (type == ListStopsInterfaceType.ALIGHT_REMINDER || type == ListStopsInterfaceType.ETA || scroll.layoutInfo.visibleItemsInfo.lastOrNull()?.let { it.index == selectedStop - 1 } == true) {
-                delay(200)
+                delay(200.milliseconds)
                 scroll.animateScrollToItem(selectedStop - 1)
             }
         }
@@ -534,7 +535,7 @@ fun ListStopsEtaInterface(
     LaunchedEffect (Unit) {
         while (true) {
             alightReminderHighlightBlink = !alightReminderHighlightBlink
-            delay(1000)
+            delay(1000.milliseconds)
         }
     }
 
@@ -1626,7 +1627,7 @@ fun StopEntryExpansionEta(
                 keyedNextBusPosition = previous
             }
             etaUpdateTimes[index]?.apply {
-                delay(waitTime)
+                delay(waitTime.milliseconds)
             }
         }
         while (true) {
@@ -1638,7 +1639,7 @@ fun StopEntryExpansionEta(
             val keyed = nextBusPosition?.let { KeyedNextBusPosition(it, selectedBranch, etaQueryOptions) }
             keyedNextBusPosition = keyed
             nextBusPositions[selectedStop] = Optional(keyed)
-            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+            delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
         }
     }
     LaunchedEffect (selectedBranch, etaQueryOptions) {
@@ -2733,11 +2734,11 @@ fun ETAColumn(
     }
     LaunchedEffect (Unit) {
         etaUpdateTimes.value[index]?.apply {
-            delay(etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+            delay((etaUpdateTimes.value[index]?.let { (Shared.ETA_UPDATE_INTERVAL - (currentTimeMillis() - it)).coerceAtLeast(0) }?: 0).milliseconds)
         }
         while (true) {
             refreshEta.invoke()
-            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+            delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
         }
     }
     RestartEffect {
@@ -2789,7 +2790,7 @@ fun ETADisplay(
     LaunchedEffect (lines) {
         while (true) {
             freshness = lines?.isOutdated() != true
-            delay(500)
+            delay(500.milliseconds)
         }
     }
 
@@ -3010,7 +3011,7 @@ fun handleToggleAlightReminder(
                         togglingAlightReminderState.value = true
                         CoroutineScope(Dispatchers.Main).launch {
                             val job = CoroutineScope(Dispatchers.IO).launch {
-                                delay(500)
+                                delay(500.milliseconds)
                                 instance.showToastText(if (Shared.language == "en") "Getting alight reminder service ready..." else "正在啟動落車提示...", ToastDuration.LONG)
                             }
                             try {

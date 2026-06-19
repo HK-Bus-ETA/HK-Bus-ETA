@@ -114,6 +114,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.jsonArray
 import java.io.InputStream
+import kotlin.time.Duration.Companion.milliseconds
 
 
 enum class TrainRouteMapType {
@@ -200,7 +201,7 @@ fun MTRRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
             if (result?.isSuccess == true) {
                 location = result.location!!
             }
-            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+            delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
         }
     }
 
@@ -218,7 +219,7 @@ fun MTRRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
                     maxScale = 0.5F * ratio
                 ))
 
-                delay(50)
+                delay(50.milliseconds)
                 zoomState.offset?.let {
                     scale(zoomState.scale)
                     offset(it)
@@ -463,7 +464,7 @@ fun LRTRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
             if (result?.isSuccess == true) {
                 location = result.location!!
             }
-            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+            delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
         }
     }
 
@@ -481,7 +482,7 @@ fun LRTRouteMapInterface(instance: AppActiveContext, ambientMode: Boolean) {
                     maxScale = 0.2F * ratio
                 ))
 
-                delay(50)
+                delay(50.milliseconds)
                 zoomState.offset?.let {
                     scale(zoomState.scale)
                     offset(it)

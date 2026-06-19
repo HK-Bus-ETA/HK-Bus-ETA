@@ -55,7 +55,7 @@ actual val FavouriteRouteStop.platformDisplayInfo: JsonObject? get() = buildJson
     route.resolvedDest(false).let {
         put("dest", it[Shared.language])
     }
-    if (co == Operator.NLB || (route.isCircular && co != Operator.CTB)) {
+    if (co == Operator.NLB || route.isCircular) {
         if (Shared.language == "en") {
             put("coSpecialRemark", "From ${route.orig.en}")
         } else {

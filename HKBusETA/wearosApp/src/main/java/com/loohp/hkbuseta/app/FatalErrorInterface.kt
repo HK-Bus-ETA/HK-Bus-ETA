@@ -82,6 +82,7 @@ import com.loohp.hkbuseta.utils.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @OptIn(ExperimentalWearFoundationApi::class)
@@ -152,7 +153,7 @@ fun Message(instance: AppActiveContext, zh: String?, en: String?, exception: Str
                     }
                 }
                 LaunchedEffect (scrollCounter, scrollReachedEnd) {
-                    delay(50)
+                    delay(50.milliseconds)
                     if (scrollReachedEnd && scrollMoved) {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }

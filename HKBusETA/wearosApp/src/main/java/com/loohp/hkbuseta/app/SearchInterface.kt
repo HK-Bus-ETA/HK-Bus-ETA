@@ -98,6 +98,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @Immutable
 data class RouteKeyboardState(
@@ -228,7 +229,7 @@ suspend fun handleInput(instance: AppActiveContext, state: MutableState<RouteKey
     if (input == '/' || input == '!' || input == '~' || (input == '<' && Shared.lastLookupRoutes.value.isNotEmpty() && originalText.isEmpty())) {
         state.value = state.value.copy(isLoading = true)
         val job = CoroutineScope(Dispatchers.IO).launch {
-            delay(500)
+            delay(500.milliseconds)
             state.value = state.value.copy(showLoadingIndicator = true)
         }
         val result = when (input) {

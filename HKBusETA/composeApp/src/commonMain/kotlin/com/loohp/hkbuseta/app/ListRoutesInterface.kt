@@ -284,6 +284,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 
 private val etaUpdateScope: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(8)
@@ -853,7 +854,7 @@ fun ListRouteInterfaceInternal(
     var init by remember { mutableStateOf(false) }
 
     LaunchedEffect (routes, lastLookupRoutes, listType, proximitySortOrigin, activeSortMode.filterTimetableActive) {
-        delay(100)
+        delay(100.milliseconds)
         CoroutineScope(Dispatchers.IO).launch {
             val sorted = sortedByModeProvider.invoke()
             withContext(Dispatchers.Main) {
@@ -867,17 +868,17 @@ fun ListRouteInterfaceInternal(
     }
     LaunchedEffect (routes, sortedByMode) {
         if (init) {
-            delay(100)
+            delay(100.milliseconds)
             if (!maintainScrollPosition) {
                 scroll.scrollToItem(0)
             }
         } else {
-            delay(100)
+            delay(100.milliseconds)
             init = true
         }
     }
     LaunchedEffect (lastLookupRoutes) {
-        delay(100)
+        delay(100.milliseconds)
         if (scroll.firstVisibleItemIndex in 0..1) {
             scroll.animateScrollToItem(0)
         }
@@ -885,7 +886,7 @@ fun ListRouteInterfaceInternal(
     var previousSortFilter by remember { mutableStateOf(activeSortMode to filterDirections) }
     ChangedEffect (sortedResults) {
         scope.launch {
-            delay(100)
+            delay(100.milliseconds)
             if (previousSortFilter != activeSortMode to filterDirections && (scroll.firstVisibleItemIndex > 0 || scroll.firstVisibleItemScrollOffset > 0)) {
                 scroll.animateScrollToItem(0)
             }
@@ -1072,7 +1073,7 @@ fun LazyItemScope.RouteEntry(
                         intent.putExtra("stopIndex", route.stopInfoIndex)
                         if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                             instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
-                            delay(300)
+                            delay(300.milliseconds)
                         }
                         instance.startActivity(intent)
                     }
@@ -1155,7 +1156,7 @@ fun RouteRow(
                 append(calculatedFare?.fare?.let { "  $$it$discountedFaresMarker" }?: "", SpanStyle(fontSize = TextUnit.Small))
             })
         }
-        if (co == Operator.NLB || co.isFerry || (showCircularOrigin && route.route!!.isCircular && co != Operator.CTB && co != Operator.LRT)) {
+        if (co == Operator.NLB || co.isFerry || (showCircularOrigin && route.route!!.isCircular && co != Operator.LRT)) {
             add((if (Shared.language == "en") "From ${route.route!!.orig.en}" else "從${route.route!!.orig.zh}開出").asAnnotatedString(SpanStyle(color = secondLineCoColor)))
         }
         if (co == Operator.KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.SUNB) {
@@ -1640,7 +1641,7 @@ fun PipETAColumn(
     LaunchedEffect (Unit) {
         while (true) {
             refreshEta.invoke()
-            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+            delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
         }
     }
     RestartEffect {
@@ -1695,7 +1696,7 @@ fun PipETADisplay(
     LaunchedEffect (lines) {
         while (true) {
             freshness = lines?.isOutdated() != true
-            delay(500)
+            delay(500.milliseconds)
         }
     }
 
@@ -1760,7 +1761,7 @@ fun ETAElement(
 
     LaunchedEffect (Unit) {
         etaUpdateTimes.value[key]?.apply {
-            delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+            delay((etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (currentTimeMillis() - it)).coerceAtLeast(0) }?: 0).milliseconds)
         }
         while (true) {
             val result = CoroutineScope(etaUpdateScope).async {
@@ -1771,7 +1772,7 @@ fun ETAElement(
             if (!result.isConnectionError) {
                 etaUpdateTimes.value[key] = currentTimeMillis()
             }
-            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+            delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
         }
     }
     RestartEffect {

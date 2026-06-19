@@ -68,6 +68,7 @@ import com.loohp.hkbuseta.utils.dp
 import com.loohp.hkbuseta.utils.getGPSLocation
 import com.loohp.hkbuseta.utils.scaledSize
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @Composable
@@ -104,7 +105,7 @@ fun WaitingElement(state: MutableState<Boolean>, instance: AppActiveContext) {
     )
 
     LaunchedEffect (Unit) {
-        delay(2000)
+        delay(2000.milliseconds)
         enableSkip = true
     }
 

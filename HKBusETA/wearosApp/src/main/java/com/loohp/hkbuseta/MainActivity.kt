@@ -74,6 +74,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @Stable
@@ -130,7 +131,7 @@ open class MainActivity : ComponentActivity() {
                 LaunchedEffect (Unit) {
                     watchDataOverwriteWarning = watchDataOverwriteWarning && hasPhoneApp(this@MainActivity).await()
                     while (true) {
-                        delay(1000)
+                        delay(1000.milliseconds)
                         watchDataOverwriteWarning = Registry.isNewInstall(appContext)
                     }
                 }
@@ -138,7 +139,7 @@ open class MainActivity : ComponentActivity() {
                     if (!requestSent) {
                         while (true) {
                             requestSent = appContext.requestPreferencesIfPossible().await()
-                            delay(1000)
+                            delay(1000.milliseconds)
                         }
                     }
                 }
@@ -170,7 +171,7 @@ open class MainActivity : ComponentActivity() {
         }
         CoroutineScope(Dispatchers.IO).launch {
             intent.extractUrl()?.extractShareLink()?.apply {
-                delay(500)
+                delay(500.milliseconds)
                 shareLaunch(appContext, noAnimation = true, skipTitle = true)
             }
         }

@@ -30,6 +30,7 @@ import com.loohp.hkbuseta.common.objects.WearableConnectionState
 import com.loohp.hkbuseta.common.shared.Shared
 import kotlinx.coroutines.delay
 import platform.WatchConnectivity.WCSession
+import kotlin.time.Duration.Companion.milliseconds
 
 actual suspend fun invalidateWatchCache(context: AppContext) {
     if (WCSession.defaultSession.isReachable()) {
@@ -48,7 +49,7 @@ actual fun rememberWearableConnected(context: AppContext): State<WearableConnect
                 WCSession.defaultSession.isWatchAppInstalled() -> WearableConnectionState.PAIRED
                 else -> WearableConnectionState.NONE_DETECTED
             }
-            delay(5000)
+            delay(5000.milliseconds)
         }
     }
 

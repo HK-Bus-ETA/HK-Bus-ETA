@@ -369,7 +369,7 @@ struct ListRoutesView: AppScreenView {
                 }
                 list.append(stopName.get(language: Shared().language).asAttributedString())
             }
-            if route.co == Operator.Companion().NLB || route.co.isFerry || (showCircularOrigin && route.route!.isCircular && route.co != Operator.Companion().CTB && route.co != Operator.Companion().LRT) {
+            if route.co == Operator.Companion().NLB || route.co.isFerry || (showCircularOrigin && route.route!.isCircular && route.co != Operator.Companion().LRT) {
                 list.append((Shared().language == "en" ? "From \(route.route!.orig.en)" : "從\(route.route!.orig.zh)開出").asAttributedString(color: color.adjustBrightness(percentage: 0.75)))
             }
             if route.co == Operator.Companion().KMB && routeNumber.getKMBSubsidiary() == KMBSubsidiary.sunb {

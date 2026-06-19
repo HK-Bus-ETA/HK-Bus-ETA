@@ -28,13 +28,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
+import kotlin.time.Duration.Companion.milliseconds
 
 
 private val minuteState: MutableStateFlow<LocalDateTime> = MutableStateFlow(currentLocalDateTime())
 private val minuteStateJob: Job = CoroutineScope(Dispatchers.IO).launch {
     while (true) {
         minuteState.value = currentLocalDateTime().let { LocalDateTime(it.year, it.month, it.dayOfMonth, it.hour, it.minute) }
-        delay(1000)
+        delay(1000.milliseconds)
     }
 }
 

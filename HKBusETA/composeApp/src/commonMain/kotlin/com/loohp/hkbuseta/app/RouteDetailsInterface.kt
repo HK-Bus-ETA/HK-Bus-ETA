@@ -227,6 +227,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.absoluteValue
 import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
 
 
 enum class StopsTabItemType {
@@ -482,7 +483,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                     selectedBranch = it.selectedRoute
                     selectedStop.value = it.currentStop.index
                 }
-                delay(1000)
+                delay(1000.milliseconds)
             }
         }
     }
@@ -667,7 +668,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
                                         intent.putExtra("route", it)
                                         if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                                             instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
-                                            delay(300)
+                                            delay(300.milliseconds)
                                         }
                                         instance.startActivity(intent)
                                         instance.compose.finishSelfOnly()

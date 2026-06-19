@@ -25,12 +25,13 @@ import androidx.compose.runtime.LaunchedEffect
 import com.loohp.hkbuseta.common.appcontext.AppActiveContext
 import com.loohp.hkbuseta.compose.PlatformText
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @Composable
 fun DummyInterface(instance: AppActiveContext) {
     LaunchedEffect (Unit) {
-        delay(400)
+        delay(400.milliseconds)
         instance.finish()
     }
     PlatformText("")

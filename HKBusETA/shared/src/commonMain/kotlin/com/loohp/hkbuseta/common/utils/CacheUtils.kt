@@ -26,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 
 
@@ -65,7 +66,7 @@ object CacheStore {
     init {
         CoroutineScope(Dispatchers.IO).launch {
             while (true) {
-                delay(cacheLifetime / 2)
+                delay((cacheLifetime / 2).milliseconds)
                 val now = currentTimeMillis()
                 val cache = globalCache?: continue
                 val keys = cache.synchronize { cache.keys.toSet() }

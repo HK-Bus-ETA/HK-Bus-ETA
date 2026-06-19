@@ -78,6 +78,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @Composable
@@ -102,7 +103,7 @@ fun MainLoading(instance: AppActiveContext, stopId: String?, co: Operator?, inde
                     val appScreen = instance.context.intent.getStringExtra("relaunch")?.let { AppScreen.valueOfNullable(it) }
                     val noAnimation = (instance.context.intent.flags and Intent.FLAG_ACTIVITY_NO_ANIMATION) == Intent.FLAG_ACTIVITY_NO_ANIMATION
                     if (appScreen != null) {
-                        delay(250)
+                        delay(250.milliseconds)
                     }
                     Shared.handleLaunchOptions(instance, stopId, co, index, stop.value, route.value, listStopRoute.value, listStopScrollToStop, listStopShowEta, queryKey, queryRouteNumber, queryBound, queryCo, queryDest, queryGMBRegion, queryStop, queryStopIndex, queryStopDirectLaunch, appScreen, noAnimation, false) {
                         WearOSShared.restoreCurrentScreenOrRun(instance, true) {
@@ -273,7 +274,7 @@ fun SkipChecksumButton(instance: AppActiveContext) {
     )
 
     LaunchedEffect (Unit) {
-        delay(3000)
+        delay(3000.milliseconds)
         enableSkip = true
     }
 

@@ -42,6 +42,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.time.Duration.Companion.milliseconds
 
 class WearDataLayerListenerService : WearableListenerService() {
 
@@ -129,7 +130,7 @@ class WearDataLayerListenerService : WearableListenerService() {
                 runBlocking(Dispatchers.Main) {
                     Registry.invalidateCache(appContext)
                     Registry.clearInstance()
-                    delay(500)
+                    delay(500.milliseconds)
                     val intent = Intent(this@WearDataLayerListenerService, MainActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     startActivity(intent)

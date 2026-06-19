@@ -139,6 +139,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @OptIn(ExperimentalWearMaterialApi::class, ExperimentalWearFoundationApi::class, ExperimentalFoundationApi::class)
@@ -334,7 +335,7 @@ fun EtaElement(ambientMode: Boolean, stopId: String, co: Operator, index: Int, s
                                 }
                             }
                         }
-                        delay(50)
+                        delay(50.milliseconds)
                     }
                 }
                 DisposableEffect (Unit) {

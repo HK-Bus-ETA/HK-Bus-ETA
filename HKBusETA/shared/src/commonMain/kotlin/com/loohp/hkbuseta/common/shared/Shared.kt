@@ -89,6 +89,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlin.math.absoluteValue
 import kotlin.native.ObjCName
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -183,13 +184,13 @@ object Shared {
                 while (currentTimeMillis() - startTime < jointOperatorColorTransitionTime) {
                     val progress = (currentTimeMillis() - startTime).toFloat() / jointOperatorColorTransitionTime
                     jointOperatedColorFractionState.value = progress
-                    delay(JOINT_OPERATED_COLOR_REFRESH_RATE)
+                    delay(JOINT_OPERATED_COLOR_REFRESH_RATE.milliseconds)
                 }
                 val yellowToRedStartTime = currentTimeMillis()
                 while (currentTimeMillis() - yellowToRedStartTime < jointOperatorColorTransitionTime) {
                     val progress = (currentTimeMillis() - yellowToRedStartTime).toFloat() / jointOperatorColorTransitionTime
                     jointOperatedColorFractionState.value = 1F - progress
-                    delay(JOINT_OPERATED_COLOR_REFRESH_RATE)
+                    delay(JOINT_OPERATED_COLOR_REFRESH_RATE.milliseconds)
                 }
             }
         }
@@ -412,7 +413,7 @@ object Shared {
     ) {
         CoroutineScope(Dispatchers.Default).launch {
             while (Registry.getInstance(instance).state.value.isProcessing) {
-                delay(100)
+                delay(100.milliseconds)
             }
             if (appScreen != null) {
                 val flags = if (noAnimation) arrayOf(AppIntentFlag.NO_ANIMATION) else emptyArray()
@@ -564,7 +565,7 @@ object Shared {
         try {
             val registry = Registry.getInstanceNoUpdateCheck(context)
             while (registry.state.value.isProcessing) {
-                delay(10)
+                delay(10.milliseconds)
             }
             if (receiveAlerts) {
                 val notification = JsonIgnoreUnknownKeys.decodeFromString<AlertNotification>(payload)

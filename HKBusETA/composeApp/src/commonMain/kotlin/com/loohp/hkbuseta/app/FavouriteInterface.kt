@@ -171,6 +171,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import sh.calvin.reorderable.ReorderableColumn
+import kotlin.time.Duration.Companion.milliseconds
 
 
 data class FavouriteTabItem(
@@ -287,7 +288,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
                 if (result?.isSuccess == true) {
                     location = result.location!!
                 }
-                delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+                delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
             }
         }
     }
@@ -697,7 +698,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                 if (result?.isSuccess == true) {
                     location = result.location!!
                 }
-                delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+                delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
             }
         }
     }

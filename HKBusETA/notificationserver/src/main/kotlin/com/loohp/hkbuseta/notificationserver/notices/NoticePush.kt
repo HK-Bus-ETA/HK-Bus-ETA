@@ -61,6 +61,7 @@ import kotlinx.serialization.json.JsonObject
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @Serializable
@@ -123,7 +124,7 @@ suspend fun checkNoticeUpdates(): List<AlertNotification> {
     Operator.values().asSequence().forEach { operator ->
         val notices = getOperatorNotices(setOf(operator), ServerAppContext)
         operatorNotices.computeIfAbsent(operator) { ConcurrentHashMap.newKeySet() }.addAll(notices)
-        delay(1000)
+        delay(1000.milliseconds)
     }
     val previousSeenNotices = previousSeenNotices()
     val notifications = mutableListOf<AlertNotificationBuilder>()

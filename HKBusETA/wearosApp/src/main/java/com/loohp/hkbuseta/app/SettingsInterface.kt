@@ -105,6 +105,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 
 fun relaunch(instance: AppActiveContext, skipSplash: Boolean = true) {
@@ -135,7 +136,7 @@ fun rememberPhoneConnected(context: AppContext): State<WearableConnectionState> 
             } else {
                 WearableConnectionState.NONE_DETECTED
             }
-            delay(5000)
+            delay(5000.milliseconds)
         }
     }
 
@@ -186,7 +187,7 @@ fun SettingsInterface(instance: AppActiveContext) {
                             Registry.invalidateCache(instance)
                             Registry.clearInstance()
                             invalidatePhoneCache(instance)
-                            delay(500)
+                            delay(500.milliseconds)
                             relaunch(instance, skipSplash = false)
                         }
                     },

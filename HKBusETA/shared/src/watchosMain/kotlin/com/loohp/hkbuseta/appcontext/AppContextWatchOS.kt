@@ -122,6 +122,7 @@ import platform.posix.memcpy
 import platform.posix.sleep
 import platform.posix.usleep
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 
 object HistoryStack {
@@ -549,9 +550,9 @@ fun receiveAlightReminderRemoteData(launch: Boolean, json: String?) {
             if (launch) {
                 CoroutineScope(Dispatchers.IO).launch {
                     while (Registry.getInstance(applicationContext).state.value.isProcessing) {
-                        delay(100)
+                        delay(100.milliseconds)
                     }
-                    delay(500)
+                    delay(500.milliseconds)
                     if (HistoryStack.historyStack.value.lastOrNull()?.screen != AppScreen.ALIGHT_REMINDER_SERVICE) {
                         applicationContext.startActivity(AppIntent(applicationContext, AppScreen.ALIGHT_REMINDER_SERVICE))
                     }
@@ -595,7 +596,7 @@ fun handleSearchInputLaunch(
     CoroutineScope(Dispatchers.IO).launch {
         preRun.invoke()
         val job = CoroutineScope(Dispatchers.IO).launch {
-            delay(500)
+            delay(500.milliseconds)
             loadingIndicator.invoke()
         }
         val result = when (input) {
@@ -665,9 +666,9 @@ fun extractAndLaunchShareLink(url: String, instance: AppActiveContext, noAnimati
     CoroutineScope(Dispatchers.IO).launch {
         val registry = Registry.getInstance(instance)
         while (registry.state.value.isProcessing) {
-            delay(100)
+            delay(100.milliseconds)
         }
-        delay(1000)
+        delay(1000.milliseconds)
         url.extractShareLink()?.apply { shareLaunch(instance, noAnimation, skipTitle) }
     }
 }

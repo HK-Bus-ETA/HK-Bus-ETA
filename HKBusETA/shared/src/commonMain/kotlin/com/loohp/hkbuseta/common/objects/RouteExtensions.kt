@@ -407,7 +407,7 @@ fun Route.resolvedDestFormatted(prependTo: Boolean, vararg style: FormattingText
 }
 
 fun StopIndexedRouteSearchResultEntry.resolvedDest(prependTo: Boolean, context: AppContext): BilingualText {
-    return if (stopInfo == null || (co !== Operator.KMB && co !== Operator.GMB) || !route!!.isCircular) {
+    return if (stopInfo == null || !co.isBus || !route!!.isCircular) {
         route!!.resolvedDest(prependTo)
     } else {
         val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
@@ -431,7 +431,7 @@ fun StopIndexedRouteSearchResultEntry.resolvedDest(prependTo: Boolean, context: 
 }
 
 fun StopIndexedRouteSearchResultEntry.resolvedDestFormatted(prependTo: Boolean, context: AppContext, vararg style: FormattingTextContentStyle): BilingualFormattedText {
-    return if (stopInfo == null || (co !== Operator.KMB && co !== Operator.GMB) || !route!!.isCircular) {
+    return if (stopInfo == null || !co.isBus || !route!!.isCircular) {
         route!!.resolvedDestFormatted(prependTo, *style)
     } else {
         val stops = Registry.getInstance(context).getAllStops(route!!.routeNumber, route!!.idBound(co), co, route!!.gmbRegion)
@@ -469,7 +469,7 @@ fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, var
 
 fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop: Int, selectedStopId: String, context: AppContext): BilingualText {
     val co = co.firstCo()!!
-    return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular) {
+    return if (!co.isBus || !branch.isCircular) {
         resolvedDestWithBranch(prependTo, branch)
     } else {
         val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)
@@ -494,7 +494,7 @@ fun Route.resolvedDestWithBranch(prependTo: Boolean, branch: Route, selectedStop
 
 fun Route.resolvedDestWithBranchFormatted(prependTo: Boolean, branch: Route, selectedStop: Int, selectedStopId: String, context: AppContext, vararg style: FormattingTextContentStyle): BilingualFormattedText {
     val co = co.firstCo()!!
-    return if ((co !== Operator.KMB && co !== Operator.GMB) || !branch.isCircular) {
+    return if (!co.isBus || !branch.isCircular) {
         resolvedDestWithBranchFormatted(prependTo, branch, *style)
     } else {
         val stops = Registry.getInstance(context).getAllStops(routeNumber, idBound(co), co, gmbRegion)

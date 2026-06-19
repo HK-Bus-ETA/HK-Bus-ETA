@@ -304,6 +304,7 @@ import org.jetbrains.compose.resources.InternalResourceApi
 import org.jetbrains.compose.resources.getResourceUri
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.readResourceBytes
+import kotlin.time.Duration.Companion.milliseconds
 
 @Immutable
 data class RouteMapData(
@@ -457,7 +458,7 @@ fun RouteMapSearchInterface(
                     location = retryResult.location!!
                 }
             }
-            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+            delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
         }
     }
 
@@ -481,7 +482,7 @@ fun RouteMapSearchInterface(
                 mtrLineServiceDisruptionAvailable = true
                 mtrLineServiceDisruption = result
             }
-            delay(180000)
+            delay(180000.milliseconds)
         }
     }
 
@@ -837,7 +838,7 @@ fun MTRRouteMapInterface(
                     maxScale = 1.2F * ratio
                 ))
 
-                delay(50)
+                delay(50.milliseconds)
                 zoomState.offset?.let {
                     scale(zoomState.scale)
                     offset(it)
@@ -887,7 +888,7 @@ fun MTRRouteMapInterface(
     LaunchedEffect (setScale, stopLaunch) {
         if (setScale) {
             stopLaunch?.let { stopLaunch ->
-                while (mtrRouteMapData == null) delay(10)
+                while (mtrRouteMapData == null) delay(10.milliseconds)
                 mtrRouteMapData?.let { data ->
                     val position = data.stations[stopLaunch]
                     if (position != null) {
@@ -903,7 +904,7 @@ fun MTRRouteMapInterface(
     }
     LaunchedEffect (showingSheet, visible) {
         if (visible) {
-            delay(1000)
+            delay(1000.milliseconds)
             if (showingSheet && sheetState.currentValue == SheetValue.Hidden) {
                 showingSheet = false
             }
@@ -1127,7 +1128,7 @@ fun MTRETADisplayInterface(
                        errorCounters[route.routeKey] = 0
                        etaState[route.routeKey] = result
                    }
-                   delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+                   delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
                }
             }
         }
@@ -1304,7 +1305,7 @@ fun MTRRouteMapETAInterface(
     LaunchedEffect (etaState) {
         while (true) {
             freshness = etaState.values.all { it?.isOutdated() != true }
-            delay(500)
+            delay(500.milliseconds)
         }
     }
 
@@ -1357,7 +1358,7 @@ fun MTRRouteMapETAInterface(
                             intent.putExtra("stopId", stopId)
                             if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                                 instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
-                                delay(300)
+                                delay(300.milliseconds)
                             }
                             instance.startActivity(intent)
                         }
@@ -1932,7 +1933,7 @@ fun LRTRouteMapInterface(
                     maxScale = 0.6F * ratio
                 ))
 
-                delay(50)
+                delay(50.milliseconds)
                 zoomState.offset?.let {
                     scale(zoomState.scale)
                     offset(it)
@@ -1982,7 +1983,7 @@ fun LRTRouteMapInterface(
     LaunchedEffect (setScale, stopLaunch) {
         if (setScale) {
             stopLaunch?.let { stopLaunch ->
-                while (lightRailRouteMapData == null) delay(10)
+                while (lightRailRouteMapData == null) delay(10.milliseconds)
                 lightRailRouteMapData?.let { data ->
                     val position = data.stations[stopLaunch]
                     if (position != null) {
@@ -1998,7 +1999,7 @@ fun LRTRouteMapInterface(
     }
     LaunchedEffect (showingSheet, visible) {
         if (visible) {
-            delay(1000)
+            delay(1000.milliseconds)
             if (showingSheet && sheetState.currentValue == SheetValue.Hidden) {
                 showingSheet = false
             }
@@ -2217,7 +2218,7 @@ fun LRTETADisplayInterface(
                     errorCounter = 0
                     etaState = result
                 }
-                delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+                delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
             }
         }
     }
@@ -2380,7 +2381,7 @@ fun LRTETADisplayByPlatformInterface(
     LaunchedEffect (etaState) {
         while (true) {
             freshness = etaState?.isOutdated() != true
-            delay(500)
+            delay(500.milliseconds)
         }
     }
 
@@ -2502,7 +2503,7 @@ fun LRTETADisplayByRouteInterface(
     LaunchedEffect (etaState) {
         while (true) {
             freshness = etaState?.isOutdated() != true
-            delay(500)
+            delay(500.milliseconds)
         }
     }
 
@@ -3128,7 +3129,7 @@ fun TrainETADisplay(
                                     intent.putExtra("stopId", stopId)
                                     if (HistoryStack.historyStack.value.last().screenGroup == AppScreenGroup.ROUTE_STOPS) {
                                         instance.startActivity(AppIntent(instance, AppScreen.DUMMY))
-                                        delay(300)
+                                        delay(300.milliseconds)
                                     }
                                     instance.startActivity(intent)
                                     break

@@ -62,6 +62,7 @@ import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.loohp.hkbuseta.common.appcontext.AppContext
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 
 val TransformingLazyColumnState.firstVisibleItemIndex: Int get() = layoutInfo.visibleItems.firstOrNull()?.index?: 0
@@ -95,14 +96,14 @@ fun Modifier.fullPageVerticalScrollbar(
     )
 
     LaunchedEffect (Unit) {
-        delay(3000)
+        delay(3000.milliseconds)
         indicatorAlphaInit = false
     }
     LaunchedEffect (state.value) {
         if (scrollValue != state.value) {
             scrollValueChanged = true
             scrollValue = state.value
-            delay(50)
+            delay(50.milliseconds)
             scrollValueChanged = false
         }
     }
@@ -202,7 +203,7 @@ fun Modifier.fullPageVerticalScrollbar(
     )
 
     LaunchedEffect (Unit) {
-        delay(3000)
+        delay(3000.milliseconds)
         indicatorAlphaInit = false
     }
     val firstVisibleItemIndex by remember { derivedStateOf { state.firstVisibleItemIndex } }
@@ -212,7 +213,7 @@ fun Modifier.fullPageVerticalScrollbar(
         if (scrollValue != pair) {
             scrollValueChanged = true
             scrollValue = pair
-            delay(50)
+            delay(50.milliseconds)
             scrollValueChanged = false
         }
     }
@@ -325,7 +326,7 @@ fun Modifier.fullPageVerticalScrollbar(
     )
 
     LaunchedEffect (Unit) {
-        delay(3000)
+        delay(3000.milliseconds)
         indicatorAlphaInit = false
     }
     val anchorItemIndex by remember { derivedStateOf { state.anchorItemIndex } }
@@ -335,7 +336,7 @@ fun Modifier.fullPageVerticalScrollbar(
         if (scrollValue != pair) {
             scrollValueChanged = true
             scrollValue = pair
-            delay(50)
+            delay(50.milliseconds)
             scrollValueChanged = false
         }
     }
@@ -501,14 +502,14 @@ fun Modifier.scrollbar(
     )
 
     LaunchedEffect (Unit) {
-        delay(3000)
+        delay(3000.milliseconds)
         indicatorAlphaInit = false
     }
     LaunchedEffect (state.value) {
         if (scrollValue != state.value) {
             scrollValueChanged = true
             scrollValue = state.value
-            delay(50)
+            delay(50.milliseconds)
             scrollValueChanged = false
         }
     }

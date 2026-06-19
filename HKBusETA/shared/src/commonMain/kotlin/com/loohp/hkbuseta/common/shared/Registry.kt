@@ -200,6 +200,7 @@ import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 
 class Registry {
@@ -294,7 +295,7 @@ class Registry {
                 context.syncPreference(preferences)
                 syncPreferences.value = null
             }
-            delay(3000)
+            delay(3000.milliseconds)
         }
     }
 
@@ -337,7 +338,7 @@ class Registry {
 
     suspend fun syncPreference(context: AppContext, preferences: Preferences, sync: Boolean) {
         while (state.value.isProcessing) {
-            delay(100)
+            delay(100.milliseconds)
         }
         val favouriteStopsUpdated = PREFERENCES!!.favouriteStops != preferences.favouriteStops
         val favouriteRouteStopsUpdated = PREFERENCES!!.favouriteRouteStops != preferences.favouriteRouteStops
@@ -1871,7 +1872,7 @@ class Registry {
         return CoroutineScope(Dispatchers.IO).async {
             val result = mutableListOf<LocationSearchEntry>()
             try {
-                val data = getJSONResponse<JsonArray>("https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q=${query.encodeURLQueryComponent()}")!!
+                val data = getJSONResponse<JsonArray>("https://www.map.gov.hk/gs/api/v1.0.0/locationSearch?q=${query.encodeURLQueryComponent()}")!!
                 for (entry in data) {
                     val json = entry.jsonObject
                     val name = json.optString("nameZH") withEn json.optString("nameEN")
@@ -2885,7 +2886,6 @@ class Registry {
         }
         stopSequences.addAll(ctbStopList)
         val matchingSeq = stopSequences.minByOrNull { (it - stopIndex).absoluteValue }?: -1
-        debugLog(stopSequences, matchingSeq)
         var counter = 0
         val usedRealSeq: MutableSet<Int> = HashSet()
         for (bus in buses.asSequence().map { it.jsonObject }.sortedBy { it.optInt("eta_seq", Int.MAX_VALUE) }) {
