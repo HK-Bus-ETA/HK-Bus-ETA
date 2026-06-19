@@ -1658,6 +1658,41 @@ def fix_missing_stops():
         if stop_id in DATA_SHEET["stopMap"]:
             del DATA_SHEET["stopMap"][stop_id]
 
+
+def fix_ctb_circular_route_origin_destination():
+    citybus_route_names = {}
+    citybus_route_json = get_web_json("https://rt.data.gov.hk/v2/transport/citybus/route/ctb")
+    for route_json in citybus_route_json.get("data", []):
+        route_number = route_json.get("route")
+        if route_number is None or any(route_json.get(field) is None for field in ["orig_tc", "orig_en", "dest_tc", "dest_en"]):
+            continue
+        citybus_route_names[route_number] = {
+            "orig": {
+                "zh": route_json.get("orig_tc"),
+                "en": route_json.get("orig_en")
+            },
+            "dest": {
+                "zh": route_json.get("dest_tc"),
+                "en": route_json.get("dest_en")
+            }
+        }
+
+    for key, data in DATA_SHEET["routeList"].items():
+        route_number = data.get("route")
+        if route_number not in citybus_route_names:
+            continue
+        if "ctb" not in data.get("co", []) or not "循環" in data["dest"]["zh"]:
+            continue
+        citybus_names = citybus_route_names[route_number]
+        data["orig"] = citybus_names["orig"].copy()
+        data["dest"] = citybus_names["dest"].copy()
+        if "循環" not in data["dest"]["zh"]:
+            data["dest"]["zh"] += " (循環線)"
+        if "Circular" not in data["dest"]["en"]:
+            data["dest"]["en"] += " (Circular)"
+        print(f"Updated {key} CTB circular route origin & destination")
+
+
 def fix_ctb_route_bounds():
     ctb_route_numbers = set()
     ctb_circular_route_numbers = set()
@@ -1865,6 +1900,8 @@ print("Downloading & Processing Traffic Snapshots")
 download_and_process_traffic_snapshot()
 print("Fix CTB Route Bounds")
 fix_ctb_route_bounds()
+print("Fix CTB Circular Route Origin & Destination")
+fix_ctb_circular_route_origin_destination()
 print("Creating Missing Routes")
 create_missing_routes()
 print("Adding Route Remarks")
