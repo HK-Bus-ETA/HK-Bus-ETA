@@ -14,8 +14,8 @@ In addition, it also supports **English**.<br>
 此應用程式支援 **中文** 及 **英文**
 
 ## Live Demonstration & Screenshots 下載連結及截圖
-<a href='https://play.google.com/store/apps/details?id=com.loohp.hkbuseta&utm_source=GitHub-Repo&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://loohpjames.com/assets/images/get-it-on-google-play.png' height="50"/></a>
-<a href='https://apps.apple.com/app/id6475241017'><img alt='Download on the App Store' src='https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg' height="50"></a><br>
+<a href='https://play.google.com/store/apps/details?id=com.loohp.hkbuseta&utm_source=GitHub-Repo&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://loohpjames.com/assets/images/get-it-on-google-play.png' width="168" height="50"/></a>
+<a href='https://apps.apple.com/app/id6475241017'><img alt='Download on the App Store' src='https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg' width="150" height="50"></a><br>
 [Or view the Web Version (Mobile not recommended)<br>
 或查看網頁版（不建議使用手機）](https://app.hkbuseta.com)
 
