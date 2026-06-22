@@ -22,7 +22,6 @@ package com.loohp.hkbuseta.glance
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.Button
 import androidx.glance.ButtonDefaults
@@ -138,9 +139,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.datetime.DateTimeUnit
+import kotlin.time.Duration.Companion.milliseconds
 
 
 val groupNameZhKey = stringPreferencesKey("groupName")
+val refreshRequestedAtKey = longPreferencesKey("refreshRequestedAt")
 
 private val etaUpdateScope: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(8)
 
@@ -161,7 +164,7 @@ object FavouriteRoutesWidget : GlanceAppWidget() {
         } else {
             val registry = Registry.getInstanceNoUpdateCheck(instance)
             while (registry.state.value.isProcessing) {
-                delay(100)
+                delay(100.milliseconds)
             }
             provideContent {
                 GlanceWidgetTheme(context) {
@@ -253,26 +256,27 @@ fun FirstInstallWidgetContent() {
 @Composable
 fun FavouriteRoutesWidgetContent(instance: AppContext) {
     val groupNameZh = currentState(groupNameZhKey)
+    val refreshRequestedAt = currentState(refreshRequestedAtKey)?: 0L
     val favouriteRouteStops by Shared.favoriteRouteStops.collectAsState()
     val alternateStopNamesShowing by Shared.alternateStopNamesShowingState.collectAsState()
     val group by remember(favouriteRouteStops, groupNameZh) { derivedStateOf { favouriteRouteStops.firstOrNull { it.name.zh == groupNameZh }?: favouriteRouteStops.first() } }
     var location: Coordinates? by remember { mutableStateOf(lastLocation?.location) }
     val routeStops by remember(group) { derivedStateOf { group.favouriteRouteStops.toRouteSearchResult(instance, location).toStopIndexed(instance) } }
-    val etaResults: MutableMap<String, Registry.ETAQueryResult> = remember { ConcurrentMutableMap() }
-    val etaUpdateTimes: MutableMap<String, Long> = remember { ConcurrentMutableMap() }
+    val etaResults: MutableMap<String, Registry.ETAQueryResult> = remember(group, refreshRequestedAt) { ConcurrentMutableMap() }
+    val etaUpdateTimes: MutableMap<String, Long> = remember(group, refreshRequestedAt) { ConcurrentMutableMap() }
     val lastUpdated by remember(etaUpdateTimes, etaResults) { derivedStateOf { instance.formatDateTime(currentLocalDateTime(), true) } }
-    var loading by remember { mutableStateOf(true) }
+    var loading by remember(group, refreshRequestedAt) { mutableStateOf(true) }
 
-    LaunchedEffect (Unit) {
+    LaunchedEffect (group, refreshRequestedAt, routeStops.size) {
         while (routeStops.size > etaResults.size) {
-            delay(200)
+            delay(200.milliseconds)
         }
         loading = false
     }
     LaunchedEffect (Unit) {
         while (true) {
             location = getGPSLocation(instance).await()?.location
-            delay(300000)
+            delay(300000.milliseconds)
         }
     }
 
@@ -398,7 +402,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                     Row(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .clickable(actionStartActivity(Intent(Intent.ACTION_VIEW, Uri.parse(route.getDeepLink())))),
+                            .clickable(actionStartActivity(Intent(Intent.ACTION_VIEW, route.getDeepLink().toUri()))),
                     ) {
                         Column(
                             modifier = GlanceModifier
@@ -522,7 +526,7 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
                                 )
                             }
                         }
-                        RouteStopETAElement(route.uniqueKey, route, etaResults.asImmutableState(), etaUpdateTimes.asImmutableState(), instance)
+                        RouteStopETAElement(route.uniqueKey, route, etaResults.asImmutableState(), etaUpdateTimes.asImmutableState(), refreshRequestedAt, instance)
                     }
                     Spacer(modifier = GlanceModifier
                         .fillMaxWidth()
@@ -537,12 +541,12 @@ fun FavouriteRoutesWidgetContent(instance: AppContext) {
 }
 
 @Composable
-fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, instance: AppContext) {
+fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, etaResults: ImmutableState<out MutableMap<String, Registry.ETAQueryResult>>, etaUpdateTimes: ImmutableState<out MutableMap<String, Long>>, refreshRequestedAt: Long, instance: AppContext) {
     var etaState by remember { mutableStateOf(etaResults.value[key]) }
 
-    LaunchedEffect (Unit) {
+    LaunchedEffect (key, refreshRequestedAt) {
         etaUpdateTimes.value[key]?.apply {
-            delay(etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (currentTimeMillis() - it)).coerceAtLeast(0) }?: 0)
+            delay((etaUpdateTimes.value[key]?.let { (Shared.ETA_UPDATE_INTERVAL - (currentTimeMillis() - it)).coerceAtLeast(0) }?: 0).milliseconds)
         }
         while (true) {
             val result = CoroutineScope(etaUpdateScope).async {
@@ -553,7 +557,7 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
             if (!result.isConnectionError) {
                 etaUpdateTimes.value[key] = currentTimeMillis()
             }
-            delay(Shared.ETA_UPDATE_INTERVAL.toLong())
+            delay(Shared.ETA_UPDATE_INTERVAL.milliseconds)
         }
     }
 
@@ -753,6 +757,9 @@ fun RouteStopETAElement(key: String, route: StopIndexedRouteSearchResultEntry, e
 
 object UpdateFavouriteRoutesCallback : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        updateAppWidgetState(context, glanceId) {
+            it[refreshRequestedAtKey] = currentTimeMillis()
+        }
         FavouriteRoutesWidget.update(context, glanceId)
     }
 }
@@ -762,7 +769,7 @@ object SwitchGroupActionCallback : ActionCallback {
         updateAppWidgetState(context, glanceId) {
             val registry = Registry.getInstanceNoUpdateCheck(context.nonActiveAppContext)
             while (registry.state.value.isProcessing) {
-                delay(100)
+                delay(100.milliseconds)
             }
             val groups = Shared.favoriteRouteStops.value
             val current = it[groupNameZhKey]
