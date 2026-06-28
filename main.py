@@ -288,16 +288,17 @@ def strip_data_sheet(data):
 
 
 def stop_matches(ctb_stop_id, kmb_stop_id):
-    if ctb_stop_id in DATA_SHEET["stopMap"]:
-        if ctb_stop_id in DATA_SHEET["stopMap"] and any(
-                array[1] == kmb_stop_id for array in
-                DATA_SHEET["stopMap"][ctb_stop_id]):
-            return True, 0
-        if kmb_stop_id in DATA_SHEET["stopMap"] and any(
-                array[1] == ctb_stop_id for array in
-                DATA_SHEET["stopMap"][kmb_stop_id]):
-            return True, 0
     try:
+        if ctb_stop_id in DATA_SHEET["stopMap"]:
+            if ctb_stop_id in DATA_SHEET["stopMap"] and any(
+                    array[1] == kmb_stop_id for array in
+                    DATA_SHEET["stopMap"][ctb_stop_id]):
+                return True, 0
+            if kmb_stop_id in DATA_SHEET["stopMap"] and any(
+                    array[1] == ctb_stop_id for array in
+                    DATA_SHEET["stopMap"][kmb_stop_id]):
+                return True, 0
+
         ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
         kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
         distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"],
@@ -376,7 +377,9 @@ def generate_ctb_route_with_more_stops(ctb_route):
             generated_kmb_stops.append(kmb_stop_id)
             kmb_stop_index += kmb_stop_offset
         else:
-            ctb_stop = DATA_SHEET["stopList"][ctb_stop_id]
+            ctb_stop = DATA_SHEET["stopList"].get(ctb_stop_id)
+            if ctb_stop is None:
+                return False
             if ctb_stop_id in route_specific_stop_map:
                 kmb_stop_id = route_specific_stop_map[ctb_stop_id]
             else:
