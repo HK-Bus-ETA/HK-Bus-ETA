@@ -17,35 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
 package com.loohp.hkbuseta.common.branchedlist
 
 import com.loohp.hkbuseta.common.utils.Immutable
-import kotlinx.collections.immutable.persistentSetOf
-import kotlinx.collections.immutable.toImmutableSet
-
 
 @Immutable
-class BranchedListEntry<K, V, B> private constructor(
-    val key: K,
+data class BranchedListEntry<V, B> (
     val value: V,
     val branchIds: Set<B>
-) {
-    constructor(key: K, value: V, vararg branchIds: B) : this(key, value, persistentSetOf(*branchIds))
-    constructor(key: K, value: V, branchIds: Collection<B>) : this(key, value, branchIds.toImmutableSet())
-
-    operator fun component1(): K {
-        return key
-    }
-
-    operator fun component2(): V {
-        return value
-    }
-
-    operator fun component3(): Set<B> {
-        return branchIds
-    }
-
-    fun merge(value: V, vararg branchIds: B): BranchedListEntry<K, V, B> {
-        return BranchedListEntry(key, value, this.branchIds + branchIds)
-    }
-}
+)
