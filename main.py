@@ -297,11 +297,14 @@ def stop_matches(ctb_stop_id, kmb_stop_id):
                 array[1] == ctb_stop_id for array in
                 DATA_SHEET["stopMap"][kmb_stop_id]):
             return True, 0
-    ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
-    kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
-    distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"],
-                         kmb_stop_location["lat"], kmb_stop_location["lng"])
-    return distance <= 0.3, distance
+    try:
+        ctb_stop_location = DATA_SHEET["stopList"][ctb_stop_id]["location"]
+        kmb_stop_location = DATA_SHEET["stopList"][kmb_stop_id]["location"]
+        distance = haversine(ctb_stop_location["lat"], ctb_stop_location["lng"],
+                             kmb_stop_location["lat"], kmb_stop_location["lng"])
+        return distance <= 0.3, distance
+    except KeyError:
+        return False, 9999999
 
 
 def generate_ctb_route_with_more_stops(ctb_route):
