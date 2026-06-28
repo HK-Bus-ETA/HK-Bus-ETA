@@ -44,6 +44,71 @@ def get_web_json(url, max_retries=1000, delay=5):
     return None
 
 
+def create_missing_stop_placeholder():
+    return {
+        "location": {
+            "lat": 22.203615,
+            "lng": 114.415195
+        },
+        "name": {
+            "zh": "未有車站資訊",
+            "en": "Stop Details TBD"
+        },
+        "remark": {
+            "zh": "(資訊通常會在數日後更新出現)",
+            "en": "(Usually details will be updated in a few days)"
+        }
+    }
+
+
+def get_ctb_stop_info(stop_id):
+    try:
+        url = f"https://rt.data.gov.hk/v2/transport/citybus/stop/{stop_id}"
+        stop_json = get_web_json(url, max_retries=3, delay=1)
+        stop_data = stop_json.get("data") if stop_json is not None else None
+        if stop_data is None or stop_data.get("stop") != stop_id:
+            return None
+        if any(stop_data.get(field) is None for field in ["lat", "long", "name_tc", "name_en"]):
+            return None
+        return {
+            "location": {
+                "lat": float(stop_data["lat"]),
+                "lng": float(stop_data["long"])
+            },
+            "name": {
+                "zh": stop_data["name_tc"],
+                "en": stop_data["name_en"]
+            }
+        }
+    except Exception as e:
+        print(e)
+        return None
+
+
+def get_kmb_stop_info(stop_id):
+    try:
+        url = f"https://data.etabus.gov.hk/v1/transport/kmb/stop/{stop_id}"
+        stop_json = get_web_json(url, max_retries=3, delay=1)
+        stop_data = stop_json.get("data") if stop_json is not None else None
+        if stop_data is None or stop_data.get("stop") != stop_id:
+            return None
+        if any(stop_data.get(field) is None for field in ["lat", "long", "name_tc", "name_en"]):
+            return None
+        return {
+            "location": {
+                "lat": float(stop_data["lat"]),
+                "lng": float(stop_data["long"])
+            },
+            "name": {
+                "zh": stop_data["name_tc"],
+                "en": stop_data["name_en"]
+            }
+        }
+    except Exception as e:
+        print(e)
+        return None
+
+
 def get_web_text(url, gzip=True, max_retries=1000, delay=5):
     for attempt in range(max_retries):
         try:
@@ -379,20 +444,9 @@ def generate_ctb_route_with_more_stops(ctb_route):
         else:
             ctb_stop = DATA_SHEET["stopList"].get(ctb_stop_id)
             if ctb_stop is None:
-                ctb_stop = {
-                    "location": {
-                        "lat": 22.203615,
-                        "lng": 114.415195
-                    },
-                    "name": {
-                        "zh": "未有車站資訊",
-                        "en": "Stop Details TBD"
-                    },
-                    "remark": {
-                        "zh": "(資訊通常會在數日後更新出現)",
-                        "en": "(Usually details will be updated in a few days)"
-                    }
-                }
+                ctb_stop = get_ctb_stop_info(ctb_stop_id)
+                if ctb_stop is None:
+                    ctb_stop = create_missing_stop_placeholder()
                 DATA_SHEET["stopList"][ctb_stop_id] = ctb_stop
             if ctb_stop_id in route_specific_stop_map:
                 kmb_stop_id = route_specific_stop_map[ctb_stop_id]
@@ -1649,25 +1703,20 @@ def fix_missing_stops():
     for key, data in DATA_SHEET["routeList"].items():
         has_fake_stop = False
         if "stops" in data and data["stops"] is not None:
-            for stops in data["stops"].values():
+            for co, stops in data["stops"].items():
                 for stop_id in stops:
                     if stop_id not in DATA_SHEET["stopList"]:
                         has_fake_stop = True
                         missing_stops.add(stop_id)
-                        DATA_SHEET["stopList"][stop_id] = {
-                            "location": {
-                                "lat": 22.203615,
-                                "lng": 114.415195
-                            },
-                            "name": {
-                                "zh": "未有車站資訊",
-                                "en": "Stop Details TBD"
-                            },
-                            "remark": {
-                                "zh": "(資訊通常會在數日後更新出現)",
-                                "en": "(Usually details will be updated in a few days)"
-                            }
-                        }
+                        if co == "ctb":
+                            stop_info = get_ctb_stop_info(stop_id)
+                        elif co == "kmb":
+                            stop_info = get_kmb_stop_info(stop_id)
+                        else:
+                            stop_info = None
+                        if stop_info is None:
+                            stop_info = create_missing_stop_placeholder()
+                        DATA_SHEET["stopList"][stop_id] = stop_info
                     elif stop_id in missing_stops:
                         has_fake_stop = True
         if has_fake_stop and "fakeRoute" in data and data["fakeRoute"]:
