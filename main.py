@@ -1555,6 +1555,8 @@ def add_ctb_stops_that_does_not_belong_to_any_route():
                         if route_number in joint_routes:
                             if not generate_ctb_route_with_more_stops(DATA_SHEET["routeList"][key]):
                                 del DATA_SHEET["routeList"][key]
+                            else:
+                                DATA_SHEET["routeList"][key]["kmbCtbJoint"] = True
                 except Exception as e:
                     print(e)
 
@@ -1664,9 +1666,8 @@ def fix_missing_stops():
     for stop_id in missing_stops:
         if stop_id in DATA_SHEET["stopMap"]:
             del DATA_SHEET["stopMap"][stop_id]
-
-    for key in fake_routes_to_remove:
-        del DATA_SHEET["routeList"][key]
+    # for key in fake_routes_to_remove:
+    #     del DATA_SHEET["routeList"][key]
 
 
 def fix_ctb_route_bounds():
