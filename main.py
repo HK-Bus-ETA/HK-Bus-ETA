@@ -1623,11 +1623,14 @@ def add_ctb_stops_that_does_not_belong_to_any_route():
 
 def fix_missing_stops():
     missing_stops = set()
-    for data in DATA_SHEET["routeList"].values():
+    fake_routes_to_remove = set()
+    for key, data in DATA_SHEET["routeList"].items():
+        has_fake_stop = False
         if "stops" in data and data["stops"] is not None:
             for stops in data["stops"].values():
                 for stop_id in stops:
                     if stop_id not in DATA_SHEET["stopList"]:
+                        has_fake_stop = True
                         missing_stops.add(stop_id)
                         DATA_SHEET["stopList"][stop_id] = {
                             "location": {
@@ -1635,14 +1638,18 @@ def fix_missing_stops():
                                 "lng": 114.415195
                             },
                             "name": {
-                                "zh": f"未有車站資訊",
-                                "en": f"Stop Details TBD"
+                                "zh": "未有車站資訊",
+                                "en": "Stop Details TBD"
                             },
                             "remark": {
                                 "zh": "(資訊通常會在數日後更新出現)",
                                 "en": "(Usually details will be updated in a few days)"
                             }
                         }
+                    elif stop_id in missing_stops:
+                        has_fake_stop = True
+        if has_fake_stop and "fakeRoute" in data and data["fakeRoute"]:
+            fake_routes_to_remove.add(key)
     entry_to_remove = set()
     for key, stop_map in DATA_SHEET["stopMap"].items():
         for i in range(len(stop_map) - 1, -1, -1):
@@ -1657,6 +1664,9 @@ def fix_missing_stops():
     for stop_id in missing_stops:
         if stop_id in DATA_SHEET["stopMap"]:
             del DATA_SHEET["stopMap"][stop_id]
+
+    for key in fake_routes_to_remove:
+        del DATA_SHEET["routeList"][key]
 
 
 def fix_ctb_route_bounds():
