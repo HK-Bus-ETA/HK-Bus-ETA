@@ -379,7 +379,21 @@ def generate_ctb_route_with_more_stops(ctb_route):
         else:
             ctb_stop = DATA_SHEET["stopList"].get(ctb_stop_id)
             if ctb_stop is None:
-                return False
+                ctb_stop = {
+                    "location": {
+                        "lat": 22.203615,
+                        "lng": 114.415195
+                    },
+                    "name": {
+                        "zh": "未有車站資訊",
+                        "en": "Stop Details TBD"
+                    },
+                    "remark": {
+                        "zh": "(資訊通常會在數日後更新出現)",
+                        "en": "(Usually details will be updated in a few days)"
+                    }
+                }
+                DATA_SHEET["stopList"][ctb_stop_id] = ctb_stop
             if ctb_stop_id in route_specific_stop_map:
                 kmb_stop_id = route_specific_stop_map[ctb_stop_id]
             else:
