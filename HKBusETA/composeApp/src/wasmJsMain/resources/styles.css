@@ -266,6 +266,127 @@ body {
     font-size: 24px !important;
 }
 
+.leaflet-tile-url-control {
+    background: transparent !important;
+    position: relative;
+}
+
+.leaflet-tile-url-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFF !important;
+    line-height: 1 !important;
+    font-size: 17px !important;
+}
+
+.leaflet-tile-url-button:hover {
+    background: #F4F4F4 !important;
+}
+
+.leaflet-tile-url-icon {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.leaflet-tile-url-panel {
+    box-sizing: border-box;
+    position: absolute;
+    top: 42px;
+    left: -1px;
+    width: min(280px, calc(100vw - 24px));
+    padding: 8px;
+    border: 1px solid #CCCCCC;
+    border-radius: 3px;
+    background: #FFFFFF;
+    cursor: default;
+}
+
+.leaflet-tile-url-panel label {
+    display: block;
+    margin-bottom: 5px;
+    color: #222222;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+.leaflet-tile-url-panel input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 5px 6px;
+    border: 1px solid #BBBBBB;
+    border-radius: 3px;
+    color: #222222;
+    background: #FFFFFF;
+    font-size: 12px;
+}
+
+.leaflet-tile-url-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    margin-top: 7px;
+}
+
+.leaflet-tile-url-actions button {
+    padding: 4px 9px;
+    border: 1px solid #BBBBBB;
+    border-radius: 3px;
+    color: #222222;
+    background: #F7F7F7;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.leaflet-tile-url-actions button:hover {
+    background: #EEEEEE;
+}
+
+.leaflet-dark-theme.leaflet-tile-url-control {
+    background: transparent !important;
+    color: #AAAAAA !important;
+}
+
+.leaflet-dark-theme .leaflet-tile-url-button {
+    background: #111111 !important;
+    color: #EEEEEE !important;
+    border-bottom-color: #333333 !important;
+}
+
+.leaflet-dark-theme .leaflet-tile-url-button:hover {
+    background: #222222 !important;
+}
+
+.leaflet-dark-theme .leaflet-tile-url-panel,
+.leaflet-dark-theme.leaflet-tile-url-panel {
+    background: #111111;
+    border-color: #333333;
+    color: #AAAAAA;
+}
+
+.leaflet-dark-theme .leaflet-tile-url-panel label {
+    color: #DDDDDD;
+}
+
+.leaflet-dark-theme .leaflet-tile-url-panel input {
+    border-color: #444444;
+    color: #EEEEEE;
+    background: #222222;
+}
+
+.leaflet-dark-theme .leaflet-tile-url-actions button {
+    border-color: #444444;
+    color: #EEEEEE;
+    background: #2A2A2A;
+}
+
+.leaflet-dark-theme .leaflet-tile-url-actions button:hover {
+    background: #333333;
+}
+
 .prevent-select {
     -webkit-user-select: none;
     -ms-user-select: none;
