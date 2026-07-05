@@ -70,6 +70,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -137,6 +138,7 @@ import com.loohp.hkbuseta.compose.Signal
 import com.loohp.hkbuseta.compose.TextInputDialog
 import com.loohp.hkbuseta.compose.TransferWithinAStation
 import com.loohp.hkbuseta.compose.WrongLocation
+import com.loohp.hkbuseta.compose.animateScrollToPageClearingFocus
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.dummySignal
 import com.loohp.hkbuseta.compose.plainTooltip
@@ -205,6 +207,7 @@ fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, sign
         pageCount = { mainFavouriteTabItem.size }
     )
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect (pagerState.currentPage, pagerState.isScrollInProgress) {
         if (!pagerState.isScrollInProgress) {
@@ -216,7 +219,7 @@ fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, sign
     }
     ChangedEffect (signal) {
         val index = pagerState.currentPage
-        scope.launch { pagerState.animateScrollToPage(if (index == 0) 1 else 0) }
+        scope.launch { pagerState.animateScrollToPageClearingFocus(if (index == 0) 1 else 0, focusManager) }
     }
 
     Column(
@@ -226,7 +229,7 @@ fun FavouriteInterface(instance: AppActiveContext, visible: Boolean = true, sign
             mainFavouriteTabItem.forEachIndexed { index, (title, iconLayers) ->
                 PlatformTab(
                     selected = index == pagerState.currentPage,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                    onClick = { scope.launch { pagerState.animateScrollToPageClearingFocus(index, focusManager) } },
                     icon = {
                         Box {
                             for ((icon, overrideColor, modifier) in iconLayers) {
@@ -296,6 +299,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
     var favouriteRouteStopChosenTab by favouriteRouteStopChosenTabState.collectAsStateMultiplatform()
     val pagerState = rememberPagerState(initialPage = favouriteRouteStopChosenTab) { favouriteRouteStops.size }
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
     val routes: MutableMap<BilingualText, ImmutableList<StopIndexedRouteSearchResultEntry>> = remember { mutableStateMapOf() }
 
     LaunchedEffect (pagerState.currentPage) {
@@ -318,7 +322,7 @@ fun FavouriteRouteStopInterface(instance: AppActiveContext, visible: Boolean) {
             favouriteRouteStops.forEachIndexed { index, item ->
                 PlatformTab(
                     selected = index == pagerState.currentPage,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                    onClick = { scope.launch { pagerState.animateScrollToPageClearingFocus(index, focusManager) } },
                     text = {
                         PlatformText(
                             modifier = Modifier
@@ -712,6 +716,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
     } else {
         val pagerState = rememberPagerState { favouriteStops.size }
         val scope = rememberCoroutineScope()
+        val focusManager = LocalFocusManager.current
         val routes: MutableMap<Stop, ImmutableList<StopIndexedRouteSearchResultEntry>> = remember { mutableStateMapOf() }
 
         Column(
@@ -737,7 +742,7 @@ fun FavouriteStopInterface(instance: AppActiveContext, visible: Boolean) {
                     } }
                     PlatformTab(
                         selected = index == pagerState.currentPage,
-                        onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                        onClick = { scope.launch { pagerState.animateScrollToPageClearingFocus(index, focusManager) } },
                         text = {
                             Row(
                                 modifier = Modifier

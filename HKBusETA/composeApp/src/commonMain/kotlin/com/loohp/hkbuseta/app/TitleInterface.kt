@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -100,6 +101,7 @@ import com.loohp.hkbuseta.compose.Settings
 import com.loohp.hkbuseta.compose.Star
 import com.loohp.hkbuseta.compose.StarOutline
 import com.loohp.hkbuseta.compose.applyIf
+import com.loohp.hkbuseta.compose.animateScrollToPageClearingFocus
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.mutableSignalStateOf
 import com.loohp.hkbuseta.compose.platformPrimaryContainerColor
@@ -206,6 +208,7 @@ fun TitleInterface(instance: AppActiveContext) {
     )
     val historyStack by HistoryStack.historyStack.collectAsStateMultiplatform()
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
     val signal = remember { mutableSignalStateOf() }
     val frontGroup by remember { derivedStateOf { historyStack.last().screenGroup == AppScreenGroup.TITLE } }
 
@@ -229,9 +232,10 @@ fun TitleInterface(instance: AppActiveContext) {
             it >= 0
         }?.let {
             if (instance.compose.flags.contains(AppIntentFlag.NO_ANIMATION)) {
+                focusManager.clearFocus(force = true)
                 pagerState.scrollToPage(it)
             } else {
-                pagerState.animateScrollToPage(it)
+                pagerState.animateScrollToPageClearingFocus(it, focusManager)
             }
         }
     }
@@ -267,7 +271,7 @@ fun TitleInterface(instance: AppActiveContext) {
                         if (selected && !Shared.disableNavBarQuickActions) {
                             item.alreadyOnPageClickAction?.invoke(instance, signal)
                         } else {
-                            pagerState.animateScrollToPage(index)
+                            pagerState.animateScrollToPageClearingFocus(index, focusManager)
                         }
                     }
                 },

@@ -484,13 +484,14 @@ fun HeaderElement(
             )
         }
         if (!co.isTrain && !co.isFerry && specialRoutes.isNotEmpty()) {
+            val specialRoutesCount = specialRoutes.size.coerceAtLeast(1)
             val infiniteTransition = rememberInfiniteTransition(label = "SpecialBranchesCrossFade")
             val animatedCurrentLine by infiniteTransition.animateValue(
                 initialValue = 0,
                 targetValue = specialRoutes.size,
                 typeConverter = Int.VectorConverter,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(3500 * specialRoutes.size, easing = LinearEasing),
+                    animation = tween(3500 * specialRoutesCount, easing = LinearEasing),
                     repeatMode = RepeatMode.Restart
                 ),
                 label = "SpecialBranchesCrossFade"

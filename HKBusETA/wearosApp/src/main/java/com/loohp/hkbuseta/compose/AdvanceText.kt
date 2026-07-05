@@ -413,15 +413,34 @@ fun AutoResizeText(
     )
 }
 
-data class FontSizeRange(
+class FontSizeRange(
     val min: TextUnit = 1.sp,
-    val max: TextUnit,
+    max: TextUnit,
     val step: TextUnit = DEFAULT_TEXT_STEP,
     val resetToMaxIfTextUpdated: Boolean = true
 ) {
+    val max: TextUnit = if (min < max) max else (min.value + step.value).sp
+
     init {
-        require(min < max) { "min should be less than max, $this" }
         require(step.value > 0) { "step should be greater than 0, $this" }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is FontSizeRange) return false
+        return min == other.min && max == other.max && step == other.step && resetToMaxIfTextUpdated == other.resetToMaxIfTextUpdated
+    }
+
+    override fun hashCode(): Int {
+        var result = min.hashCode()
+        result = 31 * result + max.hashCode()
+        result = 31 * result + step.hashCode()
+        result = 31 * result + resetToMaxIfTextUpdated.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "FontSizeRange(min=$min, max=$max, step=$step, resetToMaxIfTextUpdated=$resetToMaxIfTextUpdated)"
     }
 
     companion object {

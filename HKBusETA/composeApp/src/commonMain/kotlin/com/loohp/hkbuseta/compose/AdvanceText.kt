@@ -30,7 +30,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -50,7 +49,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
@@ -73,6 +71,7 @@ import com.loohp.hkbuseta.common.utils.Immutable
 import com.loohp.hkbuseta.utils.asAnnotatedString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -95,7 +94,7 @@ fun TextInputDialog(
     val inputValid by remember { derivedStateOf { inputValidation.invoke(textInput.text) } }
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect (Unit) {
-        delay(200)
+        delay(200.milliseconds)
         focusRequester.requestFocus()
     }
     PlatformAlertDialog(
@@ -347,14 +346,32 @@ fun AutoResizeText(
 }
 
 @Immutable
-data class FontSizeRange(
+class FontSizeRange(
     val min: TextUnit = 1.sp,
-    val max: TextUnit,
+    max: TextUnit,
     val step: TextUnit = DEFAULT_TEXT_STEP
 ) {
+    val max: TextUnit = if (min < max) max else (min.value + step.value).sp
+
     init {
-        require(min < max) { "min should be less than max, $this" }
         require(step.value > 0) { "step should be greater than 0, $this" }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is FontSizeRange) return false
+        return min == other.min && max == other.max && step == other.step
+    }
+
+    override fun hashCode(): Int {
+        var result = min.hashCode()
+        result = 31 * result + max.hashCode()
+        result = 31 * result + step.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "FontSizeRange(min=$min, max=$max, step=$step)"
     }
 
     companion object {

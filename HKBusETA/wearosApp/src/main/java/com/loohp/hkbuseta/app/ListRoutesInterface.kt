@@ -860,13 +860,14 @@ fun CrossfadeSecondLine(
     co: Operator,
     instance: AppActiveContext
 ) {
+    val secondLineCount = secondLine.size.coerceAtLeast(1)
     val infiniteTransition = rememberInfiniteTransition(label = "SecondLineCrossFade")
     val animatedCurrentLine by infiniteTransition.animateValue(
         initialValue = 0,
         targetValue = secondLine.size,
         typeConverter = Int.VectorConverter,
         animationSpec = infiniteRepeatable(
-            animation = tween(5500 * secondLine.size, easing = LinearEasing),
+            animation = tween(5500 * secondLineCount, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "SecondLineCrossFade"

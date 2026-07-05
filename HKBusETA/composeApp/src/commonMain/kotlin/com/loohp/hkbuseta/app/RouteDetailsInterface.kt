@@ -84,6 +84,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -187,6 +188,7 @@ import com.loohp.hkbuseta.compose.RightToLeftRow
 import com.loohp.hkbuseta.compose.Timer
 import com.loohp.hkbuseta.compose.UTurnRight
 import com.loohp.hkbuseta.compose.applyIf
+import com.loohp.hkbuseta.compose.animateScrollToPageClearingFocus
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.currentLocalWindowSize
 import com.loohp.hkbuseta.compose.isNarrow
@@ -414,6 +416,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
         initialPage = (instance.compose.data["page"] as? Int?: 0).coerceAtMost(listStopsTabItem.size - 1)
     ) { listStopsTabItem.size }
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
     val pagerScrollEnabled = remember { mutableStateOf(true) }
 
     val sheetState = rememberPlatformModalBottomSheetState()
@@ -721,7 +724,7 @@ fun RouteDetailsInterface(instance: AppActiveContext) {
             listStopsTabItem.forEachIndexed { index, (title, iconLayers, color, type) ->
                 PlatformTab(
                     selected = index == pagerState.currentPage,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                    onClick = { scope.launch { pagerState.animateScrollToPageClearingFocus(index, focusManager) } },
                     icon = {
                         Box {
                             for ((icon, overrideColor, modifier) in iconLayers) {

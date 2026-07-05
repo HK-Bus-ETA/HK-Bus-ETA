@@ -118,6 +118,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.FirstBaseline
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
@@ -256,6 +257,7 @@ import com.loohp.hkbuseta.compose.Train
 import com.loohp.hkbuseta.compose.VerticalGrid
 import com.loohp.hkbuseta.compose.applyIf
 import com.loohp.hkbuseta.compose.applyIfNotNull
+import com.loohp.hkbuseta.compose.animateScrollToPageClearingFocus
 import com.loohp.hkbuseta.compose.clickable
 import com.loohp.hkbuseta.compose.collectAsStateMultiplatform
 import com.loohp.hkbuseta.compose.dummySignal
@@ -407,6 +409,7 @@ fun RouteMapSearchInterface(
         pageCount = { trainRouteMapItems.size }
     )
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
     val haptics = LocalHapticFeedback.current
 
     var stopLaunch: String? by remember { mutableStateOf(null) }
@@ -423,8 +426,8 @@ fun RouteMapSearchInterface(
                     val co = operators.first()
                     if (co.isTrain) {
                         when (co) {
-                            Operator.MTR -> pagerState.animateScrollToPage(0)
-                            Operator.LRT -> pagerState.animateScrollToPage(1)
+                            Operator.MTR -> pagerState.animateScrollToPageClearingFocus(0, focusManager)
+                            Operator.LRT -> pagerState.animateScrollToPageClearingFocus(1, focusManager)
                         }
                         stopLaunch = stopId
                         instance.compose.data.remove("stopLaunch")
@@ -442,7 +445,7 @@ fun RouteMapSearchInterface(
     }
     ChangedEffect (signal) {
         val index = pagerState.currentPage
-        scope.launch { pagerState.animateScrollToPage(if (index == 0) 1 else 0) }
+        scope.launch { pagerState.animateScrollToPageClearingFocus(if (index == 0) 1 else 0, focusManager) }
     }
 
     var location by rememberSaveable(saver = coordinatesNullableStateSaver) { mutableStateOf(lastLocation?.location) }
@@ -497,7 +500,7 @@ fun RouteMapSearchInterface(
                 trainRouteMapItems.forEachIndexed { index, (title, iconLayers, color) ->
                     PlatformTab(
                         selected = pagerState.currentPage == index,
-                        onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                        onClick = { scope.launch { pagerState.animateScrollToPageClearingFocus(index, focusManager) } },
                         icon = {
                             Box {
                                 for ((icon, overrideColor, modifier) in iconLayers) {
@@ -540,13 +543,14 @@ fun RouteMapSearchInterface(
                 animationSpec = tween(durationMillis = 300)
             )
         ) {
+            val messageCount = mtrLineServiceMessages.size.coerceAtLeast(1)
             val infiniteTransition = rememberInfiniteTransition(label = "MessageCrossfade")
             val animatedCurrentLine by infiniteTransition.animateValue(
                 initialValue = 0,
                 targetValue = mtrLineServiceMessages.size,
                 typeConverter = Int.VectorConverter,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(5500 * mtrLineServiceMessages.size, easing = LinearEasing),
+                    animation = tween(5500 * messageCount, easing = LinearEasing),
                     repeatMode = RepeatMode.Restart
                 ),
                 label = "SecondLineCrossFade"
@@ -1136,6 +1140,7 @@ fun MTRETADisplayInterface(
 
     val pagerState = rememberPagerState { routes.size.coerceAtLeast(1) }
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
     val selectedLineColor = remember { Animatable(Color.Transparent) }
     var init by remember { mutableStateOf(false) }
 
@@ -1239,7 +1244,7 @@ fun MTRETADisplayInterface(
                         routes.forEachIndexed { index, (line, color) ->
                             PlatformTab(
                                 selected = index == pagerState.currentPage,
-                                onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                onClick = { scope.launch { pagerState.animateScrollToPageClearingFocus(index, focusManager) } },
                                 text = {
                                     PlatformText(
                                         fontSize = 15F.sp,
@@ -2241,6 +2246,7 @@ fun LRTETADisplayInterface(
 
     val pagerState = rememberPagerState { lrtRouteDisplayModeItems.size }
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
 
     Scaffold(
         modifier = Modifier
@@ -2284,7 +2290,7 @@ fun LRTETADisplayInterface(
                     lrtRouteDisplayModeItems.forEachIndexed { index, item ->
                         PlatformTab(
                             selected = index == pagerState.currentPage,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            onClick = { scope.launch { pagerState.animateScrollToPageClearingFocus(index, focusManager) } },
                             text = {
                                 PlatformText(
                                     fontSize = 15F.sp,
