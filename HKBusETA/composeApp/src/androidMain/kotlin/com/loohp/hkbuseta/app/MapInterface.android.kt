@@ -22,6 +22,7 @@ package com.loohp.hkbuseta.app
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Point
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -52,6 +53,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
@@ -67,10 +69,13 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.ComposeMapColorScheme
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.GoogleMapComposable
+import com.google.maps.android.compose.MapEffect
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.loohp.hkbuseta.R
@@ -103,12 +108,21 @@ import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.compose.platformBackgroundColor
 import com.loohp.hkbuseta.shared.ComposeShared
+import com.loohp.hkbuseta.utils.ProjectedRoutePoint
+import com.loohp.hkbuseta.utils.ProjectedScreenBounds
+import com.loohp.hkbuseta.utils.ProjectedScreenPoint
+import com.loohp.hkbuseta.utils.ROUTE_ARROW_COLLISION_DISTANCE
+import com.loohp.hkbuseta.utils.ROUTE_ARROW_SPACING
+import com.loohp.hkbuseta.utils.ROUTE_ARROW_STOP_CLEARANCE
+import com.loohp.hkbuseta.utils.RouteDirectionArrow
+import com.loohp.hkbuseta.utils.calculateRouteDirectionArrows
 import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.closenessTo
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
 import com.loohp.hkbuseta.utils.hasGooglePlayService
 import com.loohp.hkbuseta.utils.isHuaweiDevice
+import com.loohp.hkbuseta.utils.pathsInRouteDirection
 import com.loohp.hkbuseta.utils.toHexString
 import com.loohp.hkbuseta.utils.withAlpha
 import com.multiplatform.webview.jsbridge.IJsMessageHandler
@@ -121,8 +135,12 @@ import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.multiplatform.webview.web.rememberWebViewStateWithHTMLData
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlin.math.sin
+import com.google.android.gms.maps.GoogleMap as NativeGoogleMap
 
 
 @Suppress("NOTHING_TO_INLINE")
@@ -189,6 +207,14 @@ fun GoogleMapRouteInterface(
     var init by remember { mutableLongStateOf(-1) }
     var hasLocation by remember { mutableStateOf(false) }
     var gpsEnabled by remember { mutableStateOf(false) }
+    var nativeMap by remember { mutableStateOf<NativeGoogleMap?>(null) }
+    var mapSize by remember { mutableStateOf(IntSize.Zero) }
+    var directionArrows by remember { mutableStateOf<List<List<GoogleMapRouteDirectionArrow>>>(emptyList()) }
+    val density = LocalDensity.current.density
+    val pathColors by ComposeShared.rememberOperatorColors(sections.map { section ->
+        section.waypoints.co.getLineColor(section.waypoints.routeNumber, Color.Red) to
+            Operator.CTB.getOperatorColor(Color.Yellow).takeIf { section.waypoints.isKmbCtbJoint }
+    }.asImmutableList())
     val backgroundColor = if (Shared.theme.isDarkMode) 0xFF0F0F0F.toInt() else null
 
     LaunchedEffect (selectedSection, selectedStop, init) {
@@ -204,8 +230,15 @@ fun GoogleMapRouteInterface(
     LaunchedEffect (Unit) {
         checkLocationPermission(instance, true) { hasLocation = it }
     }
+    LaunchedEffect(cameraPositionState.isMoving, sections, nativeMap, mapSize, density) {
+        if (!cameraPositionState.isMoving && mapSize != IntSize.Zero) {
+            directionArrows = nativeMap?.let { map ->
+                runCatching { calculateGoogleMapDirectionArrows(sections, map, mapSize, density) }.getOrDefault(emptyList())
+            } ?: emptyList()
+        }
+    }
 
-    Box {
+    Box(modifier = Modifier.onGloballyPositioned { mapSize = it.size }) {
         if (hasLocation && !gpsEnabled) {
             PlatformFilledTonalIconToggleButton(
                 modifier = Modifier
@@ -241,7 +274,17 @@ fun GoogleMapRouteInterface(
             mapColorScheme = if (Shared.theme.isDarkMode) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
             onMapLoaded = { init = currentTimeMillis() }
         ) {
+            @OptIn(MapsComposeExperimentalApi::class)
+            MapEffect(Unit) { nativeMap = it }
             for ((index, section) in sections.withIndex()) {
+                WaypointPaths(
+                    waypoints = section.waypoints,
+                    pathColor = pathColors[index]
+                )
+                RouteDirectionArrowOverlays(
+                    arrows = directionArrows.getOrNull(index).orEmpty(),
+                    color = pathColors[index]
+                )
                 StopMarkers(
                     instance = instance,
                     waypoints = section.waypoints,
@@ -254,9 +297,6 @@ fun GoogleMapRouteInterface(
                     selectedSectionState = selectedSectionState,
                     sectionIndex = index,
                     shouldShowStopIndex = shouldShowStopIndex[index]
-                )
-                WaypointPaths(
-                    waypoints = section.waypoints
                 )
             }
         }
@@ -326,15 +366,13 @@ inline fun (() -> Int).logPossibleStopMarkerIndexMapException(
 
 @Composable
 @GoogleMapComposable
-fun WaypointPaths(waypoints: RouteWaypoints) {
-    val pathColor by ComposeShared.rememberOperatorColor(waypoints.co.getLineColor(waypoints.routeNumber, Color.Red), Operator.CTB.getOperatorColor(Color.Yellow).takeIf { waypoints.isKmbCtbJoint })
-    val closeness by remember { derivedStateOf { max(pathColor.closenessTo(Color(0xFFFDE293)), pathColor.closenessTo(Color(0xFFAAD4FF))) } }
+fun WaypointPaths(waypoints: RouteWaypoints, pathColor: Color) {
+    val outlineColor = routeContrastOutlineColor(pathColor)
     for (lines in waypoints.paths) {
-        val clearness = if (Shared.theme.isDarkMode) 0F else closeness
-        if (clearness > 0.8F) {
+        if (outlineColor != null) {
             Polyline(
                 points = lines.toGoogleLatLng(),
-                color = Color.Blue.withAlpha((((clearness - 0.8) / 0.05) * 255).roundToInt().coerceIn(0, 255)),
+                color = outlineColor,
                 width = 14F,
                 zIndex = 1F,
             )
@@ -349,6 +387,111 @@ fun WaypointPaths(waypoints: RouteWaypoints) {
 }
 
 @Composable
+@GoogleMapComposable
+private fun RouteDirectionArrowOverlays(arrows: List<GoogleMapRouteDirectionArrow>, color: Color) {
+    val outlineColor = routeContrastOutlineColor(color)
+    for (arrow in arrows) {
+        key(arrow.location.lat, arrow.location.lng, arrow.rotation) {
+            Polygon(
+                points = arrow.points,
+                fillColor = color,
+                strokeColor = outlineColor ?: color,
+                strokeWidth = if (outlineColor == null) 1F else 2F,
+                zIndex = 2.5F,
+                clickable = false
+            )
+        }
+    }
+}
+
+@Composable
+private fun routeContrastOutlineColor(pathColor: Color): Color? {
+    if (Shared.theme.isDarkMode) return null
+    val closeness = max(
+        pathColor.closenessTo(Color(0xFFFDE293)),
+        pathColor.closenessTo(Color(0xFFAAD4FF))
+    )
+    if (closeness <= 0.8F) return null
+    return Color.Blue.withAlpha(
+        (((closeness - 0.8) / 0.05) * 255).roundToInt().coerceIn(0, 255)
+    )
+}
+
+private data class GoogleMapRouteDirectionArrow(
+    val location: Coordinates,
+    val rotation: Float,
+    val points: List<LatLng>
+)
+
+private fun calculateGoogleMapDirectionArrows(
+    sections: ImmutableList<MapRouteSection>,
+    map: NativeGoogleMap,
+    mapSize: IntSize,
+    density: Float
+): List<List<GoogleMapRouteDirectionArrow>> {
+    val projection = map.projection
+    val occupied = mutableListOf<ProjectedScreenPoint>()
+    val bounds =
+        ProjectedScreenBounds(0.0, 0.0, mapSize.width.toDouble(), mapSize.height.toDouble())
+    val allStops = sections.flatMap { section ->
+        section.waypoints.stops.map { stop ->
+            val point = projection.toScreenLocation(stop.location.toGoogleLatLng())
+            ProjectedScreenPoint(point.x.toDouble(), point.y.toDouble())
+        }
+    }
+    return sections.map { section ->
+        val paths = section.waypoints.pathsInRouteDirection().map { path ->
+            path.map { location ->
+                val point = projection.toScreenLocation(location.toGoogleLatLng())
+                ProjectedRoutePoint(location, point.x.toDouble(), point.y.toDouble())
+            }
+        }
+        val arrows = calculateRouteDirectionArrows(
+            paths = paths,
+            stops = allStops,
+            bounds = bounds,
+            occupiedArrowPoints = occupied,
+            spacing = ROUTE_ARROW_SPACING * density,
+            collisionDistance = ROUTE_ARROW_COLLISION_DISTANCE * density,
+            stopClearance = ROUTE_ARROW_STOP_CLEARANCE * density
+        )
+        occupied += arrows.map { ProjectedScreenPoint(it.x, it.y) }
+        arrows.map { arrow ->
+            GoogleMapRouteDirectionArrow(
+                location = arrow.location,
+                rotation = arrow.rotation,
+                points = createGoogleMapDirectionArrowPoints(arrow, projection, 14F * density)
+            )
+        }
+    }
+}
+
+private fun createGoogleMapDirectionArrowPoints(
+    arrow: RouteDirectionArrow,
+    projection: com.google.android.gms.maps.Projection,
+    size: Float
+): List<LatLng> {
+    val radians = arrow.rotation * PI / 180.0
+    val cosine = cos(radians)
+    val sine = sin(radians)
+    return listOf(
+        0.0 to -0.4333,
+        0.4 to 0.4333,
+        0.0 to 0.2417,
+        -0.4 to 0.4333
+    ).map { (relativeX, relativeY) ->
+        val x = relativeX * size
+        val y = relativeY * size
+        projection.fromScreenLocation(
+            Point(
+                (arrow.x + x * cosine - y * sine).roundToInt(),
+                (arrow.y + x * sine + y * cosine).roundToInt()
+            )
+        )
+    }
+}
+
+@Composable
 fun rememberStopMarkerState(stop: Stop): MarkerState {
     return remember(stop) { MarkerState(stop.location.toGoogleLatLng()) }
 }
@@ -357,6 +500,7 @@ const val baseHtml: String = """
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Route Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -382,6 +526,12 @@ const val baseHtml: String = """
         .leaflet-dark-theme.leaflet-control-zoom {
             filter: brightness(0.6) invert(1) contrast(3);
         }
+
+        .route-direction-arrow {
+            background: transparent;
+            border: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -395,11 +545,100 @@ const val baseHtml: String = """
 
         var layer = L.layerGroup();
         map.addLayer(layer);
+
+        map.createPane('routeDirections');
+        map.getPane('routeDirections').style.zIndex = 450;
+        map.getPane('routeDirections').style.pointerEvents = 'none';
         
         var stopMarkers = [];
         
         var polylines = [];
         var polylinesOutline = [];
+        var routeArrowSections = [];
+        var routeArrowMarkers = [];
+        var routeArrowUpdateTimer = null;
+
+        function updateRouteDirectionArrows() {
+            routeArrowMarkers.forEach(function(marker) { layer.removeLayer(marker); });
+            routeArrowMarkers = [];
+            var occupied = [];
+            var allStops = [];
+            routeArrowSections.forEach(function(section) {
+                section.stops.forEach(function(stop) { allStops.push(map.latLngToContainerPoint(stop)); });
+            });
+            var size = map.getSize();
+
+            routeArrowSections.forEach(function(section) {
+                var segments = [];
+                var totalLength = 0;
+                section.paths.forEach(function(path) {
+                    for (var i = 1; i < path.length; i++) {
+                        var startPoint = map.latLngToContainerPoint(path[i - 1]);
+                        var endPoint = map.latLngToContainerPoint(path[i]);
+                        var length = startPoint.distanceTo(endPoint);
+                        if (Number.isFinite(length) && length > 0) {
+                            segments.push({ start: path[i - 1], end: path[i], startPoint: startPoint, endPoint: endPoint, length: length });
+                            totalLength += length;
+                        }
+                    }
+                });
+                if (totalLength < 40) return;
+
+                var traversed = 0;
+                var nextDistance = totalLength < 96 ? totalLength / 2 : 48;
+                var lastDistance = totalLength < 96 ? nextDistance : totalLength - 48;
+                var visibleCount = 0;
+                var opposingPhaseShifted = false;
+                for (var s = 0; s < segments.length && visibleCount < 24; s++) {
+                    var segment = segments[s];
+                    var segmentEnd = traversed + segment.length;
+                    while (nextDistance <= segmentEnd && nextDistance <= lastDistance && visibleCount < 24) {
+                        var fraction = Math.max(0, Math.min(1, (nextDistance - traversed) / segment.length));
+                        var x = segment.startPoint.x + (segment.endPoint.x - segment.startPoint.x) * fraction;
+                        var y = segment.startPoint.y + (segment.endPoint.y - segment.startPoint.y) * fraction;
+                        var rotation = (Math.atan2(segment.endPoint.y - segment.startPoint.y, segment.endPoint.x - segment.startPoint.x) * 180 / Math.PI + 450) % 360;
+                        var conflicts = occupied.map(function(arrow) { return { arrow: arrow, distance: arrow.point.distanceTo([x, y]) }; }).filter(function(conflict) { return conflict.distance < 48; });
+                        var hardOpposingOverlap = conflicts.some(function(conflict) { return angleDifference(conflict.arrow.rotation, rotation) >= 120 && conflict.distance < 14; });
+                        if (hardOpposingOverlap && !opposingPhaseShifted && nextDistance + 48 <= lastDistance) {
+                            nextDistance += 48;
+                            opposingPhaseShifted = true;
+                            continue;
+                        }
+                        var clearOfStops = allStops.every(function(point) { return point.distanceTo([x, y]) >= 24; });
+                        var clearOfArrows = conflicts.every(function(conflict) { return angleDifference(conflict.arrow.rotation, rotation) >= 120 && conflict.distance >= 14; });
+                        if (x >= 0 && y >= 0 && x <= size.x && y <= size.y && clearOfStops && clearOfArrows) {
+                            var location = [
+                                segment.start[0] + (segment.end[0] - segment.start[0]) * fraction,
+                                segment.start[1] + (segment.end[1] - segment.start[1]) * fraction
+                            ];
+                            var icon = L.divIcon({
+                                className: 'route-direction-arrow',
+                                iconSize: [14, 14],
+                                iconAnchor: [7, 7],
+                                html: '<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(' + rotation + 'deg)"><path d="M6 0.8 L10.8 11.2 L6 8.9 L1.2 11.2 Z" fill="' + section.color + '" stroke="' + section.color + '" stroke-width="1.4" stroke-linejoin="round"/></svg>'
+                            });
+                            routeArrowMarkers.push(L.marker(location, { icon: icon, pane: 'routeDirections', interactive: false, keyboard: false }).addTo(layer));
+                            occupied.push({ point: L.point(x, y), rotation: rotation });
+                            visibleCount++;
+                        }
+                        nextDistance += 96;
+                    }
+                    traversed = segmentEnd;
+                }
+            });
+        }
+
+        function scheduleRouteDirectionArrowUpdate() {
+            clearTimeout(routeArrowUpdateTimer);
+            routeArrowUpdateTimer = setTimeout(updateRouteDirectionArrows, 50);
+        }
+
+        function angleDifference(first, second) {
+            var difference = Math.abs(first - second) % 360;
+            return Math.min(difference, 360 - difference);
+        }
+
+        map.on('moveend zoomend', scheduleRouteDirectionArrowUpdate);
     </script>
 </body>
 </html>
@@ -429,7 +668,7 @@ fun rememberLeafletScript(
     } }
     val pathsJsArray by remember(sections) { derivedStateOf {
         sections.joinToString(prefix = "[", separator = "],[", postfix = "]") { s ->
-            s.waypoints.paths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" }
+            s.waypoints.pathsInRouteDirection().joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" }
         }
     } }
     val pathColors = remember { sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) } }
@@ -490,6 +729,7 @@ fun rememberLeafletScript(
         var outlineHexOpacity = $outlineHexOpacity;
         var shouldShowStopIndex = $shouldShowStopIndex;
         var paths = [$pathsJsArray];
+        routeArrowSections = paths.map(function(sectionPaths, sectionIndex) { return { paths: sectionPaths, stops: stops, color: colorHexes[sectionIndex] }; });
         
         for (var i = 0; i < ${sections.size}; i++) {
             var sectionIndex = i;
@@ -525,6 +765,7 @@ fun rememberLeafletScript(
             polylinesList.push(polylines);
             polylinesOutlineList.push(polylinesOutline);
         }
+        scheduleRouteDirectionArrowUpdate();
     """.trimIndent() } }
 }
 
@@ -576,6 +817,10 @@ fun DefaultMapRouteInterface(
                                 polylinesList[$index].forEach(function(polyline) {
                                     polyline.setStyle({ color: '$colorHex', opacity: 1.0 });
                                 });
+                            }
+                            if (routeArrowSections[$index]) {
+                                routeArrowSections[$index].color = '$colorHex';
+                                scheduleRouteDirectionArrowUpdate();
                             }
                         """.trimIndent())
                     }

@@ -66,9 +66,15 @@ import com.loohp.hkbuseta.compose.PlatformFilledTonalIconToggleButton
 import com.loohp.hkbuseta.compose.PlatformIcons
 import com.loohp.hkbuseta.compose.plainTooltip
 import com.loohp.hkbuseta.shared.ComposeShared
+import com.loohp.hkbuseta.utils.ProjectedRoutePoint
+import com.loohp.hkbuseta.utils.ProjectedScreenBounds
+import com.loohp.hkbuseta.utils.ProjectedScreenPoint
+import com.loohp.hkbuseta.utils.RouteDirectionArrow
+import com.loohp.hkbuseta.utils.calculateRouteDirectionArrows
 import com.loohp.hkbuseta.utils.checkLocationPermission
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
+import com.loohp.hkbuseta.utils.pathsInRouteDirection
 import com.loohp.hkbuseta.utils.resize
 import com.slapps.cupertino.toUIColor
 import kotlinx.cinterop.CPointer
@@ -101,9 +107,12 @@ import platform.MapKit.MKMapViewDelegateProtocol
 import platform.MapKit.MKOverlayLevelAboveRoads
 import platform.MapKit.MKOverlayProtocol
 import platform.MapKit.MKOverlayRenderer
+import platform.MapKit.MKPolygon
+import platform.MapKit.MKPolygonRenderer
 import platform.MapKit.MKPolyline
 import platform.MapKit.MKPolylineRenderer
 import platform.MapKit.addOverlays
+import platform.MapKit.overlays
 import platform.MapKit.removeOverlays
 import platform.UIKit.UIImage
 import platform.UIKit.UIView
@@ -112,6 +121,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.log2
 import kotlin.math.sin
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class, ExperimentalWeakApi::class)
 @Composable
@@ -150,7 +160,7 @@ actual fun MapRouteInterface(
     val shouldShowStopIndex = remember { sections.map { s -> !s.waypoints.co.run { isTrain || isFerry } } }
     val anchors = remember { sections.map { s -> if (s.waypoints.co.isTrain) Offset(0.5F, 0.5F) else Offset(0.5F, 1.0F) } }
     val polylineSectionIndexMap = remember { WeakMap<MKPolyline, Int>() }
-    val mapDelegate = remember(indexMap) { MapDelegate(iconNames, pathColors.toMutableList(), anchors, polylineSectionIndexMap) { sectionIndex, stopIndex ->
+    val mapDelegate = remember(indexMap, sections) { MapDelegate(iconNames, pathColors.toMutableList(), anchors, polylineSectionIndexMap, sections) { sectionIndex, stopIndex ->
         selectedSection = sectionIndex
         selectedStop = indexMap[sectionIndex][stopIndex] + 1
     } }
@@ -168,7 +178,7 @@ actual fun MapRouteInterface(
 
     LaunchedEffect (selectedSection, selectedStop) {
         CoroutineScope(Dispatchers.Main).launch {
-            delay(200)
+            delay(200.milliseconds)
             lock.withLock {
                 if (init) {
                     val location = sections[selectedSection].stops[selectedStop - 1].stop.location
@@ -235,6 +245,8 @@ actual fun MapRouteInterface(
                 map.removeOverlays(overlays)
                 map.addOverlays(overlays, MKOverlayLevelAboveRoads)
             }
+            delay(250.milliseconds)
+            lock.withLock { mapDelegate.updateDirectionArrows(map) }
         }
     }
     LaunchedEffect (pathColors) {
@@ -319,7 +331,7 @@ actual fun MapSelectInterface(
     }
     LaunchedEffect (Unit) {
         CoroutineScope(Dispatchers.Main).launch {
-            delay(200)
+            delay(200.milliseconds)
             lock.withLock {
                 camera.centerCoordinate = initialPosition.toAppleCoordinates()
                 camera.altitude = DefaultAltitude
@@ -352,7 +364,7 @@ actual fun MapSelectInterface(
                         lastZoom = newZoom
                     }
                 }
-                delay(250)
+                delay(250.milliseconds)
             }
         }
     }
@@ -407,16 +419,25 @@ class MapDelegate(
     private val color: MutableList<Color>,
     private val anchor: List<Offset>,
     private val polylineSectionIndexMap: WeakMap<MKPolyline, Int>,
+    private val sections: ImmutableList<MapRouteSection>,
     private val callback: (Int, Int) -> Unit,
 ): NSObject(), MKMapViewDelegateProtocol {
 
     private val polylineRenderers = List(iconName.size) { mutableSetOf<MKPolylineRenderer>() }
+    private val directionArrowRenderers = List(iconName.size) { mutableSetOf<MKPolygonRenderer>() }
+    private val directionArrowSectionIndexMap = mutableMapOf<MKPolygon, Int>()
+    private var directionArrowOverlays: List<MKPolygon> = emptyList()
 
     fun update(sectionIndex: Int, color: Color = this.color[sectionIndex]) {
         this.color[sectionIndex] = color
         for (renderer in polylineRenderers[sectionIndex]) {
             renderer.strokeColor = color.toUIColor()
             renderer.lineWidth = 5.0
+            renderer.setNeedsDisplay()
+        }
+        for (renderer in directionArrowRenderers[sectionIndex]) {
+            renderer.fillColor = color.toUIColor()
+            renderer.strokeColor = color.toUIColor()
             renderer.setNeedsDisplay()
         }
     }
@@ -434,6 +455,7 @@ class MapDelegate(
                 annotationView.annotation = viewForAnnotation
             }
             annotationView.canShowCallout = true
+            annotationView.layer.zPosition = 1.0
             UIImage.imageNamed(iconName[sectionIndex])?.resize(36.0)?.apply {
                 annotationView.image = this
                 annotationView.centerOffset = anchor[sectionIndex].asAppleMapOffset(this)
@@ -441,6 +463,80 @@ class MapDelegate(
             return annotationView
         }
         return null
+    }
+
+    override fun mapView(mapView: MKMapView, regionDidChangeAnimated: Boolean) {
+        updateDirectionArrows(mapView)
+    }
+
+    fun updateDirectionArrows(mapView: MKMapView) {
+        val (width, height) = mapView.frame.useContents { size.width to size.height }
+        if (width <= 0.0 || height <= 0.0) return
+
+        val occupied = mutableListOf<ProjectedScreenPoint>()
+        val allStops = sections.flatMap { section ->
+            section.waypoints.stops.map { stop ->
+                mapView.convertCoordinate(stop.location.toAppleCoordinates(), toPointToView = mapView).useContents {
+                    ProjectedScreenPoint(x, y)
+                }
+            }
+        }
+        val bounds = ProjectedScreenBounds(0.0, 0.0, width, height)
+        directionArrowSectionIndexMap.clear()
+        val newOverlays = mutableListOf<MKPolygon>()
+        for ((sectionIndex, section) in sections.withIndex()) {
+            val paths = section.waypoints.pathsInRouteDirection().map { path ->
+                path.map { location ->
+                    mapView.convertCoordinate(location.toAppleCoordinates(), toPointToView = mapView).useContents {
+                        ProjectedRoutePoint(location, x, y)
+                    }
+                }
+            }
+            val arrows = calculateRouteDirectionArrows(
+                paths = paths,
+                stops = allStops,
+                bounds = bounds,
+                occupiedArrowPoints = occupied
+            )
+            occupied += arrows.map { ProjectedScreenPoint(it.x, it.y) }
+            newOverlays += arrows.map { arrow ->
+                createDirectionArrowOverlay(mapView, arrow).also {
+                    directionArrowSectionIndexMap[it] = sectionIndex
+                }
+            }
+        }
+        directionArrowRenderers.forEach { it.clear() }
+        mapView.removeOverlays(mapView.overlays.filterIsInstance<MKPolygon>())
+        directionArrowOverlays = newOverlays
+        mapView.addOverlays(directionArrowOverlays, MKOverlayLevelAboveRoads)
+    }
+
+    private fun createDirectionArrowOverlay(mapView: MKMapView, arrow: RouteDirectionArrow): MKPolygon {
+        val angle = arrow.rotation.toDouble().radians
+        val cosine = cos(angle)
+        val sine = sin(angle)
+        val relativePoints = listOf(
+            0.0 to -8.0,
+            7.2 to 8.0,
+            0.0 to 4.4,
+            -7.2 to 8.0
+        )
+        val coordinates = nativeHeap.allocArray<CLLocationCoordinate2D>(relativePoints.size)
+        try {
+            relativePoints.forEachIndexed { index, (relativeX, relativeY) ->
+                val point = CGPointMake(
+                    arrow.x + relativeX * cosine - relativeY * sine,
+                    arrow.y + relativeX * sine + relativeY * cosine
+                )
+                mapView.convertPoint(point, toCoordinateFromView = mapView).useContents {
+                    coordinates[index].latitude = latitude
+                    coordinates[index].longitude = longitude
+                }
+            }
+            return MKPolygon.polygonWithCoordinates(coordinates, relativePoints.size.convert())
+        } finally {
+            nativeHeap.free(coordinates)
+        }
     }
 
     override fun mapView(mapView: MKMapView, didSelectAnnotationView: MKAnnotationView) {
@@ -458,6 +554,19 @@ class MapDelegate(
                 renderer.lineWidth = 5.0
                 renderer.setNeedsDisplay()
                 polylineRenderers[sectionIndex].add(renderer)
+                return renderer
+            }
+        }
+        val polygon = rendererForOverlay as? MKPolygon
+        if (polygon != null) {
+            val sectionIndex = directionArrowSectionIndexMap[polygon]
+            if (sectionIndex != null) {
+                val renderer = MKPolygonRenderer(polygon)
+                renderer.fillColor = color[sectionIndex].toUIColor()
+                renderer.strokeColor = color[sectionIndex].toUIColor()
+                renderer.lineWidth = 1.0
+                renderer.setNeedsDisplay()
+                directionArrowRenderers[sectionIndex].add(renderer)
                 return renderer
             }
         }

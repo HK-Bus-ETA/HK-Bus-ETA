@@ -74,6 +74,7 @@ import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.closenessTo
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
+import com.loohp.hkbuseta.utils.pathsInRouteDirection
 import com.loohp.hkbuseta.utils.toHexString
 import com.multiplatform.webview.jsbridge.IJsMessageHandler
 import com.multiplatform.webview.jsbridge.JsMessage
@@ -243,6 +244,12 @@ const val baseHtml: String = """
         .leaflet-dark-theme.leaflet-control-zoom {
             filter: brightness(0.6) invert(1) contrast(3);
         }
+
+        .route-direction-arrow {
+            background: transparent;
+            border: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -256,11 +263,100 @@ const val baseHtml: String = """
 
         var layer = L.layerGroup();
         map.addLayer(layer);
+
+        map.createPane('routeDirections');
+        map.getPane('routeDirections').style.zIndex = 450;
+        map.getPane('routeDirections').style.pointerEvents = 'none';
         
         var stopMarkers = [];
         
         var polylines = [];
         var polylinesOutline = [];
+        var routeArrowSections = [];
+        var routeArrowMarkers = [];
+        var routeArrowUpdateTimer = null;
+
+        function updateRouteDirectionArrows() {
+            routeArrowMarkers.forEach(function(marker) { layer.removeLayer(marker); });
+            routeArrowMarkers = [];
+            var occupied = [];
+            var allStops = [];
+            routeArrowSections.forEach(function(section) {
+                section.stops.forEach(function(stop) { allStops.push(map.latLngToContainerPoint(stop)); });
+            });
+            var size = map.getSize();
+
+            routeArrowSections.forEach(function(section) {
+                var segments = [];
+                var totalLength = 0;
+                section.paths.forEach(function(path) {
+                    for (var i = 1; i < path.length; i++) {
+                        var startPoint = map.latLngToContainerPoint(path[i - 1]);
+                        var endPoint = map.latLngToContainerPoint(path[i]);
+                        var length = startPoint.distanceTo(endPoint);
+                        if (Number.isFinite(length) && length > 0) {
+                            segments.push({ start: path[i - 1], end: path[i], startPoint: startPoint, endPoint: endPoint, length: length });
+                            totalLength += length;
+                        }
+                    }
+                });
+                if (totalLength < 40) return;
+
+                var traversed = 0;
+                var nextDistance = totalLength < 96 ? totalLength / 2 : 48;
+                var lastDistance = totalLength < 96 ? nextDistance : totalLength - 48;
+                var visibleCount = 0;
+                var opposingPhaseShifted = false;
+                for (var s = 0; s < segments.length && visibleCount < 24; s++) {
+                    var segment = segments[s];
+                    var segmentEnd = traversed + segment.length;
+                    while (nextDistance <= segmentEnd && nextDistance <= lastDistance && visibleCount < 24) {
+                        var fraction = Math.max(0, Math.min(1, (nextDistance - traversed) / segment.length));
+                        var x = segment.startPoint.x + (segment.endPoint.x - segment.startPoint.x) * fraction;
+                        var y = segment.startPoint.y + (segment.endPoint.y - segment.startPoint.y) * fraction;
+                        var rotation = (Math.atan2(segment.endPoint.y - segment.startPoint.y, segment.endPoint.x - segment.startPoint.x) * 180 / Math.PI + 450) % 360;
+                        var conflicts = occupied.map(function(arrow) { return { arrow: arrow, distance: arrow.point.distanceTo([x, y]) }; }).filter(function(conflict) { return conflict.distance < 48; });
+                        var hardOpposingOverlap = conflicts.some(function(conflict) { return angleDifference(conflict.arrow.rotation, rotation) >= 120 && conflict.distance < 14; });
+                        if (hardOpposingOverlap && !opposingPhaseShifted && nextDistance + 48 <= lastDistance) {
+                            nextDistance += 48;
+                            opposingPhaseShifted = true;
+                            continue;
+                        }
+                        var clearOfStops = allStops.every(function(point) { return point.distanceTo([x, y]) >= 24; });
+                        var clearOfArrows = conflicts.every(function(conflict) { return angleDifference(conflict.arrow.rotation, rotation) >= 120 && conflict.distance >= 14; });
+                        if (x >= 0 && y >= 0 && x <= size.x && y <= size.y && clearOfStops && clearOfArrows) {
+                            var location = [
+                                segment.start[0] + (segment.end[0] - segment.start[0]) * fraction,
+                                segment.start[1] + (segment.end[1] - segment.start[1]) * fraction
+                            ];
+                            var icon = L.divIcon({
+                                className: 'route-direction-arrow',
+                                iconSize: [14, 14],
+                                iconAnchor: [7, 7],
+                                html: '<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(' + rotation + 'deg)"><path d="M6 0.8 L10.8 11.2 L6 8.9 L1.2 11.2 Z" fill="' + section.color + '" stroke="' + section.color + '" stroke-width="1.4" stroke-linejoin="round"/></svg>'
+                            });
+                            routeArrowMarkers.push(L.marker(location, { icon: icon, pane: 'routeDirections', interactive: false, keyboard: false }).addTo(layer));
+                            occupied.push({ point: L.point(x, y), rotation: rotation });
+                            visibleCount++;
+                        }
+                        nextDistance += 96;
+                    }
+                    traversed = segmentEnd;
+                }
+            });
+        }
+
+        function scheduleRouteDirectionArrowUpdate() {
+            clearTimeout(routeArrowUpdateTimer);
+            routeArrowUpdateTimer = setTimeout(updateRouteDirectionArrows, 50);
+        }
+
+        function angleDifference(first, second) {
+            var difference = Math.abs(first - second) % 360;
+            return Math.min(difference, 360 - difference);
+        }
+
+        map.on('moveend zoomend', scheduleRouteDirectionArrowUpdate);
     </script>
 </body>
 </html>
@@ -290,7 +386,7 @@ fun rememberLeafletScript(
     } }
     val pathsJsArray by remember(sections) { derivedStateOf {
         sections.joinToString(prefix = "[", separator = "],[", postfix = "]") { s ->
-            s.waypoints.paths.joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" }
+            s.waypoints.pathsInRouteDirection().joinToString(",") { path -> "[" + path.joinToString(separator = ",") { "[${it.lat},${it.lng}]" } + "]" }
         }
     } }
     val pathColors = remember { sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) } }
@@ -351,6 +447,7 @@ fun rememberLeafletScript(
         var outlineHexOpacity = $outlineHexOpacity;
         var shouldShowStopIndex = $shouldShowStopIndex;
         var paths = [$pathsJsArray];
+        routeArrowSections = paths.map(function(sectionPaths, sectionIndex) { return { paths: sectionPaths, stops: stops, color: colorHexes[sectionIndex] }; });
         
         for (var i = 0; i < ${sections.size}; i++) {
             var sectionIndex = i;
@@ -386,6 +483,7 @@ fun rememberLeafletScript(
             polylinesList.push(polylines);
             polylinesOutlineList.push(polylinesOutline);
         }
+        scheduleRouteDirectionArrowUpdate();
     """.trimIndent() } }
 }
 
@@ -434,6 +532,10 @@ actual fun MapRouteInterface(
                             polylinesList[$index].forEach(function(polyline) {
                                 polyline.setStyle({ color: '$colorHex', opacity: 1.0 });
                             });
+                        }
+                        if (routeArrowSections[$index]) {
+                            routeArrowSections[$index].color = '$colorHex';
+                            scheduleRouteDirectionArrowUpdate();
                         }
                     """.trimIndent())
                 }

@@ -20,13 +20,24 @@ class WebMap {
         setTimeout(() => this.reloadTiles(language, darkMode, backgroundColor), 10);
 
         this.layer = L.layerGroup().addTo(this.map);
+        this.map.createPane('routeDirections');
+        this.map.getPane('routeDirections').style.zIndex = 450;
+        this.map.getPane('routeDirections').style.pointerEvents = 'none';
         this.polylinesList = [];
         this.polylinesOutlineList = [];
+        this.routeArrowSections = [];
+        this.routeArrowMarkers = [];
+        this.routeArrowUpdateFrame = null;
 
         this.stopMarkersList = [];
 
-        this.resizeCallback = () => this.map.invalidateSize();
+        this.resizeCallback = () => {
+            this.map.invalidateSize({ pan: false });
+            this.scheduleRouteDirectionArrowUpdate();
+        };
         window.addEventListener("resize", this.resizeCallback);
+        this.routeArrowUpdateCallback = () => this.scheduleRouteDirectionArrowUpdate();
+        this.map.on('moveend zoomend', this.routeArrowUpdateCallback);
 
         this.sizeToggleCallback = sizeToggleCallback;
         this.sizeToggleIsLarge = false;
@@ -194,6 +205,8 @@ class WebMap {
     remove() {
         this.valid = false;
         this.hide();
+        if (this.routeArrowUpdateFrame !== null) cancelAnimationFrame(this.routeArrowUpdateFrame);
+        this.map.off('moveend zoomend', this.routeArrowUpdateCallback);
         window.removeEventListener("resize", this.resizeCallback);
         setTimeout(() => this.mapElement.remove(), 1000);
     }
@@ -203,12 +216,14 @@ class WebMap {
         this.mapElement.style.top = y + "px";
         this.mapElement.style.width = width + "px";
         this.mapElement.style.height = height + "px";
-        this.map.invalidateSize();
+        this.map.invalidateSize({ pan: false });
+        this.scheduleRouteDirectionArrowUpdate();
     }
 
     show() {
         this.mapElement.style.display = "";
-        this.map.invalidateSize();
+        this.map.invalidateSize({ pan: false });
+        this.scheduleRouteDirectionArrowUpdate();
         if (this.mapElement.style.opacity && Number(this.mapElement.style.opacity) < 1) {
             var fadeInEffect = setInterval(() => {
                 if (this.mapElement.style.opacity < 1) {
@@ -267,6 +282,8 @@ class WebMap {
         this.stopMarkersList = [];
         this.polylinesList = [];
         this.polylinesOutlineList = [];
+        this.routeArrowSections = [];
+        this.routeArrowMarkers = [];
     }
 
     addMarkings(stopsJsArray, stopNamesJsArray, pathsJsArray, colorHex, opacity, outlineHex, outlineOpacity, iconFile, anchorX, anchorY, indexMap, shouldShowStopIndex, selectStopCallback) {
@@ -322,9 +339,93 @@ class WebMap {
             polylines.push(L.polyline(path, { color: colorHex, opacity: opacity, weight: 4 }).addTo(this.layer));
         });
 
+        this.routeArrowSections.push({ paths: paths, stops: stops, color: colorHex });
+
         this.stopMarkersList.push(stopMarkers);
         this.polylinesList.push(polylines);
         this.polylinesOutlineList.push(polylinesOutline);
+        this.scheduleRouteDirectionArrowUpdate();
+    }
+
+    scheduleRouteDirectionArrowUpdate() {
+        if (this.routeArrowUpdateFrame !== null) return;
+        this.routeArrowUpdateFrame = requestAnimationFrame(() => {
+            this.routeArrowUpdateFrame = requestAnimationFrame(() => {
+                this.routeArrowUpdateFrame = null;
+                if (this.valid) this.updateRouteDirectionArrows();
+            });
+        });
+    }
+
+    updateRouteDirectionArrows() {
+        const size = this.map.getSize();
+        if (size.x <= 0 || size.y <= 0 || this.mapElement.style.display === "none") return;
+        this.routeArrowMarkers.forEach(marker => this.layer.removeLayer(marker));
+        this.routeArrowMarkers = [];
+        const occupied = [];
+        const allStops = [];
+        this.routeArrowSections.forEach(section => {
+            section.stops.forEach(stop => allStops.push(this.map.latLngToContainerPoint(stop)));
+        });
+
+        this.routeArrowSections.forEach(section => {
+            const segments = [];
+            let totalLength = 0;
+            section.paths.forEach(path => {
+                for (let i = 1; i < path.length; i++) {
+                    const startPoint = this.map.latLngToContainerPoint(path[i - 1]);
+                    const endPoint = this.map.latLngToContainerPoint(path[i]);
+                    const length = startPoint.distanceTo(endPoint);
+                    if (Number.isFinite(length) && length > 0) {
+                        segments.push({ start: path[i - 1], end: path[i], startPoint, endPoint, length });
+                        totalLength += length;
+                    }
+                }
+            });
+            if (totalLength < 40) return;
+
+            let traversed = 0;
+            let nextDistance = totalLength < 96 ? totalLength / 2 : 48;
+            const lastDistance = totalLength < 96 ? nextDistance : totalLength - 48;
+            let visibleCount = 0;
+            let opposingPhaseShifted = false;
+            for (let s = 0; s < segments.length && visibleCount < 24; s++) {
+                const segment = segments[s];
+                const segmentEnd = traversed + segment.length;
+                while (nextDistance <= segmentEnd && nextDistance <= lastDistance && visibleCount < 24) {
+                    const fraction = Math.max(0, Math.min(1, (nextDistance - traversed) / segment.length));
+                    const x = segment.startPoint.x + (segment.endPoint.x - segment.startPoint.x) * fraction;
+                    const y = segment.startPoint.y + (segment.endPoint.y - segment.startPoint.y) * fraction;
+                    const rotation = (Math.atan2(segment.endPoint.y - segment.startPoint.y, segment.endPoint.x - segment.startPoint.x) * 180 / Math.PI + 450) % 360;
+                    const conflicts = occupied.map(arrow => ({ arrow, distance: arrow.point.distanceTo([x, y]) })).filter(conflict => conflict.distance < 48);
+                    const hardOpposingOverlap = conflicts.some(conflict => angleDifference(conflict.arrow.rotation, rotation) >= 120 && conflict.distance < 14);
+                    if (hardOpposingOverlap && !opposingPhaseShifted && nextDistance + 48 <= lastDistance) {
+                        nextDistance += 48;
+                        opposingPhaseShifted = true;
+                        continue;
+                    }
+                    const clearOfStops = allStops.every(point => point.distanceTo([x, y]) >= 24);
+                    const clearOfArrows = conflicts.every(conflict => angleDifference(conflict.arrow.rotation, rotation) >= 120 && conflict.distance >= 14);
+                    if (x >= 0 && y >= 0 && x <= size.x && y <= size.y && clearOfStops && clearOfArrows) {
+                        const location = [
+                            segment.start[0] + (segment.end[0] - segment.start[0]) * fraction,
+                            segment.start[1] + (segment.end[1] - segment.start[1]) * fraction
+                        ];
+                        const icon = L.divIcon({
+                            className: 'route-direction-arrow',
+                            iconSize: [14, 14],
+                            iconAnchor: [7, 7],
+                            html: '<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(' + rotation + 'deg)"><path d="M6 0.8 L10.8 11.2 L6 8.9 L1.2 11.2 Z" fill="' + section.color + '" stroke="' + section.color + '" stroke-width="1.4" stroke-linejoin="round"/></svg>'
+                        });
+                        this.routeArrowMarkers.push(L.marker(location, { icon, pane: 'routeDirections', interactive: false, keyboard: false }).addTo(this.layer));
+                        occupied.push({ point: L.point(x, y), rotation });
+                        visibleCount++;
+                    }
+                    nextDistance += 96;
+                }
+                traversed = segmentEnd;
+            }
+        });
     }
 
     mapFlyTo(lat, lng) {
@@ -340,6 +441,10 @@ class WebMap {
                 polyline.setStyle({ color: colorHex, opacity: opacity });
             });
         }
+        if (this.routeArrowSections[sectionIndex]) {
+            this.routeArrowSections[sectionIndex].color = colorHex;
+            this.scheduleRouteDirectionArrowUpdate();
+        }
     }
 
     showMarker(sectionIndex, stopIndex) {
@@ -354,6 +459,11 @@ function splitLatLngPairs(str) {
         result.push([Number(parts[i]), Number(parts[i + 1])]);
     }
     return result;
+}
+
+function angleDifference(first, second) {
+    const difference = Math.abs(first - second) % 360;
+    return Math.min(difference, 360 - difference);
 }
 
 function splitLatLngPaths(str) {

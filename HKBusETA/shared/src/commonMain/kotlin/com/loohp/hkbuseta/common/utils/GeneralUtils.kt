@@ -20,6 +20,9 @@
 
 package com.loohp.hkbuseta.common.utils
 
+import kotlin.reflect.KClass
+import kotlin.reflect.cast
+
 
 inline fun <T> T.runIf(condition: Boolean, block: T.() -> T): T {
     return if (condition) block.invoke(this) else this
@@ -35,4 +38,8 @@ inline fun <E, T> T.runIfNotNull(item: E?, block: T.(E) -> T): T {
 
 inline fun <T> firstNonNull(vararg blocks: () -> T?, orElse: () -> T): T {
     return blocks.firstNotNullOfOrNull { it.invoke() }?: orElse.invoke()
+}
+
+inline fun <T, C: Any> T.takeIfInstance(type: KClass<C>): C? {
+    return if (type.isInstance(this)) type.cast(this) else null
 }

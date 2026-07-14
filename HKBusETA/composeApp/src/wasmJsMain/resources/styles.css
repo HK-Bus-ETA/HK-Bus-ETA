@@ -261,6 +261,12 @@ body {
     filter: brightness(0.6) invert(1) contrast(3);
 }
 
+.route-direction-arrow {
+    background: transparent;
+    border: 0;
+    pointer-events: none;
+}
+
 .leaflet-size-toggle {
     line-height: 23px !important;
     font-size: 24px !important;

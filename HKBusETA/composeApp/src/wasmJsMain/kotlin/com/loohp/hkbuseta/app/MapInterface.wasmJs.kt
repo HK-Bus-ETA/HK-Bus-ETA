@@ -61,6 +61,7 @@ import com.loohp.hkbuseta.shared.ComposeShared
 import com.loohp.hkbuseta.utils.closenessTo
 import com.loohp.hkbuseta.utils.getLineColor
 import com.loohp.hkbuseta.utils.getOperatorColor
+import com.loohp.hkbuseta.utils.pathsInRouteDirection
 import com.loohp.hkbuseta.utils.toHexString
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
@@ -83,7 +84,7 @@ actual fun MapRouteInterface(
         "<b>" + resolvedStop.name[Shared.language] + "</b>" + (resolvedStop.remark?.let { r -> "<br><small>${r[Shared.language]}</small>" }?: "")
     } } } }
     val stopsJsArrays by remember(sections) { derivedStateOf { sections.map { s -> s.waypoints.stops.joinToString("\u0000") { "${it.location.lat}\u0000${it.location.lng}" } } } }
-    val pathsJsArrays by remember(sections) { derivedStateOf { sections.map { s -> s.waypoints.paths.joinToString("\u0000") { path -> path.joinToString(separator = "|") { "${it.lat}|${it.lng}" } } } } }
+    val pathsJsArrays by remember(sections) { derivedStateOf { sections.map { s -> s.waypoints.pathsInRouteDirection().joinToString("\u0000") { path -> path.joinToString(separator = "|") { "${it.lat}|${it.lng}" } } } } }
     val pathColors by ComposeShared.rememberOperatorColors(sections.map { s -> s.waypoints.co.getLineColor(s.waypoints.routeNumber, Color.Red) to Operator.CTB.getOperatorColor(Color.Yellow).takeIf { s.waypoints.isKmbCtbJoint } }.asImmutableList())
     val iconFiles = remember { sections.map { s -> when (s.waypoints.co) {
         Operator.KMB -> when (s.waypoints.routeNumber.getKMBSubsidiary()) {

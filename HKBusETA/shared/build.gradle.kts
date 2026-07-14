@@ -98,9 +98,6 @@ kotlin {
             implementation(libs.serialization.xml)
             implementation(libs.androidx.runtime)
         }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
-        }
         all {
             languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
         }
