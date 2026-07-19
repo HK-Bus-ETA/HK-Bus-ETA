@@ -615,7 +615,7 @@ const val baseHtml: String = """
                                 className: 'route-direction-arrow',
                                 iconSize: [14, 14],
                                 iconAnchor: [7, 7],
-                                html: '<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(' + rotation + 'deg)"><path d="M6 0.8 L10.8 11.2 L6 8.9 L1.2 11.2 Z" fill="' + section.color + '" stroke="' + section.color + '" stroke-width="1.4" stroke-linejoin="round"/></svg>'
+                                html: '<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(' + rotation + 'deg)"><path d="M6 0.8 L10.8 11.2 L6 8.9 L1.2 11.2 Z" fill="' + section.color + '" stroke="' + (section.outlineColor || section.color) + '" stroke-opacity="' + (section.outlineColor ? section.outlineOpacity : 1) + '" stroke-width="0.8" stroke-linejoin="round" paint-order="stroke fill"/></svg>'
                             });
                             routeArrowMarkers.push(L.marker(location, { icon: icon, pane: 'routeDirections', interactive: false, keyboard: false }).addTo(layer));
                             occupied.push({ point: L.point(x, y), rotation: rotation });
@@ -729,7 +729,7 @@ fun rememberLeafletScript(
         var outlineHexOpacity = $outlineHexOpacity;
         var shouldShowStopIndex = $shouldShowStopIndex;
         var paths = [$pathsJsArray];
-        routeArrowSections = paths.map(function(sectionPaths, sectionIndex) { return { paths: sectionPaths, stops: stops, color: colorHexes[sectionIndex] }; });
+        routeArrowSections = paths.map(function(sectionPaths, sectionIndex) { return { paths: sectionPaths, stops: stops, color: colorHexes[sectionIndex], outlineColor: outlineHexOpacity[sectionIndex][0], outlineOpacity: outlineHexOpacity[sectionIndex][1] }; });
         
         for (var i = 0; i < ${sections.size}; i++) {
             var sectionIndex = i;
@@ -820,6 +820,8 @@ fun DefaultMapRouteInterface(
                             }
                             if (routeArrowSections[$index]) {
                                 routeArrowSections[$index].color = '$colorHex';
+                                routeArrowSections[$index].outlineColor = ${if (outlineHex == null) "null" else "'$outlineHex'"};
+                                routeArrowSections[$index].outlineOpacity = $outlineOpacity;
                                 scheduleRouteDirectionArrowUpdate();
                             }
                         """.trimIndent())

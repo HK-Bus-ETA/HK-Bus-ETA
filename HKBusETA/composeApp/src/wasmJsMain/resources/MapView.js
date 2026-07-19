@@ -339,7 +339,7 @@ class WebMap {
             polylines.push(L.polyline(path, { color: colorHex, opacity: opacity, weight: 4 }).addTo(this.layer));
         });
 
-        this.routeArrowSections.push({ paths: paths, stops: stops, color: colorHex });
+        this.routeArrowSections.push({ paths: paths, stops: stops, color: colorHex, outlineColor: outlineHex, outlineOpacity: outlineOpacity });
 
         this.stopMarkersList.push(stopMarkers);
         this.polylinesList.push(polylines);
@@ -415,7 +415,7 @@ class WebMap {
                             className: 'route-direction-arrow',
                             iconSize: [14, 14],
                             iconAnchor: [7, 7],
-                            html: '<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(' + rotation + 'deg)"><path d="M6 0.8 L10.8 11.2 L6 8.9 L1.2 11.2 Z" fill="' + section.color + '" stroke="' + section.color + '" stroke-width="1.4" stroke-linejoin="round"/></svg>'
+                            html: '<svg width="14" height="14" viewBox="0 0 12 12" style="transform:rotate(' + rotation + 'deg)"><path d="M6 0.8 L10.8 11.2 L6 8.9 L1.2 11.2 Z" fill="' + section.color + '" stroke="' + (section.outlineColor || section.color) + '" stroke-opacity="' + (section.outlineColor ? section.outlineOpacity : 1) + '" stroke-width="0.8" stroke-linejoin="round" paint-order="stroke fill"/></svg>'
                         });
                         this.routeArrowMarkers.push(L.marker(location, { icon, pane: 'routeDirections', interactive: false, keyboard: false }).addTo(this.layer));
                         occupied.push({ point: L.point(x, y), rotation });
@@ -443,6 +443,8 @@ class WebMap {
         }
         if (this.routeArrowSections[sectionIndex]) {
             this.routeArrowSections[sectionIndex].color = colorHex;
+            this.routeArrowSections[sectionIndex].outlineColor = outlineHex;
+            this.routeArrowSections[sectionIndex].outlineOpacity = outlineOpacity;
             this.scheduleRouteDirectionArrowUpdate();
         }
     }
