@@ -521,7 +521,7 @@ def download_and_process_data_sheet():
     DATA_SHEET["stopList"]["AC1FD9BDD09D1DD6"]["remark"] = {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}
     DATA_SHEET["stopList"]["20001477"]["remark"] = {"en": "(STK FCA - Closed Area Permit Required)", "zh": "(沙頭角邊境禁區 - 需持邊境禁區許可證)"}
     DATA_SHEET["stopList"]["152"]["remark"] = {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}
-    DATA_SHEET["stopList"]["20015453"]["remark"] = {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["20023197"]["remark"] = {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}
     DATA_SHEET["stopList"]["003208"]["remark"] = {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}
     DATA_SHEET["stopList"]["81567ACCCF40DD4B"]["remark"] = {"en": "(LMC SL Immigration Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲支線出入境管制站 - 僅限過境旅客)"}
     DATA_SHEET["stopList"]["20015420"]["remark"] = {"en": "(LMC SL Immigration Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲支線出入境管制站 - 僅限過境旅客)"}
