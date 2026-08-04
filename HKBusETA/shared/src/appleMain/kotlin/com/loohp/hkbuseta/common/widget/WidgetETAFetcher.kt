@@ -334,7 +334,7 @@ private suspend fun etaQueryKmb(rawStopId: String, stopIndex: Int, route: Route,
 
 private suspend fun etaQueryCtb(stopId: String, stopIndex: Int, route: Route, precomputedData: WidgetPrecomputedData): WidgetETAResult {
     val routeNumber = route.routeNumber
-    val routeBound = route.bound[Operator.CTB]
+    val routeBound = route.bound[Operator.CTB]!!
     val data = getJSONResponse<JsonObject>("https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/$stopId/$routeNumber")
     val buses = data!!.optJsonArray("data")!!
     val stopSequences: MutableSet<Int> = HashSet()
@@ -342,12 +342,13 @@ private suspend fun etaQueryCtb(stopId: String, stopIndex: Int, route: Route, pr
         val bus = buses.optJsonObject(u)!!
         if (Operator.CTB === Operator.valueOf(bus.optString("co"))) {
             val bound = bus.optString("dir")
-            if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound)) {
+            if (routeNumber == bus.optString("route") && (routeBound.length > 1 || bound == routeBound)) {
                 stopSequences.add(bus.optInt("seq"))
             }
         }
     }
-    val ctbStopList = sequenceOf("O", "I").flatMap { bound ->
+    val ctbBounds = if (route.isCtbIsCircular || routeBound.length > 1) sequenceOf("O", "I") else sequenceOf(routeBound)
+    val ctbStopList = ctbBounds.flatMap { bound ->
         precomputedData.ctbEtaStops?.get(bound)
             ?.mapIndexedNotNull { index, thisStopId -> (index + 1).takeIf { thisStopId == stopId } }
             .orEmpty()
@@ -363,7 +364,7 @@ private suspend fun etaQueryCtb(stopId: String, stopIndex: Int, route: Route, pr
         if (Operator.CTB === Operator.valueOf(bus.optString("co"))) {
             val bound = bus.optString("dir")
             val stopSeq = bus.optInt("seq")
-            if (routeNumber == bus.optString("route") && (routeBound!!.length > 1 || bound == routeBound) && stopSeq == matchingSeq) {
+            if (routeNumber == bus.optString("route") && (routeBound.length > 1 || bound == routeBound) && stopSeq == matchingSeq) {
                 if (usedRealSeq.add(bus.optInt("eta_seq"))) {
                     val eta = bus.optString("eta")
                     val mins = if (eta.isEmpty() || eta.equals("null", ignoreCase = true)) Double.NEGATIVE_INFINITY else (eta.parseInstant().epochSeconds - currentEpochSeconds) / 60.0

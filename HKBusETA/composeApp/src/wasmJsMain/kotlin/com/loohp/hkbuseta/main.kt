@@ -50,6 +50,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.milliseconds
 
 
@@ -67,12 +68,12 @@ suspend fun isWasmSupported(): Boolean = awaitCallback { isWasmSupported { compl
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalWasmJsInterop::class)
 fun main() {
-    setVersionImpl { Triple("HKBusETA", "2.7.6", 90) }
+    setVersionImpl { Triple("HKBusETA", "2.7.7", 91) }
     if (canDecodeGzip()) {
         provideGzipBodyAsTextImpl { data, charset ->
             val defer = CompletableDeferred<String>()
-            decodeGzip(data.encodeBase64()) {
-                defer.complete(it.decodeBase64Bytes().asString(charset))
+            decodeGzip(Base64.encode(data)) {
+                defer.complete(Base64.decode(it).asString(charset))
             }
             defer.await()
         }

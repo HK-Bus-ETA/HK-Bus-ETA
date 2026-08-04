@@ -2876,7 +2876,8 @@ class Registry {
                 }
             }
         }
-        val ctbStopList = sequenceOf("O", "I").flatMap { bound ->
+        val ctbBounds = if (route.isCtbIsCircular || routeBound.length > 1) sequenceOf("O", "I") else sequenceOf(routeBound)
+        val ctbStopList = ctbBounds.flatMap { bound ->
             DATA!!.ctbEtaStops[routeNumber]?.get(bound)
                 ?.mapIndexedNotNull { index, thisStopId -> (index + 1).takeIf { thisStopId == stopId } }
                 .orEmpty()
