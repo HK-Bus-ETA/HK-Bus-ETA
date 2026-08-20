@@ -43,3 +43,8 @@ HTTPS Requests are made to the above data sources to retrieve bus routes, stops 
 <a href="https://www.flaticon.com/free-icons/smartphone" title="smartphone icons">Smartphone icons created by Anatoly - Flaticon</a><br>
 <a href="https://www.flaticon.com/free-icons/hurricane" title="hurricane icons">Hurricane icons created by Mehwish - Flaticon</a><br>
 <a href="https://www.flaticon.com/free-icons/smartwatch-app" title="smartwatch app icons">Smartwatch app icons created by Freepik - Flaticon</a> (WatchOS only)
+
+## Special Thanks 特別鳴謝
+<a href="https://ishosting.com/en/vps" title="is*hosting"><img width="130" alt="is*hosting" src="https://github.com/user-attachments/assets/f01295ce-6cfd-463f-95f7-74f75f7aad15" /></a>
+
+
