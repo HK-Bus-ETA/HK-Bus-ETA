@@ -1308,10 +1308,6 @@ def add_route_remarks():
         "HK1": {
             "zh": "九龍旅遊路線",
             "en": "Kowloon Bus Tour"
-        },
-        "HK2": {
-            "zh": "九龍旅遊路線",
-            "en": "Kowloon Bus Tour"
         }
     }
     ctb = {
@@ -1346,6 +1342,18 @@ def add_route_remarks():
     }
     nlb = {}
     lrt = {
+        "506P*": {
+            "zh": "特別路線 - 到達兆康後或改行其他路綫",
+            "en": "Special Route - May Change to Another Route at Siu Hong"
+        },
+        "507P*": {
+            "zh": "特別路線 - 到達田景後改行507綫前往屯門碼頭",
+            "en": "Special Route - Change to Route 507 at Tin King to Tuen Mun Ferry Pier"
+        },
+        "610P*": {
+            "zh": "特別路線 - 順時針方向途經屯門醫院，大興，青松返回兆康",
+            "en": "Special Route - Clockwise Direction through Tuen Mun Hospital, Tai Hing, Ching Chung to Siu Hong"
+        },
         "705": {
             "zh": "逆時針方向",
             "en": "Anticlockwise Direction"
@@ -1353,6 +1361,18 @@ def add_route_remarks():
         "706": {
             "zh": "順時針方向",
             "en": "Clockwise Direction"
+        },
+        "720*": {
+            "zh": "特別路線 - 到達天榮改行751P綫前往天水圍",
+            "en": "Special Route - Change to Route 751P going from Tin Wing to Tin Shui Wai"
+        },
+        "751P": {
+            "zh": "特別路線 - 於早上及晚上繁忙時段提供服務",
+            "en": "Special Route - Operates During Morning and Evening Peak Hours"
+        },
+        "751*": {
+            "zh": "特別路線 - 到河田後改行507綫途經屯門前往屯門碼頭",
+            "en": "Special Route - Change to Route 507 at Ho Tin through Tuen Mun to Tuen Mun Ferry Pier"
         },
         "901": {
             "zh": "特別路線 - 到兆康後改行615綫途經良景、青雲前往屯門碼頭",
@@ -1362,25 +1382,13 @@ def add_route_remarks():
             "zh": "特別路線 - 到兆康後改行507P綫途經青松、建生、田景前往屯門碼頭",
             "en": "Special Route - Change to Route 507P at Siu Hong through Ching Chung, Kin Shan, Tin King to Tuen Mun Ferry Pier"
         },
-        "751P": {
-            "zh": "特別路線",
-            "en": "Special Route"
+        "907": {
+            "zh": "特別路線 - 到兆康後改行610P綫途經屯門醫院，大興，青松返回兆康",
+            "en": "Special Route - Change to Route 610P at Siu Hong through Tuen Mun Hospital, Tai Hing, Ching Chung to Siu Hong"
         },
-        "751*": {
-            "zh": "特別路線 - 到河田後改行507綫途經屯門前往屯門碼頭",
-            "en": "Special Route - Change to Route 507 at Ho Tin through Tuen Mun to Tuen Mun Ferry Pier"
-        },
-        "720*": {
-            "zh": "特別路線 - 到天榮後改行751P綫前往天水圍",
-            "en": "Special Route - Change to Route 751P at Tin Wing to Tin Shui Wai"
-        },
-        "506P*": {
-            "zh": "特別路線",
-            "en": "Special Route"
-        },
-        "507P*": {
-            "zh": "特別路線",
-            "en": "Special Route"
+        "SPR": {
+            "zh": "特別路線 - 到達兆康後改行其他路綫",
+            "en": "Special Route - Change to Another Route at Siu Hong"
         }
     }
 
