@@ -541,6 +541,10 @@ def download_and_process_data_sheet():
     DATA_SHEET["routeList"]["AEL+1+Hong Kong+AsiaWorld-Expo"]["dest"]["zh"] = "機場及博覽館"
     DATA_SHEET["routeList"]["AEL+1+Hong Kong+AsiaWorld-Expo"]["dest"]["en"] = "Airport & AsiaWorld-Expo"
 
+    lrt_610P*_start = DATA_SHEET["routeList"]["610P*+1+Siu Hong+Siu Hong (Circular)"]["stops"]["lightRail"][0]
+    DATA_SHEET["routeList"]["610P*+1+Siu Hong+Siu Hong (Circular)"]["stops"]["lightRail"].append(lrt_610P*_start)
+    DATA_SHEET["routeList"]["610P*+1+Siu Hong+Siu Hong (Circular)"]["lrtCircular"] = {"en": "Siu Hong Circular", "zh": "兆康循環綫"}
+
     lrt_705_start = DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai (Circular)"]["stops"]["lightRail"][0]
     DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai (Circular)"]["stops"]["lightRail"].append(lrt_705_start)
     DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai (Circular)"]["lrtCircular"] = {"en": "TSW Circular", "zh": "天水圍循環綫"}
@@ -549,11 +553,11 @@ def download_and_process_data_sheet():
     DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai (Circular)"]["stops"]["lightRail"].append(lrt_706_start)
     DATA_SHEET["routeList"]["706+1+Tin Shui Wai+Tin Shui Wai (Circular)"]["lrtCircular"] = {"en": "TSW Circular", "zh": "天水圍循環綫"}
 
-    DATA_SHEET["routeList"]["901+1+Tin Yat+Siu Hong"] = copy.deepcopy(DATA_SHEET["routeList"]["SPR+1+Tin Yat+Siu Hong"])
-    DATA_SHEET["routeList"]["901+1+Tin Yat+Siu Hong"]["route"] = "901"
-    DATA_SHEET["routeList"]["902+1+Tin Yat+Siu Hong"] = copy.deepcopy(DATA_SHEET["routeList"]["SPR+1+Tin Yat+Siu Hong"])
-    DATA_SHEET["routeList"]["902+1+Tin Yat+Siu Hong"]["route"] = "902"
-    del DATA_SHEET["routeList"]["SPR+1+Tin Yat+Siu Hong"]
+    # DATA_SHEET["routeList"]["901+1+Tin Yat+Siu Hong"] = copy.deepcopy(DATA_SHEET["routeList"]["SPR+1+Tin Yat+Siu Hong"])
+    # DATA_SHEET["routeList"]["901+1+Tin Yat+Siu Hong"]["route"] = "901"
+    # DATA_SHEET["routeList"]["902+1+Tin Yat+Siu Hong"] = copy.deepcopy(DATA_SHEET["routeList"]["SPR+1+Tin Yat+Siu Hong"])
+    # DATA_SHEET["routeList"]["902+1+Tin Yat+Siu Hong"]["route"] = "902"
+    # del DATA_SHEET["routeList"]["SPR+1+Tin Yat+Siu Hong"]
 
     if "HK1+1+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI, MONG KOK and WONG TAI" in DATA_SHEET["routeList"]:
         DATA_SHEET["routeList"]["HK1+1+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI, MONG KOK and WONG TAI"]["dest"]["zh"] = "尖沙咀, 旺角及黃大仙 [九巴遊香港]"
@@ -561,9 +565,6 @@ def download_and_process_data_sheet():
     if "HK1+2+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI and MONG KOK" in DATA_SHEET["routeList"]:
         DATA_SHEET["routeList"]["HK1+2+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI and MONG KOK"]["dest"]["zh"] = "尖沙咀及旺角 [九巴遊香港]"
         DATA_SHEET["routeList"]["HK1+2+STAR FERRY+[KMB Tour HK] TSIM SHA TSUI and MONG KOK"]["dest"]["en"] = "Tsim Sha Tsui and Mong Kok [KMB Tour HK]"
-    if "HK2+1+KOWLOON STATION+[KMB Tour HK] TSIM SHA TSUI and TSING MA BRIDGE" in DATA_SHEET["routeList"]:
-        DATA_SHEET["routeList"]["HK2+1+KOWLOON STATION+[KMB Tour HK] TSIM SHA TSUI and TSING MA BRIDGE"]["dest"]["zh"] = "尖沙咀及青馬大橋 [九巴遊香港]"
-        DATA_SHEET["routeList"]["HK2+1+KOWLOON STATION+[KMB Tour HK] TSIM SHA TSUI and TSING MA BRIDGE"]["dest"]["en"] = "Tsim Sha Tsui and Tsing Ma Bridge [KMB Tour HK]"
 
     # Temp fix for 22X
     if not IS_EXPERIMENTAL:
