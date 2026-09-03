@@ -541,8 +541,8 @@ def download_and_process_data_sheet():
     DATA_SHEET["routeList"]["AEL+1+Hong Kong+AsiaWorld-Expo"]["dest"]["zh"] = "機場及博覽館"
     DATA_SHEET["routeList"]["AEL+1+Hong Kong+AsiaWorld-Expo"]["dest"]["en"] = "Airport & AsiaWorld-Expo"
 
-    lrt_610P*_start = DATA_SHEET["routeList"]["610P*+1+Siu Hong+Siu Hong (Circular)"]["stops"]["lightRail"][0]
-    DATA_SHEET["routeList"]["610P*+1+Siu Hong+Siu Hong (Circular)"]["stops"]["lightRail"].append(lrt_610P*_start)
+    lrt_610P_spr_start = DATA_SHEET["routeList"]["610P*+1+Siu Hong+Siu Hong (Circular)"]["stops"]["lightRail"][0]
+    DATA_SHEET["routeList"]["610P*+1+Siu Hong+Siu Hong (Circular)"]["stops"]["lightRail"].append(lrt_610P_spr_start)
     DATA_SHEET["routeList"]["610P*+1+Siu Hong+Siu Hong (Circular)"]["lrtCircular"] = {"en": "Siu Hong Circular", "zh": "兆康循環綫"}
 
     lrt_705_start = DATA_SHEET["routeList"]["705+1+Tin Shui Wai+Tin Shui Wai (Circular)"]["stops"]["lightRail"][0]
