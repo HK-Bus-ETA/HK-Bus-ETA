@@ -312225,7 +312225,7 @@
                     ]
                 }
             },
-            "B12+99+Huanggang Port+Wu Kai Sha Station":{
+            "B12+99+Wu Kai Sha Station+Huanggang Port":{
                 "bound":{
                     "nlb":"O"
                 },
@@ -312233,16 +312233,16 @@
                     "nlb"
                 ],
                 "dest":{
-                    "en":"Wu Kai Sha Station",
-                    "zh":"烏溪沙站"
+                    "en":"Huanggang Port",
+                    "zh":"皇崗口岸"
                 },
                 "freq":null,
                 "gtfsId":null,
                 "jt":null,
                 "nlbId":null,
                 "orig":{
-                    "en":"Huanggang Port",
-                    "zh":"皇崗口岸"
+                    "en":"Wu Kai Sha Station",
+                    "zh":"烏溪沙站"
                 },
                 "route":"B12",
                 "serviceType":"99",
