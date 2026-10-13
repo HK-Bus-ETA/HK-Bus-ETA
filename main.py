@@ -525,8 +525,14 @@ def download_and_process_data_sheet():
     DATA_SHEET["stopList"]["003208"]["remark"] = {"en": "(S-Bay Control Point - Border Crossing Passengers Only)", "zh": "(深圳灣管制站 - 僅限過境旅客)"}
     DATA_SHEET["stopList"]["81567ACCCF40DD4B"]["remark"] = {"en": "(LMC SL Immigration Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲支線出入境管制站 - 僅限過境旅客)"}
     DATA_SHEET["stopList"]["20015420"]["remark"] = {"en": "(LMC SL Immigration Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲支線出入境管制站 - 僅限過境旅客)"}
-    DATA_SHEET["stopList"]["20011698"]["remark"] = {"en": "(LMC Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲管制站 - 僅限過境旅客)"}
-    DATA_SHEET["stopList"]["20015598"]["remark"] = {"en": "(LMC Control Point - Border Crossing Passengers Only)", "zh": "(落馬洲管制站 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["003939"]["remark"] = {"en": "(Huanggang Port - Border Crossing Passengers Only)", "zh": "(皇崗口岸 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["20023758"]["remark"] = {"en": "(Huanggang Port - Border Crossing Passengers Only)", "zh": "(皇崗口岸 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["371"]["remark"] = {"en": "(Huanggang Port - Border Crossing Passengers Only)", "zh": "(皇崗口岸 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["372"]["remark"] = {"en": "(Huanggang Port - Border Crossing Passengers Only)", "zh": "(皇崗口岸 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["C9A6689E84F83D1A"]["remark"] = {"en": "(Huanggang Port - Border Crossing Passengers Only)", "zh": "(皇崗口岸 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["81546F0FC36C9A02"]["remark"] = {"en": "(Huanggang Port - Border Crossing Passengers Only)", "zh": "(皇崗口岸 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["0E38C53383FCAC6C"]["remark"] = {"en": "(Huanggang Port - Border Crossing Passengers Only)", "zh": "(皇崗口岸 - 僅限過境旅客)"}
+    DATA_SHEET["stopList"]["D7E9208A2B3A457A"]["remark"] = {"en": "(Huanggang Port - Border Crossing Passengers Only)", "zh": "(皇崗口岸 - 僅限過境旅客)"}
     DATA_SHEET["stopList"]["RAC"] = {
         "location": {"lat": 22.4003487, "lng": 114.2030287},
         "name": {"en": "Racecourse", "zh": "馬場"},
