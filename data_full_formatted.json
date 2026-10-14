@@ -21023,10 +21023,7 @@
         },
         "SP12":{
             "I":[],
-            "O":[
-                "003874",
-                "003623"
-            ]
+            "O":[]
         },
         "SP2":{
             "I":[],
@@ -240377,6 +240374,36 @@
                         "20002307",
                         "20001549",
                         "20001515"
+                    ]
+                }
+            },
+            "61S+99+WO HOP SHEK+TUEN MUN CENTRAL":{
+                "bound":{
+                    "kmb":"O"
+                },
+                "co":[
+                    "kmb"
+                ],
+                "dest":{
+                    "en":"Tuen Mun Central",
+                    "zh":"屯門巿中心"
+                },
+                "fares":null,
+                "faresHoliday":null,
+                "freq":null,
+                "gtfsId":null,
+                "jt":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Wo Hop Shek",
+                    "zh":"和合石"
+                },
+                "route":"61S",
+                "serviceType":"99",
+                "stops":{
+                    "kmb":[
+                        "ZZZZZZZZZZZZZZZY",
+                        "ZZZZZZZZZZZZZZZZ"
                     ]
                 }
             },
@@ -1504552,6 +1504579,10 @@
                 "en":"Service on specified day",
                 "zh":"特定日子服務"
             },
+            "971R":{
+                "en":"Circular, Service on specified day",
+                "zh":"循環線 特定日子服務"
+            },
             "976S":{
                 "en":"Route Details TBD",
                 "zh":"未有路線資訊"
@@ -1504636,10 +1504667,6 @@
                 "en":"Service on specified day, Disneyland",
                 "zh":"特定日子服務 迪士尼樂園路線"
             },
-            "SP12":{
-                "en":"Service on specified day",
-                "zh":"特定日子服務"
-            },
             "SP2A":{
                 "en":"Service on specified day",
                 "zh":"特定日子服務"
@@ -1504689,6 +1504716,10 @@
             "56S":{
                 "en":"on 11,17,18,19,24,25/10/2026",
                 "zh":"on 11,17,18,19,24,25/10/2026"
+            },
+            "61S":{
+                "en":"18/10/2026 Only - Route Details TBD",
+                "zh":"18/10/2026 (一天) - 未有路線資訊"
             },
             "71P":{
                 "en":"On 26/9/2026 mid-night only",
