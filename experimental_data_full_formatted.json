@@ -240431,69 +240431,6 @@
                     ]
                 }
             },
-            "61S+1+TUEN MUN CENTRAL+WO HOP SHEK":{
-                "bound":{
-                    "kmb":"O"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"Wo Hop Shek",
-                    "zh":"和合石"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Tuen Mun Central",
-                    "zh":"屯門巿中心"
-                },
-                "route":"61S",
-                "serviceType":"1",
-                "stops":{
-                    "kmb":[
-                        "8660BDF2C013FAC2",
-                        "EC49B6F5634BC0C2",
-                        "7AC6625D894BA101",
-                        "CBE54DB551C24A02",
-                        "AA5CBDB0758443A9"
-                    ]
-                }
-            },
-            "61S+1+WO HOP SHEK+TUEN MUN CENTRAL":{
-                "bound":{
-                    "kmb":"I"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"Tuen Mun Central",
-                    "zh":"屯門巿中心"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Wo Hop Shek",
-                    "zh":"和合石"
-                },
-                "route":"61S",
-                "serviceType":"1",
-                "stops":{
-                    "kmb":[
-                        "AA5CBDB0758443A9",
-                        "6FB7BC1E5BC1E4EE",
-                        "5238463F47B490D6",
-                        "8660BDF2C013FAC2"
-                    ]
-                }
-            },
             "61X+1+KOWLOON CITY FERRY+TUEN MUN CENTRAL":{
                 "bound":{
                     "kmb":"I"
@@ -313162,7 +313099,7 @@
                     ]
                 }
             },
-            "85P+1+HUNG HOM (HUNG LUEN ROAD)+NAI CHUNG":{
+            "85P+1+HUNG HOM (HUNG LUEN ROAD), KERRY HOTEL (HH905)+NAI CHUNG (SK971)":{
                 "bound":{
                     "kmb":"I"
                 },
@@ -313208,8 +313145,8 @@
                 "jt":"64",
                 "nlbId":null,
                 "orig":{
-                    "en":"Hung Hom (Hung Luen Road)",
-                    "zh":"紅磡(紅鸞道)"
+                    "en":"Hung Hom (Hung Luen Road), Kerry Hotel",
+                    "zh":"紅磡(紅鸞道) 嘉里酒店"
                 },
                 "route":"85P",
                 "serviceType":"1",
@@ -313230,19 +313167,19 @@
                         "A46B6AC99CE8722E",
                         "D7A05B5BAF07A89B",
                         "7BFC2AE979358DA7",
-                        "E27820FF0AF73D52",
                         "A384FBA637A1EBC5",
-                        "5E073AD8BC9F2AC8",
-                        "180DC2E520E7A4D0",
-                        "5E082FCF5C58328C",
                         "4B5F39DBC6671C81",
                         "4CC126E0B1E42F14",
                         "A90443FD0C19C4B1",
-                        "9AD30F8EDBC3F139"
+                        "9AD30F8EDBC3F139",
+                        "1E471172708B5C5D",
+                        "2479788748627B65",
+                        "2C5CA5F47FB6EB3F",
+                        "B493CF03406C0B5E"
                     ]
                 }
             },
-            "85P+1+NAI CHUNG+HUNG HOM (HUNG LUEN ROAD)":{
+            "85P+1+NAI CHUNG (SK971)+HUNG HOM (HUNG LUEN ROAD), KERRY HOTEL (HH905)":{
                 "bound":{
                     "kmb":"O"
                 },
@@ -313250,13 +313187,42 @@
                     "kmb"
                 ],
                 "dest":{
-                    "en":"Hung Hom (Hung Luen Road)",
-                    "zh":"紅磡(紅鸞道)"
+                    "en":"Hung Hom (Hung Luen Road), Kerry Hotel",
+                    "zh":"紅磡(紅鸞道) 嘉里酒店"
                 },
-                "fares":null,
+                "fares":[
+                    "10.9",
+                    "10.9",
+                    "10.9",
+                    "10.9",
+                    "10.9",
+                    "10.9",
+                    "10.9",
+                    "10.9",
+                    "10.9",
+                    "8.6",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "7.4",
+                    "5.6"
+                ],
                 "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
+                "freq":{
+                    "287":{
+                        "0715":null
+                    }
+                },
+                "gtfsId":"1000533",
+                "jt":"64",
                 "nlbId":null,
                 "orig":{
                     "en":"Nai Chung",
@@ -313274,11 +313240,7 @@
                         "8337F935242C5CC3",
                         "0D4E07F475845DB3",
                         "B071B60F5566934B",
-                        "8507CD56EB29D1CF",
-                        "1D99BD02B9B45429",
-                        "1D6A8B8C58C268FF",
                         "95C538941C437656",
-                        "2021D186A889FA2E",
                         "3114213F8975F536",
                         "D1AAD1771F3FA9A0",
                         "C80FB453C9F53569",
@@ -313289,7 +313251,11 @@
                         "5396072459507B7F",
                         "C048D4CF6ED36C7A",
                         "68A8F08ABC5C90F0",
-                        "91929D42214F3D7F"
+                        "91929D42214F3D7F",
+                        "97B7EC0354E020B7",
+                        "ED03E689B88CE0E8",
+                        "B122FA4A77BABF24",
+                        "B452F1514B4FEE40"
                     ]
                 }
             },
@@ -772095,10 +772061,6 @@
                     "F490C6051AA2E1F3"
                 ],
                 [
-                    "lrtfeeder",
-                    "K54-U070"
-                ],
-                [
                     "gmb",
                     "20001314"
                 ],
@@ -772113,30 +772075,6 @@
                 [
                     "lightRail",
                     "LR280"
-                ],
-                [
-                    "kmb",
-                    "4521D614AE85C1A5"
-                ],
-                [
-                    "kmb",
-                    "818F12340BA8CA4B"
-                ],
-                [
-                    "lrtfeeder",
-                    "K51-D200"
-                ],
-                [
-                    "lrtfeeder",
-                    "K51A-D180"
-                ],
-                [
-                    "ctb",
-                    "003198"
-                ],
-                [
-                    "gmb",
-                    "20001319"
                 ]
             ],
             "8667AD096EEED0A8":[
@@ -830661,10 +830599,6 @@
                 [
                     "ctb",
                     "003219"
-                ],
-                [
-                    "kmb",
-                    "8660BDF2C013FAC2"
                 ]
             ],
             "K54A-D010":[
@@ -1505053,10 +1504987,6 @@
             "56S":{
                 "en":"on 11,17,18,19,24,25/10/2026",
                 "zh":"on 11,17,18,19,24,25/10/2026"
-            },
-            "61S":{
-                "en":"18/10/2026 Only",
-                "zh":"18/10/2026 (一天)"
             },
             "71P":{
                 "en":"On 26/9/2026 mid-night only",
