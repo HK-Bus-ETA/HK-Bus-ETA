@@ -1412,6 +1412,7 @@
         "SP10",
         "SP11",
         "SP12",
+        "SP2",
         "SP2A",
         "SP3",
         "SP5A",
@@ -21023,7 +21024,18 @@
         },
         "SP12":{
             "I":[],
-            "O":[]
+            "O":[
+                "003874",
+                "003939"
+            ]
+        },
+        "SP2":{
+            "I":[],
+            "O":[
+                "003874",
+                "003692",
+                "001559"
+            ]
         },
         "SP2A":{
             "I":[],
@@ -98380,6 +98392,36 @@
                     "en":"Tsui Lai Garden",
                     "zh":"翠麗花園"
                 },
+                "freq":null,
+                "gtfsId":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Sheung Shui (Tin Ping)",
+                    "zh":"上水(天平)"
+                },
+                "route":"270",
+                "serviceType":"2",
+                "stops":{
+                    "kmb":[
+                        "EBE1766B508217AF",
+                        "D876A83244ECB838",
+                        "F118B7D39DA9A9C3",
+                        "11B894BF379B1BFC",
+                        "DE9F24A5FF5A89E9"
+                    ]
+                }
+            },
+            "270+2+TIN PING ESTATE BUS TERMINUS (ND951)+TSUI LAI GARDEN (ND945)":{
+                "bound":{
+                    "kmb":"O"
+                },
+                "co":[
+                    "kmb"
+                ],
+                "dest":{
+                    "en":"Tsui Lai Garden",
+                    "zh":"翠麗花園"
+                },
                 "freq":{
                     "511":{
                         "0530":null
@@ -98389,8 +98431,8 @@
                 "jt":"14",
                 "nlbId":null,
                 "orig":{
-                    "en":"Sheung Shui (Tin Ping)",
-                    "zh":"上水(天平)"
+                    "en":"Tin Ping Estate Bus Terminus",
+                    "zh":"天平邨總站"
                 },
                 "route":"270",
                 "serviceType":"2",
@@ -364727,7 +364769,7 @@
                     ]
                 }
             },
-            "SP12+99+Kai Tak Sports Park+Huanggang Port":{
+            "SP12+1+Kai Tak Sports Park+Huanggang Port":{
                 "bound":{
                     "ctb":"O"
                 },
@@ -364740,18 +364782,45 @@
                 },
                 "freq":null,
                 "gtfsId":null,
-                "jt":null,
                 "nlbId":null,
                 "orig":{
                     "en":"Kai Tak Sports Park",
                     "zh":"啟德體育園"
                 },
                 "route":"SP12",
-                "serviceType":"99",
+                "serviceType":1,
                 "stops":{
                     "ctb":[
-                        "999998",
-                        "999999"
+                        "003874",
+                        "003939"
+                    ]
+                }
+            },
+            "SP2+1+Kai Tak Sports Park+Mong Kok":{
+                "bound":{
+                    "ctb":"O"
+                },
+                "co":[
+                    "ctb"
+                ],
+                "dest":{
+                    "en":"Mong Kok",
+                    "zh":"旺角"
+                },
+                "freq":null,
+                "gtfsId":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Kai Tak Sports Park",
+                    "zh":"啟德體育園"
+                },
+                "route":"SP2",
+                "serviceType":1,
+                "stops":{
+                    "ctb":[
+                        "003874",
+                        "003692",
+                        "001559"
                     ]
                 }
             },
@@ -474478,6 +474547,20 @@
                     "zh":"(TP880)"
                 }
             },
+            "4594DE819A18CA80":{
+                "location":{
+                    "lat":22.05478,
+                    "lng":114.13144
+                },
+                "name":{
+                    "en":"Tin Yee House Tin Ping Estate",
+                    "zh":"天平邨天怡樓"
+                },
+                "remark":{
+                    "en":"(ND335)",
+                    "zh":"(ND335)"
+                }
+            },
             "459BE083B86A8337":{
                 "location":{
                     "lat":22.38744,
@@ -486134,6 +486217,20 @@
                 "remark":{
                     "en":"(YT330)",
                     "zh":"(YT330)"
+                }
+            },
+            "64ECC536B1725CBE":{
+                "location":{
+                    "lat":22.50307,
+                    "lng":114.12959
+                },
+                "name":{
+                    "en":"Lung Fung Garden",
+                    "zh":"龍豐花園"
+                },
+                "remark":{
+                    "en":"(ND336)",
+                    "zh":"(ND336)"
                 }
             },
             "64FBF17E3209D217":{
@@ -502662,6 +502759,20 @@
                 "remark":{
                     "en":"(ND920)",
                     "zh":"(ND920)"
+                }
+            },
+            "945D74B7F76C0FAD":{
+                "location":{
+                    "lat":22.50505,
+                    "lng":114.13119
+                },
+                "name":{
+                    "en":"Lung Sum Avenue Sports Centre",
+                    "zh":"龍琛路體育館"
+                },
+                "remark":{
+                    "en":"(ND231)",
+                    "zh":"(ND231)"
                 }
             },
             "94612276CB142F93":{
@@ -535964,6 +536075,20 @@
                 "remark":{
                     "en":"(YL655)",
                     "zh":"(YL655)"
+                }
+            },
+            "F118B7D39DA9A9C3":{
+                "location":{
+                    "lat":22.50362,
+                    "lng":114.12977
+                },
+                "name":{
+                    "en":"San Shing Avenue Sheung Shui",
+                    "zh":"上水新成路"
+                },
+                "remark":{
+                    "en":"(ND230)",
+                    "zh":"(ND230)"
                 }
             },
             "F11DEDBBCD090BCC":{
@@ -581811,6 +581936,10 @@
                 [
                     "kmb",
                     "9170FC8FFFD12204"
+                ],
+                [
+                    "kmb",
+                    "F118B7D39DA9A9C3"
                 ]
             ],
             "003765":[
@@ -605463,6 +605592,10 @@
                 [
                     "kmb",
                     "9170FC8FFFD12204"
+                ],
+                [
+                    "kmb",
+                    "F118B7D39DA9A9C3"
                 ]
             ],
             "20001474":[
@@ -678299,6 +678432,20 @@
                     "B0668BFF6178BA0B"
                 ]
             ],
+            "64ECC536B1725CBE":[
+                [
+                    "ctb",
+                    "003768"
+                ],
+                [
+                    "gmb",
+                    "20007293"
+                ],
+                [
+                    "kmb",
+                    "D417A444017171C6"
+                ]
+            ],
             "64FBF17E3209D217":[
                 [
                     "ctb",
@@ -696847,6 +696994,10 @@
                 [
                     "gmb",
                     "20001473"
+                ],
+                [
+                    "kmb",
+                    "F118B7D39DA9A9C3"
                 ]
             ],
             "9179E2F718D0F436":[
@@ -698445,6 +698596,32 @@
                 [
                     "kmb",
                     "26A1D2969A15C3AF"
+                ]
+            ],
+            "945D74B7F76C0FAD":[
+                [
+                    "ctb",
+                    "003719"
+                ],
+                [
+                    "gmb",
+                    "20012124"
+                ],
+                [
+                    "gmb",
+                    "20012127"
+                ],
+                [
+                    "kmb",
+                    "D2C1DACCC74B69C5"
+                ],
+                [
+                    "kmb",
+                    "EE775A73D626A46E"
+                ],
+                [
+                    "ctb",
+                    "003765"
                 ]
             ],
             "946516353F8828E9":[
@@ -729809,6 +729986,12 @@
                     "K58-D120"
                 ]
             ],
+            "DF0C4F9561000773":[
+                [
+                    "kmb",
+                    "EBE1766B508217AF"
+                ]
+            ],
             "DF0F8F9667BADA6A":[
                 [
                     "kmb",
@@ -734779,6 +734962,10 @@
                 [
                     "kmb",
                     "4442A9A5E7FABAB8"
+                ],
+                [
+                    "kmb",
+                    "DF0C4F9561000773"
                 ]
             ],
             "EBE72869FC78A62D":[
@@ -737125,6 +737312,20 @@
                 [
                     "kmb",
                     "527795AF6DEC209C"
+                ]
+            ],
+            "F118B7D39DA9A9C3":[
+                [
+                    "ctb",
+                    "003764"
+                ],
+                [
+                    "gmb",
+                    "20001473"
+                ],
+                [
+                    "kmb",
+                    "9170FC8FFFD12204"
                 ]
             ],
             "F11DEDBBCD090BCC":[
@@ -761547,8 +761748,12 @@
                 "zh":"特定日子服務 過海線"
             },
             "SP12":{
-                "en":"Route Details TBD",
-                "zh":"未有路線資訊"
+                "en":"Service on specified day",
+                "zh":"特定日子服務"
+            },
+            "SP2":{
+                "en":"Service on specified day",
+                "zh":"特定日子服務"
             },
             "SP2A":{
                 "en":"Service on specified day",
