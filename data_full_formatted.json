@@ -1412,6 +1412,7 @@
         "SP10",
         "SP11",
         "SP12",
+        "SP2",
         "SP2A",
         "SP3",
         "SP5A",
@@ -21023,7 +21024,18 @@
         },
         "SP12":{
             "I":[],
-            "O":[]
+            "O":[
+                "003874",
+                "003939"
+            ]
+        },
+        "SP2":{
+            "I":[],
+            "O":[
+                "003874",
+                "003692",
+                "001559"
+            ]
         },
         "SP2A":{
             "I":[],
@@ -240423,69 +240435,6 @@
                     ]
                 }
             },
-            "61S+1+TUEN MUN CENTRAL+WO HOP SHEK":{
-                "bound":{
-                    "kmb":"O"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"Wo Hop Shek",
-                    "zh":"和合石"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Tuen Mun Central",
-                    "zh":"屯門巿中心"
-                },
-                "route":"61S",
-                "serviceType":"1",
-                "stops":{
-                    "kmb":[
-                        "8660BDF2C013FAC2",
-                        "EC49B6F5634BC0C2",
-                        "7AC6625D894BA101",
-                        "CBE54DB551C24A02",
-                        "AA5CBDB0758443A9"
-                    ]
-                }
-            },
-            "61S+1+WO HOP SHEK+TUEN MUN CENTRAL":{
-                "bound":{
-                    "kmb":"I"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"Tuen Mun Central",
-                    "zh":"屯門巿中心"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Wo Hop Shek",
-                    "zh":"和合石"
-                },
-                "route":"61S",
-                "serviceType":"1",
-                "stops":{
-                    "kmb":[
-                        "AA5CBDB0758443A9",
-                        "6FB7BC1E5BC1E4EE",
-                        "5238463F47B490D6",
-                        "8660BDF2C013FAC2"
-                    ]
-                }
-            },
             "61X+1+KOWLOON CITY FERRY+TUEN MUN CENTRAL":{
                 "bound":{
                     "kmb":"I"
@@ -443804,6 +443753,37 @@
                     ]
                 }
             },
+            "SP12+98+Kai Tak Sports Park+Huanggang Port":{
+                "bound":{
+                    "ctb":"O"
+                },
+                "co":[
+                    "ctb"
+                ],
+                "dest":{
+                    "en":"Huanggang Port",
+                    "zh":"皇崗口岸"
+                },
+                "fakeRoute":true,
+                "fares":null,
+                "faresHoliday":null,
+                "freq":null,
+                "gtfsId":null,
+                "jt":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Kai Tak Sports Park",
+                    "zh":"啟德體育園"
+                },
+                "route":"SP12",
+                "serviceType":"98",
+                "stops":{
+                    "ctb":[
+                        "003874",
+                        "003939"
+                    ]
+                }
+            },
             "SP12+99+Kai Tak Sports Park+Huanggang Port":{
                 "bound":{
                     "ctb":"O"
@@ -443826,6 +443806,68 @@
                     "zh":"啟德體育園"
                 },
                 "route":"SP12",
+                "serviceType":"99",
+                "stops":{
+                    "ctb":[
+                        "999998",
+                        "999999"
+                    ]
+                }
+            },
+            "SP2+98+Kai Tak Sports Park+Mong Kok":{
+                "bound":{
+                    "ctb":"O"
+                },
+                "co":[
+                    "ctb"
+                ],
+                "dest":{
+                    "en":"Mong Kok",
+                    "zh":"旺角"
+                },
+                "fakeRoute":true,
+                "fares":null,
+                "faresHoliday":null,
+                "freq":null,
+                "gtfsId":null,
+                "jt":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Kai Tak Sports Park",
+                    "zh":"啟德體育園"
+                },
+                "route":"SP2",
+                "serviceType":"98",
+                "stops":{
+                    "ctb":[
+                        "003874",
+                        "003692",
+                        "001559"
+                    ]
+                }
+            },
+            "SP2+99+Kai Tak Sports Park+Mong Kok":{
+                "bound":{
+                    "ctb":"O"
+                },
+                "co":[
+                    "ctb"
+                ],
+                "dest":{
+                    "en":"Mong Kok",
+                    "zh":"旺角"
+                },
+                "fares":null,
+                "faresHoliday":null,
+                "freq":null,
+                "gtfsId":null,
+                "jt":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Kai Tak Sports Park",
+                    "zh":"啟德體育園"
+                },
+                "route":"SP2",
                 "serviceType":"99",
                 "stops":{
                     "ctb":[
@@ -772114,10 +772156,6 @@
                     "F490C6051AA2E1F3"
                 ],
                 [
-                    "lrtfeeder",
-                    "K54-U070"
-                ],
-                [
                     "gmb",
                     "20001314"
                 ],
@@ -772132,30 +772170,6 @@
                 [
                     "lightRail",
                     "LR280"
-                ],
-                [
-                    "kmb",
-                    "4521D614AE85C1A5"
-                ],
-                [
-                    "kmb",
-                    "818F12340BA8CA4B"
-                ],
-                [
-                    "lrtfeeder",
-                    "K51-D200"
-                ],
-                [
-                    "lrtfeeder",
-                    "K51A-D180"
-                ],
-                [
-                    "ctb",
-                    "003198"
-                ],
-                [
-                    "gmb",
-                    "20001319"
                 ]
             ],
             "8667AD096EEED0A8":[
@@ -830680,10 +830694,6 @@
                 [
                     "ctb",
                     "003219"
-                ],
-                [
-                    "kmb",
-                    "8660BDF2C013FAC2"
                 ]
             ],
             "K54A-D010":[
@@ -1505020,8 +1505030,12 @@
                 "zh":"特定日子服務 過海線"
             },
             "SP12":{
-                "en":"Route Details TBD",
-                "zh":"未有路線資訊"
+                "en":"Service on specified day - Route Details TBD",
+                "zh":"特定日子服務 - 未有路線資訊"
+            },
+            "SP2":{
+                "en":"Service on specified day - Route Details TBD",
+                "zh":"特定日子服務 - 未有路線資訊"
             },
             "SP2A":{
                 "en":"Service on specified day",
