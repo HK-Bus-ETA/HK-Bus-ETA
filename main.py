@@ -31,16 +31,26 @@ def merge(a, b, path=None):
             a[key] = b[key]
 
 
-def get_web_json(url, max_retries=1000, delay=5):
+def get_web_json(url, max_retries=10, delay=5, timeout=30):
     for attempt in range(max_retries):
         try:
-            with urllib.request.urlopen(url) as data:
+            with urllib.request.urlopen(url, timeout=timeout) as data:
                 return json.load(data)
         except Exception as e:
             if attempt < max_retries - 1:
-                time.sleep(max(delay * (attempt + 1), delay * 10))
+                retry_delay = min(delay * (2 ** attempt), delay * 10)
+                print(
+                    f"Request failed for {url} ({e!r}); retrying in "
+                    f"{retry_delay} seconds ({attempt + 1}/{max_retries})",
+                    file=sys.stderr
+                )
+                time.sleep(retry_delay)
             else:
-                raise e
+                print(
+                    f"Request failed for {url} after {max_retries} attempts: {e!r}",
+                    file=sys.stderr
+                )
+                raise
     return None
 
 
@@ -109,7 +119,7 @@ def get_kmb_stop_info(stop_id):
         return None
 
 
-def get_web_text(url, gzip=True, max_retries=1000, delay=5):
+def get_web_text(url, gzip=True, max_retries=10, delay=5, timeout=30):
     for attempt in range(max_retries):
         try:
             req = urllib.request.Request(url)
@@ -118,8 +128,8 @@ def get_web_text(url, gzip=True, max_retries=1000, delay=5):
                 req.add_header('Accept-Encoding', 'gzip')
             req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7')
             req.add_header('Connection', 'keep-alive')
-            response = urllib.request.urlopen(req)
-            text = response.read()
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                text = response.read()
             encoding = chardet.detect(text)
             if encoding['encoding'] is None:
                 decompressed_data = zlib.decompress(text, 16 + zlib.MAX_WBITS)
@@ -128,9 +138,19 @@ def get_web_text(url, gzip=True, max_retries=1000, delay=5):
                 return text.decode(encoding['encoding'])
         except Exception as e:
             if attempt < max_retries - 1:
-                time.sleep(max(delay * (attempt + 1), delay * 10))
+                retry_delay = min(delay * (2 ** attempt), delay * 10)
+                print(
+                    f"Request failed for {url} ({e!r}); retrying in "
+                    f"{retry_delay} seconds ({attempt + 1}/{max_retries})",
+                    file=sys.stderr
+                )
+                time.sleep(retry_delay)
             else:
-                raise e
+                print(
+                    f"Request failed for {url} after {max_retries} attempts: {e!r}",
+                    file=sys.stderr
+                )
+                raise
     return None
 
 
