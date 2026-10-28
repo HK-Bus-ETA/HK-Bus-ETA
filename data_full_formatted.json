@@ -589,7 +589,6 @@
         "52B",
         "52K",
         "52P",
-        "52S",
         "52X",
         "53",
         "53M",
@@ -606,7 +605,6 @@
         "56B",
         "56C",
         "56K",
-        "56S",
         "57K",
         "57M",
         "58",
@@ -1561,6 +1559,7 @@
                 "001050",
                 "001052",
                 "001025",
+                "001090",
                 "001136",
                 "002479",
                 "002480",
@@ -7070,6 +7069,7 @@
                 "001173",
                 "001049",
                 "001025",
+                "001090",
                 "001050",
                 "001052",
                 "003845",
@@ -25435,6 +25435,73 @@
                         "001049",
                         "001050",
                         "001052",
+                        "001136",
+                        "002479",
+                        "002480",
+                        "002481",
+                        "002482",
+                        "002484",
+                        "002485",
+                        "002469",
+                        "002455",
+                        "002456",
+                        "002474",
+                        "001213",
+                        "001259",
+                        "001260",
+                        "001261",
+                        "001262",
+                        "001310",
+                        "001249"
+                    ]
+                }
+            },
+            "10+98+Kennedy Town+North Point Ferry Pier":{
+                "bound":{
+                    "ctb":"O"
+                },
+                "co":[
+                    "ctb"
+                ],
+                "dest":{
+                    "en":"North Point Ferry Pier",
+                    "zh":"北角碼頭"
+                },
+                "fakeRoute":true,
+                "fares":null,
+                "faresHoliday":null,
+                "freq":null,
+                "gtfsId":null,
+                "jt":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Kennedy Town",
+                    "zh":"堅尼地城"
+                },
+                "route":"10",
+                "serviceType":"98",
+                "stops":{
+                    "ctb":[
+                        "001152",
+                        "001163",
+                        "001022",
+                        "001080",
+                        "001081",
+                        "001079",
+                        "001059",
+                        "001060",
+                        "001061",
+                        "001062",
+                        "001063",
+                        "001064",
+                        "001065",
+                        "001187",
+                        "001173",
+                        "001049",
+                        "001050",
+                        "001052",
+                        "001025",
+                        "001090",
                         "001136",
                         "002479",
                         "002480",
@@ -92102,7 +92169,7 @@
                 "nlbId":null,
                 "orig":{
                     "en":"Kwun Tong (Tsui Ping North Estate)",
-                    "zh":"觀塘(翠屏北邨"
+                    "zh":"觀塘(翠屏北邨)"
                 },
                 "route":"234C",
                 "serviceType":"1",
@@ -108928,7 +108995,7 @@
                         "6D4E7B9D5F9584E7",
                         "47AB1894215AECEE",
                         "42AEF6365E78DA56",
-                        "BA9166F11C8D446E",
+                        "8753A8442C2FFF53",
                         "8D56DB404D264D5A",
                         "A00D00FC2F4F8400",
                         "C052B4D46E1F48EA",
@@ -114601,7 +114668,7 @@
                         "6D4E7B9D5F9584E7",
                         "47AB1894215AECEE",
                         "42AEF6365E78DA56",
-                        "BA9166F11C8D446E",
+                        "8753A8442C2FFF53",
                         "8D56DB404D264D5A",
                         "498C8934EAACBE51"
                     ]
@@ -117329,6 +117396,38 @@
                     "en":"Tsui Lai Garden",
                     "zh":"翠麗花園"
                 },
+                "fares":null,
+                "faresHoliday":null,
+                "freq":null,
+                "gtfsId":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Sheung Shui (Tin Ping)",
+                    "zh":"上水(天平)"
+                },
+                "route":"270",
+                "serviceType":"2",
+                "stops":{
+                    "kmb":[
+                        "EBE1766B508217AF",
+                        "D876A83244ECB838",
+                        "F118B7D39DA9A9C3",
+                        "11B894BF379B1BFC",
+                        "DE9F24A5FF5A89E9"
+                    ]
+                }
+            },
+            "270+2+TIN PING ESTATE BUS TERMINUS (ND951)+TSUI LAI GARDEN (ND945)":{
+                "bound":{
+                    "kmb":"O"
+                },
+                "co":[
+                    "kmb"
+                ],
+                "dest":{
+                    "en":"Tsui Lai Garden",
+                    "zh":"翠麗花園"
+                },
                 "fares":[
                     "4.3",
                     "4.3",
@@ -117348,8 +117447,8 @@
                 "jt":"14",
                 "nlbId":null,
                 "orig":{
-                    "en":"Sheung Shui (Tin Ping)",
-                    "zh":"上水(天平)"
+                    "en":"Tin Ping Estate Bus Terminus",
+                    "zh":"天平邨總站"
                 },
                 "route":"270",
                 "serviceType":"2",
@@ -125608,7 +125707,7 @@
                         "6D4E7B9D5F9584E7",
                         "47AB1894215AECEE",
                         "42AEF6365E78DA56",
-                        "BA9166F11C8D446E",
+                        "8753A8442C2FFF53",
                         "8D56DB404D264D5A",
                         "744409C92DEBB74D"
                     ]
@@ -209293,7 +209392,6 @@
                     "5.8",
                     "5.8",
                     "5.8",
-                    "5.8",
                     "5.8"
                 ],
                 "faresHoliday":null,
@@ -209347,68 +209445,7 @@
                         "30B08A7B2B2B623F",
                         "7ADC6D521E6BECE6",
                         "E02E10C9135624F9",
-                        "145515B1D2C60CAF",
                         "835DE31CDA7EBEC9"
-                    ]
-                }
-            },
-            "52S+1+TSANG TSUI+TUEN MUN ROAD BBI":{
-                "bound":{
-                    "kmb":"I"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"Tuen Mun Road BBI",
-                    "zh":"屯門公路轉車站"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Tsang Tsui",
-                    "zh":"曾咀"
-                },
-                "route":"52S",
-                "serviceType":"1",
-                "stops":{
-                    "kmb":[
-                        "D6001B758148778A",
-                        "76441824D4E31948",
-                        "212BFF5737D0116C"
-                    ]
-                }
-            },
-            "52S+1+TUEN MUN ROAD BBI+TSANG TSUI":{
-                "bound":{
-                    "kmb":"O"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"Tsang Tsui",
-                    "zh":"曾咀"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Tuen Mun Road BBI",
-                    "zh":"屯門公路轉車站"
-                },
-                "route":"52S",
-                "serviceType":"1",
-                "stops":{
-                    "kmb":[
-                        "D0937674DF369B23",
-                        "09A5D5C90F15C08C",
-                        "D6001B758148778A"
                     ]
                 }
             },
@@ -209685,7 +209722,6 @@
                     "7.2",
                     "5.8",
                     "5.8",
-                    "5.8",
                     "5.8"
                 ],
                 "faresHoliday":null,
@@ -209927,7 +209963,6 @@
                         "996EC6B4E40A2E4A",
                         "7ADC6D521E6BECE6",
                         "E02E10C9135624F9",
-                        "145515B1D2C60CAF",
                         "835DE31CDA7EBEC9"
                     ]
                 }
@@ -210502,7 +210537,7 @@
                     "gmb":[
                         "20000284",
                         "20003083",
-                        "20003475",
+                        "20023791",
                         "20013195",
                         "20000289",
                         "20021451",
@@ -210864,7 +210899,7 @@
                     "gmb":[
                         "20000284",
                         "20003083",
-                        "20003475",
+                        "20023791",
                         "20013195",
                         "20000289",
                         "20021451",
@@ -210938,7 +210973,7 @@
                     "gmb":[
                         "20000284",
                         "20003083",
-                        "20003475",
+                        "20023791",
                         "20013195",
                         "20000289",
                         "20021451",
@@ -214524,68 +214559,6 @@
                         "20007809",
                         "20001456",
                         "20007811"
-                    ]
-                }
-            },
-            "56S+1+TSANG TSUI+TUEN MUN STATION":{
-                "bound":{
-                    "kmb":"I"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"Tuen Mun Station",
-                    "zh":"屯門站"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Tsang Tsui",
-                    "zh":"曾咀"
-                },
-                "route":"56S",
-                "serviceType":"1",
-                "stops":{
-                    "kmb":[
-                        "F64076F7E14E38D4",
-                        "76441824D4E31948",
-                        "5D14B75687F60509",
-                        "584E6744385F6463"
-                    ]
-                }
-            },
-            "56S+1+TUEN MUN STATION+TSANG TSUI":{
-                "bound":{
-                    "kmb":"O"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"Tsang Tsui",
-                    "zh":"曾咀"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Tuen Mun Station",
-                    "zh":"屯門站"
-                },
-                "route":"56S",
-                "serviceType":"1",
-                "stops":{
-                    "kmb":[
-                        "584E6744385F6463",
-                        "C1BF4509359B0895",
-                        "09A5D5C90F15C08C",
-                        "F64076F7E14E38D4"
                     ]
                 }
             },
@@ -225104,6 +225077,68 @@
                         "002434",
                         "002435",
                         "002438"
+                    ]
+                }
+            },
+            "5B+98+Felix Villas+Hong Kong Stadium, Eastern Hospital Road":{
+                "bound":{
+                    "ctb":"O"
+                },
+                "co":[
+                    "ctb"
+                ],
+                "dest":{
+                    "en":"Hong Kong Stadium, Eastern Hospital Road",
+                    "zh":"香港大球場, 東院道"
+                },
+                "fakeRoute":true,
+                "fares":null,
+                "faresHoliday":null,
+                "freq":null,
+                "gtfsId":null,
+                "jt":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Felix Villas",
+                    "zh":"摩星嶺"
+                },
+                "route":"5B",
+                "serviceType":"98",
+                "stops":{
+                    "ctb":[
+                        "001152",
+                        "001186",
+                        "001159",
+                        "001160",
+                        "001161",
+                        "001162",
+                        "001163",
+                        "001022",
+                        "001080",
+                        "001079",
+                        "001059",
+                        "001060",
+                        "001061",
+                        "001062",
+                        "001063",
+                        "001064",
+                        "001065",
+                        "001187",
+                        "001173",
+                        "001049",
+                        "001025",
+                        "001090",
+                        "001050",
+                        "001052",
+                        "003845",
+                        "002430",
+                        "002434",
+                        "002435",
+                        "002438",
+                        "002535",
+                        "002408",
+                        "002409",
+                        "002410"
                     ]
                 }
             },
@@ -256844,7 +256879,6 @@
                     "5.8",
                     "5.8",
                     "5.8",
-                    "5.8",
                     "5.8"
                 ],
                 "faresHoliday":null,
@@ -257008,7 +257042,6 @@
                         "30B08A7B2B2B623F",
                         "7ADC6D521E6BECE6",
                         "E02E10C9135624F9",
-                        "145515B1D2C60CAF",
                         "EC19750840FFEDDC"
                     ]
                 }
@@ -257279,7 +257312,6 @@
                     "5.8",
                     "5.8",
                     "5.8",
-                    "5.8",
                     "5.8"
                 ],
                 "faresHoliday":null,
@@ -257320,7 +257352,6 @@
                         "30B08A7B2B2B623F",
                         "7ADC6D521E6BECE6",
                         "E02E10C9135624F9",
-                        "145515B1D2C60CAF",
                         "EC19750840FFEDDC"
                     ]
                 }
@@ -257354,7 +257385,6 @@
                     "7.2",
                     "7.2",
                     "7.2",
-                    "5.8",
                     "5.8",
                     "5.8",
                     "5.8",
@@ -257398,7 +257428,6 @@
                         "30B08A7B2B2B623F",
                         "7ADC6D521E6BECE6",
                         "E02E10C9135624F9",
-                        "145515B1D2C60CAF",
                         "EC19750840FFEDDC"
                     ]
                 }
@@ -257831,7 +257860,7 @@
                         "C480A2E59BC05FB0",
                         "71D916F7E97D18A3",
                         "42AEF6365E78DA56",
-                        "BA9166F11C8D446E",
+                        "8753A8442C2FFF53",
                         "8D56DB404D264D5A",
                         "63DF37D89C356A04",
                         "1A52AD7D8F64311F"
@@ -374381,7 +374410,7 @@
                         "9E1FC92F86D2F4E3",
                         "AA239AD010294414",
                         "284790CC047436BE",
-                        "A80A0719C2068B68",
+                        "92A8D40E66E76F6B",
                         "8667AD096EEED0A8",
                         "BA72A994EEF9FABE",
                         "F8FE29B1FAF8BA77",
@@ -374608,7 +374637,7 @@
                         "9E1FC92F86D2F4E3",
                         "AA239AD010294414",
                         "284790CC047436BE",
-                        "A80A0719C2068B68",
+                        "92A8D40E66E76F6B",
                         "8667AD096EEED0A8",
                         "BA72A994EEF9FABE",
                         "F8FE29B1FAF8BA77",
@@ -380634,7 +380663,7 @@
                         "6D4E7B9D5F9584E7",
                         "47AB1894215AECEE",
                         "42AEF6365E78DA56",
-                        "BA9166F11C8D446E",
+                        "8753A8442C2FFF53",
                         "8D56DB404D264D5A",
                         "A00D00FC2F4F8400",
                         "080EF1BEA737A5D3",
@@ -380803,7 +380832,7 @@
                         "6D4E7B9D5F9584E7",
                         "47AB1894215AECEE",
                         "42AEF6365E78DA56",
-                        "BA9166F11C8D446E",
+                        "8753A8442C2FFF53",
                         "8D56DB404D264D5A",
                         "D834EE67780F47CD"
                     ]
@@ -426179,7 +426208,7 @@
                         "6D4E7B9D5F9584E7",
                         "47AB1894215AECEE",
                         "42AEF6365E78DA56",
-                        "BA9166F11C8D446E",
+                        "8753A8442C2FFF53",
                         "8D56DB404D264D5A",
                         "67D80F37744E1277",
                         "080EF1BEA737A5D3",
@@ -437430,7 +437459,7 @@
                         "9E1FC92F86D2F4E3",
                         "AA239AD010294414",
                         "284790CC047436BE",
-                        "A80A0719C2068B68",
+                        "92A8D40E66E76F6B",
                         "8667AD096EEED0A8",
                         "BA72A994EEF9FABE",
                         "F8FE29B1FAF8BA77",
@@ -443724,36 +443753,7 @@
                     ]
                 }
             },
-            "SP12+1+KAI TAK SPORTS PARK+LOK MA CHAU":{
-                "bound":{
-                    "kmb":"O"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"Lok Ma Chau",
-                    "zh":"落馬洲"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Kai Tak Sports Park",
-                    "zh":"啟德體育園"
-                },
-                "route":"SP12",
-                "serviceType":"1",
-                "stops":{
-                    "kmb":[
-                        "414AD39F5040C30F",
-                        "3106E04BB81D74A8"
-                    ]
-                }
-            },
-            "SP12+98+Kai Tak Sports Park+Huanggang Port":{
+            "SP12+1+Kai Tak Sports Park+Huanggang Port":{
                 "bound":{
                     "ctb":"O"
                 },
@@ -443764,19 +443764,17 @@
                     "en":"Huanggang Port",
                     "zh":"皇崗口岸"
                 },
-                "fakeRoute":true,
                 "fares":null,
                 "faresHoliday":null,
                 "freq":null,
                 "gtfsId":null,
-                "jt":null,
                 "nlbId":null,
                 "orig":{
                     "en":"Kai Tak Sports Park",
                     "zh":"啟德體育園"
                 },
                 "route":"SP12",
-                "serviceType":"98",
+                "serviceType":1,
                 "stops":{
                     "ctb":[
                         "003874",
@@ -443784,37 +443782,7 @@
                     ]
                 }
             },
-            "SP12+99+Kai Tak Sports Park+Huanggang Port":{
-                "bound":{
-                    "ctb":"O"
-                },
-                "co":[
-                    "ctb"
-                ],
-                "dest":{
-                    "en":"Huanggang Port",
-                    "zh":"皇崗口岸"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "jt":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Kai Tak Sports Park",
-                    "zh":"啟德體育園"
-                },
-                "route":"SP12",
-                "serviceType":"99",
-                "stops":{
-                    "ctb":[
-                        "999998",
-                        "999999"
-                    ]
-                }
-            },
-            "SP2+98+Kai Tak Sports Park+Mong Kok":{
+            "SP2+1+Kai Tak Sports Park+Mong Kok":{
                 "bound":{
                     "ctb":"O"
                 },
@@ -443825,54 +443793,22 @@
                     "en":"Mong Kok",
                     "zh":"旺角"
                 },
-                "fakeRoute":true,
                 "fares":null,
                 "faresHoliday":null,
                 "freq":null,
                 "gtfsId":null,
-                "jt":null,
                 "nlbId":null,
                 "orig":{
                     "en":"Kai Tak Sports Park",
                     "zh":"啟德體育園"
                 },
                 "route":"SP2",
-                "serviceType":"98",
+                "serviceType":1,
                 "stops":{
                     "ctb":[
                         "003874",
                         "003692",
                         "001559"
-                    ]
-                }
-            },
-            "SP2+99+Kai Tak Sports Park+Mong Kok":{
-                "bound":{
-                    "ctb":"O"
-                },
-                "co":[
-                    "ctb"
-                ],
-                "dest":{
-                    "en":"Mong Kok",
-                    "zh":"旺角"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "jt":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"Kai Tak Sports Park",
-                    "zh":"啟德體育園"
-                },
-                "route":"SP2",
-                "serviceType":"99",
-                "stops":{
-                    "ctb":[
-                        "999998",
-                        "999999"
                     ]
                 }
             },
@@ -445260,7 +445196,7 @@
                     ]
                 }
             },
-            "W2+2+HIGH SPEED RAIL WEST KOWLOON STATION BUS TERMINUS+LAGUNA PARK (LT421)":{
+            "W2+2+HIGH SPEED RAIL WEST KOWLOON STATION BUS TERMINUS (YT957)+LAGUNA PARK (LT421)":{
                 "bound":{
                     "kmb":"O"
                 },
@@ -445963,7 +445899,7 @@
                         "9E1FC92F86D2F4E3",
                         "AA239AD010294414",
                         "284790CC047436BE",
-                        "A80A0719C2068B68",
+                        "92A8D40E66E76F6B",
                         "8667AD096EEED0A8",
                         "BA72A994EEF9FABE",
                         "F8FE29B1FAF8BA77",
@@ -474079,8 +474015,8 @@
                     "lng":113.95334
                 },
                 "name":{
-                    "en":"Ying Tung Estate, Ying Tung Road",
-                    "zh":"迎東邨, 迎東路"
+                    "en":"Cheung Yat House Cheung Tung Estate, Ying Tung Road",
+                    "zh":"翔東邨翔日樓, 迎東路"
                 }
             },
             "003454":{
@@ -479019,7 +478955,7 @@
                     "zh":"深水埗(欽州街)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS970)",
                     "zh":"(SS970)"
                 }
             },
@@ -479490,7 +479426,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT956)",
                     "zh":"(YT956)"
                 }
             },
@@ -480948,7 +480884,7 @@
                 },
                 "remark":{
                     "en":"(CL304)",
-                    "zh":""
+                    "zh":"(CL304)"
                 }
             },
             "09141DBE74259A87":{
@@ -481239,16 +481175,6 @@
                 "remark":{
                     "en":"(SS467)",
                     "zh":"(SS467)"
-                }
-            },
-            "09A5D5C90F15C08C":{
-                "location":{
-                    "lat":22.38905,
-                    "lng":113.92031
-                },
-                "name":{
-                    "en":"Lung Kwu Tan",
-                    "zh":"龍鼓灘"
                 }
             },
             "09AC1B6D147CA643":{
@@ -482149,7 +482075,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT954)",
                     "zh":"(YT954)"
                 }
             },
@@ -482551,7 +482477,7 @@
                 },
                 "remark":{
                     "en":"(ST500)",
-                    "zh":""
+                    "zh":"(ST500)"
                 }
             },
             "0D5759F7A4B185FE":{
@@ -485293,7 +485219,7 @@
                 },
                 "remark":{
                     "en":"(YL851)",
-                    "zh":""
+                    "zh":"(YL851)"
                 }
             },
             "132":{
@@ -485440,7 +485366,7 @@
                     "zh":"基榮小學 維景酒店"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK302)",
                     "zh":"(MK302)"
                 }
             },
@@ -488317,7 +488243,7 @@
                     "zh":"上海街 廟街夜市"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT244)",
                     "zh":"(YT244)"
                 }
             },
@@ -489309,7 +489235,7 @@
                 },
                 "remark":{
                     "en":"(KC715)",
-                    "zh":""
+                    "zh":"(KC715)"
                 }
             },
             "1C7C526A52EF9171":{
@@ -489653,7 +489579,7 @@
                     "zh":"太子站, 旺角警署"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK356)",
                     "zh":"(MK356)"
                 }
             },
@@ -538528,6 +538454,16 @@
                     "zh":"(皇崗口岸 - 僅限過境旅客)"
                 }
             },
+            "20023791":{
+                "location":{
+                    "lat":22.28588,
+                    "lng":114.13573
+                },
+                "name":{
+                    "en":"Queen's Road West, near Shek Tong Tsui Complex",
+                    "zh":"皇后大道西, 近石塘咀市政大廈"
+                }
+            },
             "201":{
                 "location":{
                     "lat":22.42959,
@@ -538718,7 +538654,7 @@
                 },
                 "remark":{
                     "en":"(CL306)",
-                    "zh":""
+                    "zh":"(CL306)"
                 }
             },
             "20B34B5CA0E66973":{
@@ -538983,7 +538919,7 @@
                 },
                 "remark":{
                     "en":"(CL900)",
-                    "zh":""
+                    "zh":"(CL900)"
                 }
             },
             "2150919C68CAE98E":{
@@ -542806,7 +542742,7 @@
                     "zh":"工業貿易大樓，稅務中心"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(KA500)",
                     "zh":"(KA500)"
                 }
             },
@@ -543107,7 +543043,7 @@
                 },
                 "remark":{
                     "en":"(KC714)",
-                    "zh":""
+                    "zh":"(KC714)"
                 }
             },
             "2A092A3FB143443A":{
@@ -544207,7 +544143,7 @@
                     "zh":"洪水橋(洪福邨)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YL901)",
                     "zh":"(YL901)"
                 }
             },
@@ -544505,7 +544441,7 @@
                 },
                 "remark":{
                     "en":"(SS315)",
-                    "zh":""
+                    "zh":"(SS315)"
                 }
             },
             "2EC5A7EB9CA821D9":{
@@ -545441,7 +545377,7 @@
                     "zh":"西洋菜南街 旺角站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK342)",
                     "zh":"(MK342)"
                 }
             },
@@ -545609,7 +545545,7 @@
                     "zh":"西隧轉車站 - 雅翔道"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT301)",
                     "zh":"(YT301)"
                 }
             },
@@ -547501,7 +547437,7 @@
                 },
                 "remark":{
                     "en":"(YL850)",
-                    "zh":""
+                    "zh":"(YL850)"
                 }
             },
             "34BA638C9E27EB46":{
@@ -550307,7 +550243,7 @@
                     "zh":"彩雲邨白虹樓 聖言中學"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(WT615)",
                     "zh":"(WT615)"
                 }
             },
@@ -550402,7 +550338,7 @@
                     "zh":"太平總站-北區醫院"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(ND928)",
                     "zh":"(ND928)"
                 }
             },
@@ -552216,7 +552152,7 @@
                 },
                 "remark":{
                     "en":"(SS631)",
-                    "zh":""
+                    "zh":"(SS631)"
                 }
             },
             "40A0B70767CA3F13":{
@@ -552351,7 +552287,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT957)",
                     "zh":"(YT957)"
                 }
             },
@@ -554031,7 +553967,7 @@
                 },
                 "remark":{
                     "en":"(WT225)",
-                    "zh":""
+                    "zh":"(WT225)"
                 }
             },
             "4521D614AE85C1A5":{
@@ -554327,7 +554263,7 @@
                     "zh":"上水寶石湖路-上水圍"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(ND435)",
                     "zh":"(ND435)"
                 }
             },
@@ -554343,6 +554279,20 @@
                 "remark":{
                     "en":"(TP880)",
                     "zh":"(TP880)"
+                }
+            },
+            "4594DE819A18CA80":{
+                "location":{
+                    "lat":22.05478,
+                    "lng":114.13144
+                },
+                "name":{
+                    "en":"Tin Yee House Tin Ping Estate",
+                    "zh":"天平邨天怡樓"
+                },
+                "remark":{
+                    "en":"(ND335)",
+                    "zh":"(ND335)"
                 }
             },
             "459BE083B86A8337":{
@@ -554467,7 +554417,7 @@
                     "zh":"北角官立小學(雲景道)"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(ED611)",
                     "zh":"(ED611)"
                 }
             },
@@ -555671,7 +555621,7 @@
                     "zh":"長沙灣(深旺道)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS666)",
                     "zh":"(SS666)"
                 }
             },
@@ -556717,7 +556667,7 @@
                     "zh":"上海街 廟街夜市"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT246)",
                     "zh":"(YT246)"
                 }
             },
@@ -557382,7 +557332,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT950)",
                     "zh":"(YT950)"
                 }
             },
@@ -557667,7 +557617,7 @@
                     "zh":"大圍轉車站新翠邨新明樓"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(TA539)",
                     "zh":"(TA539)"
                 }
             },
@@ -558349,7 +558299,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT960)",
                     "zh":"(YT960)"
                 }
             },
@@ -559025,7 +558975,7 @@
                 },
                 "remark":{
                     "en":"(ST503)",
-                    "zh":""
+                    "zh":"(ST503)"
                 }
             },
             "51FCE282462E418B":{
@@ -560134,7 +560084,7 @@
                     "zh":"太平總站-北區醫院"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(ND929)",
                     "zh":"(ND929)"
                 }
             },
@@ -560525,7 +560475,7 @@
                     "zh":"洪水橋(洪福邨)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YL903)",
                     "zh":"(YL903)"
                 }
             },
@@ -560553,7 +560503,7 @@
                     "zh":"拔萃男書院,太子道西"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(KC744)",
                     "zh":"(KC744)"
                 }
             },
@@ -560577,7 +560527,7 @@
                     "zh":"青發街簡約公屋總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(TM871)",
                     "zh":"(TM871)"
                 }
             },
@@ -560975,7 +560925,7 @@
                 },
                 "remark":{
                     "en":"(ST505)",
-                    "zh":""
+                    "zh":"(ST505)"
                 }
             },
             "575CA240786FAB73":{
@@ -561056,7 +561006,7 @@
                 },
                 "remark":{
                     "en":"(ST502)",
-                    "zh":""
+                    "zh":"(ST502)"
                 }
             },
             "579FD884D6371179":{
@@ -561455,7 +561405,7 @@
                     "zh":"彩雲邨白虹樓 聖言中學"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(WT614)",
                     "zh":"(WT614)"
                 }
             },
@@ -561591,7 +561541,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT951)",
                     "zh":"(YT951)"
                 }
             },
@@ -561730,7 +561680,7 @@
                     "zh":"洪水橋(洪元路)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YL910)",
                     "zh":"(YL910)"
                 }
             },
@@ -563002,7 +562952,7 @@
                 },
                 "remark":{
                     "en":"(YL852)",
-                    "zh":""
+                    "zh":"(YL852)"
                 }
             },
             "5CCBD9A6B58BF20D":{
@@ -563045,7 +562995,7 @@
                 },
                 "remark":{
                     "en":"(WT226)",
-                    "zh":""
+                    "zh":"(WT226)"
                 }
             },
             "5CD6A0A0CE6B53B6":{
@@ -564100,7 +564050,7 @@
                     "zh":"西洋菜南街 旺角站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK340)",
                     "zh":"(MK340)"
                 }
             },
@@ -564490,7 +564440,7 @@
                     "zh":"拔萃男書院,太子道西"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(KC743)",
                     "zh":"(KC743)"
                 }
             },
@@ -566003,6 +565953,20 @@
                     "zh":"(YT330)"
                 }
             },
+            "64ECC536B1725CBE":{
+                "location":{
+                    "lat":22.50307,
+                    "lng":114.12959
+                },
+                "name":{
+                    "en":"Lung Fung Garden",
+                    "zh":"龍豐花園"
+                },
+                "remark":{
+                    "en":"(ND336)",
+                    "zh":"(ND336)"
+                }
+            },
             "64FBF17E3209D217":{
                 "location":{
                     "lat":22.27709,
@@ -566246,7 +566210,7 @@
                     "zh":"長沙灣(海盈邨) 總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS914)",
                     "zh":"(SS914)"
                 }
             },
@@ -568459,6 +568423,20 @@
                     "zh":"皇后街"
                 }
             },
+            "6B839DE7402D725F":{
+                "location":{
+                    "lat":22.37407,
+                    "lng":114.19773
+                },
+                "name":{
+                    "en":"Shui Chuen O Plaza",
+                    "zh":"水泉澳廣場"
+                },
+                "remark":{
+                    "en":"(ST659)",
+                    "zh":"(ST659)"
+                }
+            },
             "6B885F5529A285BB":{
                 "location":{
                     "lat":22.49566,
@@ -569027,7 +569005,7 @@
                     "zh":"洪水橋(洪福邨)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YL900)",
                     "zh":"(YL900)"
                 }
             },
@@ -569452,7 +569430,7 @@
                 },
                 "remark":{
                     "en":"(TN553)",
-                    "zh":""
+                    "zh":"(TN553)"
                 }
             },
             "6E4C75B59DEF3D89":{
@@ -570132,6 +570110,10 @@
                 "name":{
                     "en":"Ma On Shan Town Centre Bus Terminus (Alighting)",
                     "zh":"馬鞍山市中心總站 (落客站)"
+                },
+                "remark":{
+                    "en":"(MA950)",
+                    "zh":"(MA950)"
                 }
             },
             "7012718FDFC57D32":{
@@ -570616,6 +570598,10 @@
                 "name":{
                     "en":"Tsuen Wan West Station Bus Terminus(Alighting)",
                     "zh":"荃灣西站巴士總站(落客站)"
+                },
+                "remark":{
+                    "en":"(TW965)",
+                    "zh":"(TW965)"
                 }
             },
             "716E50EBD1CD72B4":{
@@ -570732,7 +570718,7 @@
                     "zh":"觀塘(翠屏北邨)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(KT271)",
                     "zh":"(KT271)"
                 }
             },
@@ -572321,16 +572307,6 @@
                     "zh":"(MA390)"
                 }
             },
-            "76441824D4E31948":{
-                "location":{
-                    "lat":22.38905,
-                    "lng":113.92031
-                },
-                "name":{
-                    "en":"Lung Kwu Tan",
-                    "zh":"龍鼓灘"
-                }
-            },
             "76457B949CBCDE7B":{
                 "location":{
                     "lat":22.3701,
@@ -572669,7 +572645,7 @@
                     "zh":"基榮小學 維景酒店"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK301)",
                     "zh":"(MK301)"
                 }
             },
@@ -572837,7 +572813,7 @@
                     "zh":"長沙灣(深旺道)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS665)",
                     "zh":"(SS665)"
                 }
             },
@@ -573689,7 +573665,7 @@
                     "zh":"長沙灣(海達邨)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS953)",
                     "zh":"(SS953)"
                 }
             },
@@ -574100,7 +574076,7 @@
                 },
                 "remark":{
                     "en":"(CL305)",
-                    "zh":""
+                    "zh":"(CL305)"
                 }
             },
             "7BFC2AE979358DA7":{
@@ -574208,7 +574184,7 @@
                     "zh":"長沙灣(麗閣邨)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS905)",
                     "zh":"(SS905)"
                 }
             },
@@ -574236,7 +574212,7 @@
                     "zh":"基榮小學 維景酒店"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK300)",
                     "zh":"(MK300)"
                 }
             },
@@ -575155,7 +575131,7 @@
                 },
                 "remark":{
                     "en":"(KC716)",
-                    "zh":""
+                    "zh":"(KC716)"
                 }
             },
             "7F4EB0203DF27B35":{
@@ -576369,7 +576345,7 @@
                 },
                 "remark":{
                     "en":"(ST504)",
-                    "zh":""
+                    "zh":"(ST504)"
                 }
             },
             "824531506E710D40":{
@@ -576487,7 +576463,7 @@
                 },
                 "name":{
                     "en":"Carado Garden",
-                    "zh":"雲叠花園"
+                    "zh":"雲疊花園"
                 },
                 "remark":{
                     "en":"(TA546)",
@@ -576994,7 +576970,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT959)",
                     "zh":"(YT959)"
                 }
             },
@@ -581238,7 +581214,7 @@
                     "zh":"長沙灣(海達邨)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS954)",
                     "zh":"(SS954)"
                 }
             },
@@ -581733,6 +581709,10 @@
                 "name":{
                     "en":"Yau Pok Road Light Public Housing (South) Terminus",
                     "zh":"攸壆路簡約公屋 (南) 總站"
+                },
+                "remark":{
+                    "en":"(YL891)",
+                    "zh":"(YL891)"
                 }
             },
             "92540DF9CB08304C":{
@@ -582252,7 +582232,7 @@
                     "zh":"蔬菜統營處, 麗翠苑"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS314)",
                     "zh":"(SS314)"
                 }
             },
@@ -582529,6 +582509,20 @@
                 "remark":{
                     "en":"(ND920)",
                     "zh":"(ND920)"
+                }
+            },
+            "945D74B7F76C0FAD":{
+                "location":{
+                    "lat":22.50505,
+                    "lng":114.13119
+                },
+                "name":{
+                    "en":"Lung Sum Avenue Sports Centre",
+                    "zh":"龍琛路體育館"
+                },
+                "remark":{
+                    "en":"(ND231)",
+                    "zh":"(ND231)"
                 }
             },
             "94612276CB142F93":{
@@ -586054,7 +586048,7 @@
                 },
                 "remark":{
                     "en":"(ST501)",
-                    "zh":""
+                    "zh":"(ST501)"
                 }
             },
             "9E082924A8362902":{
@@ -586862,6 +586856,10 @@
                 "name":{
                     "en":"Yau Pok Road Light Public Housing (North) Terminus",
                     "zh":"攸壆路簡約公屋 (北) 總站"
+                },
+                "remark":{
+                    "en":"(YL897)",
+                    "zh":"(YL897)"
                 }
             },
             "A06C4A6122AAB40B":{
@@ -589880,20 +589878,6 @@
                     "zh":"(KW205)"
                 }
             },
-            "A80A0719C2068B68":{
-                "location":{
-                    "lat":22.40343,
-                    "lng":113.97258
-                },
-                "name":{
-                    "en":"Tai Hing Sports Centre",
-                    "zh":"大興體育館"
-                },
-                "remark":{
-                    "en":"(TM475)",
-                    "zh":"(TM475)"
-                }
-            },
             "A80D9E7FA0C070E6":{
                 "location":{
                     "lat":22.32643,
@@ -590696,7 +590680,7 @@
                     "zh":"西洋菜南街 旺角站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK341)",
                     "zh":"(MK341)"
                 }
             },
@@ -591109,6 +591093,10 @@
                 "name":{
                     "en":"Yau Pok Road Light Public Housing (North) Terminus",
                     "zh":"攸壆路簡約公屋 (北) 總站"
+                },
+                "remark":{
+                    "en":"(YL896)",
+                    "zh":"(YL896)"
                 }
             },
             "AAD91FB98A0825DF":{
@@ -591203,7 +591191,7 @@
                     "zh":"太子站, 旺角警署"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK357)",
                     "zh":"(MK357)"
                 }
             },
@@ -592701,6 +592689,10 @@
                 "name":{
                     "en":"Tsing Yi BBI - On Mei House Cheung On Estate",
                     "zh":"青衣轉車站 -長安邨安湄樓"
+                },
+                "remark":{
+                    "en":"(TY364)",
+                    "zh":"(TY364)"
                 }
             },
             "AFC5AA585D7CC792":{
@@ -596557,16 +596549,6 @@
                     "zh":"新都城大廈"
                 }
             },
-            "BA9166F11C8D446E":{
-                "location":{
-                    "lat":22.46847,
-                    "lng":113.99955
-                },
-                "name":{
-                    "en":"Yat Tam House Tin Yat Estate",
-                    "zh":"天逸邨逸潭樓"
-                }
-            },
             "BA95025DE2FB9878":{
                 "location":{
                     "lat":22.32094,
@@ -598462,7 +598444,7 @@
                 },
                 "remark":{
                     "en":"(CL303)",
-                    "zh":""
+                    "zh":"(CL303)"
                 }
             },
             "C06124A5A06361AD":{
@@ -598803,7 +598785,7 @@
                     "zh":"紅隧轉車站 - 紅磡站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(HH500)",
                     "zh":"(HH500)"
                 }
             },
@@ -599604,6 +599586,10 @@
                 "name":{
                     "en":"Kowloon City Ferry Bus Terminus (Alighting Stop)",
                     "zh":"九龍城碼頭巴士總站(落客站)"
+                },
+                "remark":{
+                    "en":"(KC941)",
+                    "zh":"(KC941)"
                 }
             },
             "C355E5F825B9864F":{
@@ -599636,7 +599622,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT952)",
                     "zh":"(YT952)"
                 }
             },
@@ -600187,7 +600173,7 @@
                     "zh":"青發街簡約公屋總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(TM870)",
                     "zh":"(TM870)"
                 }
             },
@@ -600417,11 +600403,11 @@
                 },
                 "name":{
                     "en":"HKFYG Lee Shau Kee College",
-                    "zh":"香港青年協會李兆基書院 (TN533a"
+                    "zh":"香港青年協會李兆基書院"
                 },
                 "remark":{
                     "en":"(TN533a)",
-                    "zh":""
+                    "zh":"(TN533a)"
                 }
             },
             "C5C940CF1281B923":{
@@ -604026,7 +604012,7 @@
                     "zh":"西洋菜南街 旺角站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK343)",
                     "zh":"(MK343)"
                 }
             },
@@ -604084,21 +604070,6 @@
                 "remark":{
                     "en":"(WC665)",
                     "zh":"(WC665)"
-                }
-            },
-            "D0937674DF369B23":{
-                "kmbBbiId":"0005",
-                "location":{
-                    "lat":22.35849,
-                    "lng":114.01911
-                },
-                "name":{
-                    "en":"Tuen Mun Road BBI (C1)",
-                    "zh":"屯門公路轉車站 (C1)"
-                },
-                "remark":{
-                    "en":"(TM113)",
-                    "zh":"(TM113)"
                 }
             },
             "D09590C6061D9FE7":{
@@ -604672,6 +604643,10 @@
                 "name":{
                     "en":"Yau Pok Road Light Public Housing (South) Terminus",
                     "zh":"攸壆路簡約公屋 (南) 總站"
+                },
+                "remark":{
+                    "en":"(YL890)",
+                    "zh":"(YL890)"
                 }
             },
             "D213B1E60E14A62E":{
@@ -605016,7 +604991,7 @@
                     "zh":"青發街簡約公屋總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(TM874)",
                     "zh":"(TM874)"
                 }
             },
@@ -605452,7 +605427,7 @@
                     "zh":"長沙灣(海達邨)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS952)",
                     "zh":"(SS952)"
                 }
             },
@@ -606249,20 +606224,6 @@
                 "remark":{
                     "en":"(CW145)",
                     "zh":"(CW145)"
-                }
-            },
-            "D6001B758148778A":{
-                "location":{
-                    "lat":22.41939,
-                    "lng":113.92137
-                },
-                "name":{
-                    "en":"Tsang Tsui",
-                    "zh":"曾咀"
-                },
-                "remark":{
-                    "en":"(TM876)",
-                    "zh":"(TM876)"
                 }
             },
             "D617FE3785FAC79A":{
@@ -607552,7 +607513,7 @@
                     "zh":"太平總站-北區醫院"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(ND927)",
                     "zh":"(ND927)"
                 }
             },
@@ -608954,7 +608915,7 @@
                 },
                 "remark":{
                     "en":"(TW951)",
-                    "zh":""
+                    "zh":"(TW951)"
                 }
             },
             "DD56DC2336C878C1":{
@@ -609235,7 +609196,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT955)",
                     "zh":"(YT955)"
                 }
             },
@@ -609938,7 +609899,7 @@
                     "zh":"筲箕灣東官立中學"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(ED522)",
                     "zh":"(ED522)"
                 }
             },
@@ -610165,7 +610126,7 @@
                     "zh":"北角官立小學(雲景道)"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(ED271)",
                     "zh":"(ED271)"
                 }
             },
@@ -610222,7 +610183,7 @@
                     "zh":"長沙灣(海達邨)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(SS951)",
                     "zh":"(SS951)"
                 }
             },
@@ -610349,7 +610310,7 @@
                     "zh":"高鐵(西九龍站)巴士總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT953)",
                     "zh":"(YT953)"
                 }
             },
@@ -610472,7 +610433,7 @@
                     "zh":"基榮小學 維景酒店"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(MK303)",
                     "zh":"(MK303)"
                 }
             },
@@ -610584,7 +610545,7 @@
                     "zh":"洪水橋(洪元路)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YL911)",
                     "zh":"(YL911)"
                 }
             },
@@ -610880,7 +610841,7 @@
                     "zh":"洪水橋(洪福邨)總站"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YL902)",
                     "zh":"(YL902)"
                 }
             },
@@ -612274,6 +612235,10 @@
                 "name":{
                     "en":"Ngau Chi Wan BBI-Choi Wan St. Joseph's School",
                     "zh":"牛池灣轉車站-彩雲聖若瑟"
+                },
+                "remark":{
+                    "en":"(WT227)",
+                    "zh":"(WT227)"
                 }
             },
             "E71282C11BBF9847":{
@@ -612778,7 +612743,7 @@
                     "zh":"太平總站-北區醫院"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(ND926)",
                     "zh":"(ND926)"
                 }
             },
@@ -614110,6 +614075,10 @@
                 "name":{
                     "en":"Yau Pok Road Light Public Housing (North) Terminus",
                     "zh":"攸壆路簡約公屋 (北) 總站"
+                },
+                "remark":{
+                    "en":"(YL895)",
+                    "zh":"(YL895)"
                 }
             },
             "EC70552CECFD18F2":{
@@ -615642,6 +615611,10 @@
                 "name":{
                     "en":"Ngau Chi Wan BBI-Choi Wan St. Joseph's School",
                     "zh":"牛池灣轉車站-彩雲聖若瑟"
+                },
+                "remark":{
+                    "en":"(WT228)",
+                    "zh":"(WT228)"
                 }
             },
             "F0852C7827CC97EB":{
@@ -615831,6 +615804,20 @@
                 "remark":{
                     "en":"(YL655)",
                     "zh":"(YL655)"
+                }
+            },
+            "F118B7D39DA9A9C3":{
+                "location":{
+                    "lat":22.50362,
+                    "lng":114.12977
+                },
+                "name":{
+                    "en":"San Shing Avenue Sheung Shui",
+                    "zh":"上水新成路"
+                },
+                "remark":{
+                    "en":"(ND230)",
+                    "zh":"(ND230)"
                 }
             },
             "F11DEDBBCD090BCC":{
@@ -617986,20 +617973,6 @@
                 "remark":{
                     "en":"(SK221)",
                     "zh":"(SK221)"
-                }
-            },
-            "F64076F7E14E38D4":{
-                "location":{
-                    "lat":22.41939,
-                    "lng":113.92137
-                },
-                "name":{
-                    "en":"Tsang Tsui",
-                    "zh":"曾咀"
-                },
-                "remark":{
-                    "en":"(TM875)",
-                    "zh":"(TM875)"
                 }
             },
             "F646F96A5D18D121":{
@@ -620204,7 +620177,7 @@
                     "zh":"西隧轉車站 - 雅翔道"
                 },
                 "remark":{
-                    "en":"",
+                    "en":"(YT300)",
                     "zh":"(YT300)"
                 }
             },
@@ -621344,6 +621317,16 @@
                 "remark":{
                     "en":"(HH244)",
                     "zh":"(HH244)"
+                }
+            },
+            "FF0A15A39562BA92":{
+                "location":{
+                    "lat":22.37043,
+                    "lng":114.13465
+                },
+                "name":{
+                    "en":"Cheung Wing Road",
+                    "zh":"昌榮路"
                 }
             },
             "FF115E5D48CCEDD3":{
@@ -631590,8 +631573,16 @@
             ],
             "001133":[
                 [
+                    "gmb",
+                    "20023791"
+                ],
+                [
                     "kmb",
                     "2BAE0D3A6CF25EB8"
+                ],
+                [
+                    "gmb",
+                    "20003475"
                 ]
             ],
             "001134":[
@@ -646000,10 +645991,6 @@
                     "8753A8442C2FFF53"
                 ],
                 [
-                    "kmb",
-                    "BA9166F11C8D446E"
-                ],
-                [
                     "lrtfeeder",
                     "K73-U020"
                 ],
@@ -655466,10 +655453,6 @@
                 [
                     "kmb",
                     "92A8D40E66E76F6B"
-                ],
-                [
-                    "kmb",
-                    "A80A0719C2068B68"
                 ]
             ],
             "003206":[
@@ -661678,6 +661661,10 @@
                 [
                     "kmb",
                     "9170FC8FFFD12204"
+                ],
+                [
+                    "kmb",
+                    "F118B7D39DA9A9C3"
                 ]
             ],
             "003765":[
@@ -664134,10 +664121,6 @@
                 [
                     "kmb",
                     "BF8EAED2AF086669"
-                ],
-                [
-                    "kmb",
-                    "D0937674DF369B23"
                 ],
                 [
                     "kmb",
@@ -667094,16 +667077,6 @@
                 [
                     "kmb",
                     "8BCB786E1F1A2457"
-                ]
-            ],
-            "09A5D5C90F15C08C":[
-                [
-                    "lrtfeeder",
-                    "K52-nU300"
-                ],
-                [
-                    "lrtfeeder",
-                    "K52A-U170"
                 ]
             ],
             "09AC1B6D147CA643":[
@@ -685330,6 +685303,10 @@
                 [
                     "kmb",
                     "9170FC8FFFD12204"
+                ],
+                [
+                    "kmb",
+                    "F118B7D39DA9A9C3"
                 ]
             ],
             "20001474":[
@@ -691708,6 +691685,20 @@
                 [
                     "kmb",
                     "E75C2398E14CDF56"
+                ]
+            ],
+            "20003475":[
+                [
+                    "gmb",
+                    "20023791"
+                ],
+                [
+                    "ctb",
+                    "001133"
+                ],
+                [
+                    "kmb",
+                    "2BAE0D3A6CF25EB8"
                 ]
             ],
             "20003491":[
@@ -701088,6 +701079,12 @@
                 [
                     "kmb",
                     "7ADC6D521E6BECE6"
+                ]
+            ],
+            "20012410":[
+                [
+                    "kmb",
+                    "E02E10C9135624F9"
                 ]
             ],
             "20012411":[
@@ -711994,10 +711991,6 @@
                 [
                     "kmb",
                     "8753A8442C2FFF53"
-                ],
-                [
-                    "kmb",
-                    "BA9166F11C8D446E"
                 ]
             ],
             "20015460":[
@@ -724996,6 +724989,20 @@
                     "2BC21AC371639FC3"
                 ]
             ],
+            "20023791":[
+                [
+                    "ctb",
+                    "001133"
+                ],
+                [
+                    "gmb",
+                    "20003475"
+                ],
+                [
+                    "kmb",
+                    "2BAE0D3A6CF25EB8"
+                ]
+            ],
             "201":[
                 [
                     "ctb",
@@ -730171,10 +730178,6 @@
                 ],
                 [
                     "kmb",
-                    "D0937674DF369B23"
-                ],
-                [
-                    "kmb",
                     "DFE346B2C7332BC0"
                 ],
                 [
@@ -730230,6 +730233,14 @@
                 [
                     "ctb",
                     "001133"
+                ],
+                [
+                    "gmb",
+                    "20023791"
+                ],
+                [
+                    "gmb",
+                    "20003475"
                 ]
             ],
             "2BB6115BF9346B34":[
@@ -744377,10 +744388,6 @@
                 ],
                 [
                     "kmb",
-                    "D0937674DF369B23"
-                ],
-                [
-                    "kmb",
                     "DFE346B2C7332BC0"
                 ],
                 [
@@ -758166,6 +758173,20 @@
                     "B0668BFF6178BA0B"
                 ]
             ],
+            "64ECC536B1725CBE":[
+                [
+                    "ctb",
+                    "003768"
+                ],
+                [
+                    "gmb",
+                    "20007293"
+                ],
+                [
+                    "kmb",
+                    "D417A444017171C6"
+                ]
+            ],
             "64FBF17E3209D217":[
                 [
                     "ctb",
@@ -760704,6 +760725,40 @@
                 [
                     "kmb",
                     "13E0A0449C73F4DE"
+                ]
+            ],
+            "6B839DE7402D725F":[
+                [
+                    "kmb",
+                    "944A9ADFCA286511"
+                ],
+                [
+                    "ctb",
+                    "003391"
+                ],
+                [
+                    "kmb",
+                    "075A5F14CD9020D7"
+                ],
+                [
+                    "gmb",
+                    "20013044"
+                ],
+                [
+                    "kmb",
+                    "3229F37E6637B0ED"
+                ],
+                [
+                    "kmb",
+                    "81E82A4D2A0D9BD3"
+                ],
+                [
+                    "kmb",
+                    "9879DF2CF2B69838"
+                ],
+                [
+                    "kmb",
+                    "E5ABAACCE16F8E18"
                 ]
             ],
             "6B885F5529A285BB":[
@@ -764400,10 +764455,6 @@
                 [
                     "kmb",
                     "8753A8442C2FFF53"
-                ],
-                [
-                    "kmb",
-                    "BA9166F11C8D446E"
                 ],
                 [
                     "lrtfeeder",
@@ -772425,10 +772476,6 @@
                 ],
                 [
                     "kmb",
-                    "D0937674DF369B23"
-                ],
-                [
-                    "kmb",
                     "DFE346B2C7332BC0"
                 ],
                 [
@@ -772486,10 +772533,6 @@
                 [
                     "kmb",
                     "73755A16EA9076FF"
-                ],
-                [
-                    "kmb",
-                    "BA9166F11C8D446E"
                 ],
                 [
                     "lrtfeeder",
@@ -772988,10 +773031,6 @@
                 [
                     "kmb",
                     "A8B22902BD665766"
-                ],
-                [
-                    "kmb",
-                    "D0937674DF369B23"
                 ],
                 [
                     "kmb",
@@ -776714,6 +776753,10 @@
                 [
                     "gmb",
                     "20001473"
+                ],
+                [
+                    "kmb",
+                    "F118B7D39DA9A9C3"
                 ]
             ],
             "9179E2F718D0F436":[
@@ -777386,10 +777429,6 @@
                 [
                     "ctb",
                     "003204"
-                ],
-                [
-                    "kmb",
-                    "A80A0719C2068B68"
                 ]
             ],
             "92AA28BBE48D6B2E":[
@@ -778312,6 +778351,32 @@
                 [
                     "kmb",
                     "26A1D2969A15C3AF"
+                ]
+            ],
+            "945D74B7F76C0FAD":[
+                [
+                    "ctb",
+                    "003719"
+                ],
+                [
+                    "gmb",
+                    "20012124"
+                ],
+                [
+                    "gmb",
+                    "20012127"
+                ],
+                [
+                    "kmb",
+                    "D2C1DACCC74B69C5"
+                ],
+                [
+                    "kmb",
+                    "EE775A73D626A46E"
+                ],
+                [
+                    "ctb",
+                    "003765"
                 ]
             ],
             "946516353F8828E9":[
@@ -786472,16 +786537,6 @@
                     "C84CAD6CCD18F87F"
                 ]
             ],
-            "A80A0719C2068B68":[
-                [
-                    "ctb",
-                    "003204"
-                ],
-                [
-                    "kmb",
-                    "92A8D40E66E76F6B"
-                ]
-            ],
             "A80D9E7FA0C070E6":[
                 [
                     "gmb",
@@ -786780,10 +786835,6 @@
                 [
                     "kmb",
                     "88229183EDC0B6E9"
-                ],
-                [
-                    "kmb",
-                    "D0937674DF369B23"
                 ],
                 [
                     "kmb",
@@ -794268,36 +794319,6 @@
                 [
                     "kmb",
                     "E6735B26B2F1D68E"
-                ]
-            ],
-            "BA9166F11C8D446E":[
-                [
-                    "ctb",
-                    "002077"
-                ],
-                [
-                    "kmb",
-                    "73755A16EA9076FF"
-                ],
-                [
-                    "kmb",
-                    "8753A8442C2FFF53"
-                ],
-                [
-                    "lrtfeeder",
-                    "K76-U020"
-                ],
-                [
-                    "lrtfeeder",
-                    "K76S-U020"
-                ],
-                [
-                    "gmb",
-                    "20015459"
-                ],
-                [
-                    "lrtfeeder",
-                    "K73-U020"
                 ]
             ],
             "BA95025DE2FB9878":[
@@ -803450,40 +803471,6 @@
                     "002441"
                 ]
             ],
-            "D0937674DF369B23":[
-                [
-                    "kmb",
-                    "2B3A6C000BB085CD"
-                ],
-                [
-                    "kmb",
-                    "47FF0EDCD6926932"
-                ],
-                [
-                    "kmb",
-                    "A8B22902BD665766"
-                ],
-                [
-                    "kmb",
-                    "DFE346B2C7332BC0"
-                ],
-                [
-                    "kmb",
-                    "872110C8ADA14DA1"
-                ],
-                [
-                    "kmb",
-                    "88229183EDC0B6E9"
-                ],
-                [
-                    "kmb",
-                    "0269A1F9D98C737E"
-                ],
-                [
-                    "kmb",
-                    "DB516EC0B8DAF046"
-                ]
-            ],
             "D09590C6061D9FE7":[
                 [
                     "kmb",
@@ -805748,12 +805735,6 @@
                 [
                     "kmb",
                     "A9069A17B1474D76"
-                ]
-            ],
-            "D6001B758148778A":[
-                [
-                    "kmb",
-                    "F64076F7E14E38D4"
                 ]
             ],
             "D617FE3785FAC79A":[
@@ -808367,10 +808348,6 @@
                 ],
                 [
                     "kmb",
-                    "D0937674DF369B23"
-                ],
-                [
-                    "kmb",
                     "2B3A6C000BB085CD"
                 ],
                 [
@@ -809676,6 +809653,12 @@
                     "K58-D120"
                 ]
             ],
+            "DF0C4F9561000773":[
+                [
+                    "kmb",
+                    "EBE1766B508217AF"
+                ]
+            ],
             "DF0F8F9667BADA6A":[
                 [
                     "kmb",
@@ -809931,10 +809914,6 @@
                 ],
                 [
                     "kmb",
-                    "D0937674DF369B23"
-                ],
-                [
-                    "kmb",
                     "DB516EC0B8DAF046"
                 ],
                 [
@@ -810046,6 +810025,10 @@
                 [
                     "ctb",
                     "001423"
+                ],
+                [
+                    "gmb",
+                    "20012410"
                 ],
                 [
                     "kmb",
@@ -814646,6 +814629,10 @@
                 [
                     "kmb",
                     "4442A9A5E7FABAB8"
+                ],
+                [
+                    "kmb",
+                    "DF0C4F9561000773"
                 ]
             ],
             "EBE72869FC78A62D":[
@@ -816992,6 +816979,20 @@
                 [
                     "kmb",
                     "527795AF6DEC209C"
+                ]
+            ],
+            "F118B7D39DA9A9C3":[
+                [
+                    "ctb",
+                    "003764"
+                ],
+                [
+                    "gmb",
+                    "20001473"
+                ],
+                [
+                    "kmb",
+                    "9170FC8FFFD12204"
                 ]
             ],
             "F11DEDBBCD090BCC":[
@@ -819480,12 +819481,6 @@
                 [
                     "kmb",
                     "A39754C80FFB1590"
-                ]
-            ],
-            "F64076F7E14E38D4":[
-                [
-                    "kmb",
-                    "D6001B758148778A"
                 ]
             ],
             "F6512E7C4A6D5C2E":[
@@ -823684,6 +823679,28 @@
                 [
                     "gmb",
                     "20017161"
+                ]
+            ],
+            "FF0A15A39562BA92":[
+                [
+                    "kmb",
+                    "0B4807A5C0DAF24A"
+                ],
+                [
+                    "kmb",
+                    "1423FCFF61709EAC"
+                ],
+                [
+                    "gmb",
+                    "20011980"
+                ],
+                [
+                    "kmb",
+                    "8C6EF1266E4EE05B"
+                ],
+                [
+                    "kmb",
+                    "E919C0B67C6ACF3F"
                 ]
             ],
             "FF115E5D48CCEDD3":[
@@ -828260,10 +828277,6 @@
             ],
             "K52-nU300":[
                 [
-                    "kmb",
-                    "09A5D5C90F15C08C"
-                ],
-                [
                     "lrtfeeder",
                     "K52A-U170"
                 ]
@@ -828877,10 +828890,6 @@
                 ]
             ],
             "K52A-U170":[
-                [
-                    "kmb",
-                    "09A5D5C90F15C08C"
-                ],
                 [
                     "lrtfeeder",
                     "K52-nU300"
@@ -834060,10 +834069,6 @@
                 [
                     "kmb",
                     "8753A8442C2FFF53"
-                ],
-                [
-                    "kmb",
-                    "BA9166F11C8D446E"
                 ]
             ],
             "K73-U025":[
@@ -835646,10 +835651,6 @@
                     "8753A8442C2FFF53"
                 ],
                 [
-                    "kmb",
-                    "BA9166F11C8D446E"
-                ],
-                [
                     "lrtfeeder",
                     "K73-U020"
                 ],
@@ -835918,10 +835919,6 @@
                 [
                     "kmb",
                     "8753A8442C2FFF53"
-                ],
-                [
-                    "kmb",
-                    "BA9166F11C8D446E"
                 ],
                 [
                     "lrtfeeder",
@@ -1201558,7 +1201555,7 @@
                 "VJ8":{}
             },
             "closing":"01:21",
-            "facilities":232186306959,
+            "facilities":232169529743,
             "fares":{
                 "ADM":{
                     "octo_adult":10.6,
@@ -1274869,7 +1274866,7 @@
                 "VJ8":{}
             },
             "closing":"01:16",
-            "facilities":6340813,
+            "facilities":6340809,
             "fares":{
                 "ADM":{
                     "octo_adult":13.2,
@@ -1395091,7 +1395088,7 @@
                 "VJ8":{}
             },
             "closing":"01:15",
-            "facilities":8592048303,
+            "facilities":8589934767,
             "fares":{
                 "ADM":{
                     "octo_adult":17.1,
@@ -1505030,12 +1505027,12 @@
                 "zh":"特定日子服務 過海線"
             },
             "SP12":{
-                "en":"Service on specified day - Route Details TBD",
-                "zh":"特定日子服務 - 未有路線資訊"
+                "en":"Service on specified day, Boundary",
+                "zh":"特定日子服務 口岸線"
             },
             "SP2":{
-                "en":"Service on specified day - Route Details TBD",
-                "zh":"特定日子服務 - 未有路線資訊"
+                "en":"Service on specified day",
+                "zh":"特定日子服務"
             },
             "SP2A":{
                 "en":"Service on specified day",
@@ -1505078,14 +1505075,6 @@
             "331S":{
                 "en":"Sun Bus(NR331S)",
                 "zh":"陽光巴士(NR331S)"
-            },
-            "52S":{
-                "en":"on 11,17,18,19,24,25/10/2026",
-                "zh":"on 11,17,18,19,24,25/10/2026"
-            },
-            "56S":{
-                "en":"on 11,17,18,19,24,25/10/2026",
-                "zh":"on 11,17,18,19,24,25/10/2026"
             },
             "71P":{
                 "en":"On 26/9/2026 mid-night only",
@@ -1505250,20 +1505239,7 @@
                 "zh":"特別路線 - 到達兆康後改行其他路綫"
             }
         },
-        "nlb":{
-            "34S":{
-                "en":"Service on specified days only",
-                "zh":"只於指定日子提供服務"
-            },
-            "7S":{
-                "en":"Service on specified days only",
-                "zh":"只於指定日子提供服務"
-            },
-            "NB2":{
-                "en":"Service on 1/1/2026 only",
-                "zh":"只於 1/1/2026 提供服務"
-            }
-        }
+        "nlb":{}
     },
     "splashEntries":[
         {
