@@ -4,11 +4,13 @@ import json
 import math
 import random
 import re
+import ssl
 import string
 import sys
 import time
 import urllib.request
 import zlib
+from pathlib import Path
 
 import chardet
 import requests
@@ -16,6 +18,14 @@ from bs4 import BeautifulSoup
 from shapely.geometry import Point, Polygon
 
 from mtr_station_facilities_extraction import collect_mtr_station_facilities_mapping, collect_mtr_station_facilities
+
+
+NLB_SSL_CONTEXT = ssl.create_default_context()
+NLB_SSL_CONTEXT.load_verify_locations(
+    cadata=ssl.DER_cert_to_PEM_cert(
+        (Path(__file__).parent / "certificates" / "gdig2.crt").read_bytes()
+    )
+)
 
 
 def merge(a, b, path=None):
@@ -119,7 +129,7 @@ def get_kmb_stop_info(stop_id):
         return None
 
 
-def get_web_text(url, gzip=True, max_retries=10, delay=5, timeout=30):
+def get_web_text(url, gzip=True, max_retries=10, delay=5, timeout=30, ssl_context=None):
     for attempt in range(max_retries):
         try:
             req = urllib.request.Request(url)
@@ -128,7 +138,7 @@ def get_web_text(url, gzip=True, max_retries=10, delay=5, timeout=30):
                 req.add_header('Accept-Encoding', 'gzip')
             req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7')
             req.add_header('Connection', 'keep-alive')
-            with urllib.request.urlopen(req, timeout=timeout) as response:
+            with urllib.request.urlopen(req, timeout=timeout, context=ssl_context) as response:
                 text = response.read()
             encoding = chardet.detect(text)
             if encoding['encoding'] is None:
@@ -1551,7 +1561,11 @@ def add_route_remarks():
             nlb_ids = operator_data["nlb"]["nlb_ids"]
             dates_list = {}
             for nlb_id in nlb_ids:
-                page = get_web_text(f"https://nlb.com.hk/route/detail/{nlb_id}", False)
+                page = get_web_text(
+                    f"https://nlb.com.hk/route/detail/{nlb_id}",
+                    False,
+                    ssl_context=NLB_SSL_CONTEXT
+                )
                 dates = extract_nlb_timetable_date(page)
                 if dates is not None:
                     dates_list[",".join(dates)] = dates
