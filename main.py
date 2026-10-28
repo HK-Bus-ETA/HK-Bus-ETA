@@ -41,7 +41,7 @@ def merge(a, b, path=None):
             a[key] = b[key]
 
 
-def get_web_json(url, max_retries=10, delay=5, timeout=30):
+def get_web_json(url, max_retries=100, delay=5, timeout=30):
     for attempt in range(max_retries):
         try:
             with urllib.request.urlopen(url, timeout=timeout) as data:
@@ -129,7 +129,7 @@ def get_kmb_stop_info(stop_id):
         return None
 
 
-def get_web_text(url, gzip=True, max_retries=10, delay=5, timeout=30, ssl_context=None):
+def get_web_text(url, gzip=True, max_retries=100, delay=5, timeout=30, ssl_context=None):
     for attempt in range(max_retries):
         try:
             req = urllib.request.Request(url)
