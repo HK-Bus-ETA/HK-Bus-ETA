@@ -1184,6 +1184,7 @@
         "AEL",
         "B1",
         "B10",
+        "B10S",
         "B11",
         "B12",
         "B13",
@@ -251576,63 +251577,6 @@
                     ]
                 }
             },
-            "68+2+Aldrich Bay+Quarry Bay (Hoi Wan Street)":{
-                "bound":{
-                    "gmb":"O"
-                },
-                "co":[
-                    "gmb"
-                ],
-                "dest":{
-                    "en":"Quarry Bay (Hoi Wan Street)",
-                    "zh":"鰂魚涌(海灣街)"
-                },
-                "fares":[
-                    "5.7",
-                    "5.7",
-                    "5.7",
-                    "5.7",
-                    "5.7",
-                    "5.7",
-                    "5.7",
-                    "5.7",
-                    "5.7",
-                    "5.7"
-                ],
-                "faresHoliday":null,
-                "freq":{
-                    "31":{
-                        "0630":[
-                            "0900",
-                            "1800"
-                        ]
-                    }
-                },
-                "gmbRegion":"HKI",
-                "gtfsId":"2005295",
-                "nlbId":null,
-                "orig":{
-                    "en":"Aldrich Bay",
-                    "zh":"愛秩序灣"
-                },
-                "route":"68",
-                "serviceType":2,
-                "stops":{
-                    "gmb":[
-                        "20012985",
-                        "20012986",
-                        "20012987",
-                        "20012988",
-                        "20012989",
-                        "20012990",
-                        "20000215",
-                        "20002787",
-                        "20012991",
-                        "20012992",
-                        "20012985"
-                    ]
-                }
-            },
             "680+1+ADMIRALTY STATION (EAST)+LEE ON":{
                 "bound":{
                     "ctb":"O",
@@ -304252,61 +304196,6 @@
                         "20019501",
                         "20022175",
                         "20015742"
-                    ]
-                }
-            },
-            "811B+2+Yiu On+Fo Tan (Cheung Lek Mei Street)":{
-                "bound":{
-                    "gmb":"O"
-                },
-                "co":[
-                    "gmb"
-                ],
-                "dest":{
-                    "en":"Fo Tan (Cheung Lek Mei Street)",
-                    "zh":"火炭(長瀝尾街)"
-                },
-                "fares":[
-                    "11.7",
-                    "11.7",
-                    "11.7",
-                    "11.7",
-                    "11.7",
-                    "11.7",
-                    "11.7",
-                    "11.7",
-                    "11.7"
-                ],
-                "faresHoliday":null,
-                "freq":{
-                    "31":{
-                        "1630":[
-                            "1630",
-                            "60"
-                        ]
-                    }
-                },
-                "gmbRegion":"NT",
-                "gtfsId":"2011490",
-                "nlbId":null,
-                "orig":{
-                    "en":"Yiu On",
-                    "zh":"耀安"
-                },
-                "route":"811B",
-                "serviceType":2,
-                "stops":{
-                    "gmb":[
-                        "20015772",
-                        "20001228",
-                        "20002225",
-                        "20002320",
-                        "20002226",
-                        "20002288",
-                        "20002228",
-                        "20015651",
-                        "20001564",
-                        "20015773"
                     ]
                 }
             },
@@ -380662,6 +380551,36 @@
                         "9E42D981C59B5762",
                         "E16B85415973C1A2",
                         "C9A6689E84F83D1A"
+                    ]
+                }
+            },
+            "B10S+99+KWAI FONG (KWAI TSUI ESTATE)+HUANGGANG PORT":{
+                "bound":{
+                    "kmb":"O"
+                },
+                "co":[
+                    "kmb"
+                ],
+                "dest":{
+                    "en":"Huanggang Port",
+                    "zh":"皇崗口岸"
+                },
+                "fares":null,
+                "faresHoliday":null,
+                "freq":null,
+                "gtfsId":null,
+                "jt":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Kwai Fong (Kwai Tsui Estate)",
+                    "zh":"葵芳(葵翠邨)"
+                },
+                "route":"B10S",
+                "serviceType":"99",
+                "stops":{
+                    "kmb":[
+                        "ZZZZZZZZZZZZZZZY",
+                        "ZZZZZZZZZZZZZZZZ"
                     ]
                 }
             },
@@ -1504903,6 +1504822,10 @@
             "945":{
                 "en":"Sun Bus(NR945)",
                 "zh":"陽光巴士(NR945)"
+            },
+            "B10S":{
+                "en":"On Special Day Only - Route Details TBD",
+                "zh":"萬聖節(31/10)晚上 深宵服務至02:00 - 未有路線資訊"
             },
             "HK1":{
                 "en":"Kowloon Bus Tour",
