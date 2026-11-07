@@ -1384,6 +1384,7 @@
         "PB3",
         "PB4",
         "PB5",
+        "PBPN",
         "R108",
         "R11",
         "R215",
@@ -21191,22 +21192,7 @@
                 "001034",
                 "001171"
             ],
-            "O":[
-                "001027",
-                "001170",
-                "001195",
-                "001171",
-                "001032",
-                "001030",
-                "002423",
-                "002450",
-                "001264",
-                "002770",
-                "001216",
-                "002940",
-                "002941",
-                "002939"
-            ]
+            "O":[]
         },
         "X962":{
             "I":[],
@@ -367044,6 +367030,34 @@
                     ]
                 }
             },
+            "PBPN+99+GO PARK+UNIVERSITY STATION":{
+                "bound":{
+                    "kmb":"O"
+                },
+                "co":[
+                    "kmb"
+                ],
+                "dest":{
+                    "en":"University Station",
+                    "zh":"大學站"
+                },
+                "freq":null,
+                "gtfsId":null,
+                "jt":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"GO PARK",
+                    "zh":"西沙 GO PARK"
+                },
+                "route":"PBPN",
+                "serviceType":"99",
+                "stops":{
+                    "kmb":[
+                        "ZZZZZZZZZZZZZZZY",
+                        "ZZZZZZZZZZZZZZZZ"
+                    ]
+                }
+            },
             "R108+1+KAI YIP+CAUSEWAY BAY (VICTORIA PARK)":{
                 "bound":{
                     "kmb":"O"
@@ -373021,7 +373035,7 @@
             },
             "X9+1+Central (Star Ferry)+Shek O":{
                 "bound":{
-                    "ctb":"O"
+                    "ctb":"I"
                 },
                 "co":[
                     "ctb"
@@ -767153,6 +767167,10 @@
             "PB5":{
                 "en":"Pet Bus 🐾",
                 "zh":"寵物巴士團 🐾"
+            },
+            "PBPN":{
+                "en":"Pet Bus 🐾 - Route Details TBD",
+                "zh":"寵物巴士團 🐾 - 未有路線資訊"
             },
             "R108":{
                 "en":"Service on 18.1.2026 only",
