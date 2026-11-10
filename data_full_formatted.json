@@ -1383,7 +1383,6 @@
         "PB3",
         "PB4",
         "PB5",
-        "PBPN",
         "R108",
         "R11",
         "R215",
@@ -444620,36 +444619,6 @@
                     ]
                 }
             },
-            "PBPN+99+GO PARK+UNIVERSITY STATION":{
-                "bound":{
-                    "kmb":"O"
-                },
-                "co":[
-                    "kmb"
-                ],
-                "dest":{
-                    "en":"University Station",
-                    "zh":"大學站"
-                },
-                "fares":null,
-                "faresHoliday":null,
-                "freq":null,
-                "gtfsId":null,
-                "jt":null,
-                "nlbId":null,
-                "orig":{
-                    "en":"GO PARK",
-                    "zh":"西沙 GO PARK"
-                },
-                "route":"PBPN",
-                "serviceType":"99",
-                "stops":{
-                    "kmb":[
-                        "ZZZZZZZZZZZZZZZY",
-                        "ZZZZZZZZZZZZZZZZ"
-                    ]
-                }
-            },
             "R108+1+KAI YIP+CAUSEWAY BAY (VICTORIA PARK)":{
                 "bound":{
                     "kmb":"O"
@@ -843976,11 +843945,6 @@
                 }
             },
             "PB5":{
-                "joyyou":{
-                    "rate":1.0
-                }
-            },
-            "PBPN":{
                 "joyyou":{
                     "rate":1.0
                 }
@@ -1509607,10 +1509571,6 @@
             "PB5":{
                 "en":"Pet Bus 🐾",
                 "zh":"寵物巴士團 🐾"
-            },
-            "PBPN":{
-                "en":"Pet Bus 🐾 - Route Details TBD",
-                "zh":"寵物巴士團 🐾 - 未有路線資訊"
             },
             "R108":{
                 "en":"Service on 18.1.2026 only",
