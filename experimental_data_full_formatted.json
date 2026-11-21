@@ -398384,7 +398384,7 @@
                     ]
                 }
             },
-            "H0+99+Central (Star Ferry)+Central (Star Ferry)":{
+            "H0+99+Central (Star Ferry)+Victoria Star":{
                 "bound":{
                     "ctb":"O"
                 },
@@ -398392,8 +398392,8 @@
                     "ctb"
                 ],
                 "dest":{
-                    "en":"Central (Star Ferry)",
-                    "zh":"中環 (天星碼頭)"
+                    "en":"Victoria Star",
+                    "zh":"星光維港"
                 },
                 "fares":null,
                 "faresHoliday":null,
@@ -1388950,7 +1388950,7 @@
                 "VJ8":{}
             },
             "closing":"01:36",
-            "facilities":6340807,
+            "facilities":0,
             "fares":{
                 "ADM":{
                     "octo_adult":15.8,
@@ -1481038,6 +1481038,30 @@
             "SP7":{
                 "en":"Service on Specific Day Only",
                 "zh":"只在指定日期提供服務"
+            },
+            "X1":{
+                "en":"On Specific Day Only",
+                "zh":"指定日期服務"
+            },
+            "X33":{
+                "en":"On Specific Day Only",
+                "zh":"指定日期服務"
+            },
+            "X36":{
+                "en":"On Specific Day Only",
+                "zh":"指定日期服務"
+            },
+            "X40":{
+                "en":"On Specific Day Only",
+                "zh":"指定日期服務"
+            },
+            "X43":{
+                "en":"On Specific Day Only",
+                "zh":"指定日期服務"
+            },
+            "X47":{
+                "en":"On Specific Day Only",
+                "zh":"指定日期服務"
             }
         },
         "lightRail":{
