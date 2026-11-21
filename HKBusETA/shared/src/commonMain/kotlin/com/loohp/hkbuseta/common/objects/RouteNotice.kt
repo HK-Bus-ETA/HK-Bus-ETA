@@ -181,7 +181,7 @@ fun nlbRouteInfo(route: Route): RouteNoticeExternal {
         title = "嶼巴路線資訊" withEn "NLB Route Info",
         co = Operator.NLB,
         importance = RouteNoticeImportance.NORMAL,
-        url = "https://www.nlb.com.hk/route/detail/${route.nlbId}".asBilingualText(),
+        url = "https://www.nlb.com.hk/tc/route/${route.nlbId}" withEn "https://www.nlb.com.hk/en/route/${route.nlbId}",
         possibleTwoWaySectionFareInfo = true
     )
 }
