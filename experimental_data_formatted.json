@@ -162652,7 +162652,7 @@
                     ]
                 }
             },
-            "49P+1+SHATIN CENTRAL+TSING YI FERRY":{
+            "49P+1+SHATIN CENTRAL BUS TERMINUS+TSING YI FERRY BUS TERMINUS":{
                 "bound":{
                     "kmb":"O"
                 },
@@ -162660,8 +162660,8 @@
                     "kmb"
                 ],
                 "dest":{
-                    "en":"Tsing Yi Ferry",
-                    "zh":"青衣碼頭"
+                    "en":"Tsing Yi Ferry Bus Terminus",
+                    "zh":"青衣碼頭總站"
                 },
                 "freq":{
                     "287":{
@@ -162673,8 +162673,8 @@
                 "jt":"27",
                 "nlbId":null,
                 "orig":{
-                    "en":"Shatin Central",
-                    "zh":"沙田巿中心"
+                    "en":"Shatin Central Bus Terminus",
+                    "zh":"沙田市中心總站"
                 },
                 "route":"49P",
                 "serviceType":"1",
