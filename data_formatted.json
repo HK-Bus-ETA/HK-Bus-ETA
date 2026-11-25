@@ -81558,7 +81558,7 @@
                         "9E655CE3250647EA",
                         "2C7AEE8C6B2BC06A",
                         "0B8D095A45B05587",
-                        "D6BE89205CDC6645"
+                        "3241EDA71CCCF867"
                     ]
                 }
             },
@@ -156666,7 +156666,7 @@
                         "79BB89DA868D93CF",
                         "BE47845FF3E717FC",
                         "50E78EB09845863E",
-                        "A6013462EAC8AA50",
+                        "8EAD803DDD2C3BBA",
                         "2035C91B61C6DFC0",
                         "3A5C336CCB38A3FA",
                         "789384E5DC5AF7A9",
@@ -156689,7 +156689,7 @@
                         "9E655CE3250647EA",
                         "2C7AEE8C6B2BC06A",
                         "0B8D095A45B05587",
-                        "D6BE89205CDC6645"
+                        "3241EDA71CCCF867"
                     ]
                 }
             },
@@ -236862,7 +236862,7 @@
                 "serviceType":"1",
                 "stops":{
                     "kmb":[
-                        "AC1FD9BDD09D1DD6",
+                        "8EC63D8C071F72C4",
                         "6E31EAD2D04F8310",
                         "F8E6D797A84D5328",
                         "11DB53AE44D5FB17",
@@ -320020,6 +320020,50 @@
                     ]
                 }
             },
+            "E32A+4+KWAI FONG (SOUTH)+Tung Chung Pier":{
+                "bound":{
+                    "kmb":"O"
+                },
+                "co":[
+                    "kmb"
+                ],
+                "dest":{
+                    "en":"Tung Chung Pier",
+                    "zh":"東涌碼頭"
+                },
+                "freq":null,
+                "gtfsId":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Kwai Fong (South)",
+                    "zh":"葵芳(南)"
+                },
+                "route":"E32A",
+                "serviceType":"4",
+                "stops":{
+                    "kmb":[
+                        "32477B342BF2DC22",
+                        "C9BF57C6B2F9BB92",
+                        "4432CAFB004FF754",
+                        "C0E90AAAA204D927",
+                        "AF837BAF1DA794EF",
+                        "395175EBEEC636B7",
+                        "51A9098F06B6C1DB",
+                        "2E1126EB3A7EDB00",
+                        "711AE4AC67F88999",
+                        "C7217641124605E5",
+                        "0EB1DDFEBF0D09E0",
+                        "DBC287AE0C58AEC0",
+                        "7F8BF075DDF6231A",
+                        "2AA862C9E7E497EE",
+                        "D7AAC19538A45549",
+                        "22A8C801A98F9B7D",
+                        "DBA1D592108DBA72",
+                        "B1790A47B8FFEF37",
+                        "E435992628015D22"
+                    ]
+                }
+            },
             "E33+1+AIRPORT (GROUND TRANSPORTATION CENTRE)+TUEN MUN CENTRAL":{
                 "bound":{
                     "kmb":"I"
@@ -362287,17 +362331,8 @@
                     "en":"Airport (Cargo and Catering Area)",
                     "zh":"機場(貨運及航膳區)"
                 },
-                "freq":{
-                    "287":{
-                        "1545":null,
-                        "1845":null
-                    },
-                    "480":{
-                        "1845":null
-                    }
-                },
-                "gtfsId":"8347",
-                "jt":"21",
+                "freq":null,
+                "gtfsId":null,
                 "nlbId":null,
                 "orig":{
                     "en":"Cheung Tung Estate",
