@@ -707,6 +707,7 @@
         "63A",
         "63B",
         "63K",
+        "63R",
         "63S",
         "63X",
         "641",
@@ -202338,6 +202339,66 @@
                         "20014226",
                         "20014227",
                         "20014231"
+                    ]
+                }
+            },
+            "63R+1+LAM TSUEN WISHING TREE+TAI PO MARKET STATION":{
+                "bound":{
+                    "kmb":"I"
+                },
+                "co":[
+                    "kmb"
+                ],
+                "dest":{
+                    "en":"Tai Po Market Station",
+                    "zh":"大埔墟站"
+                },
+                "freq":null,
+                "gtfsId":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Lam Tsuen Wishing Tree",
+                    "zh":"林村許願樹"
+                },
+                "route":"63R",
+                "serviceType":"1",
+                "stops":{
+                    "kmb":[
+                        "74A3A3037E047C81",
+                        "BCC83D8C953DC504",
+                        "399EF919E10C7F33",
+                        "512C07C3D131AB5A",
+                        "46604706EE6CC765",
+                        "8581908CE476D2CF"
+                    ]
+                }
+            },
+            "63R+1+TAI PO MARKET STATION+LAM TSUEN WISHING TREE":{
+                "bound":{
+                    "kmb":"O"
+                },
+                "co":[
+                    "kmb"
+                ],
+                "dest":{
+                    "en":"Lam Tsuen Wishing Tree",
+                    "zh":"林村許願樹"
+                },
+                "freq":null,
+                "gtfsId":null,
+                "nlbId":null,
+                "orig":{
+                    "en":"Tai Po Market Station",
+                    "zh":"大埔墟站"
+                },
+                "route":"63R",
+                "serviceType":"1",
+                "stops":{
+                    "kmb":[
+                        "8581908CE476D2CF",
+                        "0A8E2BA2F75E472E",
+                        "CCC4773031BC0FD8",
+                        "74A3A3037E047C81"
                     ]
                 }
             },
@@ -478430,6 +478491,16 @@
                     "zh":"大朗"
                 }
             },
+            "74A3A3037E047C81":{
+                "location":{
+                    "lat":22.45766,
+                    "lng":114.14293
+                },
+                "name":{
+                    "en":"Lam Tsuen Wishing Tree",
+                    "zh":"林村許願樹"
+                }
+            },
             "74C0E91D535648A2":{
                 "location":{
                     "lat":22.4815,
@@ -592044,6 +592115,12 @@
                     "90A92A87C0491478"
                 ]
             ],
+            "20011097":[
+                [
+                    "kmb",
+                    "BCC83D8C953DC504"
+                ]
+            ],
             "20011123":[
                 [
                     "gmb",
@@ -642482,6 +642559,14 @@
                 [
                     "kmb",
                     "DE46A23558FD6CF6"
+                ],
+                [
+                    "lrtfeeder",
+                    "K12-D020"
+                ],
+                [
+                    "lrtfeeder",
+                    "K14-D010"
                 ]
             ],
             "5134E170C222E516":[
@@ -665145,10 +665230,6 @@
                 ],
                 [
                     "kmb",
-                    "919C2FE90FDCAD6A"
-                ],
-                [
-                    "kmb",
                     "94A3E9298FD887C6"
                 ],
                 [
@@ -670074,10 +670155,6 @@
                 [
                     "kmb",
                     "375591F774538709"
-                ],
-                [
-                    "kmb",
-                    "8581908CE476D2CF"
                 ],
                 [
                     "kmb",
@@ -688412,6 +688489,12 @@
                 [
                     "lrtfeeder",
                     "K65-D150"
+                ]
+            ],
+            "BCC83D8C953DC504":[
+                [
+                    "gmb",
+                    "20011097"
                 ]
             ],
             "BCEEE192EF01C361":[
@@ -717329,6 +717412,10 @@
             "K12-D020":[
                 [
                     "kmb",
+                    "512C07C3D131AB5A"
+                ],
+                [
+                    "kmb",
                     "DE46A23558FD6CF6"
                 ],
                 [
@@ -717423,6 +717510,10 @@
                 ]
             ],
             "K14-D010":[
+                [
+                    "kmb",
+                    "512C07C3D131AB5A"
+                ],
                 [
                     "kmb",
                     "DE46A23558FD6CF6"
@@ -734204,6 +734295,10 @@
             "331S":{
                 "en":"Sun Bus(NR331S)",
                 "zh":"陽光巴士(NR331S)"
+            },
+            "63R":{
+                "en":"On 29 Nov to 4 Dec Only",
+                "zh":"於11月29日至12月4日期間提供服務"
             },
             "71P":{
                 "en":"On 26/9/2026 mid-night only",
